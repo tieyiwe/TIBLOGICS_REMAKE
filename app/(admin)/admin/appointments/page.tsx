@@ -49,9 +49,24 @@ function ActionMenu({ id }: { id: string }) {
       </button>
       {open && (
         <div className="absolute right-0 top-9 bg-white border border-[#D2DCE8] rounded-xl shadow-lg z-10 min-w-[140px] py-1">
-          <button className="w-full text-left px-4 py-2 text-sm font-dm text-[#0D1B2A] hover:bg-[#F4F7FB]" onClick={() => setOpen(false)}>View Details</button>
-          <button className="w-full text-left px-4 py-2 text-sm font-dm text-[#0D1B2A] hover:bg-[#F4F7FB]" onClick={() => setOpen(false)}>Add Zoom Link</button>
-          <button className="w-full text-left px-4 py-2 text-sm font-dm text-red-500 hover:bg-red-50" onClick={() => setOpen(false)}>Cancel</button>
+          <button
+            className="w-full text-left px-4 py-2 text-sm font-dm text-[#0D1B2A] hover:bg-[#F4F7FB]"
+            onClick={() => setOpen(false)}
+          >
+            View Details
+          </button>
+          <button
+            className="w-full text-left px-4 py-2 text-sm font-dm text-[#0D1B2A] hover:bg-[#F4F7FB]"
+            onClick={() => setOpen(false)}
+          >
+            Add Zoom Link
+          </button>
+          <button
+            className="w-full text-left px-4 py-2 text-sm font-dm text-red-500 hover:bg-red-50"
+            onClick={() => setOpen(false)}
+          >
+            Cancel
+          </button>
         </div>
       )}
     </div>
@@ -134,7 +149,9 @@ export default function AppointmentsPage() {
             <tbody className="divide-y divide-[#F4F7FB]">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12 font-dm text-sm text-[#7A8FA6]">No appointments match your filters.</td>
+                  <td colSpan={8} className="text-center py-12 font-dm text-sm text-[#7A8FA6]">
+                    No appointments match your filters.
+                  </td>
                 </tr>
               ) : (
                 filtered.map(a => (

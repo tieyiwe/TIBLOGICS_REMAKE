@@ -23,11 +23,16 @@ export default function MetricCard({
     <div className={`${bg} border rounded-2xl p-5`}>
       <div className="flex items-start justify-between mb-3">
         <span className={`${labelColor} font-dm text-sm font-medium`}>{label}</span>
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: iconColor + "25" }}>
+        <div
+          className="w-9 h-9 rounded-xl flex items-center justify-center"
+          style={{ backgroundColor: iconColor + "25" }}
+        >
           <Icon size={16} style={{ color: iconColor }} />
         </div>
       </div>
-      <div className={`font-syne font-extrabold text-2xl ${valueColor}`}>{prefix}{typeof value === "number" ? value.toLocaleString() : value}{suffix}</div>
+      <div className={`font-syne font-extrabold text-2xl ${valueColor}`}>
+        {prefix}{typeof value === "number" ? value.toLocaleString() : value}{suffix}
+      </div>
       {change !== undefined && (
         <div className={`text-xs font-dm mt-1 ${change >= 0 ? "text-green-500" : "text-red-400"}`}>
           {change >= 0 ? "↑" : "↓"} {Math.abs(change)}% vs last period

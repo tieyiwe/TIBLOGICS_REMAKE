@@ -1,5 +1,8 @@
 "use client";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer,
+} from "recharts";
 
 const data = [
   { month: "Nov", revenue: 0 },
@@ -20,14 +23,21 @@ export default function RevenueChart() {
       <ResponsiveContainer width="100%" height={200}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#E8EFF8" />
-          <XAxis dataKey="month" tick={{ fill: "#7A8FA6", fontSize: 12 }} axisLine={false} tickLine={false} />
+          <XAxis
+            dataKey="month"
+            tick={{ fill: "#7A8FA6", fontSize: 12 }}
+            axisLine={false}
+            tickLine={false}
+          />
           <YAxis
             tick={{ fill: "#7A8FA6", fontSize: 12 }}
             axisLine={false}
             tickLine={false}
             tickFormatter={(v) => `$${(v / 100).toFixed(0)}`}
           />
-          <Tooltip formatter={(v: number) => [`$${(v / 100).toFixed(2)}`, "Revenue"]} />
+          <Tooltip
+            formatter={(v: number) => [`$${(v / 100).toFixed(2)}`, "Revenue"]}
+          />
           <Line
             type="monotone"
             dataKey="revenue"

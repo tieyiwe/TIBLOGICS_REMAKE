@@ -52,11 +52,16 @@ export default function AdminDashboardPage() {
         <div className="bg-white border border-[#D2DCE8] rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-syne font-bold text-base text-[#0D1B2A]">Upcoming Appointments</h3>
-            <Link href="/admin/appointments" className="text-xs text-[#2251A3] font-dm hover:underline">View All →</Link>
+            <Link href="/admin/appointments" className="text-xs text-[#2251A3] font-dm hover:underline">
+              View All →
+            </Link>
           </div>
           <div className="space-y-3">
             {mockAppointments.map(a => (
-              <div key={a.id} className="flex items-center justify-between py-2 border-b border-[#F4F7FB] last:border-0">
+              <div
+                key={a.id}
+                className="flex items-center justify-between py-2 border-b border-[#F4F7FB] last:border-0"
+              >
                 <div>
                   <p className="font-dm font-medium text-sm text-[#0D1B2A]">{a.name}</p>
                   <p className="font-dm text-xs text-[#7A8FA6]">{a.service} · {a.date} {a.time}</p>
@@ -71,17 +76,24 @@ export default function AdminDashboardPage() {
         <div className="bg-white border border-[#D2DCE8] rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-syne font-bold text-base text-[#0D1B2A]">Recent Prospects</h3>
-            <Link href="/admin/prospects" className="text-xs text-[#2251A3] font-dm hover:underline">View All →</Link>
+            <Link href="/admin/prospects" className="text-xs text-[#2251A3] font-dm hover:underline">
+              View All →
+            </Link>
           </div>
           <div className="space-y-3">
             {mockProspects.map(p => (
-              <div key={p.id} className="flex items-start justify-between py-2 border-b border-[#F4F7FB] last:border-0">
+              <div
+                key={p.id}
+                className="flex items-start justify-between py-2 border-b border-[#F4F7FB] last:border-0"
+              >
                 <div>
                   <p className="font-dm font-medium text-sm text-[#0D1B2A]">{p.name}</p>
                   <p className="font-dm text-xs text-[#7A8FA6]">{p.business} · {p.industry}</p>
                   <div className="flex gap-1 mt-1 flex-wrap">
                     {p.solutions.map(s => (
-                      <span key={s} className="bg-[#EBF0FA] text-[#2251A3] text-xs px-2 py-0.5 rounded-full font-dm">{s}</span>
+                      <span key={s} className="bg-[#EBF0FA] text-[#2251A3] text-xs px-2 py-0.5 rounded-full font-dm">
+                        {s}
+                      </span>
                     ))}
                   </div>
                 </div>

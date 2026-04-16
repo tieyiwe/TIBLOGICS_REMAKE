@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { LayoutGrid, List, Search, MoreVertical } from "lucide-react";
+import { LayoutGrid, List, Search } from "lucide-react";
 
 type ProspectStatus = "NEW" | "CONTACTED" | "QUALIFIED" | "PROPOSAL_SENT" | "CLOSED_WON";
 
@@ -16,7 +16,7 @@ interface Prospect {
   daysAgo: number;
 }
 
-const prospects: Prospect[] = [
+const INITIAL_PROSPECTS: Prospect[] = [
   { id: "1", name: "Marcus Johnson", business: "TechFlow Inc", industry: "SaaS", source: "Website Scanner", budget: "$5k–$10k", status: "NEW", solutions: ["AI Implementation", "Workflow Automation"], daysAgo: 1 },
   { id: "2", name: "Aisha Diallo", business: "DigiLearn Africa", industry: "EdTech", source: "Referral", budget: "$2k–$5k", status: "NEW", solutions: ["AI Strategy", "Web Dev"], daysAgo: 3 },
   { id: "3", name: "Robert Kim", business: "HealthBridge", industry: "Healthcare", source: "LinkedIn", budget: "$10k+", status: "CONTACTED", solutions: ["CareFlow AI", "AI Agents"], daysAgo: 5 },
@@ -55,7 +55,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function ProspectsPage() {
   const [view, setView] = useState<"kanban" | "table">("kanban");
   const [search, setSearch] = useState("");
-  const [items, setItems] = useState<Prospect[]>(prospects);
+  const [items, setItems] = useState<Prospect[]>(INITIAL_PROSPECTS);
 
   const filtered = items.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -83,13 +83,21 @@ export default function ProspectsPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setView("kanban")}
-            className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-colors ${view === "kanban" ? "bg-[#1B3A6B] border-[#1B3A6B] text-white" : "bg-white border-[#D2DCE8] text-[#7A8FA6] hover:bg-[#F4F7FB]"}`}
+            className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-colors ${
+              view === "kanban"
+                ? "bg-[#1B3A6B] border-[#1B3A6B] text-white"
+                : "bg-white border-[#D2DCE8] text-[#7A8FA6] hover:bg-[#F4F7FB]"
+            }`}
           >
             <LayoutGrid size={15} />
           </button>
           <button
             onClick={() => setView("table")}
-            className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-colors ${view === "table" ? "bg-[#1B3A6B] border-[#1B3A6B] text-white" : "bg-white border-[#D2DCE8] text-[#7A8FA6] hover:bg-[#F4F7FB]"}`}
+            className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-colors ${
+              view === "table"
+                ? "bg-[#1B3A6B] border-[#1B3A6B] text-white"
+                : "bg-white border-[#D2DCE8] text-[#7A8FA6] hover:bg-[#F4F7FB]"
+            }`}
           >
             <List size={15} />
           </button>
@@ -149,7 +157,12 @@ export default function ProspectsPage() {
                         <p className="text-xs font-dm text-[#7A8FA6]">{p.industry} · {p.budget}</p>
                         <div className="flex flex-wrap gap-1">
                           {p.solutions.map(s => (
-                            <span key={s} className="bg-[#EBF0FA] text-[#2251A3] text-xs px-1.5 py-0.5 rounded-full font-dm">{s}</span>
+                            <span
+                              key={s}
+                              className="bg-[#EBF0FA] text-[#2251A3] text-xs px-1.5 py-0.5 rounded-full font-dm"
+                            >
+                              {s}
+                            </span>
                           ))}
                         </div>
                         {p.status !== "CLOSED_WON" && (
@@ -189,7 +202,9 @@ export default function ProspectsPage() {
               <tbody className="divide-y divide-[#F4F7FB]">
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-12 font-dm text-sm text-[#7A8FA6]">No prospects found.</td>
+                    <td colSpan={7} className="text-center py-12 font-dm text-sm text-[#7A8FA6]">
+                      No prospects found.
+                    </td>
                   </tr>
                 ) : (
                   filtered.map(p => (
@@ -198,7 +213,12 @@ export default function ProspectsPage() {
                         <p className="font-dm text-sm font-medium text-[#0D1B2A]">{p.name}</p>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {p.solutions.map(s => (
-                            <span key={s} className="bg-[#EBF0FA] text-[#2251A3] text-xs px-1.5 py-0.5 rounded-full font-dm">{s}</span>
+                            <span
+                              key={s}
+                              className="bg-[#EBF0FA] text-[#2251A3] text-xs px-1.5 py-0.5 rounded-full font-dm"
+                            >
+                              {s}
+                            </span>
                           ))}
                         </div>
                       </td>
