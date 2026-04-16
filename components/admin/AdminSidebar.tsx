@@ -1,0 +1,223 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
+import { useState } from "react";
+import {
+  LayoutDashboard,
+  Rocket,
+  BarChart2,
+  Columns,
+  GanttChartSquare,
+  List,
+  RefreshCw,
+  Calendar,
+  Users,
+  Search,
+  DollarSign,
+  Settings,
+  FileEdit,
+  LogOut,
+  Menu,
+  X,
+} from "lucide-react";
+
+interface NavSubItem {
+  label: string;
+  href: string;
+  icon: React.ElementType;
+}
+
+interface NavItem {
+  label: string;
+  href: string;
+  icon: React.ElementType;
+  subItems?: NavSubItem[];
+}
+
+const navItems: NavItem[] = [
+  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  {
+    label: "Command Center",
+    href: "/admin/command-center",
+    icon: Rocket,
+    subItems: [
+      { label: "Overview", href: "/admin/command-center", icon: BarChart2 },
+      { label: "Kanban", href: "/admin/command-center/kanban", icon: Columns },
+      {
+        label: "Timeline",
+        href: "/admin/command-center/timeline",
+        icon: GanttChartSquare,
+      },
+      {
+        label: "All Projects",
+        href: "/admin/command-center/list",
+        icon: List,
+      },
+      { label: "Sync", href: "/admin/command-center/sync", icon: RefreshCw },
+    ],
+  },
+  { label: "Appointments", href: "/admin/appointments", icon: Calendar },
+  { label: "Prospects", href: "/admin/prospects", icon: Users },
+  { label: "Scanner Leads", href: "/admin/scanner-leads", icon: Search },
+  { label: "Tool Analytics", href: "/admin/tools", icon: BarChart2 },
+  { label: "Revenue", href: "/admin/revenue", icon: DollarSign },
+  { label: "Settings", href: "/admin/settings", icon: Settings },
+  { label: "Content", href: "/admin/content", icon: FileEdit },
+];
+
+function NavLink({
+  item,
+  pathname,
+  onClick,
+}: {
+  item: NavItem;
+  pathname: string;
+  onClick?: () => void;
+}) {
+  const isActive =
+    item.href === "/admin"
+      ? pathname === "/admin"
+      : pathname === item.href || pathname.startsWith(item.href + "/");
+
+  const isCommandCenter = item.href === "/admin/command-center";
+  const commandCenterActive =
+    pathname === "/admin/command-center" ||
+    pathname.startsWith("/admin/command-center/");
+
+  const Icon = item.icon;
+
+  return (
+    <div>
+      <Link
+        href={item.href}
+        onClick={onClick}
+        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-dm font-medium transition-colors cursor-pointer ${
+          isActive
+            ? "bg-[#2251A3]/40 text-white border-l-2 border-[#F47C20]"
+            : "text-white/60 hover:bg-white/10 hover:text-white"
+        }`}
+      >
+        <Icon size={16} />
+        {item.label}
+      </Link>
+
+      {/* Sub-items for Command Center when active */}
+      {isCommandCenter && commandCenterActive && item.subItems && (
+        <div className="ml-4 mt-0.5 flex flex-col gap-0.5">
+          {item.subItems.map((sub) => {
+            const subIsActive =
+              sub.href === "/admin/command-center"
+                ? pathname === "/admin/command-center"
+                : pathname === sub.href;
+            const SubIcon = sub.icon;
+            return (
+              <Link
+                key={sub.href}
+                href={sub.href}
+                onClick={onClick}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-dm font-medium transition-colors cursor-pointer ${
+                  subIsActive
+                    ? "bg-[#2251A3]/40 text-white border-l-2 border-[#F47C20]"
+                    : "text-white/50 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                <SubIcon size={14} />
+                {sub.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function AdminSidebar() {
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const sidebarContent = (
+    <div className="flex flex-col h-full">
+      {/* Logo */}
+      <div className="px-5 py-5 border-b border-white/10">
+        <span className="font-syne font-extrabold text-xl tracking-tight">
+          <span className="text-white">TIB</span>
+          <span className="text-[#F47C20]">LOGICS</span>
+        </span>
+      </div>
+
+      {/* Navigation */}
+      <nav className="px-3 py-4 flex flex-col gap-1 flex-1 overflow-y-auto">
+        {navItems.map((item, idx) => {
+          const isCommandCenter = item.href === "/admin/command-center";
+          const nextItem = navItems[idx + 1];
+          const showDivider =
+            isCommandCenter && nextItem !== undefined;
+
+          return (
+            <div key={item.href}>
+              <NavLink
+                item={item}
+                pathname={pathname}
+                onClick={() => setMobileOpen(false)}
+              />
+              {showDivider && (
+                <hr className="border-white/10 my-2" />
+              )}
+            </div>
+          );
+        })}
+      </nav>
+
+      {/* Bottom */}
+      <div className="border-t border-white/10 p-3 space-y-1">
+        <Link
+          href="/"
+          target="_blank"
+          className="flex items-center gap-2 px-3 py-2 text-sm text-white/50 hover:text-white transition-colors rounded-lg hover:bg-white/10"
+        >
+          ← Back to Site
+        </Link>
+        <button
+          onClick={() => signOut({ callbackUrl: "/admin/login" })}
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/50 hover:text-red-300 transition-colors rounded-lg hover:bg-white/5 cursor-pointer"
+        >
+          <LogOut size={16} />
+          Sign Out
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Mobile toggle button */}
+      <button
+        className="lg:hidden fixed top-4 left-4 z-50 bg-[#1B3A6B] text-white p-2 rounded-lg shadow-lg"
+        onClick={() => setMobileOpen((v) => !v)}
+        aria-label="Toggle sidebar"
+      >
+        {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/40 z-30"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Sidebar — hidden on mobile unless open, always visible on lg+ */}
+      <aside
+        className={`fixed left-0 top-0 bottom-0 w-64 bg-[#1B3A6B] z-40 transition-transform duration-300 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        }`}
+      >
+        {sidebarContent}
+      </aside>
+    </>
+  );
+}

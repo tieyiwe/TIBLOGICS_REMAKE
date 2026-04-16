@@ -1,0 +1,209 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Appointment {
+  id              String    @id @default(cuid())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  serviceType     String
+  serviceDuration String
+  servicePrice    Int
+  date            DateTime
+  timeSlot        String
+  timezone        String    @default("America/New_York")
+  firstName       String
+  lastName        String
+  email           String
+  company         String?
+  goalNotes       String?
+  addOnRecording      Boolean @default(false)
+  addOnActionPlan     Boolean @default(false)
+  addOnSlackAccess    Boolean @default(false)
+  totalAmount     Int
+  status          AppointmentStatus @default(PENDING)
+  stripeSessionId  String?
+  stripePaymentId  String?
+  paymentStatus    String?
+  zoomLink         String?
+  notes            String?
+  reminderSent     Boolean   @default(false)
+  confirmedAt      DateTime?
+  cancelledAt      DateTime?
+  cancelReason     String?
+
+  @@index([email])
+  @@index([date])
+  @@index([status])
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model Prospect {
+  id                 String         @id @default(cuid())
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  name               String
+  business           String
+  industry           String
+  mainChallenge      String
+  budget             String
+  suggestedSolutions String[]
+  email              String?
+  phone              String?
+  source             ProspectSource @default(TIBS_ADVISOR)
+  status             ProspectStatus @default(NEW)
+  priority           String?
+  estimatedValue     Int?
+  notes              String?
+  followUpDate       DateTime?
+  convertedAt        DateTime?
+  conversationLog    Json?
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum ProspectSource {
+  TIBS_ADVISOR
+  WEBSITE_SCANNER
+  CONTACT_FORM
+  REFERRAL
+  MANUAL
+}
+
+enum ProspectStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL_SENT
+  NEGOTIATING
+  CLOSED_WON
+  CLOSED_LOST
+  ON_HOLD
+}
+
+model ScannerLead {
+  id            String    @id @default(cuid())
+  createdAt     DateTime  @default(now())
+  url           String
+  overallScore  Int
+  seoScore      Int
+  perfScore     Int
+  uxScore       Int
+  aiScore       Int
+  findings      Json
+  aiDescription String
+  email         String?
+  name          String?
+  bookedCallAt  DateTime?
+
+  @@index([createdAt])
+  @@index([aiScore])
+}
+
+model ToolUsage {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  tool      String
+  sessionId String?
+  metadata  Json?
+}
+
+model AdminSettings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model BlockedDate {
+  id        String   @id @default(cuid())
+  date      DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+}
+
+model Project {
+  id               String          @id @default(cuid())
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  name             String
+  description      String?
+  category         ProjectCategory
+  status           ProjectStatus   @default(ACTIVE)
+  priority         ProjectPriority @default(MEDIUM)
+  progress         Int             @default(0)
+  color            String          @default("#2251A3")
+  revenueEarned    Int             @default(0)
+  revenuePotential Int             @default(0)
+  monthlyRecurring Int             @default(0)
+  startDate        DateTime?
+  deadline         DateTime?
+  completedAt      DateTime?
+  starred          Boolean         @default(false)
+  archived         Boolean         @default(false)
+  notes            String?
+  tasks            ProjectTask[]
+
+  @@index([category])
+  @@index([status])
+}
+
+enum ProjectCategory {
+  SAAS
+  CLIENT
+  EDUCATION
+  INTERNAL
+}
+
+enum ProjectStatus {
+  CONCEPT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+enum ProjectPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model ProjectTask {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  text      String
+  done      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  dueDate   DateTime?
+  order     Int      @default(0)
+
+  @@index([projectId])
+}
+
+model CommandCenterSync {
+  id          String    @id @default(cuid())
+  createdAt   DateTime  @default(now())
+  projectId   String?
+  projectName String
+  action      String
+  source      String
+  changesDiff Json
+  chatSummary String?
+  undoneAt    DateTime?
+}
