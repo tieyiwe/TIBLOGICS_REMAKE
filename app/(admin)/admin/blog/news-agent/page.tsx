@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Loader2, Bot, Zap, RefreshCw, FileText, ArrowLeft } from "lucide-react";
+import { Send, Loader2, Bot, Zap, RefreshCw, FileText, ArrowLeft, Mail } from "lucide-react";
 import Link from "next/link";
 
 type Message = { role: "user" | "assistant"; content: string };
 
 const QUICK_ACTIONS = [
   { label: "Fetch latest AI news", icon: RefreshCw, msg: "Fetch the latest AI news from Hacker News and DEV.to. Show me what's trending." },
-  { label: "What's hot on X/Twitter", icon: Zap, msg: "What AI topics are trending on X (Twitter) right now? What should I write about?" },
   { label: "Generate a tips post", icon: FileText, msg: "Generate a practical tips post: '5 Ways Small Businesses Can Use AI to Save 10 Hours a Week'" },
+  { label: "Draft AI newsletter", icon: Mail, msg: "Draft a newsletter about the top AI mistakes small businesses make and how to avoid them. Make it practical and engaging." },
   { label: "Set breaking news", icon: Zap, msg: "Help me set breaking news. What's the biggest AI news today that deserves a breaking alert?" },
 ];
 
@@ -77,6 +77,29 @@ export default function NewsAgentPage() {
       } else if (action.type === "CLEAR_BREAKING_NEWS") {
         await fetch("/api/blog/breaking-news", { method: "DELETE" });
         setActionFeedback("✅ Breaking news cleared.");
+      } else if (action.type === "DRAFT_NEWSLETTER") {
+        const res = await fetch("/api/newsletter/campaigns", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...action.data, sentBy: "Echelon" }),
+        });
+        if (res.ok) {
+          setActionFeedback(`✅ Newsletter drafted: "${action.data.title}" — <a href="/admin/newsletter" class="underline">View in Newsletter →</a>`);
+        } else {
+          setActionFeedback("❌ Failed to draft newsletter.");
+        }
+      } else if (action.type === "SEND_NEWSLETTER") {
+        const res = await fetch("/api/newsletter/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(action.data.campaignId ? { campaignId: action.data.campaignId } : {}),
+        });
+        if (res.ok) {
+          const d = await res.json();
+          setActionFeedback(`✅ Newsletter sent to ${d.sent ?? "all"} subscribers!`);
+        } else {
+          setActionFeedback("❌ Failed to send newsletter.");
+        }
       }
     } catch {
       setActionFeedback("❌ Action failed. Please try again.");
@@ -131,7 +154,7 @@ export default function NewsAgentPage() {
           <div>
             <h1 className="font-syne font-bold text-xl text-[#0D1B2A]">Blog News Agent</h1>
             <p className="font-dm text-xs text-[#7A8FA6]">
-              Fetch news · Generate posts · Manage breaking alerts
+              Fetch news · Generate posts · Draft &amp; send newsletters
             </p>
           </div>
         </div>

@@ -38,7 +38,7 @@ export default function ServicesPage() {
           <div className="flex justify-center gap-3 mt-6">
             <Link href="/book" className="btn-primary">Book a Session</Link>
             <Link href="/tools/advisor" className="bg-white text-[#1B3A6B] hover:bg-[#EBF0FA] font-semibold rounded-lg px-5 py-2.5 transition-colors inline-flex items-center gap-2">
-              Talk to Echelon
+              Talk to Tibo
             </Link>
           </div>
         </div>
@@ -54,8 +54,11 @@ export default function ServicesPage() {
               </div>
               <h2 className="font-syne font-bold text-base text-[#0D1B2A] mb-2">{svc.name}</h2>
               <p className="font-dm text-sm text-[#7A8FA6] leading-relaxed mb-4 flex-1">{svc.desc}</p>
-              <Link href="/book" className="text-[#2251A3] text-sm font-dm font-medium hover:text-[#1B3A6B] flex items-center gap-1 mt-auto">
-                Get a quote <ArrowRight size={13} />
+              <Link
+                href={`/services/get-started?service=${encodeURIComponent(svc.name)}`}
+                className="inline-flex items-center gap-1.5 bg-[#1B3A6B] hover:bg-[#2251A3] text-white text-sm font-dm font-semibold px-4 py-2 rounded-xl transition-colors mt-auto"
+              >
+                Get Started <ArrowRight size={13} />
               </Link>
             </div>
           ))}

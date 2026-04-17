@@ -65,7 +65,7 @@ export default function Nav() {
                 href="/tools/advisor"
                 className="btn-primary text-sm py-2 px-4"
               >
-                Talk to Echelon ↗
+                Talk to Tibo ↗
               </Link>
               <Link
                 href="/book"
@@ -142,7 +142,7 @@ export default function Nav() {
               onClick={() => setMobileOpen(false)}
               className="btn-primary justify-center text-sm"
             >
-              Talk to Echelon ↗
+              Talk to Tibo ↗
             </Link>
             <Link
               href="/book"

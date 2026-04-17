@@ -526,7 +526,7 @@ export default function ScannerPage() {
     let domain = normalizedUrl;
     try { domain = new URL(normalizedUrl).hostname; } catch { /* keep full url */ }
     window.dispatchEvent(
-      new CustomEvent("echelon:scan-complete", {
+      new CustomEvent("tibo:scan-complete", {
         detail: { url: domain, overallScore: scanResult.overallScore, criticals, aiScore: scanResult.aiScore },
       })
     );

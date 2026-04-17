@@ -28,7 +28,7 @@ const ALL_SLOTS = ["9:00 AM", "10:00 AM", "11:00 AM", "2:00 PM", "3:00 PM", "4:0
 const INITIAL_MESSAGE: Message = {
   role: "assistant",
   content:
-    "Hey! I'm Echelon 👋 How can I help you today? Ask me anything about TIBLOGICS — services, products, pricing, or how AI can transform your business.",
+    "Hey! I'm Tibo 👋 How can I help you today? Ask me anything about TIBLOGICS — services, products, pricing, or how AI can transform your business.",
 };
 
 function getAvailableDates(): Array<{ value: string; label: string }> {
@@ -188,9 +188,9 @@ export default function EchelonFloat() {
         setHasUnread(false);
       }, 3500);
     }
-    window.addEventListener("echelon:scan-complete", handleScanComplete);
+    window.addEventListener("tibo:scan-complete", handleScanComplete);
     return () =>
-      window.removeEventListener("echelon:scan-complete", handleScanComplete);
+      window.removeEventListener("tibo:scan-complete", handleScanComplete);
   }, []);
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -556,7 +556,7 @@ export default function EchelonFloat() {
                       handleSend();
                     }
                   }}
-                  placeholder="Ask Echelon anything…"
+                  placeholder="Ask Tibo anything…"
                   disabled={loading}
                   className="flex-1 bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl px-3 py-2 text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3] disabled:opacity-50 transition-colors"
                 />
@@ -591,7 +591,7 @@ export default function EchelonFloat() {
         )}
         <button
           onClick={() => setIsOpen((prev) => !prev)}
-          aria-label={isOpen ? "Close Echelon chat" : "Open Echelon chat"}
+          aria-label={isOpen ? "Close Tibo chat" : "Open Tibo chat"}
           className="relative w-[54px] h-[54px] rounded-full flex items-center justify-center transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F47C20] focus-visible:ring-offset-2"
           style={{
             background: isOpen

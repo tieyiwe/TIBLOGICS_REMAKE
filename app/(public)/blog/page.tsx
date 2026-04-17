@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Search, Clock, Zap, RefreshCw } from "lucide-react";
+import { Search, Clock, Zap, RefreshCw, Send } from "lucide-react";
 import { trackPageVisit } from "@/lib/recommendations";
 import SmartRecommendations from "@/components/public/SmartRecommendations";
 
@@ -260,6 +260,11 @@ export default function BlogPage() {
         )}
       </div>
 
+      {/* Newsletter signup */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
+        <NewsletterSignup />
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
         <SmartRecommendations currentPage="/blog" compact />
       </div>
@@ -309,6 +314,78 @@ function PostCard({ post }: { post: BlogPost }) {
         </div>
       </article>
     </Link>
+  );
+}
+
+function NewsletterSignup() {
+  const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email) return;
+    setStatus("loading");
+    try {
+      const res = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, firstName: firstName || undefined, source: "blog_page" }),
+      });
+      setStatus(res.ok ? "success" : "error");
+    } catch {
+      setStatus("error");
+    }
+  }
+
+  return (
+    <div className="bg-gradient-to-br from-[#1B3A6B] to-[#2251A3] rounded-3xl p-10 text-center">
+      <span className="inline-block bg-[#F47C20]/20 text-[#F47C20] text-xs font-dm font-semibold px-3 py-1 rounded-full mb-4 uppercase tracking-wide">
+        Free Newsletter
+      </span>
+      <h2 className="font-syne font-extrabold text-2xl md:text-3xl text-white mb-3">
+        AI insights delivered to your inbox.
+      </h2>
+      <p className="font-dm text-white/70 text-base max-w-lg mx-auto mb-7">
+        Weekly tips on AI best practices, readiness strategies, and mistakes to avoid — curated for small businesses by Echelon.
+      </p>
+      {status === "success" ? (
+        <div className="inline-flex items-center gap-2 bg-white/10 text-white font-dm text-sm px-6 py-3 rounded-2xl">
+          You&rsquo;re subscribed! Welcome aboard.
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+          <input
+            type="text"
+            placeholder="First name (optional)"
+            value={firstName}
+            onChange={e => setFirstName(e.target.value)}
+            className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 font-dm text-sm focus:outline-none focus:border-white/50"
+          />
+          <input
+            type="email"
+            placeholder="Your email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            required
+            className="flex-[2] px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 font-dm text-sm focus:outline-none focus:border-white/50"
+          />
+          <button type="submit" disabled={status === "loading"}
+            className="flex items-center justify-center gap-2 bg-[#F47C20] hover:bg-[#D85A30] text-white font-dm font-semibold px-5 py-3 rounded-xl transition-colors disabled:opacity-70 flex-shrink-0"
+          >
+            {status === "loading" ? (
+              <RefreshCw size={15} className="animate-spin" />
+            ) : (
+              <><Send size={14} /> Subscribe</>
+            )}
+          </button>
+        </form>
+      )}
+      {status === "error" && (
+        <p className="text-red-300 text-xs font-dm mt-3">Something went wrong. Please try again.</p>
+      )}
+      <p className="text-white/40 text-xs font-dm mt-4">No spam. Unsubscribe anytime.</p>
+    </div>
   );
 }
 

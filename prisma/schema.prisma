@@ -196,6 +196,56 @@ model ProjectTask {
   @@index([projectId])
 }
 
+model NewsletterSubscriber {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  firstName      String?
+  source         String    @default("blog")
+  active         Boolean   @default(true)
+  subscribedAt   DateTime  @default(now())
+  unsubscribedAt DateTime?
+
+  @@index([active])
+  @@index([subscribedAt])
+}
+
+model NewsletterCampaign {
+  id             String    @id @default(cuid())
+  title          String
+  subject        String
+  previewText    String?
+  contentHtml    String    @db.Text
+  category       String    @default("general")
+  status         String    @default("DRAFT")
+  sentAt         DateTime?
+  recipientCount Int       @default(0)
+  sentBy         String    @default("Echelon")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model ServiceRequest {
+  id           String   @id @default(cuid())
+  firstName    String
+  lastName     String
+  email        String
+  phone        String?
+  company      String?
+  service      String
+  description  String   @db.Text
+  budget       String?
+  timeline     String?
+  tiboAssisted Boolean  @default(false)
+  aiSummary    String?  @db.Text
+  status       String   @default("NEW")
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
 model BlogPost {
   id            String   @id @default(cuid())
   slug          String   @unique

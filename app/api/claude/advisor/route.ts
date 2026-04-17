@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/claude";
 
-const ADVISOR_SYSTEM_PROMPT = `You are Echelon, the AI Project Advisor for TIBLOGICS, an AI implementation and digital solutions agency based in Wheaton, Maryland.
+const ADVISOR_SYSTEM_PROMPT = `You are Tibo, the AI Project Advisor for TIBLOGICS, an AI implementation and digital solutions agency based in Wheaton, Maryland.
 
 TIBLOGICS services: AI Implementation & Agents, Workflow Automation, AI Strategy & Consulting, Web & App Development (React/Next.js), Cybersecurity, Data Analytics, Mobile Development (React Native), AI Training & Academy (90+ lessons, $97/mo on Skool), System Design & IoT.
 
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     const text = await streamChat(messages, ADVISOR_SYSTEM_PROMPT, 1024);
     return NextResponse.json({ text });
   } catch (err) {
-    console.error("Echelon advisor error:", err);
+    console.error("Tibo advisor error:", err);
     return NextResponse.json({ error: "AI service unavailable" }, { status: 500 });
   }
 }

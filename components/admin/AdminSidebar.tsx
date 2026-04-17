@@ -23,6 +23,8 @@ import {
   X,
   BookOpen,
   Bot,
+  Mail,
+  Briefcase,
 } from "lucide-react";
 
 interface NavSubItem {
@@ -72,8 +74,10 @@ const navItems: NavItem[] = [
     subItems: [
       { label: "All Posts", href: "/admin/blog", icon: FileEdit },
       { label: "News Agent", href: "/admin/blog/news-agent", icon: Bot },
+      { label: "Newsletter", href: "/admin/newsletter", icon: Mail },
     ],
   },
+  { label: "Service Requests", href: "/admin/service-requests", icon: Briefcase },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
