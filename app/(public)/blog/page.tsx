@@ -142,9 +142,9 @@ export default function BlogPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center py-12">
-          <span className="section-tag">TIBLOGICS Blog</span>
+          <span className="section-tag">TIBLOGICS</span>
           <h1 className="font-syne font-extrabold text-4xl md:text-5xl text-[#0D1B2A] mt-3">
-            AI Insights & Intelligence
+            The Smart Room
           </h1>
           <p className="font-dm text-[#3A4A5C] text-lg mt-3 max-w-xl mx-auto">
             Practical AI knowledge for businesses, builders, and curious minds. Updated automatically every 48 hours.
@@ -176,7 +176,7 @@ export default function BlogPage() {
               className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-dm font-medium transition-all duration-200 ${
                 category === cat.id
                   ? "bg-[#1B3A6B] text-white shadow-sm"
-                  : "bg-white border border-[#D2DCE8] text-[#3A4A5C] hover:border-[#1B3A6B] hover:text-[#1B3A6B]"
+                  : "bg-[#EBF0FA] border border-[#D2DCE8] text-[#3A4A5C] hover:bg-[#1B3A6B] hover:border-[#1B3A6B] hover:text-white"
               }`}
             >
               {cat.label}

@@ -37,25 +37,28 @@ export default function NewsAgentPage() {
         const res = await fetch("/api/blog/auto-refresh?force=true");
         const data = await res.json();
         setActionFeedback(`✅ Fetched news: ${data.postsAdded ?? 0} new posts added to blog`);
-      } else if (action.type === "CREATE_POST" || action.type === "GENERATE_POST_FROM_TITLE") {
-        const payload = action.type === "GENERATE_POST_FROM_TITLE"
-          ? {
-              title: action.data.title,
-              excerpt: `${action.data.title} — an AI-generated post.`,
-              content: `<p>${action.data.title}</p>`,
-              category: "industry",
-              tags: ["ai"],
-              coverEmoji: "🤖",
-              aiGenerated: true,
-              sourceUrl: action.data.sourceUrl,
-              sourceTitle: action.data.source,
-            }
-          : action.data;
-
+      } else if (action.type === "GENERATE_POST_FROM_TITLE") {
+        setActionFeedback("✍️ Generating full post with AI…");
+        const res = await fetch("/api/blog/generate-post", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: action.data.title,
+            sourceUrl: action.data.sourceUrl,
+            source: action.data.source,
+          }),
+        });
+        if (res.ok) {
+          const d = await res.json();
+          setActionFeedback(`✅ Post created: "${d.post?.title}" — <a href="/blog/${d.post?.slug}" target="_blank" class="underline">View →</a>`);
+        } else {
+          setActionFeedback("❌ Failed to generate post.");
+        }
+      } else if (action.type === "CREATE_POST") {
         const res = await fetch("/api/blog/posts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...payload, aiGenerated: true }),
+          body: JSON.stringify({ ...action.data, aiGenerated: true }),
         });
         if (res.ok) {
           const d = await res.json();

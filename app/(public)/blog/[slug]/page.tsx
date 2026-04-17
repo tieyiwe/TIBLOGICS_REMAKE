@@ -136,7 +136,7 @@ export default function BlogPostPage() {
             href="/blog"
             className="flex items-center gap-1.5 text-[#7A8FA6] hover:text-[#1B3A6B] text-sm font-dm transition-colors"
           >
-            <ArrowLeft size={15} /> Back to blog
+            <ArrowLeft size={15} /> Back to The Smart Room
           </Link>
           <button
             onClick={handleShare}
@@ -245,7 +245,7 @@ export default function BlogPostPage() {
                 href="/tools/advisor"
                 className="border border-white/30 text-white hover:bg-white/10 font-dm font-medium px-5 py-2.5 rounded-xl text-sm transition-colors"
               >
-                Talk to Echelon
+                Talk to Tibo
               </Link>
             </div>
           </div>
