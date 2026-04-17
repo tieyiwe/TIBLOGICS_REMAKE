@@ -13,10 +13,10 @@ type Message = {
 const INITIAL_MESSAGE: Message = {
   role: "assistant",
   content:
-    "Hey! I'm TIBS 👋 How can I help you today? Ask me anything about TIBLOGICS — services, products, pricing, or how AI can transform your business.",
+    "Hey! I'm Echelon 👋 How can I help you today? Ask me anything about TIBLOGICS — services, products, pricing, or how AI can transform your business.",
 };
 
-export default function TIBSFloat() {
+export default function EchelonFloat() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
@@ -53,8 +53,8 @@ export default function TIBSFloat() {
         setIsOpen(true);
       }, 3500);
     }
-    window.addEventListener("tibs:scan-complete", handleScanComplete);
-    return () => window.removeEventListener("tibs:scan-complete", handleScanComplete);
+    window.addEventListener("echelon:scan-complete", handleScanComplete);
+    return () => window.removeEventListener("echelon:scan-complete", handleScanComplete);
   }, []);
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -122,11 +122,11 @@ export default function TIBSFloat() {
     <>
       {/* Inject typing dot keyframes once */}
       <style>{`
-        @keyframes tibsBounce {
+        @keyframes echelonBounce {
           0%, 60%, 100% { transform: translateY(0); }
           30% { transform: translateY(-6px); }
         }
-        .typing-dot { animation: tibsBounce 1.2s infinite ease-in-out; }
+        .typing-dot { animation: echelonBounce 1.2s infinite ease-in-out; }
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
         .typing-dot:nth-child(3) { animation-delay: 0.4s; }
       `}</style>
@@ -135,7 +135,7 @@ export default function TIBSFloat() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            key="tibs-chat"
+            key="echelon-chat"
             initial={{ opacity: 0, scale: 0.8, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 16 }}
@@ -165,7 +165,7 @@ export default function TIBSFloat() {
                     className="text-white text-base font-bold leading-tight"
                     style={{ fontFamily: "Syne, sans-serif" }}
                   >
-                    TIBS
+                    Echelon
                   </p>
                   <p className="text-white/60 text-xs leading-tight">
                     TIBLOGICS AI Assistant
@@ -222,7 +222,7 @@ export default function TIBSFloat() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask TIBS anything…"
+                placeholder="Ask Echelon anything…"
                 disabled={loading}
                 className="flex-1 bg-white border border-[#D2DCE8] rounded-xl px-3 py-2 text-sm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3] disabled:opacity-50 transition-colors"
               />
@@ -260,7 +260,7 @@ export default function TIBSFloat() {
 
         <button
           onClick={() => setIsOpen((prev) => !prev)}
-          aria-label={isOpen ? "Close TIBS chat" : "Open TIBS chat"}
+          aria-label={isOpen ? "Close Echelon chat" : "Open Echelon chat"}
           className="relative w-[54px] h-[54px] rounded-full flex items-center justify-center transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F47C20] focus-visible:ring-offset-2"
           style={{
             background: isOpen

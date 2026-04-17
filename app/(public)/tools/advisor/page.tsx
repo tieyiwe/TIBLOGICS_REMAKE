@@ -23,7 +23,7 @@ interface ProspectProfile {
 const INITIAL_MESSAGE: Message = {
   role: "assistant",
   content:
-    "Hi! I'm TIBS, your AI advisor. I'm here to help you figure out how AI can transform your business. To start — what type of business do you run, and what's your biggest operational challenge right now?",
+    "Hi! I'm Echelon, your AI advisor. I'm here to help you figure out how AI can transform your business. To start — what type of business do you run, and what's your biggest operational challenge right now?",
 };
 
 function parseProspectProfile(text: string): { cleaned: string; profile: ProspectProfile | null } {
@@ -119,7 +119,7 @@ export default function AdvisorPage() {
           mainChallenge: prospectProfile.challenge,
           budget: prospectProfile.budget,
           suggestedSolutions: prospectProfile.solutions,
-          source: "TIBS_ADVISOR",
+          source: "ECHELON_ADVISOR",
           conversationLog: messages,
         }),
       });
@@ -139,12 +139,12 @@ export default function AdvisorPage() {
           {/* Left info panel */}
           <div className="lg:col-span-2 bg-[#1B3A6B] rounded-2xl p-6 text-white flex flex-col gap-5">
             <div>
-              <h1 className="font-syne font-extrabold text-3xl text-white">TIBS</h1>
+              <h1 className="font-syne font-extrabold text-3xl text-white">Echelon</h1>
               <p className="text-white/60 font-dm text-sm mt-0.5">AI Project Advisor</p>
             </div>
 
             <p className="font-dm text-sm text-white/80 leading-relaxed">
-              Chat with TIBS to explore how AI can solve your toughest business challenges. I&apos;ll
+              Chat with Echelon to explore how AI can solve your toughest business challenges. I&apos;ll
               ask a few questions and recommend the right TIBLOGICS solutions for your situation.
             </p>
 
@@ -215,7 +215,7 @@ export default function AdvisorPage() {
                   <Bot size={18} className="text-white" />
                 </div>
                 <div>
-                  <p className="font-syne font-bold text-white text-sm">TIBS</p>
+                  <p className="font-syne font-bold text-white text-sm">Echelon</p>
                   <p className="font-dm text-xs text-white/50">AI Project Advisor · TIBLOGICS</p>
                 </div>
                 <div className="ml-auto flex items-center gap-1.5">

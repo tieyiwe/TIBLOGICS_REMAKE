@@ -38,7 +38,7 @@ export default function ServicesPage() {
           <div className="flex justify-center gap-3 mt-6">
             <Link href="/book" className="btn-primary">Book a Session</Link>
             <Link href="/tools/advisor" className="bg-white text-[#1B3A6B] hover:bg-[#EBF0FA] font-semibold rounded-lg px-5 py-2.5 transition-colors inline-flex items-center gap-2">
-              Talk to TIBS
+              Talk to Echelon
             </Link>
           </div>
         </div>

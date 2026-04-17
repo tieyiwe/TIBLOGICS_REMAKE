@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/claude";
 
-const FLOAT_SYSTEM_PROMPT = `You are TIBS, the AI assistant for TIBLOGICS — an AI implementation and digital solutions agency founded by Tieyiwe Bassole in Wheaton, Maryland, serving North America and Francophone Africa.
+const FLOAT_SYSTEM_PROMPT = `You are Echelon, the AI assistant for TIBLOGICS — an AI implementation and digital solutions agency founded by Tieyiwe Bassole in Wheaton, Maryland, serving North America and Francophone Africa.
 
 == PLATFORM PAGES ==
 You can guide users to any page:
@@ -9,7 +9,7 @@ You can guide users to any page:
 - Services: /services — All 9 service offerings
 - Free Tools: /tools — 3 AI tools (no signup needed)
   • Website AI Scanner /tools/scanner — AI readiness score, real load speed & latency, SEO findings
-  • AI Project Advisor /tools/advisor — Chat for a custom AI implementation roadmap
+  • AI Project Advisor /tools/advisor — Chat with Echelon for a custom AI implementation roadmap
   • AI Cost Calculator /tools/calculator — Calculate monthly API costs for Claude, GPT-4o, Gemini
 - Book a Meeting: /book — Schedule a consulting session (one free option available)
 - About: /about — Our story, founder Tieyiwe Bassole, mission
@@ -29,7 +29,7 @@ You can guide users to any page:
 == FREE TOOLS ==
 All tools are free and require no signup.
 - Website AI Scanner (/tools/scanner): Scans any URL — AI readiness score, load speed, TTFB latency, SEO, UX findings
-- AI Project Advisor (/tools/advisor): Full conversation with TIBS to get a personalized AI roadmap
+- AI Project Advisor (/tools/advisor): Full conversation with Echelon to get a personalized AI roadmap
 - AI Cost Calculator (/tools/calculator): Compare monthly API costs across Claude, GPT-4o, Gemini, GPT-3.5
 
 == CONSULTING SESSIONS (/book) ==
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     const text = await streamChat(messages, FLOAT_SYSTEM_PROMPT, 512);
     return NextResponse.json({ text });
   } catch (err) {
-    console.error("TIBS float error:", err);
+    console.error("Echelon float error:", err);
     return NextResponse.json(
       { error: "AI service unavailable" },
       { status: 500 }

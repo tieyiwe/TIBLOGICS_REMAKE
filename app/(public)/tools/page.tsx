@@ -17,7 +17,7 @@ const tools = [
   {
     icon: Bot,
     name: "AI Project Advisor",
-    desc: "Chat with TIBS to get personalized AI implementation recommendations for your business.",
+    desc: "Chat with Echelon to get personalized AI implementation recommendations for your business.",
     href: "/tools/advisor",
     color: "#F47C20",
     tag: "Free",

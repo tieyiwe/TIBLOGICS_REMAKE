@@ -521,12 +521,12 @@ export default function ScannerPage() {
     setScanning(false);
     setResult(scanResult);
 
-    // Trigger TIBS proactive engagement after scan
+    // Trigger Echelon proactive engagement after scan
     const criticals = scanResult.findings.filter((f) => f.type === "critical").length;
     let domain = normalizedUrl;
     try { domain = new URL(normalizedUrl).hostname; } catch { /* keep full url */ }
     window.dispatchEvent(
-      new CustomEvent("tibs:scan-complete", {
+      new CustomEvent("echelon:scan-complete", {
         detail: { url: domain, overallScore: scanResult.overallScore, criticals, aiScore: scanResult.aiScore },
       })
     );

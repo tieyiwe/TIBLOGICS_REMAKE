@@ -1,6 +1,6 @@
 import Nav from "@/components/public/Nav";
 import Footer from "@/components/public/Footer";
-import TIBSFloat from "@/components/public/TIBSFloat";
+import EchelonFloat from "@/components/public/EchelonFloat";
 import SmartRecommendations from "@/components/public/SmartRecommendations";
 
 export default function PublicLayout({
@@ -13,7 +13,7 @@ export default function PublicLayout({
       <Nav />
       <main className="min-h-screen">{children}</main>
       <Footer />
-      <TIBSFloat />
+      <EchelonFloat />
       <SmartRecommendations currentPage="site" />
     </>
   );
