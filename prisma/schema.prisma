@@ -196,6 +196,52 @@ model ProjectTask {
   @@index([projectId])
 }
 
+model BlogPost {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  title         String
+  excerpt       String   @db.Text
+  content       String   @db.Text
+  category      String
+  tags          String[]
+  coverEmoji    String   @default("🤖")
+  coverGradient String   @default("from-[#1B3A6B] to-[#2251A3]")
+  author        String   @default("Echelon AI")
+  readingTime   Int      @default(5)
+  featured      Boolean  @default(false)
+  published     Boolean  @default(true)
+  aiGenerated   Boolean  @default(false)
+  sourceUrl     String?
+  sourceTitle   String?
+  viewCount     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([category])
+  @@index([published])
+  @@index([featured])
+  @@index([createdAt])
+}
+
+model BreakingNews {
+  id        String    @id @default(cuid())
+  headline  String
+  summary   String
+  sourceUrl String?
+  source    String?
+  active    Boolean   @default(true)
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model BlogRefreshLog {
+  id         String   @id @default(cuid())
+  success    Boolean
+  postsAdded Int      @default(0)
+  message    String?
+  createdAt  DateTime @default(now())
+}
+
 model CommandCenterSync {
   id          String    @id @default(cuid())
   createdAt   DateTime  @default(now())

@@ -1,0 +1,339 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { Search, Clock, Zap, RefreshCw } from "lucide-react";
+import { trackPageVisit } from "@/lib/recommendations";
+import SmartRecommendations from "@/components/public/SmartRecommendations";
+
+interface BlogPost {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  tags: string[];
+  coverEmoji: string;
+  coverGradient: string;
+  author: string;
+  readingTime: number;
+  featured: boolean;
+  aiGenerated: boolean;
+  createdAt: string;
+}
+
+interface BreakingNews {
+  id: string;
+  headline: string;
+  summary: string;
+  sourceUrl?: string;
+  source?: string;
+}
+
+const CATEGORIES = [
+  { id: "all", label: "All" },
+  { id: "breaking", label: "⚡ Breaking" },
+  { id: "ai-business", label: "💼 AI for Business" },
+  { id: "tips", label: "💡 Tips & Tricks" },
+  { id: "tools", label: "🔧 Tools" },
+  { id: "case-studies", label: "📊 Case Studies" },
+  { id: "industry", label: "🌐 Industry" },
+];
+
+const GRADIENT_MAP: Record<string, string> = {
+  "from-red-600 to-orange-500": "bg-gradient-to-br from-red-600 to-orange-500",
+  "from-[#1B3A6B] to-[#2251A3]": "bg-gradient-to-br from-[#1B3A6B] to-[#2251A3]",
+  "from-purple-600 to-violet-500": "bg-gradient-to-br from-purple-600 to-violet-500",
+  "from-teal-600 to-emerald-500": "bg-gradient-to-br from-teal-600 to-emerald-500",
+  "from-[#F47C20] to-yellow-500": "bg-gradient-to-br from-[#F47C20] to-yellow-500",
+  "from-slate-600 to-gray-500": "bg-gradient-to-br from-slate-600 to-gray-500",
+};
+
+function gradientClass(g: string): string {
+  return GRADIENT_MAP[g] ?? "bg-gradient-to-br from-[#1B3A6B] to-[#2251A3]";
+}
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const h = Math.floor(diff / 3600000);
+  const d = Math.floor(h / 24);
+  if (h < 1) return "Just now";
+  if (h < 24) return `${h}h ago`;
+  if (d < 7) return `${d}d ago`;
+  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+export default function BlogPage() {
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [breaking, setBreaking] = useState<BreakingNews | null>(null);
+  const [category, setCategory] = useState("all");
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    trackPageVisit("/blog");
+  }, []);
+
+  const fetchPosts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ limit: "24" });
+      if (category !== "all") params.set("category", category);
+      if (search) params.set("search", search);
+      const res = await fetch(`/api/blog/posts?${params}`);
+      const data = await res.json();
+      setPosts(data.posts ?? []);
+    } finally {
+      setLoading(false);
+    }
+  }, [category, search]);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
+
+  useEffect(() => {
+    fetch("/api/blog/breaking-news")
+      .then((r) => r.json())
+      .then((d) => setBreaking(d.news));
+  }, []);
+
+  // Auto-refresh check on page load
+  useEffect(() => {
+    fetch("/api/blog/auto-refresh?check=true")
+      .then((r) => r.json())
+      .then(async (d) => {
+        if (d.needsRefresh) {
+          setRefreshing(true);
+          await fetch("/api/blog/auto-refresh");
+          await fetchPosts();
+          setRefreshing(false);
+        }
+      })
+      .catch(() => {});
+  }, [fetchPosts]);
+
+  const featured = posts.find((p) => p.featured) ?? posts[0];
+  const grid = posts.filter((p) => p.id !== featured?.id);
+
+  return (
+    <div className="pt-20 pb-20 min-h-screen bg-[#F4F7FB]">
+      {/* Breaking news ticker */}
+      {breaking && (
+        <div className="bg-red-600 text-white py-2.5 px-4 flex items-center gap-3">
+          <span className="flex-shrink-0 bg-white text-red-600 text-xs font-extrabold font-syne px-2 py-0.5 rounded flex items-center gap-1">
+            <Zap size={11} /> BREAKING
+          </span>
+          <p className="text-sm font-dm font-medium truncate flex-1">{breaking.headline}</p>
+          {breaking.sourceUrl && (
+            <a
+              href={breaking.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-shrink-0 text-white/80 text-xs underline hover:text-white"
+            >
+              Source →
+            </a>
+          )}
+        </div>
+      )}
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="text-center py-12">
+          <span className="section-tag">TIBLOGICS Blog</span>
+          <h1 className="font-syne font-extrabold text-4xl md:text-5xl text-[#0D1B2A] mt-3">
+            AI Insights & Intelligence
+          </h1>
+          <p className="font-dm text-[#3A4A5C] text-lg mt-3 max-w-xl mx-auto">
+            Practical AI knowledge for businesses, builders, and curious minds. Updated automatically every 48 hours.
+          </p>
+          {refreshing && (
+            <p className="flex items-center justify-center gap-1.5 text-xs text-[#7A8FA6] mt-2 font-dm">
+              <RefreshCw size={12} className="animate-spin" /> Refreshing content with latest AI news…
+            </p>
+          )}
+        </div>
+
+        {/* Search */}
+        <div className="relative max-w-md mx-auto mb-8">
+          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#7A8FA6]" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search posts…"
+            className="w-full pl-11 pr-4 py-3 bg-white border border-[#D2DCE8] rounded-2xl text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3] shadow-sm"
+          />
+        </div>
+
+        {/* Category filter */}
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-8 scrollbar-hide">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setCategory(cat.id)}
+              className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-dm font-medium transition-all duration-200 ${
+                category === cat.id
+                  ? "bg-[#1B3A6B] text-white shadow-sm"
+                  : "bg-white border border-[#D2DCE8] text-[#3A4A5C] hover:border-[#1B3A6B] hover:text-[#1B3A6B]"
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl overflow-hidden border border-[#D2DCE8] animate-pulse">
+                <div className="h-44 bg-[#E8EFF8]" />
+                <div className="p-5 space-y-3">
+                  <div className="h-3 bg-[#E8EFF8] rounded w-1/3" />
+                  <div className="h-5 bg-[#E8EFF8] rounded w-4/5" />
+                  <div className="h-3 bg-[#E8EFF8] rounded w-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : posts.length === 0 ? (
+          <div className="text-center py-20">
+            <p className="text-5xl mb-4">📰</p>
+            <h3 className="font-syne font-bold text-xl text-[#0D1B2A] mb-2">No posts yet</h3>
+            <p className="font-dm text-[#7A8FA6] text-sm max-w-xs mx-auto">
+              Content will auto-populate when the blog refreshes. Check back soon!
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Featured post */}
+            {featured && category === "all" && !search && (
+              <Link href={`/blog/${featured.slug}`} className="group block mb-10">
+                <div className="bg-white border border-[#D2DCE8] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 lg:flex">
+                  <div className={`${gradientClass(featured.coverGradient)} lg:w-96 h-64 lg:h-auto flex items-center justify-center flex-shrink-0`}>
+                    <span className="text-8xl">{featured.coverEmoji}</span>
+                  </div>
+                  <div className="p-8 flex flex-col justify-center">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="bg-[#F47C20] text-white text-xs font-extrabold font-syne px-2.5 py-1 rounded-full uppercase tracking-wide">
+                        Featured
+                      </span>
+                      <CategoryBadge category={featured.category} />
+                    </div>
+                    <h2 className="font-syne font-extrabold text-2xl md:text-3xl text-[#0D1B2A] mb-3 group-hover:text-[#2251A3] transition-colors leading-tight">
+                      {featured.title}
+                    </h2>
+                    <p className="font-dm text-[#3A4A5C] text-base leading-relaxed mb-5 line-clamp-2">
+                      {featured.excerpt}
+                    </p>
+                    <div className="flex items-center gap-3 text-xs font-dm text-[#7A8FA6]">
+                      <span className="flex items-center gap-1">
+                        <Clock size={12} /> {featured.readingTime} min read
+                      </span>
+                      <span>·</span>
+                      <span>{timeAgo(featured.createdAt)}</span>
+                      {featured.aiGenerated && (
+                        <>
+                          <span>·</span>
+                          <span className="text-[#2251A3]">AI Curated</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            )}
+
+            {/* Tips spotlight */}
+            {category === "all" && !search && (
+              <TipsSpotlight posts={posts.filter((p) => p.category === "tips").slice(0, 3)} />
+            )}
+
+            {/* Post grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {grid.map((post) => (
+                <PostCard key={post.id} post={post} />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
+        <SmartRecommendations currentPage="/blog" compact />
+      </div>
+    </div>
+  );
+}
+
+function CategoryBadge({ category }: { category: string }) {
+  const labels: Record<string, string> = {
+    "breaking": "⚡ Breaking",
+    "ai-business": "💼 AI for Business",
+    "tips": "💡 Tips",
+    "tools": "🔧 Tools",
+    "case-studies": "📊 Case Study",
+    "industry": "🌐 Industry",
+  };
+  return (
+    <span className="bg-[#EBF0FA] text-[#2251A3] text-xs font-medium font-dm px-2.5 py-1 rounded-full">
+      {labels[category] ?? category}
+    </span>
+  );
+}
+
+function PostCard({ post }: { post: BlogPost }) {
+  return (
+    <Link href={`/blog/${post.slug}`} className="group">
+      <article className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 h-full flex flex-col">
+        <div className={`${gradientClass(post.coverGradient)} h-44 flex items-center justify-center`}>
+          <span className="text-6xl group-hover:scale-110 transition-transform duration-300">
+            {post.coverEmoji}
+          </span>
+        </div>
+        <div className="p-5 flex flex-col flex-1">
+          <CategoryBadge category={post.category} />
+          <h3 className="font-syne font-bold text-base text-[#0D1B2A] mt-3 mb-2 group-hover:text-[#2251A3] transition-colors leading-snug line-clamp-2">
+            {post.title}
+          </h3>
+          <p className="font-dm text-sm text-[#7A8FA6] leading-relaxed line-clamp-3 flex-1">
+            {post.excerpt}
+          </p>
+          <div className="flex items-center gap-2 mt-4 text-xs font-dm text-[#7A8FA6]">
+            <Clock size={11} />
+            <span>{post.readingTime} min</span>
+            <span>·</span>
+            <span>{timeAgo(post.createdAt)}</span>
+          </div>
+        </div>
+      </article>
+    </Link>
+  );
+}
+
+function TipsSpotlight({ posts }: { posts: BlogPost[] }) {
+  if (posts.length === 0) return null;
+  return (
+    <div className="mb-10">
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-xl">💡</span>
+        <h2 className="font-syne font-bold text-lg text-[#0D1B2A]">Tips & Tricks Spotlight</h2>
+        <Link href="#" onClick={() => {}} className="ml-auto text-xs text-[#2251A3] font-dm hover:underline">
+          View all tips →
+        </Link>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {posts.map((p) => (
+          <Link key={p.id} href={`/blog/${p.slug}`} className="group bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-100 rounded-2xl p-5 hover:shadow-md transition-all duration-200">
+            <p className="font-syne font-bold text-sm text-[#0D1B2A] group-hover:text-purple-700 line-clamp-2 mb-2">
+              {p.title}
+            </p>
+            <p className="font-dm text-xs text-[#7A8FA6] line-clamp-2">{p.excerpt}</p>
+            <p className="text-xs text-purple-500 font-dm mt-3">{p.readingTime} min read →</p>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}

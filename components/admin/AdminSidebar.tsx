@@ -21,6 +21,8 @@ import {
   LogOut,
   Menu,
   X,
+  BookOpen,
+  Bot,
 } from "lucide-react";
 
 interface NavSubItem {
@@ -63,8 +65,16 @@ const navItems: NavItem[] = [
   { label: "Scanner Leads", href: "/admin/scanner-leads", icon: Search },
   { label: "Tool Analytics", href: "/admin/tools", icon: BarChart2 },
   { label: "Revenue", href: "/admin/revenue", icon: DollarSign },
+  {
+    label: "Blog",
+    href: "/admin/blog",
+    icon: BookOpen,
+    subItems: [
+      { label: "All Posts", href: "/admin/blog", icon: FileEdit },
+      { label: "News Agent", href: "/admin/blog/news-agent", icon: Bot },
+    ],
+  },
   { label: "Settings", href: "/admin/settings", icon: Settings },
-  { label: "Content", href: "/admin/content", icon: FileEdit },
 ];
 
 function NavLink({
@@ -81,10 +91,8 @@ function NavLink({
       ? pathname === "/admin"
       : pathname === item.href || pathname.startsWith(item.href + "/");
 
-  const isCommandCenter = item.href === "/admin/command-center";
-  const commandCenterActive =
-    pathname === "/admin/command-center" ||
-    pathname.startsWith("/admin/command-center/");
+  const hasSubItems = !!item.subItems;
+  const subActive = hasSubItems && pathname.startsWith(item.href + "/");
 
   const Icon = item.icon;
 
@@ -103,8 +111,8 @@ function NavLink({
         {item.label}
       </Link>
 
-      {/* Sub-items for Command Center when active */}
-      {isCommandCenter && commandCenterActive && item.subItems && (
+      {/* Sub-items when section is active */}
+      {hasSubItems && (isActive || subActive) && item.subItems && (
         <div className="ml-4 mt-0.5 flex flex-col gap-0.5">
           {item.subItems.map((sub) => {
             const subIsActive =
@@ -154,7 +162,7 @@ export default function AdminSidebar() {
           const isCommandCenter = item.href === "/admin/command-center";
           const nextItem = navItems[idx + 1];
           const showDivider =
-            isCommandCenter && nextItem !== undefined;
+            item.href === "/admin/command-center" && nextItem !== undefined;
 
           return (
             <div key={item.href}>
