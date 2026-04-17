@@ -16,7 +16,7 @@ TIBLOGICS services:
 
 TIBLOGICS free tools:
 - Website AI Scanner: Scan any site for AI readiness
-- AI Project Advisor (TIBS): Chat to get personalized AI recommendations
+- AI Project Advisor (Echelon): Chat to get personalized AI recommendations
 - AI Cost Calculator: Calculate monthly AI API costs
 
 Consulting sessions (pricing on request):
@@ -102,7 +102,7 @@ Generate 3 highly personalized recommendations for this visitor.`;
       reason: "Most visitors find our free tools and discovery call the perfect starting point.",
       recommendations: [
         { type: "tool", name: "Website AI Scanner", tagline: "See your AI readiness score in 30 seconds — free.", href: "/tools/scanner", priority: 1 },
-        { type: "tool", name: "AI Project Advisor", tagline: "Chat with TIBS to get a custom AI roadmap for your business.", href: "/tools/advisor", priority: 2 },
+        { type: "tool", name: "AI Project Advisor", tagline: "Chat with Echelon to get a custom AI roadmap for your business.", href: "/tools/advisor", priority: 2 },
         { type: "session", name: "Project Discovery Meeting", tagline: "30-minute free meeting to explore what AI can do for you.", href: "/book", priority: 3 },
       ],
     });

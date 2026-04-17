@@ -54,7 +54,7 @@ export async function POST(req: Request) {
         suggestedSolutions: suggestedSolutions ?? [],
         email: email ?? null,
         phone: phone ?? null,
-        source: source ?? "TIBS_ADVISOR",
+        source: source ?? "ECHELON_ADVISOR",
         conversationLog: conversationLog ?? undefined,
       },
     });
