@@ -80,6 +80,5 @@ export default function ToolsPage() {
       </div>
         <SmartRecommendations currentPage="/tools" compact />
       </div>
-    </div>
   );
 }
