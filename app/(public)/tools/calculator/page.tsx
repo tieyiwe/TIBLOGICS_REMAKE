@@ -2,6 +2,8 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import SmartRecommendations from "@/components/public/SmartRecommendations";
+import { trackPageVisit, trackToolUse } from "@/lib/recommendations";
 
 type Provider = "claude" | "gpt4" | "gpt35" | "gemini";
 type ModelTier = "haiku" | "sonnet" | "opus";
@@ -35,6 +37,11 @@ function formatDollar(v: number): string {
 }
 
 export default function CalculatorPage() {
+  useEffect(() => {
+    trackPageVisit("/tools/calculator");
+    trackToolUse("calculator");
+  }, []);
+
   const [provider, setProvider] = useState<Provider>("claude");
   const [model, setModel] = useState<ModelTier>("sonnet");
   const [useCase, setUseCase] = useState<keyof typeof CASES>("chatbot");
@@ -324,6 +331,7 @@ export default function CalculatorPage() {
             </div>
           </div>
         </div>
+        <SmartRecommendations currentPage="/tools/calculator" compact />
       </div>
     </div>
   );

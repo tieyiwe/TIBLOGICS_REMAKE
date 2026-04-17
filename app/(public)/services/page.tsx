@@ -1,19 +1,28 @@
+"use client";
+
+import { useEffect } from "react";
 import Link from "next/link";
 import { Bot, Zap, Brain, Globe, Shield, BarChart3, Smartphone, GraduationCap, Cpu, ArrowRight } from "lucide-react";
+import SmartRecommendations from "@/components/public/SmartRecommendations";
+import { trackPageVisit } from "@/lib/recommendations";
 
 const services = [
-  { icon: Bot, name: "AI Implementation & Agents", desc: "Custom AI agents, LLM integration, RAG systems, and intelligent workflow automation tailored to your exact operations. From chatbots to autonomous pipelines.", price: "From $4,000", color: "#2251A3" },
-  { icon: Zap, name: "Workflow Automation", desc: "End-to-end process automation using n8n, Make, Zapier, and custom pipelines. Eliminate repetitive work and scale without headcount.", price: "From $2,500", color: "#F47C20" },
-  { icon: Brain, name: "AI Strategy & Consulting", desc: "AI readiness audits, strategy sessions, and implementation roadmaps for leaders who want to move fast and smart.", price: "From $297/session", color: "#0F6E56" },
-  { icon: Globe, name: "Web & App Development", desc: "Next.js, React, full-stack web applications. We build fast, scalable, production-ready digital products.", price: "From $2,500", color: "#2251A3" },
-  { icon: Shield, name: "Cybersecurity", desc: "Security audits, penetration testing, hardened infrastructure, and compliance-ready systems for peace of mind.", price: "From $1,500", color: "#7c3aed" },
-  { icon: BarChart3, name: "Data Analytics", desc: "Business intelligence dashboards, data pipelines, and AI-powered insights that turn raw data into competitive advantage.", price: "From $3,000", color: "#1B3A6B" },
-  { icon: Smartphone, name: "Mobile Development", desc: "React Native cross-platform apps that deliver native-quality experiences on iOS and Android.", price: "From $4,000", color: "#D85A30" },
-  { icon: GraduationCap, name: "AI Training & Academy", desc: "Team workshops, on-site training, and access to 90+ lessons on the TIBLOGICS AI Academy on Skool.", price: "From $97/mo", color: "#7c3aed" },
-  { icon: Cpu, name: "System Design & IoT", desc: "Multi-service architecture design, IoT integrations, and complex distributed systems for ambitious technical challenges.", price: "From $5,000", color: "#0F6E56" },
+  { icon: Bot, name: "AI Implementation & Agents", desc: "Custom AI agents, LLM integration, RAG systems, and intelligent workflow automation tailored to your exact operations. From chatbots to autonomous pipelines.", color: "#2251A3" },
+  { icon: Zap, name: "Workflow Automation", desc: "End-to-end process automation using n8n, Make, Zapier, and custom pipelines. Eliminate repetitive work and scale without headcount.", color: "#F47C20" },
+  { icon: Brain, name: "AI Strategy & Consulting", desc: "AI readiness audits, strategy sessions, and implementation roadmaps for leaders who want to move fast and smart.", color: "#0F6E56" },
+  { icon: Globe, name: "Web & App Development", desc: "Next.js, React, full-stack web applications. We build fast, scalable, production-ready digital products.", color: "#2251A3" },
+  { icon: Shield, name: "Cybersecurity", desc: "Security audits, penetration testing, hardened infrastructure, and compliance-ready systems for peace of mind.", color: "#7c3aed" },
+  { icon: BarChart3, name: "Data Analytics", desc: "Business intelligence dashboards, data pipelines, and AI-powered insights that turn raw data into competitive advantage.", color: "#1B3A6B" },
+  { icon: Smartphone, name: "Mobile Development", desc: "React Native cross-platform apps that deliver native-quality experiences on iOS and Android.", color: "#D85A30" },
+  { icon: GraduationCap, name: "AI Training & Academy", desc: "Team workshops, on-site training, and access to 90+ lessons on the TIBLOGICS AI Academy on Skool.", color: "#7c3aed" },
+  { icon: Cpu, name: "System Design & IoT", desc: "Multi-service architecture design, IoT integrations, and complex distributed systems for ambitious technical challenges.", color: "#0F6E56" },
 ];
 
 export default function ServicesPage() {
+  useEffect(() => {
+    trackPageVisit("/services");
+  }, []);
+
   return (
     <div className="pt-24 pb-20 min-h-screen">
       {/* Hero */}
@@ -44,13 +53,10 @@ export default function ServicesPage() {
                 <svc.icon size={22} style={{ color: svc.color }} />
               </div>
               <h2 className="font-syne font-bold text-base text-[#0D1B2A] mb-2">{svc.name}</h2>
-              <p className="font-dm text-sm text-[#7A8FA6] leading-relaxed mb-4">{svc.desc}</p>
-              <div className="flex items-center justify-between">
-                <span className="font-syne font-bold text-sm text-[#F47C20]">{svc.price}</span>
-                <Link href="/book" className="text-[#2251A3] text-sm font-dm font-medium hover:text-[#1B3A6B] flex items-center gap-1">
-                  Book <ArrowRight size={13} />
-                </Link>
-              </div>
+              <p className="font-dm text-sm text-[#7A8FA6] leading-relaxed mb-4 flex-1">{svc.desc}</p>
+              <Link href="/book" className="text-[#2251A3] text-sm font-dm font-medium hover:text-[#1B3A6B] flex items-center gap-1 mt-auto">
+                Get a quote <ArrowRight size={13} />
+              </Link>
             </div>
           ))}
         </div>
@@ -61,6 +67,7 @@ export default function ServicesPage() {
           <p className="font-dm text-[#3A4A5C] mt-2 max-w-md mx-auto">30 minutes, zero commitment. We'll listen to your challenges and tell you exactly what we'd recommend.</p>
           <Link href="/book" className="btn-primary mt-5 inline-flex">Get Started for Free</Link>
         </div>
+        <SmartRecommendations currentPage="/services" compact />
       </div>
     </div>
   );

@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Bot, Crosshair, Shield, Zap, Send } from "lucide-react";
+import SmartRecommendations from "@/components/public/SmartRecommendations";
+import { trackPageVisit, trackToolUse } from "@/lib/recommendations";
 
 interface Message {
   role: "user" | "assistant";
@@ -54,6 +56,12 @@ function parseProspectProfile(text: string): { cleaned: string; profile: Prospec
 
 export default function AdvisorPage() {
   const router = useRouter();
+
+  useEffect(() => {
+    trackPageVisit("/tools/advisor");
+    trackToolUse("advisor");
+  }, []);
+
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -342,12 +350,13 @@ export default function AdvisorPage() {
                   disabled={submitting}
                   className="btn-primary w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {submitting ? "Sending..." : "Send to TIWE & Book a Call ↗"}
+                  {submitting ? "Sending..." : "Send Profile & Book a Call ↗"}
                 </button>
               </div>
             )}
           </div>
         </div>
+        <SmartRecommendations currentPage="/tools/advisor" compact />
       </div>
     </div>
   );

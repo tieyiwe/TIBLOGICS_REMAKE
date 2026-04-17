@@ -1,5 +1,9 @@
+"use client";
 import Link from "next/link";
 import { Search, Bot, Calculator } from "lucide-react";
+import SmartRecommendations from "@/components/public/SmartRecommendations";
+import { useEffect } from "react";
+import { trackPageVisit } from "@/lib/recommendations";
 
 const tools = [
   {
@@ -29,6 +33,10 @@ const tools = [
 ];
 
 export default function ToolsPage() {
+  useEffect(() => {
+    trackPageVisit("/tools");
+  }, []);
+
   return (
     <div className="pt-24 pb-20 min-h-screen bg-[#F4F7FB]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -69,6 +77,8 @@ export default function ToolsPage() {
             </Link>
           ))}
         </div>
+      </div>
+        <SmartRecommendations currentPage="/tools" compact />
       </div>
     </div>
   );

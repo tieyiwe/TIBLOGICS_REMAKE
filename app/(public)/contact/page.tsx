@@ -77,7 +77,7 @@ export default function ContactPage() {
                   <p className="font-syne font-bold text-sm text-[#0D1B2A]">AI Strategy Session</p>
                   <p className="font-dm text-xs text-[#7A8FA6]">60 min · Personalized roadmap</p>
                 </div>
-                <span className="text-[#2251A3] font-syne font-bold text-sm">$297 →</span>
+                <span className="text-[#2251A3] font-syne font-bold text-sm">Book →</span>
               </Link>
               <Link href="/tools/scanner" className="flex items-center justify-between p-4 border border-[#D2DCE8] rounded-xl hover:border-[#2251A3] hover:bg-[#EBF0FA] transition-all">
                 <div>

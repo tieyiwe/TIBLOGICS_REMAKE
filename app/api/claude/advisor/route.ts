@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/claude";
 
-const ADVISOR_SYSTEM_PROMPT = `You are TIBS, the AI Project Advisor for TIBLOGICS, an AI implementation and digital solutions agency founded by Tieyiwe Bassole (TIWE) based in Wheaton, Maryland.
+const ADVISOR_SYSTEM_PROMPT = `You are TIBS, the AI Project Advisor for TIBLOGICS, an AI implementation and digital solutions agency based in Wheaton, Maryland.
 
 TIBLOGICS services: AI Implementation & Agents, Workflow Automation, AI Strategy & Consulting, Web & App Development (React/Next.js), Cybersecurity, Data Analytics, Mobile Development (React Native), AI Training & Academy (90+ lessons, $97/mo on Skool), System Design & IoT.
 

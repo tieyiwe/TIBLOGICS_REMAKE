@@ -121,7 +121,7 @@ export default function BookPage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-10">
           <span className="section-tag">Book a Session</span>
-          <h1 className="font-syne font-extrabold text-4xl text-[#0D1B2A] mt-2">Work with TIWE</h1>
+          <h1 className="font-syne font-extrabold text-4xl text-[#0D1B2A] mt-2">Book a Session</h1>
           <p className="font-dm text-[#3A4A5C] mt-2">Choose your session and pick a time that works for you.</p>
         </div>
 

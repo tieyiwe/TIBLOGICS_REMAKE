@@ -13,7 +13,7 @@ interface Product {
 const products: Product[] = [
   {
     name: "InStory",
-    desc: "AI-personalized K-8 learning stories. School licensing $3,999–$13,999/yr.",
+    desc: "AI-personalized K-8 learning stories. Built for schools and educators.",
     color: "#2251A3",
     emoji: "📚",
     tag: "EdTech SaaS",
@@ -27,14 +27,14 @@ const products: Product[] = [
   },
   {
     name: "ShipFrica",
-    desc: "White-label shipping SaaS for African diaspora logistics. $199–$700/mo.",
+    desc: "White-label shipping SaaS for African diaspora logistics businesses.",
     color: "#F47C20",
     emoji: "📦",
     tag: "Logistics SaaS",
   },
   {
     name: "AI Academy",
-    desc: "90+ lessons, 3 courses. Founding members $97/mo on Skool.",
+    desc: "90+ lessons across 3 AI implementation courses on Skool.",
     color: "#7c3aed",
     emoji: "🎓",
     tag: "EdTech Platform",

@@ -28,7 +28,7 @@ export default function AboutPage() {
             Built by a builder.<br /><span className="text-[#F47C20]">For builders.</span>
           </h1>
           <p className="font-dm text-white/70 text-lg mt-4 max-w-2xl leading-relaxed">
-            TIBLOGICS was founded by Tieyiwe Bassole (TIWE) — a self-taught developer, AI strategist, and entrepreneur who built everything from scratch in Wheaton, Maryland.
+            TIBLOGICS was founded by Tieyiwe Bassole (Tieyiwe) — a self-taught developer, AI strategist, and entrepreneur who built everything from scratch in Wheaton, Maryland.
           </p>
         </div>
       </div>
@@ -46,7 +46,7 @@ export default function AboutPage() {
               <MapPin size={14} /> Wheaton, MD / Washington D.C.
             </div>
             <p className="font-dm text-[#3A4A5C] leading-relaxed mb-4">
-              TIWE is a developer and AI strategist who has shipped full-stack products across EdTech, HealthTech, logistics, hospitality, and government sectors. He's equally comfortable writing code, architecting AI pipelines, and closing enterprise contracts.
+              Tieyiwe is a developer and AI strategist who has shipped full-stack products across EdTech, HealthTech, logistics, hospitality, and government sectors. He's equally comfortable writing code, architecting AI pipelines, and closing enterprise contracts.
             </p>
             <p className="font-dm text-[#3A4A5C] leading-relaxed mb-6">
               Originally from Burkina Faso, he brings a global perspective to every engagement — bridging North American tech standards with Francophone African market realities.

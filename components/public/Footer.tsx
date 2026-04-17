@@ -22,7 +22,7 @@ const products = [
 ];
 
 const company = [
-  { label: "About TIWE", href: "/about" },
+  { label: "About Us", href: "/about" },
   { label: "Services", href: "/services" },
   { label: "Free Tools", href: "/tools" },
   { label: "Book a Session", href: "/book" },

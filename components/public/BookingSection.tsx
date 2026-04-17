@@ -5,46 +5,46 @@ import Link from "next/link";
 interface Session {
   name: string;
   duration: string;
-  price: string;
   badge: string | null;
   color: string;
+  description: string;
 }
 
 const sessions: Session[] = [
   {
     name: "AI Strategy Session",
     duration: "60 min",
-    price: "$297",
     badge: "Popular",
     color: "#2251A3",
+    description: "Deep-dive into your AI opportunities with a custom action plan.",
   },
   {
     name: "AI Readiness Audit",
     duration: "90 min + PDF",
-    price: "$497",
     badge: null,
     color: "#1B3A6B",
+    description: "Full assessment of your tech stack and AI readiness with a written report.",
   },
   {
     name: "Website AI Transformation",
     duration: "45 min",
-    price: "$197",
     badge: "New",
     color: "#0F6E56",
+    description: "Review your site and design an AI-powered upgrade roadmap.",
   },
   {
     name: "AI Cost & Pricing Strategy",
     duration: "60 min",
-    price: "$197",
     badge: null,
     color: "#7c3aed",
+    description: "Build a profitable AI pricing model for your business.",
   },
   {
     name: "Project Discovery Call",
     duration: "30 min",
-    price: "Free",
-    badge: null,
+    badge: "Free",
     color: "#F47C20",
+    description: "Intro call to explore your project — no commitment required.",
   },
 ];
 
@@ -55,7 +55,7 @@ export default function BookingSection() {
 
         {/* Header */}
         <div className="text-center mb-10">
-          <span className="section-tag">Work With TIWE</span>
+          <span className="section-tag">Work With Us</span>
           <h2 className="font-syne font-extrabold text-3xl text-[#0D1B2A] mt-2">
             Book a consulting session.
           </h2>
@@ -86,19 +86,19 @@ export default function BookingSection() {
                 </span>
               )}
 
-              {/* Price */}
-              <p className="font-syne font-extrabold text-2xl text-[#0D1B2A] mt-1 pl-1">
-                {session.price}
-              </p>
-
               {/* Name */}
-              <p className="font-syne font-bold text-sm text-[#0D1B2A] leading-snug pl-1">
+              <p className="font-syne font-bold text-base text-[#0D1B2A] leading-snug pl-1 mt-1">
                 {session.name}
               </p>
 
+              {/* Description */}
+              <p className="font-dm text-xs text-[#7A8FA6] pl-1 leading-relaxed flex-1">
+                {session.description}
+              </p>
+
               {/* Duration */}
-              <p className="font-dm text-xs text-[#7A8FA6] pl-1">
-                {session.duration}
+              <p className="font-dm text-xs text-[#3A4A5C] font-medium pl-1 flex items-center gap-1">
+                ⏱ {session.duration}
               </p>
             </div>
           ))}

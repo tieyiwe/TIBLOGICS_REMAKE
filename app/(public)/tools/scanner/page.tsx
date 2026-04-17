@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Search, CheckCircle2, AlertTriangle, XCircle, Loader2 } from "lucide-react";
+import SmartRecommendations from "@/components/public/SmartRecommendations";
+import { trackPageVisit, trackToolUse } from "@/lib/recommendations";
 
 interface Finding {
   type: "critical" | "warning" | "good";
@@ -185,6 +187,11 @@ function FindingRow({ finding }: { finding: Finding }) {
 }
 
 export default function ScannerPage() {
+  useEffect(() => {
+    trackPageVisit("/tools/scanner");
+    trackToolUse("scanner");
+  }, []);
+
   const [url, setUrl] = useState("");
   const [scanning, setScanning] = useState(false);
   const [stage, setStage] = useState(0);
@@ -460,6 +467,7 @@ export default function ScannerPage() {
             </div>
           </div>
         )}
+        <SmartRecommendations currentPage="/tools/scanner" compact />
       </div>
     </div>
   );
