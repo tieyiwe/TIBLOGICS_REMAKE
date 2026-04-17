@@ -71,7 +71,7 @@ export default function Nav() {
                 href="/book"
                 className="btn-secondary text-sm py-2 px-4"
               >
-                Book a Call
+                Book a Meeting
               </Link>
             </div>
 
@@ -149,7 +149,7 @@ export default function Nav() {
               onClick={() => setMobileOpen(false)}
               className="btn-secondary justify-center text-sm"
             >
-              Book a Call
+              Book a Meeting
             </Link>
           </div>
         </div>

@@ -55,7 +55,7 @@ export default function AboutPage() {
               <a href="mailto:ai@tiblogics.com" className="btn-primary text-sm py-2">
                 <Mail size={14} /> ai@tiblogics.com
               </a>
-              <Link href="/book" className="btn-secondary text-sm py-2">Book a Call</Link>
+              <Link href="/book" className="btn-secondary text-sm py-2">Book a Meeting</Link>
             </div>
           </div>
 

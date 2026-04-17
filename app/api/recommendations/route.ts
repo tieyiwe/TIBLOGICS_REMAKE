@@ -24,7 +24,7 @@ Consulting sessions (pricing on request):
 - AI Readiness Audit (90 min + PDF report)
 - Website AI Transformation (45 min)
 - AI Cost & Pricing Strategy (60 min)
-- Project Discovery Call (30 min, free)
+- Project Discovery Meeting (30 min, free)
 
 Based on the user context provided, return a JSON object with exactly this structure (no extra text, just valid JSON):
 {
@@ -103,7 +103,7 @@ Generate 3 highly personalized recommendations for this visitor.`;
       recommendations: [
         { type: "tool", name: "Website AI Scanner", tagline: "See your AI readiness score in 30 seconds — free.", href: "/tools/scanner", priority: 1 },
         { type: "tool", name: "AI Project Advisor", tagline: "Chat with TIBS to get a custom AI roadmap for your business.", href: "/tools/advisor", priority: 2 },
-        { type: "session", name: "Project Discovery Call", tagline: "30-minute free call to explore what AI can do for you.", href: "/book", priority: 3 },
+        { type: "session", name: "Project Discovery Meeting", tagline: "30-minute free meeting to explore what AI can do for you.", href: "/book", priority: 3 },
       ],
     });
   }

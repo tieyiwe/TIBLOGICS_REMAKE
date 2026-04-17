@@ -350,7 +350,7 @@ export default function AdvisorPage() {
                   disabled={submitting}
                   className="btn-primary w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {submitting ? "Sending..." : "Send Profile & Book a Call ↗"}
+                  {submitting ? "Sending..." : "Send Profile & Book a Meeting ↗"}
                 </button>
               </div>
             )}

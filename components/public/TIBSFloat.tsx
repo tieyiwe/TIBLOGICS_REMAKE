@@ -34,6 +34,29 @@ export default function TIBSFloat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
+  // Auto-engage after website scan completes
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    function handleScanComplete(e: Event) {
+      const { url, overallScore, criticals, aiScore } = (e as CustomEvent).detail as {
+        url: string;
+        overallScore: number;
+        criticals: number;
+        aiScore: number;
+      };
+      setTimeout(() => {
+        const proactiveMsg: Message = {
+          role: "assistant",
+          content: `I noticed you just scanned ${url} — overall score ${overallScore}/100 with ${criticals} critical issue${criticals !== 1 ? "s" : ""} and an AI readiness score of ${aiScore}/100. Want me to walk you through the most impactful fixes, or help you figure out which services would move the needle fastest?`,
+        };
+        setMessages([INITIAL_MESSAGE, proactiveMsg]);
+        setIsOpen(true);
+      }, 3500);
+    }
+    window.addEventListener("tibs:scan-complete", handleScanComplete);
+    return () => window.removeEventListener("tibs:scan-complete", handleScanComplete);
+  }, []);
+
   // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (isOpen) {

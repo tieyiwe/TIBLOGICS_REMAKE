@@ -63,7 +63,7 @@ export default function ServicesPage() {
 
         <div className="mt-16 text-center bg-[#F4F7FB] rounded-2xl p-10">
           <span className="section-tag">Not sure where to start?</span>
-          <h2 className="font-syne font-extrabold text-2xl text-[#0D1B2A] mt-2">Book a free discovery call.</h2>
+          <h2 className="font-syne font-extrabold text-2xl text-[#0D1B2A] mt-2">Book a free discovery meeting.</h2>
           <p className="font-dm text-[#3A4A5C] mt-2 max-w-md mx-auto">30 minutes, zero commitment. We'll listen to your challenges and tell you exactly what we'd recommend.</p>
           <Link href="/book" className="btn-primary mt-5 inline-flex">Get Started for Free</Link>
         </div>

@@ -67,7 +67,7 @@ export default function ContactPage() {
             <div className="space-y-3">
               <Link href="/book" className="flex items-center justify-between p-4 border border-[#D2DCE8] rounded-xl hover:border-[#2251A3] hover:bg-[#EBF0FA] transition-all group">
                 <div>
-                  <p className="font-syne font-bold text-sm text-[#0D1B2A]">Book a Free Discovery Call</p>
+                  <p className="font-syne font-bold text-sm text-[#0D1B2A]">Book a Free Discovery Meeting</p>
                   <p className="font-dm text-xs text-[#7A8FA6]">30 min · No commitment</p>
                 </div>
                 <span className="text-[#F47C20] font-syne font-bold text-sm">Free →</span>

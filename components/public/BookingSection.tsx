@@ -40,7 +40,7 @@ const sessions: Session[] = [
     description: "Build a profitable AI pricing model for your business.",
   },
   {
-    name: "Project Discovery Call",
+    name: "Project Discovery Meeting",
     duration: "30 min",
     badge: "Free",
     color: "#F47C20",
@@ -60,7 +60,7 @@ export default function BookingSection() {
             Book a consulting session.
           </h2>
           <p className="font-dm text-[#3A4A5C] mt-3 max-w-xl mx-auto">
-            From free discovery calls to deep AI audits — choose the session
+            From free discovery meetings to deep AI audits — choose the session
             that fits your needs.
           </p>
         </div>
