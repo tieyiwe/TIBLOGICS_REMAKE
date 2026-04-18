@@ -303,3 +303,35 @@ model CommandCenterSync {
   chatSummary String?
   undoneAt    DateTime?
 }
+
+model PageView {
+  id        String   @id @default(cuid())
+  page      String
+  referrer  String?
+  origin    String   @default("direct")
+  device    String   @default("desktop")
+  browser   String?
+  os        String?
+  ip        String?
+  sessionId String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([sessionId])
+  @@index([origin])
+}
+
+model ActiveSession {
+  id        String   @id @default(cuid())
+  sessionId String   @unique
+  page      String
+  device    String   @default("desktop")
+  browser   String?
+  os        String?
+  origin    String   @default("direct")
+  ip        String?
+  lastSeen  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([lastSeen])
+}

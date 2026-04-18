@@ -120,7 +120,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="border-t border-[#2251A3]/40 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-[#7A9BBF] text-xs font-dm">
-            © {new Date().getFullYear()} TIBLOGICS. All rights reserved. Founded by Tieyiwe Bassole.
+            © 2026 TIBLOGICS. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <Link href="/privacy" className="text-[#7A9BBF] hover:text-white text-xs font-dm transition-colors">

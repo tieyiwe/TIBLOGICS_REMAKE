@@ -78,6 +78,7 @@ const navItems: NavItem[] = [
     ],
   },
   { label: "Service Requests", href: "/admin/service-requests", icon: Briefcase },
+  { label: "Visitor Analytics", href: "/admin/analytics", icon: BarChart2 },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
