@@ -1,3 +1,4 @@
+export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
