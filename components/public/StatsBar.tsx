@@ -6,7 +6,7 @@ const stats = [
   { value: 4,  suffix: "",  label: "Live AI Products" },
   { value: 2,  suffix: "",  label: "Continents Served" },
   { value: 20, suffix: "+", label: "Businesses Transformed" },
-  { value: 90, suffix: "+", label: "Academy Lessons" },
+  { value: 90, suffix: "+", label: "AI Academy Lessons" },
 ];
 
 function CountUp({ target, suffix }: { target: number; suffix: string }) {

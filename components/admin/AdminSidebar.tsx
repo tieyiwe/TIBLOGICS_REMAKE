@@ -25,6 +25,7 @@ import {
   Bot,
   Mail,
   Briefcase,
+  Sparkles,
 } from "lucide-react";
 
 interface NavSubItem {
@@ -79,6 +80,17 @@ const navItems: NavItem[] = [
   },
   { label: "Service Requests", href: "/admin/service-requests", icon: Briefcase },
   { label: "Visitor Analytics", href: "/admin/analytics", icon: BarChart2 },
+  {
+    label: "AI Agents",
+    href: "/admin/agents",
+    icon: Sparkles,
+    subItems: [
+      { label: "All Agents", href: "/admin/agents", icon: Sparkles },
+      { label: "Aria — Marketing", href: "/admin/agents/aria", icon: Bot },
+      { label: "Rex — Sales", href: "/admin/agents/rex", icon: Bot },
+      { label: "Nova — Operations", href: "/admin/agents/nova", icon: Bot },
+    ],
+  },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
