@@ -26,13 +26,31 @@ export default function Hero() {
             </div>
 
             <h1
-              className="anim-fade-up font-syne font-extrabold text-4xl md:text-5xl lg:text-6xl tracking-tight leading-tight text-[#0D1B2A]"
+              className="anim-fade-up font-syne font-extrabold text-4xl md:text-5xl lg:text-[3.75rem] tracking-tight leading-[1.12] text-[#0D1B2A]"
               style={{ animationDelay: "0.1s" }}
             >
               We build{" "}
-              <span className="text-[#2251A3]">AI systems</span>{" "}
-              that make businesses{" "}
-              <span className="text-[#F47C20]">unstoppable.</span>
+              <span
+                className="font-display font-semibold italic text-[#2251A3]"
+                style={{ fontSize: "1.15em", letterSpacing: "-0.01em" }}
+              >
+                AI systems
+              </span>
+              <br className="hidden sm:block" />
+              {" "}that make businesses{" "}
+              <span
+                className="font-display font-bold italic"
+                style={{
+                  fontSize: "1.15em",
+                  letterSpacing: "-0.01em",
+                  background: "linear-gradient(95deg, #F47C20 0%, #e05500 60%, #c44600 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                unstoppable.
+              </span>
             </h1>
 
             <p
