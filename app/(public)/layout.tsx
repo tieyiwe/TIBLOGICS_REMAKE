@@ -1,8 +1,10 @@
+import dynamic from "next/dynamic";
 import Nav from "@/components/public/Nav";
 import Footer from "@/components/public/Footer";
-import EchelonFloat from "@/components/public/EchelonFloat";
-import SmartRecommendations from "@/components/public/SmartRecommendations";
 import AnalyticsTracker from "@/components/public/AnalyticsTracker";
+
+const EchelonFloat = dynamic(() => import("@/components/public/EchelonFloat"), { ssr: false });
+const SmartRecommendations = dynamic(() => import("@/components/public/SmartRecommendations"), { ssr: false });
 
 export default function PublicLayout({
   children,

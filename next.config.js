@@ -9,6 +9,7 @@ const nextConfig = {
   },
   experimental: {
     serverComponentsExternalPackages: ["@prisma/client", "prisma"],
+    optimizePackageImports: ["lucide-react", "framer-motion"],
   },
   async headers() {
     return [
