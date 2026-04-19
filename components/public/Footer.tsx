@@ -1,5 +1,5 @@
+import { Mail } from "lucide-react";
 import Link from "next/link";
-import { Mail, MapPin } from "lucide-react";
 
 const services = [
   "AI Implementation",
@@ -24,7 +24,7 @@ const products = [
 const company = [
   { label: "About Us", href: "/about" },
   { label: "Services", href: "/services" },
-  { label: "Free Tools", href: "/tools" },
+  { label: "Try Smart Tools", href: "/tools" },
   { label: "Book a Session", href: "/book" },
   { label: "Contact", href: "/contact" },
   { label: "Admin", href: "/admin" },
@@ -54,8 +54,6 @@ export default function Footer() {
               ai@tiblogics.com
             </a>
             <div className="flex items-center gap-2 text-[#7A9BBF] text-sm font-dm mt-2">
-              <MapPin size={14} />
-              Wheaton, MD / Washington D.C.
             </div>
           </div>
 

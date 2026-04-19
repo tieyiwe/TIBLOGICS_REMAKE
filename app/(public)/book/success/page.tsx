@@ -79,7 +79,7 @@ function SuccessContent() {
             ← Back to Home
           </Link>
           <Link href="/tools" className="btn-primary justify-center">
-            Try Free Tools →
+            Try Smart Tools →
           </Link>
         </div>
 

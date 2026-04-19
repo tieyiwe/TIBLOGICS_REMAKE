@@ -41,7 +41,7 @@ export default function ToolsPage() {
     <div className="pt-24 pb-20 min-h-screen bg-[#F4F7FB]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <span className="section-tag">Free Tools</span>
+          <span className="section-tag">Try Smart Tools</span>
           <h1 className="font-syne font-extrabold text-4xl md:text-5xl text-[#0D1B2A] mt-2">
             AI tools, on us.
           </h1>

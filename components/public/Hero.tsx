@@ -48,7 +48,7 @@ export default function Hero() {
               className="anim-fade-up flex flex-wrap gap-3"
               style={{ animationDelay: "0.3s" }}
             >
-              <Link href="/tools" className="btn-primary">Try Free Tools</Link>
+              <Link href="/tools" className="btn-primary">Try Smart Tools</Link>
               <Link href="/book" className="btn-secondary">Get AI Assessment ↗</Link>
             </div>
           </div>
