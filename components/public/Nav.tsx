@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -13,7 +14,12 @@ const navLinks = [
   { label: "About", href: "/about" },
 ];
 
+function openTibo() {
+  window.dispatchEvent(new CustomEvent("tibo:open"));
+}
+
 export default function Nav() {
+  const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -23,18 +29,28 @@ export default function Nav() {
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
+  // Close mobile drawer on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  function isActive(href: string) {
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname.startsWith(href + "/");
+  }
+
   return (
     <>
       <header
         className={cn(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
           scrolled
-            ? "bg-white/90 backdrop-blur-[10px] border-b border-[#D2DCE8] shadow-sm"
+            ? "bg-white/95 backdrop-blur-[10px] border-b border-[#D2DCE8] shadow-sm"
             : "bg-transparent"
         )}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 lg:h-18">
+          <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center">
               <span className="font-syne text-xl font-800 tracking-tight">
@@ -49,28 +65,30 @@ export default function Nav() {
                 <Link
                   key={link.label}
                   href={link.href}
-                  className="text-[#3A4A5C] hover:text-[#1B3A6B] font-dm font-medium text-sm transition-colors duration-200"
+                  className={cn(
+                    "font-dm font-medium text-sm transition-colors duration-200",
+                    isActive(link.href)
+                      ? "text-[#1B3A6B] font-semibold"
+                      : "text-[#3A4A5C] hover:text-[#1B3A6B]"
+                  )}
                 >
                   {link.label}
+                  {isActive(link.href) && (
+                    <span className="block h-0.5 bg-[#F47C20] rounded-full mt-0.5" />
+                  )}
                 </Link>
               ))}
             </nav>
 
-            {/* Desktop Right Actions */}
+            {/* Desktop CTAs */}
             <div className="hidden lg:flex items-center gap-3">
-              <button className="text-sm font-dm font-medium text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors">
-                EN / FR
-              </button>
-              <Link
-                href="/tools/advisor"
+              <button
+                onClick={openTibo}
                 className="btn-primary text-sm py-2 px-4"
               >
                 Talk to Tibo ↗
-              </Link>
-              <Link
-                href="/book"
-                className="btn-secondary text-sm py-2 px-4"
-              >
+              </button>
+              <Link href="/book" className="btn-secondary text-sm py-2 px-4">
                 Book a Meeting
               </Link>
             </div>
@@ -106,7 +124,7 @@ export default function Nav() {
         {/* Drawer panel */}
         <div
           className={cn(
-            "absolute right-0 top-0 bottom-0 w-72 bg-white shadow-2xl transition-transform duration-300 ease-out",
+            "absolute right-0 top-0 bottom-0 w-72 bg-white shadow-2xl transition-transform duration-300 ease-out flex flex-col",
             mobileOpen ? "translate-x-0" : "translate-x-full"
           )}
         >
@@ -123,27 +141,31 @@ export default function Nav() {
             </button>
           </div>
 
-          <nav className="p-4 flex flex-col gap-1">
+          <nav className="p-4 flex flex-col gap-1 flex-1">
             {navLinks.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
                 onClick={() => setMobileOpen(false)}
-                className="flex items-center px-3 py-3 rounded-xl text-[#3A4A5C] hover:bg-[#F4F7FB] hover:text-[#1B3A6B] font-dm font-medium transition-colors"
+                className={cn(
+                  "flex items-center px-3 py-3 rounded-xl font-dm font-medium transition-colors",
+                  isActive(link.href)
+                    ? "bg-[#EBF0FA] text-[#1B3A6B] font-semibold border-l-2 border-[#F47C20]"
+                    : "text-[#3A4A5C] hover:bg-[#F4F7FB] hover:text-[#1B3A6B]"
+                )}
               >
                 {link.label}
               </Link>
             ))}
           </nav>
 
-          <div className="p-4 border-t border-[#D2DCE8] flex flex-col gap-3 mt-auto">
-            <Link
-              href="/tools/advisor"
-              onClick={() => setMobileOpen(false)}
+          <div className="p-4 border-t border-[#D2DCE8] flex flex-col gap-3">
+            <button
+              onClick={() => { setMobileOpen(false); openTibo(); }}
               className="btn-primary justify-center text-sm"
             >
               Talk to Tibo ↗
-            </Link>
+            </button>
             <Link
               href="/book"
               onClick={() => setMobileOpen(false)}
