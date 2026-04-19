@@ -106,7 +106,7 @@ async function sendClientConfirmation(data: {
     </div>
     <div style="background:#F4F7FB;padding:20px 32px;text-align:center;">
       <p style="color:#7A8FA6;font-size:12px;margin:0;">
-        Questions? Reply to this email or reach us at <a href="mailto:ai@tiblogics.com" style="color:#2251A3;">ai@tiblogics.com</a><br>
+        Questions? Reply to this email or reach us at <a href="mailto:info@tiblogics.com" style="color:#2251A3;">info@tiblogics.com</a><br>
         TIBLOGICS · Wheaton, Maryland · <a href="https://tiblogics.com" style="color:#2251A3;">tiblogics.com</a>
       </p>
     </div>
@@ -130,7 +130,7 @@ async function sendTeamNotification(data: {
 }) {
   await resend.emails.send({
     from: process.env.FROM_EMAIL ?? "hello@tiblogics.com",
-    to: process.env.TIWE_EMAIL ?? "ai@tiblogics.com",
+    to: process.env.DESIGN_EMAIL ?? "design@tiblogics.com",
     subject: `🚀 New Service Request — ${data.service} from ${data.firstName} ${data.lastName}`,
     html: `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">

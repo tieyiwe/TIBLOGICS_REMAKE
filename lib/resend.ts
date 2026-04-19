@@ -39,7 +39,7 @@ export async function sendConfirmationEmail(appointment: {
             <p><strong>Zoom Link:</strong> ${appointment.zoomLink ?? "Will be sent 24hrs before your session"}</p>
           </div>
           <p style="color: #3A4A5C;">Looking forward to our session! Feel free to reply to this email with any questions.</p>
-          <p style="color: #7A8FA6; font-size: 14px; margin-top: 32px;">ai@tiblogics.com | tiblogics.com</p>
+          <p style="color: #7A8FA6; font-size: 14px; margin-top: 32px;">info@tiblogics.com | tiblogics.com</p>
         </div>
       </div>
     `,

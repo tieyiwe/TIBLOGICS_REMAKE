@@ -47,11 +47,11 @@ export default function Footer() {
               Tech-complete. North America & Francophone Africa.
             </p>
             <a
-              href="mailto:ai@tiblogics.com"
+              href="mailto:info@tiblogics.com"
               className="inline-flex items-center gap-2 text-[#F47C20] hover:text-[#FEF0E3] text-sm font-dm font-medium transition-colors"
             >
               <Mail size={14} />
-              ai@tiblogics.com
+              info@tiblogics.com
             </a>
             <div className="flex items-center gap-2 text-[#7A9BBF] text-sm font-dm mt-2">
             </div>

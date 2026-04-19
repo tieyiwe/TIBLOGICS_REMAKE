@@ -495,8 +495,8 @@ export default function EchelonFloat() {
         )}
       </AnimatePresence>
 
-      {/* Floating trigger button */}
-      <div className="fixed bottom-6 right-6 z-50">
+      {/* Floating trigger button — desktop only; mobile uses MobileBottomNav */}
+      <div className="hidden sm:block fixed bottom-6 right-6 z-50">
         {!isOpen && (
           <span
             className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-30 pointer-events-none"
