@@ -32,16 +32,18 @@ export default function Hero() {
               We build{" "}
               <span
                 className="font-display font-semibold italic text-[#2251A3]"
-                style={{ fontSize: "1.15em", letterSpacing: "-0.01em" }}
+                style={{ fontSize: "1.1em", letterSpacing: "-0.01em" }}
               >
-                AI systems
+                digital and AI solutions
               </span>
               <br className="hidden sm:block" />
-              {" "}that make businesses{" "}
+              {" "}that eliminate inefficiency, automate the routine,
+              <br className="hidden sm:block" />
+              {" "}and solve{" "}
               <span
                 className="font-display font-bold italic"
                 style={{
-                  fontSize: "1.15em",
+                  fontSize: "1.1em",
                   letterSpacing: "-0.01em",
                   background: "linear-gradient(95deg, #F47C20 0%, #e05500 60%, #c44600 100%)",
                   WebkitBackgroundClip: "text",
@@ -49,7 +51,7 @@ export default function Hero() {
                   backgroundClip: "text",
                 }}
               >
-                unstoppable.
+                what&apos;s actually holding your business back.
               </span>
             </h1>
 
