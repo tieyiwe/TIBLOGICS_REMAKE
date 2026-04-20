@@ -10,6 +10,12 @@ export default function TermsPage() {
 
         {/* Header */}
         <div className="mb-10">
+          <div className="flex items-center gap-2 mb-4">
+            <img src="/logo.svg" alt="TIBLOGICS" className="h-8 w-auto" />
+            <span className="font-syne text-xl font-extrabold tracking-tight">
+              <span className="text-[#1B3A6B]">TIB</span><span className="text-[#F47C20]">LOGICS</span>
+            </span>
+          </div>
           <span className="section-tag">Legal</span>
           <h1 className="font-syne font-extrabold text-4xl text-[#0D1B2A] mt-3">Terms of Service</h1>
           <p className="font-dm text-[#7A8FA6] text-sm mt-2">
