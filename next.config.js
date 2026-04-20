@@ -3,6 +3,7 @@ const nextConfig = {
   output: "standalone",
   compress: true,
   poweredByHeader: false,
+  serverExternalPackages: ["@prisma/client", "prisma"],
   images: {
     formats: ["image/avif", "image/webp"],
     domains: ["fonts.gstatic.com", "image.thum.io"],
@@ -12,7 +13,6 @@ const nextConfig = {
     ],
   },
   experimental: {
-    serverComponentsExternalPackages: ["@prisma/client", "prisma"],
     optimizePackageImports: ["lucide-react", "framer-motion", "@radix-ui/react-icons"],
   },
   async headers() {
