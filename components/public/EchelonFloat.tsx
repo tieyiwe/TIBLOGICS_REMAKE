@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
 import { X, Send, ChevronLeft, Loader2 } from "lucide-react";
 
 type Message = { role: "user" | "assistant"; content: string };
@@ -116,44 +115,43 @@ export default function EchelonFloat() {
   const isAdmin = pathname?.startsWith("/admin");
   const [blockedDateSet, setBlockedDateSet] = useState<Set<string>>(new Set());
 
-  // Scroll messages into view
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading, bookingStep]);
 
-  // Show greeting bubble after 3 seconds (once per session)
+  // Greeting bubble after 3 s (once per session)
   useEffect(() => {
     if (isAdmin) return;
-    if (sessionStorage.getItem("tibo_greeted")) return;
+    try {
+      if (sessionStorage.getItem("tibo_greeted")) return;
+    } catch { return; }
     const timer = setTimeout(() => {
       setShowGreeting(true);
-      sessionStorage.setItem("tibo_greeted", "1");
+      try { sessionStorage.setItem("tibo_greeted", "1"); } catch {}
     }, 3000);
     return () => clearTimeout(timer);
   }, [isAdmin]);
 
-  // Pre-load blocked dates for the next 30 days
+  // Pre-load blocked dates
   useEffect(() => {
     fetch("/api/appointments/blocked-dates")
       .then(r => r.json())
       .then(d => {
-        const set = new Set<string>();
-        (d.blocked ?? []).forEach((b: { date: string }) => {
-          set.add(b.date.split("T")[0]);
-        });
-        setBlockedDateSet(set);
+        const s = new Set<string>();
+        (d.blocked ?? []).forEach((b: { date: string }) => s.add(b.date.split("T")[0]));
+        setBlockedDateSet(s);
       })
       .catch(() => {});
   }, []);
 
-  // Listen for tibo:open event (dispatched by "Talk to Tibo" nav button)
+  // Listen for tibo:open event
   useEffect(() => {
     const handler = () => setIsOpen(true);
     window.addEventListener("tibo:open", handler);
     return () => window.removeEventListener("tibo:open", handler);
   }, []);
 
-  // Auto-engage after website scan completes
+  // Auto-engage after website scan
   useEffect(() => {
     function handleScanComplete(e: Event) {
       const { url, overallScore, criticals, aiScore } = (e as CustomEvent).detail as {
@@ -164,7 +162,7 @@ export default function EchelonFloat() {
           INITIAL_MESSAGE,
           {
             role: "assistant",
-            content: `I can see you just scanned **${url}** — overall score **${overallScore}/100**, **${criticals} critical issue${criticals !== 1 ? "s" : ""}**, and an AI readiness score of **${aiScore}/100**.\n\nThere are clear opportunities here. Would you like me to set up a meeting with our team to walk through the findings and build a fix plan together?`,
+            content: `I can see you just scanned **${url}** — overall score **${overallScore}/100**, **${criticals} critical issue${criticals !== 1 ? "s" : ""}**, and an AI readiness score of **${aiScore}/100**.\n\nThere are clear opportunities here. Would you like me to set up a meeting with our team to walk through the findings?`,
           },
         ]);
         setBookingStep("prompt");
@@ -266,7 +264,7 @@ export default function EchelonFloat() {
         ...prev,
         {
           role: "assistant",
-          content: `You're all set, ${form.firstName}! 🎉\n\nYour **20-min Discovery Meeting** is confirmed for **${bookingData.dateLabel}** at **${bookingData.timeSlot} EST**. A confirmation is on its way to **${form.email}**.\n\nA member of our team will reach out beforehand to make sure we're fully prepared for your call. We're looking forward to it!`,
+          content: `You're all set, ${form.firstName}! 🎉\n\nYour **20-min Discovery Meeting** is confirmed for **${bookingData.dateLabel}** at **${bookingData.timeSlot} EST**. A confirmation is on its way to **${form.email}**.\n\nWe're looking forward to it!`,
         },
       ]);
     } catch {
@@ -283,16 +281,12 @@ export default function EchelonFloat() {
     if (bookingStep === "prompt") {
       return (
         <div className="px-4 pb-4 pt-2 flex gap-2">
-          <button
-            onClick={() => setBookingStep("date")}
-            className="flex-1 bg-[#1B3A6B] text-white rounded-xl py-2.5 text-sm font-semibold font-dm hover:bg-[#2251A3] transition-colors"
-          >
+          <button onClick={() => setBookingStep("date")}
+            className="flex-1 bg-[#1B3A6B] text-white rounded-xl py-2.5 text-sm font-semibold font-dm hover:bg-[#2251A3] transition-colors">
             Yes, let&apos;s do it!
           </button>
-          <button
-            onClick={declineBooking}
-            className="flex-1 border border-[#D2DCE8] text-[#3A4A5C] rounded-xl py-2.5 text-sm font-medium font-dm hover:border-[#1B3A6B] hover:text-[#1B3A6B] transition-colors"
-          >
+          <button onClick={declineBooking}
+            className="flex-1 border border-[#D2DCE8] text-[#3A4A5C] rounded-xl py-2.5 text-sm font-medium font-dm hover:border-[#1B3A6B] hover:text-[#1B3A6B] transition-colors">
             Not right now
           </button>
         </div>
@@ -308,13 +302,10 @@ export default function EchelonFloat() {
             </button>
             <p className="text-xs font-semibold text-[#3A4A5C] uppercase tracking-wide">Pick a date</p>
           </div>
-          <div className="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto pr-0.5">
+          <div className="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto">
             {dates.map((d) => (
-              <button
-                key={d.value}
-                onClick={() => handleDateSelect(d.value, d.label)}
-                className="border border-[#D2DCE8] rounded-xl py-2 px-2.5 text-xs font-medium font-dm text-[#3A4A5C] hover:border-[#1B3A6B] hover:text-[#1B3A6B] hover:bg-[#EBF0FA] transition-colors text-left"
-              >
+              <button key={d.value} onClick={() => handleDateSelect(d.value, d.label)}
+                className="border border-[#D2DCE8] rounded-xl py-2 px-2.5 text-xs font-medium font-dm text-[#3A4A5C] hover:border-[#1B3A6B] hover:text-[#1B3A6B] hover:bg-[#EBF0FA] transition-colors text-left">
                 {d.label}
               </button>
             ))}
@@ -347,11 +338,9 @@ export default function EchelonFloat() {
           ) : (
             <div className="grid grid-cols-2 gap-1.5">
               {availableSlots.map((slot) => (
-                <button
-                  key={slot}
+                <button key={slot}
                   onClick={() => { setBookingData((d) => ({ ...d, timeSlot: slot })); setBookingStep("form"); }}
-                  className="border border-[#D2DCE8] rounded-xl py-2 text-xs font-medium font-dm text-[#3A4A5C] hover:border-[#1B3A6B] hover:text-[#1B3A6B] hover:bg-[#EBF0FA] transition-colors"
-                >
+                  className="border border-[#D2DCE8] rounded-xl py-2 text-xs font-medium font-dm text-[#3A4A5C] hover:border-[#1B3A6B] hover:text-[#1B3A6B] hover:bg-[#EBF0FA] transition-colors">
                   {slot}
                 </button>
               ))}
@@ -392,136 +381,121 @@ export default function EchelonFloat() {
         .typing-dot { animation: echelonBounce 1.2s infinite ease-in-out; }
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
         .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes tiboFadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .tibo-fade-in { animation: tiboFadeIn 0.25s ease both; }
       `}</style>
 
-      {/* Chat window */}
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            {/* Mobile backdrop */}
-            <motion.div
-              key="echelon-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-black/50 sm:hidden"
+      {/* Mobile backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 sm:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Chat window — CSS transition, no framer-motion */}
+      {isOpen && (
+        <div
+          className="tibo-fade-in fixed z-50 flex flex-col bg-white border border-[#D2DCE8] shadow-2xl overflow-hidden rounded-2xl inset-x-4 bottom-4 top-auto sm:inset-auto sm:bottom-20 sm:right-6 sm:w-[360px]"
+          style={{ maxHeight: "min(82vh, 600px)" }}
+        >
+          {/* Header */}
+          <div className="bg-[#1B3A6B] px-4 py-3 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-2.5">
+              <img
+                src="/tibo-avatar.svg"
+                alt="Tibo"
+                className="w-10 h-10 rounded-full flex-shrink-0 object-cover"
+                style={{ border: "1.5px solid rgba(255,255,255,0.22)" }}
+              />
+              <div>
+                <p className="text-white text-base font-bold leading-tight" style={{ fontFamily: "var(--font-syne), sans-serif" }}>
+                  Tibo
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
+                  <p className="text-white/60 text-xs leading-tight">TIBLOGICS AI Assistant</p>
+                </div>
+              </div>
+            </div>
+            <button
               onClick={() => setIsOpen(false)}
-            />
-
-            <motion.div
-              key="echelon-chat"
-              initial={{ opacity: 0, scale: 0.95, y: 12 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 12 }}
-              transition={{ type: "spring", stiffness: 340, damping: 28 }}
-              className={[
-                "fixed z-50 flex flex-col bg-white border border-[#D2DCE8] shadow-2xl overflow-hidden",
-                // Mobile: centered modal with margin from edges
-                "inset-x-4 bottom-4 top-auto rounded-2xl",
-                "sm:inset-auto sm:bottom-20 sm:right-6 sm:w-[360px] sm:rounded-2xl",
-              ].join(" ")}
-              style={{
-                maxHeight: "min(82vh, 600px)",
-                // Desktop origin for spring animation
-                transformOrigin: "bottom right",
-              }}
+              className="text-white/70 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"
+              aria-label="Close chat"
             >
-              {/* Header */}
-              <div className="bg-[#1B3A6B] px-4 py-3 flex items-center justify-between flex-shrink-0">
-                <div className="flex items-center gap-2.5">
-                  <img
-                    src="/tibo-avatar.svg"
-                    alt="Tibo"
-                    className="w-10 h-10 rounded-full flex-shrink-0 object-cover"
-                    style={{ border: "1.5px solid rgba(255,255,255,0.22)" }}
-                  />
-                  <div>
-                    <p className="text-white text-base font-bold leading-tight" style={{ fontFamily: "var(--font-syne), sans-serif" }}>
-                      Tibo
-                    </p>
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
-                      <p className="text-white/60 text-xs leading-tight">TIBLOGICS AI Assistant</p>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="text-white/70 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"
-                  aria-label="Close chat"
-                >
-                  <X size={18} />
-                </button>
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 bg-[#F8FAFD] flex flex-col gap-3">
+            {messages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                <div
+                  className={`max-w-[85%] px-3 py-2.5 text-sm leading-relaxed font-dm rounded-2xl ${
+                    msg.role === "user"
+                      ? "bg-[#1B3A6B] text-white rounded-tr-sm"
+                      : "bg-white border border-[#E8EFF8] text-[#0D1B2A] rounded-tl-sm shadow-sm"
+                  }`}
+                  dangerouslySetInnerHTML={{
+                    __html: msg.content
+                      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                      .replace(/\n/g, "<br/>"),
+                  }}
+                />
               </div>
-
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 bg-[#F8FAFD] flex flex-col gap-3">
-                {messages.map((msg, i) => (
-                  <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                    <div
-                      className={`max-w-[85%] px-3 py-2.5 text-sm leading-relaxed font-dm rounded-2xl ${
-                        msg.role === "user"
-                          ? "bg-[#1B3A6B] text-white rounded-tr-sm"
-                          : "bg-white border border-[#E8EFF8] text-[#0D1B2A] rounded-tl-sm shadow-sm"
-                      }`}
-                      dangerouslySetInnerHTML={{
-                        __html: msg.content
-                          .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                          .replace(/\n/g, "<br/>"),
-                      }}
-                    />
-                  </div>
-                ))}
-                {loading && (
-                  <div className="flex justify-start">
-                    <div className="bg-white border border-[#E8EFF8] rounded-2xl rounded-tl-sm px-3 py-2.5 shadow-sm flex items-center gap-1">
-                      <div className="typing-dot w-2 h-2 rounded-full bg-[#7A8FA6]" />
-                      <div className="typing-dot w-2 h-2 rounded-full bg-[#7A8FA6]" />
-                      <div className="typing-dot w-2 h-2 rounded-full bg-[#7A8FA6]" />
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
+            ))}
+            {loading && (
+              <div className="flex justify-start">
+                <div className="bg-white border border-[#E8EFF8] rounded-2xl rounded-tl-sm px-3 py-2.5 shadow-sm flex items-center gap-1">
+                  <div className="typing-dot w-2 h-2 rounded-full bg-[#7A8FA6]" />
+                  <div className="typing-dot w-2 h-2 rounded-full bg-[#7A8FA6]" />
+                  <div className="typing-dot w-2 h-2 rounded-full bg-[#7A8FA6]" />
+                </div>
               </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
 
-              {/* Booking UI */}
-              {bookingStep && bookingStep !== "done" && (
-                <div className="border-t border-[#E8EFF8] bg-white flex-shrink-0">
-                  {renderBookingUI()}
-                </div>
-              )}
+          {/* Booking UI */}
+          {bookingStep && bookingStep !== "done" && (
+            <div className="border-t border-[#E8EFF8] bg-white flex-shrink-0">
+              {renderBookingUI()}
+            </div>
+          )}
 
-              {/* Input */}
-              {showInput && (
-                <div className="border-t border-[#D2DCE8] p-3 bg-white flex items-center gap-2 flex-shrink-0">
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                    placeholder="Ask Tibo anything…"
-                    disabled={loading}
-                    className="flex-1 bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl px-3 py-2 text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3] disabled:opacity-50 transition-colors"
-                  />
-                  <button
-                    onClick={() => handleSend()}
-                    disabled={loading || !input.trim()}
-                    aria-label="Send message"
-                    className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[#F47C20] hover:bg-[#d96b18] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <Send size={15} className="text-white" strokeWidth={2.5} />
-                  </button>
-                </div>
-              )}
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+          {/* Input */}
+          {showInput && (
+            <div className="border-t border-[#D2DCE8] p-3 bg-white flex items-center gap-2 flex-shrink-0">
+              <input
+                ref={inputRef}
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                placeholder="Ask Tibo anything…"
+                disabled={loading}
+                className="flex-1 bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl px-3 py-2 text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3] disabled:opacity-50 transition-colors"
+              />
+              <button
+                onClick={() => handleSend()}
+                disabled={loading || !input.trim()}
+                aria-label="Send message"
+                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[#F47C20] hover:bg-[#d96b18] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Send size={15} className="text-white" strokeWidth={2.5} />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Greeting bubble */}
       {showGreeting && !isOpen && (
-        <div className="fixed bottom-[140px] sm:bottom-24 right-4 sm:right-6 z-50 animate-fade-in">
+        <div className="fixed bottom-[140px] sm:bottom-24 right-4 sm:right-6 z-50 tibo-fade-in">
           <div className="relative bg-white border border-[#D2DCE8] rounded-2xl shadow-xl px-4 py-3 max-w-[220px]">
             <button
               onClick={() => setShowGreeting(false)}
@@ -534,13 +508,12 @@ export default function EchelonFloat() {
             <p className="font-dm text-xs text-[#3A4A5C] leading-relaxed pr-3">
               I'm Tibo — ask me anything about AI for your business.
             </p>
-            {/* tail */}
             <div className="absolute -bottom-2 right-7 w-3 h-3 bg-white border-r border-b border-[#D2DCE8] rotate-45" />
           </div>
         </div>
       )}
 
-      {/* Floating trigger button */}
+      {/* Floating trigger button — always visible */}
       <div className="fixed bottom-[72px] sm:bottom-6 right-4 sm:right-6 z-50">
         {!isOpen && (
           <span
