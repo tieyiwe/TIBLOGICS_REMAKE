@@ -336,3 +336,39 @@ model ActiveSession {
 
   @@index([lastSeen])
 }
+
+model Collaborator {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  passwordHash  String?
+  role          String    @default("CUSTOM")
+  permissions   String[]
+  active        Boolean   @default(true)
+  inviteToken   String?   @unique
+  inviteExpires DateTime?
+  invitedBy     String
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  activityLogs  CollaboratorActivityLog[]
+
+  @@index([email])
+  @@index([inviteToken])
+}
+
+model CollaboratorActivityLog {
+  id             String       @id @default(cuid())
+  collaboratorId String
+  collaborator   Collaborator @relation(fields: [collaboratorId], references: [id], onDelete: Cascade)
+  action         String
+  resource       String
+  resourceId     String?
+  details        String?
+  ip             String?
+  createdAt      DateTime     @default(now())
+
+  @@index([collaboratorId])
+  @@index([createdAt])
+  @@index([resource])
+}

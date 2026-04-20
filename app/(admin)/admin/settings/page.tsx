@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Plus, X, Eye, EyeOff, RefreshCw, Save, CheckCircle, AlertCircle, Video, Calendar, Trash2 } from "lucide-react";
+import { Plus, X, Eye, EyeOff, RefreshCw, Save, CheckCircle, AlertCircle, Video, Calendar, Trash2, Users, Mail, Shield, Activity, ChevronDown, ChevronUp, UserX, UserCheck } from "lucide-react";
 
 const WORKING_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const BUFFER_OPTIONS = ["15 min", "30 min", "45 min", "60 min"];
@@ -293,6 +293,9 @@ curl -X POST $TIBLOGICS_WEBHOOK_URL \\
 
       {/* ── Meeting Integrations ── */}
       <MeetingIntegrations />
+
+      {/* ── Team Access ── */}
+      <TeamAccess />
 
       {/* ── Admin Account ── */}
       <section className="bg-white border border-[#D2DCE8] rounded-2xl p-6 space-y-6">
@@ -617,6 +620,308 @@ function MeetingIntegrations() {
         <p className="font-dm text-xs text-[#2251A3]/80 leading-relaxed">
           1. Client books → 2. Admin clicks "Confirm" (or free booking auto-confirms) → 3. System calls Zoom/Google API → 4. Meeting created → 5. Client receives branded email with "Join Meeting" button. No manual copy-paste.
         </p>
+      </div>
+    </section>
+  );
+}
+
+// ── Team Access Component ─────────────────────────────────────────────────────
+
+const ALL_PERMISSIONS = [
+  { key: "appointments",     label: "Appointments" },
+  { key: "contacts",         label: "Contacts" },
+  { key: "prospects",        label: "Prospects" },
+  { key: "blog",             label: "Blog & Newsletter" },
+  { key: "analytics",        label: "Analytics" },
+  { key: "service_requests", label: "Service Requests" },
+  { key: "scanner_leads",    label: "Scanner Leads" },
+  { key: "revenue",          label: "Revenue" },
+  { key: "tools",            label: "Tool Analytics" },
+  { key: "agents",           label: "AI Agents" },
+  { key: "command_center",   label: "Command Center" },
+];
+
+const ROLE_PRESETS: Record<string, string[]> = {
+  FULL:    ALL_PERMISSIONS.map(p => p.key),
+  SUPPORT: ["appointments", "contacts", "service_requests"],
+  EDITOR:  ["blog"],
+  ANALYST: ["analytics", "revenue", "tools"],
+  CUSTOM:  [],
+};
+
+const ROLE_COLORS: Record<string, string> = {
+  FULL:    "bg-[#1B3A6B] text-white",
+  SUPPORT: "bg-blue-100 text-blue-700",
+  EDITOR:  "bg-purple-100 text-purple-700",
+  ANALYST: "bg-teal-100 text-teal-700",
+  CUSTOM:  "bg-gray-100 text-gray-600",
+};
+
+type Collaborator = {
+  id: string; name: string; email: string; role: string;
+  permissions: string[]; active: boolean; lastLoginAt: string | null;
+  inviteToken: string | null; createdAt: string;
+};
+
+type ActivityLog = {
+  id: string; action: string; resource: string; details: string | null;
+  ip: string | null; createdAt: string;
+  collaborator: { name: string; email: string; role: string };
+};
+
+function TeamAccess() {
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [showLogs, setShowLogs] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [inviteName, setInviteName] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("CUSTOM");
+  const [invitePerms, setInvitePerms] = useState<string[]>([]);
+  const [inviting, setInviting] = useState(false);
+  const [inviteStatus, setInviteStatus] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+
+  useEffect(() => { load(); }, []);
+
+  async function load() {
+    setLoading(true);
+    try {
+      const [cRes, lRes] = await Promise.all([
+        fetch("/api/admin/collaborators"),
+        fetch("/api/admin/collaborators/activity?limit=50"),
+      ]);
+      if (cRes.ok) setCollaborators(await cRes.json());
+      if (lRes.ok) setLogs(await lRes.json());
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function applyPreset(role: string) {
+    setInviteRole(role);
+    setInvitePerms(ROLE_PRESETS[role] ?? []);
+  }
+
+  function togglePerm(key: string) {
+    setInvitePerms(prev =>
+      prev.includes(key) ? prev.filter(p => p !== key) : [...prev, key]
+    );
+  }
+
+  async function handleInvite() {
+    setInviteStatus(null);
+    setInviteLink(null);
+    if (!inviteName.trim()) { setInviteStatus({ type: "error", msg: "Name is required" }); return; }
+    if (!inviteEmail.trim()) { setInviteStatus({ type: "error", msg: "Email is required" }); return; }
+    setInviting(true);
+    try {
+      const res = await fetch("/api/admin/collaborators", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: inviteName, email: inviteEmail, role: inviteRole, permissions: invitePerms }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setInviteStatus({ type: "success", msg: `Invitation sent to ${inviteEmail}` });
+        setInviteLink(data.inviteUrl);
+        setInviteName(""); setInviteEmail(""); setInviteRole("CUSTOM"); setInvitePerms([]);
+        load();
+      } else {
+        setInviteStatus({ type: "error", msg: data.error ?? "Failed to invite" });
+      }
+    } finally {
+      setInviting(false);
+    }
+  }
+
+  async function toggleActive(collab: Collaborator) {
+    await fetch(`/api/admin/collaborators/${collab.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ active: !collab.active }),
+    });
+    load();
+  }
+
+  async function deleteCollab(id: string) {
+    if (!confirm("Permanently remove this collaborator? This cannot be undone.")) return;
+    await fetch(`/api/admin/collaborators/${id}`, { method: "DELETE" });
+    load();
+  }
+
+  return (
+    <section className="bg-white border border-[#D2DCE8] rounded-2xl p-6 space-y-6">
+      <h2 className="font-syne font-bold text-base text-[#0D1B2A] border-b border-[#F4F7FB] pb-3 flex items-center gap-2">
+        <Users size={16} className="text-[#2251A3]" /> Team Access & Collaborators
+      </h2>
+
+      {/* Invite Form */}
+      <div className="bg-[#F4F7FB] rounded-xl p-5 space-y-4">
+        <p className="font-dm text-sm font-semibold text-[#0D1B2A] flex items-center gap-2">
+          <Mail size={14} /> Invite Collaborator
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="font-dm text-xs text-[#7A8FA6] block mb-1">Full Name</label>
+            <input value={inviteName} onChange={e => setInviteName(e.target.value)}
+              placeholder="Jane Smith"
+              className="w-full border border-[#D2DCE8] bg-white rounded-xl px-3 py-2 text-sm font-dm focus:outline-none focus:ring-2 focus:ring-[#2251A3]" />
+          </div>
+          <div>
+            <label className="font-dm text-xs text-[#7A8FA6] block mb-1">Email Address</label>
+            <input value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
+              type="email" placeholder="jane@example.com"
+              className="w-full border border-[#D2DCE8] bg-white rounded-xl px-3 py-2 text-sm font-dm focus:outline-none focus:ring-2 focus:ring-[#2251A3]" />
+          </div>
+        </div>
+
+        {/* Role presets */}
+        <div>
+          <label className="font-dm text-xs text-[#7A8FA6] block mb-2">Role Preset</label>
+          <div className="flex flex-wrap gap-2">
+            {Object.keys(ROLE_PRESETS).map(r => (
+              <button key={r} onClick={() => applyPreset(r)}
+                className={`px-3 py-1 rounded-full text-xs font-dm font-semibold border transition-all ${
+                  inviteRole === r
+                    ? "border-[#2251A3] bg-[#2251A3] text-white"
+                    : "border-[#D2DCE8] bg-white text-[#3A4A5C] hover:bg-[#EBF0FA]"
+                }`}>
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Permission checkboxes */}
+        <div>
+          <label className="font-dm text-xs text-[#7A8FA6] block mb-2 flex items-center gap-1">
+            <Shield size={11} /> Permissions
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {ALL_PERMISSIONS.map(p => (
+              <label key={p.key} className="flex items-center gap-2 cursor-pointer group">
+                <input type="checkbox" checked={invitePerms.includes(p.key)}
+                  onChange={() => togglePerm(p.key)}
+                  className="w-4 h-4 rounded border-[#D2DCE8] accent-[#2251A3]" />
+                <span className="font-dm text-xs text-[#3A4A5C] group-hover:text-[#0D1B2A]">{p.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {inviteStatus && (
+          <div className={`flex items-center gap-2 text-sm px-4 py-3 rounded-xl font-dm ${
+            inviteStatus.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"
+          }`}>
+            {inviteStatus.type === "success" ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
+            {inviteStatus.msg}
+          </div>
+        )}
+        {inviteLink && (
+          <div className="bg-[#EBF0FA] border border-[#C7D7F0] rounded-xl px-4 py-3">
+            <p className="font-dm text-xs text-[#2251A3] font-semibold mb-1">Invite link (share manually if email fails):</p>
+            <p className="font-dm text-xs text-[#2251A3] break-all">{inviteLink}</p>
+          </div>
+        )}
+        <button onClick={handleInvite} disabled={inviting}
+          className="btn-primary flex items-center gap-2 disabled:opacity-60 text-sm">
+          {inviting ? <><RefreshCw size={13} className="animate-spin" /> Sending…</> : <><Plus size={13} /> Send Invitation</>}
+        </button>
+      </div>
+
+      {/* Collaborator List */}
+      <div>
+        <p className="font-dm text-sm font-semibold text-[#0D1B2A] mb-3 flex items-center gap-2">
+          <Users size={14} /> Active Collaborators ({collaborators.length})
+        </p>
+        {loading ? (
+          <p className="font-dm text-sm text-[#7A8FA6]">Loading…</p>
+        ) : collaborators.length === 0 ? (
+          <div className="bg-[#F4F7FB] rounded-xl px-4 py-6 text-center">
+            <p className="font-dm text-sm text-[#7A8FA6]">No collaborators yet. Invite someone above.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {collaborators.map(c => (
+              <div key={c.id} className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border ${
+                c.active ? "bg-white border-[#D2DCE8]" : "bg-[#F4F7FB] border-[#E8EFF8] opacity-60"
+              }`}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-dm text-sm font-semibold text-[#0D1B2A]">{c.name}</span>
+                    <span className={`text-xs font-dm font-bold px-2 py-0.5 rounded-full ${ROLE_COLORS[c.role] ?? ROLE_COLORS.CUSTOM}`}>
+                      {c.role}
+                    </span>
+                    {c.inviteToken && (
+                      <span className="text-xs font-dm bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Pending</span>
+                    )}
+                    {!c.active && (
+                      <span className="text-xs font-dm bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Suspended</span>
+                    )}
+                  </div>
+                  <p className="font-dm text-xs text-[#7A8FA6] mt-0.5">{c.email}</p>
+                  <p className="font-dm text-xs text-[#7A8FA6]">
+                    Permissions: {c.permissions.length === 0 ? "None" : c.permissions.join(", ")}
+                  </p>
+                  {c.lastLoginAt && (
+                    <p className="font-dm text-xs text-[#7A8FA6]">
+                      Last login: {new Date(c.lastLoginAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button onClick={() => toggleActive(c)} title={c.active ? "Suspend" : "Reactivate"}
+                    className="p-1.5 rounded-lg hover:bg-[#F4F7FB] text-[#7A8FA6] hover:text-[#0D1B2A] transition-colors">
+                    {c.active ? <UserX size={15} /> : <UserCheck size={15} />}
+                  </button>
+                  <button onClick={() => deleteCollab(c.id)} title="Remove permanently"
+                    className="p-1.5 rounded-lg hover:bg-red-50 text-[#7A8FA6] hover:text-red-600 transition-colors">
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Activity Logs */}
+      <div>
+        <button onClick={() => setShowLogs(!showLogs)}
+          className="flex items-center gap-2 font-dm text-sm font-semibold text-[#0D1B2A] hover:text-[#2251A3] transition-colors">
+          <Activity size={14} /> Collaborator Activity Log ({logs.length})
+          {showLogs ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
+        {showLogs && (
+          <div className="mt-3 border border-[#E8EFF8] rounded-xl overflow-hidden">
+            {logs.length === 0 ? (
+              <p className="font-dm text-sm text-[#7A8FA6] px-4 py-4">No activity recorded yet.</p>
+            ) : (
+              <div className="divide-y divide-[#F4F7FB] max-h-80 overflow-y-auto">
+                {logs.map(log => (
+                  <div key={log.id} className="px-4 py-3 flex items-start gap-3 hover:bg-[#F4F7FB]">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-dm text-xs font-semibold text-[#0D1B2A]">{log.collaborator.name}</span>
+                        <span className="font-dm text-xs text-[#7A8FA6]">{log.collaborator.email}</span>
+                        <span className="font-dm text-xs bg-[#EBF0FA] text-[#2251A3] px-2 py-0.5 rounded-full">{log.action}</span>
+                        <span className="font-dm text-xs text-[#7A8FA6]">{log.resource}</span>
+                      </div>
+                      {log.details && (
+                        <p className="font-dm text-xs text-[#7A8FA6] mt-0.5">{log.details}</p>
+                      )}
+                    </div>
+                    <span className="font-dm text-xs text-[#7A8FA6] shrink-0">
+                      {new Date(log.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      {" "}{new Date(log.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );

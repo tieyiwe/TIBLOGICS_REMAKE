@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useState } from "react";
 import {
   LayoutDashboard,
@@ -168,9 +168,45 @@ function NavLink({
   );
 }
 
+// Maps nav hrefs to the permission key required to see them
+const NAV_PERMISSION_MAP: Record<string, string> = {
+  "/admin/command-center": "command_center",
+  "/admin/appointments":   "appointments",
+  "/admin/contacts":       "contacts",
+  "/admin/prospects":      "prospects",
+  "/admin/scanner-leads":  "scanner_leads",
+  "/admin/tools":          "tools",
+  "/admin/revenue":        "revenue",
+  "/admin/blog":           "blog",
+  "/admin/newsletter":     "blog",
+  "/admin/service-requests": "service_requests",
+  "/admin/analytics":      "analytics",
+  "/admin/agents":         "agents",
+  "/admin/settings":       "__admin_only__",
+};
+
 export default function AdminSidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { data: session } = useSession();
+
+  const isAdmin = session?.user?.isAdmin ?? false;
+  const permissions: string[] = session?.user?.permissions ?? [];
+
+  function canSee(href: string): boolean {
+    if (isAdmin || permissions.includes("*")) return true;
+    const required = NAV_PERMISSION_MAP[href];
+    if (!required) return true; // dashboard and unlisted items always visible
+    if (required === "__admin_only__") return false;
+    return permissions.includes(required);
+  }
+
+  const visibleItems = navItems
+    .map(item => ({
+      ...item,
+      subItems: item.subItems?.filter(s => canSee(s.href)),
+    }))
+    .filter(item => canSee(item.href));
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
@@ -183,13 +219,20 @@ export default function AdminSidebar() {
             <span className="text-[#F47C20]">LOGICS</span>
           </span>
         </div>
+        {!isAdmin && session?.user && (
+          <div className="mt-2 px-1">
+            <p className="text-white/60 text-xs font-dm truncate">{session.user.name}</p>
+            <span className="text-xs font-dm font-semibold bg-white/10 text-white/70 px-2 py-0.5 rounded-full mt-0.5 inline-block">
+              {(session.user as any).role ?? "Collaborator"}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Navigation */}
       <nav className="px-3 py-4 flex flex-col gap-1 flex-1 overflow-y-auto">
-        {navItems.map((item, idx) => {
-          const isCommandCenter = item.href === "/admin/command-center";
-          const nextItem = navItems[idx + 1];
+        {visibleItems.map((item, idx) => {
+          const nextItem = visibleItems[idx + 1];
           const showDivider =
             item.href === "/admin/command-center" && nextItem !== undefined;
 

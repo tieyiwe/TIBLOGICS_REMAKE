@@ -16,28 +16,49 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        // Only this email is allowed
-        if (credentials.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) return null;
-
-        // Check DB for hashed password first, fall back to env var
-        const stored = await prisma.adminSettings.findUnique({
-          where: { key: "admin_password_hash" },
-        });
-
-        let passwordValid = false;
-        if (stored?.value) {
-          passwordValid = await bcrypt.compare(credentials.password, stored.value);
-        } else if (process.env.ADMIN_PASSWORD) {
-          // First-time: plain-text comparison against env var
-          passwordValid = credentials.password === process.env.ADMIN_PASSWORD;
+        // ── Main admin login ──────────────────────────────────────────────
+        if (credentials.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+          const stored = await prisma.adminSettings.findUnique({
+            where: { key: "admin_password_hash" },
+          });
+          let valid = false;
+          if (stored?.value) {
+            valid = await bcrypt.compare(credentials.password, stored.value);
+          } else if (process.env.ADMIN_PASSWORD) {
+            valid = credentials.password === process.env.ADMIN_PASSWORD;
+          }
+          if (!valid) return null;
+          return {
+            id: "admin",
+            email: ADMIN_EMAIL,
+            name: process.env.ADMIN_NAME ?? "Admin",
+            isAdmin: true,
+            permissions: ["*"],
+          };
         }
 
-        if (!passwordValid) return null;
+        // ── Collaborator login ────────────────────────────────────────────
+        const collab = await prisma.collaborator.findUnique({
+          where: { email: credentials.email.toLowerCase() },
+        });
+        if (!collab || !collab.active || !collab.passwordHash) return null;
+
+        const valid = await bcrypt.compare(credentials.password, collab.passwordHash);
+        if (!valid) return null;
+
+        // Record last login
+        await prisma.collaborator.update({
+          where: { id: collab.id },
+          data: { lastLoginAt: new Date() },
+        });
 
         return {
-          id: "admin",
-          email: ADMIN_EMAIL,
-          name: process.env.ADMIN_NAME ?? "Tieyiwe",
+          id: collab.id,
+          email: collab.email,
+          name: collab.name,
+          isAdmin: false,
+          collaboratorId: collab.id,
+          permissions: collab.permissions,
         };
       },
     }),
@@ -46,11 +67,21 @@ export const authOptions: NextAuthOptions = {
   pages: { signIn: "/admin/login" },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) token.id = user.id;
+      if (user) {
+        token.id = user.id;
+        token.isAdmin = user.isAdmin;
+        token.collaboratorId = user.collaboratorId;
+        token.permissions = user.permissions;
+      }
       return token;
     },
     async session({ session, token }) {
-      if (session.user) (session.user as any).id = token.id;
+      if (session.user) {
+        session.user.id = token.id;
+        session.user.isAdmin = token.isAdmin;
+        session.user.collaboratorId = token.collaboratorId;
+        session.user.permissions = token.permissions ?? [];
+      }
       return session;
     },
   },
