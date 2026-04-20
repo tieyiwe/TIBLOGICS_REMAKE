@@ -55,6 +55,24 @@ const live = [
     tag: "Business Intelligence",
     href: "https://tibintel.com",
   },
+  {
+    name: "Amber",
+    tagline: "AI-powered communication and alert management platform",
+    desc: "Amber streamlines critical communications and real-time alerts for organizations — ensuring the right message reaches the right people at exactly the right moment.",
+    color: "#D97706",
+    emoji: "🔔",
+    tag: "Communication SaaS",
+    href: "#",
+  },
+  {
+    name: "GeoStrat",
+    tagline: "Geospatial strategy and location intelligence for businesses",
+    desc: "GeoStrat transforms location data into strategic decisions — mapping market opportunities, optimizing field operations, and delivering actionable geospatial intelligence at scale.",
+    color: "#0F6E56",
+    emoji: "🌍",
+    tag: "Geospatial Intelligence",
+    href: "#",
+  },
 ];
 
 const coming = [

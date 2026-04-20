@@ -38,6 +38,20 @@ const products: Product[] = [
     emoji: "🎓",
     tag: "EdTech Platform",
   },
+  {
+    name: "Amber",
+    desc: "AI-powered communication and real-time alert management for organizations.",
+    color: "#D97706",
+    emoji: "🔔",
+    tag: "Communication SaaS",
+  },
+  {
+    name: "GeoStrat",
+    desc: "Geospatial strategy and location intelligence that turns map data into decisions.",
+    color: "#0F6E56",
+    emoji: "🌍",
+    tag: "Geospatial Intelligence",
+  },
 ];
 
 export default function ProductsGrid() {
@@ -54,7 +68,7 @@ export default function ProductsGrid() {
         </div>
 
         {/* Product cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map((product) => (
             <div
               key={product.name}
