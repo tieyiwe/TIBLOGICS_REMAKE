@@ -433,14 +433,12 @@ export default function EchelonFloat() {
               {/* Header */}
               <div className="bg-[#1B3A6B] px-4 py-3 flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center gap-2.5">
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ background: "linear-gradient(135deg, #2251A3, #1B3A6B)", border: "1.5px solid rgba(255,255,255,0.18)" }}
-                  >
-                    <span className="text-white text-sm font-extrabold leading-none" style={{ fontFamily: "var(--font-syne), sans-serif" }}>
-                      T
-                    </span>
-                  </div>
+                  <img
+                    src="/tibo-avatar.svg"
+                    alt="Tibo"
+                    className="w-10 h-10 rounded-full flex-shrink-0 object-cover"
+                    style={{ border: "1.5px solid rgba(255,255,255,0.22)" }}
+                  />
                   <div>
                     <p className="text-white text-base font-bold leading-tight" style={{ fontFamily: "var(--font-syne), sans-serif" }}>
                       Tibo
@@ -545,9 +543,7 @@ export default function EchelonFloat() {
           {isOpen ? (
             <X size={22} className="text-white" strokeWidth={2.5} />
           ) : (
-            <span className="text-white text-xl font-extrabold leading-none select-none" style={{ fontFamily: "var(--font-syne), sans-serif" }}>
-              T
-            </span>
+            <img src="/tibo-avatar.svg" alt="Tibo" className="w-full h-full rounded-full object-cover" />
           )}
           {hasUnread && !isOpen && (
             <span className="absolute top-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white bg-[#F47C20]" />
