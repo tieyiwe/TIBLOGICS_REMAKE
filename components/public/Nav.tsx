@@ -49,11 +49,11 @@ export default function Nav() {
             : "border-b border-transparent"
         )}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-10">
+          <div className="flex items-center justify-between h-[68px]">
             {/* Logo */}
             <Link href="/" className="flex items-center flex-shrink-0">
-              <img src="/logo-full.svg" alt="TIBLOGICS" className="h-9 w-auto max-w-[160px]" />
+              <img src="/logo-full.svg" alt="TIBLOGICS" className="h-10 w-auto max-w-[200px]" />
             </Link>
 
             {/* Desktop Nav */}
