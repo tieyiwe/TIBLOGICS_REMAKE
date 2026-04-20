@@ -104,6 +104,7 @@ export default function EchelonFloat() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
+  const [showGreeting, setShowGreeting] = useState(false);
 
   const [bookingStep, setBookingStep] = useState<BookingStep>(null);
   const [bookingData, setBookingData] = useState<Partial<BookingData>>({});
@@ -120,13 +121,13 @@ export default function EchelonFloat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading, bookingStep]);
 
-  // Auto-open after 3 seconds (once per session)
+  // Show greeting bubble after 3 seconds (once per session)
   useEffect(() => {
     if (isAdmin) return;
-    if (sessionStorage.getItem("tibo_auto_opened")) return;
+    if (sessionStorage.getItem("tibo_greeted")) return;
     const timer = setTimeout(() => {
-      setIsOpen(true);
-      sessionStorage.setItem("tibo_auto_opened", "1");
+      setShowGreeting(true);
+      sessionStorage.setItem("tibo_greeted", "1");
     }, 3000);
     return () => clearTimeout(timer);
   }, [isAdmin]);
@@ -178,6 +179,7 @@ export default function EchelonFloat() {
   useEffect(() => {
     if (isOpen) {
       setHasUnread(false);
+      setShowGreeting(false);
       setTimeout(() => inputRef.current?.focus(), 150);
       window.dispatchEvent(new CustomEvent("tibo:opened"));
     }
@@ -516,6 +518,27 @@ export default function EchelonFloat() {
           </>
         )}
       </AnimatePresence>
+
+      {/* Greeting bubble */}
+      {showGreeting && !isOpen && (
+        <div className="hidden sm:block fixed bottom-24 right-6 z-50 animate-fade-in">
+          <div className="relative bg-white border border-[#D2DCE8] rounded-2xl shadow-xl px-4 py-3 max-w-[220px]">
+            <button
+              onClick={() => setShowGreeting(false)}
+              className="absolute top-2 right-2 text-[#B0BEC5] hover:text-[#3A4A5C] transition-colors"
+              aria-label="Dismiss"
+            >
+              <X size={12} />
+            </button>
+            <p className="font-syne font-bold text-xs text-[#0D1B2A] mb-1">👋 Hey there!</p>
+            <p className="font-dm text-xs text-[#3A4A5C] leading-relaxed pr-3">
+              I'm Tibo — ask me anything about AI for your business.
+            </p>
+            {/* tail */}
+            <div className="absolute -bottom-2 right-7 w-3 h-3 bg-white border-r border-b border-[#D2DCE8] rotate-45" />
+          </div>
+        </div>
+      )}
 
       {/* Floating trigger button — desktop only; mobile uses MobileBottomNav */}
       <div className="hidden sm:block fixed bottom-6 right-6 z-50">
