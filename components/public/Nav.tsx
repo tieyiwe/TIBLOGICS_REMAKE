@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -88,6 +88,14 @@ export default function Nav() {
               <Link href="/book" className="btn-secondary text-sm py-2 px-4">
                 Book a Meeting
               </Link>
+              <Link
+                href="/admin/login"
+                className="flex items-center gap-1 text-xs text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors py-2 px-2"
+                title="Admin"
+              >
+                <Lock size={13} />
+                <span>Admin</span>
+              </Link>
             </div>
 
             {/* Mobile Hamburger */}
@@ -168,6 +176,14 @@ export default function Nav() {
               className="btn-secondary justify-center text-sm"
             >
               Book a Meeting
+            </Link>
+            <Link
+              href="/admin/login"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center justify-center gap-1.5 text-xs text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors py-1"
+            >
+              <Lock size={12} />
+              <span>Admin Portal</span>
             </Link>
           </div>
         </div>
