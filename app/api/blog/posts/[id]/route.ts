@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
 
-// GET is public (clients read blog posts)
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const post = await prisma.blogPost.findFirst({
-      where: { OR: [{ id: params.id }, { slug: params.id }], published: true },
+      where: { OR: [{ id }, { slug: id }], published: true },
     });
     if (!post) return NextResponse.json({ error: "Not found" }, { status: 404 });
     await prisma.blogPost.update({ where: { id: post.id }, data: { viewCount: { increment: 1 } } });
@@ -16,14 +16,15 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const unauth = await requireAdmin();
   if (unauth) return unauth;
 
   try {
+    const { id } = await params;
     const body = await req.json();
     const post = await prisma.blogPost.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         title: typeof body.title === "string" ? body.title.slice(0, 300) : undefined,
         excerpt: typeof body.excerpt === "string" ? body.excerpt.slice(0, 500) : undefined,
@@ -42,12 +43,13 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const unauth = await requireAdmin();
   if (unauth) return unauth;
 
   try {
-    await prisma.blogPost.delete({ where: { id: params.id } });
+    const { id } = await params;
+    await prisma.blogPost.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Failed to delete" }, { status: 500 });

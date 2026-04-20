@@ -6,12 +6,13 @@ import { requireAdmin } from "@/lib/require-admin";
 
 const VALID_ROLES = ["FULL", "SUPPORT", "EDITOR", "ANALYST", "CUSTOM"];
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const unauth = await requireAdmin();
   if (unauth) return unauth;
   const session = await getServerSession(authOptions);
   if (!session?.user.isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+  const { id } = await params;
   const { name, role, permissions, active } = await req.json();
   const data: Record<string, unknown> = {};
 
@@ -39,7 +40,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   try {
     const updated = await prisma.collaborator.update({
-      where: { id: params.id },
+      where: { id },
       data,
       select: {
         id: true, name: true, email: true, role: true,
@@ -52,14 +53,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const unauth = await requireAdmin();
   if (unauth) return unauth;
   const session = await getServerSession(authOptions);
   if (!session?.user.isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+  const { id } = await params;
   try {
-    await prisma.collaborator.delete({ where: { id: params.id } });
+    await prisma.collaborator.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Collaborator not found" }, { status: 404 });

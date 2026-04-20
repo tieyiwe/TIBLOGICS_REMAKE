@@ -2,14 +2,13 @@ import { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import BlogPostClient from "./BlogPostClient";
 
-interface Props {
-  params: { slug: string };
-}
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(
+  { params }: { params: Promise<{ slug: string }> }
+): Promise<Metadata> {
   try {
+    const { slug } = await params;
     const post = await prisma.blogPost.findUnique({
-      where: { slug: params.slug },
+      where: { slug },
       select: { title: true, excerpt: true, coverImage: true, coverEmoji: true, tags: true },
     });
 
