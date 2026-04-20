@@ -6,10 +6,11 @@ const nextConfig = {
   serverExternalPackages: ["@prisma/client", "prisma"],
   images: {
     formats: ["image/avif", "image/webp"],
-    domains: ["fonts.gstatic.com", "image.thum.io"],
     minimumCacheTTL: 86400,
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "fonts.gstatic.com" },
+      { protocol: "https", hostname: "image.thum.io" },
     ],
   },
   experimental: {
