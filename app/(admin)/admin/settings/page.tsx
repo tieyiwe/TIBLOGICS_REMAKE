@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Plus, X, Eye, EyeOff, RefreshCw, Save } from "lucide-react";
+import { Plus, X, Eye, EyeOff, RefreshCw, Save, CheckCircle, AlertCircle } from "lucide-react";
 
 const WORKING_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const BUFFER_OPTIONS = ["15 min", "30 min", "45 min", "60 min"];
@@ -32,11 +32,45 @@ export default function SettingsPage() {
   const [showToken, setShowToken] = useState(false);
   const [webhookToken, setWebhookToken] = useState("sk_cc_tiblogics_a7f3d92e1b4c8f0a6d5e2b9c");
 
-  // Admin account
-  const [displayName, setDisplayName] = useState("TIB Admin");
+  // Admin account / password change
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwStatus, setPwStatus] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+  const [pwLoading, setPwLoading] = useState(false);
+
+  async function handleChangePassword() {
+    setPwStatus(null);
+    if (newPassword.length < 8) {
+      setPwStatus({ type: "error", msg: "New password must be at least 8 characters." });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwStatus({ type: "error", msg: "New passwords do not match." });
+      return;
+    }
+    setPwLoading(true);
+    try {
+      const res = await fetch("/api/admin/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPwStatus({ type: "success", msg: "Password updated successfully." });
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      } else {
+        setPwStatus({ type: "error", msg: data.error ?? "Failed to update password." });
+      }
+    } catch {
+      setPwStatus({ type: "error", msg: "Network error. Please try again." });
+    } finally {
+      setPwLoading(false);
+    }
+  }
 
   function addSlot() {
     const trimmed = newSlot.trim();
@@ -263,26 +297,26 @@ curl -X POST $TIBLOGICS_WEBHOOK_URL \\
           Admin Account
         </h2>
 
-        <div>
-          <label className="font-dm text-sm font-medium text-[#0D1B2A] block mb-1">Display Name</label>
-          <input
-            type="text"
-            value={displayName}
-            onChange={e => setDisplayName(e.target.value)}
-            className="w-full max-w-sm px-4 py-2.5 bg-white border border-[#D2DCE8] rounded-xl text-sm font-dm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3]"
-          />
+        <div className="bg-[#F4F7FB] rounded-xl px-4 py-3 flex items-center gap-3">
+          <span className="text-xs font-dm text-[#7A8FA6]">Admin email (locked)</span>
+          <span className="text-sm font-dm font-semibold text-[#1B3A6B]">Tieyiwebass@gmail.com</span>
         </div>
 
         <div className="space-y-3">
-          <p className="font-dm text-sm font-medium text-[#0D1B2A]">Change Password</p>
+          <p className="font-dm text-sm font-semibold text-[#0D1B2A]">Change Password</p>
+          <p className="font-dm text-xs text-[#7A8FA6] -mt-1">
+            First time? Enter your current env-var password as the current password.
+          </p>
+
           {[
-            { label: "Current Password", value: currentPassword, setter: setCurrentPassword },
-            { label: "New Password", value: newPassword, setter: setNewPassword },
-            { label: "Confirm New Password", value: confirmPassword, setter: setConfirmPassword },
-          ].map(({ label, value, setter }) => (
-            <div key={label}>
-              <label className="font-dm text-xs text-[#7A8FA6] block mb-1">{label}</label>
+            { label: "Current Password", value: currentPassword, setter: setCurrentPassword, id: "cp" },
+            { label: "New Password (min 8 chars)", value: newPassword, setter: setNewPassword, id: "np" },
+            { label: "Confirm New Password", value: confirmPassword, setter: setConfirmPassword, id: "cnp" },
+          ].map(({ label, value, setter, id }) => (
+            <div key={id}>
+              <label htmlFor={id} className="font-dm text-xs text-[#7A8FA6] block mb-1">{label}</label>
               <input
+                id={id}
                 type="password"
                 value={value}
                 onChange={e => setter(e.target.value)}
@@ -292,8 +326,27 @@ curl -X POST $TIBLOGICS_WEBHOOK_URL \\
           ))}
         </div>
 
-        <button className="btn-primary flex items-center gap-2">
-          <Save size={14} /> Save Account Changes
+        {pwStatus && (
+          <div className={`flex items-center gap-2 text-sm font-dm rounded-xl px-4 py-3 ${
+            pwStatus.type === "success"
+              ? "bg-green-50 text-green-700 border border-green-200"
+              : "bg-red-50 text-red-600 border border-red-200"
+          }`}>
+            {pwStatus.type === "success"
+              ? <CheckCircle size={15} />
+              : <AlertCircle size={15} />}
+            {pwStatus.msg}
+          </div>
+        )}
+
+        <button
+          onClick={handleChangePassword}
+          disabled={pwLoading}
+          className="btn-primary flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {pwLoading
+            ? <><RefreshCw size={14} className="animate-spin" /> Updating…</>
+            : <><Save size={14} /> Update Password</>}
         </button>
       </section>
     </div>

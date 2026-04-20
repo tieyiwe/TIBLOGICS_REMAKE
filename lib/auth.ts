@@ -1,5 +1,9 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
+import { prisma } from "@/lib/prisma";
+
+const ADMIN_EMAIL = "Tieyiwebass@gmail.com";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -10,17 +14,31 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (
-          credentials?.email === process.env.ADMIN_EMAIL &&
-          credentials?.password === process.env.ADMIN_PASSWORD
-        ) {
-          return {
-            id: "admin",
-            email: process.env.ADMIN_EMAIL!,
-            name: process.env.ADMIN_NAME ?? "Admin",
-          };
+        if (!credentials?.email || !credentials?.password) return null;
+
+        // Only this email is allowed
+        if (credentials.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) return null;
+
+        // Check DB for hashed password first, fall back to env var
+        const stored = await prisma.adminSettings.findUnique({
+          where: { key: "admin_password_hash" },
+        });
+
+        let passwordValid = false;
+        if (stored?.value) {
+          passwordValid = await bcrypt.compare(credentials.password, stored.value);
+        } else if (process.env.ADMIN_PASSWORD) {
+          // First-time: plain-text comparison against env var
+          passwordValid = credentials.password === process.env.ADMIN_PASSWORD;
         }
-        return null;
+
+        if (!passwordValid) return null;
+
+        return {
+          id: "admin",
+          email: ADMIN_EMAIL,
+          name: process.env.ADMIN_NAME ?? "Tieyiwe",
+        };
       },
     }),
   ],
