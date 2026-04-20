@@ -125,6 +125,16 @@ export default function BlogPostPage() {
 
   return (
     <div className="pt-20 pb-20 min-h-screen bg-[#F4F7FB]">
+      {/* Back bar */}
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4">
+        <Link
+          href="/blog"
+          className="inline-flex items-center gap-2 text-sm font-dm font-medium text-[#1B3A6B] bg-white border border-[#D2DCE8] hover:border-[#1B3A6B] px-4 py-2 rounded-xl shadow-sm transition-all duration-200"
+        >
+          <ArrowLeft size={15} /> Back to The Smart Room
+        </Link>
+      </div>
+
       {/* Hero cover */}
       {post.coverImage ? (
         <div className="w-full h-72 relative overflow-hidden">

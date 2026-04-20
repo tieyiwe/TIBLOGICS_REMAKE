@@ -429,6 +429,10 @@ async function main() {
     console.log(`✅ Created project: ${project.name}`);
   }
 
+  // Remove stale AI-generated posts (old articles from external APIs like HN/DEV.to)
+  const deleted = await prisma.blogPost.deleteMany({ where: { aiGenerated: true } });
+  console.log(`🗑️  Removed ${deleted.count} stale AI-generated posts`);
+
   // Seed blog posts
   for (let idx = 0; idx < BLOG_POSTS.length; idx++) {
     const bp = BLOG_POSTS[idx];
