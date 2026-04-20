@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Plus, X, Eye, EyeOff, RefreshCw, Save, CheckCircle, AlertCircle } from "lucide-react";
+import { Plus, X, Eye, EyeOff, RefreshCw, Save, CheckCircle, AlertCircle, Video, Calendar } from "lucide-react";
 
 const WORKING_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const BUFFER_OPTIONS = ["15 min", "30 min", "45 min", "60 min"];
@@ -288,6 +288,93 @@ curl -X POST $TIBLOGICS_WEBHOOK_URL \\
   -H "Content-Type: application/json" \\
   -d '{"event": "task_complete", "message": "Build finished"}'`}
           </pre>
+        </div>
+      </section>
+
+      {/* ── Meeting Integrations ── */}
+      <section className="bg-white border border-[#D2DCE8] rounded-2xl p-6 space-y-6">
+        <h2 className="font-syne font-bold text-base text-[#0D1B2A] border-b border-[#F4F7FB] pb-3">
+          Meeting Integrations
+        </h2>
+        <p className="font-dm text-sm text-[#7A8FA6]">
+          Connect Zoom or Google Meet to auto-generate meeting links when a booking is confirmed.
+          Credentials will be wired in once your OAuth apps are ready.
+        </p>
+
+        {/* Zoom */}
+        <div className="border border-[#D2DCE8] rounded-2xl p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-[#2D8CFF]/10 rounded-xl flex items-center justify-center">
+              <Video size={18} className="text-[#2D8CFF]" />
+            </div>
+            <div>
+              <p className="font-dm text-sm font-semibold text-[#0D1B2A]">Zoom</p>
+              <p className="font-dm text-xs text-[#7A8FA6]">Server-to-Server OAuth App</p>
+            </div>
+            <span className="ml-auto text-xs font-dm px-2.5 py-1 rounded-full bg-[#F4F7FB] text-[#7A8FA6] border border-[#E8EFF8]">
+              Not connected
+            </span>
+          </div>
+          {[
+            { id: "zoom_account_id", label: "Account ID" },
+            { id: "zoom_client_id", label: "Client ID" },
+            { id: "zoom_client_secret", label: "Client Secret" },
+          ].map(({ id, label }) => (
+            <div key={id}>
+              <label htmlFor={id} className="font-dm text-xs text-[#7A8FA6] block mb-1">{label}</label>
+              <input
+                id={id}
+                type="password"
+                disabled
+                placeholder="Provide credentials to enable"
+                className="w-full max-w-sm px-4 py-2.5 bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl text-sm font-dm text-[#7A8FA6] cursor-not-allowed"
+              />
+            </div>
+          ))}
+          <button disabled className="flex items-center gap-2 px-4 py-2.5 bg-[#F4F7FB] text-[#7A8FA6] text-sm font-dm rounded-xl border border-[#D2DCE8] cursor-not-allowed">
+            Connect Zoom — coming soon
+          </button>
+        </div>
+
+        {/* Google Meet */}
+        <div className="border border-[#D2DCE8] rounded-2xl p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-green-50 rounded-xl flex items-center justify-center">
+              <Calendar size={18} className="text-green-600" />
+            </div>
+            <div>
+              <p className="font-dm text-sm font-semibold text-[#0D1B2A]">Google Meet</p>
+              <p className="font-dm text-xs text-[#7A8FA6]">Google Calendar API / OAuth 2.0</p>
+            </div>
+            <span className="ml-auto text-xs font-dm px-2.5 py-1 rounded-full bg-[#F4F7FB] text-[#7A8FA6] border border-[#E8EFF8]">
+              Not connected
+            </span>
+          </div>
+          {[
+            { id: "google_client_id", label: "OAuth Client ID" },
+            { id: "google_client_secret", label: "OAuth Client Secret" },
+            { id: "google_refresh_token", label: "Refresh Token" },
+          ].map(({ id, label }) => (
+            <div key={id}>
+              <label htmlFor={id} className="font-dm text-xs text-[#7A8FA6] block mb-1">{label}</label>
+              <input
+                id={id}
+                type="password"
+                disabled
+                placeholder="Provide credentials to enable"
+                className="w-full max-w-sm px-4 py-2.5 bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl text-sm font-dm text-[#7A8FA6] cursor-not-allowed"
+              />
+            </div>
+          ))}
+          <button disabled className="flex items-center gap-2 px-4 py-2.5 bg-[#F4F7FB] text-[#7A8FA6] text-sm font-dm rounded-xl border border-[#D2DCE8] cursor-not-allowed">
+            Connect Google Meet — coming soon
+          </button>
+        </div>
+
+        <div className="bg-[#EBF0FA] border border-[#C7D7F0] rounded-xl px-4 py-3">
+          <p className="font-dm text-xs text-[#2251A3] leading-relaxed">
+            <strong>How it will work:</strong> Once connected, confirming an appointment will auto-create a meeting link and include it in the client confirmation email — no manual copy-paste needed.
+          </p>
         </div>
       </section>
 
