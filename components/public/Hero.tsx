@@ -26,7 +26,7 @@ export default function Hero() {
             </div>
 
             <h1
-              className="anim-fade-up font-syne font-extrabold text-4xl md:text-5xl lg:text-[3.75rem] tracking-tight leading-[1.12] text-[#0D1B2A]"
+              className="anim-fade-up font-syne font-extrabold text-3xl md:text-4xl lg:text-[3rem] tracking-tight leading-[1.15] text-[#0D1B2A]"
               style={{ animationDelay: "0.1s" }}
             >
               We build{" "}
