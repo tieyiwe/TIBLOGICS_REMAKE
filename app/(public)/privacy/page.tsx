@@ -10,11 +10,8 @@ export default function PrivacyPage() {
 
         {/* Header */}
         <div className="mb-10">
-          <div className="flex items-center gap-2 mb-4">
-            <img src="/logo.svg" alt="TIBLOGICS" className="h-8 w-auto" />
-            <span className="font-syne text-xl font-extrabold tracking-tight">
-              <span className="text-[#1B3A6B]">TIB</span><span className="text-[#F47C20]">LOGICS</span>
-            </span>
+          <div className="flex items-center mb-4">
+            <img src="/logo-full.svg" alt="TIBLOGICS" className="h-9 w-auto" />
           </div>
           <span className="section-tag">Legal</span>
           <h1 className="font-syne font-extrabold text-4xl text-[#0D1B2A] mt-3">Privacy Policy</h1>
