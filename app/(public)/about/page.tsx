@@ -184,8 +184,8 @@ export default function AboutPage() {
       </div>
 
       {/* CTA */}
-      <div className="bg-[#1B3A6B]">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+      <div className="bg-[#F4F7FB] py-16 px-4">
+        <div className="max-w-xl mx-auto bg-[#1B3A6B] rounded-2xl px-8 py-12 text-center">
           <p className="font-dm text-[#7A9BBF] text-sm uppercase tracking-widest mb-4">Ready to build?</p>
           <h2 className="font-syne font-extrabold text-3xl md:text-4xl text-white leading-tight mb-4">
             We are not a vendor.<br />
