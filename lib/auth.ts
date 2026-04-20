@@ -38,28 +38,32 @@ export const authOptions: NextAuthOptions = {
         }
 
         // ── Collaborator login ────────────────────────────────────────────
-        const collab = await prisma.collaborator.findUnique({
-          where: { email: credentials.email.toLowerCase() },
-        });
-        if (!collab || !collab.active || !collab.passwordHash) return null;
+        try {
+          const collab = await prisma.collaborator.findUnique({
+            where: { email: credentials.email.toLowerCase() },
+          });
+          if (!collab || !collab.active || !collab.passwordHash) return null;
 
-        const valid = await bcrypt.compare(credentials.password, collab.passwordHash);
-        if (!valid) return null;
+          const valid = await bcrypt.compare(credentials.password, collab.passwordHash);
+          if (!valid) return null;
 
-        // Record last login
-        await prisma.collaborator.update({
-          where: { id: collab.id },
-          data: { lastLoginAt: new Date() },
-        });
+          await prisma.collaborator.update({
+            where: { id: collab.id },
+            data: { lastLoginAt: new Date() },
+          });
 
-        return {
-          id: collab.id,
-          email: collab.email,
-          name: collab.name,
-          isAdmin: false,
-          collaboratorId: collab.id,
-          permissions: collab.permissions,
-        };
+          return {
+            id: collab.id,
+            email: collab.email,
+            name: collab.name,
+            isAdmin: false,
+            collaboratorId: collab.id,
+            permissions: collab.permissions,
+          };
+        } catch {
+          // Table may not exist yet — fail silently
+          return null;
+        }
       },
     }),
   ],
