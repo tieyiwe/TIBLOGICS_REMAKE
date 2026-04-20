@@ -37,6 +37,12 @@ export default function SmartRecommendations({ currentPage, compact = false }: P
   const [shown, setShown] = useState(false);
 
   useEffect(() => {
+    const handler = () => dismiss();
+    window.addEventListener("tibo:opened", handler);
+    return () => window.removeEventListener("tibo:opened", handler);
+  }, []);
+
+  useEffect(() => {
     trackPageVisit(currentPage);
 
     // Only show after 8 seconds on page, and only if not dismissed this session

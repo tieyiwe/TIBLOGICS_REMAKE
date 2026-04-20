@@ -185,6 +185,7 @@ export default function EchelonFloat() {
     if (isOpen) {
       setHasUnread(false);
       setTimeout(() => inputRef.current?.focus(), 150);
+      window.dispatchEvent(new CustomEvent("tibo:opened"));
     }
   }, [isOpen]);
 
