@@ -11,39 +11,39 @@ interface Session {
 
 const sessions: Session[] = [
   {
+    name: "Project Discovery Meeting",
+    duration: "20 min",
+    badge: "Free",
+    color: "#F47C20",
+    description: "Intro call to explore your project — no commitment required.",
+  },
+  {
     name: "AI Strategy Session",
     duration: "60 min",
     badge: "Popular",
     color: "#2251A3",
-    description: "Deep-dive into your AI opportunities with a custom action plan.",
+    description: "Deep-dive into your AI opportunities with a custom action plan. $497",
   },
   {
     name: "AI Readiness Audit",
     duration: "90 min + PDF",
     badge: null,
     color: "#1B3A6B",
-    description: "Full assessment of your tech stack and AI readiness with a written report.",
+    description: "Full assessment of your tech stack and AI readiness with a written report. $897",
   },
   {
     name: "Website AI Transformation",
     duration: "45 min",
     badge: "New",
     color: "#0F6E56",
-    description: "Review your site and design an AI-powered upgrade roadmap.",
+    description: "Review your site and design an AI-powered upgrade roadmap. $397",
   },
   {
     name: "AI Cost & Pricing Strategy",
     duration: "60 min",
     badge: null,
     color: "#7c3aed",
-    description: "Build a profitable AI pricing model for your business.",
-  },
-  {
-    name: "Project Discovery Meeting",
-    duration: "30 min",
-    badge: "Free",
-    color: "#F47C20",
-    description: "Intro call to explore your project — no commitment required.",
+    description: "Build a profitable AI pricing model for your business. $297",
   },
 ];
 

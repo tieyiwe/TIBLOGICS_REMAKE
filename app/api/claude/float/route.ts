@@ -70,11 +70,11 @@ We train teams how to actually use AI — not just theory. Workshops, on-site tr
 Architecture for complex, multi-service systems. We design distributed backends, microservices, and IoT integrations for hardware + software products. Great for industrial, healthcare, and smart-device companies.
 
 == CONSULTING SESSIONS ==
-- Project Discovery Meeting — 30 min, FREE
-- AI Strategy Session — 60 min
-- AI Readiness Audit — 90 min + PDF report
-- Website AI Transformation — 45 min
-- AI Cost & Pricing Strategy — 60 min
+- Project Discovery Meeting — 20 min, FREE — best entry point for new clients
+- AI Strategy Session — 60 min, $497
+- AI Readiness Audit — 90 min + PDF report, $897
+- Website AI Transformation — 45 min, $397
+- AI Cost & Pricing Strategy — 60 min, $297
 
 == PRODUCTS ==
 - InStory: AI-personalized learning for K-8 schools

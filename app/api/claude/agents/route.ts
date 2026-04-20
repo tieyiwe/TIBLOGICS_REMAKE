@@ -67,10 +67,10 @@ TIBLOGICS sells transformational outcomes, not just services. Lead with business
 Always tie services to the client's specific pain points.
 
 == SERVICE PRICING CONTEXT ==
-- Project Discovery Meeting: FREE (30 min) — main entry point
-- AI Strategy Session: $297 (60 min)
-- AI Readiness Audit: $497 (90 min + PDF report)
-- Website AI Transformation: $197 (45 min)
+- Project Discovery Meeting: FREE (20 min) — main entry point, zero commitment
+- AI Strategy Session: $497 (60 min)
+- AI Readiness Audit: $897 (90 min + PDF report)
+- Website AI Transformation: $397 (45 min)
 - AI Cost & Pricing Strategy: $297 (60 min)
 - Custom AI projects: $5,000–$50,000+ depending on scope
 
@@ -125,7 +125,7 @@ Lead with data, then insight, then recommendation. Structure every analysis:
 - Service request volume and resolution time
 
 == COMPANY CONTEXT ==
-TIBLOGICS offers consulting sessions ($0–$497), custom AI projects ($5k–$50k+), and SaaS products (InStory, CareFlow AI, ShipFrica, AI Academy).
+TIBLOGICS offers consulting sessions ($0–$897), custom AI projects ($5k–$50k+), and SaaS products (InStory, CareFlow AI, ShipFrica, AI Academy).
 Founded by Tieyiwe Bassole. Serving North America and Francophone Africa.
 
 == OUTPUT FORMATS ==

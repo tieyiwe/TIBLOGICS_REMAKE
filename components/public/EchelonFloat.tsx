@@ -252,7 +252,7 @@ export default function EchelonFloat() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           serviceType: "PROJECT_DISCOVERY_MEETING",
-          serviceDuration: 30,
+          serviceDuration: 20,
           servicePrice: 0,
           totalAmount: 0,
           date: bookingData.date,
@@ -269,7 +269,7 @@ export default function EchelonFloat() {
         ...prev,
         {
           role: "assistant",
-          content: `You're all set, ${form.firstName}! 🎉\n\nYour **30-min Discovery Meeting** is confirmed for **${bookingData.dateLabel}** at **${bookingData.timeSlot} EST**. A confirmation is on its way to **${form.email}**.\n\nA member of our team will reach out beforehand to make sure we're fully prepared for your call. We're looking forward to it!`,
+          content: `You're all set, ${form.firstName}! 🎉\n\nYour **20-min Discovery Meeting** is confirmed for **${bookingData.dateLabel}** at **${bookingData.timeSlot} EST**. A confirmation is on its way to **${form.email}**.\n\nA member of our team will reach out beforehand to make sure we're fully prepared for your call. We're looking forward to it!`,
         },
       ]);
     } catch {
