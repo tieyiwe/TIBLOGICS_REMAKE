@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { Plus, X, Eye, EyeOff, RefreshCw, Save, CheckCircle, AlertCircle, Video, Calendar } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, X, Eye, EyeOff, RefreshCw, Save, CheckCircle, AlertCircle, Video, Calendar, Trash2 } from "lucide-react";
 
 const WORKING_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const BUFFER_OPTIONS = ["15 min", "30 min", "45 min", "60 min"];
@@ -292,91 +292,7 @@ curl -X POST $TIBLOGICS_WEBHOOK_URL \\
       </section>
 
       {/* ── Meeting Integrations ── */}
-      <section className="bg-white border border-[#D2DCE8] rounded-2xl p-6 space-y-6">
-        <h2 className="font-syne font-bold text-base text-[#0D1B2A] border-b border-[#F4F7FB] pb-3">
-          Meeting Integrations
-        </h2>
-        <p className="font-dm text-sm text-[#7A8FA6]">
-          Connect Zoom or Google Meet to auto-generate meeting links when a booking is confirmed.
-          Credentials will be wired in once your OAuth apps are ready.
-        </p>
-
-        {/* Zoom */}
-        <div className="border border-[#D2DCE8] rounded-2xl p-5 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-[#2D8CFF]/10 rounded-xl flex items-center justify-center">
-              <Video size={18} className="text-[#2D8CFF]" />
-            </div>
-            <div>
-              <p className="font-dm text-sm font-semibold text-[#0D1B2A]">Zoom</p>
-              <p className="font-dm text-xs text-[#7A8FA6]">Server-to-Server OAuth App</p>
-            </div>
-            <span className="ml-auto text-xs font-dm px-2.5 py-1 rounded-full bg-[#F4F7FB] text-[#7A8FA6] border border-[#E8EFF8]">
-              Not connected
-            </span>
-          </div>
-          {[
-            { id: "zoom_account_id", label: "Account ID" },
-            { id: "zoom_client_id", label: "Client ID" },
-            { id: "zoom_client_secret", label: "Client Secret" },
-          ].map(({ id, label }) => (
-            <div key={id}>
-              <label htmlFor={id} className="font-dm text-xs text-[#7A8FA6] block mb-1">{label}</label>
-              <input
-                id={id}
-                type="password"
-                disabled
-                placeholder="Provide credentials to enable"
-                className="w-full max-w-sm px-4 py-2.5 bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl text-sm font-dm text-[#7A8FA6] cursor-not-allowed"
-              />
-            </div>
-          ))}
-          <button disabled className="flex items-center gap-2 px-4 py-2.5 bg-[#F4F7FB] text-[#7A8FA6] text-sm font-dm rounded-xl border border-[#D2DCE8] cursor-not-allowed">
-            Connect Zoom — coming soon
-          </button>
-        </div>
-
-        {/* Google Meet */}
-        <div className="border border-[#D2DCE8] rounded-2xl p-5 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-green-50 rounded-xl flex items-center justify-center">
-              <Calendar size={18} className="text-green-600" />
-            </div>
-            <div>
-              <p className="font-dm text-sm font-semibold text-[#0D1B2A]">Google Meet</p>
-              <p className="font-dm text-xs text-[#7A8FA6]">Google Calendar API / OAuth 2.0</p>
-            </div>
-            <span className="ml-auto text-xs font-dm px-2.5 py-1 rounded-full bg-[#F4F7FB] text-[#7A8FA6] border border-[#E8EFF8]">
-              Not connected
-            </span>
-          </div>
-          {[
-            { id: "google_client_id", label: "OAuth Client ID" },
-            { id: "google_client_secret", label: "OAuth Client Secret" },
-            { id: "google_refresh_token", label: "Refresh Token" },
-          ].map(({ id, label }) => (
-            <div key={id}>
-              <label htmlFor={id} className="font-dm text-xs text-[#7A8FA6] block mb-1">{label}</label>
-              <input
-                id={id}
-                type="password"
-                disabled
-                placeholder="Provide credentials to enable"
-                className="w-full max-w-sm px-4 py-2.5 bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl text-sm font-dm text-[#7A8FA6] cursor-not-allowed"
-              />
-            </div>
-          ))}
-          <button disabled className="flex items-center gap-2 px-4 py-2.5 bg-[#F4F7FB] text-[#7A8FA6] text-sm font-dm rounded-xl border border-[#D2DCE8] cursor-not-allowed">
-            Connect Google Meet — coming soon
-          </button>
-        </div>
-
-        <div className="bg-[#EBF0FA] border border-[#C7D7F0] rounded-xl px-4 py-3">
-          <p className="font-dm text-xs text-[#2251A3] leading-relaxed">
-            <strong>How it will work:</strong> Once connected, confirming an appointment will auto-create a meeting link and include it in the client confirmation email — no manual copy-paste needed.
-          </p>
-        </div>
-      </section>
+      <MeetingIntegrations />
 
       {/* ── Admin Account ── */}
       <section className="bg-white border border-[#D2DCE8] rounded-2xl p-6 space-y-6">
@@ -437,5 +353,271 @@ curl -X POST $TIBLOGICS_WEBHOOK_URL \\
         </button>
       </section>
     </div>
+  );
+}
+
+// ── Meeting Integrations Component ────────────────────────────────────────────
+
+function ProviderCard({
+  icon,
+  iconBg,
+  iconColor,
+  name,
+  subtitle,
+  connected,
+  fields,
+  values,
+  onChange,
+  onSave,
+  onTest,
+  onDisconnect,
+  busy,
+  feedback,
+}: {
+  icon: React.ReactNode;
+  iconBg: string;
+  iconColor: string;
+  name: string;
+  subtitle: string;
+  connected: boolean;
+  fields: { id: string; label: string }[];
+  values: Record<string, string>;
+  onChange: (id: string, v: string) => void;
+  onSave: () => void;
+  onTest: () => void;
+  onDisconnect: () => void;
+  busy: string | null;
+  feedback: { type: "ok" | "err"; msg: string } | null;
+}) {
+  const allFilled = fields.every((f) => values[f.id]?.trim());
+
+  return (
+    <div className={`border rounded-2xl p-5 space-y-4 transition-colors ${connected ? "border-green-200 bg-green-50/30" : "border-[#D2DCE8]"}`}>
+      <div className="flex items-center gap-3">
+        <div className={`w-9 h-9 ${iconBg} rounded-xl flex items-center justify-center`}>
+          <span className={iconColor}>{icon}</span>
+        </div>
+        <div>
+          <p className="font-dm text-sm font-semibold text-[#0D1B2A]">{name}</p>
+          <p className="font-dm text-xs text-[#7A8FA6]">{subtitle}</p>
+        </div>
+        {connected ? (
+          <span className="ml-auto flex items-center gap-1 text-xs font-dm px-2.5 py-1 rounded-full bg-green-100 text-green-700 border border-green-200">
+            <CheckCircle size={11} /> Connected
+          </span>
+        ) : (
+          <span className="ml-auto text-xs font-dm px-2.5 py-1 rounded-full bg-[#F4F7FB] text-[#7A8FA6] border border-[#E8EFF8]">
+            Not connected
+          </span>
+        )}
+      </div>
+
+      {fields.map(({ id, label }) => (
+        <div key={id}>
+          <label htmlFor={id} className="font-dm text-xs text-[#7A8FA6] block mb-1">{label}</label>
+          <input
+            id={id}
+            type="password"
+            autoComplete="new-password"
+            value={values[id] ?? ""}
+            onChange={(e) => onChange(id, e.target.value)}
+            placeholder={connected ? "••••••• (stored)" : `Enter ${label}`}
+            className="w-full max-w-sm px-4 py-2.5 bg-white border border-[#D2DCE8] rounded-xl text-sm font-dm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3]"
+          />
+        </div>
+      ))}
+
+      {feedback && (
+        <div className={`flex items-center gap-2 text-sm font-dm rounded-xl px-4 py-3 border ${
+          feedback.type === "ok"
+            ? "bg-green-50 border-green-200 text-green-700"
+            : "bg-red-50 border-red-200 text-red-600"
+        }`}>
+          {feedback.type === "ok" ? <CheckCircle size={13} /> : <AlertCircle size={13} />}
+          {feedback.msg}
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={onTest}
+          disabled={!allFilled || busy === "test"}
+          className="flex items-center gap-1.5 px-4 py-2.5 border border-[#D2DCE8] bg-white text-sm font-dm text-[#0D1B2A] rounded-xl hover:bg-[#F4F7FB] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {busy === "test" ? <RefreshCw size={13} className="animate-spin" /> : <CheckCircle size={13} />}
+          Test Connection
+        </button>
+        <button
+          onClick={onSave}
+          disabled={!allFilled || busy === "save"}
+          className="flex items-center gap-1.5 px-4 py-2.5 bg-[#1B3A6B] text-white text-sm font-dm font-semibold rounded-xl hover:bg-[#2251A3] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {busy === "save" ? <RefreshCw size={13} className="animate-spin" /> : <Save size={13} />}
+          Save Credentials
+        </button>
+        {connected && (
+          <button
+            onClick={onDisconnect}
+            disabled={!!busy}
+            className="flex items-center gap-1.5 px-4 py-2.5 border border-red-200 text-red-500 text-sm font-dm rounded-xl hover:bg-red-50 disabled:opacity-50 transition-colors"
+          >
+            <Trash2 size={13} /> Disconnect
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MeetingIntegrations() {
+  const [status, setStatus] = useState<{ zoom: boolean; google: boolean }>({ zoom: false, google: false });
+  const [zoomVals, setZoomVals] = useState<Record<string, string>>({ zoom_account_id: "", zoom_client_id: "", zoom_client_secret: "" });
+  const [googleVals, setGoogleVals] = useState<Record<string, string>>({ google_client_id: "", google_client_secret: "", google_refresh_token: "" });
+  const [zoomBusy, setZoomBusy] = useState<string | null>(null);
+  const [googleBusy, setGoogleBusy] = useState<string | null>(null);
+  const [zoomFeedback, setZoomFeedback] = useState<{ type: "ok" | "err"; msg: string } | null>(null);
+  const [googleFeedback, setGoogleFeedback] = useState<{ type: "ok" | "err"; msg: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/meeting-settings")
+      .then((r) => r.json())
+      .then(setStatus)
+      .catch(() => {});
+  }, []);
+
+  async function handleZoom(action: "save" | "test") {
+    setZoomBusy(action);
+    setZoomFeedback(null);
+    try {
+      const res = await fetch("/api/admin/meeting-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: "zoom",
+          test: action === "test",
+          zoom: {
+            accountId: zoomVals.zoom_account_id,
+            clientId: zoomVals.zoom_client_id,
+            clientSecret: zoomVals.zoom_client_secret,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (action === "test") {
+        setZoomFeedback({ type: data.success ? "ok" : "err", msg: data.message });
+      } else {
+        setZoomFeedback({ type: "ok", msg: "Credentials saved. Meetings will now be auto-created on Zoom." });
+        setStatus((s) => ({ ...s, zoom: true }));
+        setZoomVals({ zoom_account_id: "", zoom_client_id: "", zoom_client_secret: "" });
+      }
+    } catch {
+      setZoomFeedback({ type: "err", msg: "Request failed. Try again." });
+    } finally {
+      setZoomBusy(null);
+    }
+  }
+
+  async function handleGoogle(action: "save" | "test") {
+    setGoogleBusy(action);
+    setGoogleFeedback(null);
+    try {
+      const res = await fetch("/api/admin/meeting-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: "google",
+          test: action === "test",
+          google: {
+            clientId: googleVals.google_client_id,
+            clientSecret: googleVals.google_client_secret,
+            refreshToken: googleVals.google_refresh_token,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (action === "test") {
+        setGoogleFeedback({ type: data.success ? "ok" : "err", msg: data.message });
+      } else {
+        setGoogleFeedback({ type: "ok", msg: "Credentials saved. Meetings will now be auto-created on Google Meet." });
+        setStatus((s) => ({ ...s, google: true }));
+        setGoogleVals({ google_client_id: "", google_client_secret: "", google_refresh_token: "" });
+      }
+    } catch {
+      setGoogleFeedback({ type: "err", msg: "Request failed. Try again." });
+    } finally {
+      setGoogleBusy(null);
+    }
+  }
+
+  async function disconnect(provider: "zoom" | "google") {
+    await fetch("/api/admin/meeting-settings", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ provider }),
+    });
+    setStatus((s) => ({ ...s, [provider]: false }));
+    if (provider === "zoom") setZoomFeedback({ type: "ok", msg: "Zoom disconnected." });
+    else setGoogleFeedback({ type: "ok", msg: "Google Meet disconnected." });
+  }
+
+  return (
+    <section className="bg-white border border-[#D2DCE8] rounded-2xl p-6 space-y-6">
+      <div className="border-b border-[#F4F7FB] pb-3">
+        <h2 className="font-syne font-bold text-base text-[#0D1B2A]">Meeting Integrations</h2>
+        <p className="font-dm text-xs text-[#7A8FA6] mt-0.5">
+          When a booking is confirmed, the system auto-creates a meeting and sends the link to the client.
+          Zoom takes priority; Google Meet is the fallback.
+        </p>
+      </div>
+
+      <ProviderCard
+        icon={<Video size={18} />}
+        iconBg="bg-[#2D8CFF]/10"
+        iconColor="text-[#2D8CFF]"
+        name="Zoom"
+        subtitle="Server-to-Server OAuth App (Marketplace → Build App)"
+        connected={status.zoom}
+        fields={[
+          { id: "zoom_account_id", label: "Account ID" },
+          { id: "zoom_client_id", label: "Client ID" },
+          { id: "zoom_client_secret", label: "Client Secret" },
+        ]}
+        values={zoomVals}
+        onChange={(id, v) => setZoomVals((prev) => ({ ...prev, [id]: v }))}
+        onSave={() => handleZoom("save")}
+        onTest={() => handleZoom("test")}
+        onDisconnect={() => disconnect("zoom")}
+        busy={zoomBusy}
+        feedback={zoomFeedback}
+      />
+
+      <ProviderCard
+        icon={<Calendar size={18} />}
+        iconBg="bg-green-50"
+        iconColor="text-green-600"
+        name="Google Meet"
+        subtitle="Google Cloud Console → OAuth 2.0 → Calendar API"
+        connected={status.google}
+        fields={[
+          { id: "google_client_id", label: "OAuth Client ID" },
+          { id: "google_client_secret", label: "OAuth Client Secret" },
+          { id: "google_refresh_token", label: "Refresh Token" },
+        ]}
+        values={googleVals}
+        onChange={(id, v) => setGoogleVals((prev) => ({ ...prev, [id]: v }))}
+        onSave={() => handleGoogle("save")}
+        onTest={() => handleGoogle("test")}
+        onDisconnect={() => disconnect("google")}
+        busy={googleBusy}
+        feedback={googleFeedback}
+      />
+
+      <div className="bg-[#EBF0FA] border border-[#C7D7F0] rounded-xl px-4 py-3 space-y-1">
+        <p className="font-dm text-xs font-semibold text-[#2251A3]">How auto-meeting works</p>
+        <p className="font-dm text-xs text-[#2251A3]/80 leading-relaxed">
+          1. Client books → 2. Admin clicks "Confirm" (or free booking auto-confirms) → 3. System calls Zoom/Google API → 4. Meeting created → 5. Client receives branded email with "Join Meeting" button. No manual copy-paste.
+        </p>
+      </div>
+    </section>
   );
 }

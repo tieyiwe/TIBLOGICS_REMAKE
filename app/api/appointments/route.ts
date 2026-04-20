@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import resend from "@/lib/resend";
 import Stripe from "stripe";
+import { createMeeting } from "@/lib/meeting-providers";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-12-18.acacia",
@@ -73,6 +74,19 @@ export async function POST(req: Request) {
     } = body;
 
     if (totalAmount === 0) {
+      const tz = timezone ?? "America/New_York";
+
+      // Auto-create meeting link before saving so it's included in the confirmation email
+      const meetingLink = await createMeeting({
+        serviceType,
+        date: new Date(date),
+        timeSlot,
+        timezone: tz,
+        serviceDuration,
+        firstName,
+        lastName,
+      });
+
       const appointment = await prisma.appointment.create({
         data: {
           serviceType,
@@ -80,7 +94,7 @@ export async function POST(req: Request) {
           servicePrice,
           date: new Date(date),
           timeSlot,
-          timezone: timezone ?? "America/New_York",
+          timezone: tz,
           firstName,
           lastName,
           email,
@@ -93,11 +107,12 @@ export async function POST(req: Request) {
           status: "CONFIRMED",
           paymentStatus: "free",
           confirmedAt: new Date(),
+          zoomLink: meetingLink,
         },
       });
 
-      // Send confirmation email to the client
-      await sendBookingConfirmation({ firstName, lastName, email, serviceType, date, timeSlot });
+      // Send confirmation email with meeting link
+      await sendBookingConfirmation({ firstName, lastName, email, serviceType, date, timeSlot, meetingLink });
       // Notify the team
       await sendTeamBookingAlert({ firstName, lastName, email, serviceType, date, timeSlot });
 
@@ -177,43 +192,63 @@ export async function POST(req: Request) {
 async function sendBookingConfirmation(data: {
   firstName: string; lastName: string; email: string;
   serviceType: string; date: string; timeSlot: string;
+  meetingLink?: string | null;
 }) {
   const serviceLabel = data.serviceType.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c: string) => c.toUpperCase());
   const dateLabel = new Date(data.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+
+  const providerName = data.meetingLink?.includes("zoom.us") ? "Zoom" : "Google Meet";
+  const providerColor = data.meetingLink?.includes("zoom.us") ? "#2D8CFF" : "#1A73E8";
+
+  const meetingSection = data.meetingLink
+    ? `<div style="margin:24px 0;text-align:center;">
+        <p style="margin:0 0 12px;font-size:11px;color:#7A8FA6;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Your Meeting Link</p>
+        <a href="${data.meetingLink}"
+           style="display:inline-block;background:${providerColor};color:white;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:15px;font-weight:700;">
+          🎥 Join on ${providerName}
+        </a>
+        <p style="color:#7A8FA6;font-size:12px;margin:10px 0 0;word-break:break-all;">${data.meetingLink}</p>
+      </div>`
+    : `<div style="background:#FEF0E3;border-radius:12px;padding:16px 20px;margin:24px 0;border-left:4px solid #F47C20;">
+        <p style="margin:0;color:#F47C20;font-size:14px;">📅 Your meeting link will be sent at least 24 hours before your session.</p>
+      </div>`;
+
   await resend.emails.send({
     from: process.env.FROM_EMAIL ?? "hello@tiblogics.com",
     to: data.email,
-    subject: `Your meeting with TIBLOGICS is confirmed — ${dateLabel}`,
+    subject: `✅ Your TIBLOGICS meeting is confirmed — ${dateLabel}`,
     html: `<!DOCTYPE html>
-<html><head><meta charset="utf-8"></head>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#F4F7FB;font-family:Arial,sans-serif;">
-  <div style="max-width:580px;margin:32px auto;background:white;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(27,58,107,0.08);">
-    <div style="background:linear-gradient(135deg,#1B3A6B,#2251A3);padding:36px 32px;text-align:center;">
-      <h1 style="color:white;margin:0;font-size:26px;">TIB<span style="color:#F47C20;">LOGICS</span></h1>
-      <p style="color:rgba(255,255,255,0.7);margin:8px 0 0;font-size:13px;">Meeting Confirmed</p>
+  <div style="max-width:580px;margin:32px auto;background:white;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(27,58,107,0.10);">
+    <div style="background:linear-gradient(135deg,#1B3A6B,#2251A3);padding:40px 32px;text-align:center;">
+      <h1 style="color:white;margin:0 0 6px;font-size:28px;">TIB<span style="color:#F47C20;">LOGICS</span></h1>
+      <p style="color:rgba(255,255,255,0.65);margin:0;font-size:13px;">Meeting Confirmed ✓</p>
     </div>
     <div style="padding:36px 32px;">
-      <h2 style="color:#0D1B2A;font-size:20px;margin:0 0 8px;">You're all set, ${data.firstName}! 🎉</h2>
+      <h2 style="color:#0D1B2A;font-size:22px;margin:0 0 10px;font-weight:700;">You're confirmed, ${data.firstName}! 🎉</h2>
       <p style="color:#3A4A5C;font-size:15px;line-height:1.7;margin:0 0 24px;">
-        Your meeting has been confirmed. A team member will reach out before your call to make sure we're fully prepared for you.
+        We're looking forward to speaking with you. Here are your session details.
       </p>
-      <div style="background:#F4F7FB;border-radius:12px;padding:20px 24px;margin-bottom:28px;border-left:4px solid #F47C20;">
-        <p style="margin:0 0 6px;font-size:13px;color:#7A8FA6;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">Meeting Details</p>
-        <p style="margin:0 0 6px;font-size:15px;color:#0D1B2A;"><strong>Service:</strong> ${serviceLabel}</p>
-        <p style="margin:0 0 6px;font-size:15px;color:#0D1B2A;"><strong>Date:</strong> ${dateLabel}</p>
-        <p style="margin:0;font-size:15px;color:#0D1B2A;"><strong>Time:</strong> ${data.timeSlot} EST</p>
+      <div style="background:#F4F7FB;border-radius:14px;padding:22px 24px;">
+        <p style="margin:0 0 12px;font-size:11px;color:#7A8FA6;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Session Details</p>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr><td style="padding:5px 0;color:#7A8FA6;font-size:14px;width:80px;">Service</td><td style="padding:5px 0;color:#0D1B2A;font-size:14px;font-weight:600;">${serviceLabel}</td></tr>
+          <tr><td style="padding:5px 0;color:#7A8FA6;font-size:14px;">Date</td><td style="padding:5px 0;color:#0D1B2A;font-size:14px;font-weight:600;">${dateLabel}</td></tr>
+          <tr><td style="padding:5px 0;color:#7A8FA6;font-size:14px;">Time</td><td style="padding:5px 0;color:#0D1B2A;font-size:14px;font-weight:600;">${data.timeSlot} EST</td></tr>
+        </table>
       </div>
-      <div style="text-align:center;">
-        <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://tiblogics.com"}/tools"
-           style="display:inline-block;background:#F47C20;color:white;text-decoration:none;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;">
-          Explore Free Tools ↗
-        </a>
+      ${meetingSection}
+      <div style="background:#EBF5FF;border-radius:12px;padding:16px 20px;margin-top:8px;">
+        <p style="margin:0;color:#2251A3;font-size:13px;line-height:1.65;">
+          💡 <strong>Prepare:</strong> Jot down 2–3 specific challenges you want to tackle so we can make every minute count.
+        </p>
       </div>
     </div>
-    <div style="background:#F4F7FB;padding:18px 32px;text-align:center;">
-      <p style="color:#7A8FA6;font-size:12px;margin:0;">
-        Questions? Reply or email <a href="mailto:info@tiblogics.com" style="color:#2251A3;">info@tiblogics.com</a><br>
-        TIBLOGICS · Wheaton, Maryland · <a href="https://tiblogics.com" style="color:#2251A3;">tiblogics.com</a>
+    <div style="background:#F4F7FB;padding:20px 32px;text-align:center;border-top:1px solid #E8EFF8;">
+      <p style="color:#7A8FA6;font-size:12px;margin:0;line-height:2;">
+        Questions? Reply or email <a href="mailto:info@tiblogics.com" style="color:#2251A3;text-decoration:none;">info@tiblogics.com</a><br>
+        TIBLOGICS · Wheaton, Maryland · <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://tiblogics.com"}" style="color:#2251A3;text-decoration:none;">tiblogics.com</a>
       </p>
     </div>
   </div>
