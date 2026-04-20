@@ -31,15 +31,18 @@ const INITIAL_MESSAGE: Message = {
     "Hey! I'm Tibo 👋 How can I help you today? Ask me anything about TIBLOGICS — services, products, pricing, or how AI can transform your business.",
 };
 
-function getAvailableDates(): Array<{ value: string; label: string }> {
+function getAvailableDates(blockedSet: Set<string>): Array<{ value: string; label: string }> {
   const dates: Array<{ value: string; label: string }> = [];
   const d = new Date();
   d.setDate(d.getDate() + 1);
-  while (dates.length < 14) {
+  let checked = 0;
+  while (dates.length < 14 && checked < 60) {
+    checked++;
     const day = d.getDay();
-    if (day !== 0 && day !== 6) {
+    const iso = d.toISOString().split("T")[0];
+    if (day !== 0 && day !== 6 && !blockedSet.has(iso)) {
       dates.push({
-        value: d.toISOString().split("T")[0],
+        value: iso,
         label: d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
       });
     }
@@ -110,11 +113,37 @@ export default function EchelonFloat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const isAdmin = pathname?.startsWith("/admin");
+  const [blockedDateSet, setBlockedDateSet] = useState<Set<string>>(new Set());
 
   // Scroll messages into view
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading, bookingStep]);
+
+  // Auto-open after 3 seconds (once per session)
+  useEffect(() => {
+    if (isAdmin) return;
+    if (sessionStorage.getItem("tibo_auto_opened")) return;
+    const timer = setTimeout(() => {
+      setIsOpen(true);
+      sessionStorage.setItem("tibo_auto_opened", "1");
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [isAdmin]);
+
+  // Pre-load blocked dates for the next 30 days
+  useEffect(() => {
+    fetch("/api/appointments/blocked-dates")
+      .then(r => r.json())
+      .then(d => {
+        const set = new Set<string>();
+        (d.blocked ?? []).forEach((b: { date: string }) => {
+          set.add(b.date.split("T")[0]);
+        });
+        setBlockedDateSet(set);
+      })
+      .catch(() => {});
+  }, []);
 
   // Lock body scroll when open (prevents page scroll behind modal on mobile)
   useEffect(() => {
@@ -273,7 +302,7 @@ export default function EchelonFloat() {
       );
     }
     if (bookingStep === "date") {
-      const dates = getAvailableDates();
+      const dates = getAvailableDates(blockedDateSet);
       return (
         <div className="px-4 pb-4 pt-3 space-y-2">
           <div className="flex items-center gap-2">

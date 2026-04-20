@@ -63,7 +63,16 @@ const navItems: NavItem[] = [
       { label: "Sync", href: "/admin/command-center/sync", icon: RefreshCw },
     ],
   },
-  { label: "Appointments", href: "/admin/appointments", icon: Calendar },
+  {
+    label: "Appointments",
+    href: "/admin/appointments",
+    icon: Calendar,
+    subItems: [
+      { label: "All Appointments", href: "/admin/appointments", icon: Calendar },
+      { label: "Availability", href: "/admin/appointments/availability", icon: Settings },
+    ],
+  },
+  { label: "Contacts", href: "/admin/contacts", icon: Users },
   { label: "Prospects", href: "/admin/prospects", icon: Users },
   { label: "Scanner Leads", href: "/admin/scanner-leads", icon: Search },
   { label: "Tool Analytics", href: "/admin/tools", icon: BarChart2 },
@@ -167,10 +176,13 @@ export default function AdminSidebar() {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-white/10">
-        <span className="font-syne font-extrabold text-xl tracking-tight">
-          <span className="text-white">TIB</span>
-          <span className="text-[#F47C20]">LOGICS</span>
-        </span>
+        <div className="flex items-center gap-2">
+          <img src="/logo.svg" alt="" aria-hidden="true" className="h-7 w-auto brightness-[10] saturate-0" />
+          <span className="font-syne font-extrabold text-xl tracking-tight">
+            <span className="text-white">TIB</span>
+            <span className="text-[#F47C20]">LOGICS</span>
+          </span>
+        </div>
       </div>
 
       {/* Navigation */}

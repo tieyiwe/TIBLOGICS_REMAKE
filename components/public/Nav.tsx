@@ -52,7 +52,8 @@ export default function Nav() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link href="/" className="flex items-center">
+            <Link href="/" className="flex items-center gap-2">
+              <img src="/logo.svg" alt="" aria-hidden="true" className="h-8 w-auto" />
               <span className="font-syne text-xl font-800 tracking-tight">
                 <span className="text-[#1B3A6B]">TIB</span>
                 <span className="text-[#F47C20]">LOGICS</span>
@@ -129,10 +130,13 @@ export default function Nav() {
           )}
         >
           <div className="flex items-center justify-between p-4 border-b border-[#D2DCE8]">
-            <span className="font-syne font-800 text-lg">
-              <span className="text-[#1B3A6B]">TIB</span>
-              <span className="text-[#F47C20]">LOGICS</span>
-            </span>
+            <div className="flex items-center gap-2">
+              <img src="/logo.svg" alt="" aria-hidden="true" className="h-7 w-auto" />
+              <span className="font-syne font-800 text-lg">
+                <span className="text-[#1B3A6B]">TIB</span>
+                <span className="text-[#F47C20]">LOGICS</span>
+              </span>
+            </div>
             <button
               onClick={() => setMobileOpen(false)}
               className="p-2 rounded-lg hover:bg-[#F4F7FB] transition-colors"

@@ -38,9 +38,12 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
           {/* Brand */}
           <div>
-            <div className="font-syne text-2xl font-800 mb-3">
-              <span className="text-white">TIB</span>
-              <span className="text-[#F47C20]">LOGICS</span>
+            <div className="flex items-center gap-2 mb-3">
+              <img src="/logo.svg" alt="" aria-hidden="true" className="h-9 w-auto brightness-[10] saturate-0" />
+              <span className="font-syne text-2xl font-800">
+                <span className="text-white">TIB</span>
+                <span className="text-[#F47C20]">LOGICS</span>
+              </span>
             </div>
             <p className="text-[#7A9BBF] text-sm font-dm leading-relaxed mb-4">
               We create the right logics to fulfill your technical needs. AI-first.

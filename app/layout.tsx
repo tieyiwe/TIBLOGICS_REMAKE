@@ -76,7 +76,7 @@ export const metadata: Metadata = {
     creator: "@tiblogics",
     images: [`${SITE_URL}/og-image.png`],
   },
-  icons: { icon: "/favicon.ico", apple: "/apple-touch-icon.png" },
+  icons: { icon: "/icon.svg", shortcut: "/icon.svg", apple: "/icon.svg" },
 };
 
 const jsonLd = {
