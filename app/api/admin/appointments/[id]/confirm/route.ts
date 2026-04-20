@@ -162,8 +162,7 @@ async function sendConfirmationEmail(data: {
       <p style="color:#7A8FA6;font-size:12px;margin:0;line-height:2;">
         Questions? Reply to this email or write to us at
         <a href="mailto:info@tiblogics.com" style="color:#2251A3;text-decoration:none;">info@tiblogics.com</a><br>
-        TIBLOGICS · Wheaton, Maryland ·
-        <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://tiblogics.com"}" style="color:#2251A3;text-decoration:none;">tiblogics.com</a>
+        TIBLOGICS · <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://tiblogics.com"}" style="color:#2251A3;text-decoration:none;">tiblogics.com</a>
       </p>
     </div>
 

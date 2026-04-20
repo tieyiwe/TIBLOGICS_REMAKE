@@ -29,7 +29,7 @@ const display = Cormorant_Garamond({
 
 const SITE_URL = "https://tiblogics.com";
 const SITE_NAME = "TIBLOGICS";
-const DEFAULT_TITLE = "TIBLOGICS — AI Implementation & Digital Solutions | Washington D.C.";
+const DEFAULT_TITLE = "TIBLOGICS — AI Implementation & Digital Solutions";
 const DEFAULT_DESC =
   "TIBLOGICS builds AI agents, workflow automation, and full-stack digital products for businesses in North America, Africa, and beyond. AI-first. Tech-complete.";
 
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   description: DEFAULT_DESC,
   keywords: [
     "AI implementation", "AI agency", "AI agents", "workflow automation",
-    "machine learning", "Washington DC AI", "AI consulting",
+    "machine learning", "AI consulting",
     "digital transformation", "AI for small business", "LLM integration",
     "RAG systems", "n8n automation", "Next.js development", "AI readiness",
     "Francophone Africa tech", "TIBLOGICS",
@@ -89,7 +89,6 @@ const jsonLd = {
       url: SITE_URL,
       logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.png`, width: 200, height: 60 },
       description: DEFAULT_DESC,
-      address: { "@type": "PostalAddress", addressLocality: "Wheaton", addressRegion: "MD", addressCountry: "US" },
       contactPoint: { "@type": "ContactPoint", email: "ai@tiblogics.com", contactType: "customer service" },
       sameAs: ["https://linkedin.com/company/tiblogics", "https://twitter.com/tiblogics"],
       founder: { "@type": "Person", name: "Tieyiwe Bassole" },
@@ -114,9 +113,7 @@ const jsonLd = {
       image: `${SITE_URL}/og-image.png`,
       url: SITE_URL,
       priceRange: "$$",
-      address: { "@type": "PostalAddress", addressLocality: "Wheaton", addressRegion: "MD", postalCode: "20902", addressCountry: "US" },
-      geo: { "@type": "GeoCoordinates", latitude: 39.0343, longitude: -77.0531 },
-      areaServed: ["Washington DC", "Maryland", "Virginia", "Francophone Africa"],
+      areaServed: ["North America", "Francophone Africa"],
       openingHoursSpecification: {
         "@type": "OpeningHoursSpecification",
         dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],

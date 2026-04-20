@@ -21,7 +21,7 @@ export default function Hero() {
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-[#F47C20]" />
               </span>
               <span className="text-[#F47C20] text-xs font-semibold font-dm tracking-wide">
-                AI-First Agency · Washington D.C. · Serving Businesses &amp; Individual Builders
+                AI-First Agency · Serving Businesses &amp; Individual Builders
               </span>
             </div>
 

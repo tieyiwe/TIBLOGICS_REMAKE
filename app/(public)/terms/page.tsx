@@ -454,7 +454,6 @@ export default function TermsPage() {
             <p>Questions about these Terms? Contact us:</p>
             <div className="mt-4 bg-[#F4F7FB] rounded-xl p-5 border border-[#E8EFF8]">
               <p><strong>TIBLOGICS LLC</strong></p>
-              <p>Wheaton, Maryland, USA</p>
               <p className="mt-2">
                 Email:{" "}
                 <a href="mailto:info@tiblogics.com" className="text-[#2251A3] hover:underline">info@tiblogics.com</a>

@@ -95,7 +95,7 @@ async function sendClientConfirmation(data: { firstName: string; lastName: strin
       </div>
     </div>
     <div style="background:#F4F7FB;padding:20px 32px;text-align:center;">
-      <p style="color:#7A8FA6;font-size:12px;margin:0;">Questions? Reply or email <a href="mailto:info@tiblogics.com" style="color:#2251A3;">info@tiblogics.com</a><br>TIBLOGICS · Wheaton, Maryland</p>
+      <p style="color:#7A8FA6;font-size:12px;margin:0;">Questions? Reply or email <a href="mailto:info@tiblogics.com" style="color:#2251A3;">info@tiblogics.com</a><br>TIBLOGICS</p>
     </div>
   </div>
 </body></html>`,

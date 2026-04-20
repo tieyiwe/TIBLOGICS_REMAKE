@@ -22,8 +22,8 @@ Tone: Smart, warm, direct. Never corporate-speak. Real talk that builds trust.
 Brand colors context: Navy (#1B3A6B), Orange (#F47C20). Bold and modern.
 
 == COMPANY CONTEXT ==
-TIBLOGICS is an AI implementation and digital solutions agency founded by Tieyiwe Bassole.
-- HQ: Wheaton, Maryland (North America & Francophone Africa)
+TIBLOGICS is an AI implementation and digital solutions agency.
+- Markets: North America & Francophone Africa
 - Core services: AI Implementation, Workflow Automation, AI Strategy, Web/App Dev, Cybersecurity, Data Analytics, Mobile Dev, AI Training
 - Products: InStory (EdTech AI), CareFlow AI (HealthTech), ShipFrica (logistics SaaS), AI Academy on Skool
 - Target clients: SMBs, startups, enterprises, African diaspora businesses, healthcare orgs, schools

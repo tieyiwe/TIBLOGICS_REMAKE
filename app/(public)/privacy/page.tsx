@@ -29,8 +29,7 @@ export default function PrivacyPage() {
           <section>
             <p>
               TIBLOGICS LLC ("<strong>TIBLOGICS</strong>", "<strong>we</strong>", "<strong>us</strong>", or
-              "<strong>our</strong>") is an AI implementation and digital solutions company headquartered in
-              Wheaton, Maryland, USA. We operate the website located at{" "}
+              "<strong>our</strong>") is an AI implementation and digital solutions company. We operate the website located at{" "}
               <strong>tiblogics.com</strong> (the "<strong>Site</strong>") and provide related services,
               products, and consultations (collectively, the "<strong>Services</strong>").
             </p>
@@ -266,7 +265,6 @@ export default function PrivacyPage() {
             <p>If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:</p>
             <div className="mt-4 bg-[#F4F7FB] rounded-xl p-5 border border-[#E8EFF8]">
               <p><strong>TIBLOGICS LLC</strong></p>
-              <p>Wheaton, Maryland, USA</p>
               <p className="mt-2">
                 Email:{" "}
                 <a href="mailto:info@tiblogics.com" className="text-[#2251A3] hover:underline">info@tiblogics.com</a>
