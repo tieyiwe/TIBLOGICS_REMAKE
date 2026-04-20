@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin, Mail, Globe, Zap, Users, Shield, Target, Lightbulb, TrendingUp } from "lucide-react";
+import { Mail, Globe, Zap, Users, Shield, Target, Lightbulb, TrendingUp } from "lucide-react";
 
 const principles = [
   { icon: Shield, title: "Integrity, Always", desc: "We tell the truth about what AI can and cannot do. Our clients make better decisions because we give them honest advice, not what sounds impressive." },
@@ -109,13 +109,8 @@ export default function AboutPage() {
               <span className="font-syne font-extrabold text-3xl text-white">T</span>
             </div>
             <div>
-              <h2 className="font-syne font-extrabold text-2xl text-[#0D1B2A]">Tieyiwe Bassole</h2>
-              <p className="font-dm text-[#3A4A5C] text-sm font-medium mt-1">Founder & CEO, TIBLOGICS</p>
-              <div className="flex items-center gap-2 text-[#7A8FA6] text-sm font-dm mt-1 mb-4">
-                <MapPin size={13} /> Wheaton, MD / Washington D.C.
-              </div>
               <p className="font-dm text-[#3A4A5C] leading-relaxed mb-4">
-                Tieyiwe is a developer and AI strategist who has shipped full-stack products across EdTech, HealthTech, logistics, hospitality, and government sectors. He&apos;s equally comfortable writing code, architecting AI pipelines, and closing enterprise contracts.
+                Our founder is a developer and AI strategist who has shipped full-stack products across EdTech, HealthTech, logistics, hospitality, and government sectors — equally comfortable writing code, architecting AI pipelines, and closing enterprise contracts.
               </p>
               <p className="font-dm text-[#3A4A5C] leading-relaxed mb-6">
                 Originally from Burkina Faso, he brings a global perspective to every engagement — bridging North American tech standards with African market realities.
