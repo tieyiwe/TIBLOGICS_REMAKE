@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, MapPin, Clock, MessageSquare } from "lucide-react";
+import { Mail, Clock, MessageSquare } from "lucide-react";
 
 export default function ContactPage() {
   return (
@@ -22,17 +22,6 @@ export default function ContactPage() {
                 <p className="font-syne font-bold text-sm text-[#0D1B2A]">Email Us</p>
                 <a href="mailto:ai@tiblogics.com" className="font-dm text-[#F47C20] text-sm hover:underline">ai@tiblogics.com</a>
                 <p className="font-dm text-xs text-[#7A8FA6] mt-1">Best for project inquiries and partnerships</p>
-              </div>
-            </div>
-
-            <div className="bg-white border border-[#D2DCE8] rounded-2xl p-6 flex gap-4">
-              <div className="w-10 h-10 bg-[#EBF0FA] rounded-xl flex items-center justify-center shrink-0">
-                <MapPin size={18} className="text-[#2251A3]" />
-              </div>
-              <div>
-                <p className="font-syne font-bold text-sm text-[#0D1B2A]">Location</p>
-                <p className="font-dm text-[#3A4A5C] text-sm">Wheaton, Maryland</p>
-                <p className="font-dm text-xs text-[#7A8FA6] mt-1">Washington D.C. Metro Area · Remote-first</p>
               </div>
             </div>
 
