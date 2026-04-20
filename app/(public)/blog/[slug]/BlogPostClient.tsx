@@ -135,14 +135,22 @@ export default function BlogPostPage() {
 
   return (
     <div className="pt-20 pb-20 min-h-screen bg-[#F4F7FB]">
-      {/* Back bar */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4">
-        <Link
-          href="/blog"
-          className="inline-flex items-center gap-2 text-sm font-dm font-medium text-[#1B3A6B] bg-white border border-[#D2DCE8] hover:border-[#1B3A6B] px-4 py-2 rounded-xl shadow-sm transition-all duration-200"
-        >
-          <ArrowLeft size={15} /> Back to The Smart Room
-        </Link>
+      {/* Sticky back bar — always visible while reading */}
+      <div className="sticky top-16 z-30 bg-white/95 backdrop-blur-sm border-b border-[#D2DCE8] shadow-sm">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
+          <Link
+            href="/blog"
+            className="inline-flex items-center gap-2 text-sm font-dm font-semibold text-[#1B3A6B] hover:text-[#F47C20] transition-colors"
+          >
+            <ArrowLeft size={15} /> Back to The Smart Room
+          </Link>
+          <button
+            onClick={handleShare}
+            className="inline-flex items-center gap-1.5 text-xs font-dm text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors"
+          >
+            <Share2 size={13} /> {copied ? "Copied!" : "Share"}
+          </button>
+        </div>
       </div>
 
       {/* Hero cover */}
@@ -160,21 +168,6 @@ export default function BlogPostPage() {
       )}
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 -mt-8 relative z-10">
-        {/* Back + share */}
-        <div className="flex items-center justify-between mb-6">
-          <Link
-            href="/blog"
-            className="flex items-center gap-1.5 text-[#7A8FA6] hover:text-[#1B3A6B] text-sm font-dm transition-colors"
-          >
-            <ArrowLeft size={15} /> Back to The Smart Room
-          </Link>
-          <button
-            onClick={handleShare}
-            className="flex items-center gap-1.5 text-[#7A8FA6] hover:text-[#1B3A6B] text-sm font-dm transition-colors"
-          >
-            <Share2 size={15} /> {copied ? "Copied!" : "Share"}
-          </button>
-        </div>
 
         {/* Article card */}
         <article className="bg-white border border-[#D2DCE8] rounded-3xl overflow-hidden shadow-sm">
