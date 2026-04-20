@@ -1,10 +1,10 @@
 import Link from "next/link";
 
 const projectCards = [
-  { emoji: "✈️", title: "SSR Airport — Mauritius", subtitle: "5-Solution AI Operations Suite", badge: "Active", badgeClass: "bg-green-100 text-green-700" },
-  { emoji: "📚", title: "InStory Method Platform", subtitle: "K–8 AI Personalized Learning", badge: "Launch Ready", badgeClass: "bg-[#EBF0FA] text-[#2251A3]" },
-  { emoji: "🍽️", title: "Caribbean Flavor Restaurant", subtitle: "Full Digital Transformation", badge: "In Progress", badgeClass: "bg-[#FEF0E3] text-[#F47C20]" },
-  { emoji: "❤️", title: "CareFlow AI Platform", subtitle: "Social Work Automation", badge: "Beta", badgeClass: "bg-[#EBF0FA] text-[#2251A3]" },
+  { emoji: "🧠", title: "First Principles Problem Solving", subtitle: "Strip assumptions. Rebuild from truth.", badge: "Our Method", badgeClass: "bg-[#EBF0FA] text-[#2251A3]" },
+  { emoji: "🎯", title: "Design Is How It Works", subtitle: "Functionality is the real aesthetic.", badge: "Our Standard", badgeClass: "bg-[#FEF0E3] text-[#F47C20]" },
+  { emoji: "💡", title: "If You Can Think It, We Build It", subtitle: "Your vision, engineered into reality.", badge: "Our Promise", badgeClass: "bg-green-100 text-green-700" },
+  { emoji: "⚡", title: "Real Solutions, Not Buzzwords", subtitle: "Measurable outcomes. Zero hype.", badge: "Our Commitment", badgeClass: "bg-purple-100 text-purple-700" },
 ];
 
 export default function Hero() {

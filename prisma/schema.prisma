@@ -254,6 +254,7 @@ model BlogPost {
   content       String   @db.Text
   category      String
   tags          String[]
+  coverImage    String?
   coverEmoji    String   @default("🤖")
   coverGradient String   @default("from-[#1B3A6B] to-[#2251A3]")
   author        String   @default("Echelon AI")

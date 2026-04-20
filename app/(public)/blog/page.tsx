@@ -13,6 +13,7 @@ interface BlogPost {
   excerpt: string;
   category: string;
   tags: string[];
+  coverImage?: string;
   coverEmoji: string;
   coverGradient: string;
   author: string;
@@ -101,17 +102,30 @@ export default function BlogPage() {
 
   // Auto-refresh check on page load
   useEffect(() => {
-    fetch("/api/blog/auto-refresh?check=true")
-      .then((r) => r.json())
-      .then(async (d) => {
-        if (d.needsRefresh) {
+    async function checkAndRefresh() {
+      try {
+        const checkRes = await fetch("/api/blog/auto-refresh?check=true");
+        const checkData = await checkRes.json();
+        const currentPosts = await fetch("/api/blog/posts?limit=1").then(r => r.json());
+        const isEmpty = (currentPosts.total ?? 0) === 0;
+
+        if (checkData.needsRefresh || isEmpty) {
           setRefreshing(true);
-          await fetch("/api/blog/auto-refresh");
-          await fetchPosts();
-          setRefreshing(false);
+          try {
+            const url = isEmpty
+              ? "/api/blog/auto-refresh?force=true"
+              : "/api/blog/auto-refresh";
+            await fetch(url);
+          } finally {
+            await fetchPosts();
+            setRefreshing(false);
+          }
         }
-      })
-      .catch(() => {});
+      } catch {
+        setRefreshing(false);
+      }
+    }
+    checkAndRefresh();
   }, [fetchPosts]);
 
   const featured = posts.find((p) => p.featured) ?? posts[0];
@@ -211,8 +225,14 @@ export default function BlogPage() {
             {featured && category === "all" && !search && (
               <Link href={`/blog/${featured.slug}`} className="group block mb-10">
                 <div className="bg-white border border-[#D2DCE8] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 lg:flex">
-                  <div className={`${gradientClass(featured.coverGradient)} lg:w-96 h-64 lg:h-auto flex items-center justify-center flex-shrink-0`}>
-                    <span className="text-8xl">{featured.coverEmoji}</span>
+                  <div className="lg:w-96 h-64 lg:h-auto flex-shrink-0 overflow-hidden relative">
+                    {featured.coverImage ? (
+                      <img src={featured.coverImage} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    ) : (
+                      <div className={`${gradientClass(featured.coverGradient)} w-full h-full flex items-center justify-center`}>
+                        <span className="text-8xl">{featured.coverEmoji}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="p-8 flex flex-col justify-center">
                     <div className="flex items-center gap-2 mb-3">
@@ -292,10 +312,21 @@ function PostCard({ post }: { post: BlogPost }) {
   return (
     <Link href={`/blog/${post.slug}`} className="group">
       <article className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 h-full flex flex-col">
-        <div className={`${gradientClass(post.coverGradient)} h-44 flex items-center justify-center`}>
-          <span className="text-6xl group-hover:scale-110 transition-transform duration-300">
-            {post.coverEmoji}
-          </span>
+        <div className="h-44 overflow-hidden relative">
+          {post.coverImage ? (
+            <img
+              src={post.coverImage}
+              alt=""
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
+            />
+          ) : (
+            <div className={`${gradientClass(post.coverGradient)} w-full h-full flex items-center justify-center`}>
+              <span className="text-6xl group-hover:scale-110 transition-transform duration-300">
+                {post.coverEmoji}
+              </span>
+            </div>
+          )}
         </div>
         <div className="p-5 flex flex-col flex-1">
           <CategoryBadge category={post.category} />
