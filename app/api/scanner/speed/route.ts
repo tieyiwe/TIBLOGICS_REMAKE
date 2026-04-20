@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
         "Accept-Encoding": "gzip, deflate, br",
         "Accept-Language": "en-US,en;q=0.5",
       },
-      redirect: "follow",
+      redirect: "manual",
     });
 
     ttfb = Math.round(performance.now() - start);

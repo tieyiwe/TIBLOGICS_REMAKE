@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import resend from "@/lib/resend";
 import Stripe from "stripe";
 import { createMeeting } from "@/lib/meeting-providers";
+import { isValidEmail, escapeHtml } from "@/lib/require-admin";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-12-18.acacia",
@@ -72,6 +73,26 @@ export async function POST(req: Request) {
       addOnSlackAccess,
       totalAmount,
     } = body;
+
+    // Input validation
+    if (!firstName || typeof firstName !== "string" || firstName.length > 100) {
+      return NextResponse.json({ error: "Invalid first name" }, { status: 400 });
+    }
+    if (!lastName || typeof lastName !== "string" || lastName.length > 100) {
+      return NextResponse.json({ error: "Invalid last name" }, { status: 400 });
+    }
+    if (!isValidEmail(email)) {
+      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+    }
+    if (!serviceType || typeof serviceType !== "string" || serviceType.length > 100) {
+      return NextResponse.json({ error: "Invalid serviceType" }, { status: 400 });
+    }
+    if (typeof totalAmount !== "number" || !Number.isInteger(totalAmount) || totalAmount < 0 || totalAmount > 500_000) {
+      return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+    }
+    if (!date || isNaN(new Date(date).getTime())) {
+      return NextResponse.json({ error: "Invalid date" }, { status: 400 });
+    }
 
     if (totalAmount === 0) {
       const tz = timezone ?? "America/New_York";
@@ -197,6 +218,8 @@ async function sendBookingConfirmation(data: {
   const serviceLabel = data.serviceType.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c: string) => c.toUpperCase());
   const dateLabel = new Date(data.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 
+  const safeFirst = escapeHtml(data.firstName);
+  const safeService = escapeHtml(serviceLabel);
   const providerName = data.meetingLink?.includes("zoom.us") ? "Zoom" : "Google Meet";
   const providerColor = data.meetingLink?.includes("zoom.us") ? "#2D8CFF" : "#1A73E8";
 

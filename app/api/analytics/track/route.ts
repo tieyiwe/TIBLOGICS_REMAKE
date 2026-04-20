@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { anonymiseIp } from "@/lib/require-admin";
 
 function detectDevice(ua: string): string {
   if (/mobile|android|iphone|ipod|blackberry|windows phone/i.test(ua)) return "mobile";
@@ -48,10 +49,12 @@ export async function POST(req: NextRequest) {
     if (!page || !sessionId) return NextResponse.json({ ok: true });
 
     const ua = req.headers.get("user-agent") ?? "";
-    const ip =
+    const rawIp =
       req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
       req.headers.get("x-real-ip") ??
       "unknown";
+    // Anonymise to /24 block for GDPR compliance (no raw IPs stored)
+    const ip = anonymiseIp(rawIp);
 
     const device = detectDevice(ua);
     const browser = detectBrowser(ua);

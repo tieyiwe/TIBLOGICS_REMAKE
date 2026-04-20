@@ -12,10 +12,26 @@ const CATEGORY_MAP: Record<string, { emoji: string; gradient: string }> = {
   "industry":    { emoji: "🌐", gradient: "from-slate-600 to-gray-500" },
 };
 
+const VALID_CATEGORIES = new Set(Object.keys(CATEGORY_MAP));
+
 export async function POST(req: NextRequest) {
   try {
-    const { title, sourceUrl, source } = await req.json();
-    if (!title) return NextResponse.json({ error: "title required" }, { status: 400 });
+    const body = await req.json();
+    const { title, sourceUrl, source } = body;
+
+    // Input validation with strict length limits
+    if (!title || typeof title !== "string") {
+      return NextResponse.json({ error: "title required" }, { status: 400 });
+    }
+    if (title.length > 300) {
+      return NextResponse.json({ error: "title too long (max 300 chars)" }, { status: 400 });
+    }
+    if (sourceUrl !== undefined && (typeof sourceUrl !== "string" || sourceUrl.length > 500)) {
+      return NextResponse.json({ error: "sourceUrl too long" }, { status: 400 });
+    }
+    if (source !== undefined && (typeof source !== "string" || source.length > 200)) {
+      return NextResponse.json({ error: "source too long" }, { status: 400 });
+    }
 
     const prompt = `Write an informative, engaging blog post for TIBLOGICS (an AI consultancy blog) based on this topic:
 
@@ -50,16 +66,16 @@ category must be one of: breaking, ai-business, tips, tools, case-studies, indus
         "You are a professional AI technology journalist. Return only valid JSON — no markdown, no extra commentary.",
         1200
       );
-      // Strip markdown code fences if present
       const clean = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
       const jsonMatch = clean.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error("No JSON found");
       generated = JSON.parse(jsonMatch[0]);
-      // Validate
       if (!generated.content || generated.content.length < 100) throw new Error("Content too short");
+      // Enforce category whitelist
+      if (!VALID_CATEGORIES.has(generated.category)) generated.category = "industry";
     } catch {
       generated = {
-        excerpt: `${title} — a key development in AI worth knowing about.`,
+        excerpt: `${title.slice(0, 155)} — a key development in AI worth knowing about.`,
         content: `<p>${title}</p><h2>Overview</h2><p>This topic is rapidly evolving. Stay tuned for our full coverage.</p>`,
         category: "industry",
         tags: ["ai", "technology"],
@@ -86,11 +102,11 @@ category must be one of: breaking, ai-business, tips, tools, case-studies, indus
     const post = await prisma.blogPost.create({
       data: {
         slug,
-        title,
-        excerpt: generated.excerpt,
+        title: title.slice(0, 300),
+        excerpt: (generated.excerpt ?? "").slice(0, 300),
         content: generated.content,
         category: generated.category,
-        tags: generated.tags ?? [],
+        tags: (Array.isArray(generated.tags) ? generated.tags : []).slice(0, 10),
         coverEmoji: meta.emoji,
         coverGradient: meta.gradient,
         author: "Echelon AI",
@@ -98,8 +114,8 @@ category must be one of: breaking, ai-business, tips, tools, case-studies, indus
         featured: false,
         published: true,
         aiGenerated: true,
-        sourceUrl: sourceUrl ?? null,
-        sourceTitle: source ?? null,
+        sourceUrl: sourceUrl ? sourceUrl.slice(0, 500) : null,
+        sourceTitle: source ? source.slice(0, 200) : null,
       },
     });
 

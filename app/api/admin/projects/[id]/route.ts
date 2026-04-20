@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAdmin } from "@/lib/require-admin";
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   const project = await prisma.project.findUnique({
     where: { id: params.id },
     include: { tasks: { orderBy: { order: "asc" } } },
@@ -11,6 +15,9 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   try {
     const body = await req.json();
     const project = await prisma.project.update({
@@ -19,12 +26,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       include: { tasks: { orderBy: { order: "asc" } } },
     });
     return NextResponse.json(project);
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Update failed" }, { status: 500 });
   }
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   await prisma.project.update({ where: { id: params.id }, data: { archived: true } });
   return NextResponse.json({ success: true });
 }
