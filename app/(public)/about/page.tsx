@@ -1,14 +1,5 @@
 import Link from "next/link";
-import { MapPin, Mail, Globe, Zap, Users, BookOpen, Shield, Target, Lightbulb, TrendingUp } from "lucide-react";
-
-const milestones = [
-  { year: "2022", event: "Founded TIBLOGICS in Wheaton, Maryland" },
-  { year: "2023", event: "Launched AI Academy — 90+ lessons across 3 courses" },
-  { year: "2024", event: "InStory Method Platform — K-8 AI personalized learning" },
-  { year: "2024", event: "Caribbean Flavor Restaurant full digital transformation" },
-  { year: "2025", event: "SSR International Airport — Mauritius AI operations contract" },
-  { year: "2026", event: "CareFlow AI + ShipFrica in beta — global expansion" },
-];
+import { MapPin, Mail, Globe, Zap, Users, Shield, Target, Lightbulb, TrendingUp } from "lucide-react";
 
 const principles = [
   { icon: Shield, title: "Integrity, Always", desc: "We tell the truth about what AI can and cannot do. Our clients make better decisions because we give them honest advice, not what sounds impressive." },
@@ -109,15 +100,15 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* Founder + Timeline */}
+      {/* Founder */}
       <div className="bg-[#F4F7FB] border-y border-[#E8EFF8]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          <span className="section-tag">Founder</span>
+          <div className="mt-6 flex flex-col sm:flex-row gap-8 items-start">
+            <div className="w-20 h-20 bg-gradient-to-br from-[#1B3A6B] to-[#2251A3] rounded-2xl flex items-center justify-center shrink-0">
+              <span className="font-syne font-extrabold text-3xl text-white">T</span>
+            </div>
             <div>
-              <span className="section-tag">Founder</span>
-              <div className="w-20 h-20 bg-gradient-to-br from-[#1B3A6B] to-[#2251A3] rounded-2xl flex items-center justify-center mt-4 mb-5">
-                <span className="font-syne font-extrabold text-3xl text-white">T</span>
-              </div>
               <h2 className="font-syne font-extrabold text-2xl text-[#0D1B2A]">Tieyiwe Bassole</h2>
               <p className="font-dm text-[#3A4A5C] text-sm font-medium mt-1">Founder & CEO, TIBLOGICS</p>
               <div className="flex items-center gap-2 text-[#7A8FA6] text-sm font-dm mt-1 mb-4">
@@ -134,22 +125,6 @@ export default function AboutPage() {
                   <Mail size={14} /> ai@tiblogics.com
                 </a>
                 <Link href="/book" className="btn-secondary text-sm py-2">Book a Meeting</Link>
-              </div>
-            </div>
-
-            <div>
-              <span className="section-tag">Timeline</span>
-              <div className="mt-4 space-y-3">
-                {milestones.map((m) => (
-                  <div key={m.year + m.event} className="flex gap-4">
-                    <div className="w-12 shrink-0 pt-0.5">
-                      <span className="font-syne font-bold text-sm text-[#F47C20]">{m.year}</span>
-                    </div>
-                    <div className="flex-1 pb-3 border-b border-[#E8EFF8]">
-                      <p className="font-dm text-sm text-[#3A4A5C]">{m.event}</p>
-                    </div>
-                  </div>
-                ))}
               </div>
             </div>
           </div>
