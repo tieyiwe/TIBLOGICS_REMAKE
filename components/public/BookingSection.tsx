@@ -26,7 +26,7 @@ const sessions: Session[] = [
   },
   {
     name: "AI Readiness Audit",
-    duration: "90 min + PDF",
+    duration: "90 min + Deliverable",
     badge: null,
     color: "#1B3A6B",
     description: "Full assessment of your tech stack and AI readiness with a written report. $897",

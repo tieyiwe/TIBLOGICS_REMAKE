@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight, Check, Clock, DollarSign } from "lucide-reac
 const SERVICES = [
   { id: "discovery", name: "Project Discovery Meeting", duration: "20 min", price: 0, badge: "Free", description: "Intro call to explore your project — zero commitment, zero cost.", color: "#F47C20" },
   { id: "strategy", name: "AI Strategy Session", duration: "60 min", price: 49700, badge: "Popular", description: "Deep-dive into your AI opportunities and build a custom action plan.", color: "#2251A3" },
-  { id: "audit", name: "AI Readiness Audit", duration: "90 min + PDF", price: 89700, badge: null, description: "Full assessment of your tech stack and AI readiness with a written report.", color: "#1B3A6B" },
+  { id: "audit", name: "AI Readiness Audit", duration: "90 min + Deliverable", price: 89700, badge: null, description: "Full assessment of your tech stack and AI readiness with a written deliverable.", color: "#1B3A6B" },
   { id: "website", name: "Website AI Transformation", duration: "45 min", price: 39700, badge: "New", description: "Review your current website and design an AI-powered upgrade plan.", color: "#0F6E56" },
   { id: "cost", name: "AI Cost & Price Strategy for AI Product Builders", duration: "60 min", price: 29700, badge: null, description: "Calculate your AI costs and design a profitable pricing model.", color: "#7c3aed" },
   { id: "tech", name: "General Tech Consulting", duration: "45 min", price: 29700, badge: null, description: "Get expert guidance on any technical challenge — architecture, tools, or strategy.", color: "#3A4A5C" },

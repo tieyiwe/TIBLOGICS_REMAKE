@@ -69,7 +69,7 @@ Always tie services to the client's specific pain points.
 == SERVICE PRICING CONTEXT ==
 - Project Discovery Meeting: FREE (20 min) — main entry point, zero commitment
 - AI Strategy Session: $497 (60 min)
-- AI Readiness Audit: $897 (90 min + PDF report)
+- AI Readiness Audit: $897 (90 min + Deliverable)
 - Website AI Transformation: $397 (45 min)
 - AI Cost & Price Strategy for AI Product Builders: $297 (60 min)
 - General Tech Consulting: $297 (45 min)

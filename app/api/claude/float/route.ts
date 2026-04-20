@@ -72,7 +72,7 @@ Architecture for complex, multi-service systems. We design distributed backends,
 == CONSULTING SESSIONS ==
 - Project Discovery Meeting — 20 min, FREE — best entry point for new clients
 - AI Strategy Session — 60 min, $497
-- AI Readiness Audit — 90 min + PDF report, $897
+- AI Readiness Audit — 90 min + Deliverable, $897
 - Website AI Transformation — 45 min, $397
 - AI Cost & Price Strategy for AI Product Builders — 60 min, $297
 - General Tech Consulting — 45 min, $297
