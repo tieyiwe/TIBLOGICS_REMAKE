@@ -49,7 +49,7 @@ export default function Footer() {
             </div>
             <p className="text-[#7A9BBF] text-sm font-dm leading-relaxed mb-4">
               We create the right logics to fulfill your technical needs. AI-first.
-              Tech-complete. North America & Francophone Africa.
+              Tech-complete. North America, Africa & beyond.
             </p>
             <a
               href="mailto:info@tiblogics.com"

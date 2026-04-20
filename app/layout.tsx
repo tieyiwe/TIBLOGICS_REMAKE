@@ -31,7 +31,7 @@ const SITE_URL = "https://tiblogics.com";
 const SITE_NAME = "TIBLOGICS";
 const DEFAULT_TITLE = "TIBLOGICS — AI Implementation & Digital Solutions | Washington D.C.";
 const DEFAULT_DESC =
-  "TIBLOGICS builds AI agents, workflow automation, and full-stack digital products for businesses in North America and Francophone Africa. AI-first. Tech-complete.";
+  "TIBLOGICS builds AI agents, workflow automation, and full-stack digital products for businesses in North America, Africa, and beyond. AI-first. Tech-complete.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

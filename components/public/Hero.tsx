@@ -58,8 +58,8 @@ export default function Hero() {
               style={{ animationDelay: "0.2s" }}
             >
               TIBLOGICS is an AI implementation and digital solutions agency
-              serving North America and Francophone Africa. We don&apos;t just
-              add AI — we architect it from the ground up.
+              rooted in North America and Africa — and open to partnering with
+              businesses anywhere in the world.
             </p>
 
             <div
