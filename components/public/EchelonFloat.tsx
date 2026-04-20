@@ -181,7 +181,7 @@ export default function EchelonFloat() {
       const raw: string =
         res.ok && data.text
           ? data.text
-          : "Sorry, I'm having trouble connecting right now. Please email ai@tiblogics.com for help.";
+          : "Sorry, I'm having trouble connecting right now. Please email info@tiblogics.com for help.";
 
       const hasBooking = raw.includes(BOOKING_MARKER);
       const clean = raw.replace(BOOKING_MARKER, "").trim();
@@ -191,7 +191,7 @@ export default function EchelonFloat() {
     } catch {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "Sorry, I'm having trouble connecting right now. Please email ai@tiblogics.com for help." },
+        { role: "assistant", content: "Sorry, I'm having trouble connecting right now. Please email info@tiblogics.com for help." },
       ]);
       if (!isOpen) setHasUnread(true);
     } finally {
@@ -240,7 +240,7 @@ export default function EchelonFloat() {
         ...prev,
         {
           role: "assistant",
-          content: `Your meeting is confirmed! 🎉\n\n**${bookingData.dateLabel}** at **${bookingData.timeSlot} EST** — 30 min Project Discovery Meeting.\n\nWe'll send a confirmation to **${form.email}**. Looking forward to speaking with you, ${form.firstName}!`,
+          content: `You're all set, ${form.firstName}! 🎉\n\nYour **30-min Discovery Meeting** is confirmed for **${bookingData.dateLabel}** at **${bookingData.timeSlot} EST**. A confirmation is on its way to **${form.email}**.\n\nA member of our team will reach out beforehand to make sure we're fully prepared for your call. We're looking forward to it!`,
         },
       ]);
     } catch {
