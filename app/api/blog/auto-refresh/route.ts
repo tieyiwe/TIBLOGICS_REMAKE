@@ -59,8 +59,9 @@ async function fetchHackerNews(): Promise<HNStory[]> {
       )
     );
 
+    const thirtyDaysAgo = Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60;
     return stories
-      .filter((s): s is HNStory => s && s.title && isAIRelated(s.title))
+      .filter((s): s is HNStory => s && s.title && isAIRelated(s.title) && s.time > thirtyDaysAgo)
       .slice(0, 8);
   } catch {
     return [];
@@ -73,7 +74,10 @@ async function fetchDevTo(): Promise<DevArticle[]> {
       "https://dev.to/api/articles?tag=ai&per_page=10&top=2",
       { signal: AbortSignal.timeout(8000) }
     ).then((r) => r.json());
-    return articles.filter((a) => isAIRelated(a.title)).slice(0, 5);
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    return articles
+      .filter((a) => isAIRelated(a.title) && a.published_at > thirtyDaysAgo)
+      .slice(0, 5);
   } catch {
     return [];
   }
