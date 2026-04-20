@@ -13,5 +13,8 @@ npm install
 echo "🗄️  Generating Prisma client..."
 npx prisma generate
 
-echo "✅ Done! Preview should now load correctly."
-echo "   If this is a fresh setup, also run: npx prisma db push"
+echo "✅ Done!"
+echo ""
+echo "Next steps:"
+echo "  Development : npm run dev"
+echo "  Production  : npm run build && npm run start"
