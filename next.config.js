@@ -6,10 +6,13 @@ const nextConfig = {
     formats: ["image/avif", "image/webp"],
     domains: ["fonts.gstatic.com", "image.thum.io"],
     minimumCacheTTL: 86400,
+    remotePatterns: [
+      { protocol: "https", hostname: "images.unsplash.com" },
+    ],
   },
   experimental: {
     serverComponentsExternalPackages: ["@prisma/client", "prisma"],
-    optimizePackageImports: ["lucide-react", "framer-motion"],
+    optimizePackageImports: ["lucide-react", "framer-motion", "@radix-ui/react-icons"],
   },
   async headers() {
     return [
