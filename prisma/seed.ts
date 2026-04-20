@@ -433,7 +433,7 @@ async function main() {
   const deleted = await prisma.blogPost.deleteMany({ where: { aiGenerated: true } });
   console.log(`🗑️  Removed ${deleted.count} stale AI-generated posts`);
 
-  // Seed blog posts
+  // Seed blog posts (upsert by slug first)
   for (let idx = 0; idx < BLOG_POSTS.length; idx++) {
     const bp = BLOG_POSTS[idx];
     await prisma.blogPost.upsert({
@@ -462,6 +462,41 @@ async function main() {
       },
     });
     console.log(`✅ Blog post: ${bp.title}`);
+  }
+
+  // Patch any posts still missing coverImage with a category-based Unsplash image
+  const CATEGORY_COVER: Record<string, string> = {
+    "breaking":     "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=800&q=80",
+    "ai-business":  "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=800&q=80",
+    "tips":         "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=800&q=80",
+    "tools":        "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80",
+    "case-studies": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80",
+    "industry":     "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80",
+  };
+  const noCover = await prisma.blogPost.findMany({ where: { coverImage: null }, select: { id: true, category: true } });
+  for (const p of noCover) {
+    await prisma.blogPost.update({
+      where: { id: p.id },
+      data: { coverImage: CATEGORY_COVER[p.category] ?? CATEGORY_COVER["industry"] },
+    });
+  }
+  if (noCover.length) console.log(`🖼️  Patched cover images on ${noCover.length} posts`);
+
+  // Deduplicate: keep the curated post when titles collide, remove extras
+  const allPosts = await prisma.blogPost.findMany({
+    orderBy: [{ aiGenerated: "asc" }, { createdAt: "desc" }],
+    select: { id: true, title: true, aiGenerated: true },
+  });
+  const seen = new Set<string>();
+  const dupes: string[] = [];
+  for (const p of allPosts) {
+    const key = p.title.toLowerCase().replace(/\s+/g, " ").slice(0, 60);
+    if (seen.has(key)) dupes.push(p.id);
+    else seen.add(key);
+  }
+  if (dupes.length) {
+    await prisma.blogPost.deleteMany({ where: { id: { in: dupes } } });
+    console.log(`🗑️  Removed ${dupes.length} duplicate posts`);
   }
 
   console.log("✅ Seeding complete!");

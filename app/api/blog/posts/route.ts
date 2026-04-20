@@ -10,6 +10,15 @@ function slugify(title: string): string {
     .slice(0, 80);
 }
 
+const CATEGORY_COVER: Record<string, string> = {
+  "breaking":     "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=800&q=80",
+  "ai-business":  "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=800&q=80",
+  "tips":         "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=800&q=80",
+  "tools":        "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80",
+  "case-studies": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80",
+  "industry":     "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80",
+};
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const category = searchParams.get("category");
@@ -56,16 +65,18 @@ export async function POST(req: NextRequest) {
       slug = `${baseSlug}-${i++}`;
     }
 
+    const category = body.category ?? "industry";
     const post = await prisma.blogPost.create({
       data: {
         slug,
         title: body.title,
         excerpt: body.excerpt,
         content: body.content,
-        category: body.category ?? "industry",
+        category,
         tags: body.tags ?? [],
         coverEmoji: body.coverEmoji ?? "🤖",
         coverGradient: body.coverGradient ?? "from-[#1B3A6B] to-[#2251A3]",
+        coverImage: body.coverImage ?? CATEGORY_COVER[category] ?? CATEGORY_COVER["industry"],
         author: body.author ?? "Echelon AI",
         readingTime: body.readingTime ?? Math.ceil(body.content.split(" ").length / 200),
         featured: body.featured ?? false,
