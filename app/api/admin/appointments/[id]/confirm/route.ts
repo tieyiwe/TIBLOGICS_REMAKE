@@ -27,7 +27,7 @@ export async function POST(
         date: appt.date,
         timeSlot: appt.timeSlot,
         timezone: appt.timezone,
-        serviceDuration: appt.serviceDuration,
+        serviceDuration: Number(appt.serviceDuration),
         firstName: appt.firstName,
         lastName: appt.lastName,
       });
