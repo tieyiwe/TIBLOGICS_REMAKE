@@ -93,7 +93,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-end justify-between mb-8">
             <div>
-              <span className="section-tag">Our Products</span>
+              <span className="section-tag">Our Startups &amp; Products</span>
               <h2 className="font-syne font-extrabold text-3xl text-[#0D1B2A] mt-2">
                 Built in-house. Deployed globally.
               </h2>

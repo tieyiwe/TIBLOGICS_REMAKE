@@ -72,6 +72,7 @@ Always tie services to the client's specific pain points.
 - AI Readiness Audit: $897 (90 min + PDF report)
 - Website AI Transformation: $397 (45 min)
 - AI Cost & Pricing Strategy: $297 (60 min)
+- General Tech Consulting: $297 (45 min)
 - Custom AI projects: $5,000–$50,000+ depending on scope
 
 == COMPANY CONTEXT ==

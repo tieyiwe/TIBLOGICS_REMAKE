@@ -45,6 +45,13 @@ const sessions: Session[] = [
     color: "#7c3aed",
     description: "Build a profitable AI pricing model for your business. $297",
   },
+  {
+    name: "General Tech Consulting",
+    duration: "45 min",
+    badge: null,
+    color: "#3A4A5C",
+    description: "Expert guidance on any technical challenge — architecture, tools, or strategy. $297",
+  },
 ];
 
 export default function BookingSection() {

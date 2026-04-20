@@ -13,12 +13,14 @@ const services = [
 ];
 
 const products = [
-  { label: "InStory Method", href: "#" },
+  { label: "InStory School", href: "#" },
   { label: "CareFlow AI", href: "#" },
   { label: "ShipFrica", href: "#" },
   { label: "AI Academy", href: "#" },
+  { label: "RoofGuard", href: "#" },
+  { label: "Tibintel", href: "https://tibintel.com" },
   { label: "Goal Tester", href: "#" },
-  { label: "AutoIQ", href: "#" },
+  { label: "AI Central", href: "#" },
 ];
 
 const company = [
@@ -79,10 +81,10 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Products */}
+          {/* Startups & Products */}
           <div>
             <h4 className="font-syne font-700 text-sm uppercase tracking-wider text-[#E8EFF8] mb-4">
-              Products
+              Startups &amp; Products
             </h4>
             <ul className="space-y-2">
               {products.map((p) => (

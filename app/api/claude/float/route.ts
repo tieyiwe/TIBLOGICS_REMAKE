@@ -75,6 +75,7 @@ Architecture for complex, multi-service systems. We design distributed backends,
 - AI Readiness Audit — 90 min + PDF report, $897
 - Website AI Transformation — 45 min, $397
 - AI Cost & Pricing Strategy — 60 min, $297
+- General Tech Consulting — 45 min, $297
 
 == PRODUCTS ==
 - InStory: AI-personalized learning for K-8 schools
