@@ -145,12 +145,6 @@ export default function EchelonFloat() {
       .catch(() => {});
   }, []);
 
-  // Lock body scroll when open (prevents page scroll behind modal on mobile)
-  useEffect(() => {
-    document.body.style.overflow = isOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [isOpen]);
-
   // Listen for tibo:open event (dispatched by "Talk to Tibo" nav button)
   useEffect(() => {
     const handler = () => setIsOpen(true);
