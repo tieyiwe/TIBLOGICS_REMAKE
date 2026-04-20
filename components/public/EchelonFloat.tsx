@@ -521,7 +521,7 @@ export default function EchelonFloat() {
 
       {/* Greeting bubble */}
       {showGreeting && !isOpen && (
-        <div className="hidden sm:block fixed bottom-24 right-6 z-50 animate-fade-in">
+        <div className="fixed bottom-[140px] sm:bottom-24 right-4 sm:right-6 z-50 animate-fade-in">
           <div className="relative bg-white border border-[#D2DCE8] rounded-2xl shadow-xl px-4 py-3 max-w-[220px]">
             <button
               onClick={() => setShowGreeting(false)}
@@ -540,8 +540,8 @@ export default function EchelonFloat() {
         </div>
       )}
 
-      {/* Floating trigger button — desktop only; mobile uses MobileBottomNav */}
-      <div className="hidden sm:block fixed bottom-6 right-6 z-50">
+      {/* Floating trigger button */}
+      <div className="fixed bottom-[72px] sm:bottom-6 right-4 sm:right-6 z-50">
         {!isOpen && (
           <span
             className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-30 pointer-events-none"
