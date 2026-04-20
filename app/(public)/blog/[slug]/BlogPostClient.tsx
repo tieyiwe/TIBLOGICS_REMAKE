@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Clock, ArrowLeft, Share2, BookOpen, ExternalLink } from "lucide-react";
+import { Clock, ArrowLeft, Share2, BookOpen, ExternalLink, Calendar, MessageCircle, X } from "lucide-react";
 
 interface BlogPost {
   id: string;
@@ -64,6 +64,16 @@ export default function BlogPostPage() {
   const [related, setRelated] = useState<RelatedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [widgetVisible, setWidgetVisible] = useState(false);
+  const [widgetDismissed, setWidgetDismissed] = useState(false);
+
+  useEffect(() => {
+    function onScroll() {
+      if (!widgetDismissed && window.scrollY > 400) setWidgetVisible(true);
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [widgetDismissed]);
 
   useEffect(() => {
     if (!slug) return;
@@ -299,6 +309,43 @@ export default function BlogPostPage() {
           </div>
         )}
       </div>
+
+      {/* Floating CTA widget */}
+      {widgetVisible && !widgetDismissed && (
+        <div className="fixed bottom-6 right-6 z-40 max-w-xs w-full animate-fade-in">
+          <div className="bg-[#1B3A6B] text-white rounded-2xl shadow-2xl overflow-hidden">
+            <div className="flex items-start justify-between p-4 pb-2">
+              <p className="font-syne font-bold text-sm leading-snug pr-2">
+                Interested in AI for your business?
+              </p>
+              <button
+                onClick={() => { setWidgetDismissed(true); setWidgetVisible(false); }}
+                className="text-white/50 hover:text-white flex-shrink-0 transition-colors"
+                aria-label="Dismiss"
+              >
+                <X size={15} />
+              </button>
+            </div>
+            <p className="font-dm text-white/70 text-xs px-4 pb-3 leading-relaxed">
+              We build the AI systems you just read about. Let's talk about yours.
+            </p>
+            <div className="flex gap-2 px-4 pb-4">
+              <Link
+                href="/book"
+                className="flex items-center gap-1.5 bg-[#F47C20] hover:bg-[#d96b18] text-white font-dm font-semibold text-xs px-3 py-2 rounded-lg transition-colors flex-1 justify-center"
+              >
+                <Calendar size={12} /> Book Meeting
+              </Link>
+              <Link
+                href="/contact"
+                className="flex items-center gap-1.5 border border-white/25 hover:bg-white/10 text-white font-dm font-medium text-xs px-3 py-2 rounded-lg transition-colors flex-1 justify-center"
+              >
+                <MessageCircle size={12} /> Contact Us
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Prose styles */}
       <style>{`

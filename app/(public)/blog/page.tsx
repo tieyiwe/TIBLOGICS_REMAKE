@@ -128,8 +128,9 @@ export default function BlogPage() {
     checkAndRefresh();
   }, [fetchPosts]);
 
-  const featured = posts.find((p) => p.featured) ?? posts[0];
-  const grid = posts.filter((p) => p.id !== featured?.id);
+  const showFeatured = category === "all" && !search;
+  const featured = showFeatured ? (posts.find((p) => p.featured) ?? posts[0]) : null;
+  const grid = featured ? posts.filter((p) => p.id !== featured.id) : posts;
 
   return (
     <div className="pt-20 pb-20 min-h-screen bg-[#F4F7FB]">
@@ -222,7 +223,7 @@ export default function BlogPage() {
         ) : (
           <>
             {/* Featured post */}
-            {featured && category === "all" && !search && (
+            {featured && showFeatured && (
               <Link href={`/blog/${featured.slug}`} className="group block mb-10">
                 <div className="bg-white border border-[#D2DCE8] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 lg:flex">
                   <div className="lg:w-96 h-64 lg:h-auto flex-shrink-0 overflow-hidden relative">
@@ -266,7 +267,7 @@ export default function BlogPage() {
             )}
 
             {/* Tips spotlight */}
-            {category === "all" && !search && (
+            {showFeatured && (
               <TipsSpotlight posts={posts.filter((p) => p.category === "tips").slice(0, 3)} />
             )}
 
