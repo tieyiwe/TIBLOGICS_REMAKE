@@ -39,7 +39,7 @@ const sessions: Session[] = [
     description: "Review your site and design an AI-powered upgrade roadmap. $397",
   },
   {
-    name: "AI Cost & Pricing Strategy",
+    name: "AI Cost & Price Strategy for AI Product Builders",
     duration: "60 min",
     badge: null,
     color: "#7c3aed",

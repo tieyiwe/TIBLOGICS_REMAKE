@@ -24,7 +24,7 @@ Consulting sessions (pricing on request):
 - AI Strategy Session (60 min)
 - AI Readiness Audit (90 min + PDF report)
 - Website AI Transformation (45 min)
-- AI Cost & Pricing Strategy (60 min)
+- AI Cost & Price Strategy for AI Product Builders (60 min)
 - Project Discovery Meeting (30 min, free)
 
 Based on the user context provided, return a JSON object with exactly this structure (no extra text, just valid JSON):
