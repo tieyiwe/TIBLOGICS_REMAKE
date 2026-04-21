@@ -262,7 +262,7 @@ const BLOG_POSTS = [
     tags: ["ai", "small business", "automation", "cost savings"],
     coverEmoji: "💼",
     coverGradient: "from-[#1B3A6B] to-[#2251A3]",
-    coverImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=800&q=80",
+    coverImage: "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=800&q=80",
     featured: true,
     content: `<p>For years, AI was something you read about in tech news and assumed was built for companies with massive budgets. That story is changing fast — and the businesses winning right now are the ones that moved early.</p>
 
@@ -294,7 +294,7 @@ const BLOG_POSTS = [
     tags: ["rag", "ai", "knowledge base", "llm"],
     coverEmoji: "💡",
     coverGradient: "from-purple-600 to-violet-500",
-    coverImage: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=800&q=80",
+    coverImage: "https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?auto=format&fit=crop&w=800&q=80",
     featured: false,
     content: `<p>You've probably heard people talk about AI hallucinating — making up facts with complete confidence. RAG (Retrieval-Augmented Generation) is the architecture that fixes this, and it's become the backbone of every serious business AI deployment.</p>
 
@@ -326,7 +326,7 @@ const BLOG_POSTS = [
     tags: ["ai readiness", "checklist", "strategy", "small business"],
     coverEmoji: "📋",
     coverGradient: "from-teal-600 to-emerald-500",
-    coverImage: "https://images.unsplash.com/photo-1484557052118-f32bd25b45b5?auto=format&fit=crop&w=800&q=80",
+    coverImage: "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?auto=format&fit=crop&w=800&q=80",
     featured: false,
     content: `<p>Before spending a dollar on AI implementation, there's a more important question to answer: is your business actually ready for it? Not in a technical sense — in a process sense. AI amplifies what's already there. If your operations are chaotic, AI makes them chaotically faster.</p>
 
@@ -603,7 +603,7 @@ const BLOG_POSTS = [
     tags: ["ai implementation", "mistakes", "strategy", "lessons learned"],
     coverEmoji: "📊",
     coverGradient: "from-[#F47C20] to-yellow-500",
-    coverImage: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80",
+    coverImage: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=800&q=80",
     featured: false,
     content: `<p>After working on AI implementations across industries — healthcare, logistics, education, retail — patterns emerge. The technology almost never causes failure. What causes failure is more predictable, and more preventable, than most people expect.</p>
 
@@ -637,7 +637,7 @@ const BLOG_POSTS = [
     tags: ["claude", "gpt-4", "gemini", "llm comparison", "ai tools"],
     coverEmoji: "🔧",
     coverGradient: "from-purple-700 to-violet-500",
-    coverImage: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=800&q=80",
+    coverImage: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80",
     featured: false,
     content: `<p>The three dominant large language models for business use are Anthropic's Claude, OpenAI's GPT-4 (and GPT-4o), and Google's Gemini. All three can write, summarize, analyze, and code. But the differences that matter for real business deployments aren't in the marketing copy — they're in the specifics.</p>
 
@@ -668,7 +668,7 @@ const BLOG_POSTS = [
     tags: ["n8n", "zapier", "make", "automation", "no-code"],
     coverEmoji: "⚙️",
     coverGradient: "from-teal-600 to-emerald-500",
-    coverImage: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80",
+    coverImage: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80",
     featured: false,
     content: `<p>If you're building automated workflows for your business, three platforms dominate the market: Zapier (the most recognized), Make (formerly Integromat), and n8n (the open-source challenger). All three can connect your tools and automate repetitive tasks. The right choice depends on your volume, technical comfort, and how much control you need.</p>
 
@@ -700,7 +700,7 @@ const BLOG_POSTS = [
     tags: ["productivity", "ai stack", "small business tools", "automation"],
     coverEmoji: "🔧",
     coverGradient: "from-[#1B3A6B] to-[#2251A3]",
-    coverImage: "https://images.unsplash.com/photo-1484557052118-f32bd25b45b5?auto=format&fit=crop&w=800&q=80",
+    coverImage: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80",
     featured: false,
     content: `<p>Small businesses lose more time than they realize to tasks that AI tools can handle. Not the complex, judgment-heavy tasks — the repetitive ones. Building a systematic AI productivity stack doesn't require a technical team. It requires deliberate prioritization.</p>
 
@@ -733,7 +733,7 @@ const BLOG_POSTS = [
     tags: ["ai tools", "productivity", "business software", "automation"],
     coverEmoji: "🔧",
     coverGradient: "from-teal-600 to-emerald-500",
-    coverImage: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80",
+    coverImage: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=800&q=80",
     featured: false,
     content: `<p>The AI tools market has matured rapidly. Two years ago, most businesses were experimenting with basic chatbots. Today, the tools available to even small businesses would have seemed like enterprise-only capabilities just 18 months ago.</p>
 
@@ -764,7 +764,7 @@ const BLOG_POSTS = [
     tags: ["ai chips", "nvidia", "amd", "hardware", "semiconductor"],
     coverEmoji: "⚡",
     coverGradient: "from-red-600 to-orange-500",
-    coverImage: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80",
+    coverImage: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=800&q=80",
     featured: false,
     content: `<p>In the early days of the oil economy, whoever controlled the refineries controlled the world. Today, the same dynamic is playing out in AI — and the refineries are semiconductor fabs. AI chips are no longer a niche tech topic. They are geopolitical leverage, economic infrastructure, and competitive moat all at once.</p>
 
@@ -857,7 +857,7 @@ const BLOG_POSTS = [
     tags: ["ai regulation", "compliance", "policy", "business"],
     coverEmoji: "⚡",
     coverGradient: "from-red-600 to-orange-500",
-    coverImage: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=800&q=80",
+    coverImage: "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=800&q=80",
     featured: false,
     content: `<p>For the past two years, AI regulation has been a policy discussion. In 2025, it's becoming operational reality. Whether you're a small business using AI tools or building AI-powered products, the regulatory environment is shifting in ways that affect your decisions today.</p>
 
