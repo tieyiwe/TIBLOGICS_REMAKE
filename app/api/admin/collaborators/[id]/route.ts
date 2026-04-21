@@ -13,7 +13,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!session?.user.isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
-  const { name, role, permissions, active } = await req.json();
+  const body = await req.json();
+  const { name, role, permissions, active, isAdmin } = body;
   const data: Record<string, unknown> = {};
 
   if (name !== undefined) {
@@ -37,6 +38,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (active !== undefined) {
     data.active = Boolean(active);
   }
+  // Only the Owner can grant or revoke admin access
+  if (isAdmin !== undefined) {
+    if (!session.user.isOwner) {
+      return NextResponse.json({ error: "Only the Owner can grant or revoke admin access" }, { status: 403 });
+    }
+    data.isAdmin = Boolean(isAdmin);
+  }
 
   try {
     const updated = await prisma.collaborator.update({
@@ -44,7 +52,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       data,
       select: {
         id: true, name: true, email: true, role: true,
-        permissions: true, active: true, lastLoginAt: true,
+        permissions: true, isAdmin: true, active: true, lastLoginAt: true,
       },
     });
     return NextResponse.json(updated);

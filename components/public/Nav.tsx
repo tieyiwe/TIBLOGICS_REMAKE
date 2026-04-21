@@ -50,10 +50,10 @@ export default function Nav() {
         )}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-10">
-          <div className="flex items-center justify-between h-[68px]">
+          <div className="flex items-center justify-between h-[84px]">
             {/* Logo */}
             <Link href="/" className="flex items-center flex-shrink-0">
-              <img src="/logo-full.svg" alt="TIBLOGICS" className="h-10 w-auto max-w-[200px]" />
+              <img src="/logo-full.svg" alt="TIBLOGICS" className="h-14 w-auto max-w-[280px]" />
             </Link>
 
             {/* Desktop Nav */}

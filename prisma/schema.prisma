@@ -344,6 +344,7 @@ model Collaborator {
   passwordHash  String?
   role          String    @default("CUSTOM")
   permissions   String[]
+  isAdmin       Boolean   @default(false)
   active        Boolean   @default(true)
   inviteToken   String?   @unique
   inviteExpires DateTime?

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Plus, X, Eye, EyeOff, RefreshCw, Save, CheckCircle, AlertCircle, Video, Calendar, Trash2, Users, Mail, Shield, Activity, ChevronDown, ChevronUp, UserX, UserCheck } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { Plus, X, Eye, EyeOff, RefreshCw, Save, CheckCircle, AlertCircle, Video, Calendar, Trash2, Users, Mail, Shield, Activity, ChevronDown, ChevronUp, UserX, UserCheck, Crown, KeyRound } from "lucide-react";
 
 const WORKING_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const BUFFER_OPTIONS = ["15 min", "30 min", "45 min", "60 min"];
@@ -12,6 +13,9 @@ const NOTIFICATION_TOGGLES = [
 ];
 
 export default function SettingsPage() {
+  const { data: session } = useSession();
+  const isOwner = session?.user?.isOwner ?? false;
+
   // Booking settings
   const [timeSlots, setTimeSlots] = useState(["9:00 AM", "10:00 AM", "11:00 AM", "1:00 PM", "2:00 PM", "3:00 PM"]);
   const [newSlot, setNewSlot] = useState("");
@@ -303,9 +307,14 @@ curl -X POST $TIBLOGICS_WEBHOOK_URL \\
           Admin Account
         </h2>
 
-        <div className="bg-[#F4F7FB] rounded-xl px-4 py-3 flex items-center gap-3">
+        <div className="bg-[#F4F7FB] rounded-xl px-4 py-3 flex items-center gap-3 flex-wrap">
           <span className="text-xs font-dm text-[#7A8FA6]">Admin email (locked)</span>
-          <span className="text-sm font-dm font-semibold text-[#1B3A6B]">Tieyiwebass@gmail.com</span>
+          <span className="text-sm font-dm font-semibold text-[#1B3A6B]">tieyiwebass@gmail.com</span>
+          {isOwner && (
+            <span className="flex items-center gap-1 text-xs font-dm font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 border border-amber-200 ml-auto">
+              <Crown size={11} /> Owner
+            </span>
+          )}
         </div>
 
         <div className="space-y-3">
@@ -659,7 +668,7 @@ const ROLE_COLORS: Record<string, string> = {
 
 type Collaborator = {
   id: string; name: string; email: string; role: string;
-  permissions: string[]; active: boolean; lastLoginAt: string | null;
+  permissions: string[]; isAdmin: boolean; active: boolean; lastLoginAt: string | null;
   inviteToken: string | null; createdAt: string;
 };
 
@@ -670,6 +679,9 @@ type ActivityLog = {
 };
 
 function TeamAccess() {
+  const { data: session } = useSession();
+  const isOwner = session?.user?.isOwner ?? false;
+
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [showLogs, setShowLogs] = useState(false);
@@ -681,6 +693,7 @@ function TeamAccess() {
   const [inviting, setInviting] = useState(false);
   const [inviteStatus, setInviteStatus] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [resetStatus, setResetStatus] = useState<{ id: string; msg: string; ok: boolean } | null>(null);
 
   useEffect(() => { load(); }, []);
 
@@ -742,6 +755,25 @@ function TeamAccess() {
       body: JSON.stringify({ active: !collab.active }),
     });
     load();
+  }
+
+  async function grantAdmin(id: string, grant: boolean) {
+    const res = await fetch(`/api/admin/collaborators/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isAdmin: grant }),
+    });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error ?? "Failed to update admin status"); return; }
+    load();
+  }
+
+  async function resetPassword(id: string, name: string) {
+    setResetStatus(null);
+    if (!confirm(`Send a password reset email to ${name}?`)) return;
+    const res = await fetch(`/api/admin/collaborators/${id}/reset-password`, { method: "POST" });
+    const data = await res.json();
+    setResetStatus({ id, msg: res.ok ? "Reset email sent." : (data.error ?? "Failed to send reset."), ok: res.ok });
   }
 
   async function deleteCollab(id: string) {
@@ -844,41 +876,71 @@ function TeamAccess() {
         ) : (
           <div className="space-y-2">
             {collaborators.map(c => (
-              <div key={c.id} className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl border ${
+              <div key={c.id} className={`rounded-xl border transition-colors ${
                 c.active ? "bg-white border-[#D2DCE8]" : "bg-[#F4F7FB] border-[#E8EFF8] opacity-60"
               }`}>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-dm text-sm font-semibold text-[#0D1B2A]">{c.name}</span>
-                    <span className={`text-xs font-dm font-bold px-2 py-0.5 rounded-full ${ROLE_COLORS[c.role] ?? ROLE_COLORS.CUSTOM}`}>
-                      {c.role}
-                    </span>
-                    {c.inviteToken && (
-                      <span className="text-xs font-dm bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Pending</span>
+                <div className="flex items-start justify-between gap-3 px-4 py-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-dm text-sm font-semibold text-[#0D1B2A]">{c.name}</span>
+                      <span className={`text-xs font-dm font-bold px-2 py-0.5 rounded-full ${ROLE_COLORS[c.role] ?? ROLE_COLORS.CUSTOM}`}>
+                        {c.role}
+                      </span>
+                      {c.isAdmin && (
+                        <span className="flex items-center gap-1 text-xs font-dm font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+                          <Crown size={10} /> Admin
+                        </span>
+                      )}
+                      {c.inviteToken && (
+                        <span className="text-xs font-dm bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Pending</span>
+                      )}
+                      {!c.active && (
+                        <span className="text-xs font-dm bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Suspended</span>
+                      )}
+                    </div>
+                    <p className="font-dm text-xs text-[#7A8FA6] mt-0.5">{c.email}</p>
+                    <p className="font-dm text-xs text-[#7A8FA6]">
+                      {c.isAdmin ? "Full admin access (all permissions)" : `Permissions: ${c.permissions.length === 0 ? "None" : c.permissions.join(", ")}`}
+                    </p>
+                    {c.lastLoginAt && (
+                      <p className="font-dm text-xs text-[#7A8FA6]">
+                        Last login: {new Date(c.lastLoginAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      </p>
                     )}
-                    {!c.active && (
-                      <span className="text-xs font-dm bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Suspended</span>
+                    {resetStatus?.id === c.id && (
+                      <p className={`text-xs font-dm mt-1 ${resetStatus.ok ? "text-green-600" : "text-red-500"}`}>{resetStatus.msg}</p>
                     )}
                   </div>
-                  <p className="font-dm text-xs text-[#7A8FA6] mt-0.5">{c.email}</p>
-                  <p className="font-dm text-xs text-[#7A8FA6]">
-                    Permissions: {c.permissions.length === 0 ? "None" : c.permissions.join(", ")}
-                  </p>
-                  {c.lastLoginAt && (
-                    <p className="font-dm text-xs text-[#7A8FA6]">
-                      Last login: {new Date(c.lastLoginAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                    </p>
-                  )}
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={() => toggleActive(c)} title={c.active ? "Suspend" : "Reactivate"}
-                    className="p-1.5 rounded-lg hover:bg-[#F4F7FB] text-[#7A8FA6] hover:text-[#0D1B2A] transition-colors">
-                    {c.active ? <UserX size={15} /> : <UserCheck size={15} />}
-                  </button>
-                  <button onClick={() => deleteCollab(c.id)} title="Remove permanently"
-                    className="p-1.5 rounded-lg hover:bg-red-50 text-[#7A8FA6] hover:text-red-600 transition-colors">
-                    <Trash2 size={15} />
-                  </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {isOwner && (
+                      <button
+                        onClick={() => grantAdmin(c.id, !c.isAdmin)}
+                        title={c.isAdmin ? "Revoke admin access" : "Grant admin access"}
+                        className={`p-1.5 rounded-lg transition-colors text-xs font-dm ${
+                          c.isAdmin
+                            ? "hover:bg-amber-50 text-amber-500 hover:text-amber-700"
+                            : "hover:bg-[#F4F7FB] text-[#7A8FA6] hover:text-amber-600"
+                        }`}
+                      >
+                        <Crown size={15} />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => resetPassword(c.id, c.name)}
+                      title="Send password reset email"
+                      className="p-1.5 rounded-lg hover:bg-[#F4F7FB] text-[#7A8FA6] hover:text-[#2251A3] transition-colors"
+                    >
+                      <KeyRound size={15} />
+                    </button>
+                    <button onClick={() => toggleActive(c)} title={c.active ? "Suspend" : "Reactivate"}
+                      className="p-1.5 rounded-lg hover:bg-[#F4F7FB] text-[#7A8FA6] hover:text-[#0D1B2A] transition-colors">
+                      {c.active ? <UserX size={15} /> : <UserCheck size={15} />}
+                    </button>
+                    <button onClick={() => deleteCollab(c.id)} title="Remove permanently"
+                      className="p-1.5 rounded-lg hover:bg-red-50 text-[#7A8FA6] hover:text-red-600 transition-colors">
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

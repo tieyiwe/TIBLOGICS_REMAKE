@@ -19,7 +19,7 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
     select: {
       id: true, name: true, email: true, role: true,
-      permissions: true, active: true, inviteToken: true,
+      permissions: true, isAdmin: true, active: true, inviteToken: true,
       inviteExpires: true, invitedBy: true, lastLoginAt: true, createdAt: true,
       passwordHash: false,
     },

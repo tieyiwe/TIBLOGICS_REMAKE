@@ -3,7 +3,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
-const ADMIN_EMAIL = "Tieyiwebass@gmail.com";
+// tieyiwebass@gmail.com is the Owner — the super account above all admins
+const OWNER_EMAIL = "tieyiwebass@gmail.com";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -16,8 +17,8 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        // ── Main admin login ──────────────────────────────────────────────
-        if (credentials.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+        // ── Owner login ───────────────────────────────────────────────────────
+        if (credentials.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) {
           const stored = await prisma.adminSettings.findUnique({
             where: { key: "admin_password_hash" },
           });
@@ -29,15 +30,16 @@ export const authOptions: NextAuthOptions = {
           }
           if (!valid) return null;
           return {
-            id: "admin",
-            email: ADMIN_EMAIL,
-            name: process.env.ADMIN_NAME ?? "Admin",
+            id: "owner",
+            email: OWNER_EMAIL,
+            name: process.env.ADMIN_NAME ?? "Tieyiwe",
             isAdmin: true,
+            isOwner: true,
             permissions: ["*"],
           };
         }
 
-        // ── Collaborator login ────────────────────────────────────────────
+        // ── Collaborator login ────────────────────────────────────────────────
         try {
           const collab = await prisma.collaborator.findUnique({
             where: { email: credentials.email.toLowerCase() },
@@ -56,12 +58,13 @@ export const authOptions: NextAuthOptions = {
             id: collab.id,
             email: collab.email,
             name: collab.name,
-            isAdmin: false,
+            isAdmin: collab.isAdmin,
+            isOwner: false,
             collaboratorId: collab.id,
-            permissions: collab.permissions,
+            // Admin collaborators get wildcard permissions
+            permissions: collab.isAdmin ? ["*"] : collab.permissions,
           };
         } catch {
-          // Table may not exist yet — fail silently
           return null;
         }
       },
@@ -74,6 +77,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.isAdmin = user.isAdmin;
+        token.isOwner = user.isOwner;
         token.collaboratorId = user.collaboratorId;
         token.permissions = user.permissions;
       }
@@ -83,6 +87,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id;
         session.user.isAdmin = token.isAdmin;
+        session.user.isOwner = token.isOwner;
         session.user.collaboratorId = token.collaboratorId;
         session.user.permissions = token.permissions ?? [];
       }

@@ -8,6 +8,7 @@ declare module "next-auth" {
       email: string;
       name: string;
       isAdmin: boolean;
+      isOwner: boolean;
       collaboratorId?: string;
       permissions: string[];
     };
@@ -17,6 +18,7 @@ declare module "next-auth" {
     email: string;
     name: string;
     isAdmin: boolean;
+    isOwner: boolean;
     collaboratorId?: string;
     permissions: string[];
   }
@@ -26,6 +28,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string;
     isAdmin: boolean;
+    isOwner: boolean;
     collaboratorId?: string;
     permissions: string[];
   }
