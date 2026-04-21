@@ -70,9 +70,11 @@ model Prospect {
   followUpDate       DateTime?
   convertedAt        DateTime?
   conversationLog    Json?
+  archived           Boolean        @default(false)
 
   @@index([status])
   @@index([createdAt])
+  @@index([archived])
 }
 
 enum ProspectSource {
