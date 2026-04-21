@@ -12,21 +12,21 @@ export async function generateMetadata(
       select: { title: true, excerpt: true, coverImage: true, coverEmoji: true, tags: true },
     });
 
-    if (!post) return { title: "Post Not Found | The Smart Room" };
+    if (!post) return { title: "Post Not Found | AI Times" };
 
     const images = post.coverImage
       ? [{ url: post.coverImage, width: 800, height: 450, alt: post.title }]
       : [];
 
     return {
-      title: `${post.title} | The Smart Room by TIBLOGICS`,
+      title: `${post.title} | AI Times by TIBLOGICS`,
       description: post.excerpt,
       keywords: post.tags,
       openGraph: {
         title: post.title,
         description: post.excerpt,
         type: "article",
-        siteName: "The Smart Room | TIBLOGICS",
+        siteName: "AI Times | TIBLOGICS",
         images,
       },
       twitter: {
@@ -37,7 +37,7 @@ export async function generateMetadata(
       },
     };
   } catch {
-    return { title: "The Smart Room | TIBLOGICS" };
+    return { title: "AI Times | TIBLOGICS" };
   }
 }
 

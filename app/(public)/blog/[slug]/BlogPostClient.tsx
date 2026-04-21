@@ -142,7 +142,7 @@ export default function BlogPostPage() {
             href="/blog"
             className="inline-flex items-center gap-2 text-sm font-dm font-semibold text-[#1B3A6B] hover:text-[#F47C20] transition-colors"
           >
-            <ArrowLeft size={15} /> Back to The Smart Room
+            <ArrowLeft size={15} /> Back to AI Times
           </Link>
           <button
             onClick={handleShare}

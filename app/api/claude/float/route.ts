@@ -34,7 +34,7 @@ Do NOT use [BOOK_APPOINTMENT] in the first or second reply. Never use it twice i
 Guide users to relevant pages naturally in conversation:
 - Services: /services
 - Free AI Tools: /tools (Website Scanner, AI Advisor, Cost Calculator — no signup needed)
-- Blog / The Smart Room: /blog
+- Blog / AI Times: /blog
 - Book a Meeting: /book (free 30-min discovery option available)
 - Products: /products
 - About: /about
