@@ -6,6 +6,9 @@ import stripe from "@/lib/stripe";
 const MAX_AMOUNT_CENTS = 500_000;
 
 export async function POST(req: Request) {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return NextResponse.json({ error: "Payment processing is not configured yet. Please contact info@tiblogics.com to complete your booking." }, { status: 503 });
+  }
   try {
     const body = await req.json();
     const { appointmentId, amount, serviceType, clientEmail } = body;

@@ -513,8 +513,8 @@ export default function EchelonFloat() {
         </div>
       )}
 
-      {/* Floating trigger button — always visible */}
-      <div className="fixed bottom-[72px] sm:bottom-6 right-4 sm:right-6 z-50">
+      {/* Floating trigger button — desktop only (mobile uses MobileBottomNav Tibo tab) */}
+      <div className="hidden sm:block fixed bottom-6 right-6 z-[55]">
         {!isOpen && (
           <span
             className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-30 pointer-events-none"
