@@ -1,6 +1,17 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Deferred so the module can be imported at build time without RESEND_API_KEY
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY ?? "no-key");
+}
+
+// Proxy preserves the Resend instance API for files that do:
+//   import resend from "@/lib/resend"; resend.emails.send(...)
+const resendProxy = new Proxy({} as Resend, {
+  get(_: Resend, prop: string | symbol) {
+    return (getResend() as unknown as Record<string | symbol, unknown>)[prop];
+  },
+});
 
 export async function sendConfirmationEmail(appointment: {
   firstName: string;
@@ -20,7 +31,7 @@ export async function sendConfirmationEmail(appointment: {
     day: "numeric",
   }).format(new Date(appointment.date));
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: process.env.FROM_EMAIL!,
     to: appointment.email,
     subject: `Your TIBLOGICS session is confirmed — ${appointment.serviceType} on ${dateStr}`,
@@ -77,7 +88,7 @@ export async function sendTiweNotification(appointment: {
       .filter(Boolean)
       .join(", ") || "None";
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: process.env.FROM_EMAIL!,
     to: process.env.TIWE_EMAIL!,
     subject: `🗓️ New ${appointment.serviceType} Booking — ${appointment.firstName} ${appointment.lastName} on ${dateStr}`,
@@ -106,7 +117,7 @@ export async function sendProspectEmail(prospect: {
   mainChallenge: string;
   suggestedSolutions: string[];
 }) {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: process.env.FROM_EMAIL!,
     to: process.env.TIWE_EMAIL!,
     subject: `🎯 New Prospect from TIBS — ${prospect.name} at ${prospect.business}`,
@@ -125,4 +136,4 @@ export async function sendProspectEmail(prospect: {
   });
 }
 
-export default resend;
+export default resendProxy;

@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import resend from "@/lib/resend";
-import Stripe from "stripe";
 import { createMeeting } from "@/lib/meeting-providers";
 import { isValidEmail, escapeHtml } from "@/lib/require-admin";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-02-24.acacia",
-});
+import stripe from "@/lib/stripe";
 
 export async function GET(req: Request) {
   try {
