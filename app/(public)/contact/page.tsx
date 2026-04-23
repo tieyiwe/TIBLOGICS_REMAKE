@@ -3,7 +3,7 @@ import { Mail, Clock, MessageSquare } from "lucide-react";
 
 export default function ContactPage() {
   return (
-    <div className="pt-40 pb-20 min-h-screen bg-[#F4F7FB]">
+    <div className="pt-44 pb-20 min-h-screen bg-[#F4F7FB]">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <span className="section-tag">Contact</span>
