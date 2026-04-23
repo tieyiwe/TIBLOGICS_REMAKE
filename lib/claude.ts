@@ -6,7 +6,7 @@ const anthropic = new Anthropic({
   timeout: 120_000, // 2 min — generous for blog generation
 });
 
-export const CLAUDE_MODEL = "claude-sonnet-4-20250514";
+export const CLAUDE_MODEL = "claude-sonnet-4-6";
 
 // Uses SSE streaming so the connection stays alive during generation.
 // messages.create() sits silent while tokens compute → hosting kills it.

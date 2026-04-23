@@ -419,31 +419,58 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: "Content is up to date", postsAdded: 0 });
     }
 
-    // Fetch from external sources in parallel
+    let postsAdded = 0;
+    const errors: string[] = [];
+
+    // Seed immediately if DB is empty — no external API needed
+    const existingCount = await prisma.blogPost.count();
+    if (existingCount === 0) {
+      for (let idx = 0; idx < SEED_POSTS.length; idx++) {
+        const sp = SEED_POSTS[idx];
+        try {
+          const dupCheck = await prisma.blogPost.findFirst({
+            where: { title: { contains: sp.title.slice(0, 50), mode: "insensitive" } },
+          });
+          if (dupCheck) continue;
+          const baseSlug = sp.title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-").slice(0, 70);
+          let slug = baseSlug; let si = 1;
+          while (await prisma.blogPost.findUnique({ where: { slug } })) slug = `${baseSlug}-${si++}`;
+          await prisma.blogPost.create({
+            data: {
+              slug,
+              title: sp.title,
+              excerpt: sp.excerpt,
+              content: sp.content,
+              category: sp.category,
+              tags: sp.tags,
+              coverEmoji: sp.coverEmoji,
+              coverGradient: sp.coverGradient,
+              coverImage: sp.coverImage,
+              author: "TIBLOGICS Editorial",
+              readingTime: Math.ceil(sp.content.replace(/<[^>]*>/g, "").split(" ").length / 200),
+              featured: idx === 0,
+              published: true,
+              aiGenerated: false,
+            },
+          });
+          postsAdded++;
+        } catch { /* skip */ }
+      }
+    }
+
+    // Then fetch from external sources to add fresh AI-generated posts on top
     const [hnStories, devArticles] = await Promise.all([
       fetchHackerNews(),
       fetchDevTo(),
     ]);
 
     const sources: Array<{ title: string; url?: string; source: string }> = [
-      ...hnStories.map((s) => ({
-        title: s.title,
-        url: s.url,
-        source: "Hacker News",
-      })),
-      ...devArticles.map((a) => ({
-        title: a.title,
-        url: a.url,
-        source: "DEV.to",
-      })),
+      ...hnStories.map((s) => ({ title: s.title, url: s.url, source: "Hacker News" })),
+      ...devArticles.map((a) => ({ title: a.title, url: a.url, source: "DEV.to" })),
     ];
-
-    let postsAdded = 0;
-    const errors: string[] = [];
 
     for (const item of sources.slice(0, 5)) {
       try {
-        // Skip duplicates by title (case-insensitive) or sourceUrl
         const existing = await prisma.blogPost.findFirst({
           where: {
             OR: [
@@ -483,7 +510,7 @@ export async function GET(req: NextRequest) {
             coverImage: meta.image,
             author: "Echelon AI",
             readingTime: Math.ceil(generated.content.replace(/<[^>]*>/g, "").split(" ").length / 200),
-            featured: postsAdded === 0,
+            featured: false,
             published: true,
             aiGenerated: true,
             sourceUrl: item.url,
@@ -493,44 +520,6 @@ export async function GET(req: NextRequest) {
         postsAdded++;
       } catch (e) {
         errors.push(String(e));
-      }
-    }
-
-    // Seed fallback: if external APIs returned nothing and DB is still empty
-    if (postsAdded === 0) {
-      const existingCount = await prisma.blogPost.count();
-      if (existingCount === 0) {
-        for (let idx = 0; idx < SEED_POSTS.length; idx++) {
-          const sp = SEED_POSTS[idx];
-          try {
-            const dupCheck = await prisma.blogPost.findFirst({
-              where: { title: { contains: sp.title.slice(0, 50), mode: "insensitive" } },
-            });
-            if (dupCheck) continue;
-            const baseSlug = sp.title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-").slice(0, 70);
-            let slug = baseSlug; let si = 1;
-            while (await prisma.blogPost.findUnique({ where: { slug } })) slug = `${baseSlug}-${si++}`;
-            await prisma.blogPost.create({
-              data: {
-                slug,
-                title: sp.title,
-                excerpt: sp.excerpt,
-                content: sp.content,
-                category: sp.category,
-                tags: sp.tags,
-                coverEmoji: sp.coverEmoji,
-                coverGradient: sp.coverGradient,
-                coverImage: sp.coverImage,
-                author: "TIBLOGICS Editorial",
-                readingTime: Math.ceil(sp.content.replace(/<[^>]*>/g, "").split(" ").length / 200),
-                featured: idx === 0,
-                published: true,
-                aiGenerated: false,
-              },
-            });
-            postsAdded++;
-          } catch { /* skip */ }
-        }
       }
     }
 
