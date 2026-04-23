@@ -47,6 +47,8 @@ export default function BlogAdminPage() {
   const [refreshStatus, setRefreshStatus] = useState<RefreshStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [repairing, setRepairing] = useState(false);
+  const [repairResult, setRepairResult] = useState<string | null>(null);
   const [stats, setStats] = useState({ total: 0, published: 0, aiGenerated: 0, totalViews: 0 });
 
   async function loadData() {
@@ -83,6 +85,21 @@ export default function BlogAdminPage() {
     await fetch("/api/blog/auto-refresh?force=true");
     await loadData();
     setRefreshing(false);
+  }
+
+  async function repairThinPosts() {
+    setRepairing(true);
+    setRepairResult(null);
+    try {
+      const res = await fetch("/api/blog/repair-posts");
+      const data = await res.json();
+      setRepairResult(data.message ?? "Done");
+      await loadData();
+    } catch {
+      setRepairResult("Repair failed — check logs");
+    } finally {
+      setRepairing(false);
+    }
   }
 
   async function togglePublish(id: string, current: boolean) {
@@ -125,8 +142,18 @@ export default function BlogAdminPage() {
             <Bot size={15} /> News Agent
           </Link>
           <button
+            onClick={repairThinPosts}
+            disabled={repairing || refreshing}
+            className="flex items-center gap-2 border border-[#F47C20] bg-white rounded-xl px-4 py-2 text-sm font-dm text-[#F47C20] hover:bg-orange-50 disabled:opacity-50 transition-colors"
+            title="Find and regenerate incomplete articles"
+          >
+            <Loader2 size={14} className={repairing ? "animate-spin" : "hidden"} />
+            <FileText size={14} className={repairing ? "hidden" : ""} />
+            {repairing ? "Repairing…" : "Fix Incomplete"}
+          </button>
+          <button
             onClick={triggerRefresh}
-            disabled={refreshing}
+            disabled={refreshing || repairing}
             className="flex items-center gap-2 border border-[#D2DCE8] bg-white rounded-xl px-4 py-2 text-sm font-dm text-[#0D1B2A] hover:bg-[#F4F7FB] disabled:opacity-50 transition-colors"
           >
             <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
@@ -134,6 +161,13 @@ export default function BlogAdminPage() {
           </button>
         </div>
       </div>
+
+      {repairResult && (
+        <div className="bg-green-50 border border-green-200 text-green-800 rounded-xl px-4 py-3 text-sm font-dm flex items-center justify-between">
+          <span>{repairResult}</span>
+          <button onClick={() => setRepairResult(null)} className="text-green-600 hover:text-green-800 ml-4">✕</button>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
