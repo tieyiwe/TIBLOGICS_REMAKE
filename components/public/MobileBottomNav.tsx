@@ -7,7 +7,7 @@ import { Home, Wrench, BookOpen, CalendarDays, MessageCircle } from "lucide-reac
 const tabs = [
   { icon: Home,         label: "Home",    href: "/" },
   { icon: Wrench,       label: "Tools",   href: "/tools" },
-  { icon: BookOpen,     label: "The Room",href: "/blog" },
+  { icon: BookOpen,     label: "AI TIMES", href: "/blog" },
   { icon: CalendarDays, label: "Book",    href: "/book" },
 ];
 
