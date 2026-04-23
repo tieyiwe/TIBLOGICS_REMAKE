@@ -76,17 +76,23 @@ export default function BlogPage() {
     trackPageVisit("/blog");
   }, []);
 
-  const fetchPosts = useCallback(async () => {
-    setLoading(true);
+  const fetchPosts = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000);
     try {
       const params = new URLSearchParams({ limit: "24" });
       if (category !== "all") params.set("category", category);
       if (search) params.set("search", search);
-      const res = await fetch(`/api/blog/posts?${params}`);
+      const res = await fetch(`/api/blog/posts?${params}`, { signal: controller.signal });
+      clearTimeout(timer);
       const data = await res.json();
       setPosts(data.posts ?? []);
+    } catch {
+      // timeout or network error — leave posts as-is
     } finally {
-      setLoading(false);
+      clearTimeout(timer);
+      if (!silent) setLoading(false);
     }
   }, [category, search]);
 
@@ -117,7 +123,7 @@ export default function BlogPage() {
               : "/api/blog/auto-refresh";
             await fetch(url);
           } finally {
-            await fetchPosts();
+            await fetchPosts(true);
             setRefreshing(false);
           }
         }

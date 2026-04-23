@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Check, Clock, DollarSign } from "lucide-react";
@@ -49,6 +49,8 @@ export default function BookPage() {
   const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", company: "", goalNotes: "" });
   const [addOns, setAddOns] = useState({ recording: false, actionPlan: false, slack: false });
   const [submitting, setSubmitting] = useState(false);
+
+  const bookingPanelRef = useRef<HTMLDivElement>(null);
 
   const addOnTotal = (addOns.recording ? 4900 : 0) + (addOns.actionPlan ? 7900 : 0) + (addOns.slack ? 14900 : 0);
   const total = selectedService.price + addOnTotal;
@@ -133,7 +135,12 @@ export default function BookPage() {
             {SERVICES.map((svc) => (
               <button
                 key={svc.id}
-                onClick={() => { setSelectedService(svc); setStep(1); setSelectedDate(null); setSelectedSlot(null); }}
+                onClick={() => {
+                  setSelectedService(svc); setStep(1); setSelectedDate(null); setSelectedSlot(null);
+                  if (window.innerWidth < 1024) {
+                    setTimeout(() => bookingPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+                  }
+                }}
                 className={`relative text-left bg-white border rounded-2xl p-4 transition-all duration-200 overflow-hidden ${
                   selectedService.id === svc.id
                     ? "border-[#2251A3] bg-[#EBF0FA] shadow-sm"
@@ -160,7 +167,7 @@ export default function BookPage() {
           </div>
 
           {/* Right: Booking Panel */}
-          <div className="lg:col-span-3 bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden shadow-sm">
+          <div ref={bookingPanelRef} className="lg:col-span-3 bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden shadow-sm">
             {/* Panel header */}
             <div className="bg-[#1B3A6B] p-5">
               <div className="font-syne font-bold text-white text-base">{selectedService.name}</div>
