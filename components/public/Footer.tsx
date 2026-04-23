@@ -41,7 +41,7 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <div className="mb-3">
-              <img src="/logo.png" alt="TIBLOGICS" className="h-14 w-auto" />
+              <img src="/logo.png" alt="TIBLOGICS" className="h-20 w-auto" />
             </div>
             <p className="text-[#7A9BBF] text-sm font-dm leading-relaxed mb-4">
               We create the right logics to fulfill your technical needs. AI-first.
