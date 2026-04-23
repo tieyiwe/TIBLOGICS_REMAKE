@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  allowedDevOrigins: [process.env.REPLIT_DEV_DOMAIN].filter(Boolean),
   output: "standalone",
   compress: true,
   poweredByHeader: false,
@@ -50,6 +51,10 @@ const nextConfig = {
             ].join("; "),
           },
         ],
+      },
+      {
+        source: "/((?!_next/static|_next/image|fonts|favicon)(?:[^.]*|.*\\.html))",
+        headers: [{ key: "Cache-Control", value: "no-store, no-cache, must-revalidate" }],
       },
       {
         source: "/api/:path*",
