@@ -159,7 +159,7 @@ export default function BlogPage() {
         <div className="text-center py-12">
           <span className="section-tag">TIBLOGICS</span>
           <h1
-            className="text-5xl md:text-7xl text-[#0D1B2A] mt-3 tracking-wide"
+            className="text-5xl md:text-7xl text-[#0D1B2A] mt-3 tracking-widest font-bold"
             style={{ fontFamily: "var(--font-masthead)" }}
           >
             AI TIMES

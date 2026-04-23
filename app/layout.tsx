@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Plus_Jakarta_Sans, Cormorant_Garamond, UnifrakturMaguntia } from "next/font/google";
+import { Playfair_Display, Plus_Jakarta_Sans, Cormorant_Garamond, Cinzel } from "next/font/google";
 import "./globals.css";
 
 const syne = Playfair_Display({
@@ -19,9 +19,9 @@ const dmSans = Plus_Jakarta_Sans({
   preload: true,
 });
 
-const masthead = UnifrakturMaguntia({
-  weight: "400",
+const masthead = Cinzel({
   subsets: ["latin"],
+  weight: ["400", "700", "900"],
   variable: "--font-masthead",
   display: "swap",
 });
