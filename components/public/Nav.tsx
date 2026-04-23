@@ -53,7 +53,7 @@ export default function Nav() {
           <div className="flex items-center justify-between h-[148px]">
             {/* Logo */}
             <Link href="/" className="flex items-center flex-shrink-0 overflow-visible">
-              <img src="/logo-full.svg" alt="TIBLOGICS" className="h-32 w-auto" />
+              <img src="/tiblogics-logo.png" alt="TIBLOGICS" style={{ height: "96px", width: "auto" }} className="block object-contain" />
             </Link>
 
             {/* Desktop Nav */}
@@ -135,7 +135,7 @@ export default function Nav() {
         >
           <div className="flex items-center justify-between p-4 border-b border-[#D2DCE8]">
             <div className="flex items-center">
-              <img src="/logo-full.svg" alt="TIBLOGICS" className="h-20 w-auto" />
+              <img src="/tiblogics-logo.png" alt="TIBLOGICS" style={{ height: "64px", width: "auto" }} className="block object-contain" />
             </div>
             <button
               onClick={() => setMobileOpen(false)}
