@@ -133,7 +133,7 @@ export default function BlogPage() {
   const grid = featured ? posts.filter((p) => p.id !== featured.id) : posts;
 
   return (
-    <div className="pt-44 pb-36 sm:pb-20 min-h-screen bg-[#F4F7FB]">
+    <div className="pt-24 sm:pt-44 pb-36 sm:pb-20 min-h-screen bg-[#F4F7FB]">
       {/* Breaking news ticker */}
       {breaking && (
         <div className="bg-red-600 text-white py-2.5 px-4 flex items-center gap-3">

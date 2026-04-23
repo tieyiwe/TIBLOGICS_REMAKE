@@ -118,7 +118,7 @@ export default function BookPage() {
   }
 
   return (
-    <div className="pt-44 pb-20 min-h-screen bg-[#F4F7FB]">
+    <div className="pt-24 sm:pt-44 pb-20 min-h-screen bg-[#F4F7FB]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-10">
           <span className="section-tag">Book a Session</span>

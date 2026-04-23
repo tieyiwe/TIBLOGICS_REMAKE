@@ -132,7 +132,7 @@ export default function AdvisorPage() {
   }
 
   return (
-    <div className="min-h-screen pt-44 pb-16 bg-[#F4F7FB]">
+    <div className="min-h-screen pt-24 sm:pt-44 pb-16 bg-[#F4F7FB]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Two-column layout */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">

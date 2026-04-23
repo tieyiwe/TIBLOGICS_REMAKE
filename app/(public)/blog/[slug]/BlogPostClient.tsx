@@ -105,7 +105,7 @@ export default function BlogPostPage() {
 
   if (loading) {
     return (
-      <div className="pt-44 min-h-screen bg-[#F4F7FB]">
+      <div className="pt-24 sm:pt-44 min-h-screen bg-[#F4F7FB]">
         <div className="max-w-3xl mx-auto px-4 py-16 animate-pulse space-y-6">
           <div className="h-64 bg-[#D2DCE8] rounded-3xl" />
           <div className="h-8 bg-[#D2DCE8] rounded w-3/4" />
@@ -121,7 +121,7 @@ export default function BlogPostPage() {
 
   if (!post) {
     return (
-      <div className="pt-44 min-h-screen bg-[#F4F7FB] flex items-center justify-center">
+      <div className="pt-24 sm:pt-44 min-h-screen bg-[#F4F7FB] flex items-center justify-center">
         <div className="text-center">
           <p className="text-5xl mb-4">📭</p>
           <h1 className="font-syne font-bold text-2xl text-[#0D1B2A] mb-2">Post not found</h1>
@@ -134,9 +134,9 @@ export default function BlogPostPage() {
   }
 
   return (
-    <div className="pt-44 pb-36 sm:pb-20 min-h-screen bg-[#F4F7FB]">
+    <div className="pt-24 sm:pt-44 pb-36 sm:pb-20 min-h-screen bg-[#F4F7FB]">
       {/* Sticky back bar — always visible while reading */}
-      <div className="sticky top-44 z-30 bg-white/95 backdrop-blur-sm border-b border-[#D2DCE8] shadow-sm">
+      <div className="sticky top-20 sm:top-44 z-30 bg-white/95 backdrop-blur-sm border-b border-[#D2DCE8] shadow-sm">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
           <Link
             href="/blog"

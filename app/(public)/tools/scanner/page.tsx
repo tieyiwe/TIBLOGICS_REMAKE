@@ -570,7 +570,7 @@ export default function ScannerPage() {
   }
 
   return (
-    <div className="pt-44 pb-20 min-h-screen bg-[#F4F7FB]">
+    <div className="pt-24 sm:pt-44 pb-20 min-h-screen bg-[#F4F7FB]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-10">
