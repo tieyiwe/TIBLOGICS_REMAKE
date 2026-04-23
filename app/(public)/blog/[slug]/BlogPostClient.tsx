@@ -134,9 +134,9 @@ export default function BlogPostPage() {
   }
 
   return (
-    <div className="pt-44 pb-20 min-h-screen bg-[#F4F7FB]">
+    <div className="pt-44 pb-36 sm:pb-20 min-h-screen bg-[#F4F7FB]">
       {/* Sticky back bar — always visible while reading */}
-      <div className="sticky top-16 z-30 bg-white/95 backdrop-blur-sm border-b border-[#D2DCE8] shadow-sm">
+      <div className="sticky top-44 z-30 bg-white/95 backdrop-blur-sm border-b border-[#D2DCE8] shadow-sm">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
           <Link
             href="/blog"

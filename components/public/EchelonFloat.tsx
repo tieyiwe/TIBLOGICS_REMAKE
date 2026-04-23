@@ -399,8 +399,8 @@ export default function EchelonFloat() {
       {/* Chat window — CSS transition, no framer-motion */}
       {isOpen && (
         <div
-          className="tibo-fade-in fixed z-50 flex flex-col bg-white border border-[#D2DCE8] shadow-2xl overflow-hidden rounded-2xl inset-x-4 bottom-4 top-auto sm:inset-auto sm:bottom-20 sm:right-6 sm:w-[360px]"
-          style={{ maxHeight: "min(82vh, 600px)" }}
+          className="tibo-fade-in fixed z-50 flex flex-col bg-white border border-[#D2DCE8] shadow-2xl overflow-hidden rounded-2xl inset-x-3 bottom-[80px] top-auto sm:inset-auto sm:bottom-20 sm:right-6 sm:w-[360px]"
+          style={{ maxHeight: "min(72vh, 600px)" }}
         >
           {/* Header */}
           <div className="bg-[#1B3A6B] px-4 py-3 flex items-center justify-between flex-shrink-0">
@@ -495,10 +495,15 @@ export default function EchelonFloat() {
 
       {/* Greeting bubble */}
       {showGreeting && !isOpen && (
-        <div className="fixed bottom-[140px] sm:bottom-24 right-4 sm:right-6 z-50 tibo-fade-in">
+        <div
+          className="fixed bottom-[148px] sm:bottom-24 right-4 sm:right-6 z-50 tibo-fade-in cursor-pointer"
+          onClick={() => { setShowGreeting(false); setIsOpen(true); }}
+          role="button"
+          aria-label="Open Tibo chat"
+        >
           <div className="relative bg-white border border-[#D2DCE8] rounded-2xl shadow-xl px-4 py-3 max-w-[220px]">
             <button
-              onClick={() => setShowGreeting(false)}
+              onClick={(e) => { e.stopPropagation(); setShowGreeting(false); }}
               className="absolute top-2 right-2 text-[#B0BEC5] hover:text-[#3A4A5C] transition-colors"
               aria-label="Dismiss"
             >
@@ -506,7 +511,7 @@ export default function EchelonFloat() {
             </button>
             <p className="font-syne font-bold text-xs text-[#0D1B2A] mb-1">👋 Hey there!</p>
             <p className="font-dm text-xs text-[#3A4A5C] leading-relaxed pr-3">
-              I'm Tibo — ask me anything about AI for your business.
+              I'm Tibo — tap to chat about AI for your business.
             </p>
             <div className="absolute -bottom-2 right-7 w-3 h-3 bg-white border-r border-b border-[#D2DCE8] rotate-45" />
           </div>
