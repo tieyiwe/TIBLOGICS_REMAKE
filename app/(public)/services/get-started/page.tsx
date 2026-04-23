@@ -162,7 +162,7 @@ Keep responses short and friendly.`;
 
   if (submitted) {
     return (
-      <div className="pt-24 pb-20 min-h-screen bg-[#F4F7FB] flex items-center justify-center px-4">
+      <div className="pt-40 pb-20 min-h-screen bg-[#F4F7FB] flex items-center justify-center px-4">
         <div className="bg-white border border-[#D2DCE8] rounded-3xl p-12 max-w-md w-full text-center shadow-lg">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5">
             <CheckCircle2 size={32} className="text-green-600" />
@@ -185,7 +185,7 @@ Keep responses short and friendly.`;
   }
 
   return (
-    <div className="pt-24 pb-20 min-h-screen bg-[#F4F7FB]">
+    <div className="pt-40 pb-20 min-h-screen bg-[#F4F7FB]">
       {/* Hero */}
       <div className="bg-[#1B3A6B] py-12 text-center">
         <span className="section-tag-light">Start a Project</span>

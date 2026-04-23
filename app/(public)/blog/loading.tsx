@@ -1,6 +1,6 @@
 export default function BlogLoading() {
   return (
-    <div className="pt-20 pb-20 min-h-screen bg-[#F4F7FB]">
+    <div className="pt-40 pb-20 min-h-screen bg-[#F4F7FB]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center py-12 animate-pulse">
           <div className="h-3 bg-[#E8EFF8] rounded-full w-20 mx-auto mb-4" />

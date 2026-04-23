@@ -38,7 +38,7 @@ export default function ToolsPage() {
   }, []);
 
   return (
-    <div className="pt-24 pb-20 min-h-screen bg-[#F4F7FB]">
+    <div className="pt-40 pb-20 min-h-screen bg-[#F4F7FB]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <span className="section-tag">Try Smart Tools</span>

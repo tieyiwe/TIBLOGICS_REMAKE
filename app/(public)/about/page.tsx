@@ -29,7 +29,7 @@ const services = [
 
 export default function AboutPage() {
   return (
-    <div className="pt-24 pb-20 min-h-screen">
+    <div className="pt-40 pb-20 min-h-screen">
 
       {/* Hero */}
       <div className="bg-[#1B3A6B] py-20">
