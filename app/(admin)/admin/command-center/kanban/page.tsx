@@ -235,7 +235,7 @@ function ProjectDetailModal({ project, onClose, onUpdate }: {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: newTask.trim() }),
       });
-      if (res.ok) { setTasks(prev => [...prev, await res.json()]); setNewTask(""); }
+      if (res.ok) { const task = await res.json(); setTasks(prev => [...prev, task]); setNewTask(""); }
     } finally { setTaskAdding(false); }
   }
 
