@@ -29,7 +29,7 @@ const company = [
   { label: "Try Smart Tools", href: "/tools" },
   { label: "Book a Session", href: "/book" },
   { label: "Contact", href: "/contact" },
-  { label: "Admin", href: "/admin" },
+  { label: "Admin", href: "/admin/login" },
 ];
 
 export default function Footer() {

@@ -158,8 +158,11 @@ export default function BlogPage() {
         {/* Header */}
         <div className="text-center py-12">
           <span className="section-tag">TIBLOGICS</span>
-          <h1 className="font-syne font-extrabold text-4xl md:text-5xl text-[#0D1B2A] mt-3">
-            AI Times
+          <h1
+            className="text-5xl md:text-7xl text-[#0D1B2A] mt-3 tracking-wide"
+            style={{ fontFamily: "var(--font-masthead)" }}
+          >
+            AI TIMES
           </h1>
           <p className="font-dm text-[#3A4A5C] text-lg mt-3 max-w-xl mx-auto">
             Practical AI knowledge for businesses, builders, and curious minds. Updated automatically every 48 hours.

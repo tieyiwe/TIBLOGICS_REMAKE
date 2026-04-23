@@ -10,7 +10,7 @@ const navLinks = [
   { label: "Services", href: "/services" },
   { label: "Startups & Products", href: "/products" },
   { label: "Try Smart Tools", href: "/tools" },
-  { label: "AI Times", href: "/blog" },
+  { label: "AI TIMES", href: "/blog" },
   { label: "About", href: "/about" },
 ];
 

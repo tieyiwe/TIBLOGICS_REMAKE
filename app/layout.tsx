@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Plus_Jakarta_Sans, Cormorant_Garamond } from "next/font/google";
+import { Playfair_Display, Plus_Jakarta_Sans, Cormorant_Garamond, UnifrakturMaguntia } from "next/font/google";
 import "./globals.css";
 
 const syne = Playfair_Display({
@@ -17,6 +17,13 @@ const dmSans = Plus_Jakarta_Sans({
   variable: "--font-dm-sans",
   display: "swap",
   preload: true,
+});
+
+const masthead = UnifrakturMaguntia({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-masthead",
+  display: "swap",
 });
 
 const display = Cormorant_Garamond({
@@ -126,7 +133,7 @@ const jsonLd = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${syne.variable} ${dmSans.variable} ${display.variable}`}>
+    <html lang="en" className={`${syne.variable} ${dmSans.variable} ${display.variable} ${masthead.variable}`}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
