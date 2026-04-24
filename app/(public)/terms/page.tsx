@@ -11,7 +11,7 @@ export default function TermsPage() {
         {/* Header */}
         <div className="mb-10">
           <div className="flex items-center mb-4">
-            <img src="/tiblogics-logo.png" alt="TIBLOGICS" className="h-9 w-auto" />
+            <img src="/tiblogics-logo.svg" alt="TIBLOGICS" className="h-9 w-auto" />
           </div>
           <span className="section-tag">Legal</span>
           <h1 className="font-syne font-extrabold text-4xl text-[#0D1B2A] mt-3">Terms of Service</h1>
