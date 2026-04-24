@@ -212,12 +212,8 @@ export default function AdminSidebar() {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-white/10">
-        <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="" aria-hidden="true" className="h-14 w-auto" />
-          <span className="font-syne font-extrabold text-xl tracking-tight">
-            <span className="text-white">TIB</span>
-            <span className="text-[#F47C20]">LOGICS</span>
-          </span>
+        <div className="flex items-center">
+          <img src="/tiblogics-logo.png" alt="TIBLOGICS" className="h-14 w-auto" />
         </div>
         {!isAdmin && session?.user && (
           <div className="mt-2 px-1">
