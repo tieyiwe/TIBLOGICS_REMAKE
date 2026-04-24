@@ -51,11 +51,6 @@ export default function Nav() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-10">
           <div className="flex items-center justify-between h-20 sm:h-[168px]">
-            {/* Logo */}
-            <Link href="/" className="flex items-center flex-shrink-0">
-              <img src="/tiblogics-logo.svg" alt="TIBLOGICS" className="h-20 sm:h-44 w-auto" />
-            </Link>
-
             {/* Desktop Nav */}
             <nav className="hidden lg:flex items-center gap-7">
               {navLinks.map((link) => (
@@ -133,10 +128,7 @@ export default function Nav() {
             mobileOpen ? "translate-x-0" : "translate-x-full"
           )}
         >
-          <div className="flex items-center justify-between p-4 border-b border-[#D2DCE8]">
-            <Link href="/" onClick={() => setMobileOpen(false)}>
-              <img src="/tiblogics-logo.svg" alt="TIBLOGICS" className="h-24 w-auto" />
-            </Link>
+          <div className="flex items-center justify-end p-4 border-b border-[#D2DCE8]">
             <button
               onClick={() => setMobileOpen(false)}
               className="p-2 rounded-lg hover:bg-[#F4F7FB] transition-colors"
