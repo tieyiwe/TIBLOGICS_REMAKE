@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 140" role="img" aria-label="TIBLOGICS">
+  <defs>
+    <linearGradient id="ng" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
+      <stop offset="0%"   stop-color="#F4C01A"/>
+      <stop offset="50%"  stop-color="#F47C20"/>
+      <stop offset="100%" stop-color="#E05520"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Connections -->
+  <g stroke="url(#ng)" stroke-width="3.5" fill="none" stroke-linecap="round">
+    <line x1="22"  y1="93"  x2="62"  y2="90"/>
+    <line x1="62"  y1="90"  x2="88"  y2="36"/>
+    <line x1="62"  y1="90"  x2="122" y2="70"/>
+    <line x1="62"  y1="90"  x2="112" y2="124"/>
+    <line x1="88"  y1="36"  x2="122" y2="70"/>
+    <line x1="122" y1="70"  x2="152" y2="26"/>
+    <line x1="122" y1="70"  x2="162" y2="106"/>
+    <line x1="152" y1="26"  x2="162" y2="106"/>
+    <line x1="162" y1="106" x2="182" y2="56"/>
+    <line x1="162" y1="106" x2="182" y2="126"/>
+    <line x1="182" y1="56"  x2="186" y2="30"/>
+  </g>
+
+  <!-- Nodes -->
+  <circle cx="22"  cy="93"  r="5"  fill="url(#ng)"/>
+  <circle cx="62"  cy="90"  r="16" fill="url(#ng)"/>
+  <circle cx="88"  cy="36"  r="7"  fill="url(#ng)"/>
+  <circle cx="112" cy="124" r="6"  fill="url(#ng)"/>
+  <circle cx="122" cy="70"  r="10" fill="url(#ng)"/>
+  <circle cx="152" cy="26"  r="5"  fill="url(#ng)"/>
+  <circle cx="162" cy="106" r="12" fill="url(#ng)"/>
+  <circle cx="182" cy="56"  r="5"  fill="url(#ng)"/>
+  <circle cx="182" cy="126" r="5"  fill="url(#ng)"/>
+  <circle cx="186" cy="30"  r="4"  fill="url(#ng)"/>
+
+  <!-- TIB -->
+  <text x="208" y="97"
+        font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+        font-weight="800" font-size="64"
+        textLength="98" lengthAdjust="spacingAndGlyphs"
+        fill="#1B3A6B">TIB</text>
+
+  <!-- LOGICS -->
+  <text x="310" y="97"
+        font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+        font-weight="800" font-size="64"
+        textLength="200" lengthAdjust="spacingAndGlyphs"
+        fill="#F47C20">LOGICS</text>
+</svg>

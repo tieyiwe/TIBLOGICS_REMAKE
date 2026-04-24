@@ -29,7 +29,6 @@ export default function Nav() {
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
-  // Close mobile drawer on route change
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
@@ -50,7 +49,13 @@ export default function Nav() {
         )}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-10">
-          <div className="flex items-center justify-between h-20 sm:h-[168px]">
+          <div className="flex items-center justify-between h-20 sm:h-[120px]">
+
+            {/* Logo */}
+            <Link href="/" className="flex items-center flex-shrink-0">
+              <img src="/logo.svg" alt="TIBLOGICS" className="h-10 sm:h-14 w-auto" />
+            </Link>
+
             {/* Desktop Nav */}
             <nav className="hidden lg:flex items-center gap-7">
               {navLinks.map((link) => (
@@ -74,10 +79,7 @@ export default function Nav() {
 
             {/* Desktop CTAs */}
             <div className="hidden lg:flex items-center gap-3">
-              <button
-                onClick={openTibo}
-                className="btn-primary text-sm py-2 px-4"
-              >
+              <button onClick={openTibo} className="btn-primary text-sm py-2 px-4">
                 Talk to Tibo ↗
               </button>
               <Link href="/book" className="btn-secondary text-sm py-2 px-4">
@@ -112,7 +114,6 @@ export default function Nav() {
           mobileOpen ? "pointer-events-auto" : "pointer-events-none"
         )}
       >
-        {/* Overlay */}
         <div
           className={cn(
             "absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300",
@@ -121,14 +122,16 @@ export default function Nav() {
           onClick={() => setMobileOpen(false)}
         />
 
-        {/* Drawer panel */}
         <div
           className={cn(
             "absolute right-0 top-0 bottom-0 w-72 bg-white shadow-2xl transition-transform duration-300 ease-out flex flex-col",
             mobileOpen ? "translate-x-0" : "translate-x-full"
           )}
         >
-          <div className="flex items-center justify-end p-4 border-b border-[#D2DCE8]">
+          <div className="flex items-center justify-between p-4 border-b border-[#D2DCE8]">
+            <Link href="/" onClick={() => setMobileOpen(false)}>
+              <img src="/logo.svg" alt="TIBLOGICS" className="h-9 w-auto" />
+            </Link>
             <button
               onClick={() => setMobileOpen(false)}
               className="p-2 rounded-lg hover:bg-[#F4F7FB] transition-colors"
