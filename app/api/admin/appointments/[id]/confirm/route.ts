@@ -84,8 +84,8 @@ async function sendConfirmationEmail(data: {
     weekday: "long", month: "long", day: "numeric", year: "numeric",
   });
 
-  const providerName = data.meetingLink?.includes("zoom.us") ? "Zoom" : "Google Meet";
-  const providerColor = data.meetingLink?.includes("zoom.us") ? "#2D8CFF" : "#1A73E8";
+  const providerName = "Jitsi Meet";
+  const providerColor = "#1D76BA";
 
   const meetingSection = data.meetingLink
     ? `

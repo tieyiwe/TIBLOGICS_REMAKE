@@ -278,14 +278,14 @@ function DetailPanel({
               <Video size={14} className="text-[#2251A3]" /> Meeting Link
             </p>
             <p className="font-dm text-xs text-[#7A8FA6] mb-2">
-              Paste a Zoom or Google Meet link. This will be included in the confirmation email.
+              Paste a Jitsi Meet link or leave blank to auto-generate one. This will be included in the confirmation email.
             </p>
             <div className="flex gap-2">
               <input
                 type="url"
                 value={meetingLink}
                 onChange={(e) => setMeetingLink(e.target.value)}
-                placeholder="https://zoom.us/j/... or meet.google.com/..."
+                placeholder="https://meet.jit.si/tiblogics-..."
                 className="flex-1 px-3 py-2.5 text-sm font-dm border border-[#D2DCE8] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3] bg-white"
               />
               <button
