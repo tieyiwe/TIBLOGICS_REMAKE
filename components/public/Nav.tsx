@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { Menu, X, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const NEW_LOGO = "/logo.svg";
+const NEW_LOGO = "/logo.png";
 
 const navLinks = [
   { label: "Services", href: "/services" },

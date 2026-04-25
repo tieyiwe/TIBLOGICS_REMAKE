@@ -1,7 +1,7 @@
 import { Mail } from "lucide-react";
 import Link from "next/link";
 
-const NEW_LOGO = "/logo.svg";
+const NEW_LOGO = "/logo.png";
 
 const services = [
   "AI Implementation",
