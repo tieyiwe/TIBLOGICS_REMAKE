@@ -3,13 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 
 const stats = [
-  { value: 4,  suffix: "",  label: "Live AI Products" },
-  { value: 2,  suffix: "",  label: "Continents Served" },
-  { value: 20, suffix: "+", label: "Businesses Transformed" },
-  { value: 90, suffix: "+", label: "AI Academy Lessons" },
+  { value: null, suffix: "",  label: "Live AI Products" },
+  { value: 2,    suffix: "",  label: "Continents Served" },
+  { value: null, suffix: "+", label: "Businesses Transformed" },
+  { value: null, suffix: "+", label: "AI Academy Lessons" },
 ];
 
-function CountUp({ target, suffix }: { target: number; suffix: string }) {
+function CountUp({ target, suffix }: { target: number | null; suffix: string }) {
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
   const started = useRef(false);
@@ -28,7 +28,7 @@ function CountUp({ target, suffix }: { target: number; suffix: string }) {
             const elapsed = now - startTime;
             const progress = Math.min(elapsed / duration, 1);
             const eased = 1 - Math.pow(1 - progress, 3);
-            setCount(Math.round(eased * target));
+            setCount(Math.round(eased * (target ?? 0)));
             if (progress < 1) requestAnimationFrame(animate);
           };
           requestAnimationFrame(animate);
@@ -63,7 +63,7 @@ export default function StatsBar() {
                 i < 2 ? "border-b border-white/10 md:border-b-0" : "",
               ].filter(Boolean).join(" ")}
             >
-              <CountUp target={stat.value} suffix={stat.suffix} />
+              {stat.value !== null && <CountUp target={stat.value} suffix={stat.suffix} />}
               <p className="font-dm text-sm text-white/60 text-center">{stat.label}</p>
             </div>
           ))}
