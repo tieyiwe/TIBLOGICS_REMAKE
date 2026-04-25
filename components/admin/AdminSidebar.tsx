@@ -213,7 +213,7 @@ export default function AdminSidebar() {
       {/* Logo */}
       <div className="px-5 py-5 border-b border-white/10">
         <div className="flex items-center">
-          <img src="/footer-logo-transparent.png" alt="TIBLOGICS" className="h-14 w-auto max-w-[180px]" />
+          <img src="/footer-logo-transparent.png" alt="TIBLOGICS" className="h-28 w-auto max-w-[220px]" />
         </div>
         {!isAdmin && session?.user && (
           <div className="mt-2 px-1">
