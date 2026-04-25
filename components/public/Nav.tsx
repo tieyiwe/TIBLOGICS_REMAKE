@@ -1,14 +1,12 @@
  "use client";
 
-"use client";
-
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const NEW_LOGO = "/new-logo.png";
+const NEW_LOGO = "/logo.svg";
 
 const navLinks = [
   { label: "Services", href: "/services" },
