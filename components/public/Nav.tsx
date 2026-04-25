@@ -50,6 +50,9 @@ export default function Nav() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-10">
           <div className="flex items-center justify-between h-20 sm:h-[120px]">
+            <Link href="/" className="flex items-center flex-shrink-0 text-xl font-bold tracking-wide text-[#1B3A6B]">
+              TIBLOGICS
+            </Link>
 
             {/* Logo */}
             <Link href="/" className="flex items-center flex-shrink-0">
