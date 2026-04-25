@@ -51,9 +51,9 @@ export default function Nav() {
         )}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-10">
-          <div className="flex items-center justify-between h-20 sm:h-[120px]">
+          <div className="flex items-center justify-between min-h-[7.5rem] sm:min-h-[10.5rem] py-2">
             <Link href="/" className="flex items-center flex-shrink-0">
-              <img src={NEW_LOGO} alt="TIBLOGICS" className="h-10 sm:h-14 w-auto" />
+              <img src={NEW_LOGO} alt="TIBLOGICS" className="h-[7.5rem] sm:h-[10.5rem] w-auto" />
             </Link>
 
             {/* Logo */}
