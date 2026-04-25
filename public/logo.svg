@@ -1,48 +1,46 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="520" height="140" viewBox="0 0 520 140" preserveAspectRatio="xMidYMid meet" role="img" aria-label="TIBLOGICS">
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="160" viewBox="0 0 560 160" preserveAspectRatio="xMidYMid meet" role="img" aria-label="TIBLOGICS">
   <defs>
-    <linearGradient id="ng" gradientUnits="userSpaceOnUse" x1="22" y1="0" x2="186" y2="0">
-      <stop offset="0%"   stop-color="#F4C01A"/>
-      <stop offset="50%"  stop-color="#F47C20"/>
-      <stop offset="100%" stop-color="#E05520"/>
+    <linearGradient id="ng" gradientUnits="userSpaceOnUse" x1="10" y1="0" x2="200" y2="0">
+      <stop offset="0%"   stop-color="#F5A623"/>
+      <stop offset="55%"  stop-color="#F47C20"/>
+      <stop offset="100%" stop-color="#E05020"/>
     </linearGradient>
   </defs>
 
   <!-- Connections -->
-  <g stroke="url(#ng)" stroke-width="3.5" fill="none" stroke-linecap="round">
-    <line x1="22"  y1="93"  x2="62"  y2="90"/>
-    <line x1="62"  y1="90"  x2="88"  y2="36"/>
-    <line x1="62"  y1="90"  x2="122" y2="70"/>
-    <line x1="62"  y1="90"  x2="112" y2="124"/>
-    <line x1="88"  y1="36"  x2="122" y2="70"/>
-    <line x1="122" y1="70"  x2="152" y2="26"/>
-    <line x1="122" y1="70"  x2="162" y2="106"/>
-    <line x1="152" y1="26"  x2="162" y2="106"/>
-    <line x1="162" y1="106" x2="182" y2="56"/>
-    <line x1="162" y1="106" x2="182" y2="126"/>
-    <line x1="182" y1="56"  x2="186" y2="30"/>
+  <g stroke="url(#ng)" stroke-width="3" fill="none" stroke-linecap="round">
+    <line x1="68"  y1="88"  x2="32"  y2="58"/>
+    <line x1="32"  y1="58"  x2="12"  y2="92"/>
+    <line x1="32"  y1="58"  x2="22"  y2="132"/>
+    <line x1="68"  y1="88"  x2="86"  y2="28"/>
+    <line x1="68"  y1="88"  x2="120" y2="52"/>
+    <line x1="68"  y1="88"  x2="158" y2="82"/>
+    <line x1="120" y1="52"  x2="158" y2="82"/>
+    <line x1="120" y1="52"  x2="192" y2="46"/>
+    <line x1="158" y1="82"  x2="172" y2="118"/>
+    <line x1="158" y1="82"  x2="192" y2="46"/>
   </g>
 
   <!-- Nodes -->
-  <circle cx="22"  cy="93"  r="5"  fill="url(#ng)"/>
-  <circle cx="62"  cy="90"  r="16" fill="url(#ng)"/>
-  <circle cx="88"  cy="36"  r="7"  fill="url(#ng)"/>
-  <circle cx="112" cy="124" r="6"  fill="url(#ng)"/>
-  <circle cx="122" cy="70"  r="10" fill="url(#ng)"/>
-  <circle cx="152" cy="26"  r="5"  fill="url(#ng)"/>
-  <circle cx="162" cy="106" r="12" fill="url(#ng)"/>
-  <circle cx="182" cy="56"  r="5"  fill="url(#ng)"/>
-  <circle cx="182" cy="126" r="5"  fill="url(#ng)"/>
-  <circle cx="186" cy="30"  r="4"  fill="url(#ng)"/>
+  <circle cx="12"  cy="92"  r="6"  fill="url(#ng)"/>
+  <circle cx="22"  cy="132" r="5"  fill="url(#ng)"/>
+  <circle cx="32"  cy="58"  r="8"  fill="url(#ng)"/>
+  <circle cx="68"  cy="88"  r="21" fill="url(#ng)"/>
+  <circle cx="86"  cy="28"  r="7"  fill="url(#ng)"/>
+  <circle cx="120" cy="52"  r="10" fill="url(#ng)"/>
+  <circle cx="158" cy="82"  r="14" fill="url(#ng)"/>
+  <circle cx="172" cy="118" r="8"  fill="url(#ng)"/>
+  <circle cx="192" cy="46"  r="6"  fill="url(#ng)"/>
 
   <!-- TIB -->
-  <text x="208" y="97"
+  <text x="218" y="108"
         font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
-        font-weight="800" font-size="64"
+        font-weight="800" font-size="68"
         fill="#1B3A6B">TIB</text>
 
   <!-- LOGICS -->
-  <text x="310" y="97"
+  <text x="333" y="108"
         font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
-        font-weight="800" font-size="64"
+        font-weight="800" font-size="68"
         fill="#F47C20">LOGICS</text>
 </svg>
