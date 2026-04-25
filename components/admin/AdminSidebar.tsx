@@ -213,7 +213,7 @@ export default function AdminSidebar() {
       {/* Logo */}
       <div className="px-5 py-5 border-b border-white/10">
         <div className="flex items-center">
-          <img src="/footer-logo.png" alt="TIBLOGICS" className="h-8 w-auto brightness-0 invert" />
+          <img src="/footer-logo.png" alt="TIBLOGICS" className="h-8 w-auto" />
         </div>
         {!isAdmin && session?.user && (
           <div className="mt-2 px-1">
