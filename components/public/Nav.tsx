@@ -56,11 +56,6 @@ export default function Nav() {
               <img src={NEW_LOGO} alt="TIBLOGICS" className="h-[7.5rem] sm:h-[10.5rem] w-auto" />
             </Link>
 
-            {/* Logo */}
-            <Link href="/" className="flex items-center flex-shrink-0">
-              <img src="/logo.svg" alt="TIBLOGICS" className="h-10 sm:h-14 w-auto" />
-            </Link>
-
             {/* Desktop Nav */}
             <nav className="hidden lg:flex items-center gap-7">
               {navLinks.map((link) => (
@@ -134,9 +129,6 @@ export default function Nav() {
           )}
         >
           <div className="flex items-center justify-between p-4 border-b border-[#D2DCE8]">
-            <Link href="/" onClick={() => setMobileOpen(false)}>
-              <img src="/logo.svg" alt="TIBLOGICS" className="h-9 w-auto" />
-            </Link>
             <button
               onClick={() => setMobileOpen(false)}
               className="p-2 rounded-lg hover:bg-[#F4F7FB] transition-colors"
