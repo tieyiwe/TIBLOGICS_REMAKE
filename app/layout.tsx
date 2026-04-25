@@ -95,7 +95,7 @@ const jsonLd = {
       "@id": `${SITE_URL}/#organization`,
       name: SITE_NAME,
       url: SITE_URL,
-      logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.svg`, width: 200, height: 60 },
+      logo: { "@type": "ImageObject", url: `${SITE_URL}/new-logo.png`, width: 500, height: 500 },
       description: DEFAULT_DESC,
       contactPoint: { "@type": "ContactPoint", email: "ai@tiblogics.com", contactType: "customer service" },
       sameAs: ["https://linkedin.com/company/tiblogics", "https://twitter.com/tiblogics"],

@@ -1,10 +1,10 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const NEW_LOGO = "/new-logo.png";
 
 const navLinks = [
   { label: "Services", href: "/services" },
@@ -50,8 +50,8 @@ export default function Nav() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-10">
           <div className="flex items-center justify-between h-20 sm:h-[120px]">
-            <Link href="/" className="flex items-center flex-shrink-0 text-xl font-bold tracking-wide text-[#1B3A6B]">
-              TIBLOGICS
+            <Link href="/" className="flex items-center flex-shrink-0">
+              <img src={NEW_LOGO} alt="TIBLOGICS" className="h-10 sm:h-14 w-auto" />
             </Link>
 
             {/* Logo */}
