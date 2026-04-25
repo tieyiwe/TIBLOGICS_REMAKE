@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from "react";
 
 const stats = [
   { value: null, suffix: "",  label: "Live AI Products" },
-  { value: 2,    suffix: "",  label: "Continents Served" },
+  { value: 2,    suffix: "",  label: "Markets Served" },
   { value: null, suffix: "+", label: "Businesses Transformed" },
-  { value: null, suffix: "+", label: "AI Academy Lessons" },
+  { value: null, suffix: "+", label: "AI Academy on Skool" },
 ];
 
 function CountUp({ target, suffix }: { target: number | null; suffix: string }) {
