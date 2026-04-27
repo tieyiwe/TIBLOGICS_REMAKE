@@ -3,7 +3,7 @@ import Link from "next/link";
 const live = [
   {
     name: "InStory School",
-    tagline: "AI-personalized K-8 learning stories for schools",
+    tagline: "AI-powered K-8 learning stories built for schools",
     desc: "Delivers adaptive educational narratives tailored to each student's reading level, interests, and curriculum. Built for schools, tutors, and parents who want learning to feel personal.",
     color: "#2251A3",
     emoji: "📚",

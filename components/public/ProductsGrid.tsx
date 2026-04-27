@@ -12,7 +12,7 @@ interface Product {
 const products: Product[] = [
   {
     name: "InStory",
-    desc: "AI-personalized K-8 learning stories. Built for schools and educators.",
+    desc: "AI-powered K-8 learning stories. Built for schools and educators.",
     color: "#2251A3",
     emoji: "📚",
     tag: "EdTech SaaS",

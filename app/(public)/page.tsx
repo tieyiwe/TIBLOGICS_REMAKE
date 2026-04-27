@@ -26,7 +26,7 @@ const featuredServices = [
 ];
 
 const featuredProducts = [
-  { name: "InStory", desc: "AI-personalized K-8 learning stories for schools.", emoji: "📚", color: "#2251A3", tag: "EdTech" },
+  { name: "InStory", desc: "AI-powered K-8 learning stories built for schools.", emoji: "📚", color: "#2251A3", tag: "EdTech" },
   { name: "CareFlow AI", desc: "Automated wellness check-ins via AI voice for social work agencies.", emoji: "❤️", color: "#0F6E56", tag: "HealthTech" },
   { name: "ShipFrica", desc: "White-label shipping SaaS for African diaspora logistics.", emoji: "📦", color: "#F47C20", tag: "Logistics" },
   { name: "AI Academy", desc: "90+ lessons across 3 AI courses on Skool.", emoji: "🎓", color: "#7c3aed", tag: "EdTech" },
