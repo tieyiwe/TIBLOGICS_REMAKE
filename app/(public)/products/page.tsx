@@ -12,8 +12,8 @@ const live = [
   },
   {
     name: "CareFlow AI",
-    tagline: "Automated wellness check-ins for social work agencies",
-    desc: "Automates wellness monitoring and follow-up calls via AI voice for social work agencies. Reduces case worker burnout while keeping every client connected and cared for.",
+    tagline: "AI voice assistant for healthcare & social care",
+    desc: "An AI voice assistant that handles patient check-ins, appointment booking, follow-ups, and support — reducing staff workload while keeping every patient connected and cared for.",
     color: "#0F6E56",
     emoji: "❤️",
     tag: "HealthTech SaaS",

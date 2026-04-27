@@ -19,7 +19,7 @@ const products: Product[] = [
   },
   {
     name: "CareFlow AI",
-    desc: "Automated wellness check-ins for social work agencies via Twilio + AI voice.",
+    desc: "AI voice assistant for healthcare — check-ins, appointment booking, and patient support.",
     color: "#0F6E56",
     emoji: "❤️",
     tag: "HealthTech SaaS",
