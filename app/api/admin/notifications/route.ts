@@ -15,15 +15,11 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
       select: { id: true, firstName: true, lastName: true, serviceType: true, createdAt: true },
     }),
-    prisma.contact?.findMany?.({
-      where: { createdAt: { gte: since } },
-      orderBy: { createdAt: "desc" },
-      select: { id: true, name: true, email: true, createdAt: true },
-    }).catch(() => []) ?? [],
+    Promise.resolve([]),
     prisma.serviceRequest.findMany({
       where: { status: "pending", createdAt: { gte: since } },
       orderBy: { createdAt: "desc" },
-      select: { id: true, name: true, service: true, createdAt: true },
+      select: { id: true, firstName: true, lastName: true, service: true, createdAt: true },
     }),
     prisma.partnershipApplication.findMany({
       where: { createdAt: { gte: since } },
@@ -54,7 +50,7 @@ export async function GET() {
     })),
     ...serviceRequests.map(s => ({
       id: `sr-${s.id}`, type: "service_request" as const,
-      title: `Service request — ${s.name}`,
+      title: `Service request — ${s.firstName} ${s.lastName}`,
       subtitle: s.service,
       href: "/admin/service-requests",
       createdAt: s.createdAt,
