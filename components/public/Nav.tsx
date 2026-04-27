@@ -67,7 +67,7 @@ export default function Nav() {
                       href={link.href}
                       className={cn(
                         "font-dm font-semibold text-sm px-3 py-1.5 rounded-full transition-all duration-200",
-                        "bg-gradient-to-r from-slate-400 via-gray-300 to-slate-500 text-white shadow-sm hover:from-slate-500 hover:to-slate-600",
+                        "bg-gradient-to-r from-emerald-400 via-green-300 to-teal-500 text-white shadow-sm hover:from-emerald-500 hover:to-teal-600",
                         isActive(link.href) && "ring-2 ring-[#F47C20] ring-offset-1"
                       )}
                     >
@@ -158,7 +158,7 @@ export default function Nav() {
                     onClick={() => setMobileOpen(false)}
                     className={cn(
                       "flex items-center px-3 py-3 rounded-xl font-dm font-semibold transition-all",
-                      "bg-gradient-to-r from-slate-400 via-gray-300 to-slate-500 text-white",
+                      "bg-gradient-to-r from-emerald-400 via-green-300 to-teal-500 text-white",
                       isActive(link.href) && "ring-2 ring-[#F47C20] ring-offset-1"
                     )}
                   >
