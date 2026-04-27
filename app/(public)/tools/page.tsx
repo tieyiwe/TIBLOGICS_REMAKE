@@ -28,7 +28,7 @@ const tools = [
     desc: "Building an AI product? This tool helps you figure out your real API costs across all major models before you commit to a budget.",
     href: "/tools/calculator",
     color: "#7c3aed",
-    tag: "Paid",
+    tag: "Free",
   },
 ];
 
