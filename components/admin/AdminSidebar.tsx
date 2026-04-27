@@ -88,6 +88,7 @@ const navItems: NavItem[] = [
     ],
   },
   { label: "Service Requests", href: "/admin/service-requests", icon: Briefcase },
+  { label: "Partnerships", href: "/admin/partnerships", icon: Briefcase },
   { label: "Waitlist", href: "/admin/waitlist", icon: Users },
   { label: "Visitor Analytics", href: "/admin/analytics", icon: BarChart2 },
   {
@@ -181,6 +182,7 @@ const NAV_PERMISSION_MAP: Record<string, string> = {
   "/admin/blog":           "blog",
   "/admin/newsletter":     "blog",
   "/admin/service-requests": "service_requests",
+  "/admin/partnerships":     "service_requests",
   "/admin/waitlist":         "service_requests",
   "/admin/analytics":      "analytics",
   "/admin/agents":         "agents",

@@ -444,6 +444,20 @@ model AgentRun {
   @@index([status])
 }
 
+model PartnershipApplication {
+  id           String   @id @default(cuid())
+  businessName String
+  contactName  String
+  email        String
+  phone        String
+  website      String?
+  address      String?
+  description  String
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 model WaitlistEntry {
   id        String   @id @default(cuid())
   email     String
