@@ -24,11 +24,11 @@ const tools = [
   },
   {
     icon: Calculator,
-    name: "AI Cost Calculator",
-    desc: "Calculate your monthly AI API costs across Claude, GPT-4o, Gemini and more.",
+    name: "AI Product Cost Calculator",
+    desc: "Building an AI product? This tool helps you figure out your real API costs across all major models before you commit to a budget.",
     href: "/tools/calculator",
     color: "#7c3aed",
-    tag: "Free",
+    tag: "Paid",
   },
 ];
 
@@ -65,7 +65,7 @@ export default function ToolsPage() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <h2 className="font-syne font-bold text-lg text-[#0D1B2A]">{t.name}</h2>
-                  <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${t.tag === "Paid" ? "bg-[#7c3aed]/10 text-[#7c3aed]" : "bg-green-100 text-green-700"}`}>
                     {t.tag}
                   </span>
                 </div>
