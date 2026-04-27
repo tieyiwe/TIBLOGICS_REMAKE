@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "prisma generate && next build",
-    "start": "next start -H 0.0.0.0 -p 3000",
+    "dev": "NODE_OPTIONS=--openssl-legacy-provider next dev",
+    "build": "NODE_OPTIONS=--openssl-legacy-provider prisma generate && next build",
+    "start": "NODE_OPTIONS=--openssl-legacy-provider next start -H 0.0.0.0 -p 3000",
     "lint": "next lint",
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
