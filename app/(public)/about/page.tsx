@@ -109,9 +109,6 @@ export default function AboutPage() {
               <span className="font-syne font-extrabold text-3xl text-white">T</span>
             </div>
             <div>
-              <p className="font-dm text-[#3A4A5C] leading-relaxed mb-4">
-                Our founder is a developer and AI strategist who has shipped full-stack products across EdTech, HealthTech, logistics, hospitality, and government sectors — equally comfortable writing code, architecting AI pipelines, and closing enterprise contracts.
-              </p>
               <blockquote className="border-l-4 border-[#F47C20] pl-5 mb-6">
                 <p className="font-dm text-[#3A4A5C] leading-relaxed italic">
                   &ldquo;At my core, I believe in first-principles thinking. By stripping every challenge down to its fundamental truths, I ensure we never lose sight of what is essential; this approach effectively eliminates the noise of unnecessary costs and complexity. I invest heavily in studying the core of a problem so that the eventual implementation is not just fast, but precise. There is nothing more rewarding than delivering a solution that buys a company its time back while fueling its growth and service quality.&rdquo;
