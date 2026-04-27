@@ -174,7 +174,7 @@ export default function ProductsPage() {
       {modalProduct && <WaitlistModal product={modalProduct} onClose={() => setModalProduct(null)} />}
 
       {/* Hero */}
-      <div className="bg-[#1B3A6B] pt-24 sm:pt-44 pb-16">
+      <div className="bg-[#1B3A6B] pt-32 sm:pt-44 pb-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <span className="section-tag">Our Startups &amp; Products</span>
           <h1 className="font-syne font-extrabold text-4xl md:text-5xl text-white mt-3 leading-tight">
