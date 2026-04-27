@@ -171,7 +171,7 @@ export default function BlogPage() {
             AI TIMES
           </h1>
           <p className="font-dm text-[#3A4A5C] text-lg mt-3 max-w-xl mx-auto">
-            Practical AI knowledge for businesses, builders, and curious minds. Updated automatically every 48 hours.
+            Practical AI knowledge for businesses, builders, and curious minds. Updated automatically every 3 days.
           </p>
           {refreshing && (
             <p className="flex items-center justify-center gap-1.5 text-xs text-[#7A8FA6] mt-2 font-dm">
