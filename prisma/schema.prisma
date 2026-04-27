@@ -443,3 +443,14 @@ model AgentRun {
   @@index([agent])
   @@index([status])
 }
+
+model WaitlistEntry {
+  id        String   @id @default(cuid())
+  email     String
+  product   String
+  createdAt DateTime @default(now())
+
+  @@unique([email, product])
+  @@index([product])
+  @@index([createdAt])
+}

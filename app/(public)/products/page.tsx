@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 
 const live = [
   {
@@ -94,43 +97,82 @@ const live = [
 ];
 
 const coming = [
-  {
-    name: "AI Readiness Platform",
-    tagline: "Know exactly where your business stands with AI",
-    desc: "An assessment product for businesses serious about AI adoption. Coming soon.",
-    color: "#2251A3",
-    emoji: "📊",
-    tag: "AI Assessment SaaS",
-  },
-  {
-    name: "AI Central",
-    tagline: "Unified hub for all your AI agents and workflows",
-    desc: "One dashboard. All your AI. Built for teams that run on automation.",
-    color: "#0F6E56",
-    emoji: "⚡",
-    tag: "AI Operations",
-  },
-  {
-    name: "AutoIQ",
-    tagline: "AI-powered automotive diagnostic platform",
-    desc: "A smart diagnostic product built for the automotive space. Coming soon.",
-    color: "#F47C20",
-    emoji: "🚗",
-    tag: "AutoTech SaaS",
-  },
-  {
-    name: "Appreciate Songs",
-    tagline: "Discover music that moves you, deeper",
-    desc: "A music product built for people who don't just listen — they feel.",
-    color: "#7c3aed",
-    emoji: "🎵",
-    tag: "Music Tech",
-  },
+  { name: "AI Readiness Platform", color: "#2251A3", emoji: "📊", tag: "AI Assessment SaaS" },
+  { name: "AI Central", color: "#0F6E56", emoji: "⚡", tag: "AI Operations" },
+  { name: "AutoIQ", color: "#F47C20", emoji: "🚗", tag: "AutoTech SaaS" },
+  { name: "Appreciate Songs", color: "#7c3aed", emoji: "🎵", tag: "Music Tech" },
 ];
 
+function WaitlistModal({ product, onClose }: { product: string; onClose: () => void }) {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus("loading");
+    try {
+      const res = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, product }),
+      });
+      setStatus(res.ok ? "done" : "error");
+    } catch {
+      setStatus("error");
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+        <button onClick={onClose} className="absolute top-4 right-4 text-[#7A8FA6] hover:text-[#0D1B2A] text-xl leading-none">✕</button>
+
+        {status === "done" ? (
+          <div className="text-center py-4">
+            <div className="text-4xl mb-3">🎉</div>
+            <h3 className="font-syne font-bold text-xl text-[#0D1B2A] mb-2">You&apos;re on the list!</h3>
+            <p className="font-dm text-sm text-[#7A8FA6]">We&apos;ll notify you the moment <strong>{product}</strong> launches.</p>
+            <button onClick={onClose} className="mt-5 btn-primary text-sm px-6 py-2">Done</button>
+          </div>
+        ) : (
+          <>
+            <h3 className="font-syne font-bold text-xl text-[#0D1B2A] mb-1">Get early access</h3>
+            <p className="font-dm text-sm text-[#7A8FA6] mb-6">
+              Be the first to use <strong className="text-[#0D1B2A]">{product}</strong> when it launches. Drop your email and we&apos;ll reach out.
+            </p>
+            <form onSubmit={submit} className="space-y-3">
+              <input
+                type="email"
+                required
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 border border-[#D2DCE8] rounded-xl font-dm text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/20 focus:border-[#1B3A6B]"
+              />
+              {status === "error" && <p className="text-red-500 text-xs font-dm">Something went wrong. Try again.</p>}
+              <button
+                type="submit"
+                disabled={status === "loading"}
+                className="w-full btn-primary py-3 text-sm disabled:opacity-60"
+              >
+                {status === "loading" ? "Saving…" : "Notify me at launch →"}
+              </button>
+            </form>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function ProductsPage() {
+  const [modalProduct, setModalProduct] = useState<string | null>(null);
+
   return (
     <div className="min-h-screen">
+      {modalProduct && <WaitlistModal product={modalProduct} onClose={() => setModalProduct(null)} />}
+
       {/* Hero */}
       <div className="bg-[#1B3A6B] pt-24 sm:pt-44 pb-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -168,10 +210,7 @@ export default function ProductsPage() {
               className="bg-white border border-[#D2DCE8] rounded-2xl p-6 flex flex-col gap-3 hover:shadow-[0_4px_24px_rgba(27,58,107,0.12)] hover:-translate-y-0.5 transition-all duration-200"
             >
               <div className="flex items-start justify-between">
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center text-2xl flex-shrink-0"
-                  style={{ backgroundColor: p.color + "26" }}
-                >
+                <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl flex-shrink-0" style={{ backgroundColor: p.color + "26" }}>
                   {p.emoji}
                 </div>
                 <span className="bg-green-50 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">● Live</span>
@@ -199,21 +238,22 @@ export default function ProductsPage() {
           {coming.map((p) => (
             <div
               key={p.name}
-              className="bg-[#F4F7FB] border border-[#D2DCE8] rounded-2xl p-6 flex gap-4 items-start"
+              className="bg-[#F4F7FB] border border-[#D2DCE8] rounded-2xl p-6 flex gap-4 items-center"
             >
-              <div
-                className="w-12 h-12 rounded-full flex items-center justify-center text-2xl flex-shrink-0"
-                style={{ backgroundColor: p.color + "18" }}
-              >
+              <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl flex-shrink-0" style={{ backgroundColor: p.color + "18" }}>
                 {p.emoji}
               </div>
-              <div className="flex flex-col gap-1">
+              <div className="flex-1 min-w-0">
                 <span className="section-tag">{p.tag}</span>
-                <h3 className="font-syne font-bold text-lg text-[#0D1B2A]">{p.name}</h3>
-                <p className="font-dm text-xs text-[#3A4A5C] italic mb-1">{p.tagline}</p>
-                <p className="font-dm text-sm text-[#7A8FA6] leading-relaxed">{p.desc}</p>
-                <span className="text-xs text-[#7A8FA6] font-medium mt-1">🔨 In development</span>
+                <h3 className="font-syne font-bold text-lg text-[#0D1B2A] mt-0.5">{p.name}</h3>
+                <span className="text-xs text-[#7A8FA6] font-medium">🔨 In development</span>
               </div>
+              <button
+                onClick={() => setModalProduct(p.name)}
+                className="shrink-0 text-xs font-dm font-semibold px-3 py-2 rounded-xl border border-[#D2DCE8] text-[#1B3A6B] hover:bg-[#1B3A6B] hover:text-white transition-colors"
+              >
+                Learn more
+              </button>
             </div>
           ))}
         </div>
