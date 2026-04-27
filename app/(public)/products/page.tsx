@@ -112,11 +112,11 @@ const coming = [
   },
   {
     name: "AutoIQ",
-    tagline: "Intelligent workflow automation for SMBs",
-    desc: "Making automation accessible to every business — not just the ones with dev teams.",
+    tagline: "AI-powered automotive diagnostic platform",
+    desc: "A smart diagnostic product built for the automotive space. Coming soon.",
     color: "#F47C20",
-    emoji: "🤖",
-    tag: "Automation SaaS",
+    emoji: "🚗",
+    tag: "AutoTech SaaS",
   },
   {
     name: "Appreciate Songs",
