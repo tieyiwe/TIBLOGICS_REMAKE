@@ -58,23 +58,41 @@ export default function Nav() {
 
             {/* Desktop Nav */}
             <nav className="hidden lg:flex items-center gap-7">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className={cn(
-                    "font-dm font-medium text-sm transition-colors duration-200",
-                    isActive(link.href)
-                      ? "text-[#1B3A6B] font-semibold"
-                      : "text-[#3A4A5C] hover:text-[#1B3A6B]"
-                  )}
-                >
-                  {link.label}
-                  {isActive(link.href) && (
-                    <span className="block h-0.5 bg-[#F47C20] rounded-full mt-0.5" />
-                  )}
-                </Link>
-              ))}
+              {navLinks.map((link) => {
+                const isAITimes = link.label === "AI TIMES";
+                if (isAITimes) {
+                  return (
+                    <Link
+                      key={link.label}
+                      href={link.href}
+                      className={cn(
+                        "font-dm font-semibold text-sm px-3 py-1.5 rounded-full transition-all duration-200",
+                        "bg-gradient-to-r from-slate-400 via-gray-300 to-slate-500 text-white shadow-sm hover:from-slate-500 hover:to-slate-600",
+                        isActive(link.href) && "ring-2 ring-[#F47C20] ring-offset-1"
+                      )}
+                    >
+                      {link.label}
+                    </Link>
+                  );
+                }
+                return (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    className={cn(
+                      "font-dm font-medium text-sm transition-colors duration-200",
+                      isActive(link.href)
+                        ? "text-[#1B3A6B] font-semibold"
+                        : "text-[#3A4A5C] hover:text-[#1B3A6B]"
+                    )}
+                  >
+                    {link.label}
+                    {isActive(link.href) && (
+                      <span className="block h-0.5 bg-[#F47C20] rounded-full mt-0.5" />
+                    )}
+                  </Link>
+                );
+              })}
             </nav>
 
             {/* Desktop CTAs */}
@@ -130,21 +148,40 @@ export default function Nav() {
           </div>
 
           <nav className="p-4 flex flex-col gap-1 flex-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                onClick={() => setMobileOpen(false)}
-                className={cn(
-                  "flex items-center px-3 py-3 rounded-xl font-dm font-medium transition-colors",
-                  isActive(link.href)
-                    ? "bg-[#EBF0FA] text-[#1B3A6B] font-semibold border-l-2 border-[#F47C20]"
-                    : "text-[#3A4A5C] hover:bg-[#F4F7FB] hover:text-[#1B3A6B]"
-                )}
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const isAITimes = link.label === "AI TIMES";
+              if (isAITimes) {
+                return (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      "flex items-center px-3 py-3 rounded-xl font-dm font-semibold transition-all",
+                      "bg-gradient-to-r from-slate-400 via-gray-300 to-slate-500 text-white",
+                      isActive(link.href) && "ring-2 ring-[#F47C20] ring-offset-1"
+                    )}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              }
+              return (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={cn(
+                    "flex items-center px-3 py-3 rounded-xl font-dm font-medium transition-colors",
+                    isActive(link.href)
+                      ? "bg-[#EBF0FA] text-[#1B3A6B] font-semibold border-l-2 border-[#F47C20]"
+                      : "text-[#3A4A5C] hover:bg-[#F4F7FB] hover:text-[#1B3A6B]"
+                  )}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
           </nav>
 
           <div className="p-4 border-t border-[#D2DCE8] flex flex-col gap-3">
