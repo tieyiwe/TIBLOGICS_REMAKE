@@ -15,9 +15,7 @@ const SERVICES = [
 ];
 
 const ADD_ONS = [
-  { id: "recording", label: "Session recording + transcript", price: 4900 },
   { id: "actionPlan", label: "Written action plan & follow-up notes", price: 7900 },
-  { id: "slack", label: "30-day Slack access (Q&A support)", price: 14900 },
 ];
 
 const TIME_SLOTS = ["9:00 AM", "10:00 AM", "11:00 AM", "1:00 PM", "2:00 PM", "3:00 PM"];
@@ -47,12 +45,12 @@ export default function BookPage() {
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [isBlocked, setIsBlocked] = useState(false);
   const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", company: "", goalNotes: "" });
-  const [addOns, setAddOns] = useState({ recording: false, actionPlan: false, slack: false });
+  const [addOns, setAddOns] = useState({ actionPlan: false });
   const [submitting, setSubmitting] = useState(false);
 
   const bookingPanelRef = useRef<HTMLDivElement>(null);
 
-  const addOnTotal = (addOns.recording ? 4900 : 0) + (addOns.actionPlan ? 7900 : 0) + (addOns.slack ? 14900 : 0);
+  const addOnTotal = addOns.actionPlan ? 7900 : 0;
   const total = selectedService.price + addOnTotal;
 
   async function handleDateSelect(date: Date) {
@@ -83,9 +81,9 @@ export default function BookPage() {
           timeSlot: selectedSlot,
           timezone: "America/New_York",
           ...formData,
-          addOnRecording: addOns.recording,
+          addOnRecording: false,
           addOnActionPlan: addOns.actionPlan,
-          addOnSlackAccess: addOns.slack,
+          addOnSlackAccess: false,
           totalAmount: total,
         }),
       });
