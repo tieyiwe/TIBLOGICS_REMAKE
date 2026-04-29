@@ -6,13 +6,22 @@ import { createMeeting } from "@/lib/meeting-providers";
 import stripe from "@/lib/stripe";
 
 export async function POST(req: Request) {
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error("[stripe/webhook] STRIPE_WEBHOOK_SECRET is not set");
+    return new Response("Webhook secret not configured", { status: 500 });
+  }
+
   const body = await req.text();
   const headersList = await headers();
-  const signature = headersList.get("stripe-signature")!;
+  const signature = headersList.get("stripe-signature");
+
+  if (!signature) {
+    return new Response("Missing stripe-signature header", { status: 400 });
+  }
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!);
+    event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     console.error("[stripe/webhook] Signature verification failed", err);
     return new Response("Webhook signature verification failed", { status: 400 });
