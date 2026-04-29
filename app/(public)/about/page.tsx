@@ -1,5 +1,32 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Mail, Globe, Zap, Users, Shield, Target, Lightbulb, TrendingUp } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "About TIBLOGICS — AI Implementation Agency",
+  description:
+    "Learn about TIBLOGICS — an AI implementation and digital solutions agency serving businesses across North America and Africa. First-principles thinking. Measurable outcomes.",
+  keywords: [
+    "about TIBLOGICS", "AI agency mission", "AI implementation company", "Tieyiwe Bassole",
+    "AI consulting firm", "digital solutions agency", "AI for African businesses",
+    "bilingual AI agency", "AI first principles",
+  ],
+  alternates: { canonical: "https://tiblogics.com/about" },
+  openGraph: {
+    title: "About TIBLOGICS — AI Implementation & Digital Solutions",
+    description: "We don't just talk about AI. We implement it. Learn about our mission, our team, and how we deliver measurable outcomes.",
+    url: "https://tiblogics.com/about",
+    type: "website",
+    images: [{ url: "https://tiblogics.com/og-image.png", width: 1200, height: 630, alt: "About TIBLOGICS" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "About TIBLOGICS",
+    description: "AI implementation agency built for businesses ready to stop watching the future arrive and start leading it.",
+    creator: "@tiblogics",
+    images: ["https://tiblogics.com/og-image.png"],
+  },
+};
 
 const principles = [
   { icon: Shield, title: "Integrity, Always", desc: "We tell the truth about what AI can and cannot do. Our clients make better decisions because we give them honest advice, not what sounds impressive." },

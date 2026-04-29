@@ -1,8 +1,35 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Hero from "@/components/public/Hero";
 import StatsBar from "@/components/public/StatsBar";
 import AIBanner from "@/components/public/AIBanner";
 import { Bot, Zap, Brain } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "TIBLOGICS — AI Implementation & Digital Solutions Agency",
+  description:
+    "TIBLOGICS builds custom AI agents, workflow automation, and full-stack digital products for businesses in North America, Africa, and beyond. Start with a free discovery meeting.",
+  keywords: [
+    "AI implementation agency", "AI agents", "workflow automation", "AI consulting",
+    "digital transformation", "AI for small business", "LLM integration", "AI strategy",
+    "web development", "mobile development", "cybersecurity", "data analytics", "TIBLOGICS",
+  ],
+  alternates: { canonical: "https://tiblogics.com" },
+  openGraph: {
+    title: "TIBLOGICS — AI Implementation & Digital Solutions",
+    description: "We build custom AI agents, workflow automation, and digital products for ambitious businesses. AI-first. Tech-complete.",
+    url: "https://tiblogics.com",
+    type: "website",
+    images: [{ url: "https://tiblogics.com/og-image.png", width: 1200, height: 630, alt: "TIBLOGICS" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "TIBLOGICS — AI Implementation & Digital Solutions",
+    description: "Custom AI agents, workflow automation, and digital products for ambitious businesses.",
+    creator: "@tiblogics",
+    images: ["https://tiblogics.com/og-image.png"],
+  },
+};
 
 const featuredServices = [
   {
