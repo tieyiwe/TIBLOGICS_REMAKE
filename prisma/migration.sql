@@ -1,14 +1,14 @@
 -- CreateSchema
 CREATE SCHEMA IF NOT EXISTS "public";
 
--- CreateEnum
-CREATE TYPE IF NOT EXISTS "AppointmentStatus" AS ENUM ('PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW');
-CREATE TYPE IF NOT EXISTS "ProspectSource" AS ENUM ('TIBS_ADVISOR', 'WEBSITE_SCANNER', 'CONTACT_FORM', 'REFERRAL', 'MANUAL');
-CREATE TYPE IF NOT EXISTS "ProspectStatus" AS ENUM ('NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL_SENT', 'NEGOTIATING', 'CLOSED_WON', 'CLOSED_LOST', 'ON_HOLD');
-CREATE TYPE IF NOT EXISTS "ProjectCategory" AS ENUM ('SAAS', 'CLIENT', 'EDUCATION', 'INTERNAL');
-CREATE TYPE IF NOT EXISTS "ProjectStatus" AS ENUM ('CONCEPT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'ARCHIVED');
-CREATE TYPE IF NOT EXISTS "ProjectPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL');
-CREATE TYPE IF NOT EXISTS "AgentLeadStatus" AS ENUM ('NEW', 'TRANSFERRED', 'CONTACTED', 'HOT', 'WARM', 'COLD', 'UNINTERESTED', 'CONVERTED');
+-- CreateEnum (safe idempotent creation via DO blocks)
+DO $$ BEGIN CREATE TYPE "AppointmentStatus" AS ENUM ('PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW'); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE TYPE "ProspectSource" AS ENUM ('TIBS_ADVISOR', 'WEBSITE_SCANNER', 'CONTACT_FORM', 'REFERRAL', 'MANUAL'); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE TYPE "ProspectStatus" AS ENUM ('NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL_SENT', 'NEGOTIATING', 'CLOSED_WON', 'CLOSED_LOST', 'ON_HOLD'); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE TYPE "ProjectCategory" AS ENUM ('SAAS', 'CLIENT', 'EDUCATION', 'INTERNAL'); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE TYPE "ProjectStatus" AS ENUM ('CONCEPT', 'ACTIVE', 'PAUSED', 'COMPLETED', 'ARCHIVED'); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE TYPE "ProjectPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL'); EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN CREATE TYPE "AgentLeadStatus" AS ENUM ('NEW', 'TRANSFERRED', 'CONTACTED', 'HOT', 'WARM', 'COLD', 'UNINTERESTED', 'CONVERTED'); EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 CREATE TABLE IF NOT EXISTS "Appointment" ("id" TEXT NOT NULL,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"updatedAt" TIMESTAMP(3) NOT NULL,"serviceType" TEXT NOT NULL,"serviceDuration" TEXT NOT NULL,"servicePrice" INTEGER NOT NULL,"date" TIMESTAMP(3) NOT NULL,"timeSlot" TEXT NOT NULL,"timezone" TEXT NOT NULL DEFAULT 'America/New_York',"firstName" TEXT NOT NULL,"lastName" TEXT NOT NULL,"email" TEXT NOT NULL,"company" TEXT,"goalNotes" TEXT,"addOnRecording" BOOLEAN NOT NULL DEFAULT false,"addOnActionPlan" BOOLEAN NOT NULL DEFAULT false,"addOnSlackAccess" BOOLEAN NOT NULL DEFAULT false,"totalAmount" INTEGER NOT NULL,"status" "AppointmentStatus" NOT NULL DEFAULT 'PENDING',"stripeSessionId" TEXT,"stripePaymentId" TEXT,"paymentStatus" TEXT,"zoomLink" TEXT,"notes" TEXT,"reminderSent" BOOLEAN NOT NULL DEFAULT false,"confirmedAt" TIMESTAMP(3),"cancelledAt" TIMESTAMP(3),"cancelReason" TEXT,CONSTRAINT "Appointment_pkey" PRIMARY KEY ("id"));
 CREATE TABLE IF NOT EXISTS "Prospect" ("id" TEXT NOT NULL,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"updatedAt" TIMESTAMP(3) NOT NULL,"name" TEXT NOT NULL,"business" TEXT NOT NULL,"industry" TEXT NOT NULL,"mainChallenge" TEXT NOT NULL,"budget" TEXT NOT NULL,"suggestedSolutions" TEXT[],"email" TEXT,"phone" TEXT,"source" "ProspectSource" NOT NULL DEFAULT 'TIBS_ADVISOR',"status" "ProspectStatus" NOT NULL DEFAULT 'NEW',"priority" TEXT,"estimatedValue" INTEGER,"notes" TEXT,"followUpDate" TIMESTAMP(3),"convertedAt" TIMESTAMP(3),"conversationLog" JSONB,"archived" BOOLEAN NOT NULL DEFAULT false,CONSTRAINT "Prospect_pkey" PRIMARY KEY ("id"));
