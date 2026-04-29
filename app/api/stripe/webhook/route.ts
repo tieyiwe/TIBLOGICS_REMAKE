@@ -88,6 +88,7 @@ export async function POST(req: Request) {
             addOnRecording: updated.addOnRecording,
             addOnActionPlan: updated.addOnActionPlan,
             addOnSlackAccess: updated.addOnSlackAccess,
+            meetingLink: updated.zoomLink,
           }).catch((err) => console.error("[sendTiweNotification]", err)),
         ]);
       }

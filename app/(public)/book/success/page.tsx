@@ -93,9 +93,9 @@ function SuccessContent() {
                     href={zoomLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-[#2D8CFF] text-white text-sm font-dm font-semibold px-4 py-2.5 rounded-xl hover:bg-[#1a7ae8] transition-colors"
+                    className="inline-flex items-center gap-2 bg-[#1D76BA] text-white text-sm font-dm font-semibold px-4 py-2.5 rounded-xl hover:bg-[#155e99] transition-colors"
                   >
-                    🎥 Join your meeting
+                    🎥 Join on Jitsi Meet
                   </a>
                 </>
               ) : (

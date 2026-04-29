@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import resend from "@/lib/resend";
+import { sendTiweNotification } from "@/lib/resend";
 import { createMeeting } from "@/lib/meeting-providers";
 import { isValidEmail, escapeHtml } from "@/lib/require-admin";
 import stripe from "@/lib/stripe";
@@ -128,10 +129,16 @@ export async function POST(req: Request) {
         },
       });
 
-      // Send confirmation email with meeting link
-      await sendBookingConfirmation({ firstName, lastName, email, serviceType, date, timeSlot, meetingLink });
-      // Notify the team
-      await sendTeamBookingAlert({ firstName, lastName, email, serviceType, date, timeSlot });
+      await Promise.allSettled([
+        sendBookingConfirmation({ firstName, lastName, email, serviceType, date, timeSlot, meetingLink }),
+        sendTiweNotification({
+          firstName, lastName, email, company: company ?? null,
+          serviceType, date: new Date(date), timeSlot,
+          totalAmount: 0, paymentStatus: "free",
+          addOnRecording: false, addOnActionPlan: false, addOnSlackAccess: false,
+          goalNotes: goalNotes ?? null, meetingLink,
+        }),
+      ]);
 
       return NextResponse.json(
         { appointmentId: appointment.id, checkoutUrl: null },
