@@ -84,7 +84,7 @@ export default function BlogPage() {
       const params = new URLSearchParams({ limit: "24" });
       if (category !== "all") params.set("category", category);
       if (search) params.set("search", search);
-      const res = await fetch(`/api/blog/posts?${params}`, { signal: controller.signal });
+      const res = await fetch(`/api/ai-times/posts?${params}`, { signal: controller.signal });
       clearTimeout(timer);
       const data = await res.json();
       setPosts(data.posts ?? []);
@@ -101,7 +101,7 @@ export default function BlogPage() {
   }, [fetchPosts]);
 
   useEffect(() => {
-    fetch("/api/blog/breaking-news")
+    fetch("/api/ai-times/breaking-news")
       .then((r) => r.json())
       .then((d) => setBreaking(d.news));
   }, []);
@@ -110,17 +110,17 @@ export default function BlogPage() {
   useEffect(() => {
     async function checkAndRefresh() {
       try {
-        const checkRes = await fetch("/api/blog/auto-refresh?check=true");
+        const checkRes = await fetch("/api/ai-times/auto-refresh?check=true");
         const checkData = await checkRes.json();
-        const currentPosts = await fetch("/api/blog/posts?limit=1").then(r => r.json());
+        const currentPosts = await fetch("/api/ai-times/posts?limit=1").then(r => r.json());
         const isEmpty = (currentPosts.total ?? 0) === 0;
 
         if (checkData.needsRefresh || isEmpty) {
           setRefreshing(true);
           try {
             const url = isEmpty
-              ? "/api/blog/auto-refresh?force=true"
-              : "/api/blog/auto-refresh";
+              ? "/api/ai-times/auto-refresh?force=true"
+              : "/api/ai-times/auto-refresh";
             await fetch(url);
           } finally {
             await fetchPosts(true);
@@ -233,7 +233,7 @@ export default function BlogPage() {
           <>
             {/* Featured post */}
             {featured && showFeatured && (
-              <Link href={`/blog/${featured.slug}`} className="group block mb-10">
+              <Link href={`/ai-times/${featured.slug}`} className="group block mb-10">
                 <div className="bg-white border border-[#D2DCE8] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 lg:flex">
                   <div className="lg:w-96 h-64 lg:h-auto flex-shrink-0 overflow-hidden relative">
                     {featured.coverImage ? (
@@ -296,7 +296,7 @@ export default function BlogPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
-        <SmartRecommendations currentPage="/blog" compact />
+        <SmartRecommendations currentPage="/ai-times" compact />
       </div>
     </div>
   );
@@ -320,7 +320,7 @@ function CategoryBadge({ category }: { category: string }) {
 
 function PostCard({ post }: { post: BlogPost }) {
   return (
-    <Link href={`/blog/${post.slug}`} className="group">
+    <Link href={`/ai-times/${post.slug}`} className="group">
       <article className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 h-full flex flex-col">
         <div className="h-44 overflow-hidden relative">
           {post.coverImage ? (
@@ -443,7 +443,7 @@ function TipsSpotlight({ posts }: { posts: BlogPost[] }) {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {posts.map((p) => (
-          <Link key={p.id} href={`/blog/${p.slug}`} className="group bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-100 rounded-2xl p-5 hover:shadow-md transition-all duration-200">
+          <Link key={p.id} href={`/ai-times/${p.slug}`} className="group bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-100 rounded-2xl p-5 hover:shadow-md transition-all duration-200">
             <p className="font-syne font-bold text-sm text-[#0D1B2A] group-hover:text-purple-700 line-clamp-2 mb-2">
               {p.title}
             </p>

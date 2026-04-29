@@ -432,7 +432,7 @@ export default function EchelonFloat() {
       {isOpen && (
         <div
           className="tibo-fade-in fixed z-50 flex flex-col bg-white border border-[#D2DCE8] shadow-2xl overflow-hidden rounded-2xl inset-x-3 bottom-[80px] top-auto sm:inset-auto sm:bottom-20 sm:right-6 sm:w-[360px]"
-          style={{ maxHeight: "min(72vh, 600px)" }}
+          style={{ maxHeight: "min(72dvh, 600px)" }}
         >
           {/* Header */}
           <div className="bg-[#1B3A6B] px-4 py-3 flex items-center justify-between flex-shrink-0">
@@ -508,6 +508,9 @@ export default function EchelonFloat() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                onFocus={() => {
+                  setTimeout(() => inputRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 300);
+                }}
                 placeholder="Ask Tibo anything…"
                 disabled={loading}
                 className="flex-1 bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl px-3 py-2 text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3] disabled:opacity-50 transition-colors"

@@ -17,6 +17,12 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react", "@radix-ui/react-icons"],
   },
+  async redirects() {
+    return [
+      { source: "/blog", destination: "/ai-times", permanent: true },
+      { source: "/blog/:slug", destination: "/ai-times/:slug", permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

@@ -85,8 +85,8 @@ export default function Hero() {
                   {card.emoji}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-syne font-bold text-sm text-[#0D1B2A] truncate">{card.title}</p>
-                  <p className="text-xs text-[#7A8FA6] truncate">{card.subtitle}</p>
+                  <p className="font-syne font-bold text-sm text-[#0D1B2A] leading-snug">{card.title}</p>
+                  <p className="text-xs text-[#7A8FA6] mt-0.5">{card.subtitle}</p>
                 </div>
                 <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${card.badgeClass}`}>
                   {card.badge}

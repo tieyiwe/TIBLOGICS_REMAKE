@@ -60,7 +60,7 @@ export default function AboutPage() {
             </div>
             <div className="bg-[#F4F7FB] rounded-2xl p-6 border border-[#E8EFF8]">
               <Globe size={20} className="text-[#2251A3] mb-3" />
-              <p className="font-syne font-bold text-sm text-[#0D1B2A] mb-2">Markets Served</p>
+              <p className="font-syne font-bold text-sm text-[#0D1B2A] mb-2">Serving Markets Worldwide</p>
               <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed">
                 While our primary focus is the <strong>United States and African markets</strong>, we are equipped to serve clients across the globe — with bilingual English and French delivery.
               </p>

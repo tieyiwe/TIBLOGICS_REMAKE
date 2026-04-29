@@ -110,7 +110,7 @@ const jsonLd = {
       publisher: { "@id": `${SITE_URL}/#organization` },
       potentialAction: {
         "@type": "SearchAction",
-        target: { "@type": "EntryPoint", urlTemplate: `${SITE_URL}/blog?search={search_term_string}` },
+        target: { "@type": "EntryPoint", urlTemplate: `${SITE_URL}/ai-times?search={search_term_string}` },
         "query-input": "required name=search_term_string",
       },
     },

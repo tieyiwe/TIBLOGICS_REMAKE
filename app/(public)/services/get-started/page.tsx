@@ -172,7 +172,7 @@ Keep responses short and friendly.`;
             Your project details have been sent to our team. Expect to hear back within <strong>1–2 business days</strong>. A confirmation email is on its way to you.
           </p>
           <div className="flex flex-col gap-3">
-            <button onClick={() => router.push("/blog")} className="btn-primary justify-center">
+            <button onClick={() => router.push("/ai-times")} className="btn-primary justify-center">
               Read Our Blog →
             </button>
             <button onClick={() => router.push("/tools/advisor")} className="btn-secondary justify-center">
