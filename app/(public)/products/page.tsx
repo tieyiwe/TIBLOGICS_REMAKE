@@ -3,19 +3,19 @@
 import Link from "next/link";
 
 const products = [
-  { name: "Goal Tester",            emoji: "🎯", industry: "Business Strategy",        color: "#1B3A6B" },
-  { name: "InStory School",         emoji: "📚", industry: "Education & EdTech",        color: "#2251A3" },
-  { name: "CareFlow AI",            emoji: "❤️", industry: "Healthcare & Social Care",  color: "#0F6E56" },
-  { name: "ShipFrica",              emoji: "📦", industry: "Logistics & Shipping",       color: "#F47C20" },
-  { name: "AI Academy",             emoji: "🎓", industry: "Education & Training",       color: "#7c3aed" },
-  { name: "RoofGuard",              emoji: "🏠", industry: "Property & Construction",    color: "#D85A30" },
-  { name: "Tibintel",               emoji: "🧠", industry: "Business Intelligence",      color: "#1B3A6B" },
-  { name: "Amber",                  emoji: "🔔", industry: "Communications & Alerts",    color: "#D97706" },
-  { name: "GeoStrat",               emoji: "🌍", industry: "Geospatial Intelligence",    color: "#0F6E56" },
-  { name: "AI Readiness Platform",  emoji: "📊", industry: "AI Assessment",              color: "#2251A3" },
-  { name: "AI Central",             emoji: "⚡", industry: "AI Operations",              color: "#0F6E56" },
-  { name: "AutoIQ",                 emoji: "🚗", industry: "Automotive Technology",      color: "#F47C20" },
-  { name: "Appreciate Songs",       emoji: "🎵", industry: "Music Technology",           color: "#7c3aed" },
+  { name: "Goal Tester",            emoji: "🎯", industry: "Business AI Tool",       color: "#1B3A6B" },
+  { name: "InStory School",         emoji: "📚", industry: "EdTech SaaS",             color: "#2251A3" },
+  { name: "CareFlow AI",            emoji: "❤️", industry: "HealthTech SaaS",         color: "#0F6E56" },
+  { name: "ShipFrica",              emoji: "📦", industry: "Logistics SaaS",           color: "#F47C20" },
+  { name: "AI Academy",             emoji: "🎓", industry: "EdTech Platform",          color: "#7c3aed" },
+  { name: "RoofGuard",              emoji: "🏠", industry: "PropTech SaaS",            color: "#D85A30" },
+  { name: "Tibintel",               emoji: "🧠", industry: "Business Intelligence",    color: "#1B3A6B" },
+  { name: "Amber",                  emoji: "🔔", industry: "Communication SaaS",       color: "#D97706" },
+  { name: "GeoStrat",               emoji: "🌍", industry: "Geospatial Intelligence",  color: "#0F6E56" },
+  { name: "AI Readiness Platform",  emoji: "📊", industry: "AI Assessment SaaS",       color: "#2251A3" },
+  { name: "AI Central",             emoji: "⚡", industry: "AI Operations",            color: "#0F6E56" },
+  { name: "AutoIQ",                 emoji: "🚗", industry: "AutoTech SaaS",            color: "#F47C20" },
+  { name: "Appreciate Songs",       emoji: "🎵", industry: "Music Tech",               color: "#7c3aed" },
 ];
 
 export default function ProductsPage() {
