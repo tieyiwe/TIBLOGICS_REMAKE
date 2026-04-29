@@ -130,38 +130,62 @@ export default function BookPage() {
           {/* Left: Service Selector */}
           <div className="lg:col-span-2 flex flex-col gap-3">
             <h2 className="font-syne font-bold text-base text-[#0D1B2A]">Choose Your Session</h2>
-            {SERVICES.map((svc) => (
-              <button
-                key={svc.id}
-                onClick={() => {
-                  setSelectedService(svc); setStep(1); setSelectedDate(null); setSelectedSlot(null);
-                  if (window.innerWidth < 1024) {
-                    setTimeout(() => bookingPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
-                  }
-                }}
-                className={`relative text-left bg-white border rounded-2xl p-4 transition-all duration-200 overflow-hidden ${
-                  selectedService.id === svc.id
-                    ? "border-[#2251A3] bg-[#EBF0FA] shadow-sm"
-                    : "border-[#D2DCE8] hover:border-[#2251A3]/40"
-                }`}
-              >
-                {/* Color bar */}
-                <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl" style={{ backgroundColor: svc.color }} />
-                <div className="pl-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="font-syne font-bold text-sm text-[#0D1B2A]">{svc.name}</span>
-                    {svc.badge && (
-                      <span className="shrink-0 bg-[#FEF0E3] text-[#F47C20] text-xs font-bold px-2 py-0.5 rounded-full">{svc.badge}</span>
-                    )}
+            {SERVICES.map((svc) => {
+              const isSelected = selectedService.id === svc.id;
+              return (
+                <button
+                  key={svc.id}
+                  onClick={() => {
+                    setSelectedService(svc); setStep(1); setSelectedDate(null); setSelectedSlot(null);
+                    if (window.innerWidth < 1024) {
+                      setTimeout(() => bookingPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+                    }
+                  }}
+                  className="relative text-left rounded-2xl p-4 transition-all duration-200 overflow-hidden w-full"
+                  style={{
+                    border: isSelected ? `2.5px solid ${svc.color}` : "1.5px solid #D2DCE8",
+                    background: isSelected ? `${svc.color}0F` : "white",
+                    boxShadow: isSelected ? `0 0 0 4px ${svc.color}18, 0 4px 16px ${svc.color}22` : undefined,
+                    transform: isSelected ? "scale(1.01)" : undefined,
+                  }}
+                >
+                  {/* Color bar — thicker when selected */}
+                  <div
+                    className="absolute left-0 top-0 bottom-0 rounded-l-2xl transition-all duration-200"
+                    style={{ width: isSelected ? "5px" : "3px", backgroundColor: svc.color }}
+                  />
+
+                  {/* Selected checkmark */}
+                  {isSelected && (
+                    <div
+                      className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: svc.color }}
+                    >
+                      <Check size={11} strokeWidth={3} className="text-white" />
+                    </div>
+                  )}
+
+                  <div className="pl-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <span
+                        className="font-syne font-bold text-sm transition-colors duration-200"
+                        style={{ color: isSelected ? svc.color : "#0D1B2A" }}
+                      >
+                        {svc.name}
+                      </span>
+                      {svc.badge && !isSelected && (
+                        <span className="shrink-0 bg-[#FEF0E3] text-[#F47C20] text-xs font-bold px-2 py-0.5 rounded-full">{svc.badge}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="font-syne font-extrabold text-lg text-[#0D1B2A]">{formatPrice(svc.price)}</span>
+                      <span className="font-dm text-xs text-[#7A8FA6] flex items-center gap-1"><Clock size={11} />{svc.duration}</span>
+                    </div>
+                    <p className="font-dm text-xs text-[#7A8FA6] mt-1 leading-relaxed">{svc.description}</p>
                   </div>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="font-syne font-extrabold text-lg text-[#0D1B2A]">{formatPrice(svc.price)}</span>
-                    <span className="font-dm text-xs text-[#7A8FA6] flex items-center gap-1"><Clock size={11} />{svc.duration}</span>
-                  </div>
-                  <p className="font-dm text-xs text-[#7A8FA6] mt-1 leading-relaxed">{svc.description}</p>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
 
           {/* Right: Booking Panel */}
