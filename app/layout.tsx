@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Plus_Jakarta_Sans, Cormorant_Garamond, Cinzel } from "next/font/google";
+import { Lora, Plus_Jakarta_Sans, Cormorant_Garamond, Cinzel } from "next/font/google";
 import "./globals.css";
 
-const syne = Playfair_Display({
+const syne = Lora({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: ["400", "500", "600", "700"],
   style: ["normal", "italic"],
   variable: "--font-syne",
   display: "swap",
