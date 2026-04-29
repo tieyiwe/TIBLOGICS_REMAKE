@@ -31,6 +31,7 @@ interface RelatedPost {
   title: string;
   coverEmoji: string;
   coverGradient: string;
+  coverImage?: string;
   readingTime: number;
   createdAt: string;
 }
@@ -56,6 +57,40 @@ const CATEGORY_LABELS: Record<string, string> = {
   "case-studies": "📊 Case Studies",
   "industry": "🌐 Industry News",
 };
+
+function RelatedCard({ post: r }: { post: RelatedPost }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  return (
+    <Link
+      href={`/ai-times/${r.slug}`}
+      className="group bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+    >
+      <div className="h-28 overflow-hidden relative">
+        {r.coverImage && !imgFailed ? (
+          <img
+            src={r.coverImage}
+            alt=""
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
+            onError={() => setImgFailed(true)}
+          />
+        ) : (
+          <div className={`${gradientClass(r.coverGradient)} w-full h-full flex items-center justify-center`}>
+            <span className="text-4xl group-hover:scale-110 transition-transform">{r.coverEmoji}</span>
+          </div>
+        )}
+      </div>
+      <div className="p-4">
+        <p className="font-syne font-bold text-sm text-[#0D1B2A] group-hover:text-[#2251A3] line-clamp-2 leading-snug">
+          {r.title}
+        </p>
+        <p className="font-dm text-xs text-[#7A8FA6] mt-1.5 flex items-center gap-1">
+          <Clock size={10} /> {r.readingTime} min
+        </p>
+      </div>
+    </Link>
+  );
+}
 
 export default function BlogPostPage() {
   const params = useParams();
@@ -281,23 +316,7 @@ export default function BlogPostPage() {
             <h2 className="font-syne font-bold text-lg text-[#0D1B2A] mb-5">More from this category</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {related.map((r) => (
-                <Link
-                  key={r.id}
-                  href={`/ai-times/${r.slug}`}
-                  className="group bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
-                >
-                  <div className={`${gradientClass(r.coverGradient)} h-24 flex items-center justify-center`}>
-                    <span className="text-4xl group-hover:scale-110 transition-transform">{r.coverEmoji}</span>
-                  </div>
-                  <div className="p-4">
-                    <p className="font-syne font-bold text-sm text-[#0D1B2A] group-hover:text-[#2251A3] line-clamp-2 leading-snug">
-                      {r.title}
-                    </p>
-                    <p className="font-dm text-xs text-[#7A8FA6] mt-1.5 flex items-center gap-1">
-                      <Clock size={10} /> {r.readingTime} min
-                    </p>
-                  </div>
-                </Link>
+                <RelatedCard key={r.id} post={r} />
               ))}
             </div>
           </div>
