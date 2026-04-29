@@ -15,6 +15,14 @@ export const metadata: Metadata = {
     description: "AI implementation, workflow automation, and full-stack digital services for ambitious businesses.",
     url: "https://tiblogics.com/services",
     type: "website",
+    images: [{ url: "https://tiblogics.com/og-image.png", width: 1200, height: 630, alt: "TIBLOGICS AI Services" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AI Services — TIBLOGICS",
+    description: "AI implementation, workflow automation, and full-stack digital services for ambitious businesses.",
+    creator: "@tiblogics",
+    images: ["https://tiblogics.com/og-image.png"],
   },
 };
 

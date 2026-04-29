@@ -15,6 +15,14 @@ export const metadata: Metadata = {
     description: "Scan your website for AI readiness, speed, and UX gaps in seconds.",
     url: "https://tiblogics.com/tools",
     type: "website",
+    images: [{ url: "https://tiblogics.com/og-image.png", width: 1200, height: 630, alt: "TIBLOGICS AI Tools" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Platform Testing & AI Tools — TIBLOGICS",
+    description: "Scan your website for AI readiness, speed, and UX gaps in seconds.",
+    creator: "@tiblogics",
+    images: ["https://tiblogics.com/og-image.png"],
   },
 };
 
