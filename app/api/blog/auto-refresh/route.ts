@@ -452,33 +452,39 @@ export async function GET(req: NextRequest) {
   const checkOnly = searchParams.get("check") === "true";
   const force = searchParams.get("force") === "true";
 
+  // Safely read last refresh — table may not exist yet
+  let needsRefresh = force;
+  let lastRefresh: Date | null = null;
   try {
     const lastRefreshSetting = await prisma.adminSettings.findUnique({
       where: { key: "blog_last_refresh" },
     });
-    const lastRefresh = lastRefreshSetting
-      ? new Date(lastRefreshSetting.value)
-      : null;
-    const needsRefresh =
-      force || !lastRefresh || Date.now() - lastRefresh.getTime() > REFRESH_INTERVAL_MS;
-
-    if (checkOnly) {
-      return NextResponse.json({
-        needsRefresh,
-        lastRefresh: lastRefresh?.toISOString() ?? null,
-        nextRefresh: lastRefresh
-          ? new Date(lastRefresh.getTime() + REFRESH_INTERVAL_MS).toISOString()
-          : null,
-      });
-    }
-
+    lastRefresh = lastRefreshSetting ? new Date(lastRefreshSetting.value) : null;
     if (!needsRefresh) {
-      return NextResponse.json({ message: "Content is up to date", postsAdded: 0 });
+      needsRefresh = !lastRefresh || Date.now() - lastRefresh.getTime() > REFRESH_INTERVAL_MS;
     }
+  } catch {
+    needsRefresh = true; // table missing — treat as needing refresh
+  }
 
-    let postsAdded = 0;
-    const errors: string[] = [];
+  if (checkOnly) {
+    return NextResponse.json({
+      needsRefresh,
+      lastRefresh: lastRefresh?.toISOString() ?? null,
+      nextRefresh: lastRefresh
+        ? new Date(lastRefresh.getTime() + REFRESH_INTERVAL_MS).toISOString()
+        : null,
+    });
+  }
 
+  if (!needsRefresh) {
+    return NextResponse.json({ message: "Content is up to date", postsAdded: 0 });
+  }
+
+  let postsAdded = 0;
+  const errors: string[] = [];
+
+  try {
     // Seed immediately if DB is empty — no external API needed
     const existingCount = await prisma.blogPost.count();
     if (existingCount === 0) {
@@ -511,82 +517,90 @@ export async function GET(req: NextRequest) {
             },
           });
           postsAdded++;
-        } catch { /* skip */ }
+        } catch { /* skip duplicate */ }
       }
     }
+  } catch (err) {
+    // BlogPost table missing — cannot seed
+    const msg = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: "Database tables missing. Run: npx prisma db push", detail: msg }, { status: 503 });
+  }
 
-    // Then fetch from external sources to add fresh AI-generated posts on top
-    const [hnStories, devArticles] = await Promise.all([
-      fetchHackerNews(),
-      fetchDevTo(),
-    ]);
+  // Fetch fresh AI-generated posts from external sources
+  const [hnStories, devArticles] = await Promise.all([
+    fetchHackerNews(),
+    fetchDevTo(),
+  ]);
 
-    const sources: Array<{ title: string; url?: string; source: string }> = [
-      ...hnStories.map((s) => ({ title: s.title, url: s.url, source: "Hacker News" })),
-      ...devArticles.map((a) => ({ title: a.title, url: a.url, source: "DEV.to" })),
-    ];
+  const sources: Array<{ title: string; url?: string; source: string }> = [
+    ...hnStories.map((s) => ({ title: s.title, url: s.url, source: "Hacker News" })),
+    ...devArticles.map((a) => ({ title: a.title, url: a.url, source: "DEV.to" })),
+  ];
 
-    for (const item of sources.slice(0, 5)) {
-      try {
-        const existing = await prisma.blogPost.findFirst({
-          where: {
-            OR: [
-              { title: { contains: item.title.slice(0, 50), mode: "insensitive" } },
-              ...(item.url ? [{ sourceUrl: item.url }] : []),
-            ],
-          },
-        });
-        if (existing) continue;
+  for (const item of sources.slice(0, 5)) {
+    try {
+      const existing = await prisma.blogPost.findFirst({
+        where: {
+          OR: [
+            { title: { contains: item.title.slice(0, 50), mode: "insensitive" } },
+            ...(item.url ? [{ sourceUrl: item.url }] : []),
+          ],
+        },
+      });
+      if (existing) continue;
 
-        const generated = await generatePost(item.title, item.url, item.source);
-        const meta = CATEGORY_META[generated.category] ?? CATEGORY_META["industry"];
+      const generated = await generatePost(item.title, item.url, item.source);
+      const meta = CATEGORY_META[generated.category] ?? CATEGORY_META["industry"];
 
-        const baseSlug = item.title
-          .toLowerCase()
-          .replace(/[^a-z0-9\s]/g, "")
-          .trim()
-          .replace(/\s+/g, "-")
-          .slice(0, 70);
+      const baseSlug = item.title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, "")
+        .trim()
+        .replace(/\s+/g, "-")
+        .slice(0, 70);
 
-        let slug = baseSlug;
-        let i = 1;
-        while (await prisma.blogPost.findUnique({ where: { slug } })) {
-          slug = `${baseSlug}-${i++}`;
-        }
-
-        await prisma.blogPost.create({
-          data: {
-            slug,
-            title: item.title,
-            excerpt: generated.excerpt,
-            content: generated.content,
-            category: generated.category,
-            tags: generated.tags,
-            coverEmoji: meta.emoji,
-            coverGradient: meta.gradient,
-            coverImage: pickUniqueImage(generated.category),
-            author: "Echelon AI",
-            readingTime: Math.ceil(generated.content.replace(/<[^>]*>/g, "").split(" ").length / 200),
-            featured: false,
-            published: true,
-            aiGenerated: true,
-            sourceUrl: item.url,
-            sourceTitle: item.source,
-          },
-        });
-        postsAdded++;
-      } catch (e) {
-        errors.push(String(e));
+      let slug = baseSlug;
+      let i = 1;
+      while (await prisma.blogPost.findUnique({ where: { slug } })) {
+        slug = `${baseSlug}-${i++}`;
       }
-    }
 
-    // Update last refresh timestamp
+      await prisma.blogPost.create({
+        data: {
+          slug,
+          title: item.title,
+          excerpt: generated.excerpt,
+          content: generated.content,
+          category: generated.category,
+          tags: generated.tags,
+          coverEmoji: meta.emoji,
+          coverGradient: meta.gradient,
+          coverImage: pickUniqueImage(generated.category),
+          author: "Echelon AI",
+          readingTime: Math.ceil(generated.content.replace(/<[^>]*>/g, "").split(" ").length / 200),
+          featured: false,
+          published: true,
+          aiGenerated: true,
+          sourceUrl: item.url,
+          sourceTitle: item.source,
+        },
+      });
+      postsAdded++;
+    } catch (e) {
+      errors.push(String(e));
+    }
+  }
+
+  // Update last refresh timestamp — ignore if table missing
+  try {
     await prisma.adminSettings.upsert({
       where: { key: "blog_last_refresh" },
       create: { key: "blog_last_refresh", value: new Date().toISOString() },
       update: { value: new Date().toISOString() },
     });
+  } catch { /* ignore */ }
 
+  try {
     await prisma.blogRefreshLog.create({
       data: {
         success: errors.length === 0,
@@ -594,11 +608,7 @@ export async function GET(req: NextRequest) {
         message: errors.length > 0 ? errors.slice(0, 3).join("; ") : null,
       },
     });
+  } catch { /* ignore */ }
 
-    return NextResponse.json({ message: `Added ${postsAdded} new posts`, postsAdded });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("Auto-refresh error:", msg);
-    return NextResponse.json({ error: "Refresh failed", detail: msg }, { status: 500 });
-  }
+  return NextResponse.json({ message: `Added ${postsAdded} new posts`, postsAdded });
 }
