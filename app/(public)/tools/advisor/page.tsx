@@ -83,23 +83,56 @@ export default function AdvisorPage() {
     setInput("");
     setLoading(true);
 
+    setMessages([...newMessages, { role: "assistant", content: "" }]);
+
     try {
       const res = await fetch("/api/claude/advisor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: newMessages }),
       });
-      const data = await res.json();
-      if (data.text) {
-        const { cleaned, profile } = parseProspectProfile(data.text);
-        setMessages([...newMessages, { role: "assistant", content: cleaned }]);
-        if (profile) setProspectProfile(profile);
+
+      if (!res.ok || !res.body) throw new Error("Bad response");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let full = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        for (const line of chunk.split("\n")) {
+          if (!line.startsWith("data: ")) continue;
+          const payload = line.slice(6).trim();
+          if (payload === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(payload);
+            if (parsed.text) {
+              full += parsed.text;
+              setMessages((prev) => {
+                const updated = [...prev];
+                updated[updated.length - 1] = { role: "assistant", content: full };
+                return updated;
+              });
+            }
+          } catch { /* ignore incomplete chunks */ }
+        }
       }
+
+      const { cleaned, profile } = parseProspectProfile(full);
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = { role: "assistant", content: cleaned };
+        return updated;
+      });
+      if (profile) setProspectProfile(profile);
     } catch {
-      setMessages([
-        ...newMessages,
-        { role: "assistant", content: "Sorry, I ran into a connection issue. Please try again." },
-      ]);
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = { role: "assistant", content: "Sorry, I ran into a connection issue. Please try again." };
+        return updated;
+      });
     } finally {
       setLoading(false);
     }

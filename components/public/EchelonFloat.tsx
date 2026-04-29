@@ -195,28 +195,60 @@ export default function EchelonFloat() {
     setInput("");
     setLoading(true);
 
+    // Add empty assistant message to stream into
+    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
     try {
       const res = await fetch("/api/claude/float", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: nextMessages }),
       });
-      const data = await res.json();
-      const raw: string =
-        res.ok && data.text
-          ? data.text
-          : "Sorry, I'm having trouble connecting right now. Please email info@tiblogics.com for help.";
 
-      const hasBooking = raw.includes(BOOKING_MARKER);
-      const clean = raw.replace(BOOKING_MARKER, "").trim();
-      setMessages((prev) => [...prev, { role: "assistant", content: clean }]);
+      if (!res.ok || !res.body) throw new Error("Bad response");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let full = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        for (const line of chunk.split("\n")) {
+          if (!line.startsWith("data: ")) continue;
+          const payload = line.slice(6).trim();
+          if (payload === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(payload);
+            if (parsed.text) {
+              full += parsed.text;
+              setMessages((prev) => {
+                const updated = [...prev];
+                updated[updated.length - 1] = { role: "assistant", content: full };
+                return updated;
+              });
+            }
+            if (parsed.error) throw new Error(parsed.error);
+          } catch { /* ignore parse errors on incomplete chunks */ }
+        }
+      }
+
+      const hasBooking = full.includes(BOOKING_MARKER);
+      const clean = full.replace(BOOKING_MARKER, "").trim();
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = { role: "assistant", content: clean };
+        return updated;
+      });
       if (hasBooking) setBookingStep("prompt");
       if (!isOpen) setHasUnread(true);
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "Sorry, I'm having trouble connecting right now. Please email info@tiblogics.com for help." },
-      ]);
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = { role: "assistant", content: "Sorry, I'm having trouble connecting right now. Please email info@tiblogics.com for help." };
+        return updated;
+      });
       if (!isOpen) setHasUnread(true);
     } finally {
       setLoading(false);
