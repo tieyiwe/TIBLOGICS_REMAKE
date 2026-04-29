@@ -447,6 +447,71 @@ For a logistics company: an agent tracks shipments, updates clients, escalates d
   },
 ];
 
+// Editorial spotlights — always checked and inserted if missing (even when DB has posts)
+const EDITORIAL_SPOTLIGHTS = [
+  {
+    title: "The OpenAI Exodus: Why the Architects of Modern AI Are Walking Out",
+    excerpt: "An unprecedented wave of departures from OpenAI is raising serious questions about where the company — and the AI industry — is headed.",
+    category: "breaking",
+    tags: ["openai", "ai leadership", "safety", "industry"],
+    coverEmoji: "⚡",
+    coverGradient: "from-red-600 to-orange-500",
+    coverImage: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80",
+    featured: true,
+    content: `<p>In the span of eighteen months, OpenAI lost a co-founder, its CTO, its chief scientist, its chief research officer, its head of alignment — and nearly its CEO. For a company at the center of the most consequential technology race in decades, the departures aren't just personnel moves. They're signals.</p>
+
+<h2>The Names That Left</h2>
+<p>The list reads like a who's who of the modern AI era. Ilya Sutskever, co-founder and chief scientist, departed in May 2024 after playing a pivotal role in the boardroom coup that briefly ousted Sam Altman in November 2023. Jan Leike, who led OpenAI's superalignment team — the group tasked with ensuring AI systems remain safe as they become more capable — resigned the same week, posting a scathing message calling safety work "a slow burn" that had lost priority to product development.</p>
+<p>Then came the September 2024 wave: Mira Murati, OpenAI's CTO and widely seen as the steady operational hand of the company, resigned abruptly. She was followed almost immediately by Bob McGrew, Chief Research Officer, and Barret Zoph, VP of Research. John Schulman, one of the original architects of reinforcement learning from human feedback (RLHF) — the technique that made ChatGPT behave the way it does — had already left to join Anthropic months earlier.</p>
+
+<h2>What They're Saying (and Not Saying)</h2>
+<p>Few departures came with detailed explanations. Jan Leike was the most direct, writing that he and Sam Altman had "a fundamental disagreement about what OpenAI should be" and that "safety culture and processes have taken a back seat to shiny products." Others offered little beyond brief farewell statements. The silence itself is telling — many are likely bound by NDAs and equity vesting considerations.</p>
+<p>What emerges from the pattern, however, is a consistent theme: tension between the company's original safety-focused mission and the commercial pressures of competing with Google, Anthropic, Meta, and a rapidly growing field of competitors. When OpenAI raised $6.6 billion in late 2024 and began restructuring toward a for-profit model, the message was clear: the company was accelerating, not pausing.</p>
+
+<h2>What Stayed Behind</h2>
+<p>Sam Altman remains. The company's commercial momentum — ChatGPT, GPT-4o, the API business — remains. OpenAI's valuation crossed $150 billion. By most business metrics, OpenAI is thriving. But the institutional knowledge carried out by these departures represents years of research intuition that is genuinely difficult to replace. The people who built the safety frameworks, the alignment research, the fundamental model architectures — many of them are now building competing labs or advising competitors.</p>
+
+<h2>What This Means for Small Businesses</h2>
+<p>For businesses using or planning to use OpenAI's products, this is mostly business as usual in the short term — ChatGPT still works, the API still works, GPT-4o is still the best general-purpose model available. But the longer-term implication matters: an AI ecosystem with more distributed talent, more competing frontier labs, and more regulatory scrutiny is likely healthier for buyers than a single dominant provider. The departures are accelerating that distribution.</p>
+
+<p><strong>Practical takeaway:</strong> Don't build critical business workflows on a single AI provider. The talent moves happening at the frontier will eventually reshape which models and platforms lead — having provider-agnostic architecture gives you flexibility as the landscape shifts.</p>`,
+  },
+  {
+    title: "GPT-4o's Native Image Generation Is Here — and It Changes Everything",
+    excerpt: "OpenAI's native image generation inside ChatGPT isn't just better than DALL-E — it's a different category of tool entirely.",
+    category: "breaking",
+    tags: ["openai", "image generation", "gpt-4o", "ai tools"],
+    coverEmoji: "⚡",
+    coverGradient: "from-red-600 to-orange-500",
+    coverImage: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=800&q=80",
+    featured: false,
+    content: `<p>OpenAI's release of native image generation inside ChatGPT using GPT-4o didn't just improve on DALL-E 3 — it demonstrated a capability gap wide enough to reshape how both individuals and businesses think about AI-generated visuals. Within days of its release, social media was saturated with outputs. The Studio Ghibli-style portraits alone generated enough traffic to briefly strain OpenAI's servers. But the real story isn't the aesthetic novelty — it's the underlying capability shift.</p>
+
+<h2>What's Actually Different</h2>
+<p>Previous image generation models, including DALL-E 3 and Midjourney, were trained separately from the language models that prompted them. They were good at artistic composition and stylistic range, but famously bad at text within images, precise spatial relationships, and following complex multi-part instructions accurately.</p>
+<p>GPT-4o's image generation is native — the same model that understands your instructions also generates the image. The result: accurate text rendering in images (signs, labels, business cards, infographics), precise adherence to complex prompts, and genuine understanding of context and intent rather than pattern-matching on keywords.</p>
+
+<h2>Where It's Already Being Used</h2>
+<p>The early applications emerging from power users are instructive:</p>
+<ul>
+<li><strong>Marketing and brand teams</strong> are generating campaign mockups, social media assets, and product visualizations in minutes — iterations that previously required a designer and multiple revision cycles.</li>
+<li><strong>E-commerce businesses</strong> are generating lifestyle product photos from plain product shots, replacing expensive photography sessions for catalog images.</li>
+<li><strong>Publishers and content creators</strong> are producing custom illustrations for articles, social posts, and newsletters at a fraction of previous cost and time.</li>
+<li><strong>Educators and trainers</strong> are building visual explainers, diagrams, and scenario-based imagery for course content.</li>
+</ul>
+
+<h2>The Controversy It Surfaced</h2>
+<p>The same release that delighted users also sparked the industry's sharpest conversation yet about AI and creative work. The ability to render images in the style of Studio Ghibli — or any other identifiable artistic style — raised pointed questions about consent, attribution, and what the training data for these models actually contained. Artists, illustrators, and studios who have long expressed concern about AI training on their work without compensation found new ammunition in the quality of the outputs.</p>
+<p>OpenAI responded with some style restrictions but largely maintained its position that style itself is not copyrightable. The legal and ethical debate is far from settled.</p>
+
+<h2>What This Means for Small Businesses</h2>
+<p>For most small businesses, the practical implication is simple: high-quality custom visual content — which previously required either hiring a designer or compromising on quality — is now accessible on demand. A restaurant can generate menu imagery. A consultant can build a branded presentation in an afternoon. A startup can produce a complete landing page visual identity without a full design budget.</p>
+<p>The caveat: quality prompt engineering still matters significantly. The output gap between a vague prompt and a precise one is substantial. Businesses that invest time in learning how to prompt effectively will see dramatically better results than those treating it as a magic button.</p>
+
+<p><strong>Practical takeaway:</strong> If your business regularly spends time or money on stock photos, basic design assets, or visual content creation, test GPT-4o image generation against your current workflow. The time and cost savings for straightforward visual tasks are real — but keep a human designer in the loop for brand-critical work.</p>`,
+  },
+];
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const checkOnly = searchParams.get("check") === "true";
@@ -485,40 +550,53 @@ export async function GET(req: NextRequest) {
   const errors: string[] = [];
 
   try {
-    // Seed immediately if DB is empty — no external API needed
-    const existingCount = await prisma.blogPost.count();
-    if (existingCount === 0) {
-      for (let idx = 0; idx < SEED_POSTS.length; idx++) {
-        const sp = SEED_POSTS[idx];
-        try {
-          const dupCheck = await prisma.blogPost.findFirst({
-            where: { title: { contains: sp.title.slice(0, 50), mode: "insensitive" } },
-          });
-          if (dupCheck) continue;
-          const baseSlug = sp.title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-").slice(0, 70);
-          let slug = baseSlug; let si = 1;
-          while (await prisma.blogPost.findUnique({ where: { slug } })) slug = `${baseSlug}-${si++}`;
-          await prisma.blogPost.create({
-            data: {
-              slug,
-              title: sp.title,
-              excerpt: sp.excerpt,
-              content: sp.content,
-              category: sp.category,
-              tags: sp.tags,
-              coverEmoji: sp.coverEmoji,
-              coverGradient: sp.coverGradient,
-              coverImage: sp.coverImage,
-              author: "TIBLOGICS Editorial",
-              readingTime: Math.ceil(sp.content.replace(/<[^>]*>/g, "").split(" ").length / 200),
-              featured: idx === 0,
-              published: true,
-              aiGenerated: false,
-            },
-          });
-          postsAdded++;
-        } catch { /* skip duplicate */ }
-      }
+    // Always insert editorial spotlights if not already present
+    for (const sp of EDITORIAL_SPOTLIGHTS) {
+      try {
+        const dupCheck = await prisma.blogPost.findFirst({
+          where: { title: { contains: sp.title.slice(0, 50), mode: "insensitive" } },
+        });
+        if (dupCheck) continue;
+        const baseSlug = sp.title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-").slice(0, 70);
+        let slug = baseSlug; let si = 1;
+        while (await prisma.blogPost.findUnique({ where: { slug } })) slug = `${baseSlug}-${si++}`;
+        await prisma.blogPost.create({
+          data: {
+            slug, title: sp.title, excerpt: sp.excerpt, content: sp.content,
+            category: sp.category, tags: sp.tags, coverEmoji: sp.coverEmoji,
+            coverGradient: sp.coverGradient, coverImage: sp.coverImage,
+            author: "TIBLOGICS Editorial",
+            readingTime: Math.ceil(sp.content.replace(/<[^>]*>/g, "").split(" ").length / 200),
+            featured: sp.featured, published: true, aiGenerated: false,
+          },
+        });
+        postsAdded++;
+      } catch { /* skip duplicate */ }
+    }
+
+    // Always ensure all seed posts are present (safe — each checks for duplicates first)
+    for (let idx = 0; idx < SEED_POSTS.length; idx++) {
+      const sp = SEED_POSTS[idx];
+      try {
+        const dupCheck = await prisma.blogPost.findFirst({
+          where: { title: { contains: sp.title.slice(0, 50), mode: "insensitive" } },
+        });
+        if (dupCheck) continue;
+        const baseSlug = sp.title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-").slice(0, 70);
+        let slug = baseSlug; let si = 1;
+        while (await prisma.blogPost.findUnique({ where: { slug } })) slug = `${baseSlug}-${si++}`;
+        await prisma.blogPost.create({
+          data: {
+            slug, title: sp.title, excerpt: sp.excerpt, content: sp.content,
+            category: sp.category, tags: sp.tags, coverEmoji: sp.coverEmoji,
+            coverGradient: sp.coverGradient, coverImage: sp.coverImage,
+            author: "TIBLOGICS Editorial",
+            readingTime: Math.ceil(sp.content.replace(/<[^>]*>/g, "").split(" ").length / 200),
+            featured: idx === 0, published: true, aiGenerated: false,
+          },
+        });
+        postsAdded++;
+      } catch { /* skip duplicate */ }
     }
   } catch (err) {
     // BlogPost table missing — cannot seed
