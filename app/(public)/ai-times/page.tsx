@@ -71,6 +71,7 @@ export default function BlogPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [featuredImgFailed, setFeaturedImgFailed] = useState(false);
 
   useEffect(() => {
     trackPageVisit("/ai-times");
@@ -236,8 +237,8 @@ export default function BlogPage() {
               <Link href={`/ai-times/${featured.slug}`} className="group block mb-10">
                 <div className="bg-white border border-[#D2DCE8] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 lg:flex">
                   <div className="lg:w-96 h-64 lg:h-auto flex-shrink-0 overflow-hidden relative">
-                    {featured.coverImage ? (
-                      <img src={featured.coverImage} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    {featured.coverImage && !featuredImgFailed ? (
+                      <img src={featured.coverImage} alt="" className="w-full h-full object-cover" loading="lazy" onError={() => setFeaturedImgFailed(true)} />
                     ) : (
                       <div className={`${gradientClass(featured.coverGradient)} w-full h-full flex items-center justify-center`}>
                         <span className="text-8xl">{featured.coverEmoji}</span>
@@ -319,16 +320,18 @@ function CategoryBadge({ category }: { category: string }) {
 }
 
 function PostCard({ post }: { post: BlogPost }) {
+  const [imgFailed, setImgFailed] = useState(false);
   return (
     <Link href={`/ai-times/${post.slug}`} className="group">
       <article className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 h-full flex flex-col">
         <div className="h-44 overflow-hidden relative">
-          {post.coverImage ? (
+          {post.coverImage && !imgFailed ? (
             <img
               src={post.coverImage}
               alt=""
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               loading="lazy"
+              onError={() => setImgFailed(true)}
             />
           ) : (
             <div className={`${gradientClass(post.coverGradient)} w-full h-full flex items-center justify-center`}>

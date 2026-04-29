@@ -66,6 +66,7 @@ export default function BlogPostPage() {
   const [copied, setCopied] = useState(false);
   const [widgetVisible, setWidgetVisible] = useState(false);
   const [widgetDismissed, setWidgetDismissed] = useState(false);
+  const [heroImgFailed, setHeroImgFailed] = useState(false);
 
   useEffect(() => {
     function onScroll() {
@@ -154,9 +155,9 @@ export default function BlogPostPage() {
       </div>
 
       {/* Hero cover */}
-      {post.coverImage ? (
+      {post.coverImage && !heroImgFailed ? (
         <div className="w-full h-72 relative overflow-hidden">
-          <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" />
+          <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" onError={() => setHeroImgFailed(true)} />
           <div className="absolute inset-0 bg-black/30 flex items-end p-6">
             <span className="text-5xl">{post.coverEmoji}</span>
           </div>
