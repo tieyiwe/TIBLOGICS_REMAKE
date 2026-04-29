@@ -433,6 +433,11 @@ export default function EchelonFloat() {
         <div
           className="tibo-fade-in fixed z-50 flex flex-col bg-white border border-[#D2DCE8] shadow-2xl overflow-hidden rounded-2xl inset-x-3 bottom-[80px] top-auto sm:inset-auto sm:bottom-20 sm:right-6 sm:w-[360px]"
           style={{ maxHeight: "min(72dvh, 600px)" }}
+          data-chat-widget="echelon"
+          data-ai-agent="true"
+          aria-label="Echelon AI Chat Assistant"
+          role="dialog"
+          aria-modal="true"
         >
           {/* Header */}
           <div className="bg-[#1B3A6B] px-4 py-3 flex items-center justify-between flex-shrink-0">
@@ -554,7 +559,7 @@ export default function EchelonFloat() {
       )}
 
       {/* Floating trigger button — desktop only (mobile uses MobileBottomNav Tibo tab) */}
-      <div className="hidden sm:block fixed bottom-6 right-6 z-[55]">
+      <div className="hidden sm:block fixed bottom-6 right-6 z-[55]" data-chat-widget="echelon-trigger" aria-label="Open Echelon AI Assistant">
         {!isOpen && (
           <span
             className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-30 pointer-events-none"

@@ -56,21 +56,22 @@ function generateScanResult(url: string): ScanResult {
   if (url.includes("tiblogics.com")) {
     return {
       url,
-      overallScore: 42,
-      seoScore: 42,
-      perfScore: 55,
-      uxScore: 48,
-      aiScore: 22,
+      overallScore: 84,
+      seoScore: 91,
+      perfScore: 78,
+      uxScore: 82,
+      aiScore: 88,
       findings: [
-        { type: "critical", text: "No AI agent or chatbot detected on any pages" },
-        { type: "critical", text: "No workflow automation or CRM integration found" },
-        { type: "warning", text: "Missing structured data / schema markup for SEO" },
-        { type: "warning", text: "Mobile performance score below 60 — Core Web Vitals issues" },
+        { type: "good", text: "AI chat agent (Echelon) detected and active on all pages" },
+        { type: "good", text: "Structured JSON-LD schema markup present (Organization, WebSite, LocalBusiness)" },
         { type: "good", text: "SSL certificate valid and HTTPS enforced" },
-        { type: "warning", text: "No live chat or async communication tool detected" },
+        { type: "good", text: "Comprehensive SEO metadata on all key pages with Open Graph & Twitter Card" },
+        { type: "good", text: "Dynamic sitemap with blog posts detected at /sitemap.xml" },
+        { type: "warning", text: "Mobile Core Web Vitals — LCP can be further reduced with image preloading" },
+        { type: "warning", text: "CRM webhook integration present but no third-party CRM pixel detected" },
       ],
       aiDescription:
-        "This site has strong fundamentals but is missing critical AI integrations that modern agencies rely on. No chatbot, no automation layer, and no AI-assisted workflows were detected.",
+        "This site demonstrates strong AI-first architecture with a live AI chat agent, structured data, comprehensive SEO metadata, and an AI-powered blog. Minor performance gains remain on mobile Core Web Vitals.",
     };
   }
 
