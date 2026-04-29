@@ -597,7 +597,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ message: `Added ${postsAdded} new posts`, postsAdded });
   } catch (err) {
-    console.error("Auto-refresh error:", err);
-    return NextResponse.json({ error: "Refresh failed" }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("Auto-refresh error:", msg);
+    return NextResponse.json({ error: "Refresh failed", detail: msg }, { status: 500 });
   }
 }
