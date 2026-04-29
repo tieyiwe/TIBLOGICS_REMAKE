@@ -77,13 +77,13 @@ export default function BlogPostPage() {
 
   useEffect(() => {
     if (!slug) return;
-    fetch(`/api/ai-times/posts/${slug}`)
+    fetch(`/api/blog/posts/${slug}`)
       .then((r) => r.json())
       .then((d) => {
         setPost(d.post ?? null);
         // Fetch related posts
         if (d.post) {
-          return fetch(`/api/ai-times/posts?category=${d.post.category}&limit=4`);
+          return fetch(`/api/blog/posts?category=${d.post.category}&limit=4`);
         }
       })
       .then((r) => r?.json())

@@ -84,7 +84,7 @@ export default function BlogPage() {
       const params = new URLSearchParams({ limit: "24" });
       if (category !== "all") params.set("category", category);
       if (search) params.set("search", search);
-      const res = await fetch(`/api/ai-times/posts?${params}`, { signal: controller.signal });
+      const res = await fetch(`/api/blog/posts?${params}`, { signal: controller.signal });
       clearTimeout(timer);
       const data = await res.json();
       setPosts(data.posts ?? []);
@@ -101,7 +101,7 @@ export default function BlogPage() {
   }, [fetchPosts]);
 
   useEffect(() => {
-    fetch("/api/ai-times/breaking-news")
+    fetch("/api/blog/breaking-news")
       .then((r) => r.json())
       .then((d) => setBreaking(d.news));
   }, []);
@@ -110,17 +110,17 @@ export default function BlogPage() {
   useEffect(() => {
     async function checkAndRefresh() {
       try {
-        const checkRes = await fetch("/api/ai-times/auto-refresh?check=true");
+        const checkRes = await fetch("/api/blog/auto-refresh?check=true");
         const checkData = await checkRes.json();
-        const currentPosts = await fetch("/api/ai-times/posts?limit=1").then(r => r.json());
+        const currentPosts = await fetch("/api/blog/posts?limit=1").then(r => r.json());
         const isEmpty = (currentPosts.total ?? 0) === 0;
 
         if (checkData.needsRefresh || isEmpty) {
           setRefreshing(true);
           try {
             const url = isEmpty
-              ? "/api/ai-times/auto-refresh?force=true"
-              : "/api/ai-times/auto-refresh";
+              ? "/api/blog/auto-refresh?force=true"
+              : "/api/blog/auto-refresh";
             await fetch(url);
           } finally {
             await fetchPosts(true);
