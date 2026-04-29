@@ -216,8 +216,8 @@ async function sendBookingConfirmation(data: {
 
   const safeFirst = escapeHtml(data.firstName);
   const safeService = escapeHtml(serviceLabel);
-  const providerName = data.meetingLink?.includes("zoom.us") ? "Zoom" : "Google Meet";
-  const providerColor = data.meetingLink?.includes("zoom.us") ? "#2D8CFF" : "#1A73E8";
+  const providerName = "Jitsi Meet";
+  const providerColor = "#1D76BA";
 
   const meetingSection = data.meetingLink
     ? `<div style="margin:24px 0;text-align:center;">
