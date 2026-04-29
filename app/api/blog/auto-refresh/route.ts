@@ -420,7 +420,7 @@ For a logistics company: an agent tracks shipments, updates clients, escalates d
     tags: ["prompt engineering", "ai tips", "chatgpt", "productivity", "llm"],
     coverEmoji: "💡",
     coverGradient: "from-purple-600 to-violet-500",
-    coverImage: "https://images.unsplash.com/photo-1434030216411-0b793f4b6f6d?auto=format&fit=crop&w=800&q=80",
+    coverImage: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=800&q=80",
     featured: false,
     content: `<p>Most people who are disappointed by AI results are prompting wrong. Not maliciously or even carelessly — just without a framework. The same AI model that produces a generic, forgettable response to a vague question can produce genuinely impressive, business-ready output when given the right context and instruction. Here's the framework that makes the difference.</p>
 
@@ -1028,8 +1028,18 @@ export async function GET(req: NextRequest) {
       try {
         const dupCheck = await prisma.blogPost.findFirst({
           where: { title: { contains: sp.title.slice(0, 50), mode: "insensitive" } },
+          select: { id: true, coverImage: true },
         });
-        if (dupCheck) continue;
+        if (dupCheck) {
+          // Patch missing coverImage on existing posts
+          if (!dupCheck.coverImage && sp.coverImage) {
+            await prisma.blogPost.update({
+              where: { id: dupCheck.id },
+              data: { coverImage: sp.coverImage },
+            });
+          }
+          continue;
+        }
         const baseSlug = sp.title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-").slice(0, 70);
         let slug = baseSlug; let si = 1;
         while (await prisma.blogPost.findUnique({ where: { slug } })) slug = `${baseSlug}-${si++}`;
