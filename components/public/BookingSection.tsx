@@ -12,7 +12,7 @@ interface Session {
 const sessions: Session[] = [
   {
     name: "Project Discovery Meeting",
-    duration: "20 min",
+    duration: "30 min",
     badge: "Free",
     color: "#F47C20",
     description: "Intro call to explore your project — no commitment required.",
