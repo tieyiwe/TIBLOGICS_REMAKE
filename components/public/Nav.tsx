@@ -101,7 +101,7 @@ export default function Nav() {
                 Talk to Tibo ↗
               </button>
               <Link href="/book" className="btn-secondary text-sm py-2 px-4">
-                Book a Free Session
+                Book a Free Consulting
               </Link>
             </div>
 

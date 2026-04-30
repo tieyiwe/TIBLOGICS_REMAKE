@@ -26,7 +26,7 @@ const company = [
   { label: "About Us", href: "/about" },
   { label: "Services", href: "/services" },
   { label: "Try Smart Tools", href: "/tools" },
-  { label: "Book a Session", href: "/book" },
+  { label: "Book a Consulting", href: "/book" },
   { label: "Contact", href: "/contact" },
 ];
 

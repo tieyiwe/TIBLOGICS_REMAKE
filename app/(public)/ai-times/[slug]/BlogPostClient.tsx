@@ -347,7 +347,7 @@ export default function BlogPostPage() {
                 href="/book"
                 className="flex items-center gap-1.5 bg-[#F47C20] hover:bg-[#d96b18] text-white font-dm font-semibold text-xs px-3 py-2 rounded-lg transition-colors flex-1 justify-center"
               >
-                <Calendar size={12} /> Book a Session
+                <Calendar size={12} /> Book a Consulting
               </Link>
               <Link
                 href="/contact"

@@ -169,7 +169,7 @@ export default function HomePage() {
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-3 mt-6">
             <Link href="/book" className="btn-primary justify-center">
-              Book a Free Session →
+              Book a Free Consulting →
             </Link>
             <Link href="/services" className="btn-secondary justify-center">
               Explore Services
