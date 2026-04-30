@@ -56,3 +56,34 @@ ALTER TABLE "AgentLead" ADD COLUMN IF NOT EXISTS "area" TEXT;
 
 -- Add phone to Appointment
 ALTER TABLE "Appointment" ADD COLUMN IF NOT EXISTS "phone" TEXT;
+
+-- Create Event table
+CREATE TABLE IF NOT EXISTS "Event" (
+  "id" TEXT NOT NULL DEFAULT gen_random_uuid()::text,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "title" TEXT NOT NULL,
+  "slug" TEXT NOT NULL,
+  "description" TEXT NOT NULL,
+  "content" TEXT,
+  "type" TEXT NOT NULL DEFAULT 'TRAINING',
+  "price" INTEGER NOT NULL DEFAULT 0,
+  "currency" TEXT NOT NULL DEFAULT 'USD',
+  "capacity" INTEGER,
+  "location" TEXT NOT NULL DEFAULT 'Online',
+  "date" TIMESTAMP(3),
+  "endDate" TIMESTAMP(3),
+  "timeSlot" TEXT,
+  "timezone" TEXT NOT NULL DEFAULT 'America/New_York',
+  "coverImage" TEXT,
+  "tags" TEXT[] DEFAULT ARRAY[]::TEXT[],
+  "featured" BOOLEAN NOT NULL DEFAULT false,
+  "published" BOOLEAN NOT NULL DEFAULT false,
+  "registrationOpen" BOOLEAN NOT NULL DEFAULT true,
+  "stripePaymentLink" TEXT,
+  "spots" INTEGER,
+  CONSTRAINT "Event_pkey" PRIMARY KEY ("id")
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "Event_slug_key" ON "Event"("slug");
+CREATE INDEX IF NOT EXISTS "Event_published_idx" ON "Event"("published");
+CREATE INDEX IF NOT EXISTS "Event_date_idx" ON "Event"("date");

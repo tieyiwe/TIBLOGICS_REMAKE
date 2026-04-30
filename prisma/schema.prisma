@@ -477,3 +477,32 @@ model WaitlistEntry {
   @@index([product])
   @@index([createdAt])
 }
+
+model Event {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  title            String
+  slug             String   @unique
+  description      String   @db.Text
+  content          String?  @db.Text
+  type             String   @default("TRAINING")
+  price            Int      @default(0)
+  currency         String   @default("USD")
+  capacity         Int?
+  location         String   @default("Online")
+  date             DateTime?
+  endDate          DateTime?
+  timeSlot         String?
+  timezone         String   @default("America/New_York")
+  coverImage       String?
+  tags             String[]
+  featured         Boolean  @default(false)
+  published        Boolean  @default(false)
+  registrationOpen Boolean  @default(true)
+  stripePaymentLink String?
+  spots            Int?
+
+  @@index([published])
+  @@index([date])
+}
