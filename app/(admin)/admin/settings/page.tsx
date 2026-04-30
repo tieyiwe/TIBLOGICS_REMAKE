@@ -364,7 +364,91 @@ curl -X POST $TIBLOGICS_WEBHOOK_URL \\
             : <><Save size={14} /> Update Password</>}
         </button>
       </section>
+
+      {/* ── Production Readiness ── */}
+      {isOwner && <ClearDevDataSection />}
     </div>
+  );
+}
+
+function ClearDevDataSection() {
+  const [confirmed, setConfirmed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ success: boolean; message: string; breakdown?: Record<string, number> } | null>(null);
+
+  async function handleClear() {
+    if (!confirmed) return;
+    setBusy(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/admin/clear-dev-data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm: "CLEAR_DEV_DATA" }),
+      });
+      const data = await res.json();
+      setResult({ success: res.ok, message: data.message ?? data.error, breakdown: data.breakdown });
+    } catch {
+      setResult({ success: false, message: "Request failed." });
+    } finally {
+      setBusy(false);
+      setConfirmed(false);
+    }
+  }
+
+  return (
+    <section className="bg-white border border-red-200 rounded-2xl p-6 space-y-4">
+      <div className="flex items-center gap-2 border-b border-red-100 pb-3">
+        <Trash2 size={16} className="text-red-500" />
+        <h2 className="font-syne font-bold text-base text-red-600">Production Readiness — Clear Dev Data</h2>
+      </div>
+
+      <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed">
+        Before going live, clear all test data created during development.
+        This permanently deletes appointments, leads, prospects, analytics, agent sessions,
+        scanner data, and tool usage logs. <strong>Projects, blog posts, collaborators, and settings are preserved.</strong>
+      </p>
+
+      <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+        <p className="font-dm text-xs text-red-600 font-semibold mb-1">⚠️ This action cannot be undone.</p>
+        <p className="font-dm text-xs text-red-500">Only use this once — right before launching production.</p>
+      </div>
+
+      {result && (
+        <div className={`flex flex-col gap-1 px-4 py-3 rounded-xl text-sm font-dm border ${
+          result.success ? "bg-green-50 border-green-200 text-green-700" : "bg-red-50 border-red-200 text-red-600"
+        }`}>
+          <span className="font-semibold">{result.message}</span>
+          {result.breakdown && (
+            <div className="grid grid-cols-2 gap-x-4 mt-2 text-xs opacity-80">
+              {Object.entries(result.breakdown).filter(([, v]) => v > 0).map(([k, v]) => (
+                <span key={k}>{k}: {v} deleted</span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="flex items-center gap-3 flex-wrap">
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={confirmed}
+            onChange={(e) => setConfirmed(e.target.checked)}
+            className="w-4 h-4 accent-red-500"
+          />
+          <span className="font-dm text-sm text-[#3A4A5C]">I understand this will permanently delete all dev/test data</span>
+        </label>
+      </div>
+
+      <button
+        onClick={handleClear}
+        disabled={!confirmed || busy}
+        className="flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white text-sm font-dm font-semibold rounded-xl hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        {busy ? <><RefreshCw size={14} className="animate-spin" /> Clearing…</> : <><Trash2 size={14} /> Clear Dev Data & Go Live</>}
+      </button>
+    </section>
   );
 }
 
