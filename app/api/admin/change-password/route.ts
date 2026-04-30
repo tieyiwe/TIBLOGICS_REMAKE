@@ -20,10 +20,11 @@ export async function POST(req: Request) {
   });
 
   let currentValid = false;
-  if (stored?.value) {
+  // Accept env ADMIN_PASSWORD as master override for current-password verification
+  if (process.env.ADMIN_PASSWORD && currentPassword === process.env.ADMIN_PASSWORD) {
+    currentValid = true;
+  } else if (stored?.value) {
     currentValid = await bcrypt.compare(currentPassword, stored.value);
-  } else if (process.env.ADMIN_PASSWORD) {
-    currentValid = currentPassword === process.env.ADMIN_PASSWORD;
   }
 
   if (!currentValid) {

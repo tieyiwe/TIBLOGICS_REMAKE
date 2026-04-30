@@ -7,6 +7,16 @@ export async function GET() {
     const existing = await prisma.adminSettings.findUnique({
       where: { key: "admin_password_hash" },
     });
+
+    // Auto-seed from ADMIN_PASSWORD env var if hash not yet in DB
+    if (!existing && process.env.ADMIN_PASSWORD) {
+      const hash = await bcrypt.hash(process.env.ADMIN_PASSWORD, 12);
+      await prisma.adminSettings.create({
+        data: { key: "admin_password_hash", value: hash },
+      }).catch(() => {});
+      return NextResponse.json({ needsSetup: false, autoSeeded: true });
+    }
+
     return NextResponse.json({ needsSetup: !existing });
   } catch {
     return NextResponse.json({ needsSetup: true });

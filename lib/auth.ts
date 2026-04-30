@@ -19,17 +19,7 @@ export const authOptions: NextAuthOptions = {
 
         // ── Owner login ───────────────────────────────────────────────────────
         if (credentials.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) {
-          const stored = await prisma.adminSettings.findUnique({
-            where: { key: "admin_password_hash" },
-          });
-          let valid = false;
-          if (stored?.value) {
-            valid = await bcrypt.compare(credentials.password, stored.value);
-          } else if (process.env.ADMIN_PASSWORD) {
-            valid = credentials.password === process.env.ADMIN_PASSWORD;
-          }
-          if (!valid) return null;
-          return {
+          const ownerUser = {
             id: "owner",
             email: OWNER_EMAIL,
             name: process.env.ADMIN_NAME ?? "Tieyiwe",
@@ -37,6 +27,37 @@ export const authOptions: NextAuthOptions = {
             isOwner: true,
             permissions: ["*"],
           };
+
+          // Priority 1: ADMIN_PASSWORD env var acts as a master credential that
+          // works in every environment (dev, staging, prod) without needing the
+          // DB to be seeded first. On first successful match it auto-seeds the
+          // bcrypt hash so subsequent logins go through the DB path.
+          if (process.env.ADMIN_PASSWORD) {
+            if (credentials.password === process.env.ADMIN_PASSWORD) {
+              // Auto-seed bcrypt hash into this environment's DB if missing
+              const existing = await prisma.adminSettings.findUnique({
+                where: { key: "admin_password_hash" },
+              });
+              if (!existing) {
+                const hash = await bcrypt.hash(process.env.ADMIN_PASSWORD, 12);
+                await prisma.adminSettings.create({
+                  data: { key: "admin_password_hash", value: hash },
+                }).catch(() => {});
+              }
+              return ownerUser;
+            }
+          }
+
+          // Priority 2: DB-stored bcrypt hash (set via admin "Change Password" UI)
+          const stored = await prisma.adminSettings.findUnique({
+            where: { key: "admin_password_hash" },
+          });
+          if (stored?.value) {
+            const valid = await bcrypt.compare(credentials.password, stored.value);
+            if (valid) return ownerUser;
+          }
+
+          return null;
         }
 
         // ── Collaborator login ────────────────────────────────────────────────
