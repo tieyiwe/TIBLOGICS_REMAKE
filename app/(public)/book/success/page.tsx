@@ -46,11 +46,11 @@ function SuccessContent() {
   const searchParams = useSearchParams();
   const appointmentId = searchParams.get("appointmentId");
   const isFree = searchParams.get("free") === "true";
-  const [status, setStatus] = useState<Status>("polling");
+  const [status, setStatus] = useState<Status>(isFree ? "confirmed" : "polling");
   const [zoomLink, setZoomLink] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!appointmentId) { setStatus("confirmed"); return; }
+    if (isFree || !appointmentId) { setStatus("confirmed"); return; }
 
     let attempts = 0;
     const MAX = 20; // poll for up to 20 × 1.5s = 30s
