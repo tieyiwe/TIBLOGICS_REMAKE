@@ -1,17 +1,18 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-// Deferred so the module can be imported at build time without RESEND_API_KEY
-function getResend() {
-  return new Resend(process.env.RESEND_API_KEY ?? "no-key");
+function getTransport() {
+  return nodemailer.createTransport({
+    host: process.env.TITAN_SMTP_HOST ?? "smtp.titan.email",
+    port: Number(process.env.TITAN_SMTP_PORT ?? 465),
+    secure: Number(process.env.TITAN_SMTP_PORT ?? 465) === 465,
+    auth: {
+      user: process.env.TITAN_SMTP_USER ?? "info@tiblogics.com",
+      pass: process.env.TITAN_SMTP_PASS,
+    },
+  });
 }
 
-// Proxy preserves the Resend instance API for files that do:
-//   import resend from "@/lib/resend"; resend.emails.send(...)
-const resendProxy = new Proxy({} as Resend, {
-  get(_: Resend, prop: string | symbol) {
-    return (getResend() as unknown as Record<string | symbol, unknown>)[prop];
-  },
-});
+const FROM = `TIBLOGICS <${process.env.TITAN_SMTP_USER ?? "info@tiblogics.com"}>`;
 
 export async function sendConfirmationEmail(appointment: {
   firstName: string;
@@ -31,8 +32,8 @@ export async function sendConfirmationEmail(appointment: {
     day: "numeric",
   }).format(new Date(appointment.date));
 
-  await getResend().emails.send({
-    from: process.env.FROM_EMAIL!,
+  await getTransport().sendMail({
+    from: FROM,
     to: appointment.email,
     subject: `Your TIBLOGICS session is confirmed — ${appointment.serviceType} on ${dateStr}`,
     html: `
@@ -77,16 +78,13 @@ export async function sendTiweNotification(appointment: {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   }).format(new Date(appointment.date));
 
-  const addOns = [
-    appointment.addOnActionPlan && "Written Action Plan (+$79)",
-  ].filter(Boolean).join(", ") || "None";
-
-  const isPaid = appointment.totalAmount > 0;
   const adminEmail = process.env.TIWE_EMAIL || process.env.DESIGN_EMAIL;
   if (!adminEmail) return;
 
-  await getResend().emails.send({
-    from: process.env.FROM_EMAIL!,
+  const isPaid = appointment.totalAmount > 0;
+
+  await getTransport().sendMail({
+    from: FROM,
     to: adminEmail,
     subject: `🗓️ NEW BOOKING — ${appointment.serviceType} · ${appointment.firstName} ${appointment.lastName} · ${dateStr}`,
     html: `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#F4F7FB;font-family:Arial,sans-serif;">
@@ -103,25 +101,18 @@ export async function sendTiweNotification(appointment: {
         <tr><td style="padding:8px 0;color:#7A8FA6;">Service</td><td style="padding:8px 0;color:#0D1B2A;font-weight:600;">${appointment.serviceType}</td></tr>
         <tr><td style="padding:8px 0;color:#7A8FA6;">Date & Time</td><td style="padding:8px 0;color:#0D1B2A;font-weight:600;">${dateStr} at ${appointment.timeSlot} ET</td></tr>
         <tr><td style="padding:8px 0;color:#7A8FA6;">Amount</td><td style="padding:8px 0;color:#0D1B2A;">${isPaid ? `<strong style="color:#16a34a;">$${(appointment.totalAmount / 100).toFixed(0)} paid</strong>` : "Free"}</td></tr>
-        ${addOns !== "None" ? `<tr><td style="padding:8px 0;color:#7A8FA6;">Add-ons</td><td style="padding:8px 0;color:#0D1B2A;">${addOns}</td></tr>` : ""}
         ${appointment.goalNotes ? `<tr><td style="padding:8px 0;color:#7A8FA6;vertical-align:top;">Their Goals</td><td style="padding:8px 0;color:#3A4A5C;font-style:italic;">${appointment.goalNotes}</td></tr>` : ""}
       </table>
-
       ${appointment.meetingLink ? `
       <div style="margin:24px 0;padding:16px 20px;background:#EFF8FF;border-radius:12px;border-left:4px solid #1D76BA;">
         <p style="margin:0 0 8px;font-size:12px;color:#1D76BA;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Jitsi Meeting Link</p>
         <a href="${appointment.meetingLink}" style="color:#1D76BA;word-break:break-all;font-size:14px;">${appointment.meetingLink}</a>
       </div>` : ""}
-
-      <div style="margin-top:24px;display:flex;gap:12px;">
+      <div style="margin-top:24px;">
         <a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/appointments"
            style="display:inline-block;background:#F47C20;color:white;text-decoration:none;padding:12px 24px;border-radius:10px;font-weight:700;font-size:14px;">
           View in Admin →
         </a>
-        ${appointment.meetingLink ? `<a href="${appointment.meetingLink}"
-           style="display:inline-block;background:#1D76BA;color:white;text-decoration:none;padding:12px 24px;border-radius:10px;font-weight:700;font-size:14px;">
-          Join on Jitsi →
-        </a>` : ""}
       </div>
     </div>
   </div>
@@ -137,9 +128,12 @@ export async function sendProspectEmail(prospect: {
   mainChallenge: string;
   suggestedSolutions: string[];
 }) {
-  await getResend().emails.send({
-    from: process.env.FROM_EMAIL!,
-    to: process.env.TIWE_EMAIL!,
+  const adminEmail = process.env.TIWE_EMAIL;
+  if (!adminEmail) return;
+
+  await getTransport().sendMail({
+    from: FROM,
+    to: adminEmail,
     subject: `🎯 New Prospect from TIBS — ${prospect.name} at ${prospect.business}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
@@ -156,4 +150,52 @@ export async function sendProspectEmail(prospect: {
   });
 }
 
-export default resendProxy;
+export async function sendRescheduleEmail(data: {
+  firstName: string;
+  email: string;
+  originalDate: string;
+  originalTimeSlot: string;
+  suggestedDate: string;
+  suggestedTimeSlot: string;
+  message?: string;
+}) {
+  await getTransport().sendMail({
+    from: FROM,
+    to: data.email,
+    subject: `TIBLOGICS — A new time has been suggested for your session`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #1B3A6B; padding: 24px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">TIB<span style="color: #F47C20;">LOGICS</span></h1>
+        </div>
+        <div style="padding: 32px; background: white;">
+          <h2 style="color: #0D1B2A;">Hi ${data.firstName}, we'd like to reschedule</h2>
+          <p style="color: #3A4A5C;">Your original time slot is no longer available. Here's what we're suggesting:</p>
+          <div style="background: #F4F7FB; border-radius: 12px; padding: 20px; margin: 20px 0;">
+            <p style="margin: 0 0 8px;"><strong style="color: #7A8FA6;">Original:</strong> <span style="text-decoration: line-through; color: #7A8FA6;">${data.originalDate} at ${data.originalTimeSlot} ET</span></p>
+            <p style="margin: 0;"><strong style="color: #2251A3;">New suggested time:</strong> <span style="color: #0D1B2A; font-weight: 700;">${data.suggestedDate} at ${data.suggestedTimeSlot} ET</span></p>
+          </div>
+          ${data.message ? `<p style="color: #3A4A5C; font-style: italic;">"${data.message}"</p>` : ""}
+          <p style="color: #3A4A5C;">Please reply to this email to confirm or suggest an alternative time.</p>
+          <p style="color: #7A8FA6; font-size: 14px; margin-top: 32px;">info@tiblogics.com | tiblogics.com</p>
+        </div>
+      </div>
+    `,
+  });
+}
+
+// Drop-in replacement for `resend.emails.send({from, to, subject, html})`
+const resendCompat = {
+  emails: {
+    send(msg: { from?: string; to: string | string[]; subject: string; html: string }) {
+      return getTransport().sendMail({
+        from: msg.from ?? FROM,
+        to: Array.isArray(msg.to) ? msg.to.join(", ") : msg.to,
+        subject: msg.subject,
+        html: msg.html,
+      });
+    },
+  },
+};
+
+export default resendCompat;
