@@ -11,7 +11,7 @@ const SERVICES = [
   { id: "audit", name: "AI Readiness Audit", duration: "90 min + Deliverable", price: 89700, badge: null, description: "Full assessment of your tech stack and AI readiness with a written deliverable.", color: "#1B3A6B" },
   { id: "website", name: "Website AI Transformation", duration: "45 min", price: 24900, badge: "New", description: "Review your current website and design an AI-powered upgrade plan.", color: "#0F6E56" },
   { id: "cost", name: "AI Cost & Price Strategy for AI Product Builders", duration: "60 min", price: 29700, badge: null, description: "Calculate your AI costs and design a profitable pricing model.", color: "#7c3aed" },
-  { id: "tech", name: "General Tech Consulting", duration: "45 min", price: 29700, badge: null, description: "Get expert guidance on any technical challenge — architecture, tools, or strategy.", color: "#3A4A5C" },
+  { id: "tech", name: "Other Consulting (Apps, SaaS, Special Features…)", duration: "1h", price: 24900, badge: null, description: "Expert guidance on app development, SaaS products, special features, or any technical challenge.", color: "#3A4A5C" },
 ];
 
 const ADD_ONS = [
