@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import {
   MoreVertical, Download, Search, Loader2, X, CheckCircle,
-  Video, Trash2, Ban, CheckCheck, Clock, AlertCircle, ExternalLink, Send,
+  Video, Trash2, Ban, CheckCheck, Clock, AlertCircle, ExternalLink, Send, CalendarClock,
 } from "lucide-react";
 
 interface Appointment {
@@ -16,7 +16,7 @@ interface Appointment {
   company?: string | null;
   goalNotes?: string | null;
   serviceType: string;
-  serviceDuration: number;
+  serviceDuration: string;
   servicePrice: number;
   totalAmount: number;
   status: string;
@@ -108,6 +108,10 @@ function DetailPanel({
   const [cancelReason, setCancelReason] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: "ok" | "err"; msg: string } | null>(null);
+  const [showReschedule, setShowReschedule] = useState(false);
+  const [suggestedDate, setSuggestedDate] = useState("");
+  const [suggestedTimeSlot, setSuggestedTimeSlot] = useState("");
+  const [rescheduleMessage, setRescheduleMessage] = useState("");
 
   function showToast(type: "ok" | "err", msg: string) {
     setToast({ type, msg });
@@ -201,6 +205,29 @@ function DetailPanel({
     }
   }
 
+  async function handleReschedule() {
+    if (!suggestedDate || !suggestedTimeSlot) {
+      showToast("err", "Please enter both a date and time slot.");
+      return;
+    }
+    setBusy("reschedule");
+    try {
+      const res = await fetch(`/api/admin/appointments/${appt.id}/reschedule`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ suggestedDate, suggestedTimeSlot, message: rescheduleMessage.trim() || undefined }),
+      });
+      if (!res.ok) throw new Error();
+      showToast("ok", "New time suggestion sent to client.");
+      setShowReschedule(false);
+      setSuggestedDate(""); setSuggestedTimeSlot(""); setRescheduleMessage("");
+    } catch {
+      showToast("err", "Failed to send reschedule notice.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function handleDelete() {
     if (!confirm(`Delete this appointment for ${appt.firstName} ${appt.lastName}? This cannot be undone.`)) return;
     setBusy("delete");
@@ -257,7 +284,7 @@ function DetailPanel({
           <section className="bg-[#F4F7FB] rounded-2xl p-4 space-y-2">
             <p className="font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide mb-3">Meeting Details</p>
             <Row label="Service" value={fmt(appt.serviceType)} />
-            <Row label="Duration" value={`${appt.serviceDuration} min`} />
+            <Row label="Duration" value={appt.serviceDuration} />
             <Row label="Date" value={fmtDate(appt.date)} />
             <Row label="Time" value={`${appt.timeSlot} (${appt.timezone})`} />
             <Row label="Amount" value={fmtMoney(appt.totalAmount)} />
@@ -308,6 +335,16 @@ function DetailPanel({
             )}
           </section>
 
+          {/* Reschedule note (if a new time was suggested) */}
+          {appt.notes && appt.notes.startsWith("[Reschedule suggested]") && (
+            <section className="bg-[#FEF0E3] border border-orange-100 rounded-xl p-4">
+              <p className="font-dm text-xs font-semibold text-[#F47C20] uppercase mb-1 flex items-center gap-1.5">
+                <CalendarClock size={12} /> Reschedule Suggested
+              </p>
+              <p className="font-dm text-sm text-[#3A4A5C]">{appt.notes.replace("[Reschedule suggested] ", "")}</p>
+            </section>
+          )}
+
           {/* Cancel reason (if cancelled) */}
           {appt.status === "CANCELLED" && appt.cancelReason && (
             <section className="bg-red-50 border border-red-100 rounded-xl p-4">
@@ -342,6 +379,70 @@ function DetailPanel({
                 {busy === "resend" ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                 Resend Confirmation Email
               </button>
+            )}
+
+            {/* Suggest new time */}
+            {["PENDING", "CONFIRMED"].includes(appt.status) && (
+              <div className="border border-[#D2DCE8] rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setShowReschedule((v) => !v)}
+                  className="w-full flex items-center justify-between gap-2 px-4 py-3 text-sm font-dm font-semibold text-[#0D1B2A] hover:bg-[#F4F7FB] transition-colors"
+                >
+                  <span className="flex items-center gap-2">
+                    <CalendarClock size={14} className="text-[#F47C20]" />
+                    Suggest a New Time
+                  </span>
+                  <span className="text-[#7A8FA6] text-xs">{showReschedule ? "▲" : "▼"}</span>
+                </button>
+                {showReschedule && (
+                  <div className="px-4 pb-4 space-y-3 border-t border-[#F4F7FB] pt-3">
+                    <p className="font-dm text-xs text-[#7A8FA6]">
+                      An email will be sent to <strong>{appt.email}</strong> with the proposed new time.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block font-dm text-xs text-[#7A8FA6] mb-1">New Date</label>
+                        <input
+                          type="date"
+                          value={suggestedDate}
+                          onChange={(e) => setSuggestedDate(e.target.value)}
+                          className="w-full px-3 py-2 text-sm font-dm border border-[#D2DCE8] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3] bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-dm text-xs text-[#7A8FA6] mb-1">New Time</label>
+                        <select
+                          value={suggestedTimeSlot}
+                          onChange={(e) => setSuggestedTimeSlot(e.target.value)}
+                          className="w-full px-3 py-2 text-sm font-dm border border-[#D2DCE8] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3] bg-white"
+                        >
+                          <option value="">Select time</option>
+                          {["8:00 AM","8:30 AM","9:00 AM","9:30 AM","10:00 AM","10:30 AM","11:00 AM","11:30 AM",
+                            "12:00 PM","12:30 PM","1:00 PM","1:30 PM","2:00 PM","2:30 PM","3:00 PM","3:30 PM",
+                            "4:00 PM","4:30 PM","5:00 PM","5:30 PM","6:00 PM"].map((t) => (
+                            <option key={t} value={t}>{t}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <textarea
+                      value={rescheduleMessage}
+                      onChange={(e) => setRescheduleMessage(e.target.value)}
+                      placeholder="Optional note to client (e.g. 'Apologies for the change — looking forward to speaking with you!')"
+                      rows={2}
+                      className="w-full px-3 py-2 text-sm font-dm border border-[#D2DCE8] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3] bg-white resize-none"
+                    />
+                    <button
+                      onClick={handleReschedule}
+                      disabled={!!busy}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#F47C20] text-white text-sm font-dm font-semibold rounded-xl hover:bg-[#d96a15] transition-colors disabled:opacity-60"
+                    >
+                      {busy === "reschedule" ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                      Send Time Suggestion to Client
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Complete */}
@@ -449,7 +550,7 @@ export default function AppointmentsPage() {
       ...filtered.map((a) => [
         fmtDate(a.date), a.timeSlot,
         `${a.firstName} ${a.lastName}`, a.email, a.company ?? "",
-        fmt(a.serviceType), `${a.serviceDuration} min`,
+        fmt(a.serviceType), a.serviceDuration,
         fmtMoney(a.totalAmount), a.status, a.paymentStatus ?? "",
         a.zoomLink ?? "",
       ]),
@@ -567,7 +668,7 @@ export default function AppointmentsPage() {
                     </td>
                     <td className="px-5 py-4">
                       <p className="font-dm text-sm text-[#0D1B2A]">{fmt(a.serviceType)}</p>
-                      <p className="font-dm text-xs text-[#7A8FA6]">{a.serviceDuration} min</p>
+                      <p className="font-dm text-xs text-[#7A8FA6]">{a.serviceDuration}</p>
                     </td>
                     <td className="px-5 py-4 font-dm text-sm font-semibold text-[#0D1B2A]">
                       {fmtMoney(a.totalAmount)}
