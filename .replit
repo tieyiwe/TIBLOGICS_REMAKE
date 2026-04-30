@@ -15,17 +15,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run build && npm run start"
-waitForPort = 3000
-
-[[workflows.workflow]]
-name = "Dev"
-author = "agent"
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "next dev -H 0.0.0.0 -p 3000"
+args = "fuser -k 3000/tcp 2>/dev/null || true; npm run build && npm run start"
 waitForPort = 3000
 
 [deployment]
@@ -35,14 +25,6 @@ run = ["sh", "-c", "npm run start"]
 [[ports]]
 localPort = 3000
 externalPort = 80
-
-[[ports]]
-localPort = 3001
-externalPort = 3001
-
-[[ports]]
-localPort = 3002
-externalPort = 3002
 
 [agent]
 expertMode = true
