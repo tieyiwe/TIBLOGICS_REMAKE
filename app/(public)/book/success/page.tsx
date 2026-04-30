@@ -109,7 +109,11 @@ function SuccessContent() {
 
         <h1 className="font-syne font-extrabold text-4xl text-[#0D1B2A] mb-3">You&rsquo;re booked!</h1>
         <p className="font-dm text-[#3A4A5C] text-lg mb-8">
-          {status === "confirmed" ? "Your session is confirmed and payment received." : "Your payment was received — confirmation is on its way."}
+          {isFree
+            ? "Your session is confirmed. Check your inbox for the details."
+            : status === "confirmed"
+              ? "Your session is confirmed and payment received."
+              : "Your payment was received — confirmation is on its way."}
         </p>
 
         <div className="bg-[#EBF0FA] border border-[#D2DCE8] rounded-2xl p-6 mb-10 text-left">
