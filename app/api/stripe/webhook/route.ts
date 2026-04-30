@@ -43,7 +43,7 @@ export async function POST(req: Request) {
             date: appt.date,
             timeSlot: appt.timeSlot,
             timezone: appt.timezone,
-            serviceDuration: Number(appt.serviceDuration),
+            serviceDuration: appt.serviceDuration,
             firstName: appt.firstName,
             lastName: appt.lastName,
           });

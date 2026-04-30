@@ -21,6 +21,7 @@ model Appointment {
   lastName        String
   email           String
   company         String?
+  phone           String?
   goalNotes       String?
   addOnRecording      Boolean @default(false)
   addOnActionPlan     Boolean @default(false)
@@ -391,13 +392,21 @@ model AgentLead {
   status        AgentLeadStatus @default(NEW)
   fromAgent     String          @default("aria")
   assignedTo    String?
-  callSid       String?
-  callStatus    String?
-  callNotes     String?         @db.Text
-  transferredAt DateTime?
-  contactedAt   DateTime?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  callSid           String?
+  callStatus        String?
+  callNotes         String?   @db.Text
+  callTranscript    String?   @db.Text
+  callSummary       String?   @db.Text
+  blandCallId       String?
+  interestedIn      String[]
+  hasWebsite        Boolean?
+  businessInfo      Json?
+  scrapedAt         DateTime?
+  area              String?
+  transferredAt     DateTime?
+  contactedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([status])
   @@index([fromAgent])

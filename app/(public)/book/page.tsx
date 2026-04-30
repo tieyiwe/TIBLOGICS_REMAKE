@@ -42,7 +42,7 @@ export default function BookPage() {
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [isBlocked, setIsBlocked] = useState(false);
-  const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", company: "", goalNotes: "" });
+  const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", phone: "", company: "", goalNotes: "" });
   const [submitting, setSubmitting] = useState(false);
 
   const bookingPanelRef = useRef<HTMLDivElement>(null);
@@ -322,6 +322,11 @@ export default function BookPage() {
                       onChange={e => setFormData(p => ({ ...p, email: e.target.value }))} placeholder="jane@company.com" />
                   </div>
                   <div>
+                    <label className="block text-xs font-dm font-medium text-[#3A4A5C] mb-1">Phone Number</label>
+                    <input type="tel" className="input-base w-full text-sm" value={formData.phone}
+                      onChange={e => setFormData(p => ({ ...p, phone: e.target.value }))} placeholder="+1 (555) 000-0000 (optional)" />
+                  </div>
+                  <div>
                     <label className="block text-xs font-dm font-medium text-[#3A4A5C] mb-1">Company / Business</label>
                     <input className="input-base w-full text-sm" value={formData.company}
                       onChange={e => setFormData(p => ({ ...p, company: e.target.value }))} placeholder="Acme Inc. (optional)" />
@@ -372,6 +377,12 @@ export default function BookPage() {
                       <span className="text-[#7A8FA6]">Email</span>
                       <span className="font-medium text-[#0D1B2A]">{formData.email}</span>
                     </div>
+                    {formData.phone && (
+                      <div className="flex justify-between text-sm font-dm">
+                        <span className="text-[#7A8FA6]">Phone</span>
+                        <span className="font-medium text-[#0D1B2A]">{formData.phone}</span>
+                      </div>
+                    )}
                     <div className="border-t border-[#D2DCE8] pt-2 flex justify-between">
                       <span className="font-syne font-bold text-[#0D1B2A]">Total</span>
                       <span className="font-syne font-extrabold text-2xl text-[#2251A3]">{formatPrice(total)}</span>

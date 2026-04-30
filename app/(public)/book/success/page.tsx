@@ -2,9 +2,45 @@
 
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
 
 type Status = "polling" | "confirmed" | "timeout";
+
+function CopyLinkBox({ link }: { link: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(link).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  }, [link]);
+
+  return (
+    <div className="mt-4 bg-white border border-[#D2DCE8] rounded-xl p-4">
+      <p className="font-dm text-xs text-[#7A8FA6] mb-2">
+        📋 <strong>Save your meeting link</strong> — copy it now so you always have it handy, even if the email goes to spam.
+      </p>
+      <div className="flex items-center gap-2">
+        <input
+          readOnly
+          value={link}
+          className="flex-1 px-3 py-2 text-xs font-mono bg-[#F4F7FB] border border-[#D2DCE8] rounded-lg text-[#2251A3] truncate focus:outline-none"
+        />
+        <button
+          onClick={handleCopy}
+          className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-dm font-semibold transition-all ${
+            copied
+              ? "bg-green-100 text-green-700 border border-green-200"
+              : "bg-[#1B3A6B] text-white hover:bg-[#2251A3]"
+          }`}
+        >
+          {copied ? "✓ Copied!" : "Copy Link"}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -97,6 +133,7 @@ function SuccessContent() {
                   >
                     🎥 Join on Jitsi Meet
                   </a>
+                  <CopyLinkBox link={zoomLink} />
                 </>
               ) : (
                 <p className="font-dm text-[#3A4A5C] text-sm leading-relaxed">
