@@ -14,9 +14,7 @@ const SERVICES = [
   { id: "tech", name: "Other Consulting (Apps, SaaS, Special Features…)", duration: "60 min", price: 24900, badge: null, description: "Expert guidance on app development, SaaS products, special features, or any technical challenge.", color: "#3A4A5C" },
 ];
 
-const ADD_ONS = [
-  { id: "actionPlan", label: "Written action plan & follow-up notes", price: 7900 },
-];
+const ADD_ONS: { id: string; label: string; price: number }[] = [];
 
 const TIME_SLOTS = ["9:00 AM", "10:00 AM", "11:00 AM", "1:00 PM", "2:00 PM", "3:00 PM"];
 
@@ -45,13 +43,11 @@ export default function BookPage() {
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [isBlocked, setIsBlocked] = useState(false);
   const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", company: "", goalNotes: "" });
-  const [addOns, setAddOns] = useState({ actionPlan: false });
   const [submitting, setSubmitting] = useState(false);
 
   const bookingPanelRef = useRef<HTMLDivElement>(null);
 
-  const addOnTotal = addOns.actionPlan ? 7900 : 0;
-  const total = selectedService.price + addOnTotal;
+  const total = selectedService.price;
 
   async function handleDateSelect(date: Date) {
     setSelectedDate(date);
@@ -82,7 +78,7 @@ export default function BookPage() {
           timezone: "America/New_York",
           ...formData,
           addOnRecording: false,
-          addOnActionPlan: addOns.actionPlan,
+          addOnActionPlan: false,
           addOnSlackAccess: false,
           totalAmount: total,
         }),
@@ -337,22 +333,6 @@ export default function BookPage() {
                       placeholder="Share your main goals or challenges for this session..." />
                   </div>
 
-                  {/* Add-ons */}
-                  <div>
-                    <p className="font-dm text-xs font-medium text-[#3A4A5C] mb-2">Add-ons (optional)</p>
-                    <div className="space-y-2">
-                      {ADD_ONS.map(ao => (
-                        <label key={ao.id} className="flex items-center gap-3 p-3 border border-[#D2DCE8] rounded-xl cursor-pointer hover:bg-[#F4F7FB] transition-colors">
-                          <input type="checkbox" className="accent-[#1B3A6B] w-4 h-4"
-                            checked={addOns[ao.id as keyof typeof addOns]}
-                            onChange={e => setAddOns(p => ({ ...p, [ao.id]: e.target.checked }))} />
-                          <span className="font-dm text-sm text-[#0D1B2A] flex-1">{ao.label}</span>
-                          <span className="font-syne font-bold text-sm text-[#F47C20]">+{formatPrice(ao.price)}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
                   <div className="flex items-center justify-between pt-2 border-t border-[#D2DCE8]">
                     <span className="font-dm text-sm text-[#7A8FA6]">Total: <span className="font-syne font-bold text-[#0D1B2A]">{formatPrice(total)}</span></span>
                   </div>
@@ -392,12 +372,6 @@ export default function BookPage() {
                       <span className="text-[#7A8FA6]">Email</span>
                       <span className="font-medium text-[#0D1B2A]">{formData.email}</span>
                     </div>
-                    {addOnTotal > 0 && (
-                      <div className="flex justify-between text-sm font-dm">
-                        <span className="text-[#7A8FA6]">Add-ons</span>
-                        <span className="font-medium text-[#F47C20]">+{formatPrice(addOnTotal)}</span>
-                      </div>
-                    )}
                     <div className="border-t border-[#D2DCE8] pt-2 flex justify-between">
                       <span className="font-syne font-bold text-[#0D1B2A]">Total</span>
                       <span className="font-syne font-extrabold text-2xl text-[#2251A3]">{formatPrice(total)}</span>
