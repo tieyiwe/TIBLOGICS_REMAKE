@@ -78,8 +78,8 @@ export async function sendTiweNotification(appointment: {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   }).format(new Date(appointment.date));
 
-  const adminEmail = process.env.TIWE_EMAIL || process.env.DESIGN_EMAIL;
-  if (!adminEmail) return;
+  const adminEmail = process.env.TIWE_EMAIL || process.env.DESIGN_EMAIL || process.env.TITAN_SMTP_USER || "info@tiblogics.com";
+
 
   const isPaid = appointment.totalAmount > 0;
 
@@ -128,8 +128,8 @@ export async function sendProspectEmail(prospect: {
   mainChallenge: string;
   suggestedSolutions: string[];
 }) {
-  const adminEmail = process.env.TIWE_EMAIL;
-  if (!adminEmail) return;
+  const adminEmail = process.env.TIWE_EMAIL || process.env.TITAN_SMTP_USER || "info@tiblogics.com";
+
 
   await getTransport().sendMail({
     from: FROM,
