@@ -13,8 +13,12 @@ npm install
 echo "🗄️  Generating Prisma client..."
 npx prisma generate
 
-echo "✅ Done!"
-echo ""
-echo "Next steps:"
-echo "  Development : npm run dev"
-echo "  Production  : npm run build && npm run start"
+echo "🔨 Building..."
+npm run build
+
+echo "📂 Copying static assets into standalone..."
+cp -r public .next/standalone/public
+cp -r .next/static .next/standalone/.next/static
+
+echo "✅ Done! Starting app..."
+npm run start
