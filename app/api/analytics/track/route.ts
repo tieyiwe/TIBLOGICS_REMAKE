@@ -43,6 +43,15 @@ function extractOrigin(referrer: string | null): string {
   }
 }
 
+function detectCountry(req: NextRequest): string | null {
+  return (
+    req.headers.get("cf-ipcountry") ??
+    req.headers.get("x-vercel-ip-country") ??
+    req.headers.get("x-country") ??
+    null
+  );
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { page, referrer, sessionId } = await req.json();
@@ -60,15 +69,16 @@ export async function POST(req: NextRequest) {
     const browser = detectBrowser(ua);
     const os = detectOS(ua);
     const origin = extractOrigin(referrer ?? null);
+    const country = detectCountry(req);
 
     await Promise.all([
       prisma.pageView.create({
-        data: { page, referrer: referrer || null, origin, device, browser, os, ip, sessionId },
+        data: { page, referrer: referrer || null, origin, device, browser, os, ip, country, sessionId },
       }),
       prisma.activeSession.upsert({
         where: { sessionId },
-        create: { sessionId, page, device, browser, os, origin, ip, lastSeen: new Date() },
-        update: { page, lastSeen: new Date() },
+        create: { sessionId, page, device, browser, os, origin, ip, country, lastSeen: new Date() },
+        update: { page, lastSeen: new Date(), country: country ?? undefined },
       }),
     ]);
 

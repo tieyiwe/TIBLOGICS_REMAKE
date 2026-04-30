@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Eye, EyeOff, Pencil, X, Loader2, Calendar } from "lucide-react";
+import { Plus, Trash2, Eye, EyeOff, Pencil, X, Loader2, Calendar, Bell, Mail } from "lucide-react";
 
 interface EventItem {
   id: string;
@@ -74,6 +74,14 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+interface NotifySignup {
+  id: string;
+  email: string;
+  firstName?: string | null;
+  source: string;
+  subscribedAt: string;
+}
+
 export default function AdminEventsPage() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,6 +91,7 @@ export default function AdminEventsPage() {
   const [form, setForm] = useState<FormData>(EMPTY_FORM);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [notifySignups, setNotifySignups] = useState<NotifySignup[]>([]);
 
   async function loadEvents() {
     try {
@@ -96,8 +105,19 @@ export default function AdminEventsPage() {
     }
   }
 
+  async function loadNotifySignups() {
+    try {
+      const res = await fetch("/api/events/notify");
+      if (res.ok) {
+        const data = await res.json();
+        setNotifySignups(data.subscribers ?? []);
+      }
+    } catch { /* silent */ }
+  }
+
   useEffect(() => {
     loadEvents();
+    loadNotifySignups();
   }, []);
 
   function openCreate() {
@@ -321,6 +341,55 @@ export default function AdminEventsPage() {
                           {deletingId === event.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                         </button>
                       </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Notification Sign-ups */}
+      {notifySignups.length > 0 && (
+        <div className="mt-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Bell size={18} className="text-[#F47C20]" />
+            <h2 className="font-syne font-bold text-lg text-[#0D1B2A]">Notification Sign-ups</h2>
+            <span className="ml-auto text-xs font-dm font-semibold bg-[#F47C20]/10 text-[#F47C20] px-2 py-0.5 rounded-full">
+              {notifySignups.length}
+            </span>
+          </div>
+          <div className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[#D2DCE8] bg-[#F4F7FB]">
+                  <th className="text-left font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider px-4 py-3">Name</th>
+                  <th className="text-left font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider px-4 py-3">Email</th>
+                  <th className="text-left font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider px-4 py-3">Event</th>
+                  <th className="text-left font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider px-4 py-3">Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#D2DCE8]">
+                {notifySignups.map((s) => (
+                  <tr key={s.id} className="hover:bg-[#F4F7FB] transition-colors">
+                    <td className="px-4 py-3">
+                      <p className="font-dm text-sm text-[#0D1B2A]">{s.firstName || "—"}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <a href={`mailto:${s.email}`} className="font-dm text-sm text-[#2251A3] hover:underline flex items-center gap-1">
+                        <Mail size={12} /> {s.email}
+                      </a>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="font-dm text-xs text-[#7A8FA6]">
+                        {s.source.replace("event-notify:", "").replace("event-notify", "General")}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="font-dm text-xs text-[#7A8FA6]">
+                        {new Date(s.subscribedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      </p>
                     </td>
                   </tr>
                 ))}

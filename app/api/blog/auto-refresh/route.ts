@@ -144,7 +144,7 @@ async function generatePost(
   title: string,
   sourceUrl: string | undefined,
   sourceTitle: string
-): Promise<{ excerpt: string; content: string; category: string; tags: string[] }> {
+): Promise<{ excerpt: string; content: string; category: string; tags: string[] } | null> {
   const prompt = `Write an informative, engaging blog post for TIBLOGICS (an AI agency blog) based on this news:
 
 Title: "${title}"
@@ -176,18 +176,15 @@ Return a JSON object:
     const raw = await streamChat(
       [{ role: "user", content: prompt }],
       "You are a professional AI technology journalist writing for an AI agency blog. Write engaging, accurate, practical content.",
-      900
+      2000
     );
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON");
-    return JSON.parse(jsonMatch[0]);
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (!parsed.content || parsed.content.length < 200) throw new Error("Content too short");
+    return parsed;
   } catch {
-    return {
-      excerpt: `${title} — the latest development in AI worth knowing about.`,
-      content: `<p>${title}</p>`,
-      category: "industry",
-      tags: ["ai", "technology"],
-    };
+    return null;
   }
 }
 
@@ -990,12 +987,10 @@ export async function GET(req: NextRequest) {
   let postsAdded = 0;
   const errors: string[] = [];
 
-  // When force=true, purge auto-generated stub posts (content under 300 chars)
-  if (force) {
-    try {
-      await prisma.$executeRaw`DELETE FROM "BlogPost" WHERE "aiGenerated" = true AND LENGTH("content") < 300`;
-    } catch { /* ignore if table missing */ }
-  }
+  // Always purge auto-generated stub posts (content under 300 chars — generation failures)
+  try {
+    await prisma.$executeRaw`DELETE FROM "BlogPost" WHERE "aiGenerated" = true AND LENGTH("content") < 300`;
+  } catch { /* ignore if table missing */ }
 
   try {
     // Always insert editorial spotlights if not already present
@@ -1086,6 +1081,7 @@ export async function GET(req: NextRequest) {
       if (existing) continue;
 
       const generated = await generatePost(item.title, item.url, item.source);
+      if (!generated) continue;
       const meta = CATEGORY_META[generated.category] ?? CATEGORY_META["industry"];
 
       const baseSlug = item.title

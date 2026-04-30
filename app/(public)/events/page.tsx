@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Calendar, MapPin, DollarSign, Users, Clock, ArrowRight, Bell } from "lucide-react";
+import { Calendar, MapPin, DollarSign, Users, Clock, ArrowRight, Bell, X, ExternalLink } from "lucide-react";
 
 interface EventItem {
   id: string;
@@ -26,6 +26,73 @@ interface EventItem {
   stripePaymentLink?: string | null;
 }
 
+interface TechEvent {
+  name: string;
+  organizer: string;
+  when: string;
+  location: string;
+  description: string;
+  emoji: string;
+  color: string;
+}
+
+const POPULAR_TECH_EVENTS: TechEvent[] = [
+  {
+    name: "Google I/O",
+    organizer: "Google",
+    when: "May 2025",
+    location: "Mountain View, CA + Online",
+    description: "Google's annual developer conference showcasing the latest in Android, AI, Chrome, and Google Cloud.",
+    emoji: "🔵",
+    color: "from-blue-600 to-blue-800",
+  },
+  {
+    name: "Microsoft Build",
+    organizer: "Microsoft",
+    when: "May 2025",
+    location: "Seattle, WA + Online",
+    description: "Developers gather to explore the latest in Azure, Copilot, and AI-powered developer tools.",
+    emoji: "🟦",
+    color: "from-sky-500 to-sky-700",
+  },
+  {
+    name: "AWS re:Invent",
+    organizer: "Amazon Web Services",
+    when: "Dec 2025",
+    location: "Las Vegas, NV",
+    description: "The world's largest cloud computing conference — announcements, deep dives, and 60,000+ attendees.",
+    emoji: "☁️",
+    color: "from-orange-500 to-orange-700",
+  },
+  {
+    name: "OpenAI DevDay",
+    organizer: "OpenAI",
+    when: "TBD 2025",
+    location: "San Francisco, CA",
+    description: "OpenAI's developer event covering GPT updates, new APIs, and the future of AI-powered applications.",
+    emoji: "🤖",
+    color: "from-emerald-600 to-emerald-800",
+  },
+  {
+    name: "Salesforce Dreamforce",
+    organizer: "Salesforce",
+    when: "Sep 2025",
+    location: "San Francisco, CA",
+    description: "The world's largest software conference — AI, CRM innovation, and Agentforce keynotes.",
+    emoji: "☁️",
+    color: "from-cyan-500 to-cyan-700",
+  },
+  {
+    name: "TechCrunch Disrupt",
+    organizer: "TechCrunch",
+    when: "Oct 2025",
+    location: "San Francisco, CA",
+    description: "Startup pitches, industry leaders, and the Startup Battlefield. A must for entrepreneurs and investors.",
+    emoji: "🚀",
+    color: "from-green-500 to-green-700",
+  },
+];
+
 const FILTER_TABS = [
   { id: "all", label: "All" },
   { id: "event", label: "Events" },
@@ -46,146 +113,286 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
 }
 
-function EventCard({ event }: { event: EventItem }) {
-  const isFree = event.price === 0;
-  const typeColor = TYPE_COLORS[event.type] ?? "bg-gray-100 text-gray-700";
-  const registerHref = event.stripePaymentLink || "/book";
+function NotifyModal({ eventName, onClose }: { eventName: string; onClose: () => void }) {
+  const [form, setForm] = useState({ name: "", email: "" });
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.name.trim() || !form.email.includes("@")) return;
+    setStatus("loading");
+    try {
+      const res = await fetch("/api/events/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: form.name.trim(), email: form.email.trim(), event: eventName }),
+      });
+      if (res.ok) setStatus("done");
+      else setStatus("error");
+    } catch {
+      setStatus("error");
+    }
+  }
 
   return (
-    <div className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col">
-      {event.coverImage ? (
-        <img src={event.coverImage} alt={event.title} className="w-full h-48 object-cover" />
-      ) : (
-        <div className="w-full h-48 bg-gradient-to-br from-[#1B3A6B] to-[#2251A3] flex items-center justify-center">
-          <span className="text-white text-4xl font-syne font-bold opacity-30">
-            {event.type[0]}
-          </span>
-        </div>
-      )}
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button onClick={onClose} className="absolute top-4 right-4 text-[#7A8FA6] hover:text-[#0D1B2A]">
+          <X size={18} />
+        </button>
 
-      <div className="p-6 flex flex-col flex-1 gap-3">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className={`text-xs font-dm font-semibold px-2 py-0.5 rounded-full ${typeColor}`}>
-            {event.type}
-          </span>
-          {event.featured && (
-            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20]">
-              Featured
-            </span>
-          )}
-          {isFree ? (
-            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 ml-auto">
-              Free
-            </span>
-          ) : (
-            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20] ml-auto">
-              ${(event.price / 100).toFixed(0)}
-            </span>
-          )}
-        </div>
-
-        <h3 className="font-syne font-bold text-lg text-[#0D1B2A] leading-snug">
-          {event.title}
-        </h3>
-
-        <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed line-clamp-2 flex-1">
-          {event.description}
-        </p>
-
-        <div className="flex flex-col gap-1.5 mt-1">
-          {event.date && (
-            <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-              <Calendar size={13} />
-              <span>{formatDate(event.date)}</span>
-            </div>
-          )}
-          {event.timeSlot && (
-            <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-              <Clock size={13} />
-              <span>{event.timeSlot}</span>
-            </div>
-          )}
-          <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-            <MapPin size={13} />
-            <span>{event.location}</span>
+        {status === "done" ? (
+          <div className="text-center py-4">
+            <div className="text-4xl mb-3">🎉</div>
+            <h3 className="font-syne font-bold text-xl text-[#0D1B2A] mb-2">You&apos;re on the list!</h3>
+            <p className="font-dm text-sm text-[#3A4A5C]">We&apos;ll notify you as soon as this training is ready.</p>
+            <button onClick={onClose} className="mt-5 w-full bg-[#1B3A6B] text-white rounded-xl py-2.5 font-dm font-semibold text-sm hover:bg-[#2251A3] transition-colors">
+              Close
+            </button>
           </div>
-          {event.spots != null && (
-            <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-              <Users size={13} />
-              <span>{event.spots} spots available</span>
+        ) : (
+          <>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-full bg-[#F47C20]/10 flex items-center justify-center">
+                <Bell size={18} className="text-[#F47C20]" />
+              </div>
+              <div>
+                <h3 className="font-syne font-bold text-lg text-[#0D1B2A] leading-tight">Get Notified</h3>
+                <p className="font-dm text-xs text-[#7A8FA6]">{eventName}</p>
+              </div>
             </div>
-          )}
-        </div>
 
-        <div className="flex gap-2 mt-2 pt-3 border-t border-[#D2DCE8]">
-          <Link
-            href={`/events/${event.slug}`}
-            className="flex-1 text-center font-dm font-medium text-sm text-[#2251A3] hover:text-[#1B3A6B] transition-colors py-2 rounded-xl border border-[#D2DCE8] hover:border-[#2251A3]"
-          >
-            Learn More
-          </Link>
-          {event.registrationOpen && (
-            <a
-              href={registerHref}
-              target={event.stripePaymentLink ? "_blank" : "_self"}
-              rel="noopener noreferrer"
-              className="flex-1 text-center font-dm font-semibold text-sm text-white bg-[#F47C20] hover:bg-[#e06a10] transition-colors py-2 rounded-xl"
-            >
-              {isFree ? "Join Free" : "Register"} →
-            </a>
-          )}
-        </div>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <input
+                type="text"
+                placeholder="Your name"
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                className="w-full bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl px-4 py-2.5 text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:border-[#2251A3] focus:ring-1 focus:ring-[#2251A3]/20"
+                required
+              />
+              <input
+                type="email"
+                placeholder="Email address"
+                value={form.email}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                className="w-full bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl px-4 py-2.5 text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:border-[#2251A3] focus:ring-1 focus:ring-[#2251A3]/20"
+                required
+              />
+              {status === "error" && (
+                <p className="text-xs text-red-500 font-dm">Something went wrong. Please try again.</p>
+              )}
+              <button
+                type="submit"
+                disabled={status === "loading" || !form.name.trim() || !form.email.includes("@")}
+                className="w-full bg-[#F47C20] text-white rounded-xl py-2.5 font-dm font-semibold text-sm hover:bg-[#e06a10] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {status === "loading" ? (
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Bell size={14} /> Notify Me
+                  </>
+                )}
+              </button>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );
 }
 
-function ComingSoonCard() {
+function EventCard({ event }: { event: EventItem }) {
+  const [notifyOpen, setNotifyOpen] = useState(false);
+  const isFree = event.price === 0;
+  const typeColor = TYPE_COLORS[event.type] ?? "bg-gray-100 text-gray-700";
+  const registerHref = event.stripePaymentLink || "/book";
+
   return (
-    <div className="bg-white border-2 border-[#F47C20]/30 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col relative">
-      <div className="w-full h-48 bg-gradient-to-br from-[#1B3A6B] via-[#2251A3] to-[#F47C20] flex items-center justify-center relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-4 left-4 w-16 h-16 border-2 border-white rounded-full" />
-          <div className="absolute bottom-6 right-6 w-24 h-24 border-2 border-white rounded-full" />
-          <div className="absolute top-12 right-12 w-8 h-8 border border-white rounded-full" />
-        </div>
-        <div className="text-center z-10">
-          <div className="text-4xl mb-2">🚀</div>
-          <p className="font-syne font-bold text-white text-lg">Practical AI Training</p>
+    <>
+      {notifyOpen && <NotifyModal eventName={event.title} onClose={() => setNotifyOpen(false)} />}
+      <div className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col">
+        {event.coverImage ? (
+          <img src={event.coverImage} alt={event.title} className="w-full h-48 object-cover" />
+        ) : (
+          <div className="w-full h-48 bg-gradient-to-br from-[#1B3A6B] to-[#2251A3] flex items-center justify-center">
+            <span className="text-white text-4xl font-syne font-bold opacity-30">
+              {event.type[0]}
+            </span>
+          </div>
+        )}
+
+        <div className="p-6 flex flex-col flex-1 gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`text-xs font-dm font-semibold px-2 py-0.5 rounded-full ${typeColor}`}>
+              {event.type}
+            </span>
+            {event.featured && (
+              <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20]">
+                Featured
+              </span>
+            )}
+            {isFree ? (
+              <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 ml-auto">
+                Free
+              </span>
+            ) : (
+              <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20] ml-auto">
+                ${(event.price / 100).toFixed(0)}
+              </span>
+            )}
+          </div>
+
+          <h3 className="font-syne font-bold text-lg text-[#0D1B2A] leading-snug">
+            {event.title}
+          </h3>
+
+          <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed line-clamp-2 flex-1">
+            {event.description}
+          </p>
+
+          <div className="flex flex-col gap-1.5 mt-1">
+            {event.date && (
+              <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
+                <Calendar size={13} />
+                <span>{formatDate(event.date)}</span>
+              </div>
+            )}
+            {event.timeSlot && (
+              <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
+                <Clock size={13} />
+                <span>{event.timeSlot}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
+              <MapPin size={13} />
+              <span>{event.location}</span>
+            </div>
+            {event.spots != null && (
+              <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
+                <Users size={13} />
+                <span>{event.spots} spots available</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-2 mt-2 pt-3 border-t border-[#D2DCE8]">
+            <Link
+              href={`/events/${event.slug}`}
+              className="flex-1 text-center font-dm font-medium text-sm text-[#2251A3] hover:text-[#1B3A6B] transition-colors py-2 rounded-xl border border-[#D2DCE8] hover:border-[#2251A3]"
+            >
+              Learn More
+            </Link>
+            {event.registrationOpen ? (
+              <a
+                href={registerHref}
+                target={event.stripePaymentLink ? "_blank" : "_self"}
+                rel="noopener noreferrer"
+                className="flex-1 text-center font-dm font-semibold text-sm text-white bg-[#F47C20] hover:bg-[#e06a10] transition-colors py-2 rounded-xl"
+              >
+                {isFree ? "Join Free" : "Register"} →
+              </a>
+            ) : (
+              <button
+                onClick={() => setNotifyOpen(true)}
+                className="flex-1 flex items-center justify-center gap-1.5 font-dm font-semibold text-sm text-white bg-[#1B3A6B] hover:bg-[#2251A3] transition-colors py-2 rounded-xl"
+              >
+                <Bell size={13} /> Notify Me
+              </button>
+            )}
+          </div>
         </div>
       </div>
+    </>
+  );
+}
 
-      <div className="p-6 flex flex-col flex-1 gap-3">
+function ComingSoonCard() {
+  const [notifyOpen, setNotifyOpen] = useState(false);
+
+  return (
+    <>
+      {notifyOpen && <NotifyModal eventName="Practical AI Training" onClose={() => setNotifyOpen(false)} />}
+      <div className="bg-white border-2 border-[#F47C20]/30 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col relative">
+        <div className="w-full h-48 bg-gradient-to-br from-[#1B3A6B] via-[#2251A3] to-[#F47C20] flex items-center justify-center relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-4 left-4 w-16 h-16 border-2 border-white rounded-full" />
+            <div className="absolute bottom-6 right-6 w-24 h-24 border-2 border-white rounded-full" />
+            <div className="absolute top-12 right-12 w-8 h-8 border border-white rounded-full" />
+          </div>
+          <div className="text-center z-10">
+            <div className="text-4xl mb-2">🚀</div>
+            <p className="font-syne font-bold text-white text-lg">Practical AI Training</p>
+          </div>
+        </div>
+
+        <div className="p-6 flex flex-col flex-1 gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#2251A3]/10 text-[#2251A3]">
+              TRAINING
+            </span>
+            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20] text-white ml-auto">
+              Coming Soon
+            </span>
+          </div>
+
+          <h3 className="font-syne font-bold text-lg text-[#0D1B2A] leading-snug">
+            🚀 Practical AI Training
+          </h3>
+
+          <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed flex-1">
+            Hands-on AI implementation training for business owners and teams. Learn to build workflows, automate tasks, and integrate AI into your operations.
+          </p>
+
+          <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
+            <MapPin size={13} />
+            <span>Online · Live Sessions</span>
+          </div>
+
+          <div className="flex gap-2 mt-2 pt-3 border-t border-[#D2DCE8]">
+            <button
+              onClick={() => setNotifyOpen(true)}
+              className="flex items-center justify-center gap-2 flex-1 text-center font-dm font-semibold text-sm text-white bg-[#F47C20] hover:bg-[#e06a10] transition-colors py-2 rounded-xl"
+            >
+              <Bell size={14} />
+              Get Notified
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function TechEventCard({ ev }: { ev: TechEvent }) {
+  return (
+    <div className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-md transition-all duration-300 flex flex-col">
+      <div className={`w-full h-32 bg-gradient-to-br ${ev.color} flex items-center justify-center`}>
+        <span className="text-5xl">{ev.emoji}</span>
+      </div>
+      <div className="p-5 flex flex-col gap-2 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#2251A3]/10 text-[#2251A3]">
-            TRAINING
-          </span>
-          <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20] text-white ml-auto">
-            Coming Soon
+          <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+            INDUSTRY EVENT
           </span>
         </div>
-
-        <h3 className="font-syne font-bold text-lg text-[#0D1B2A] leading-snug">
-          🚀 Practical AI Training
-        </h3>
-
-        <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed flex-1">
-          Hands-on AI implementation training for business owners and teams. Learn to build workflows, automate tasks, and integrate AI into your operations.
-        </p>
-
-        <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-          <MapPin size={13} />
-          <span>Online · Live Sessions</span>
+        <h3 className="font-syne font-bold text-base text-[#0D1B2A]">{ev.name}</h3>
+        <p className="font-dm text-xs text-[#7A8FA6] font-medium">{ev.organizer}</p>
+        <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed flex-1 line-clamp-2">{ev.description}</p>
+        <div className="flex flex-col gap-1 mt-1">
+          <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
+            <Calendar size={12} /><span>{ev.when}</span>
+          </div>
+          <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
+            <MapPin size={12} /><span>{ev.location}</span>
+          </div>
         </div>
-
-        <div className="flex gap-2 mt-2 pt-3 border-t border-[#D2DCE8]">
-          <Link
-            href="/book"
-            className="flex items-center justify-center gap-2 flex-1 text-center font-dm font-semibold text-sm text-white bg-[#F47C20] hover:bg-[#e06a10] transition-colors py-2 rounded-xl"
-          >
-            <Bell size={14} />
-            Get Notified
-          </Link>
+        <div className="pt-3 border-t border-[#D2DCE8] mt-1">
+          <p className="font-dm text-xs text-[#7A8FA6] italic">Search &quot;{ev.name}&quot; for official registration &amp; updates.</p>
         </div>
       </div>
     </div>
@@ -258,7 +465,7 @@ export default function EventsPage() {
         </div>
       </section>
 
-      {/* Events Grid */}
+      {/* TIBLOGICS Events Grid */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -282,6 +489,23 @@ export default function EventsPage() {
                 {filtered.map((event) => (
                   <EventCard key={event.id} event={event} />
                 ))}
+              </div>
+            )}
+
+            {/* Popular Tech Events */}
+            {(activeFilter === "all" || activeFilter === "event") && (
+              <div className="mt-16">
+                <div className="flex items-center gap-3 mb-6">
+                  <div>
+                    <h2 className="font-syne font-bold text-2xl text-[#0D1B2A]">Popular Industry Events</h2>
+                    <p className="font-dm text-sm text-[#7A8FA6] mt-1">Major tech conferences happening this year — stay informed.</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {POPULAR_TECH_EVENTS.map((ev) => (
+                    <TechEventCard key={ev.name} ev={ev} />
+                  ))}
+                </div>
               </div>
             )}
 

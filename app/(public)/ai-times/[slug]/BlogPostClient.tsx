@@ -111,6 +111,17 @@ export default function BlogPostPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, [widgetDismissed]);
 
+  // Close this widget when Tibo chat opens; notify Tibo when this widget appears
+  useEffect(() => {
+    const onTiboOpened = () => { setWidgetVisible(false); setWidgetDismissed(true); };
+    window.addEventListener("tibo:opened", onTiboOpened);
+    return () => window.removeEventListener("tibo:opened", onTiboOpened);
+  }, []);
+
+  useEffect(() => {
+    if (widgetVisible) window.dispatchEvent(new CustomEvent("booking-cta:shown"));
+  }, [widgetVisible]);
+
   useEffect(() => {
     if (!slug) return;
     fetch(`/api/blog/posts/${slug}`)

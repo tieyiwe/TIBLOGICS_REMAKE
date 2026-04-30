@@ -119,7 +119,7 @@ export default function EchelonFloat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading, bookingStep]);
 
-  // Greeting bubble after 3 s (once per session)
+  // Initial greeting bubble after 8s (once per session)
   useEffect(() => {
     if (isAdmin) return;
     try {
@@ -128,9 +128,19 @@ export default function EchelonFloat() {
     const timer = setTimeout(() => {
       setShowGreeting(true);
       try { sessionStorage.setItem("tibo_greeted", "1"); } catch {}
-    }, 3000);
+    }, 8000);
     return () => clearTimeout(timer);
   }, [isAdmin]);
+
+  // Idle re-engagement: if user has been on page 45s without opening Tibo, show greeting again
+  useEffect(() => {
+    if (isAdmin || isOpen) return;
+    const timer = setTimeout(() => {
+      if (!isOpen) setShowGreeting(true);
+    }, 45_000);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, isAdmin]);
 
   // Pre-load blocked dates
   useEffect(() => {
@@ -149,6 +159,13 @@ export default function EchelonFloat() {
     const handler = () => setIsOpen(true);
     window.addEventListener("tibo:open", handler);
     return () => window.removeEventListener("tibo:open", handler);
+  }, []);
+
+  // Dismiss greeting bubble when the blog booking CTA widget appears
+  useEffect(() => {
+    const handler = () => setShowGreeting(false);
+    window.addEventListener("booking-cta:shown", handler);
+    return () => window.removeEventListener("booking-cta:shown", handler);
   }, []);
 
   // Auto-engage after website scan

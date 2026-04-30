@@ -318,6 +318,7 @@ model PageView {
   browser   String?
   os        String?
   ip        String?
+  country   String?
   sessionId String
   createdAt DateTime @default(now())
 
@@ -334,6 +335,7 @@ model ActiveSession {
   browser   String?
   os        String?
   origin    String   @default("direct")
+  country   String?
   ip        String?
   lastSeen  DateTime @default(now())
   createdAt DateTime @default(now())

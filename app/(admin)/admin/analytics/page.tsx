@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Users, Monitor, Smartphone, Tablet, Globe, TrendingUp, Eye, Loader2, RefreshCw, Radio } from "lucide-react";
+import { Users, Monitor, Smartphone, Tablet, Globe, TrendingUp, Eye, Loader2, RefreshCw, Radio, Zap, MapPin } from "lucide-react";
 
 interface LiveSession {
   sessionId: string;
@@ -30,6 +30,8 @@ interface AnalyticsData {
   recentViews: PageView[];
   topPages: { page: string; count: number }[];
   topOrigins: { origin: string; count: number }[];
+  topCountries: { country: string; count: number }[];
+  topFeatures: { feature: string; count: number }[];
   deviceBreakdown: { desktop: number; mobile: number; tablet: number; total: number };
   hourly: { hour: number; count: number }[];
 }
@@ -107,7 +109,7 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 5000);
+    const interval = setInterval(fetchData, 60_000);
     return () => clearInterval(interval);
   }, [fetchData]);
 
@@ -129,7 +131,7 @@ export default function AnalyticsPage() {
         <div>
           <h1 className="font-syne font-bold text-2xl text-[#0D1B2A]">Visitor Analytics</h1>
           <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">
-            Real-time site visitors · updates every 5s
+            Real-time site visitors · updates every minute
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs font-dm text-[#7A8FA6]">
@@ -232,6 +234,59 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
+      {/* Country + Feature tracking */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Top Countries */}
+        <div className="bg-white border border-[#D2DCE8] rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <MapPin size={15} className="text-[#2251A3]" />
+            <h2 className="font-syne font-bold text-sm text-[#0D1B2A]">Top Countries</h2>
+          </div>
+          <div className="space-y-2.5">
+            {(!d.topCountries || d.topCountries.length === 0) ? (
+              <p className="font-dm text-xs text-[#7A8FA6]">No location data yet — requires Cloudflare or Vercel hosting headers</p>
+            ) : (
+              d.topCountries.map((c) => (
+                <div key={c.country} className="flex items-center justify-between">
+                  <span className="font-dm text-sm text-[#3A4A5C]">{c.country}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 bg-[#E8EFF8] rounded-full overflow-hidden w-16">
+                      <div className="h-full bg-[#0F6E56] rounded-full" style={{ width: `${Math.min(100, (c.count / (d.topCountries[0]?.count ?? 1)) * 100)}%` }} />
+                    </div>
+                    <span className="font-dm text-xs font-semibold text-[#0D1B2A] w-6 text-right">{c.count}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Top Features / Buttons Clicked */}
+        <div className="bg-white border border-[#D2DCE8] rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Zap size={15} className="text-[#F47C20]" />
+            <h2 className="font-syne font-bold text-sm text-[#0D1B2A]">Top Features Used <span className="text-[#7A8FA6] font-normal text-xs">(7 days)</span></h2>
+          </div>
+          <div className="space-y-2.5">
+            {(!d.topFeatures || d.topFeatures.length === 0) ? (
+              <p className="font-dm text-xs text-[#7A8FA6]">No feature clicks tracked yet. Add data-track=&quot;feature-name&quot; to buttons.</p>
+            ) : (
+              d.topFeatures.map((f) => (
+                <div key={f.feature} className="flex items-center justify-between">
+                  <span className="font-dm text-sm text-[#3A4A5C] truncate max-w-[70%] capitalize">{f.feature.replace(/_/g, " ")}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 bg-[#E8EFF8] rounded-full overflow-hidden w-16">
+                      <div className="h-full bg-[#F47C20] rounded-full" style={{ width: `${Math.min(100, (f.count / (d.topFeatures[0]?.count ?? 1)) * 100)}%` }} />
+                    </div>
+                    <span className="font-dm text-xs font-semibold text-[#0D1B2A] w-6 text-right">{f.count}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Hourly chart */}
       <div className="bg-white border border-[#D2DCE8] rounded-2xl p-5">
         <div className="flex items-center justify-between mb-4">
@@ -277,7 +332,7 @@ export default function AnalyticsPage() {
                       <div className="min-w-0">
                         <p className="font-dm text-sm text-[#0D1B2A] truncate">{s.page}</p>
                         <p className="font-dm text-xs text-[#7A8FA6]">
-                          <DevIcon size={10} className="inline mr-0.5" />{s.os} · {s.browser} · {s.origin}
+                          <DevIcon size={10} className="inline mr-0.5" />{s.os} · {s.browser}{(s as LiveSession & { country?: string }).country ? ` · ${(s as LiveSession & { country?: string }).country}` : ""}
                         </p>
                       </div>
                     </div>

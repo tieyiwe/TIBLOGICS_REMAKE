@@ -75,6 +75,17 @@ export default function BlogPostPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, [widgetDismissed]);
 
+  // Close this widget when Tibo chat opens; notify Tibo when this widget appears
+  useEffect(() => {
+    const onTiboOpened = () => { setWidgetVisible(false); setWidgetDismissed(true); };
+    window.addEventListener("tibo:opened", onTiboOpened);
+    return () => window.removeEventListener("tibo:opened", onTiboOpened);
+  }, []);
+
+  useEffect(() => {
+    if (widgetVisible) window.dispatchEvent(new CustomEvent("booking-cta:shown"));
+  }, [widgetVisible]);
+
   useEffect(() => {
     if (!slug) return;
     fetch(`/api/blog/posts/${slug}`)
@@ -305,7 +316,7 @@ export default function BlogPostPage() {
 
       {/* Floating CTA widget */}
       {widgetVisible && !widgetDismissed && (
-        <div className="fixed bottom-6 right-6 z-40 max-w-xs w-full animate-fade-in">
+        <div className="fixed bottom-[72px] sm:bottom-6 right-4 sm:right-6 z-40 max-w-xs w-[calc(100vw-2rem)] sm:w-full animate-fade-in">
           <div className="bg-[#1B3A6B] text-white rounded-2xl shadow-2xl overflow-hidden">
             <div className="flex items-start justify-between p-4 pb-2">
               <p className="font-syne font-bold text-sm leading-snug pr-2">
