@@ -87,6 +87,7 @@ const navItems: NavItem[] = [
       { label: "Newsletter", href: "/admin/newsletter", icon: Mail },
     ],
   },
+  { label: "Events & Training", href: "/admin/events", icon: Calendar },
   { label: "Service Requests", href: "/admin/service-requests", icon: Briefcase },
   { label: "Partnerships", href: "/admin/partnerships", icon: Briefcase },
   { label: "Waitlist", href: "/admin/waitlist", icon: Users },

@@ -25,6 +25,7 @@ const products = [
 const company = [
   { label: "About Us", href: "/about" },
   { label: "Services", href: "/services" },
+  { label: "Events & Training", href: "/events" },
   { label: "Try Smart Tools", href: "/tools" },
   { label: "Book a Consulting", href: "/book" },
   { label: "Contact", href: "/contact" },
