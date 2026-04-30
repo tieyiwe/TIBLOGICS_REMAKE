@@ -189,7 +189,7 @@ const resendCompat = {
   emails: {
     send(msg: { from?: string; to: string | string[]; subject: string; html: string }) {
       return getTransport().sendMail({
-        from: msg.from ?? FROM,
+        from: FROM, // always use configured Titan sender; ignore any passed from value
         to: Array.isArray(msg.to) ? msg.to.join(", ") : msg.to,
         subject: msg.subject,
         html: msg.html,

@@ -50,7 +50,16 @@ function SuccessContent() {
   const [zoomLink, setZoomLink] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isFree || !appointmentId) { setStatus("confirmed"); return; }
+    if (!appointmentId || appointmentId === "undefined") { setStatus("confirmed"); return; }
+
+    // Free bookings: one fetch to get the zoom link, already confirmed
+    if (isFree) {
+      fetch(`/api/appointments/${appointmentId}/status`)
+        .then(r => r.json())
+        .then(data => { if (data.zoomLink) setZoomLink(data.zoomLink); })
+        .catch(() => {});
+      return;
+    }
 
     let attempts = 0;
     const MAX = 20; // poll for up to 20 × 1.5s = 30s

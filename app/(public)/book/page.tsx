@@ -103,7 +103,9 @@ export default function BookPage() {
           totalAmount: total,
         }),
       });
+      if (!res.ok) { setSubmitting(false); return; }
       const { appointmentId, checkoutUrl } = await res.json();
+      if (!appointmentId && !checkoutUrl) { setSubmitting(false); return; }
       if (checkoutUrl) {
         window.location.href = checkoutUrl;
       } else {
