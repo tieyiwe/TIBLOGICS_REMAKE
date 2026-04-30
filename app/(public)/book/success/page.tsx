@@ -45,6 +45,7 @@ function CopyLinkBox({ link }: { link: string }) {
 function SuccessContent() {
   const searchParams = useSearchParams();
   const appointmentId = searchParams.get("appointmentId");
+  const isFree = searchParams.get("free") === "true";
   const [status, setStatus] = useState<Status>("polling");
   const [zoomLink, setZoomLink] = useState<string | null>(null);
 
@@ -87,7 +88,7 @@ function SuccessContent() {
               <div className="w-10 h-10 rounded-full border-4 border-[#2251A3] border-t-transparent animate-spin" />
             </div>
           </div>
-          <h1 className="font-syne font-extrabold text-3xl text-[#0D1B2A] mb-3">Confirming your payment…</h1>
+          <h1 className="font-syne font-extrabold text-3xl text-[#0D1B2A] mb-3">{isFree ? "Confirming your booking…" : "Confirming your payment…"}</h1>
           <p className="font-dm text-[#7A8FA6] text-base">This only takes a moment. Please don&apos;t close this page.</p>
         </div>
       </div>

@@ -87,7 +87,7 @@ export default function BookPage() {
       if (checkoutUrl) {
         window.location.href = checkoutUrl;
       } else {
-        router.push(`/book/success?appointmentId=${appointmentId}`);
+        router.push(`/book/success?appointmentId=${appointmentId}${selectedService.price === 0 ? "&free=true" : ""}`);
       }
     } catch {
       setSubmitting(false);
