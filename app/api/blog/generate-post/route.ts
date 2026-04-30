@@ -53,12 +53,13 @@ Return ONLY a valid JSON object (no markdown fences, no extra text):
   "excerpt": "One compelling sentence, max 160 chars",
   "content": "<p>...</p><h2>...</h2>...",
   "category": "ai-business",
-  "tags": ["ai", "business"]
+  "tags": ["ai", "business"],
+  "imageQuery": "2-3 keywords for a relevant cover photo (e.g. 'artificial intelligence robot', 'business technology laptop')"
 }
 
 category must be one of: breaking, ai-business, tips, tools, case-studies, industry`;
 
-    let generated: { excerpt: string; content: string; category: string; tags: string[] };
+    let generated: { excerpt: string; content: string; category: string; tags: string[]; imageQuery?: string };
 
     try {
       const raw = await streamChat(
@@ -84,6 +85,24 @@ category must be one of: breaking, ai-business, tips, tools, case-studies, indus
 
     const meta = CATEGORY_MAP[generated.category] ?? CATEGORY_MAP["industry"];
 
+    // Fetch a stable cover image URL via Unsplash source (follows redirect → final images.unsplash.com URL)
+    let coverImage: string | null = null;
+    const query = encodeURIComponent(generated.imageQuery ?? `${generated.category} technology business`);
+    try {
+      const imgRes = await fetch(`https://source.unsplash.com/1200x630/?${query}`, {
+        redirect: "follow",
+        signal: AbortSignal.timeout(5000),
+      });
+      if (imgRes.ok && imgRes.url.includes("unsplash.com/photo")) {
+        coverImage = imgRes.url.split("?")[0] + "?w=1200&q=80&fit=crop&crop=center";
+      }
+    } catch { /* fall back to gradient */ }
+
+    // Final fallback: picsum with slug as seed (consistent, beautiful, no API key needed)
+    if (!coverImage) {
+      coverImage = null; // let gradient show — picsum images aren't always appropriate for business content
+    }
+
     const baseSlug = title
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, "")
@@ -107,6 +126,7 @@ category must be one of: breaking, ai-business, tips, tools, case-studies, indus
         content: generated.content,
         category: generated.category,
         tags: (Array.isArray(generated.tags) ? generated.tags : []).slice(0, 10),
+        coverImage: coverImage ?? undefined,
         coverEmoji: meta.emoji,
         coverGradient: meta.gradient,
         author: "Echelon AI",

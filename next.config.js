@@ -9,6 +9,7 @@ const nextConfig = {
     minimumCacheTTL: 86400,
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "source.unsplash.com" },
       { protocol: "https", hostname: "fonts.gstatic.com" },
       { protocol: "https", hostname: "image.thum.io" },
     ],
