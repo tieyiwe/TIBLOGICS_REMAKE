@@ -6,7 +6,17 @@ channel = "stable-24_05"
 hidden = [".build", ".config", "node_modules", ".next"]
 
 [workflows]
-runButton = "Dev"
+runButton = "Start"
+
+[[workflows.workflow]]
+name = "Start"
+author = "agent"
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run build && npm run start"
+waitForPort = 3000
 
 [[workflows.workflow]]
 name = "Dev"
@@ -15,21 +25,7 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev"
-waitForPort = 3000
-
-[[workflows.workflow]]
-name = "Build & Start"
-author = "agent"
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run build"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run start"
+args = "next dev -H 0.0.0.0 -p 3000"
 waitForPort = 3000
 
 [deployment]
