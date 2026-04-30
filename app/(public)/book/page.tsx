@@ -33,6 +33,26 @@ function getFirstDayOfMonth(year: number, month: number) {
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
+function parseSlotMinutes(slot: string): number {
+  const [time, period] = slot.split(" ");
+  const [h, m] = time.split(":").map(Number);
+  return ((h % 12) + (period === "PM" ? 12 : 0)) * 60 + m;
+}
+
+function isPastSlot(date: Date, slot: string): boolean {
+  const now = new Date();
+  const todayET = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+  const selectedET = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+  if (todayET !== selectedET) return false;
+
+  const etParts = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit", hour12: false }).formatToParts(now);
+  const etHour = Number(etParts.find(p => p.type === "hour")?.value ?? 0);
+  const etMin = Number(etParts.find(p => p.type === "minute")?.value ?? 0);
+  const nowMinutes = etHour * 60 + etMin;
+
+  return parseSlotMinutes(slot) <= nowMinutes + 30; // block slots within 30 min of now
+}
+
 export default function BookPage() {
   const router = useRouter();
   const [selectedService, setSelectedService] = useState(SERVICES[0]);
@@ -268,15 +288,17 @@ export default function BookPage() {
                         <div className="grid grid-cols-3 gap-2">
                           {TIME_SLOTS.map(slot => {
                             const booked = bookedSlots.includes(slot);
+                            const past = isPastSlot(selectedDate!, slot);
+                            const unavailable = booked || past;
                             const selected = selectedSlot === slot;
                             return (
                               <button
                                 key={slot}
-                                disabled={booked}
+                                disabled={unavailable}
                                 onClick={() => setSelectedSlot(slot)}
                                 className={`py-2 px-3 rounded-lg text-sm font-dm font-medium transition-all ${
                                   selected ? "bg-[#1B3A6B] text-white" :
-                                  booked ? "bg-[#F4F7FB] text-[#D2DCE8] cursor-not-allowed" :
+                                  unavailable ? "bg-[#F4F7FB] text-[#D2DCE8] cursor-not-allowed" :
                                   "border border-[#D2DCE8] text-[#3A4A5C] hover:border-[#2251A3] hover:bg-[#EBF0FA]"
                                 }`}
                               >
