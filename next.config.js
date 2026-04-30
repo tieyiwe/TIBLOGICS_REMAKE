@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   allowedDevOrigins: [process.env.REPLIT_DEV_DOMAIN].filter(Boolean),
-  output: "standalone",
   compress: true,
   poweredByHeader: false,
   serverExternalPackages: ["@prisma/client", "prisma"],

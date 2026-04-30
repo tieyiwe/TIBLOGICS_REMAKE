@@ -16,9 +16,5 @@ npx prisma generate
 echo "🔨 Building..."
 npm run build
 
-echo "📂 Copying static assets into standalone..."
-cp -r public .next/standalone/public
-cp -r .next/static .next/standalone/.next/static
-
 echo "✅ Done! Starting app..."
 npm run start
