@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import resend from "@/lib/resend";
 import { sendTiweNotification } from "@/lib/resend";
-import { createMeeting } from "@/lib/meeting-providers";
+import { createMeeting, calcEndTime } from "@/lib/meeting-providers";
 import { isValidEmail, escapeHtml } from "@/lib/require-admin";
 import stripe from "@/lib/stripe";
 
@@ -130,7 +130,7 @@ export async function POST(req: Request) {
       });
 
       await Promise.allSettled([
-        sendBookingConfirmation({ firstName, lastName, email, serviceType, date, timeSlot, meetingLink }),
+        sendBookingConfirmation({ firstName, lastName, email, serviceType, serviceDuration, date, timeSlot, meetingLink }),
         sendTiweNotification({
           firstName, lastName, email, company: company ?? null,
           serviceType, date: new Date(date), timeSlot,
@@ -215,11 +215,12 @@ export async function POST(req: Request) {
 
 async function sendBookingConfirmation(data: {
   firstName: string; lastName: string; email: string;
-  serviceType: string; date: string; timeSlot: string;
+  serviceType: string; serviceDuration?: string; date: string; timeSlot: string;
   meetingLink?: string | null;
 }) {
   const serviceLabel = data.serviceType.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c: string) => c.toUpperCase());
   const dateLabel = new Date(data.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  const endTime = data.serviceDuration ? calcEndTime(data.timeSlot, data.serviceDuration) : "";
 
   const safeFirst = escapeHtml(data.firstName);
   const safeService = escapeHtml(serviceLabel);
@@ -259,9 +260,10 @@ async function sendBookingConfirmation(data: {
       <div style="background:#F4F7FB;border-radius:14px;padding:22px 24px;">
         <p style="margin:0 0 12px;font-size:11px;color:#7A8FA6;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Session Details</p>
         <table style="width:100%;border-collapse:collapse;">
-          <tr><td style="padding:5px 0;color:#7A8FA6;font-size:14px;width:80px;">Service</td><td style="padding:5px 0;color:#0D1B2A;font-size:14px;font-weight:600;">${serviceLabel}</td></tr>
+          <tr><td style="padding:5px 0;color:#7A8FA6;font-size:14px;width:90px;">Service</td><td style="padding:5px 0;color:#0D1B2A;font-size:14px;font-weight:600;">${serviceLabel}</td></tr>
           <tr><td style="padding:5px 0;color:#7A8FA6;font-size:14px;">Date</td><td style="padding:5px 0;color:#0D1B2A;font-size:14px;font-weight:600;">${dateLabel}</td></tr>
-          <tr><td style="padding:5px 0;color:#7A8FA6;font-size:14px;">Time</td><td style="padding:5px 0;color:#0D1B2A;font-size:14px;font-weight:600;">${data.timeSlot} EST</td></tr>
+          <tr><td style="padding:5px 0;color:#7A8FA6;font-size:14px;">Time</td><td style="padding:5px 0;color:#0D1B2A;font-size:14px;font-weight:600;">${data.timeSlot}${endTime ? ` – ${endTime}` : ""} EST</td></tr>
+          ${data.serviceDuration ? `<tr><td style="padding:5px 0;color:#7A8FA6;font-size:14px;">Duration</td><td style="padding:5px 0;color:#0D1B2A;font-size:14px;font-weight:600;">${data.serviceDuration}</td></tr>` : ""}
         </table>
       </div>
       ${meetingSection}

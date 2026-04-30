@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import resend from "@/lib/resend";
-import { createMeeting } from "@/lib/meeting-providers";
+import { createMeeting, calcEndTime } from "@/lib/meeting-providers";
 
 export async function POST(
   req: Request,
@@ -27,7 +27,7 @@ export async function POST(
         date: appt.date,
         timeSlot: appt.timeSlot,
         timezone: appt.timezone,
-        serviceDuration: Number(appt.serviceDuration),
+        serviceDuration: appt.serviceDuration ?? "60 min",
         firstName: appt.firstName,
         lastName: appt.lastName,
       });
@@ -56,6 +56,7 @@ export async function POST(
     lastName: appt.lastName,
     email: appt.email,
     serviceType: appt.serviceType,
+    serviceDuration: appt.serviceDuration ?? undefined,
     date: appt.date.toISOString(),
     timeSlot: appt.timeSlot,
     timezone: appt.timezone,
@@ -70,6 +71,7 @@ async function sendConfirmationEmail(data: {
   lastName: string;
   email: string;
   serviceType: string;
+  serviceDuration?: string;
   date: string;
   timeSlot: string;
   timezone: string;
@@ -83,6 +85,8 @@ async function sendConfirmationEmail(data: {
   const dateLabel = new Date(data.date).toLocaleDateString("en-US", {
     weekday: "long", month: "long", day: "numeric", year: "numeric",
   });
+
+  const endTime = data.serviceDuration ? calcEndTime(data.timeSlot, data.serviceDuration) : "";
 
   const providerName = "Jitsi Meet";
   const providerColor = "#1D76BA";
@@ -140,8 +144,12 @@ async function sendConfirmationEmail(data: {
           </tr>
           <tr>
             <td style="padding:6px 0;color:#7A8FA6;font-size:14px;">Time</td>
-            <td style="padding:6px 0;color:#0D1B2A;font-size:14px;font-weight:600;">${data.timeSlot} (${data.timezone})</td>
+            <td style="padding:6px 0;color:#0D1B2A;font-size:14px;font-weight:600;">${data.timeSlot}${endTime ? ` – ${endTime}` : ""} (${data.timezone})</td>
           </tr>
+          ${data.serviceDuration ? `<tr>
+            <td style="padding:6px 0;color:#7A8FA6;font-size:14px;">Duration</td>
+            <td style="padding:6px 0;color:#0D1B2A;font-size:14px;font-weight:600;">${data.serviceDuration}</td>
+          </tr>` : ""}
         </table>
       </div>
       ${meetingSection}
