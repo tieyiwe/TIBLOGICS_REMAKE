@@ -75,13 +75,22 @@ export default function BlogPostPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, [widgetDismissed]);
 
-  // Close this widget when Tibo chat opens; notify Tibo when this widget appears
+  // Dismiss CTA when Tibo chat opens or Tibo idle greeting appears
   useEffect(() => {
-    const onTiboOpened = () => { setWidgetVisible(false); setWidgetDismissed(true); };
-    window.addEventListener("tibo:opened", onTiboOpened);
-    return () => window.removeEventListener("tibo:opened", onTiboOpened);
+    const dismiss = () => {
+      setWidgetVisible(false);
+      setWidgetDismissed(true);
+      window.dispatchEvent(new CustomEvent("booking-cta:hidden"));
+    };
+    window.addEventListener("tibo:opened", dismiss);
+    window.addEventListener("tibo:greeting-shown", dismiss);
+    return () => {
+      window.removeEventListener("tibo:opened", dismiss);
+      window.removeEventListener("tibo:greeting-shown", dismiss);
+    };
   }, []);
 
+  // Notify Tibo when CTA becomes visible
   useEffect(() => {
     if (widgetVisible) window.dispatchEvent(new CustomEvent("booking-cta:shown"));
   }, [widgetVisible]);
@@ -323,7 +332,7 @@ export default function BlogPostPage() {
                 Interested in AI for your business?
               </p>
               <button
-                onClick={() => { setWidgetDismissed(true); setWidgetVisible(false); }}
+                onClick={() => { setWidgetDismissed(true); setWidgetVisible(false); window.dispatchEvent(new CustomEvent("booking-cta:hidden")); }}
                 className="text-white/50 hover:text-white flex-shrink-0 transition-colors"
                 aria-label="Dismiss"
               >

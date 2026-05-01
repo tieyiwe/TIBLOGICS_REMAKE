@@ -114,6 +114,8 @@ export default function EchelonFloat() {
   const inputRef = useRef<HTMLInputElement>(null);
   const isAdmin = pathname?.startsWith("/admin");
   const [blockedDateSet, setBlockedDateSet] = useState<Set<string>>(new Set());
+  const ctaVisibleRef = useRef(false);
+  const isOpenRef = useRef(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -132,11 +134,17 @@ export default function EchelonFloat() {
     return () => clearTimeout(timer);
   }, [isAdmin]);
 
-  // Idle re-engagement: if user has been on page 45s without opening Tibo, show greeting again
+  // Keep isOpenRef current so idle-timer closure doesn't see stale value
+  useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
+
+  // Idle re-engagement: show greeting after 45s, but only if chat is closed AND blog CTA is not on screen
   useEffect(() => {
     if (isAdmin || isOpen) return;
     const timer = setTimeout(() => {
-      if (!isOpen) setShowGreeting(true);
+      if (!isOpenRef.current && !ctaVisibleRef.current) {
+        setShowGreeting(true);
+        window.dispatchEvent(new CustomEvent("tibo:greeting-shown"));
+      }
     }, 45_000);
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -161,11 +169,16 @@ export default function EchelonFloat() {
     return () => window.removeEventListener("tibo:open", handler);
   }, []);
 
-  // Dismiss greeting bubble when the blog booking CTA widget appears
+  // Track blog CTA visibility: hide greeting when it appears, allow it again when CTA is dismissed
   useEffect(() => {
-    const handler = () => setShowGreeting(false);
-    window.addEventListener("booking-cta:shown", handler);
-    return () => window.removeEventListener("booking-cta:shown", handler);
+    const onShown = () => { ctaVisibleRef.current = true; setShowGreeting(false); };
+    const onHidden = () => { ctaVisibleRef.current = false; };
+    window.addEventListener("booking-cta:shown", onShown);
+    window.addEventListener("booking-cta:hidden", onHidden);
+    return () => {
+      window.removeEventListener("booking-cta:shown", onShown);
+      window.removeEventListener("booking-cta:hidden", onHidden);
+    };
   }, []);
 
   // Auto-engage after website scan
