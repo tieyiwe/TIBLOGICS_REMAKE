@@ -1,4 +1,16 @@
 /** @type {import('next').NextConfig} */
+
+// Auto-detect production URL on Replit if NEXTAUTH_URL isn't explicitly set.
+// NextAuth requires this to match the actual hostname for cookie domain and
+// CSRF validation to work correctly in production.
+if (!process.env.NEXTAUTH_URL) {
+  if (process.env.REPLIT_DEV_DOMAIN) {
+    process.env.NEXTAUTH_URL = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+  } else if (process.env.NEXT_PUBLIC_APP_URL) {
+    process.env.NEXTAUTH_URL = process.env.NEXT_PUBLIC_APP_URL;
+  }
+}
+
 const nextConfig = {
   allowedDevOrigins: [process.env.REPLIT_DEV_DOMAIN].filter(Boolean),
   compress: true,

@@ -1,7 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
 
 // tieyiwebass@gmail.com is the Owner — the super account above all admins
 const OWNER_EMAIL = "tieyiwebass@gmail.com";
@@ -17,6 +16,14 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
+        // Lazy import so a Prisma binary failure doesn't crash the auth module at load time
+        let prisma: Awaited<typeof import("@/lib/prisma")>["prisma"];
+        try {
+          ({ prisma } = await import("@/lib/prisma"));
+        } catch {
+          return null;
+        }
+
         // ── Owner login ───────────────────────────────────────────────────────
         if (credentials.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) {
           const ownerUser = {
@@ -30,32 +37,35 @@ export const authOptions: NextAuthOptions = {
 
           // Priority 1: ADMIN_PASSWORD env var acts as a master credential that
           // works in every environment (dev, staging, prod) without needing the
-          // DB to be seeded first. On first successful match it auto-seeds the
-          // bcrypt hash so subsequent logins go through the DB path.
+          // DB to be seeded first.
           if (process.env.ADMIN_PASSWORD) {
             if (credentials.password === process.env.ADMIN_PASSWORD) {
               // Auto-seed bcrypt hash into this environment's DB if missing
-              const existing = await prisma.adminSettings.findUnique({
-                where: { key: "admin_password_hash" },
-              });
-              if (!existing) {
-                const hash = await bcrypt.hash(process.env.ADMIN_PASSWORD, 12);
-                await prisma.adminSettings.create({
-                  data: { key: "admin_password_hash", value: hash },
-                }).catch(() => {});
-              }
+              try {
+                const existing = await prisma.adminSettings.findUnique({
+                  where: { key: "admin_password_hash" },
+                });
+                if (!existing) {
+                  const hash = await bcrypt.hash(process.env.ADMIN_PASSWORD, 12);
+                  await prisma.adminSettings.create({
+                    data: { key: "admin_password_hash", value: hash },
+                  }).catch(() => {});
+                }
+              } catch { /* non-blocking */ }
               return ownerUser;
             }
           }
 
           // Priority 2: DB-stored bcrypt hash (set via admin "Change Password" UI)
-          const stored = await prisma.adminSettings.findUnique({
-            where: { key: "admin_password_hash" },
-          });
-          if (stored?.value) {
-            const valid = await bcrypt.compare(credentials.password, stored.value);
-            if (valid) return ownerUser;
-          }
+          try {
+            const stored = await prisma.adminSettings.findUnique({
+              where: { key: "admin_password_hash" },
+            });
+            if (stored?.value) {
+              const valid = await bcrypt.compare(credentials.password, stored.value);
+              if (valid) return ownerUser;
+            }
+          } catch { /* fall through */ }
 
           return null;
         }
@@ -82,7 +92,6 @@ export const authOptions: NextAuthOptions = {
             isAdmin: collab.isAdmin,
             isOwner: false,
             collaboratorId: collab.id,
-            // Admin collaborators get wildcard permissions
             permissions: collab.isAdmin ? ["*"] : collab.permissions,
           };
         } catch {

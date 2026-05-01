@@ -64,6 +64,7 @@ export default function BookPage() {
   const [isBlocked, setIsBlocked] = useState(false);
   const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", phone: "", company: "", goalNotes: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const bookingPanelRef = useRef<HTMLDivElement>(null);
 
@@ -85,6 +86,7 @@ export default function BookPage() {
 
   async function handleSubmit() {
     setSubmitting(true);
+    setSubmitError("");
     try {
       const res = await fetch("/api/appointments", {
         method: "POST",
@@ -103,15 +105,25 @@ export default function BookPage() {
           totalAmount: total,
         }),
       });
-      if (!res.ok) { setSubmitting(false); return; }
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setSubmitError(body?.error || "Something went wrong. Please try again.");
+        setSubmitting(false);
+        return;
+      }
       const { appointmentId, checkoutUrl } = await res.json();
-      if (!appointmentId && !checkoutUrl) { setSubmitting(false); return; }
+      if (!appointmentId && !checkoutUrl) {
+        setSubmitError("Booking could not be confirmed. Please try again.");
+        setSubmitting(false);
+        return;
+      }
       if (checkoutUrl) {
         window.location.href = checkoutUrl;
       } else {
         router.push(`/book/success?appointmentId=${appointmentId}${selectedService.price === 0 ? "&free=true" : ""}`);
       }
     } catch {
+      setSubmitError("Network error. Please check your connection and try again.");
       setSubmitting(false);
     }
   }
@@ -423,6 +435,10 @@ export default function BookPage() {
                       {submitting ? "Processing..." : total > 0 ? "Pay & Confirm →" : "Confirm Booking →"}
                     </button>
                   </div>
+
+                  {submitError && (
+                    <p className="text-center text-sm text-red-500 font-dm">{submitError}</p>
+                  )}
 
                   {total > 0 && (
                     <p className="text-center text-xs text-[#7A8FA6] font-dm">

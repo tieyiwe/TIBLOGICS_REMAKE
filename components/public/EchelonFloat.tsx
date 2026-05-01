@@ -304,12 +304,12 @@ export default function EchelonFloat() {
   async function handleBookingSubmit(form: { firstName: string; lastName: string; email: string; phone: string }) {
     setBookingStep("submitting");
     try {
-      await fetch("/api/appointments", {
+      const res = await fetch("/api/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           serviceType: "PROJECT_DISCOVERY_MEETING",
-          serviceDuration: 20,
+          serviceDuration: "20 min",
           servicePrice: 0,
           totalAmount: 0,
           date: bookingData.date,
@@ -321,16 +321,24 @@ export default function EchelonFloat() {
           notes: JSON.stringify({ phone: form.phone, source: "echelon_chat" }),
         }),
       });
+      if (!res.ok) throw new Error("Booking failed");
       setBookingStep("done");
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: `You're all set, ${form.firstName}! 🎉\n\nYour **20-min Discovery Meeting** is confirmed for **${bookingData.dateLabel}** at **${bookingData.timeSlot} EST**. A confirmation is on its way to **${form.email}**.\n\nWe're looking forward to it!`,
+          content: `You're all set, ${form.firstName}! 🎉\n\nYour **20-min Discovery Meeting** is confirmed for **${bookingData.dateLabel}** at **${bookingData.timeSlot} EST**. A confirmation email is on its way to **${form.email}**.\n\nWe're looking forward to speaking with you!`,
         },
       ]);
     } catch {
       setBookingStep("form");
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Sorry, there was an issue saving your booking. Please try again or email **info@tiblogics.com** and we'll sort it out.",
+        },
+      ]);
     }
   }
 
