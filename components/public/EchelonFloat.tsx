@@ -318,7 +318,8 @@ export default function EchelonFloat() {
           firstName: form.firstName,
           lastName: form.lastName,
           email: form.email,
-          notes: JSON.stringify({ phone: form.phone, source: "echelon_chat" }),
+          phone: form.phone || null,
+          goalNotes: "Booked via TIBS chat assistant",
         }),
       });
       if (!res.ok) throw new Error("Booking failed");
