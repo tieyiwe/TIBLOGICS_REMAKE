@@ -1000,6 +1000,7 @@ async function main() {
   // Clear existing data
   await prisma.projectTask.deleteMany();
   await prisma.project.deleteMany();
+  await prisma.event.deleteMany();
 
   // Seed admin settings
   await prisma.adminSettings.upsert({
