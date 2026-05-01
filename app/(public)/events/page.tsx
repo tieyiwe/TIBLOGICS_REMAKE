@@ -32,8 +32,8 @@ interface TechEvent {
   when: string;
   location: string;
   description: string;
-  emoji: string;
-  color: string;
+  coverImage: string;
+  url: string;
 }
 
 const POPULAR_TECH_EVENTS: TechEvent[] = [
@@ -43,8 +43,8 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
     when: "May 2025",
     location: "Mountain View, CA + Online",
     description: "Google's annual developer conference showcasing the latest in Android, AI, Chrome, and Google Cloud.",
-    emoji: "🔵",
-    color: "from-blue-600 to-blue-800",
+    coverImage: "https://images.unsplash.com/photo-1573804633927-bfcbcd909acd?auto=format&fit=crop&w=800&q=80",
+    url: "https://io.google/2025/",
   },
   {
     name: "Microsoft Build",
@@ -52,8 +52,8 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
     when: "May 2025",
     location: "Seattle, WA + Online",
     description: "Developers gather to explore the latest in Azure, Copilot, and AI-powered developer tools.",
-    emoji: "🟦",
-    color: "from-sky-500 to-sky-700",
+    coverImage: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&w=800&q=80",
+    url: "https://build.microsoft.com/",
   },
   {
     name: "AWS re:Invent",
@@ -61,8 +61,8 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
     when: "Dec 2025",
     location: "Las Vegas, NV",
     description: "The world's largest cloud computing conference — announcements, deep dives, and 60,000+ attendees.",
-    emoji: "☁️",
-    color: "from-orange-500 to-orange-700",
+    coverImage: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80",
+    url: "https://reinvent.awsevents.com/",
   },
   {
     name: "OpenAI DevDay",
@@ -70,8 +70,8 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
     when: "TBD 2025",
     location: "San Francisco, CA",
     description: "OpenAI's developer event covering GPT updates, new APIs, and the future of AI-powered applications.",
-    emoji: "🤖",
-    color: "from-emerald-600 to-emerald-800",
+    coverImage: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=800&q=80",
+    url: "https://openai.com/",
   },
   {
     name: "Salesforce Dreamforce",
@@ -79,8 +79,8 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
     when: "Sep 2025",
     location: "San Francisco, CA",
     description: "The world's largest software conference — AI, CRM innovation, and Agentforce keynotes.",
-    emoji: "☁️",
-    color: "from-cyan-500 to-cyan-700",
+    coverImage: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80",
+    url: "https://www.salesforce.com/dreamforce/",
   },
   {
     name: "TechCrunch Disrupt",
@@ -88,8 +88,8 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
     when: "Oct 2025",
     location: "San Francisco, CA",
     description: "Startup pitches, industry leaders, and the Startup Battlefield. A must for entrepreneurs and investors.",
-    emoji: "🚀",
-    color: "from-green-500 to-green-700",
+    coverImage: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=800&q=80",
+    url: "https://techcrunch.com/events/tc-disrupt-2025/",
   },
 ];
 
@@ -373,17 +373,25 @@ function ComingSoonCard() {
 
 function TechEventCard({ ev }: { ev: TechEvent }) {
   return (
-    <div className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-md transition-all duration-300 flex flex-col">
-      <div className={`w-full h-32 bg-gradient-to-br ${ev.color} flex items-center justify-center`}>
-        <span className="text-5xl">{ev.emoji}</span>
+    <a
+      href={ev.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col group"
+    >
+      <div className="relative w-full h-40 overflow-hidden">
+        <img
+          src={ev.coverImage}
+          alt={ev.name}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        <span className="absolute bottom-3 left-3 text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+          INDUSTRY EVENT
+        </span>
       </div>
       <div className="p-5 flex flex-col gap-2 flex-1">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
-            INDUSTRY EVENT
-          </span>
-        </div>
-        <h3 className="font-syne font-bold text-base text-[#0D1B2A]">{ev.name}</h3>
+        <h3 className="font-syne font-bold text-base text-[#0D1B2A] group-hover:text-[#2251A3] transition-colors">{ev.name}</h3>
         <p className="font-dm text-xs text-[#7A8FA6] font-medium">{ev.organizer}</p>
         <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed flex-1 line-clamp-2">{ev.description}</p>
         <div className="flex flex-col gap-1 mt-1">
@@ -394,11 +402,14 @@ function TechEventCard({ ev }: { ev: TechEvent }) {
             <MapPin size={12} /><span>{ev.location}</span>
           </div>
         </div>
-        <div className="pt-3 border-t border-[#D2DCE8] mt-1">
-          <p className="font-dm text-xs text-[#7A8FA6] italic">Search &quot;{ev.name}&quot; for official registration &amp; updates.</p>
+        <div className="pt-3 border-t border-[#D2DCE8] mt-1 flex items-center justify-between">
+          <span className="font-dm text-xs font-semibold text-[#2251A3] group-hover:text-[#F47C20] transition-colors">
+            Visit official site →
+          </span>
+          <ExternalLink size={12} className="text-[#7A8FA6]" />
         </div>
       </div>
-    </div>
+    </a>
   );
 }
 

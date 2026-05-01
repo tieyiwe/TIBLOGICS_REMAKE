@@ -125,117 +125,6 @@ const PROJECTS = [
   },
 ];
 
-const EVENTS = [
-  {
-    slug: "ai-for-business-leaders-webinar-june-2026",
-    title: "AI for Business Leaders — Live Webinar",
-    description: "Cut through the hype. In 60 minutes you'll leave with a clear picture of which AI tools actually move the needle for your business, and a 3-step action plan to implement them this month.",
-    type: "WEBINAR",
-    price: 0,
-    capacity: 150,
-    spots: 150,
-    location: "Online · Zoom",
-    date: new Date("2026-06-05T18:00:00.000Z"),
-    timeSlot: "2:00 PM ET",
-    timezone: "America/New_York",
-    coverImage: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1200&q=80",
-    tags: ["AI strategy", "business leaders", "webinar", "free"],
-    featured: true,
-    published: true,
-    registrationOpen: true,
-  },
-  {
-    slug: "python-ai-automation-workshop-june-2026",
-    title: "Python & AI Automation Workshop",
-    description: "Hands-on full-day workshop. Build real automation scripts, connect AI APIs, and leave with 3 working tools you can deploy in your business the same week.",
-    type: "WORKSHOP",
-    price: 19700,
-    capacity: 20,
-    spots: 20,
-    location: "Online · Live + Recording",
-    date: new Date("2026-06-21T13:00:00.000Z"),
-    timeSlot: "9:00 AM ET",
-    timezone: "America/New_York",
-    coverImage: "https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?auto=format&fit=crop&w=1200&q=80",
-    tags: ["python", "automation", "workshop", "hands-on"],
-    featured: false,
-    published: true,
-    registrationOpen: true,
-  },
-  {
-    slug: "ai-implementation-bootcamp-july-2026",
-    title: "AI Implementation Bootcamp — 3-Day Intensive",
-    description: "The most practical AI training program for business owners. Three days of live instruction, real-world case studies, and guided implementation across sales, operations, and marketing.",
-    type: "TRAINING",
-    price: 49700,
-    capacity: 30,
-    spots: 30,
-    location: "Online · Live Sessions",
-    date: new Date("2026-07-14T13:00:00.000Z"),
-    timeSlot: "9:00 AM ET (3 days)",
-    timezone: "America/New_York",
-    coverImage: "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=1200&q=80",
-    tags: ["bootcamp", "intensive", "AI implementation", "training"],
-    featured: true,
-    published: true,
-    registrationOpen: true,
-  },
-  {
-    slug: "ai-tech-entrepreneurs-summit-july-2026",
-    title: "AI & Tech Entrepreneurs Virtual Summit",
-    description: "A full-day virtual summit for founders, freelancers, and side-hustlers building AI-powered businesses. Speakers, panels, live demos, and networking rooms.",
-    type: "EVENT",
-    price: 4700,
-    capacity: 500,
-    spots: 500,
-    location: "Online · Multi-session",
-    date: new Date("2026-07-26T13:00:00.000Z"),
-    timeSlot: "9:00 AM – 5:00 PM ET",
-    timezone: "America/New_York",
-    coverImage: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=1200&q=80",
-    tags: ["summit", "entrepreneurs", "networking", "AI business"],
-    featured: false,
-    published: true,
-    registrationOpen: true,
-  },
-  {
-    slug: "build-your-first-ai-chatbot-webinar-aug-2026",
-    title: "Build Your First AI Chatbot in 90 Minutes",
-    description: "No-code to low-code chatbot workshop. We'll build a fully functional AI assistant live — trained on your business data, ready to deploy on your website.",
-    type: "WEBINAR",
-    price: 0,
-    capacity: 200,
-    spots: 200,
-    location: "Online · Zoom",
-    date: new Date("2026-08-14T18:00:00.000Z"),
-    timeSlot: "2:00 PM ET",
-    timezone: "America/New_York",
-    coverImage: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80",
-    tags: ["chatbot", "no-code", "webinar", "free"],
-    featured: false,
-    published: true,
-    registrationOpen: true,
-  },
-  {
-    slug: "ai-pricing-cost-masterclass-sep-2026",
-    title: "AI Cost & Pricing Masterclass for Product Builders",
-    description: "Stop guessing what to charge. Learn exactly how to model your AI API costs, design pricing tiers that convert, and protect your margins as you scale.",
-    type: "TRAINING",
-    price: 29700,
-    capacity: 40,
-    spots: 40,
-    location: "Online · Live + Recording",
-    date: new Date("2026-09-06T14:00:00.000Z"),
-    timeSlot: "10:00 AM ET",
-    timezone: "America/New_York",
-    coverImage: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80",
-    tags: ["pricing", "AI costs", "SaaS", "product builders"],
-    featured: false,
-    published: true,
-    registrationOpen: true,
-  },
-];
-
 const BLOG_POSTS = [
   // ── AI-BUSINESS (2 more) ──────────────────────────────────────────────────
   {
@@ -1000,7 +889,6 @@ async function main() {
   // Clear existing data
   await prisma.projectTask.deleteMany();
   await prisma.project.deleteMany();
-  await prisma.event.deleteMany();
 
   // Seed admin settings
   await prisma.adminSettings.upsert({
@@ -1037,27 +925,6 @@ async function main() {
       });
     }
     console.log(`✅ Created project: ${project.name}`);
-  }
-
-  // Seed events
-  for (const ev of EVENTS) {
-    await prisma.event.upsert({
-      where: { slug: ev.slug },
-      create: ev,
-      update: {
-        coverImage: ev.coverImage,
-        title: ev.title,
-        description: ev.description,
-        price: ev.price,
-        spots: ev.spots,
-        date: ev.date,
-        timeSlot: ev.timeSlot,
-        published: ev.published,
-        registrationOpen: ev.registrationOpen,
-        featured: ev.featured,
-      },
-    });
-    console.log(`✅ Event: ${ev.title}`);
   }
 
   // Remove stale AI-generated posts (old articles from external APIs like HN/DEV.to)
