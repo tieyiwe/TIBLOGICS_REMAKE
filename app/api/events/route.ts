@@ -7,7 +7,13 @@ export async function GET(req: NextRequest) {
   const featured = searchParams.get("featured");
 
   try {
-    const where: Record<string, unknown> = { published: true };
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    const where: Record<string, unknown> = {
+      published: true,
+      OR: [{ date: null }, { date: { gte: now } }],
+    };
     if (type && type !== "all") where.type = type.toUpperCase();
     if (featured === "true") where.featured = true;
 
