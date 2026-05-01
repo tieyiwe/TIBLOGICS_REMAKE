@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
 import { Calendar, MapPin, Clock, Users, ArrowLeft, DollarSign } from "lucide-react";
 
 interface Props {
@@ -26,7 +25,13 @@ const TYPE_COLORS: Record<string, string> = {
 export default async function EventDetailPage({ params }: Props) {
   const { slug } = await params;
 
-  const event = await prisma.event.findUnique({ where: { slug } });
+  let event = null;
+  try {
+    const { prisma } = await import("@/lib/prisma");
+    event = await prisma.event.findUnique({ where: { slug } });
+  } catch {
+    notFound();
+  }
 
   if (!event || !event.published) {
     notFound();

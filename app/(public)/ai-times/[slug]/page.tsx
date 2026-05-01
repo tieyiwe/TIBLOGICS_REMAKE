@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
 import BlogPostClient from "./BlogPostClient";
 
 const SITE_URL = "https://tiblogics.com";
@@ -28,6 +27,7 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   try {
     const { slug } = await params;
+    const { prisma } = await import("@/lib/prisma");
     const post = await prisma.blogPost.findUnique({
       where: { slug },
       select: {
