@@ -154,8 +154,8 @@ function NotifyModal({ eventName, onClose }: { eventName: string; onClose: () =>
         {status === "done" ? (
           <div className="text-center py-4">
             <div className="text-4xl mb-3">🎉</div>
-            <h3 className="font-syne font-bold text-xl text-[#0D1B2A] mb-2">You&apos;re on the list!</h3>
-            <p className="font-dm text-sm text-[#3A4A5C]">We&apos;ll notify you as soon as this training is ready.</p>
+            <h3 className="font-syne font-bold text-xl text-[#0D1B2A] mb-2">You&apos;re on the waitlist!</h3>
+            <p className="font-dm text-sm text-[#3A4A5C]">We&apos;ll reach out as soon as registration opens.</p>
             <button onClick={onClose} className="mt-5 w-full bg-[#1B3A6B] text-white rounded-xl py-2.5 font-dm font-semibold text-sm hover:bg-[#2251A3] transition-colors">
               Close
             </button>
@@ -167,7 +167,7 @@ function NotifyModal({ eventName, onClose }: { eventName: string; onClose: () =>
                 <Bell size={18} className="text-[#F47C20]" />
               </div>
               <div>
-                <h3 className="font-syne font-bold text-lg text-[#0D1B2A] leading-tight">Get Notified</h3>
+                <h3 className="font-syne font-bold text-lg text-[#0D1B2A] leading-tight">Join the Waitlist</h3>
                 <p className="font-dm text-xs text-[#7A8FA6]">{eventName}</p>
               </div>
             </div>
@@ -201,7 +201,7 @@ function NotifyModal({ eventName, onClose }: { eventName: string; onClose: () =>
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <>
-                    <Bell size={14} /> Notify Me
+                    <Bell size={14} /> Join Waitlist
                   </>
                 )}
               </button>
@@ -304,7 +304,7 @@ function EventCard({ event }: { event: EventItem }) {
                 onClick={() => setNotifyOpen(true)}
                 className="flex-1 flex items-center justify-center gap-1.5 font-dm font-semibold text-sm text-white bg-[#1B3A6B] hover:bg-[#2251A3] transition-colors py-2 rounded-xl"
               >
-                <Bell size={13} /> Notify Me
+                <Bell size={13} /> Join Waitlist
               </button>
             )}
           </div>
@@ -362,7 +362,7 @@ function ComingSoonCard() {
               className="flex items-center justify-center gap-2 flex-1 text-center font-dm font-semibold text-sm text-white bg-[#F47C20] hover:bg-[#e06a10] transition-colors py-2 rounded-xl"
             >
               <Bell size={14} />
-              Get Notified
+              Join Waitlist
             </button>
           </div>
         </div>
