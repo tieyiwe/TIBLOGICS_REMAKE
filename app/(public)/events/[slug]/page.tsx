@@ -22,6 +22,13 @@ const TYPE_COLORS: Record<string, string> = {
   WEBINAR: "bg-teal-100 text-teal-700",
 };
 
+const TYPE_FALLBACK_IMAGE: Record<string, string> = {
+  TRAINING: "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=1200&q=80",
+  WORKSHOP: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1200&q=80",
+  WEBINAR: "https://images.unsplash.com/photo-1587440871875-191322ee64b0?auto=format&fit=crop&w=1200&q=80",
+  EVENT: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=1200&q=80",
+};
+
 export default async function EventDetailPage({ params }: Props) {
   const { slug } = await params;
 
@@ -53,24 +60,14 @@ export default async function EventDetailPage({ params }: Props) {
         </Link>
       </div>
 
-      {/* Hero image or gradient */}
-      {event.coverImage ? (
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-          <img
-            src={event.coverImage}
-            alt={event.title}
-            className="w-full h-64 sm:h-80 object-cover rounded-2xl"
-          />
-        </div>
-      ) : (
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-          <div className="w-full h-48 sm:h-64 bg-gradient-to-br from-[#1B3A6B] via-[#2251A3] to-[#F47C20] rounded-2xl flex items-center justify-center">
-            <span className="font-syne font-bold text-white text-3xl sm:text-4xl opacity-50 text-center px-4">
-              {event.title}
-            </span>
-          </div>
-        </div>
-      )}
+      {/* Hero image */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        <img
+          src={event.coverImage || TYPE_FALLBACK_IMAGE[event.type] || TYPE_FALLBACK_IMAGE.EVENT}
+          alt={event.title}
+          className="w-full h-64 sm:h-80 object-cover rounded-2xl"
+        />
+      </div>
 
       {/* Main content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">

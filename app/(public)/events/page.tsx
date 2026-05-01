@@ -108,6 +108,13 @@ const TYPE_COLORS: Record<string, string> = {
   WEBINAR: "bg-teal-100 text-teal-700",
 };
 
+const TYPE_FALLBACK_IMAGE: Record<string, string> = {
+  TRAINING: "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=800&q=80",
+  WORKSHOP: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=800&q=80",
+  WEBINAR: "https://images.unsplash.com/photo-1587440871875-191322ee64b0?auto=format&fit=crop&w=800&q=80",
+  EVENT: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=800&q=80",
+};
+
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
@@ -216,15 +223,11 @@ function EventCard({ event }: { event: EventItem }) {
     <>
       {notifyOpen && <NotifyModal eventName={event.title} onClose={() => setNotifyOpen(false)} />}
       <div className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col">
-        {event.coverImage ? (
-          <img src={event.coverImage} alt={event.title} className="w-full h-48 object-cover" />
-        ) : (
-          <div className="w-full h-48 bg-gradient-to-br from-[#1B3A6B] to-[#2251A3] flex items-center justify-center">
-            <span className="text-white text-4xl font-syne font-bold opacity-30">
-              {event.type[0]}
-            </span>
-          </div>
-        )}
+        <img
+          src={event.coverImage || TYPE_FALLBACK_IMAGE[event.type] || TYPE_FALLBACK_IMAGE.EVENT}
+          alt={event.title}
+          className="w-full h-48 object-cover"
+        />
 
         <div className="p-6 flex flex-col flex-1 gap-3">
           <div className="flex items-center gap-2 flex-wrap">
