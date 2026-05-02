@@ -343,6 +343,14 @@ function ComingSoonCard() {
             </span>
           </div>
 
+          <h3 className="font-syne font-bold text-lg text-[#0D1B2A] leading-snug">
+            🚀 Practical AI Training
+          </h3>
+
+          <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed flex-1">
+            Hands-on AI implementation training for business owners and teams. Learn to build workflows, automate tasks, and integrate AI into your operations.
+          </p>
+
           <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
             <MapPin size={13} />
             <span>Online · Live Sessions</span>
