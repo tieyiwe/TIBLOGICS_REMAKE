@@ -175,8 +175,8 @@ export default function BlogPostPage() {
 
       {/* Hero cover */}
       {post.coverImage ? (
-        <div className="w-full h-[600px] relative overflow-hidden">
-          <img src={post.coverImage.replace('-cover.', '-hero.')} alt={post.title} className="w-full h-full object-cover object-[center_15%]" />
+        <div className="w-full h-[700px] relative overflow-hidden">
+          <img src={post.coverImage.replace('-cover.', '-hero.')} alt={post.title} className="w-full h-full object-cover object-top" />
           <div className="absolute inset-0 bg-black/30 flex items-end p-6">
             <span className="text-5xl">{post.coverEmoji}</span>
           </div>
