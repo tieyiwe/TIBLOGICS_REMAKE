@@ -18,7 +18,7 @@ function toOgImage(coverImage: string | null): string {
     }
     return coverImage;
   } catch {
-    return coverImage;
+    return coverImage.startsWith("/") ? `${SITE_URL}${coverImage}` : FALLBACK_IMAGE;
   }
 }
 
