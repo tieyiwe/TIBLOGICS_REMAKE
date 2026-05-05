@@ -403,6 +403,26 @@ export default function BlogPostPage() {
           font-style: italic;
           margin: 1.5rem 0;
         }
+        .prose-blog img {
+          max-width: 100%;
+          height: auto;
+        }
+        @media (max-width: 640px) {
+          .prose-blog div[style*="display:grid"],
+          .prose-blog div[style*="display: grid"] {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 0.75rem !important;
+          }
+          .prose-blog div[style*="display:grid"] > *,
+          .prose-blog div[style*="display: grid"] > * {
+            width: 100% !important;
+            min-width: 0 !important;
+          }
+          .prose-blog h2 { font-size: 1.2rem; }
+          .prose-blog h3 { font-size: 1rem; }
+          .prose-blog p { font-size: 0.9375rem; }
+        }
       `}</style>
     </div>
   );
