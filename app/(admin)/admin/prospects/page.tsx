@@ -108,7 +108,7 @@ function ProspectPanel({
 
   async function save(data: Partial<Prospect>, activityEntry?: ActivityEntry) {
     setSaving(true);
-    const payload: Partial<Prospect> & { conversationLog?: ActivityEntry[] } = { ...data };
+    const payload: Partial<Prospect> & { conversationLog?: ActivityEntry[] | null } = { ...data };
     if (activityEntry) {
       payload.conversationLog = [activityEntry, ...activity].slice(0, 50);
     }
