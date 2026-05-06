@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="white"/>
+  <defs>
+    <linearGradient id="fg" x1="42" y1="0" x2="482" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#F4C01A"/>
+      <stop offset="42%"  stop-color="#F47C20"/>
+      <stop offset="100%" stop-color="#DC4C2E"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Connections -->
+  <g stroke="url(#fg)" stroke-width="11" fill="none" stroke-linecap="round">
+    <line x1="42"  y1="303" x2="139" y2="295"/>
+    <line x1="139" y1="295" x2="214" y2="144"/>
+    <line x1="139" y1="295" x2="302" y2="245"/>
+    <line x1="139" y1="295" x2="286" y2="387"/>
+    <line x1="214" y1="144" x2="302" y2="245"/>
+    <line x1="302" y1="245" x2="385" y2="123"/>
+    <line x1="302" y1="245" x2="412" y2="333"/>
+    <line x1="385" y1="123" x2="412" y2="333"/>
+    <line x1="412" y1="333" x2="460" y2="201"/>
+    <line x1="412" y1="333" x2="460" y2="391"/>
+    <line x1="460" y1="201" x2="474" y2="135"/>
+  </g>
+
+  <!-- Nodes -->
+  <circle cx="42"  cy="303" r="10" fill="url(#fg)"/>
+  <circle cx="139" cy="295" r="35" fill="url(#fg)"/>
+  <circle cx="214" cy="144" r="15" fill="url(#fg)"/>
+  <circle cx="286" cy="387" r="13" fill="url(#fg)"/>
+  <circle cx="302" cy="245" r="23" fill="url(#fg)"/>
+  <circle cx="385" cy="123" r="12" fill="url(#fg)"/>
+  <circle cx="412" cy="333" r="27" fill="url(#fg)"/>
+  <circle cx="460" cy="201" r="10" fill="url(#fg)"/>
+  <circle cx="460" cy="391" r="9"  fill="url(#fg)"/>
+  <circle cx="474" cy="135" r="8"  fill="url(#fg)"/>
+</svg>

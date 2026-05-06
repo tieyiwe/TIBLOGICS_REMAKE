@@ -1,6 +1,18 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getTransport() {
+  return nodemailer.createTransport({
+    host: process.env.TITAN_SMTP_HOST ?? "smtp.titan.email",
+    port: Number(process.env.TITAN_SMTP_PORT ?? 465),
+    secure: Number(process.env.TITAN_SMTP_PORT ?? 465) === 465,
+    auth: {
+      user: process.env.TITAN_SMTP_USER ?? "info@tiblogics.com",
+      pass: process.env.TITAN_SMTP_PASS,
+    },
+  });
+}
+
+const FROM = `TIBLOGICS <${process.env.TITAN_SMTP_USER ?? "info@tiblogics.com"}>`;
 
 export async function sendConfirmationEmail(appointment: {
   firstName: string;
@@ -20,8 +32,8 @@ export async function sendConfirmationEmail(appointment: {
     day: "numeric",
   }).format(new Date(appointment.date));
 
-  await resend.emails.send({
-    from: process.env.FROM_EMAIL!,
+  await getTransport().sendMail({
+    from: FROM,
     to: appointment.email,
     subject: `Your TIBLOGICS session is confirmed — ${appointment.serviceType} on ${dateStr}`,
     html: `
@@ -36,10 +48,10 @@ export async function sendConfirmationEmail(appointment: {
             <p><strong>Date:</strong> ${dateStr} at ${appointment.timeSlot} ET</p>
             <p><strong>Duration:</strong> ${appointment.serviceDuration}</p>
             <p><strong>With:</strong> Tieyiwe Bassole, TIBLOGICS</p>
-            <p><strong>Zoom Link:</strong> ${appointment.zoomLink ?? "Will be sent 24hrs before your session"}</p>
+            <p><strong>Meeting Link (Jitsi):</strong> ${appointment.zoomLink ? `<a href="${appointment.zoomLink}">${appointment.zoomLink}</a>` : "Will be sent 24hrs before your session"}</p>
           </div>
           <p style="color: #3A4A5C;">Looking forward to our session! Feel free to reply to this email with any questions.</p>
-          <p style="color: #7A8FA6; font-size: 14px; margin-top: 32px;">ai@tiblogics.com | tiblogics.com</p>
+          <p style="color: #7A8FA6; font-size: 14px; margin-top: 32px;">info@tiblogics.com | tiblogics.com</p>
         </div>
       </div>
     `,
@@ -60,41 +72,51 @@ export async function sendTiweNotification(appointment: {
   addOnRecording: boolean;
   addOnActionPlan: boolean;
   addOnSlackAccess: boolean;
+  meetingLink?: string | null;
 }) {
   const dateStr = new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
   }).format(new Date(appointment.date));
 
-  const addOns =
-    [
-      appointment.addOnRecording && "Recording + Transcript (+$49)",
-      appointment.addOnActionPlan && "Written Action Plan (+$79)",
-      appointment.addOnSlackAccess && "30-day Slack Access (+$149)",
-    ]
-      .filter(Boolean)
-      .join(", ") || "None";
+  const adminEmail = process.env.TIWE_EMAIL || process.env.DESIGN_EMAIL || process.env.TITAN_SMTP_USER || "info@tiblogics.com";
 
-  await resend.emails.send({
-    from: process.env.FROM_EMAIL!,
-    to: process.env.TIWE_EMAIL!,
-    subject: `🗓️ New ${appointment.serviceType} Booking — ${appointment.firstName} ${appointment.lastName} on ${dateStr}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-        <h2 style="color: #1B3A6B;">New Booking Alert</h2>
-        <div style="background: #F4F7FB; border-radius: 12px; padding: 20px;">
-          <p><strong>Client:</strong> ${appointment.firstName} ${appointment.lastName} | ${appointment.email}${appointment.company ? ` | ${appointment.company}` : ""}</p>
-          <p><strong>Service:</strong> ${appointment.serviceType}</p>
-          <p><strong>Date:</strong> ${dateStr} at ${appointment.timeSlot} ET</p>
-          <p><strong>Total:</strong> $${(appointment.totalAmount / 100).toFixed(0)} | Add-ons: ${addOns}</p>
-          <p><strong>Payment:</strong> ${appointment.paymentStatus ?? "pending"}</p>
-          ${appointment.goalNotes ? `<p><strong>Their goals:</strong> ${appointment.goalNotes}</p>` : ""}
-        </div>
-        <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/appointments" style="color: #F47C20;">View in Admin Dashboard →</a></p>
+
+  const isPaid = appointment.totalAmount > 0;
+
+  await getTransport().sendMail({
+    from: FROM,
+    to: adminEmail,
+    subject: `🗓️ NEW BOOKING — ${appointment.serviceType} · ${appointment.firstName} ${appointment.lastName} · ${dateStr}`,
+    html: `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#F4F7FB;font-family:Arial,sans-serif;">
+  <div style="max-width:600px;margin:24px auto;background:white;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+    <div style="background:linear-gradient(135deg,#1B3A6B,#2251A3);padding:28px 32px;">
+      <p style="margin:0 0 4px;color:rgba(255,255,255,0.6);font-size:11px;text-transform:uppercase;letter-spacing:1px;">TIBLOGICS</p>
+      <h1 style="margin:0;color:white;font-size:22px;">📅 New Booking${isPaid ? " — <span style='color:#4ade80'>Paid ✓</span>" : " — Free Session"}</h1>
+    </div>
+    <div style="padding:28px 32px;">
+      <table style="width:100%;border-collapse:collapse;font-size:15px;">
+        <tr><td style="padding:8px 0;color:#7A8FA6;width:130px;">Client</td><td style="padding:8px 0;color:#0D1B2A;font-weight:700;">${appointment.firstName} ${appointment.lastName}</td></tr>
+        <tr><td style="padding:8px 0;color:#7A8FA6;">Email</td><td style="padding:8px 0;"><a href="mailto:${appointment.email}" style="color:#2251A3;">${appointment.email}</a></td></tr>
+        ${appointment.company ? `<tr><td style="padding:8px 0;color:#7A8FA6;">Company</td><td style="padding:8px 0;color:#0D1B2A;">${appointment.company}</td></tr>` : ""}
+        <tr><td style="padding:8px 0;color:#7A8FA6;">Service</td><td style="padding:8px 0;color:#0D1B2A;font-weight:600;">${appointment.serviceType}</td></tr>
+        <tr><td style="padding:8px 0;color:#7A8FA6;">Date & Time</td><td style="padding:8px 0;color:#0D1B2A;font-weight:600;">${dateStr} at ${appointment.timeSlot} ET</td></tr>
+        <tr><td style="padding:8px 0;color:#7A8FA6;">Amount</td><td style="padding:8px 0;color:#0D1B2A;">${isPaid ? `<strong style="color:#16a34a;">$${(appointment.totalAmount / 100).toFixed(0)} paid</strong>` : "Free"}</td></tr>
+        ${appointment.goalNotes ? `<tr><td style="padding:8px 0;color:#7A8FA6;vertical-align:top;">Their Goals</td><td style="padding:8px 0;color:#3A4A5C;font-style:italic;">${appointment.goalNotes}</td></tr>` : ""}
+      </table>
+      ${appointment.meetingLink ? `
+      <div style="margin:24px 0;padding:16px 20px;background:#EFF8FF;border-radius:12px;border-left:4px solid #1D76BA;">
+        <p style="margin:0 0 8px;font-size:12px;color:#1D76BA;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Jitsi Meeting Link</p>
+        <a href="${appointment.meetingLink}" style="color:#1D76BA;word-break:break-all;font-size:14px;">${appointment.meetingLink}</a>
+      </div>` : ""}
+      <div style="margin-top:24px;">
+        <a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/appointments"
+           style="display:inline-block;background:#F47C20;color:white;text-decoration:none;padding:12px 24px;border-radius:10px;font-weight:700;font-size:14px;">
+          View in Admin →
+        </a>
       </div>
-    `,
+    </div>
+  </div>
+</body></html>`,
   });
 }
 
@@ -106,9 +128,12 @@ export async function sendProspectEmail(prospect: {
   mainChallenge: string;
   suggestedSolutions: string[];
 }) {
-  await resend.emails.send({
-    from: process.env.FROM_EMAIL!,
-    to: process.env.TIWE_EMAIL!,
+  const adminEmail = process.env.TIWE_EMAIL || process.env.TITAN_SMTP_USER || "info@tiblogics.com";
+
+
+  await getTransport().sendMail({
+    from: FROM,
+    to: adminEmail,
     subject: `🎯 New Prospect from TIBS — ${prospect.name} at ${prospect.business}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
@@ -125,4 +150,52 @@ export async function sendProspectEmail(prospect: {
   });
 }
 
-export default resend;
+export async function sendRescheduleEmail(data: {
+  firstName: string;
+  email: string;
+  originalDate: string;
+  originalTimeSlot: string;
+  suggestedDate: string;
+  suggestedTimeSlot: string;
+  message?: string;
+}) {
+  await getTransport().sendMail({
+    from: FROM,
+    to: data.email,
+    subject: `TIBLOGICS — A new time has been suggested for your session`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #1B3A6B; padding: 24px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">TIB<span style="color: #F47C20;">LOGICS</span></h1>
+        </div>
+        <div style="padding: 32px; background: white;">
+          <h2 style="color: #0D1B2A;">Hi ${data.firstName}, we'd like to reschedule</h2>
+          <p style="color: #3A4A5C;">Your original time slot is no longer available. Here's what we're suggesting:</p>
+          <div style="background: #F4F7FB; border-radius: 12px; padding: 20px; margin: 20px 0;">
+            <p style="margin: 0 0 8px;"><strong style="color: #7A8FA6;">Original:</strong> <span style="text-decoration: line-through; color: #7A8FA6;">${data.originalDate} at ${data.originalTimeSlot} ET</span></p>
+            <p style="margin: 0;"><strong style="color: #2251A3;">New suggested time:</strong> <span style="color: #0D1B2A; font-weight: 700;">${data.suggestedDate} at ${data.suggestedTimeSlot} ET</span></p>
+          </div>
+          ${data.message ? `<p style="color: #3A4A5C; font-style: italic;">"${data.message}"</p>` : ""}
+          <p style="color: #3A4A5C;">Please reply to this email to confirm or suggest an alternative time.</p>
+          <p style="color: #7A8FA6; font-size: 14px; margin-top: 32px;">info@tiblogics.com | tiblogics.com</p>
+        </div>
+      </div>
+    `,
+  });
+}
+
+// Drop-in replacement for `resend.emails.send({from, to, subject, html})`
+const resendCompat = {
+  emails: {
+    send(msg: { from?: string; to: string | string[]; subject: string; html: string }) {
+      return getTransport().sendMail({
+        from: FROM, // always use configured Titan sender; ignore any passed from value
+        to: Array.isArray(msg.to) ? msg.to.join(", ") : msg.to,
+        subject: msg.subject,
+        html: msg.html,
+      });
+    },
+  },
+};
+
+export default resendCompat;

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 
 async function getWebhookToken(): Promise<string | null> {
@@ -127,7 +128,7 @@ export async function POST(req: NextRequest) {
         data: {
           projectId: project.id, projectName: project.name,
           action: update.action ?? "update", source: "webhook",
-          changesDiff: { before, after },
+          changesDiff: { before, after } as Prisma.InputJsonValue,
           chatSummary: update.chatSummary,
         },
       });

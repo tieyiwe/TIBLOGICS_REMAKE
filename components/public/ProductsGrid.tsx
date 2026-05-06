@@ -1,4 +1,3 @@
-"use client";
 
 import Link from "next/link";
 
@@ -13,14 +12,14 @@ interface Product {
 const products: Product[] = [
   {
     name: "InStory",
-    desc: "AI-personalized K-8 learning stories. Built for schools and educators.",
+    desc: "AI-powered K-8 learning stories. Built for schools and educators.",
     color: "#2251A3",
     emoji: "📚",
     tag: "EdTech SaaS",
   },
   {
     name: "CareFlow AI",
-    desc: "Automated wellness check-ins for social work agencies via Twilio + AI voice.",
+    desc: "AI voice assistant for healthcare — check-ins, appointment booking, and patient support.",
     color: "#0F6E56",
     emoji: "❤️",
     tag: "HealthTech SaaS",
@@ -39,6 +38,20 @@ const products: Product[] = [
     emoji: "🎓",
     tag: "EdTech Platform",
   },
+  {
+    name: "Amber",
+    desc: "AI-powered communication and real-time alert management for organizations.",
+    color: "#D97706",
+    emoji: "🔔",
+    tag: "Communication SaaS",
+  },
+  {
+    name: "GeoStrat",
+    desc: "Geospatial strategy and location intelligence that turns map data into decisions.",
+    color: "#0F6E56",
+    emoji: "🌍",
+    tag: "Geospatial Intelligence",
+  },
 ];
 
 export default function ProductsGrid() {
@@ -55,7 +68,7 @@ export default function ProductsGrid() {
         </div>
 
         {/* Product cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map((product) => (
             <div
               key={product.name}

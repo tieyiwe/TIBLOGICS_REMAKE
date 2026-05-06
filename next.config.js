@@ -1,11 +1,85 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  images: {
-    domains: ['fonts.gstatic.com'],
-  },
-  experimental: {
-    serverComponentsExternalPackages: ['@prisma/client', 'prisma'],
-  },
+
+// Auto-detect production URL on Replit if NEXTAUTH_URL isn't explicitly set.
+// NextAuth requires this to match the actual hostname for cookie domain and
+// CSRF validation to work correctly in production.
+if (!process.env.NEXTAUTH_URL) {
+  if (process.env.REPLIT_DEV_DOMAIN) {
+    process.env.NEXTAUTH_URL = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+  } else if (process.env.NEXT_PUBLIC_APP_URL) {
+    process.env.NEXTAUTH_URL = process.env.NEXT_PUBLIC_APP_URL;
+  }
 }
 
-module.exports = nextConfig
+const nextConfig = {
+  allowedDevOrigins: [process.env.REPLIT_DEV_DOMAIN].filter(Boolean),
+  compress: true,
+  poweredByHeader: false,
+  serverExternalPackages: ["@prisma/client", "prisma"],
+  images: {
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 86400,
+    remotePatterns: [
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "source.unsplash.com" },
+      { protocol: "https", hostname: "fonts.gstatic.com" },
+      { protocol: "https", hostname: "image.thum.io" },
+    ],
+  },
+  experimental: {
+    optimizePackageImports: ["lucide-react", "@radix-ui/react-icons"],
+  },
+  async redirects() {
+    return [
+      { source: "/blog", destination: "/ai-times", permanent: true },
+      { source: "/blog/:slug", destination: "/ai-times/:slug", permanent: true },
+    ];
+  },
+  async headers() {
+    return [
+      {
+        source: "/fonts/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
+      {
+        source: "/:path*\\.{jpg,jpeg,png,gif,svg,ico,webp,avif}",
+        headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=3600" }],
+      },
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-DNS-Prefetch-Control", value: "on" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' https://fonts.gstatic.com",
+              "img-src 'self' https: data: blob:",
+              "connect-src 'self' https://api.anthropic.com https://api.resend.com https://api.stripe.com",
+              "frame-src https://js.stripe.com https://hooks.stripe.com",
+              "object-src 'none'",
+              "base-uri 'self'",
+            ].join("; "),
+          },
+        ],
+      },
+      {
+        source: "/((?!_next/static|_next/image|fonts|favicon)(?:[^.]*|.*\\.html))",
+        headers: [{ key: "Cache-Control", value: "no-store, no-cache, must-revalidate" }],
+      },
+      {
+        source: "/api/:path*",
+        headers: [{ key: "Cache-Control", value: "no-store, no-cache, must-revalidate" }],
+      },
+    ];
+  },
+};
+
+module.exports = nextConfig;

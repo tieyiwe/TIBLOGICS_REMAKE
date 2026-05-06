@@ -111,6 +111,36 @@
   transform: translateY(24px);
 }
 
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.anim-fade-up {
+  animation: fadeInUp 0.5s ease both;
+}
+
+.anim-fade-in {
+  animation: fadeInDown 0.4s ease both;
+}
+
+.animate-fade-in {
+  animation: fadeInDown 0.4s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-fade-up, .anim-fade-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* Chat bubbles */
 .chat-bubble-user {
   @apply bg-[#1B3A6B] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%] text-sm font-dm;
@@ -129,3 +159,38 @@
 }
 .typing-dot:nth-child(2) { animation-delay: 0.2s; }
 .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* ── Native mobile feel ─────────────────────────────────────────────────────── */
+
+/* Remove 300 ms tap delay on all interactive elements */
+a, button, [role="button"], input, select, textarea, label {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Subtle press scale on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  a:active, button:active {
+    transform: scale(0.97);
+    transition: transform 0.08s ease;
+  }
+}
+
+/* Smooth momentum scrolling on iOS for scrollable containers */
+.overflow-y-auto, .overflow-x-auto, .overflow-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent text size inflation on landscape rotation (iOS) */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Hide scrollbar on horizontal scroll strips (category pills, etc.) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

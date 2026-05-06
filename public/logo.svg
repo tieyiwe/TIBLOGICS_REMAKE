@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="160" viewBox="0 0 560 160" preserveAspectRatio="xMidYMid meet" role="img" aria-label="TIBLOGICS">
+  <defs>
+    <linearGradient id="ng" gradientUnits="userSpaceOnUse" x1="10" y1="0" x2="200" y2="0">
+      <stop offset="0%"   stop-color="#F5A623"/>
+      <stop offset="55%"  stop-color="#F47C20"/>
+      <stop offset="100%" stop-color="#E05020"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Connections -->
+  <g stroke="url(#ng)" stroke-width="3" fill="none" stroke-linecap="round">
+    <line x1="68"  y1="88"  x2="32"  y2="58"/>
+    <line x1="32"  y1="58"  x2="12"  y2="92"/>
+    <line x1="32"  y1="58"  x2="22"  y2="132"/>
+    <line x1="68"  y1="88"  x2="86"  y2="28"/>
+    <line x1="68"  y1="88"  x2="120" y2="52"/>
+    <line x1="68"  y1="88"  x2="158" y2="82"/>
+    <line x1="120" y1="52"  x2="158" y2="82"/>
+    <line x1="120" y1="52"  x2="192" y2="46"/>
+    <line x1="158" y1="82"  x2="172" y2="118"/>
+    <line x1="158" y1="82"  x2="192" y2="46"/>
+  </g>
+
+  <!-- Nodes -->
+  <circle cx="12"  cy="92"  r="6"  fill="url(#ng)"/>
+  <circle cx="22"  cy="132" r="5"  fill="url(#ng)"/>
+  <circle cx="32"  cy="58"  r="8"  fill="url(#ng)"/>
+  <circle cx="68"  cy="88"  r="21" fill="url(#ng)"/>
+  <circle cx="86"  cy="28"  r="7"  fill="url(#ng)"/>
+  <circle cx="120" cy="52"  r="10" fill="url(#ng)"/>
+  <circle cx="158" cy="82"  r="14" fill="url(#ng)"/>
+  <circle cx="172" cy="118" r="8"  fill="url(#ng)"/>
+  <circle cx="192" cy="46"  r="6"  fill="url(#ng)"/>
+
+  <!-- TIB -->
+  <text x="218" y="108"
+        font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+        font-weight="800" font-size="68"
+        fill="#1B3A6B">TIB</text>
+
+  <!-- LOGICS -->
+  <text x="333" y="108"
+        font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+        font-weight="800" font-size="68"
+        fill="#F47C20">LOGICS</text>
+</svg>

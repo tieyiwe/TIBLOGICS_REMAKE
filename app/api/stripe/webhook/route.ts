@@ -2,36 +2,54 @@ import { headers } from "next/headers";
 import prisma from "@/lib/prisma";
 import { sendConfirmationEmail, sendTiweNotification } from "@/lib/resend";
 import Stripe from "stripe";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-12-18.acacia",
-});
+import { createMeeting } from "@/lib/meeting-providers";
+import stripe from "@/lib/stripe";
 
 export async function POST(req: Request) {
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error("[stripe/webhook] STRIPE_WEBHOOK_SECRET is not set");
+    return new Response("Webhook secret not configured", { status: 500 });
+  }
+
   const body = await req.text();
-  const signature = headers().get("stripe-signature")!;
+  const headersList = await headers();
+  const signature = headersList.get("stripe-signature");
+
+  if (!signature) {
+    return new Response("Missing stripe-signature header", { status: 400 });
+  }
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
+    event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     console.error("[stripe/webhook] Signature verification failed", err);
-    return new Response("Webhook signature verification failed", {
-      status: 400,
-    });
+    return new Response("Webhook signature verification failed", { status: 400 });
   }
 
+  // Always return 200 after signature check — Stripe will retry on 5xx
   try {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
       const appointmentId = session.metadata?.appointmentId;
 
       if (appointmentId) {
-        const appt = await prisma.appointment.update({
+        // Auto-create meeting link on payment confirmation
+        const appt = await prisma.appointment.findUnique({ where: { id: appointmentId } });
+        let meetingLink: string | null = null;
+        if (appt) {
+          meetingLink = await createMeeting({
+            serviceType: appt.serviceType,
+            date: appt.date,
+            timeSlot: appt.timeSlot,
+            timezone: appt.timezone,
+            serviceDuration: appt.serviceDuration,
+            firstName: appt.firstName,
+            lastName: appt.lastName,
+          });
+        }
+
+        const updated = await prisma.appointment.update({
           where: { id: appointmentId },
           data: {
             status: "CONFIRMED",
@@ -39,45 +57,44 @@ export async function POST(req: Request) {
             stripeSessionId: session.id,
             paymentStatus: "paid",
             confirmedAt: new Date(),
+            zoomLink: meetingLink,
           },
         });
 
-        // Send emails — log errors but don't fail the webhook response
         await Promise.allSettled([
           sendConfirmationEmail({
-            firstName: appt.firstName,
-            lastName: appt.lastName,
-            email: appt.email,
-            serviceType: appt.serviceType,
-            date: appt.date,
-            timeSlot: appt.timeSlot,
-            serviceDuration: appt.serviceDuration,
-            zoomLink: appt.zoomLink,
-            totalAmount: appt.totalAmount,
+            firstName: updated.firstName,
+            lastName: updated.lastName,
+            email: updated.email,
+            serviceType: updated.serviceType,
+            date: updated.date,
+            timeSlot: updated.timeSlot,
+            serviceDuration: updated.serviceDuration,
+            zoomLink: updated.zoomLink,
+            totalAmount: updated.totalAmount,
           }).catch((err) => console.error("[sendConfirmationEmail]", err)),
 
           sendTiweNotification({
-            firstName: appt.firstName,
-            lastName: appt.lastName,
-            email: appt.email,
-            company: appt.company,
-            serviceType: appt.serviceType,
-            date: appt.date,
-            timeSlot: appt.timeSlot,
-            totalAmount: appt.totalAmount,
-            goalNotes: appt.goalNotes,
-            paymentStatus: appt.paymentStatus,
-            addOnRecording: appt.addOnRecording,
-            addOnActionPlan: appt.addOnActionPlan,
-            addOnSlackAccess: appt.addOnSlackAccess,
+            firstName: updated.firstName,
+            lastName: updated.lastName,
+            email: updated.email,
+            company: updated.company,
+            serviceType: updated.serviceType,
+            date: updated.date,
+            timeSlot: updated.timeSlot,
+            totalAmount: updated.totalAmount,
+            goalNotes: updated.goalNotes,
+            paymentStatus: updated.paymentStatus,
+            addOnRecording: updated.addOnRecording,
+            addOnActionPlan: updated.addOnActionPlan,
+            addOnSlackAccess: updated.addOnSlackAccess,
+            meetingLink: updated.zoomLink,
           }).catch((err) => console.error("[sendTiweNotification]", err)),
         ]);
       }
     }
   } catch (error) {
     console.error("[stripe/webhook] Event handling error", error);
-    // Still return 200 so Stripe doesn't retry indefinitely for non-transient errors
-    return new Response("Event handling error", { status: 500 });
   }
 
   return new Response("ok", { status: 200 });

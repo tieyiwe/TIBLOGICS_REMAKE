@@ -1,7 +1,8 @@
+export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/claude";
 
-const ADVISOR_SYSTEM_PROMPT = `You are Tibo, the AI Project Advisor for TIBLOGICS, an AI implementation and digital solutions agency based in Wheaton, Maryland.
+const ADVISOR_SYSTEM_PROMPT = `You are Tibo, the AI Project Advisor for TIBLOGICS, an AI implementation and digital solutions agency.
 
 TIBLOGICS services: AI Implementation & Agents, Workflow Automation, AI Strategy & Consulting, Web & App Development (React/Next.js), Cybersecurity, Data Analytics, Mobile Development (React Native), AI Training & Academy (90+ lessons, $97/mo on Skool), System Design & IoT.
 
@@ -9,7 +10,7 @@ TIBLOGICS products: InStory (AI-personalized learning platform for K-8, school l
 
 Target markets: Enterprise/airports (SSR Airport Mauritius active client), SMBs & restaurants (Caribbean Flavor active client), Schools & educators, African diaspora businesses, Startups & tech companies.
 
-Pricing ranges: Website $2,500–$8,000 | AI implementation $4,000–$15,000+ | Full digital transformation $10,000–$50,000+ | Monthly retainer $500–$2,500/mo | Discovery meeting: Free | AI Strategy Session $297 | AI Readiness Audit $497 | Website AI Transformation $197 | AI Cost & Pricing Strategy $197.
+Pricing ranges: Website $2,500–$8,000 | AI implementation $4,000–$15,000+ | Full digital transformation $10,000–$50,000+ | Monthly retainer $500–$2,500/mo | Discovery meeting: Free | AI Strategy Session $297 | AI Readiness Audit $497 | Website AI Transformation $197 | AI Cost & Price Strategy for AI Product Builders $197.
 
 Your role: Have a warm, professional conversation. Ask ONE question at a time. Explore their business type, main challenges, goals, current tech stack, budget range, and timeline. After 4-6 exchanges, summarize their needs and recommend 2-3 specific TIBLOGICS solutions with rationale. Be honest about pricing. Never oversell. Always offer the free discovery meeting as a next step.
 
@@ -39,8 +40,42 @@ export async function POST(req: NextRequest) {
   }
   try {
     const { messages } = await req.json();
-    const text = await streamChat(messages, ADVISOR_SYSTEM_PROMPT, 1024);
-    return NextResponse.json({ text });
+
+    const anthropic = (await import("@/lib/claude")).default;
+    const { CLAUDE_MODEL } = await import("@/lib/claude");
+
+    const stream = anthropic.messages.stream({
+      model: CLAUDE_MODEL,
+      max_tokens: 1024,
+      system: ADVISOR_SYSTEM_PROMPT,
+      messages,
+    });
+
+    const encoder = new TextEncoder();
+    const readable = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of stream) {
+            if (chunk.type === "content_block_delta" && chunk.delta.type === "text_delta") {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: chunk.delta.text })}\n\n`));
+            }
+          }
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        } catch (err) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "Stream error" })}\n\n`));
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(readable, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+      },
+    });
   } catch (err) {
     console.error("Tibo advisor error:", err);
     return NextResponse.json({ error: "AI service unavailable" }, { status: 500 });

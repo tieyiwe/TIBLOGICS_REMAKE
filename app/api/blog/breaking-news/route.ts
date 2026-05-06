@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAdmin } from "@/lib/require-admin";
 
+// GET is public (displayed on site), POST/DELETE require admin
 export async function GET() {
   try {
     const now = new Date();
     const news = await prisma.breakingNews.findFirst({
-      where: {
-        active: true,
-        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
-      },
+      where: { active: true, OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] },
       orderBy: { createdAt: "desc" },
     });
     return NextResponse.json({ news });
@@ -18,16 +17,21 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   try {
     const body = await req.json();
-    // Deactivate all previous breaking news
+    if (!body.headline || typeof body.headline !== "string" || body.headline.length > 300) {
+      return NextResponse.json({ error: "Invalid headline" }, { status: 400 });
+    }
     await prisma.breakingNews.updateMany({ data: { active: false } });
     const news = await prisma.breakingNews.create({
       data: {
-        headline: body.headline,
-        summary: body.summary ?? "",
-        sourceUrl: body.sourceUrl,
-        source: body.source,
+        headline: body.headline.trim(),
+        summary: typeof body.summary === "string" ? body.summary.slice(0, 500) : "",
+        sourceUrl: typeof body.sourceUrl === "string" ? body.sourceUrl.slice(0, 500) : null,
+        source: typeof body.source === "string" ? body.source.slice(0, 100) : null,
         active: true,
         expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
       },
@@ -40,6 +44,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE() {
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   try {
     await prisma.breakingNews.updateMany({ data: { active: false } });
     return NextResponse.json({ success: true });

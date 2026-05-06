@@ -24,7 +24,7 @@ export default function ServicesPage() {
   }, []);
 
   return (
-    <div className="pt-24 pb-20 min-h-screen">
+    <div className="pt-32 sm:pt-44 pb-20 min-h-screen">
       {/* Hero */}
       <div className="bg-[#1B3A6B] py-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -36,7 +36,7 @@ export default function ServicesPage() {
             Every service we offer starts with an AI lens. We identify automation opportunities, recommend AI tools, and architect systems that scale.
           </p>
           <div className="flex justify-center gap-3 mt-6">
-            <Link href="/book" className="btn-primary">Book a Session</Link>
+            <Link href="/book" className="btn-primary">Book a Consulting</Link>
             <Link href="/tools/advisor" className="bg-white text-[#1B3A6B] hover:bg-[#EBF0FA] font-semibold rounded-lg px-5 py-2.5 transition-colors inline-flex items-center gap-2">
               Talk to Tibo
             </Link>

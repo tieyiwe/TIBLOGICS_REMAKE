@@ -1,52 +1,54 @@
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
+import prisma from "@/lib/prisma";
+import stripe from "@/lib/stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-12-18.acacia",
-});
+// Max reasonable appointment price: $5000
+const MAX_AMOUNT_CENTS = 500_000;
 
 export async function POST(req: Request) {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return NextResponse.json({ error: "Payment processing is not configured yet. Please contact info@tiblogics.com to complete your booking." }, { status: 503 });
+  }
   try {
     const body = await req.json();
-    const { appointmentId, amount, serviceType, clientEmail, clientName } =
-      body;
+    const { appointmentId, amount, serviceType, clientEmail } = body;
+
+    // Validate required fields
+    if (!appointmentId || typeof appointmentId !== "string") {
+      return NextResponse.json({ error: "Invalid appointmentId" }, { status: 400 });
+    }
+    if (typeof amount !== "number" || !Number.isInteger(amount) || amount <= 0 || amount > MAX_AMOUNT_CENTS) {
+      return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+    }
+    if (!serviceType || typeof serviceType !== "string" || serviceType.length > 200) {
+      return NextResponse.json({ error: "Invalid serviceType" }, { status: 400 });
+    }
+    if (!clientEmail || typeof clientEmail !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(clientEmail)) {
+      return NextResponse.json({ error: "Invalid email" }, { status: 400 });
+    }
+
+    // Verify the appointment exists and the amount matches what's stored
+    const appt = await prisma.appointment.findUnique({ where: { id: appointmentId } });
+    if (!appt) {
+      return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
+    }
+    if (appt.totalAmount !== amount) {
+      return NextResponse.json({ error: "Amount mismatch" }, { status: 400 });
+    }
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: { name: body.serviceType },
-            unit_amount: body.amount,
-          },
-          quantity: 1,
-        },
-      ],
+      line_items: [{ price_data: { currency: "usd", product_data: { name: serviceType }, unit_amount: amount }, quantity: 1 }],
       mode: "payment",
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/book/success?appointmentId=${body.appointmentId}`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/book/success?appointmentId=${appointmentId}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/book`,
-      metadata: {
-        appointmentId: body.appointmentId,
-        serviceType: body.serviceType,
-        clientEmail: body.clientEmail,
-      },
-      customer_email: body.clientEmail,
+      metadata: { appointmentId, serviceType, clientEmail },
+      customer_email: clientEmail,
     });
-
-    // Suppress unused-variable warnings — values are destructured for validation clarity
-    void appointmentId;
-    void amount;
-    void serviceType;
-    void clientEmail;
-    void clientName;
 
     return NextResponse.json({ checkoutUrl: session.url });
   } catch (error) {
     console.error("[POST /api/stripe/checkout]", error);
-    return NextResponse.json(
-      { error: "Failed to create checkout session" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to create checkout session" }, { status: 500 });
   }
 }

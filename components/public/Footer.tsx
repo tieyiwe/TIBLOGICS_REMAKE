@@ -1,6 +1,5 @@
+import { Mail } from "lucide-react";
 import Link from "next/link";
-import { Mail, MapPin } from "lucide-react";
-
 const services = [
   "AI Implementation",
   "Workflow Automation",
@@ -13,21 +12,23 @@ const services = [
 ];
 
 const products = [
-  { label: "InStory Method", href: "#" },
+  { label: "InStory School", href: "#" },
   { label: "CareFlow AI", href: "#" },
   { label: "ShipFrica", href: "#" },
   { label: "AI Academy", href: "#" },
+  { label: "RoofGuard", href: "#" },
+  { label: "Tibintel", href: "https://tibintel.com" },
   { label: "Goal Tester", href: "#" },
-  { label: "AutoIQ", href: "#" },
+  { label: "AI Central", href: "#" },
 ];
 
 const company = [
   { label: "About Us", href: "/about" },
   { label: "Services", href: "/services" },
-  { label: "Free Tools", href: "/tools" },
-  { label: "Book a Session", href: "/book" },
+  { label: "Events & Training", href: "/events" },
+  { label: "Try Smart Tools", href: "/tools" },
+  { label: "Book a Consulting", href: "/book" },
   { label: "Contact", href: "/contact" },
-  { label: "Admin", href: "/admin" },
 ];
 
 export default function Footer() {
@@ -38,24 +39,21 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
           {/* Brand */}
           <div>
-            <div className="font-syne text-2xl font-800 mb-3">
-              <span className="text-white">TIB</span>
-              <span className="text-[#F47C20]">LOGICS</span>
+            <div className="mb-3">
+              <img src="/footer-logo-transparent.png" alt="TIBLOGICS" className="h-24 w-auto" />
             </div>
             <p className="text-[#7A9BBF] text-sm font-dm leading-relaxed mb-4">
               We create the right logics to fulfill your technical needs. AI-first.
-              Tech-complete. North America & Francophone Africa.
+              Tech-complete. North America, Africa & beyond.
             </p>
             <a
-              href="mailto:ai@tiblogics.com"
+              href="mailto:info@tiblogics.com"
               className="inline-flex items-center gap-2 text-[#F47C20] hover:text-[#FEF0E3] text-sm font-dm font-medium transition-colors"
             >
               <Mail size={14} />
-              ai@tiblogics.com
+              info@tiblogics.com
             </a>
             <div className="flex items-center gap-2 text-[#7A9BBF] text-sm font-dm mt-2">
-              <MapPin size={14} />
-              Wheaton, MD / Washington D.C.
             </div>
           </div>
 
@@ -78,10 +76,10 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Products */}
+          {/* Startups & Products */}
           <div>
             <h4 className="font-syne font-700 text-sm uppercase tracking-wider text-[#E8EFF8] mb-4">
-              Products
+              Startups &amp; Products
             </h4>
             <ul className="space-y-2">
               {products.map((p) => (
@@ -120,7 +118,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="border-t border-[#2251A3]/40 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-[#7A9BBF] text-xs font-dm">
-            © {new Date().getFullYear()} TIBLOGICS. All rights reserved. Founded by Tieyiwe Bassole.
+            © 2026 TIBLOGICS. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <Link href="/privacy" className="text-[#7A9BBF] hover:text-white text-xs font-dm transition-colors">

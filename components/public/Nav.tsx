@@ -1,77 +1,108 @@
-"use client";
+ "use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const NEW_LOGO = "/logo.png";
 
 const navLinks = [
   { label: "Services", href: "/services" },
-  { label: "Products", href: "/products" },
-  { label: "Free Tools", href: "/tools" },
-  { label: "The Smart Room", href: "/blog" },
+  { label: "Startups & Products", href: "/products" },
+  { label: "Try Smart Tools", href: "/tools" },
+  { label: "AI TIMES", href: "/ai-times" },
+  { label: "Events", href: "/events" },
   { label: "About", href: "/about" },
 ];
 
+function openTibo() {
+  window.dispatchEvent(new CustomEvent("tibo:open"));
+}
+
 export default function Nav() {
+  const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", handler);
+    window.addEventListener("scroll", handler, { passive: true });
     return () => window.removeEventListener("scroll", handler);
   }, []);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  function isActive(href: string) {
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname.startsWith(href + "/");
+  }
 
   return (
     <>
       <header
         className={cn(
-          "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+          "fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white",
           scrolled
-            ? "bg-white/90 backdrop-blur-[10px] border-b border-[#D2DCE8] shadow-sm"
-            : "bg-transparent"
+            ? "border-b border-[#D2DCE8] shadow-sm"
+            : "border-b border-transparent"
         )}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 lg:h-18">
-            {/* Logo */}
-            <Link href="/" className="flex items-center">
-              <span className="font-syne text-xl font-800 tracking-tight">
-                <span className="text-[#1B3A6B]">TIB</span>
-                <span className="text-[#F47C20]">LOGICS</span>
-              </span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-10">
+          <div className="flex items-center justify-between min-h-[7.5rem] sm:min-h-[10.5rem] py-0 sm:py-2">
+            <Link href="/" className="flex items-center flex-shrink-0">
+              <img src={NEW_LOGO} alt="TIBLOGICS" className="h-[7.5rem] sm:h-[10.5rem] w-auto" />
             </Link>
 
             {/* Desktop Nav */}
             <nav className="hidden lg:flex items-center gap-7">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className="text-[#3A4A5C] hover:text-[#1B3A6B] font-dm font-medium text-sm transition-colors duration-200"
-                >
-                  {link.label}
-                </Link>
-              ))}
+              {navLinks.map((link) => {
+                const isAITimes = link.label === "AI TIMES";
+                if (isAITimes) {
+                  return (
+                    <Link
+                      key={link.label}
+                      href={link.href}
+                      className={cn(
+                        "font-dm font-semibold text-sm px-3 py-1.5 rounded-full transition-all duration-200",
+                        "bg-gradient-to-r from-emerald-600 via-green-500 to-teal-600 text-white shadow-sm hover:from-emerald-700 hover:to-teal-700",
+                        isActive(link.href) && "ring-2 ring-[#F47C20] ring-offset-1"
+                      )}
+                    >
+                      {link.label}
+                    </Link>
+                  );
+                }
+                return (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    className={cn(
+                      "font-dm font-medium text-sm transition-colors duration-200",
+                      isActive(link.href)
+                        ? "text-[#1B3A6B] font-semibold"
+                        : "text-[#3A4A5C] hover:text-[#1B3A6B]"
+                    )}
+                  >
+                    {link.label}
+                    {isActive(link.href) && (
+                      <span className="block h-0.5 bg-[#F47C20] rounded-full mt-0.5" />
+                    )}
+                  </Link>
+                );
+              })}
             </nav>
 
-            {/* Desktop Right Actions */}
+            {/* Desktop CTAs */}
             <div className="hidden lg:flex items-center gap-3">
-              <button className="text-sm font-dm font-medium text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors">
-                EN / FR
-              </button>
-              <Link
-                href="/tools/advisor"
-                className="btn-primary text-sm py-2 px-4"
-              >
+              <button onClick={openTibo} className="btn-primary text-sm py-2 px-4">
                 Talk to Tibo ↗
-              </Link>
-              <Link
-                href="/book"
-                className="btn-secondary text-sm py-2 px-4"
-              >
-                Book a Meeting
+              </button>
+              <Link href="/book" className="btn-secondary text-sm py-2 px-4">
+                Book a Free Consulting
               </Link>
             </div>
 
@@ -94,7 +125,6 @@ export default function Nav() {
           mobileOpen ? "pointer-events-auto" : "pointer-events-none"
         )}
       >
-        {/* Overlay */}
         <div
           className={cn(
             "absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300",
@@ -103,18 +133,13 @@ export default function Nav() {
           onClick={() => setMobileOpen(false)}
         />
 
-        {/* Drawer panel */}
         <div
           className={cn(
-            "absolute right-0 top-0 bottom-0 w-72 bg-white shadow-2xl transition-transform duration-300 ease-out",
+            "absolute right-0 top-0 bottom-0 w-72 bg-white shadow-2xl transition-transform duration-300 ease-out flex flex-col",
             mobileOpen ? "translate-x-0" : "translate-x-full"
           )}
         >
           <div className="flex items-center justify-between p-4 border-b border-[#D2DCE8]">
-            <span className="font-syne font-800 text-lg">
-              <span className="text-[#1B3A6B]">TIB</span>
-              <span className="text-[#F47C20]">LOGICS</span>
-            </span>
             <button
               onClick={() => setMobileOpen(false)}
               className="p-2 rounded-lg hover:bg-[#F4F7FB] transition-colors"
@@ -123,27 +148,50 @@ export default function Nav() {
             </button>
           </div>
 
-          <nav className="p-4 flex flex-col gap-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center px-3 py-3 rounded-xl text-[#3A4A5C] hover:bg-[#F4F7FB] hover:text-[#1B3A6B] font-dm font-medium transition-colors"
-              >
-                {link.label}
-              </Link>
-            ))}
+          <nav className="p-4 flex flex-col gap-1 flex-1">
+            {navLinks.map((link) => {
+              const isAITimes = link.label === "AI TIMES";
+              if (isAITimes) {
+                return (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      "flex items-center px-3 py-3 rounded-xl font-dm font-semibold transition-all",
+                      "bg-gradient-to-r from-emerald-600 via-green-500 to-teal-600 text-white",
+                      isActive(link.href) && "ring-2 ring-[#F47C20] ring-offset-1"
+                    )}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              }
+              return (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={cn(
+                    "flex items-center px-3 py-3 rounded-xl font-dm font-medium transition-colors",
+                    isActive(link.href)
+                      ? "bg-[#EBF0FA] text-[#1B3A6B] font-semibold border-l-2 border-[#F47C20]"
+                      : "text-[#3A4A5C] hover:bg-[#F4F7FB] hover:text-[#1B3A6B]"
+                  )}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
           </nav>
 
-          <div className="p-4 border-t border-[#D2DCE8] flex flex-col gap-3 mt-auto">
-            <Link
-              href="/tools/advisor"
-              onClick={() => setMobileOpen(false)}
+          <div className="p-4 border-t border-[#D2DCE8] flex flex-col gap-3">
+            <button
+              onClick={() => { setMobileOpen(false); openTibo(); }}
               className="btn-primary justify-center text-sm"
             >
               Talk to Tibo ↗
-            </Link>
+            </button>
             <Link
               href="/book"
               onClick={() => setMobileOpen(false)}

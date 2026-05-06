@@ -29,7 +29,7 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json({
-      bookedSlots: appointments.map((a) => a.timeSlot),
+      bookedSlots: appointments.map((a: { timeSlot: string }) => a.timeSlot),
       isBlocked: !!blocked,
     });
   } catch (error) {

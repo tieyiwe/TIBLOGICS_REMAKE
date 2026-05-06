@@ -1,10 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x", "linux-musl", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("SUPABASE_URL")
+  directUrl = env("SUPABASE_URL")
 }
 
 model Appointment {
@@ -21,6 +23,7 @@ model Appointment {
   lastName        String
   email           String
   company         String?
+  phone           String?
   goalNotes       String?
   addOnRecording      Boolean @default(false)
   addOnActionPlan     Boolean @default(false)
@@ -70,9 +73,11 @@ model Prospect {
   followUpDate       DateTime?
   convertedAt        DateTime?
   conversationLog    Json?
+  archived           Boolean        @default(false)
 
   @@index([status])
   @@index([createdAt])
+  @@index([archived])
 }
 
 enum ProspectSource {
@@ -254,6 +259,7 @@ model BlogPost {
   content       String   @db.Text
   category      String
   tags          String[]
+  coverImage    String?
   coverEmoji    String   @default("🤖")
   coverGradient String   @default("from-[#1B3A6B] to-[#2251A3]")
   author        String   @default("Echelon AI")
@@ -302,4 +308,205 @@ model CommandCenterSync {
   changesDiff Json
   chatSummary String?
   undoneAt    DateTime?
+}
+
+model PageView {
+  id        String   @id @default(cuid())
+  page      String
+  referrer  String?
+  origin    String   @default("direct")
+  device    String   @default("desktop")
+  browser   String?
+  os        String?
+  ip        String?
+  country   String?
+  sessionId String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([sessionId])
+  @@index([origin])
+}
+
+model ActiveSession {
+  id        String   @id @default(cuid())
+  sessionId String   @unique
+  page      String
+  device    String   @default("desktop")
+  browser   String?
+  os        String?
+  origin    String   @default("direct")
+  country   String?
+  ip        String?
+  lastSeen  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([lastSeen])
+}
+
+model Collaborator {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  passwordHash  String?
+  role          String    @default("CUSTOM")
+  permissions   String[]
+  isAdmin       Boolean   @default(false)
+  active        Boolean   @default(true)
+  inviteToken   String?   @unique
+  inviteExpires DateTime?
+  invitedBy     String
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  activityLogs  CollaboratorActivityLog[]
+
+  @@index([email])
+  @@index([inviteToken])
+}
+
+model CollaboratorActivityLog {
+  id             String       @id @default(cuid())
+  collaboratorId String
+  collaborator   Collaborator @relation(fields: [collaboratorId], references: [id], onDelete: Cascade)
+  action         String
+  resource       String
+  resourceId     String?
+  details        String?
+  ip             String?
+  createdAt      DateTime     @default(now())
+
+  @@index([collaboratorId])
+  @@index([createdAt])
+  @@index([resource])
+}
+
+model AgentLead {
+  id            String          @id @default(cuid())
+  source        String          @default("ai_generated")
+  companyName   String
+  contactName   String?
+  email         String?
+  phone         String?
+  website       String?
+  location      String?
+  industry      String?
+  description   String?         @db.Text
+  notes         String?         @db.Text
+  status        AgentLeadStatus @default(NEW)
+  fromAgent     String          @default("aria")
+  assignedTo    String?
+  callSid           String?
+  callStatus        String?
+  callNotes         String?   @db.Text
+  callTranscript    String?   @db.Text
+  callSummary       String?   @db.Text
+  blandCallId       String?
+  interestedIn      String[]
+  hasWebsite        Boolean?
+  businessInfo      Json?
+  scrapedAt         DateTime?
+  area              String?
+  transferredAt     DateTime?
+  contactedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([status])
+  @@index([fromAgent])
+  @@index([assignedTo])
+}
+
+enum AgentLeadStatus {
+  NEW
+  TRANSFERRED
+  CONTACTED
+  HOT
+  WARM
+  COLD
+  UNINTERESTED
+  CONVERTED
+}
+
+model AgentMessage {
+  id        String   @id @default(cuid())
+  fromAgent String
+  toAgent   String
+  type      String   @default("notification")
+  subject   String?
+  payload   Json     @default("{}")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([toAgent, read])
+  @@index([fromAgent])
+}
+
+model AgentRun {
+  id        String   @id @default(cuid())
+  agent     String
+  action    String
+  status    String   @default("running")
+  input     Json?
+  output    Json?
+  error     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([agent])
+  @@index([status])
+}
+
+model PartnershipApplication {
+  id           String   @id @default(cuid())
+  businessName String
+  contactName  String
+  email        String
+  phone        String
+  website      String?
+  address      String?
+  description  String
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model WaitlistEntry {
+  id        String   @id @default(cuid())
+  email     String
+  product   String
+  createdAt DateTime @default(now())
+
+  @@unique([email, product])
+  @@index([product])
+  @@index([createdAt])
+}
+
+model Event {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  title            String
+  slug             String   @unique
+  description      String   @db.Text
+  content          String?  @db.Text
+  type             String   @default("TRAINING")
+  price            Int      @default(0)
+  currency         String   @default("USD")
+  capacity         Int?
+  location         String   @default("Online")
+  date             DateTime?
+  endDate          DateTime?
+  timeSlot         String?
+  timezone         String   @default("America/New_York")
+  coverImage       String?
+  tags             String[]
+  featured         Boolean  @default(false)
+  published        Boolean  @default(false)
+  registrationOpen Boolean  @default(true)
+  stripePaymentLink String?
+  spots            Int?
+
+  @@index([published])
+  @@index([date])
 }

@@ -18,11 +18,13 @@ const SERVICES = [
 ];
 
 const BUDGETS = [
-  "Under $2,000",
-  "$2,000 – $5,000",
-  "$5,000 – $10,000",
-  "$10,000 – $25,000",
-  "$25,000+",
+  "Under $19,000",
+  "$19,000 – $50,000",
+  "$50,000 – $150,000",
+  "$150,000 – $500,000",
+  "$500,000 – $1M",
+  "$1M – $3M",
+  "$3M+",
   "Not sure / Let's discuss",
 ];
 
@@ -160,7 +162,7 @@ Keep responses short and friendly.`;
 
   if (submitted) {
     return (
-      <div className="pt-24 pb-20 min-h-screen bg-[#F4F7FB] flex items-center justify-center px-4">
+      <div className="pt-32 sm:pt-44 pb-20 min-h-screen bg-[#F4F7FB] flex items-center justify-center px-4">
         <div className="bg-white border border-[#D2DCE8] rounded-3xl p-12 max-w-md w-full text-center shadow-lg">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5">
             <CheckCircle2 size={32} className="text-green-600" />
@@ -170,7 +172,7 @@ Keep responses short and friendly.`;
             Your project details have been sent to our team. Expect to hear back within <strong>1–2 business days</strong>. A confirmation email is on its way to you.
           </p>
           <div className="flex flex-col gap-3">
-            <button onClick={() => router.push("/blog")} className="btn-primary justify-center">
+            <button onClick={() => router.push("/ai-times")} className="btn-primary justify-center">
               Read Our Blog →
             </button>
             <button onClick={() => router.push("/tools/advisor")} className="btn-secondary justify-center">
@@ -183,7 +185,7 @@ Keep responses short and friendly.`;
   }
 
   return (
-    <div className="pt-24 pb-20 min-h-screen bg-[#F4F7FB]">
+    <div className="pt-32 sm:pt-44 pb-20 min-h-screen bg-[#F4F7FB]">
       {/* Hero */}
       <div className="bg-[#1B3A6B] py-12 text-center">
         <span className="section-tag-light">Start a Project</span>

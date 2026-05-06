@@ -99,11 +99,11 @@ export default function CalculatorPage() {
     "bg-white text-[#3A4A5C] border-[#D2DCE8] hover:border-[#2251A3] hover:text-[#2251A3]";
 
   return (
-    <div className="pt-24 pb-16 min-h-screen bg-[#F4F7FB]">
+    <div className="pt-32 sm:pt-44 pb-16 min-h-screen bg-[#F4F7FB]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Page header */}
         <div className="mb-10 text-center">
-          <span className="section-tag">AI Cost Calculator</span>
+          <span className="section-tag">AI Product Cost Calculator</span>
           <h1 className="font-syne font-extrabold text-3xl sm:text-4xl text-[#0D1B2A] mt-3 mb-3">
             Estimate Your AI API Costs
           </h1>

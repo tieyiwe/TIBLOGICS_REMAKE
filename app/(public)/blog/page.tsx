@@ -13,6 +13,7 @@ interface BlogPost {
   excerpt: string;
   category: string;
   tags: string[];
+  coverImage?: string;
   coverEmoji: string;
   coverGradient: string;
   author: string;
@@ -72,20 +73,26 @@ export default function BlogPage() {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    trackPageVisit("/blog");
+    trackPageVisit("/ai-times");
   }, []);
 
-  const fetchPosts = useCallback(async () => {
-    setLoading(true);
+  const fetchPosts = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000);
     try {
       const params = new URLSearchParams({ limit: "24" });
       if (category !== "all") params.set("category", category);
       if (search) params.set("search", search);
-      const res = await fetch(`/api/blog/posts?${params}`);
+      const res = await fetch(`/api/blog/posts?${params}`, { signal: controller.signal });
+      clearTimeout(timer);
       const data = await res.json();
       setPosts(data.posts ?? []);
+    } catch {
+      // timeout or network error — leave posts as-is
     } finally {
-      setLoading(false);
+      clearTimeout(timer);
+      if (!silent) setLoading(false);
     }
   }, [category, search]);
 
@@ -101,24 +108,38 @@ export default function BlogPage() {
 
   // Auto-refresh check on page load
   useEffect(() => {
-    fetch("/api/blog/auto-refresh?check=true")
-      .then((r) => r.json())
-      .then(async (d) => {
-        if (d.needsRefresh) {
+    async function checkAndRefresh() {
+      try {
+        const checkRes = await fetch("/api/blog/auto-refresh?check=true");
+        const checkData = await checkRes.json();
+        const currentPosts = await fetch("/api/blog/posts?limit=1").then(r => r.json());
+        const isEmpty = (currentPosts.total ?? 0) === 0;
+
+        if (checkData.needsRefresh || isEmpty) {
           setRefreshing(true);
-          await fetch("/api/blog/auto-refresh");
-          await fetchPosts();
-          setRefreshing(false);
+          try {
+            const url = isEmpty
+              ? "/api/blog/auto-refresh?force=true"
+              : "/api/blog/auto-refresh";
+            await fetch(url);
+          } finally {
+            await fetchPosts(true);
+            setRefreshing(false);
+          }
         }
-      })
-      .catch(() => {});
+      } catch {
+        setRefreshing(false);
+      }
+    }
+    checkAndRefresh();
   }, [fetchPosts]);
 
-  const featured = posts.find((p) => p.featured) ?? posts[0];
-  const grid = posts.filter((p) => p.id !== featured?.id);
+  const showFeatured = category === "all" && !search;
+  const featured = showFeatured ? (posts.find((p) => p.featured) ?? posts[0]) : null;
+  const grid = featured ? posts.filter((p) => p.id !== featured.id) : posts;
 
   return (
-    <div className="pt-20 pb-20 min-h-screen bg-[#F4F7FB]">
+    <div className="pt-32 sm:pt-44 pb-36 sm:pb-20 min-h-screen bg-[#F4F7FB]">
       {/* Breaking news ticker */}
       {breaking && (
         <div className="bg-red-600 text-white py-2.5 px-4 flex items-center gap-3">
@@ -143,11 +164,14 @@ export default function BlogPage() {
         {/* Header */}
         <div className="text-center py-12">
           <span className="section-tag">TIBLOGICS</span>
-          <h1 className="font-syne font-extrabold text-4xl md:text-5xl text-[#0D1B2A] mt-3">
-            The Smart Room
+          <h1
+            className="text-5xl md:text-7xl text-[#0D1B2A] mt-3 tracking-widest font-bold"
+            style={{ fontFamily: "var(--font-masthead)" }}
+          >
+            AI TIMES
           </h1>
           <p className="font-dm text-[#3A4A5C] text-lg mt-3 max-w-xl mx-auto">
-            Practical AI knowledge for businesses, builders, and curious minds. Updated automatically every 48 hours.
+            Practical AI knowledge for businesses, builders, and curious minds. Updated automatically every 3 days.
           </p>
           {refreshing && (
             <p className="flex items-center justify-center gap-1.5 text-xs text-[#7A8FA6] mt-2 font-dm">
@@ -208,11 +232,17 @@ export default function BlogPage() {
         ) : (
           <>
             {/* Featured post */}
-            {featured && category === "all" && !search && (
+            {featured && showFeatured && (
               <Link href={`/blog/${featured.slug}`} className="group block mb-10">
                 <div className="bg-white border border-[#D2DCE8] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 lg:flex">
-                  <div className={`${gradientClass(featured.coverGradient)} lg:w-96 h-64 lg:h-auto flex items-center justify-center flex-shrink-0`}>
-                    <span className="text-8xl">{featured.coverEmoji}</span>
+                  <div className="lg:w-96 h-64 lg:h-auto flex-shrink-0 overflow-hidden relative">
+                    {featured.coverImage ? (
+                      <img src={featured.coverImage} alt="" className="w-full h-full object-cover" loading="eager" fetchPriority="high" />
+                    ) : (
+                      <div className={`${gradientClass(featured.coverGradient)} w-full h-full flex items-center justify-center`}>
+                        <span className="text-8xl">{featured.coverEmoji}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="p-8 flex flex-col justify-center">
                     <div className="flex items-center gap-2 mb-3">
@@ -246,7 +276,7 @@ export default function BlogPage() {
             )}
 
             {/* Tips spotlight */}
-            {category === "all" && !search && (
+            {showFeatured && (
               <TipsSpotlight posts={posts.filter((p) => p.category === "tips").slice(0, 3)} />
             )}
 
@@ -292,10 +322,21 @@ function PostCard({ post }: { post: BlogPost }) {
   return (
     <Link href={`/blog/${post.slug}`} className="group">
       <article className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 h-full flex flex-col">
-        <div className={`${gradientClass(post.coverGradient)} h-44 flex items-center justify-center`}>
-          <span className="text-6xl group-hover:scale-110 transition-transform duration-300">
-            {post.coverEmoji}
-          </span>
+        <div className="h-44 overflow-hidden relative">
+          {post.coverImage ? (
+            <img
+              src={post.coverImage}
+              alt=""
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
+            />
+          ) : (
+            <div className={`${gradientClass(post.coverGradient)} w-full h-full flex items-center justify-center`}>
+              <span className="text-6xl group-hover:scale-110 transition-transform duration-300">
+                {post.coverEmoji}
+              </span>
+            </div>
+          )}
         </div>
         <div className="p-5 flex flex-col flex-1">
           <CategoryBadge category={post.category} />

@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
 import { X, Send, ChevronLeft, Loader2 } from "lucide-react";
 
 type Message = { role: "user" | "assistant"; content: string };
@@ -31,20 +30,19 @@ const INITIAL_MESSAGE: Message = {
     "Hey! I'm Tibo 👋 How can I help you today? Ask me anything about TIBLOGICS — services, products, pricing, or how AI can transform your business.",
 };
 
-function getAvailableDates(): Array<{ value: string; label: string }> {
+function getAvailableDates(blockedSet: Set<string>): Array<{ value: string; label: string }> {
   const dates: Array<{ value: string; label: string }> = [];
   const d = new Date();
   d.setDate(d.getDate() + 1);
-  while (dates.length < 14) {
+  let checked = 0;
+  while (dates.length < 14 && checked < 60) {
+    checked++;
     const day = d.getDay();
-    if (day !== 0 && day !== 6) {
+    const iso = d.toISOString().split("T")[0];
+    if (day !== 0 && day !== 6 && !blockedSet.has(iso)) {
       dates.push({
-        value: d.toISOString().split("T")[0],
-        label: d.toLocaleDateString("en-US", {
-          weekday: "short",
-          month: "short",
-          day: "numeric",
-        }),
+        value: iso,
+        label: d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
       });
     }
     d.setDate(d.getDate() + 1);
@@ -52,7 +50,6 @@ function getAvailableDates(): Array<{ value: string; label: string }> {
   return dates;
 }
 
-// ── Booking form sub-component ──────────────────────────────────────────────
 function BookingForm({
   dateLabel,
   timeSlot,
@@ -62,40 +59,20 @@ function BookingForm({
   dateLabel: string;
   timeSlot: string;
   onBack: () => void;
-  onSubmit: (data: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-  }) => void;
+  onSubmit: (data: { firstName: string; lastName: string; email: string; phone: string }) => void;
 }) {
-  const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-  });
-
-  const set =
-    (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
-      setForm((f) => ({ ...f, [k]: e.target.value }));
-
+  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", phone: "" });
+  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
   const valid =
-    form.firstName.trim() &&
-    form.lastName.trim() &&
-    form.email.includes("@") &&
-    form.phone.trim();
-
+    form.firstName.trim() && form.lastName.trim() && form.email.includes("@") && form.phone.trim();
   const fieldCls =
     "w-full bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl px-3 py-2 text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:border-[#2251A3] focus:ring-1 focus:ring-[#2251A3]/20";
 
   return (
     <div className="px-4 pb-4 pt-3 space-y-2">
       <div className="flex items-center gap-2 mb-3">
-        <button
-          onClick={onBack}
-          className="text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors"
-        >
+        <button onClick={onBack} className="text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors">
           <ChevronLeft size={15} />
         </button>
         <p className="text-xs font-semibold text-[#3A4A5C] uppercase tracking-wide">
@@ -103,33 +80,11 @@ function BookingForm({
         </p>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <input
-          value={form.firstName}
-          onChange={set("firstName")}
-          placeholder="First name"
-          className={fieldCls}
-        />
-        <input
-          value={form.lastName}
-          onChange={set("lastName")}
-          placeholder="Last name"
-          className={fieldCls}
-        />
+        <input value={form.firstName} onChange={set("firstName")} placeholder="First name" className={fieldCls} />
+        <input value={form.lastName} onChange={set("lastName")} placeholder="Last name" className={fieldCls} />
       </div>
-      <input
-        value={form.email}
-        onChange={set("email")}
-        placeholder="Email address"
-        type="email"
-        className={fieldCls}
-      />
-      <input
-        value={form.phone}
-        onChange={set("phone")}
-        placeholder="Phone number"
-        type="tel"
-        className={fieldCls}
-      />
+      <input value={form.email} onChange={set("email")} placeholder="Email address" type="email" className={fieldCls} />
+      <input value={form.phone} onChange={set("phone")} placeholder="Phone number" type="tel" className={fieldCls} />
       <button
         onClick={() => valid && onSubmit(form)}
         disabled={!valid}
@@ -141,7 +96,6 @@ function BookingForm({
   );
 }
 
-// ── Main component ───────────────────────────────────────────────────────────
 export default function EchelonFloat() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
@@ -149,6 +103,7 @@ export default function EchelonFloat() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
+  const [showGreeting, setShowGreeting] = useState(false);
 
   const [bookingStep, setBookingStep] = useState<BookingStep>(null);
   const [bookingData, setBookingData] = useState<Partial<BookingData>>({});
@@ -157,53 +112,109 @@ export default function EchelonFloat() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Hide on admin pages — after hooks to satisfy Rules of Hooks
   const isAdmin = pathname?.startsWith("/admin");
+  const [blockedDateSet, setBlockedDateSet] = useState<Set<string>>(new Set());
+  const ctaVisibleRef = useRef(false);
+  const isOpenRef = useRef(false);
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading, bookingStep]);
 
-  // Auto-engage after website scan completes
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+  // Initial greeting bubble after 8s (once per session)
+  useEffect(() => {
+    if (isAdmin) return;
+    try {
+      if (sessionStorage.getItem("tibo_greeted")) return;
+    } catch { return; }
+    const timer = setTimeout(() => {
+      setShowGreeting(true);
+      try { sessionStorage.setItem("tibo_greeted", "1"); } catch {}
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [isAdmin]);
+
+  // Keep isOpenRef current so idle-timer closure doesn't see stale value
+  useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
+
+  // Idle re-engagement: show greeting after 45s, but only if chat is closed AND blog CTA is not on screen
+  useEffect(() => {
+    if (isAdmin || isOpen) return;
+    const timer = setTimeout(() => {
+      if (!isOpenRef.current && !ctaVisibleRef.current) {
+        setShowGreeting(true);
+        window.dispatchEvent(new CustomEvent("tibo:greeting-shown"));
+      }
+    }, 45_000);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, isAdmin]);
+
+  // Pre-load blocked dates
+  useEffect(() => {
+    fetch("/api/appointments/blocked-dates")
+      .then(r => r.json())
+      .then(d => {
+        const s = new Set<string>();
+        (d.blocked ?? []).forEach((b: { date: string }) => s.add(b.date.split("T")[0]));
+        setBlockedDateSet(s);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Listen for tibo:open event
+  useEffect(() => {
+    const handler = () => setIsOpen(true);
+    window.addEventListener("tibo:open", handler);
+    return () => window.removeEventListener("tibo:open", handler);
+  }, []);
+
+  // Track blog CTA visibility: hide greeting when it appears, allow it again when CTA is dismissed
+  useEffect(() => {
+    const onShown = () => { ctaVisibleRef.current = true; setShowGreeting(false); };
+    const onHidden = () => { ctaVisibleRef.current = false; };
+    window.addEventListener("booking-cta:shown", onShown);
+    window.addEventListener("booking-cta:hidden", onHidden);
+    return () => {
+      window.removeEventListener("booking-cta:shown", onShown);
+      window.removeEventListener("booking-cta:hidden", onHidden);
+    };
+  }, []);
+
+  // Auto-engage after website scan
   useEffect(() => {
     function handleScanComplete(e: Event) {
-      const { url, overallScore, criticals, aiScore } = (e as CustomEvent)
-        .detail as {
-        url: string;
-        overallScore: number;
-        criticals: number;
-        aiScore: number;
+      const { url, overallScore, criticals, aiScore } = (e as CustomEvent).detail as {
+        url: string; overallScore: number; criticals: number; aiScore: number;
       };
       setTimeout(() => {
-        const proactiveMsg: Message = {
-          role: "assistant",
-          content: `I can see you just scanned **${url}** — overall score **${overallScore}/100**, **${criticals} critical issue${criticals !== 1 ? "s" : ""}**, and an AI readiness score of **${aiScore}/100**.\n\nThere are clear opportunities here. Would you like me to set up a meeting with our team to walk through the findings and build a fix plan together?`,
-        };
-        setMessages([INITIAL_MESSAGE, proactiveMsg]);
+        setMessages([
+          INITIAL_MESSAGE,
+          {
+            role: "assistant",
+            content: `I can see you just scanned **${url}** — overall score **${overallScore}/100**, **${criticals} critical issue${criticals !== 1 ? "s" : ""}**, and an AI readiness score of **${aiScore}/100**.\n\nThere are clear opportunities here. Would you like me to set up a meeting with our team to walk through the findings?`,
+          },
+        ]);
         setBookingStep("prompt");
         setIsOpen(true);
         setHasUnread(false);
       }, 3500);
     }
     window.addEventListener("tibo:scan-complete", handleScanComplete);
-    return () =>
-      window.removeEventListener("tibo:scan-complete", handleScanComplete);
+    return () => window.removeEventListener("tibo:scan-complete", handleScanComplete);
   }, []);
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     if (isOpen) {
       setHasUnread(false);
+      setShowGreeting(false);
       setTimeout(() => inputRef.current?.focus(), 150);
+      window.dispatchEvent(new CustomEvent("tibo:opened"));
     }
   }, [isOpen]);
 
   if (isAdmin) return null;
 
-  // ── Send a chat message ────────────────────────────────────────────────────
   async function handleSend(overrideText?: string) {
     const trimmed = overrideText ?? input.trim();
     if (!trimmed || loading) return;
@@ -214,40 +225,66 @@ export default function EchelonFloat() {
     setInput("");
     setLoading(true);
 
+    // Add empty assistant message to stream into
+    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
     try {
       const res = await fetch("/api/claude/float", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: nextMessages }),
       });
-      const data = await res.json();
-      const raw: string =
-        res.ok && data.text
-          ? data.text
-          : "Sorry, I'm having trouble connecting right now. Please email ai@tiblogics.com for help.";
 
-      const hasBooking = raw.includes(BOOKING_MARKER);
-      const clean = raw.replace(BOOKING_MARKER, "").trim();
+      if (!res.ok || !res.body) throw new Error("Bad response");
 
-      setMessages((prev) => [...prev, { role: "assistant", content: clean }]);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let full = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        for (const line of chunk.split("\n")) {
+          if (!line.startsWith("data: ")) continue;
+          const payload = line.slice(6).trim();
+          if (payload === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(payload);
+            if (parsed.text) {
+              full += parsed.text;
+              setMessages((prev) => {
+                const updated = [...prev];
+                updated[updated.length - 1] = { role: "assistant", content: full };
+                return updated;
+              });
+            }
+            if (parsed.error) throw new Error(parsed.error);
+          } catch { /* ignore parse errors on incomplete chunks */ }
+        }
+      }
+
+      const hasBooking = full.includes(BOOKING_MARKER);
+      const clean = full.replace(BOOKING_MARKER, "").trim();
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = { role: "assistant", content: clean };
+        return updated;
+      });
       if (hasBooking) setBookingStep("prompt");
       if (!isOpen) setHasUnread(true);
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content:
-            "Sorry, I'm having trouble connecting right now. Please email ai@tiblogics.com for help.",
-        },
-      ]);
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = { role: "assistant", content: "Sorry, I'm having trouble connecting right now. Please email info@tiblogics.com for help." };
+        return updated;
+      });
       if (!isOpen) setHasUnread(true);
     } finally {
       setLoading(false);
     }
   }
 
-  // ── Booking flow ───────────────────────────────────────────────────────────
   async function handleDateSelect(date: string, dateLabel: string) {
     setBookingData((d) => ({ ...d, date, dateLabel }));
     setSlotsLoading(true);
@@ -264,20 +301,15 @@ export default function EchelonFloat() {
     }
   }
 
-  async function handleBookingSubmit(form: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-  }) {
+  async function handleBookingSubmit(form: { firstName: string; lastName: string; email: string; phone: string }) {
     setBookingStep("submitting");
     try {
-      await fetch("/api/appointments", {
+      const res = await fetch("/api/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           serviceType: "PROJECT_DISCOVERY_MEETING",
-          serviceDuration: 30,
+          serviceDuration: "20 min",
           servicePrice: 0,
           totalAmount: 0,
           date: bookingData.date,
@@ -286,20 +318,28 @@ export default function EchelonFloat() {
           firstName: form.firstName,
           lastName: form.lastName,
           email: form.email,
-          notes: JSON.stringify({ phone: form.phone, source: "echelon_chat" }),
+          phone: form.phone || null,
+          goalNotes: "Booked via TIBS chat assistant",
         }),
       });
-
+      if (!res.ok) throw new Error("Booking failed");
       setBookingStep("done");
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: `Your meeting is confirmed! 🎉\n\n**${bookingData.dateLabel}** at **${bookingData.timeSlot} EST** — 30 min Project Discovery Meeting.\n\nWe'll send a confirmation to **${form.email}**. Looking forward to speaking with you, ${form.firstName}!`,
+          content: `You're all set, ${form.firstName}! 🎉\n\nYour **20-min Discovery Meeting** is confirmed for **${bookingData.dateLabel}** at **${bookingData.timeSlot} EST**. A confirmation email is on its way to **${form.email}**.\n\nWe're looking forward to speaking with you!`,
         },
       ]);
     } catch {
       setBookingStep("form");
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Sorry, there was an issue saving your booking. Please try again or email **info@tiblogics.com** and we'll sort it out.",
+        },
+      ]);
     }
   }
 
@@ -308,49 +348,35 @@ export default function EchelonFloat() {
     handleSend("No thanks, I'll keep exploring for now.");
   }
 
-  // ── Booking UI renderer ────────────────────────────────────────────────────
   function renderBookingUI() {
     if (bookingStep === "prompt") {
       return (
         <div className="px-4 pb-4 pt-2 flex gap-2">
-          <button
-            onClick={() => setBookingStep("date")}
-            className="flex-1 bg-[#1B3A6B] text-white rounded-xl py-2.5 text-sm font-semibold font-dm hover:bg-[#2251A3] transition-colors"
-          >
+          <button onClick={() => setBookingStep("date")}
+            className="flex-1 bg-[#1B3A6B] text-white rounded-xl py-2.5 text-sm font-semibold font-dm hover:bg-[#2251A3] transition-colors">
             Yes, let&apos;s do it!
           </button>
-          <button
-            onClick={declineBooking}
-            className="flex-1 border border-[#D2DCE8] text-[#3A4A5C] rounded-xl py-2.5 text-sm font-medium font-dm hover:border-[#1B3A6B] hover:text-[#1B3A6B] transition-colors"
-          >
+          <button onClick={declineBooking}
+            className="flex-1 border border-[#D2DCE8] text-[#3A4A5C] rounded-xl py-2.5 text-sm font-medium font-dm hover:border-[#1B3A6B] hover:text-[#1B3A6B] transition-colors">
             Not right now
           </button>
         </div>
       );
     }
-
     if (bookingStep === "date") {
-      const dates = getAvailableDates();
+      const dates = getAvailableDates(blockedDateSet);
       return (
         <div className="px-4 pb-4 pt-3 space-y-2">
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setBookingStep("prompt")}
-              className="text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors"
-            >
+            <button onClick={() => setBookingStep("prompt")} className="text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors">
               <ChevronLeft size={15} />
             </button>
-            <p className="text-xs font-semibold text-[#3A4A5C] uppercase tracking-wide">
-              Pick a date
-            </p>
+            <p className="text-xs font-semibold text-[#3A4A5C] uppercase tracking-wide">Pick a date</p>
           </div>
-          <div className="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto pr-0.5">
+          <div className="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto">
             {dates.map((d) => (
-              <button
-                key={d.value}
-                onClick={() => handleDateSelect(d.value, d.label)}
-                className="border border-[#D2DCE8] rounded-xl py-2 px-2.5 text-xs font-medium font-dm text-[#3A4A5C] hover:border-[#1B3A6B] hover:text-[#1B3A6B] hover:bg-[#EBF0FA] transition-colors text-left"
-              >
+              <button key={d.value} onClick={() => handleDateSelect(d.value, d.label)}
+                className="border border-[#D2DCE8] rounded-xl py-2 px-2.5 text-xs font-medium font-dm text-[#3A4A5C] hover:border-[#1B3A6B] hover:text-[#1B3A6B] hover:bg-[#EBF0FA] transition-colors text-left">
                 {d.label}
               </button>
             ))}
@@ -358,15 +384,11 @@ export default function EchelonFloat() {
         </div>
       );
     }
-
     if (bookingStep === "time") {
       return (
         <div className="px-4 pb-4 pt-3 space-y-2">
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setBookingStep("date")}
-              className="text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors"
-            >
+            <button onClick={() => setBookingStep("date")} className="text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors">
               <ChevronLeft size={15} />
             </button>
             <p className="text-xs font-semibold text-[#3A4A5C] uppercase tracking-wide truncate">
@@ -379,27 +401,17 @@ export default function EchelonFloat() {
             </div>
           ) : availableSlots.length === 0 ? (
             <div className="text-center py-3">
-              <p className="text-xs text-[#7A8FA6] font-dm">
-                No slots available — pick another date.
-              </p>
-              <button
-                onClick={() => setBookingStep("date")}
-                className="mt-2 text-xs text-[#2251A3] font-medium hover:underline"
-              >
+              <p className="text-xs text-[#7A8FA6] font-dm">No slots available — pick another date.</p>
+              <button onClick={() => setBookingStep("date")} className="mt-2 text-xs text-[#2251A3] font-medium hover:underline">
                 ← Choose different date
               </button>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-1.5">
               {availableSlots.map((slot) => (
-                <button
-                  key={slot}
-                  onClick={() => {
-                    setBookingData((d) => ({ ...d, timeSlot: slot }));
-                    setBookingStep("form");
-                  }}
-                  className="border border-[#D2DCE8] rounded-xl py-2 text-xs font-medium font-dm text-[#3A4A5C] hover:border-[#1B3A6B] hover:text-[#1B3A6B] hover:bg-[#EBF0FA] transition-colors"
-                >
+                <button key={slot}
+                  onClick={() => { setBookingData((d) => ({ ...d, timeSlot: slot })); setBookingStep("form"); }}
+                  className="border border-[#D2DCE8] rounded-xl py-2 text-xs font-medium font-dm text-[#3A4A5C] hover:border-[#1B3A6B] hover:text-[#1B3A6B] hover:bg-[#EBF0FA] transition-colors">
                   {slot}
                 </button>
               ))}
@@ -408,7 +420,6 @@ export default function EchelonFloat() {
         </div>
       );
     }
-
     if (bookingStep === "form") {
       return (
         <BookingForm
@@ -419,23 +430,18 @@ export default function EchelonFloat() {
         />
       );
     }
-
     if (bookingStep === "submitting") {
       return (
         <div className="px-4 pb-4 pt-3 flex items-center gap-2 text-sm font-dm text-[#7A8FA6]">
-          <Loader2 size={15} className="animate-spin" />
-          Booking your meeting…
+          <Loader2 size={15} className="animate-spin" /> Booking your meeting…
         </div>
       );
     }
-
     return null;
   }
 
-  // ── Show input bar only when not mid-flow ─────────────────────────────────
   const showInput = bookingStep === null || bookingStep === "done";
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <>
       <style>{`
@@ -446,143 +452,153 @@ export default function EchelonFloat() {
         .typing-dot { animation: echelonBounce 1.2s infinite ease-in-out; }
         .typing-dot:nth-child(2) { animation-delay: 0.2s; }
         .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes tiboFadeIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .tibo-fade-in { animation: tiboFadeIn 0.25s ease both; }
       `}</style>
 
-      {/* Chat window */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            key="echelon-chat"
-            initial={{ opacity: 0, scale: 0.85, y: 16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.85, y: 16 }}
-            transition={{ type: "spring", stiffness: 340, damping: 28 }}
-            className="fixed bottom-20 right-6 z-50 w-[350px] max-w-[calc(100vw-2rem)] rounded-2xl shadow-2xl overflow-hidden flex flex-col bg-white border border-[#D2DCE8]"
-            style={{ transformOrigin: "bottom right", maxHeight: "min(580px, calc(100vh - 7rem))" }}
-          >
-            {/* Header */}
-            <div className="bg-[#1B3A6B] px-4 py-3 flex items-center justify-between flex-shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{
-                    background: "linear-gradient(135deg, #2251A3, #1B3A6B)",
-                    border: "1.5px solid rgba(255,255,255,0.18)",
-                  }}
-                >
-                  <span
-                    className="text-white text-sm font-extrabold leading-none"
-                    style={{ fontFamily: "var(--font-syne), sans-serif" }}
-                  >
-                    E
-                  </span>
-                </div>
-                <div>
-                  <p
-                    className="text-white text-base font-bold leading-tight"
-                    style={{ fontFamily: "var(--font-syne), sans-serif" }}
-                  >
-                    Echelon
-                  </p>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
-                    <p className="text-white/60 text-xs leading-tight">
-                      TIBLOGICS AI Assistant
-                    </p>
-                  </div>
+      {/* Mobile backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 sm:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Chat window — CSS transition, no framer-motion */}
+      {isOpen && (
+        <div
+          className="tibo-fade-in fixed z-50 flex flex-col bg-white border border-[#D2DCE8] shadow-2xl overflow-hidden rounded-2xl inset-x-3 bottom-[80px] top-auto sm:inset-auto sm:bottom-20 sm:right-6 sm:w-[360px]"
+          style={{ maxHeight: "min(72dvh, 600px)" }}
+          data-chat-widget="echelon"
+          data-ai-agent="true"
+          aria-label="Echelon AI Chat Assistant"
+          role="dialog"
+          aria-modal="true"
+        >
+          {/* Header */}
+          <div className="bg-[#1B3A6B] px-4 py-3 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-2.5">
+              <img
+                src="/tibo-avatar.svg"
+                alt="Tibo"
+                className="w-10 h-10 rounded-full flex-shrink-0 object-cover"
+                style={{ border: "1.5px solid rgba(255,255,255,0.22)" }}
+              />
+              <div>
+                <p className="text-white text-base font-bold leading-tight" style={{ fontFamily: "var(--font-syne), sans-serif" }}>
+                  Tibo
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
+                  <p className="text-white/60 text-xs leading-tight">TIBLOGICS AI Assistant</p>
                 </div>
               </div>
+            </div>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-white/70 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"
+              aria-label="Close chat"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 bg-[#F8FAFD] flex flex-col gap-3">
+            {messages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                <div
+                  className={`max-w-[85%] px-3 py-2.5 text-sm leading-relaxed font-dm rounded-2xl ${
+                    msg.role === "user"
+                      ? "bg-[#1B3A6B] text-white rounded-tr-sm"
+                      : "bg-white border border-[#E8EFF8] text-[#0D1B2A] rounded-tl-sm shadow-sm"
+                  }`}
+                  dangerouslySetInnerHTML={{
+                    __html: msg.content
+                      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                      .replace(/\n/g, "<br/>"),
+                  }}
+                />
+              </div>
+            ))}
+            {loading && (
+              <div className="flex justify-start">
+                <div className="bg-white border border-[#E8EFF8] rounded-2xl rounded-tl-sm px-3 py-2.5 shadow-sm flex items-center gap-1">
+                  <div className="typing-dot w-2 h-2 rounded-full bg-[#7A8FA6]" />
+                  <div className="typing-dot w-2 h-2 rounded-full bg-[#7A8FA6]" />
+                  <div className="typing-dot w-2 h-2 rounded-full bg-[#7A8FA6]" />
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Booking UI */}
+          {bookingStep && bookingStep !== "done" && (
+            <div className="border-t border-[#E8EFF8] bg-white flex-shrink-0">
+              {renderBookingUI()}
+            </div>
+          )}
+
+          {/* Input */}
+          {showInput && (
+            <div className="border-t border-[#D2DCE8] p-3 bg-white flex items-center gap-2 flex-shrink-0">
+              <input
+                ref={inputRef}
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                onFocus={() => {
+                  setTimeout(() => inputRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 300);
+                }}
+                placeholder="Ask Tibo anything…"
+                disabled={loading}
+                className="flex-1 bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl px-3 py-2 text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3] disabled:opacity-50 transition-colors"
+              />
               <button
-                onClick={() => setIsOpen(false)}
-                className="text-white/70 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"
-                aria-label="Close chat"
+                onClick={() => handleSend()}
+                disabled={loading || !input.trim()}
+                aria-label="Send message"
+                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[#F47C20] hover:bg-[#d96b18] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <X size={18} />
+                <Send size={15} className="text-white" strokeWidth={2.5} />
               </button>
             </div>
+          )}
+        </div>
+      )}
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 bg-[#F8FAFD] flex flex-col gap-3">
-              {messages.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`max-w-[85%] px-3 py-2.5 text-sm leading-relaxed font-dm rounded-2xl ${
-                      msg.role === "user"
-                        ? "bg-[#1B3A6B] text-white rounded-tr-sm"
-                        : "bg-white border border-[#E8EFF8] text-[#0D1B2A] rounded-tl-sm shadow-sm"
-                    }`}
-                    dangerouslySetInnerHTML={{
-                      __html: msg.content
-                        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                        .replace(/\n/g, "<br/>"),
-                    }}
-                  />
-                </div>
-              ))}
+      {/* Greeting bubble */}
+      {showGreeting && !isOpen && (
+        <div
+          className="fixed bottom-[148px] sm:bottom-24 right-4 sm:right-6 z-50 tibo-fade-in cursor-pointer"
+          onClick={() => { setShowGreeting(false); setIsOpen(true); }}
+          role="button"
+          aria-label="Open Tibo chat"
+        >
+          <div className="relative bg-white border border-[#D2DCE8] rounded-2xl shadow-xl px-4 py-3 max-w-[220px]">
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowGreeting(false); }}
+              className="absolute top-2 right-2 text-[#B0BEC5] hover:text-[#3A4A5C] transition-colors"
+              aria-label="Dismiss"
+            >
+              <X size={12} />
+            </button>
+            <p className="font-syne font-bold text-xs text-[#0D1B2A] mb-1">👋 Hey there!</p>
+            <p className="font-dm text-xs text-[#3A4A5C] leading-relaxed pr-3">
+              I'm Tibo — tap to chat about AI for your business.
+            </p>
+            <div className="absolute -bottom-2 right-7 w-3 h-3 bg-white border-r border-b border-[#D2DCE8] rotate-45" />
+          </div>
+        </div>
+      )}
 
-              {loading && (
-                <div className="flex justify-start">
-                  <div className="bg-white border border-[#E8EFF8] rounded-2xl rounded-tl-sm px-3 py-2.5 shadow-sm flex items-center gap-1">
-                    <div className="typing-dot w-2 h-2 rounded-full bg-[#7A8FA6]" />
-                    <div className="typing-dot w-2 h-2 rounded-full bg-[#7A8FA6]" />
-                    <div className="typing-dot w-2 h-2 rounded-full bg-[#7A8FA6]" />
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Booking UI */}
-            {bookingStep && bookingStep !== "done" && (
-              <div className="border-t border-[#E8EFF8] bg-white flex-shrink-0">
-                {renderBookingUI()}
-              </div>
-            )}
-
-            {/* Input */}
-            {showInput && (
-              <div className="border-t border-[#D2DCE8] p-3 bg-white flex items-center gap-2 flex-shrink-0">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  placeholder="Ask Tibo anything…"
-                  disabled={loading}
-                  className="flex-1 bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl px-3 py-2 text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3] disabled:opacity-50 transition-colors"
-                />
-                <button
-                  onClick={() => handleSend()}
-                  disabled={loading || !input.trim()}
-                  aria-label="Send message"
-                  className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ background: "#F47C20" }}
-                  onMouseEnter={(e) =>
-                    ((e.currentTarget as HTMLButtonElement).style.background = "#d96b18")
-                  }
-                  onMouseLeave={(e) =>
-                    ((e.currentTarget as HTMLButtonElement).style.background = "#F47C20")
-                  }
-                >
-                  <Send size={15} className="text-white" strokeWidth={2.5} />
-                </button>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Floating trigger button */}
-      <div className="fixed bottom-6 right-6 z-50">
+      {/* Floating trigger button — desktop only (mobile uses MobileBottomNav Tibo tab) */}
+      <div className="hidden sm:block fixed bottom-6 right-6 z-[55]" data-chat-widget="echelon-trigger" aria-label="Open Echelon AI Assistant">
         {!isOpen && (
           <span
             className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-30 pointer-events-none"
@@ -591,40 +607,20 @@ export default function EchelonFloat() {
         )}
         <button
           onClick={() => setIsOpen((prev) => !prev)}
-          aria-label={isOpen ? "Close Tibo chat" : "Open Tibo chat"}
+          aria-label={isOpen ? "Close Tibo chat" : "Talk to Tibo"}
           className="relative w-[54px] h-[54px] rounded-full flex items-center justify-center transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F47C20] focus-visible:ring-offset-2"
           style={{
-            background: isOpen
-              ? "#F47C20"
-              : "linear-gradient(135deg, #1B3A6B 0%, #2251A3 100%)",
+            background: isOpen ? "#F47C20" : "linear-gradient(135deg, #1B3A6B 0%, #2251A3 100%)",
             boxShadow: "0 4px 20px rgba(27,58,107,0.4)",
-          }}
-          onMouseEnter={(e) => {
-            if (!isOpen)
-              (e.currentTarget as HTMLButtonElement).style.background = "#F47C20";
-          }}
-          onMouseLeave={(e) => {
-            if (!isOpen)
-              (e.currentTarget as HTMLButtonElement).style.background =
-                "linear-gradient(135deg, #1B3A6B 0%, #2251A3 100%)";
           }}
         >
           {isOpen ? (
             <X size={22} className="text-white" strokeWidth={2.5} />
           ) : (
-            <span
-              className="text-white text-xl font-extrabold leading-none select-none"
-              style={{ fontFamily: "var(--font-syne), sans-serif" }}
-            >
-              E
-            </span>
+            <img src="/tibo-avatar.svg" alt="Tibo" className="w-full h-full rounded-full object-cover" />
           )}
-
           {hasUnread && !isOpen && (
-            <span
-              className="absolute top-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white"
-              style={{ background: "#F47C20" }}
-            />
+            <span className="absolute top-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white bg-[#F47C20]" />
           )}
         </button>
       </div>

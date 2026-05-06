@@ -1,7 +1,8 @@
 import Nav from "@/components/public/Nav";
 import Footer from "@/components/public/Footer";
-import EchelonFloat from "@/components/public/EchelonFloat";
-import SmartRecommendations from "@/components/public/SmartRecommendations";
+import MobileBottomNav from "@/components/public/MobileBottomNav";
+import AnalyticsTracker from "@/components/public/AnalyticsTracker";
+import EchelonFloatClient from "@/components/public/EchelonFloatClient";
 
 export default function PublicLayout({
   children,
@@ -10,11 +11,12 @@ export default function PublicLayout({
 }) {
   return (
     <>
+      <AnalyticsTracker />
       <Nav />
-      <main className="min-h-screen">{children}</main>
+      <main className="min-h-screen pb-[76px] sm:pb-0">{children}</main>
       <Footer />
-      <EchelonFloat />
-      <SmartRecommendations currentPage="site" />
+      <MobileBottomNav />
+      <EchelonFloatClient />
     </>
   );
 }

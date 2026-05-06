@@ -24,8 +24,8 @@ const tools = [
   },
   {
     icon: Calculator,
-    name: "AI Cost Calculator",
-    desc: "Calculate your monthly AI API costs across Claude, GPT-4o, Gemini and more.",
+    name: "AI Product Cost Calculator",
+    desc: "Building an AI product? This tool helps you figure out your real API costs across all major models before you commit to a budget.",
     href: "/tools/calculator",
     color: "#7c3aed",
     tag: "Free",
@@ -38,10 +38,10 @@ export default function ToolsPage() {
   }, []);
 
   return (
-    <div className="pt-24 pb-20 min-h-screen bg-[#F4F7FB]">
+    <div className="pt-32 sm:pt-44 pb-20 min-h-screen bg-[#F4F7FB]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <span className="section-tag">Free Tools</span>
+          <span className="section-tag">Try Smart Tools</span>
           <h1 className="font-syne font-extrabold text-4xl md:text-5xl text-[#0D1B2A] mt-2">
             AI tools, on us.
           </h1>
@@ -65,7 +65,7 @@ export default function ToolsPage() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <h2 className="font-syne font-bold text-lg text-[#0D1B2A]">{t.name}</h2>
-                  <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${t.tag === "Paid" ? "bg-[#7c3aed]/10 text-[#7c3aed]" : "bg-green-100 text-green-700"}`}>
                     {t.tag}
                   </span>
                 </div>
