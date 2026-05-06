@@ -1,5 +1,4 @@
 modules = ["nodejs-20"]
-<<<<<<< HEAD
 [agent]
 expertMode = true
 
@@ -22,13 +21,13 @@ args = "Start application"
 name = "Start application"
 author = "agent"
 
-[workflows.workflow.metadata]
-outputType = "webview"
-
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev -- -p 5000 -H 0.0.0.0"
+args = "npm run dev"
 waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
 
 [[ports]]
 localPort = 3000
@@ -42,34 +41,3 @@ externalPort = 80
 deploymentTarget = "autoscale"
 run = ["npm", "run", "start"]
 build = ["npm", "run", "build"]
-=======
-
-[nix]
-channel = "stable-24_05"
-
-hidden = [".build", ".config", "node_modules", ".next"]
-
-[workflows]
-runButton = "Start"
-
-[[workflows.workflow]]
-name = "Start"
-author = "agent"
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "fuser -k 3000/tcp 2>/dev/null || true; npm run build && npm run start"
-waitForPort = 3000
-
-[deployment]
-build = ["sh", "-c", "npm run build"]
-run = ["sh", "-c", "npm run start"]
-
-[[ports]]
-localPort = 3000
-externalPort = 80
-
-[agent]
-expertMode = true
->>>>>>> origin/claude/tiblogics-website-build-ZCs63
