@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import BlogPostClient from "./BlogPostClient";
 
-const SITE_URL = "https://tiblogics.com";
+const SITE_URL = (process.env.NEXTAUTH_URL || "https://tiblogics.com").replace(/\/$/, "");
 const FALLBACK_IMAGE = `${SITE_URL}/og-image.png`;
 
 function toOgImage(coverImage: string | null): string {
@@ -18,7 +18,7 @@ function toOgImage(coverImage: string | null): string {
     }
     return coverImage;
   } catch {
-    return coverImage;
+    return coverImage.startsWith("/") ? `${SITE_URL}${coverImage}` : FALLBACK_IMAGE;
   }
 }
 
