@@ -21,13 +21,13 @@ args = "Start"
 name = "Start"
 author = "agent"
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "fuser -k 3000/tcp 2>/dev/null || true; npm run build && npm run start"
-waitForPort = 3000
-
-[workflows.workflow.metadata]
-outputType = "console"
+args = "fuser -k 5000/tcp 2>/dev/null || true; npm run build && npm run start"
+waitForPort = 5000
 
 [[ports]]
 localPort = 3000
