@@ -114,8 +114,15 @@ export default function BlogAdminPage() {
   }
 
   async function deletePost(id: string) {
-    if (!confirm("Delete this post?")) return;
-    await fetch(`/api/blog/posts/${id}`, { method: "DELETE" });
+    const post = posts.find((p) => p.id === id);
+    const isManual = post && !post.aiGenerated;
+    const warning = isManual
+      ? `⚠️ "${post.title}" is a manually-written article. Deleting it is permanent and cannot be undone. Are you sure?`
+      : "Delete this post?";
+    if (!confirm(warning)) return;
+    const headers: Record<string, string> = {};
+    if (isManual) headers["x-confirm-delete"] = "manual-article";
+    await fetch(`/api/blog/posts/${id}`, { method: "DELETE", headers });
     setPosts((ps) => ps.filter((p) => p.id !== id));
   }
 

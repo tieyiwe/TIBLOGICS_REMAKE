@@ -43,12 +43,26 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const unauth = await requireAdmin();
   if (unauth) return unauth;
 
   try {
     const { id } = await params;
+    const post = await prisma.blogPost.findUnique({ where: { id }, select: { aiGenerated: true, title: true } });
+    if (!post) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    // Require explicit confirmation header to delete manually-written articles
+    if (!post.aiGenerated) {
+      const confirmed = req.headers.get("x-confirm-delete");
+      if (confirmed !== "manual-article") {
+        return NextResponse.json(
+          { error: "This is a manually-written article. Add header x-confirm-delete: manual-article to confirm deletion." },
+          { status: 409 }
+        );
+      }
+    }
+
     await prisma.blogPost.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch {
