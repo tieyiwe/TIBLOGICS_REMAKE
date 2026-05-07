@@ -102,6 +102,31 @@ export default function BlogPostPage() {
   const [widgetVisible, setWidgetVisible] = useState(false);
   const [widgetDismissed, setWidgetDismissed] = useState(false);
   const [heroImgFailed, setHeroImgFailed] = useState(false);
+  const [language, setLanguage] = useState<"en" | "fr" | "sw">("en");
+  const [translating, setTranslating] = useState(false);
+  const [translations, setTranslations] = useState<Record<string, { title: string; excerpt: string; content: string }>>({});
+  async function handleTranslate(lang: "en" | "fr" | "sw") {
+    if (lang === "en" || translations[lang]) { setLanguage(lang); return; }
+    setTranslating(true);
+    try {
+      const res = await fetch("/api/blog/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug, language: lang }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTranslations(prev => ({ ...prev, [lang]: data }));
+      }
+    } finally {
+      setLanguage(lang);
+      setTranslating(false);
+    }
+  }
+
+  const display = language !== "en" && translations[language]
+    ? translations[language]
+    : post ? { title: post.title, excerpt: post.excerpt, content: post.content } : null;
 
   useEffect(() => {
     function onScroll() {
@@ -211,8 +236,15 @@ export default function BlogPostPage() {
 
       {/* Hero cover */}
       {post.coverImage && !heroImgFailed ? (
-        <div className="w-full h-72 relative overflow-hidden">
-          <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" onError={() => setHeroImgFailed(true)} />
+        <div className="w-full h-[700px] relative overflow-hidden">
+          <img
+            src={post.coverImage.replace('-cover.', '-hero.')}
+            alt={post.title}
+            className="w-full h-full object-cover object-top"
+            loading="eager"
+            fetchPriority="high"
+            onError={() => setHeroImgFailed(true)}
+          />
           <div className="absolute inset-0 bg-black/30 flex items-end p-6">
             <span className="text-5xl">{post.coverEmoji}</span>
           </div>
@@ -241,11 +273,11 @@ export default function BlogPostPage() {
             </div>
 
             <h1 className="font-syne font-extrabold text-2xl md:text-4xl text-[#0D1B2A] leading-tight mb-4">
-              {post.title}
+              {display?.title ?? post.title}
             </h1>
 
             <p className="font-dm text-[#3A4A5C] text-lg leading-relaxed mb-6 border-l-4 border-[#F47C20] pl-4">
-              {post.excerpt}
+              {display?.excerpt ?? post.excerpt}
             </p>
 
             {/* Author + meta row */}
@@ -271,10 +303,23 @@ export default function BlogPostPage() {
               </span>
             </div>
 
+            {/* Language toggle */}
+            <div className="flex items-center gap-2 mb-5 flex-wrap">
+              <span className="text-xs text-[#7A8FA6] font-medium">Translate:</span>
+              {([["en","🇬🇧 English"],["fr","🇫🇷 Français"],["sw","🇰🇪 Swahili"]] as const).map(([lang, label]) => (
+                <button key={lang} onClick={() => handleTranslate(lang)} disabled={translating}
+                  className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-all ${
+                    language === lang ? "bg-[#2251A3] text-white border-[#2251A3]" : "bg-white text-[#3A4A5C] border-[#D2DCE8] hover:border-[#2251A3] hover:text-[#2251A3]"
+                  } ${translating && lang !== language ? "opacity-50 cursor-not-allowed" : ""}`}>
+                  {translating && lang !== "en" && language === lang ? "Translating…" : label}
+                </button>
+              ))}
+            </div>
+
             {/* Content */}
             <div
               className="prose-blog font-dm text-[#0D1B2A] leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: post.content }}
+              dangerouslySetInnerHTML={{ __html: display?.content ?? post.content }}
             />
 
             {/* Tags */}
@@ -422,6 +467,23 @@ export default function BlogPostPage() {
           color: #7A8FA6;
           font-style: italic;
           margin: 1.5rem 0;
+        }
+        .prose-blog img { max-width: 100%; height: auto; }
+        @media (max-width: 640px) {
+          .prose-blog div[style*="display:grid"],
+          .prose-blog div[style*="display: grid"] {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 0.75rem !important;
+          }
+          .prose-blog div[style*="display:grid"] > *,
+          .prose-blog div[style*="display: grid"] > * {
+            width: 100% !important;
+            min-width: 0 !important;
+          }
+          .prose-blog h2 { font-size: 1.2rem; }
+          .prose-blog h3 { font-size: 1rem; }
+          .prose-blog p { font-size: 0.9375rem; }
         }
       `}</style>
     </div>
