@@ -102,6 +102,7 @@ export default function BlogPostPage() {
   const [widgetVisible, setWidgetVisible] = useState(false);
   const [widgetDismissed, setWidgetDismissed] = useState(false);
   const [heroImgFailed, setHeroImgFailed] = useState(false);
+  const [heroCoverFailed, setHeroCoverFailed] = useState(false);
   const [language, setLanguage] = useState<"en" | "fr" | "sw">("en");
   const [translating, setTranslating] = useState(false);
   const [translations, setTranslations] = useState<Record<string, { title: string; excerpt: string; content: string }>>({});
@@ -235,15 +236,15 @@ export default function BlogPostPage() {
       </div>
 
       {/* Hero cover */}
-      {post.coverImage && !heroImgFailed ? (
+      {post.coverImage && !heroCoverFailed ? (
         <div className="w-full h-[700px] relative overflow-hidden">
           <img
-            src={post.coverImage.replace('-cover.', '-hero.')}
+            src={heroImgFailed ? post.coverImage : post.coverImage.replace('-cover.', '-hero.')}
             alt={post.title}
             className="w-full h-full object-cover object-top"
             loading="eager"
             fetchPriority="high"
-            onError={() => setHeroImgFailed(true)}
+            onError={() => heroImgFailed ? setHeroCoverFailed(true) : setHeroImgFailed(true)}
           />
           <div className="absolute inset-0 bg-black/30 flex items-end p-6">
             <span className="text-5xl">{post.coverEmoji}</span>
