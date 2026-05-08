@@ -5,25 +5,35 @@ export async function GET() {
   try {
     // Find all posts grouped by normalised title (lowercase, stripped punctuation)
     const allPosts = await prisma.blogPost.findMany({
-      select: { id: true, title: true, content: true, createdAt: true },
+      select: { id: true, title: true, content: true, createdAt: true, aiGenerated: true },
       orderBy: { createdAt: "asc" },
     });
 
-    const seen = new Map<string, { id: string; contentLen: number }>();
+    const seen = new Map<string, { id: string; contentLen: number; aiGenerated: boolean }>();
     const toDelete: string[] = [];
 
     for (const post of allPosts) {
       const key = post.title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, " ").slice(0, 60);
       const existing = seen.get(key);
       if (!existing) {
-        seen.set(key, { id: post.id, contentLen: post.content.length });
+        seen.set(key, { id: post.id, contentLen: post.content.length, aiGenerated: post.aiGenerated });
       } else {
-        // Keep the one with more content; delete the other
-        if (post.content.length > existing.contentLen) {
+        // Never delete a manually-written article (aiGenerated: false) — always keep it
+        if (!post.aiGenerated && existing.aiGenerated) {
+          // New post is manual, existing is AI — delete existing
           toDelete.push(existing.id);
-          seen.set(key, { id: post.id, contentLen: post.content.length });
-        } else {
+          seen.set(key, { id: post.id, contentLen: post.content.length, aiGenerated: post.aiGenerated });
+        } else if (post.aiGenerated && !existing.aiGenerated) {
+          // New post is AI, existing is manual — delete new
           toDelete.push(post.id);
+        } else {
+          // Both same type — keep the one with more content
+          if (post.content.length > existing.contentLen) {
+            toDelete.push(existing.id);
+            seen.set(key, { id: post.id, contentLen: post.content.length, aiGenerated: post.aiGenerated });
+          } else {
+            toDelete.push(post.id);
+          }
         }
       }
     }

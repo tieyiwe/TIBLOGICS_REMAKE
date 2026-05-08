@@ -348,7 +348,7 @@ function ComingSoonCard() {
           </h3>
 
           <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed flex-1">
-            Hands-on AI implementation training for business owners and teams. Learn to build workflows, automate tasks, and integrate AI into your operations.
+            Hands-on AI implementation training for business owners, teams, and individuals. Learn to build workflows, automate tasks, advance your career, and create new income streams with AI.
           </p>
 
           <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
@@ -529,7 +529,7 @@ export default function EventsPage() {
                 Want private training for your team?
               </h2>
               <p className="font-dm text-white/70 mb-6 max-w-xl mx-auto">
-                We offer customized AI training sessions for businesses and organizations. Let&apos;s design a program that fits your needs.
+                We offer customized AI training sessions for businesses, organizations, and individuals. Whether you&apos;re building a team capability or advancing your own career and income with AI — let&apos;s design a program that fits your goals.
               </p>
               <Link
                 href="/book"

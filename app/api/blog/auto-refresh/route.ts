@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
 
-const REFRESH_INTERVAL_MS = 72 * 60 * 60 * 1000; // 72 hours (3 days)
+const REFRESH_INTERVAL_MS = 48 * 60 * 60 * 1000; // 48 hours
 
 const AI_KEYWORDS = [
   "ai", "llm", "gpt", "claude", "gemini", "machine learning", "openai",

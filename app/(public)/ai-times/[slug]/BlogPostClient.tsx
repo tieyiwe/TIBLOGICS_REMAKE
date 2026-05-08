@@ -102,11 +102,14 @@ export default function BlogPostPage() {
   const [widgetVisible, setWidgetVisible] = useState(false);
   const [widgetDismissed, setWidgetDismissed] = useState(false);
   const [heroImgFailed, setHeroImgFailed] = useState(false);
+  const [heroCoverFailed, setHeroCoverFailed] = useState(false);
   const [language, setLanguage] = useState<"en" | "fr" | "sw">("en");
   const [translating, setTranslating] = useState(false);
   const [translations, setTranslations] = useState<Record<string, { title: string; excerpt: string; content: string }>>({});
   async function handleTranslate(lang: "en" | "fr" | "sw") {
     if (lang === "en" || translations[lang]) { setLanguage(lang); return; }
+    // Switch button state immediately so UI feels responsive
+    setLanguage(lang);
     setTranslating(true);
     try {
       const res = await fetch("/api/blog/translate", {
@@ -119,7 +122,6 @@ export default function BlogPostPage() {
         setTranslations(prev => ({ ...prev, [lang]: data }));
       }
     } finally {
-      setLanguage(lang);
       setTranslating(false);
     }
   }
@@ -235,15 +237,15 @@ export default function BlogPostPage() {
       </div>
 
       {/* Hero cover */}
-      {post.coverImage && !heroImgFailed ? (
+      {post.coverImage && !heroCoverFailed ? (
         <div className="w-full h-[700px] relative overflow-hidden">
           <img
-            src={post.coverImage.replace('-cover.', '-hero.')}
+            src={heroImgFailed ? post.coverImage : post.coverImage.replace('-cover.', '-hero.')}
             alt={post.title}
             className="w-full h-full object-cover object-top"
             loading="eager"
             fetchPriority="high"
-            onError={() => setHeroImgFailed(true)}
+            onError={() => heroImgFailed ? setHeroCoverFailed(true) : setHeroImgFailed(true)}
           />
           <div className="absolute inset-0 bg-black/30 flex items-end p-6">
             <span className="text-5xl">{post.coverEmoji}</span>
@@ -317,10 +319,19 @@ export default function BlogPostPage() {
             </div>
 
             {/* Content */}
-            <div
-              className="prose-blog font-dm text-[#0D1B2A] leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: display?.content ?? post.content }}
-            />
+            {translating ? (
+              <div className="space-y-3 animate-pulse py-2">
+                {[100,90,95,85,100,80,92].map((w, i) => (
+                  <div key={i} className="h-4 bg-[#D2DCE8] rounded" style={{ width: `${w}%` }} />
+                ))}
+                <div className="h-4 bg-[#D2DCE8] rounded w-1/2 mt-2" />
+              </div>
+            ) : (
+              <div
+                className="prose-blog font-dm text-[#0D1B2A] leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: display?.content ?? post.content }}
+              />
+            )}
 
             {/* Tags */}
             {post.tags.length > 0 && (
