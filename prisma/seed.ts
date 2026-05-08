@@ -135,7 +135,7 @@ const BLOG_POSTS = [
     tags: ["data centers", "AI economy", "entrepreneurship", "DMV", "business opportunity", "data center cleaning"],
     coverEmoji: "🏭",
     coverGradient: "from-[#085041] to-[#0F6E56]",
-    coverImage: "/tieyiwe-bass-cover.png",
+    coverImage: "/tieyiwe-bass-cover.png", // replace with committed PNG; fallback Unsplash used if missing
     featured: true,
     author: "Tieyiwe Bass · TIBLOGICS",
     content: `<p>Every time you ask an AI a question, every time a stream starts buffering and then bursts to life, every time a bank processes a transaction in milliseconds — a data center made it happen. Inside that building, there are hundreds of thousands of servers stacked floor to ceiling, humming with heat, and quietly generating something most people never think about: <em>dust</em>.</p>

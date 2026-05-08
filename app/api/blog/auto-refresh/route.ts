@@ -885,6 +885,25 @@ For a logistics company: an agent tracks shipments, updates clients, escalates d
   },
 ];
 
+// Tieyiwe Bass personal article — Unsplash fallback used when local PNG not committed
+const TIEYIWE_BASS_FALLBACK_IMAGE = "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80";
+
+// Patch the Tieyiwe Bass article cover if it's still pointing at the local PNG
+async function patchTieyiweCover() {
+  try {
+    const post = await prisma.blogPost.findFirst({
+      where: { title: { contains: "Nobody Talks About the People Cleaning", mode: "insensitive" } },
+      select: { id: true, coverImage: true },
+    });
+    if (post && (!post.coverImage || post.coverImage.startsWith("/"))) {
+      await prisma.blogPost.update({
+        where: { id: post.id },
+        data: { coverImage: TIEYIWE_BASS_FALLBACK_IMAGE },
+      });
+    }
+  } catch { /* ignore */ }
+}
+
 // Editorial spotlights — always checked and inserted if missing (even when DB has posts)
 const EDITORIAL_SPOTLIGHTS = [
   {
@@ -987,6 +1006,9 @@ export async function GET(req: NextRequest) {
   let postsAdded = 0;
   const errors: string[] = [];
 
+  // Fix Tieyiwe Bass article cover if pointing at local file
+  await patchTieyiweCover();
+
   // Always purge auto-generated stub posts (content under 300 chars — generation failures)
   try {
     await prisma.$executeRaw`DELETE FROM "BlogPost" WHERE "aiGenerated" = true AND LENGTH("content") < 300`;
@@ -1026,8 +1048,9 @@ export async function GET(req: NextRequest) {
           select: { id: true, coverImage: true },
         });
         if (dupCheck) {
-          // Patch missing coverImage on existing posts
-          if (!dupCheck.coverImage && sp.coverImage) {
+          // Patch missing or local-file coverImage with the Unsplash fallback from seed
+          const needsPatch = !dupCheck.coverImage || dupCheck.coverImage.startsWith("/");
+          if (needsPatch && sp.coverImage && !sp.coverImage.startsWith("/")) {
             await prisma.blogPost.update({
               where: { id: dupCheck.id },
               data: { coverImage: sp.coverImage },
