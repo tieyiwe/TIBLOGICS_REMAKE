@@ -159,8 +159,8 @@ export default function Nav() {
                     onClick={() => setMobileOpen(false)}
                     className={cn(
                       "flex items-center px-3 py-3 rounded-xl font-dm font-semibold transition-all",
-                      "bg-gradient-to-r from-emerald-600 via-green-500 to-teal-600 text-white",
-                      isActive(link.href) && "ring-2 ring-[#F47C20] ring-offset-1"
+                      "bg-gradient-to-r from-[#F47C20] to-[#e06a10] text-white",
+                      isActive(link.href) && "ring-2 ring-[#1B3A6B] ring-offset-1"
                     )}
                   >
                     {link.label}
