@@ -950,6 +950,36 @@ For a logistics company: an agent tracks shipments, updates clients, escalates d
 const TIEYIWE_BASS_FALLBACK_IMAGE = "https://tiblogics.com/tieyiwe-bass-cover.png";
 
 // Patch the Tieyiwe Bass article cover if it's still pointing at the local PNG
+// Reassign unique cover images to any AI-generated articles that share an image
+// with another article. Manual articles (aiGenerated=false) are never touched.
+async function patchDuplicateCoverImages(usedImages: Set<string>): Promise<void> {
+  try {
+    const allPosts = await prisma.blogPost.findMany({
+      select: { id: true, coverImage: true, aiGenerated: true, category: true },
+      orderBy: { createdAt: "asc" }, // oldest kept; newer duplicates get reassigned
+    });
+
+    const seenImages = new Map<string, string>(); // image → first article id that owns it
+
+    for (const post of allPosts) {
+      if (!post.coverImage) continue;
+
+      if (!seenImages.has(post.coverImage)) {
+        seenImages.set(post.coverImage, post.id);
+        // usedImages already contains this from the initial DB load
+      } else if (post.aiGenerated) {
+        // Duplicate image on an AI-generated article — give it a fresh one
+        const newImage = pickFreshImage(post.category, usedImages);
+        await prisma.blogPost.update({
+          where: { id: post.id },
+          data: { coverImage: newImage },
+        });
+      }
+      // Non-AI duplicate: leave it alone (manual articles keep their chosen image)
+    }
+  } catch { /* non-blocking */ }
+}
+
 async function patchTieyiweCover() {
   try {
     const post = await prisma.blogPost.findFirst({
@@ -1151,6 +1181,9 @@ export async function GET(req: NextRequest) {
 
   // Fix Tieyiwe Bass article cover if pointing at local file
   await patchTieyiweCover();
+
+  // Reassign cover images on any AI-generated articles that share an image
+  await patchDuplicateCoverImages(usedImages);
 
   // Always purge auto-generated stub posts (content under 300 chars — generation failures)
   try {

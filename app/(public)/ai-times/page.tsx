@@ -136,7 +136,13 @@ export default function BlogPage() {
   }, [fetchPosts]);
 
   const showFeatured = category === "all" && !search;
-  const featured = showFeatured ? (posts.find((p) => p.featured) ?? posts[0]) : null;
+  // Only pin a "featured" article to the hero if it was published within the last 14 days;
+  // otherwise fall back to the newest article so fresh content always leads.
+  const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
+  const recentFeatured = posts.find(
+    (p) => p.featured && new Date(p.createdAt).getTime() > fourteenDaysAgo
+  );
+  const featured = showFeatured ? (recentFeatured ?? posts[0]) : null;
   const grid = featured ? posts.filter((p) => p.id !== featured.id) : posts;
 
   return (
