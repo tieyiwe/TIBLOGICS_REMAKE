@@ -87,6 +87,53 @@ export async function generateMetadata(
   }
 }
 
-export default function BlogPostPage() {
-  return <BlogPostClient />;
+export default async function BlogPostPage(
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  const { slug } = await params;
+  const SITE_URL_LOCAL = (process.env.NEXTAUTH_URL || "https://tiblogics.com").replace(/\/$/, "");
+
+  let jsonLd: object | null = null;
+  try {
+    const { prisma } = await import("@/lib/prisma");
+    const post = await prisma.blogPost.findUnique({
+      where: { slug },
+      select: { title: true, excerpt: true, coverImage: true, author: true, createdAt: true, updatedAt: true, tags: true },
+    });
+    if (post) {
+      const ogImage = toOgImage(post.coverImage);
+      jsonLd = {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": post.title,
+        "description": post.excerpt.slice(0, 200),
+        "image": ogImage,
+        "datePublished": post.createdAt.toISOString(),
+        "dateModified": post.updatedAt.toISOString(),
+        "url": `${SITE_URL_LOCAL}/ai-times/${slug}`,
+        "author": { "@type": "Person", "name": post.author, "url": SITE_URL_LOCAL },
+        "publisher": {
+          "@type": "Organization",
+          "name": "TIBLOGICS",
+          "url": SITE_URL_LOCAL,
+          "logo": { "@type": "ImageObject", "url": `${SITE_URL_LOCAL}/logo.png` },
+        },
+        "keywords": post.tags.join(", "),
+        "mainEntityOfPage": { "@type": "WebPage", "@id": `${SITE_URL_LOCAL}/ai-times/${slug}` },
+        "isPartOf": { "@type": "Blog", "name": "AI Times by TIBLOGICS", "url": `${SITE_URL_LOCAL}/ai-times` },
+      };
+    }
+  } catch { /* non-blocking */ }
+
+  return (
+    <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
+      <BlogPostClient />
+    </>
+  );
 }

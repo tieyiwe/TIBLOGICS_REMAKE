@@ -242,6 +242,9 @@ export default function BlogPostPage() {
           >
             <ArrowLeft size={15} /> Back to AI TIMES
           </Link>
+          <span className="hidden sm:block font-syne font-bold text-xs text-[#F47C20] tracking-wide uppercase">
+            The #1 AI Digestable Knowledge
+          </span>
           <button
             onClick={handleShare}
             className="inline-flex items-center gap-1.5 text-xs font-dm text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors"

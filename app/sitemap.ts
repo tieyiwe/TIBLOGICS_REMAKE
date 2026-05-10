@@ -24,16 +24,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const posts = await prisma.blogPost.findMany({
       where: { published: true },
-      select: { slug: true, updatedAt: true },
+      select: { slug: true, updatedAt: true, featured: true },
       orderBy: { createdAt: "desc" },
       take: 200,
     });
 
-    blogRoutes = posts.map((p: { slug: string; updatedAt: Date }) => ({
+    blogRoutes = posts.map((p: { slug: string; updatedAt: Date; featured: boolean }) => ({
       url: `${BASE}/ai-times/${p.slug}`,
       lastModified: p.updatedAt,
       changeFrequency: "weekly" as const,
-      priority: 0.7,
+      priority: p.featured ? 0.9 : 0.8,
     }));
   } catch {
     // DB not available during build
