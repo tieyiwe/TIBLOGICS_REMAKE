@@ -236,31 +236,28 @@ export default function BlogPostPage() {
         </div>
       </div>
 
-      {/* Hero cover */}
-      {post.coverImage && !heroCoverFailed ? (
-        <div className="w-full h-[700px] relative overflow-hidden">
-          <img
-            src={heroImgFailed ? post.coverImage : post.coverImage.replace('-cover.', '-hero.')}
-            alt={post.title}
-            className="w-full h-full object-cover object-top"
-            loading="eager"
-            fetchPriority="high"
-            onError={() => heroImgFailed ? setHeroCoverFailed(true) : setHeroImgFailed(true)}
-          />
-          <div className="absolute inset-0 bg-black/30 flex items-end p-6">
-            <span className="text-5xl">{post.coverEmoji}</span>
-          </div>
-        </div>
-      ) : (
-        <div className={`${gradientClass(post.coverGradient)} w-full h-72 flex items-center justify-center`}>
-          <span className="text-9xl">{post.coverEmoji}</span>
-        </div>
-      )}
-
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 -mt-8 relative z-10">
-
-        {/* Article card */}
+      {/* Hero cover + Article card */}
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 mt-6 relative z-10">
         <article className="bg-white border border-[#D2DCE8] rounded-3xl overflow-hidden shadow-sm">
+
+          {/* Cover image — constrained to card width */}
+          {post.coverImage && !heroCoverFailed ? (
+            <div className="w-full h-72 relative overflow-hidden">
+              <img
+                src={heroImgFailed ? post.coverImage : post.coverImage.replace('-cover.', '-hero.')}
+                alt={post.title}
+                className="w-full h-full object-cover object-top"
+                loading="eager"
+                fetchPriority="high"
+                onError={() => heroImgFailed ? setHeroCoverFailed(true) : setHeroImgFailed(true)}
+              />
+            </div>
+          ) : (
+            <div className={`${gradientClass(post.coverGradient)} w-full h-48 flex items-center justify-center`}>
+              <span className="text-9xl">{post.coverEmoji}</span>
+            </div>
+          )}
+
           <div className="p-8 md:p-10">
             {/* Meta */}
             <div className="flex flex-wrap items-center gap-2 mb-5">
