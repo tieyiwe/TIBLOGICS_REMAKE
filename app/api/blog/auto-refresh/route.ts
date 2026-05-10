@@ -908,6 +908,46 @@ async function patchTieyiweCover() {
 // Editorial spotlights — always checked and inserted if missing (even when DB has posts)
 const EDITORIAL_SPOTLIGHTS = [
   {
+    title: "Claude Agents Now Dream: What Developers Need to Know — and How to Upgrade Your Builds",
+    excerpt: "Anthropic's Dreaming feature lets Claude agents reason continuously in the background between interactions. Here's what changed, why it matters, and how to bring your existing client builds up to the new standard.",
+    category: "tips",
+    tags: ["claude", "ai agents", "anthropic", "developers", "agent sdk", "dreaming", "background processing"],
+    coverEmoji: "🤖",
+    coverGradient: "from-purple-600 to-violet-500",
+    coverImage: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=800&q=80",
+    featured: false,
+    content: `<p>Claude just got significantly more capable in a way that most end users won't immediately notice — but every developer building agents should understand immediately. Anthropic's Dreaming feature gives Claude agents the ability to reason in the background between interactions: processing context, planning multi-step actions, and arriving at responses that reflect deeper preparation rather than reactive generation. If you've built agents for clients, some of those builds are already behind the curve. Here's what changed and exactly what to do about it.</p>
+
+<h2>What the Dreaming Feature Actually Does</h2>
+<p>Traditional Claude agents operate on a simple call-and-response model: user sends a message, the agent generates a reply. The model's "thinking" is bounded by that single request window. Dreaming changes the architecture. Agents can now run background reasoning loops — processing incoming context, evaluating queued tasks, updating their working memory, and preparing structured responses — even when no immediate user prompt is active.</p>
+<p>Think of it like the difference between a consultant who reads your brief for the first time during the meeting versus one who spent the night studying your files, mapping dependencies, and arriving with a prepared game plan. The underlying model is the same; what changes is the depth of preparation brought to each interaction.</p>
+<p>In practice this means: faster and more coherent multi-step reasoning, better retention of context across long conversations, improved performance on tasks that require planning before acting, and more reliable tool-use chains where previous steps inform subsequent ones.</p>
+
+<h2>Why This Is a Bigger Deal Than It Sounds</h2>
+<p>The agents most businesses are running today were designed around the old constraint — that each response is generated fresh with only the context explicitly passed in. That shaped decisions about prompt design, memory architecture, tool invocation order, and how much reasoning to expect in a single turn. Dreaming removes some of those constraints entirely.</p>
+<p>Agents that were built to decompose complex tasks across multiple user turns (because a single turn couldn't handle the reasoning depth) can now do that reasoning within a single extended session. Agents that relied on explicit "think step by step" prompting to force deliberate reasoning get that quality natively. And agents that struggled with long-running workflows — where maintaining coherent context across 20+ tool calls was brittle — are now meaningfully more reliable.</p>
+<p>The clients who hired you to build those agents aren't getting that improvement automatically. The upgrade is available, but it requires intentional configuration and prompt restructuring.</p>
+
+<h2>Developer Tips: How to Upgrade Existing Client Agents</h2>
+<p>If you've built Claude-powered agents for clients — whether customer service bots, business process agents, data analysis assistants, or anything else — this is a practical checklist for bringing those builds up to the Dreaming standard.</p>
+
+<ul>
+<li><strong>Enable extended thinking in your API calls.</strong> Dreaming runs on top of Claude's extended thinking capability. Make sure your API calls include <code>"thinking": {"type": "enabled", "budget_tokens": 10000}</code> (or higher for complex agents). Agents built without this won't use background reasoning even if the model supports it.</li>
+<li><strong>Restructure prompts that were written around single-turn limitations.</strong> If you built prompts with explicit "break this into steps and ask me before proceeding" logic to work around depth limits, test removing that scaffolding. Dreaming handles multi-step planning natively — over-structured prompts can actually constrain it.</li>
+<li><strong>Revisit memory and context injection.</strong> If your agent summaries context explicitly at each turn because you didn't trust cross-turn retention, audit whether that's still necessary. Background reasoning improves context coherence; your injected summaries may now be redundant or even confusing.</li>
+<li><strong>Upgrade your tool-use ordering logic.</strong> Agents that called tools in rigid sequences to manage reasoning quality can now be more flexible. Dreaming allows the agent to decide the optimal tool invocation order based on background planning — let it.</li>
+<li><strong>Test long-horizon tasks end-to-end.</strong> The biggest gains show up in workflows that span many steps. Set up an evaluation run of your agent's hardest scenarios and compare against your pre-Dreaming baseline. You may find tasks that previously required human check-ins now complete cleanly.</li>
+<li><strong>Update client-facing documentation.</strong> If you gave clients expectations about what their agent could and couldn't do based on the old architecture, those expectations deserve a revision call. Under-selling a meaningfully upgraded tool is a missed opportunity for the relationship.</li>
+</ul>
+
+<h2>Making This the New Standard for All Future Builds</h2>
+<p>The developers who move fastest here aren't just upgrading old work — they're rebuilding their default starting point. Every new agent you build from this point forward should be designed with Dreaming enabled and assumed, not bolted on later.</p>
+<p>Concretely, that means: your base system prompt template should be written for a reasoning-capable model (no artificial step decomposition). Your API wrapper or agent initialization function should include extended thinking configuration by default. Your evaluation framework should include long-horizon test cases, not just single-turn response quality. And your client onboarding conversations should set expectations around what an agent built on this architecture can do — because the bar is meaningfully higher.</p>
+<p>The agents being built today with Dreaming as a baseline assumption will perform substantially better than the previous generation. Clients who see that difference will notice. The ones who stay on older builds won't know what they're missing — until a competitor's agent shows them.</p>
+
+<p><strong>Practical takeaway:</strong> Audit every active client agent you've built and enable extended thinking with a meaningful token budget. Then schedule a brief call with each client to walk them through what the upgrade unlocks. It costs you an afternoon and it's the kind of proactive value delivery that turns one-time builds into long-term relationships.</p>`,
+  },
+  {
     title: "The OpenAI Exodus: Why the Architects of Modern AI Are Walking Out",
     excerpt: "An unprecedented wave of departures from OpenAI is raising serious questions about where the company — and the AI industry — is headed.",
     category: "breaking",
@@ -1053,6 +1093,7 @@ export async function GET(req: NextRequest) {
       try {
         const dupCheck = await prisma.blogPost.findFirst({
           where: { title: { contains: sp.title.slice(0, 50), mode: "insensitive" } },
+          select: { id: true },
         });
         if (dupCheck) continue;
         const baseSlug = sp.title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-").slice(0, 70);
