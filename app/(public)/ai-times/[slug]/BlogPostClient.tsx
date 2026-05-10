@@ -106,24 +106,39 @@ export default function BlogPostPage() {
   const [language, setLanguage] = useState<"en" | "fr" | "sw">("en");
   const [translating, setTranslating] = useState(false);
   const [translations, setTranslations] = useState<Record<string, { title: string; excerpt: string; content: string }>>({});
-  async function handleTranslate(lang: "en" | "fr" | "sw") {
-    if (lang === "en" || translations[lang]) { setLanguage(lang); return; }
-    // Switch button state immediately so UI feels responsive
+
+  // Pre-fetch both translations silently after the article loads
+  useEffect(() => {
+    if (!post || !slug) return;
+    const prefetch = async (lang: "fr" | "sw") => {
+      try {
+        const res = await fetch("/api/blog/translate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slug, language: lang }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setTranslations(prev => ({ ...prev, [lang]: data }));
+        }
+      } catch { /* silent */ }
+    };
+    // Small delay so it doesn't compete with the initial page render
+    const t = setTimeout(() => { prefetch("fr"); prefetch("sw"); }, 1500);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [post?.id]);
+
+  // When a cached translation arrives, clear the spinner if user already selected that language
+  useEffect(() => {
+    if (language !== "en" && translations[language]) setTranslating(false);
+  }, [translations, language]);
+
+  function handleTranslate(lang: "en" | "fr" | "sw") {
     setLanguage(lang);
-    setTranslating(true);
-    try {
-      const res = await fetch("/api/blog/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, language: lang }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setTranslations(prev => ({ ...prev, [lang]: data }));
-      }
-    } finally {
-      setTranslating(false);
-    }
+    // Show spinner only if background fetch hasn't finished yet
+    if (lang !== "en" && !translations[lang]) setTranslating(true);
+    else setTranslating(false);
   }
 
   const display = language !== "en" && translations[language]
