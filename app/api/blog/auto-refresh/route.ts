@@ -952,32 +952,33 @@ const TIEYIWE_BASS_FALLBACK_IMAGE = "https://tiblogics.com/tieyiwe-bass-cover.pn
 // Patch the Tieyiwe Bass article cover if it's still pointing at the local PNG
 // Reassign unique cover images to any AI-generated articles that share an image
 // with another article. Manual articles (aiGenerated=false) are never touched.
-async function patchDuplicateCoverImages(usedImages: Set<string>): Promise<void> {
+async function patchDuplicateCoverImages(usedImages: Set<string>): Promise<number> {
+  let patched = 0;
   try {
     const allPosts = await prisma.blogPost.findMany({
       select: { id: true, coverImage: true, aiGenerated: true, category: true },
-      orderBy: { createdAt: "asc" }, // oldest kept; newer duplicates get reassigned
+      orderBy: { createdAt: "asc" }, // oldest entry keeps its image
     });
 
-    const seenImages = new Map<string, string>(); // image → first article id that owns it
+    const seenImages = new Set<string>();
 
     for (const post of allPosts) {
       if (!post.coverImage) continue;
 
       if (!seenImages.has(post.coverImage)) {
-        seenImages.set(post.coverImage, post.id);
-        // usedImages already contains this from the initial DB load
-      } else if (post.aiGenerated) {
-        // Duplicate image on an AI-generated article — give it a fresh one
+        seenImages.add(post.coverImage);
+      } else {
+        // Duplicate — reassign regardless of aiGenerated so ALL duplicates get fixed
         const newImage = pickFreshImage(post.category, usedImages);
         await prisma.blogPost.update({
           where: { id: post.id },
           data: { coverImage: newImage },
         });
+        patched++;
       }
-      // Non-AI duplicate: leave it alone (manual articles keep their chosen image)
     }
   } catch { /* non-blocking */ }
+  return patched;
 }
 
 async function patchTieyiweCover() {
@@ -1182,8 +1183,8 @@ export async function GET(req: NextRequest) {
   // Fix Tieyiwe Bass article cover if pointing at local file
   await patchTieyiweCover();
 
-  // Reassign cover images on any AI-generated articles that share an image
-  await patchDuplicateCoverImages(usedImages);
+  // Reassign cover images on any articles that share an image
+  const imagesPatched = await patchDuplicateCoverImages(usedImages);
 
   // Always purge auto-generated stub posts (content under 300 chars — generation failures)
   try {
@@ -1357,5 +1358,5 @@ export async function GET(req: NextRequest) {
     });
   } catch { /* ignore */ }
 
-  return NextResponse.json({ message: `Added ${postsAdded} new posts`, postsAdded });
+  return NextResponse.json({ message: `Added ${postsAdded} new posts`, postsAdded, imagesPatched });
 }
