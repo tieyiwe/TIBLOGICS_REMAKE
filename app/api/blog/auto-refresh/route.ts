@@ -19,6 +19,13 @@ const CATEGORY_IMAGES: Record<string, string[]> = {
     "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1518432031352-d6fc5c10da5a?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1535378620166-273bee7c-17c2?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1620288627223-53302f4e8c74?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1495592822108-9e6261896da8?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1560472355-536de3962603?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1504384764586-bb4cdc1707b0?auto=format&fit=crop&w=800&q=80",
   ],
   "ai-business": [
     "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=800&q=80",
@@ -27,6 +34,12 @@ const CATEGORY_IMAGES: Record<string, string[]> = {
     "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1664575602276-acd073f104c1?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1556761175-4b46a572b786?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&q=80",
   ],
   "tips": [
     "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=800&q=80",
@@ -35,6 +48,12 @@ const CATEGORY_IMAGES: Record<string, string[]> = {
     "https://images.unsplash.com/photo-1513258496099-48168024aec0?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1456324504439-367cee3b3c32?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1501504905252-473c47e087f8?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1572021335469-31706a17aaef?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80",
   ],
   "tools": [
     "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80",
@@ -43,6 +62,12 @@ const CATEGORY_IMAGES: Record<string, string[]> = {
     "https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1568952433726-3896e3881c65?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1531746790731-6c087fecd65a?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=800&q=80",
   ],
   "case-studies": [
     "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80",
@@ -50,6 +75,13 @@ const CATEGORY_IMAGES: Record<string, string[]> = {
     "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1543286386-713bdd548da4?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1579389083175-b5aded5da8a3?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1664575601786-b00d7c1e9d6c?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1572021335469-31706a17aaef?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=800&q=80",
   ],
   "industry": [
     "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80",
@@ -58,15 +90,43 @@ const CATEGORY_IMAGES: Record<string, string[]> = {
     "https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1639322537228-f710d846310a?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1676299081847-824916de030a?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1655720031554-a929595ffad7?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1677696795873-45e6b77fa4c0?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1516110833967-0b5716ca1387?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1509023464722-18d996393ca8?auto=format&fit=crop&w=800&q=80",
   ],
 };
 
-let _imageCounters: Record<string, number> = {};
-function pickUniqueImage(category: string): string {
-  const pool = CATEGORY_IMAGES[category] ?? CATEGORY_IMAGES["industry"];
-  const idx = (_imageCounters[category] ?? 0) % pool.length;
-  _imageCounters[category] = idx + 1;
-  return pool[idx];
+// All images across every category — used as overflow when a category pool is exhausted
+const ALL_IMAGES = Object.values(CATEGORY_IMAGES).flat();
+
+// Pick an image not already used by any existing article.
+// Prefers the correct category pool; falls back to cross-category; last resort: least-used.
+function pickFreshImage(category: string, usedImages: Set<string>): string {
+  const categoryPool = CATEGORY_IMAGES[category] ?? CATEGORY_IMAGES["industry"];
+
+  // 1. Unused image from the correct category
+  const unusedInCategory = categoryPool.filter((u) => !usedImages.has(u));
+  if (unusedInCategory.length > 0) {
+    const pick = unusedInCategory[Math.floor(Math.random() * unusedInCategory.length)];
+    usedImages.add(pick);
+    return pick;
+  }
+
+  // 2. Unused image from any other category
+  const unusedAnywhere = ALL_IMAGES.filter((u) => !usedImages.has(u));
+  if (unusedAnywhere.length > 0) {
+    const pick = unusedAnywhere[Math.floor(Math.random() * unusedAnywhere.length)];
+    usedImages.add(pick);
+    return pick;
+  }
+
+  // 3. All images exhausted — pick a random one (unavoidable repeat, pool needs expanding)
+  const pick = ALL_IMAGES[Math.floor(Math.random() * ALL_IMAGES.length)];
+  usedImages.add(pick);
+  return pick;
 }
 
 const CATEGORY_META: Record<string, { emoji: string; gradient: string }> = {
@@ -1080,6 +1140,15 @@ export async function GET(req: NextRequest) {
   let postsAdded = 0;
   const errors: string[] = [];
 
+  // Build a set of cover images already used in the DB so new articles get unique ones
+  let usedImages: Set<string>;
+  try {
+    const existing = await prisma.blogPost.findMany({ select: { coverImage: true } });
+    usedImages = new Set(existing.map((p) => p.coverImage).filter(Boolean) as string[]);
+  } catch {
+    usedImages = new Set();
+  }
+
   // Fix Tieyiwe Bass article cover if pointing at local file
   await patchTieyiweCover();
 
@@ -1220,7 +1289,7 @@ export async function GET(req: NextRequest) {
           tags: generated.tags,
           coverEmoji: meta.emoji,
           coverGradient: meta.gradient,
-          coverImage: pickUniqueImage(generated.category),
+          coverImage: pickFreshImage(generated.category, usedImages),
           author: "Echelon AI",
           readingTime: Math.ceil(generated.content.replace(/<[^>]*>/g, "").split(" ").length / 200),
           featured: false,
