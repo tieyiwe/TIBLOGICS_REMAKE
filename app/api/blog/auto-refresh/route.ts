@@ -2,6 +2,7 @@ export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
+import resend from "@/lib/resend";
 
 const REFRESH_INTERVAL_MS = 48 * 60 * 60 * 1000; // 48 hours
 
@@ -969,10 +970,38 @@ const EDITORIAL_SPOTLIGHTS = [
   },
 ];
 
+const OWNER_EMAIL = "tieyiwebass@gmail.com";
+const ALERT_THRESHOLD_MS = REFRESH_INTERVAL_MS + 6 * 60 * 60 * 1000; // 48h + 6h grace
+
+async function sendOverdueAlert(lastRefresh: Date | null) {
+  const since = lastRefresh
+    ? `Last successful run: ${lastRefresh.toUTCString()}`
+    : "No successful run recorded.";
+  try {
+    await resend.emails.send({
+      to: OWNER_EMAIL,
+      subject: "⚠️ AI Times: Article agent is overdue",
+      html: `<p>The AI Times article agent has not run on schedule.</p><p>${since}</p><p>Visit <a href="https://tiblogics.com/admin/blog">Admin → Blog</a> and click <strong>Refresh Now</strong> to trigger manually.</p>`,
+    });
+  } catch { /* don't crash the refresh if email fails */ }
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const checkOnly = searchParams.get("check") === "true";
   const force = searchParams.get("force") === "true";
+
+  // Verify caller: Vercel cron sends Authorization: Bearer <CRON_SECRET>
+  // Allow unauthenticated check-only requests (admin status polling)
+  if (!checkOnly) {
+    const cronSecret = process.env.CRON_SECRET;
+    const authHeader = req.headers.get("authorization");
+    const isVercelCron = cronSecret && authHeader === `Bearer ${cronSecret}`;
+    const isForceFromAdmin = force; // admin page uses ?force=true (protected by admin session at page level)
+    if (cronSecret && !isVercelCron && !isForceFromAdmin) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
 
   // Safely read last refresh — table may not exist yet
   let needsRefresh = force;
@@ -984,6 +1013,10 @@ export async function GET(req: NextRequest) {
     lastRefresh = lastRefreshSetting ? new Date(lastRefreshSetting.value) : null;
     if (!needsRefresh) {
       needsRefresh = !lastRefresh || Date.now() - lastRefresh.getTime() > REFRESH_INTERVAL_MS;
+    }
+    // Alert if the agent is running significantly behind schedule
+    if (!checkOnly && lastRefresh && Date.now() - lastRefresh.getTime() > ALERT_THRESHOLD_MS) {
+      await sendOverdueAlert(lastRefresh);
     }
   } catch {
     needsRefresh = true; // table missing — treat as needing refresh
