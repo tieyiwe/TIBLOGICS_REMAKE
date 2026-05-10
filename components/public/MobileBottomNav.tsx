@@ -17,7 +17,7 @@ function openTibo() {
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
-  if (pathname?.startsWith("/admin")) return null;
+  if (pathname?.startsWith("/admin_pro")) return null;
 
   function isActive(href: string) {
     if (href === "/") return pathname === "/";

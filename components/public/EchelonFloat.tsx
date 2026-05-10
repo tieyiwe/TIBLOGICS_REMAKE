@@ -112,7 +112,7 @@ export default function EchelonFloat() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const isAdmin = pathname?.startsWith("/admin");
+  const isAdmin = pathname?.startsWith("/admin_pro");
   const [blockedDateSet, setBlockedDateSet] = useState<Set<string>>(new Set());
   const ctaVisibleRef = useRef(false);
   const isOpenRef = useRef(false);

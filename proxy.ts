@@ -4,8 +4,8 @@ import { NextResponse } from "next/server";
 export const proxy = withAuth(
   function middleware(req) {
     // Authenticated user hitting /admin/login → send to dashboard
-    if (req.nextUrl.pathname === "/admin/login" && req.nextauth.token) {
-      return NextResponse.redirect(new URL("/admin", req.url));
+    if (req.nextUrl.pathname === "/admin_pro/login" && req.nextauth.token) {
+      return NextResponse.redirect(new URL("/admin_pro", req.url));
     }
     return NextResponse.next();
   },
@@ -14,18 +14,18 @@ export const proxy = withAuth(
       authorized({ token, req }) {
         const { pathname } = req.nextUrl;
         if (
-          pathname === "/admin/login" ||
-          pathname.startsWith("/admin/accept-invite")
+          pathname === "/admin_pro/login" ||
+          pathname.startsWith("/admin_pro/accept-invite")
         ) {
           return true;
         }
         return !!token;
       },
     },
-    pages: { signIn: "/admin/login" },
+    pages: { signIn: "/admin_pro/login" },
   }
 );
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin_pro/:path*"],
 };

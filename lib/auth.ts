@@ -101,7 +101,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   session: { strategy: "jwt" },
-  pages: { signIn: "/admin/login" },
+  pages: { signIn: "/admin_pro/login" },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
