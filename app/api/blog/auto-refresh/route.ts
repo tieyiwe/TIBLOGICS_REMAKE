@@ -915,6 +915,7 @@ const EDITORIAL_SPOTLIGHTS = [
     coverEmoji: "🤖",
     coverGradient: "from-purple-600 to-violet-500",
     coverImage: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=800&q=80",
+    author: "Tieyiwe Bass · TIBLOGICS",
     featured: false,
     content: `<p>Claude just got significantly more capable in a way that most end users won't immediately notice — but every developer building agents should understand immediately. Anthropic's Dreaming feature gives Claude agents the ability to reason in the background between interactions: processing context, planning multi-step actions, and arriving at responses that reflect deeper preparation rather than reactive generation. If you've built agents for clients, some of those builds are already behind the curve. Here's what changed and exactly what to do about it.</p>
 
@@ -1104,13 +1105,28 @@ export async function GET(req: NextRequest) {
             slug, title: sp.title, excerpt: sp.excerpt, content: sp.content,
             category: sp.category, tags: sp.tags, coverEmoji: sp.coverEmoji,
             coverGradient: sp.coverGradient, coverImage: sp.coverImage,
-            author: "TIBLOGICS Editorial",
+            author: (sp as { author?: string }).author ?? "TIBLOGICS Editorial",
             readingTime: Math.ceil(sp.content.replace(/<[^>]*>/g, "").split(" ").length / 200),
             featured: sp.featured, published: true, aiGenerated: false,
           },
         });
         postsAdded++;
       } catch { /* skip duplicate */ }
+    }
+
+    // Patch author on any spotlight that already exists with wrong author
+    for (const sp of EDITORIAL_SPOTLIGHTS) {
+      const spAuthor = (sp as { author?: string }).author;
+      if (!spAuthor) continue;
+      try {
+        const existing = await prisma.blogPost.findFirst({
+          where: { title: { contains: sp.title.slice(0, 50), mode: "insensitive" } },
+          select: { id: true, author: true },
+        });
+        if (existing && existing.author !== spAuthor) {
+          await prisma.blogPost.update({ where: { id: existing.id }, data: { author: spAuthor } });
+        }
+      } catch { /* ignore */ }
     }
 
     // Always ensure all seed posts are present (safe — each checks for duplicates first)
