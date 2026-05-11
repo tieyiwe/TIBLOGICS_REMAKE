@@ -249,7 +249,14 @@ Return a JSON object:
   }
 }
 
-async function generateTips(title: string, content: string): Promise<string[]> {
+function buildTipsHtml(tips: string[]): string {
+  const items = tips
+    .map((t, i) => `<li><span class="tip-num">${i + 1}</span>${t}</li>`)
+    .join("");
+  return `<div class="tips-section"><div class="tips-header">💡 Tip of the Day</div><ul class="tips-list">${items}</ul></div>`;
+}
+
+async function generateTips(title: string, content: string): Promise<string> {
   const plain = content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").slice(0, 800);
   const prompt = `Based on this article titled "${title}", write exactly 2-3 short, practical tips related to the topic. Each tip must be a single sentence (max 160 chars), actionable, and specific.
 
@@ -267,9 +274,10 @@ Return ONLY a JSON array:
     if (!match) throw new Error("no array");
     const tips: unknown[] = JSON.parse(match[0]);
     if (!Array.isArray(tips) || tips.length < 2) throw new Error("too short");
-    return tips.slice(0, 3).map((t) => String(t).slice(0, 180));
+    const clean = tips.slice(0, 3).map((t) => String(t).slice(0, 180));
+    return buildTipsHtml(clean);
   } catch {
-    return [];
+    return "";
   }
 }
 
@@ -277,14 +285,17 @@ async function patchMissingTips(): Promise<number> {
   let patched = 0;
   try {
     const posts = await prisma.blogPost.findMany({
-      where: { tips: { isEmpty: true } },
+      where: { content: { not: { contains: "tips-section" } } },
       select: { id: true, title: true, content: true },
       take: 8,
     });
     for (const post of posts) {
-      const tips = await generateTips(post.title, post.content);
-      if (tips.length > 0) {
-        await prisma.blogPost.update({ where: { id: post.id }, data: { tips } });
+      const tipsHtml = await generateTips(post.title, post.content);
+      if (tipsHtml) {
+        await prisma.blogPost.update({
+          where: { id: post.id },
+          data: { content: post.content + tipsHtml },
+        });
         patched++;
       }
     }
@@ -1354,7 +1365,7 @@ export async function GET(req: NextRequest) {
       const generated = await generatePost(item.title, item.url, item.source);
       if (!generated) continue;
       const meta = CATEGORY_META[generated.category] ?? CATEGORY_META["industry"];
-      const tips = await generateTips(item.title, generated.content);
+      const tipsHtml = await generateTips(item.title, generated.content);
 
       const baseSlug = item.title
         .toLowerCase()
@@ -1374,7 +1385,7 @@ export async function GET(req: NextRequest) {
           slug,
           title: item.title,
           excerpt: generated.excerpt,
-          content: generated.content,
+          content: generated.content + tipsHtml,
           category: generated.category,
           tags: generated.tags,
           coverEmoji: meta.emoji,
@@ -1387,7 +1398,6 @@ export async function GET(req: NextRequest) {
           aiGenerated: true,
           sourceUrl: item.url,
           sourceTitle: item.source,
-          tips,
         },
       });
       postsAdded++;

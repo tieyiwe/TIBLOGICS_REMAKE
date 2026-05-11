@@ -270,7 +270,6 @@ model BlogPost {
   sourceUrl     String?
   sourceTitle   String?
   viewCount     Int      @default(0)
-  tips          String[] @default([])
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
