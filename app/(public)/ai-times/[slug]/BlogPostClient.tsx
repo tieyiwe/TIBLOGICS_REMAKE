@@ -401,6 +401,9 @@ export default function BlogPostPage() {
           </div>
         </article>
 
+        {/* Newsletter signup */}
+        <ArticleNewsletterSignup slug={slug} />
+
         {/* Related posts */}
         {related.length > 0 && (
           <div className="mt-10">
@@ -512,6 +515,87 @@ export default function BlogPostPage() {
           .prose-blog p { font-size: 0.9375rem; }
         }
       `}</style>
+    </div>
+  );
+}
+
+function ArticleNewsletterSignup({ slug }: { slug: string }) {
+  const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [msg, setMsg] = useState("");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email) return;
+    setStatus("loading");
+    try {
+      const res = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, firstName: firstName || undefined, source: `article:${slug}` }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setStatus("success");
+        setMsg(data.message ?? "You're subscribed!");
+      } else {
+        setStatus("error");
+        setMsg(data.error ?? "Something went wrong.");
+      }
+    } catch {
+      setStatus("error");
+      setMsg("Network error. Please try again.");
+    }
+  }
+
+  return (
+    <div className="mt-10 rounded-2xl overflow-hidden border border-[#D2DCE8]">
+      <div className="bg-gradient-to-br from-[#1B3A6B] to-[#2251A3] px-6 py-6 sm:px-8">
+        <p className="font-syne font-extrabold text-white text-xl sm:text-2xl leading-tight mb-1">
+          Stay ahead in AI — without the noise.
+        </p>
+        <p className="font-dm text-white/75 text-sm leading-relaxed">
+          Get the most digestible AI insights, tools, and developments straight to your inbox. In plain English. Free.
+        </p>
+      </div>
+      <div className="bg-white px-6 py-5 sm:px-8">
+        {status === "success" ? (
+          <div className="flex items-center gap-2 text-green-700 font-dm text-sm font-medium py-2">
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+            {msg}
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              placeholder="First name (optional)"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              className="flex-1 min-w-0 px-4 py-2.5 border border-[#D2DCE8] rounded-xl text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3]"
+            />
+            <input
+              type="email"
+              placeholder="Your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="flex-[2] min-w-0 px-4 py-2.5 border border-[#D2DCE8] rounded-xl text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3]"
+            />
+            <button
+              type="submit"
+              disabled={status === "loading"}
+              className="flex-shrink-0 bg-[#F47C20] hover:bg-[#d96b18] text-white font-dm font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors disabled:opacity-60"
+            >
+              {status === "loading" ? "…" : "Subscribe →"}
+            </button>
+          </form>
+        )}
+        {status === "error" && (
+          <p className="text-red-500 text-xs font-dm mt-2">{msg}</p>
+        )}
+        <p className="text-[#7A8FA6] text-xs font-dm mt-2">No spam. Unsubscribe anytime.</p>
+      </div>
     </div>
   );
 }
