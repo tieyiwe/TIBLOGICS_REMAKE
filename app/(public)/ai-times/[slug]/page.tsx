@@ -136,7 +136,6 @@ export default async function BlogPostPage(
           rel="preload"
           as="image"
           href={heroCoverUrl}
-          // @ts-expect-error — fetchPriority is valid HTML but not yet in React types
           fetchPriority="high"
         />
       )}
