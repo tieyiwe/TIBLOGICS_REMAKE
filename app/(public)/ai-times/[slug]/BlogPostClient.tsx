@@ -22,7 +22,6 @@ interface BlogPost {
   sourceUrl?: string;
   sourceTitle?: string;
   viewCount: number;
-  tips: string[];
   createdAt: string;
 }
 
@@ -369,11 +368,6 @@ export default function BlogPostPage() {
               />
             )}
 
-            {/* Tip of the Day */}
-            {post.tips && post.tips.length > 0 && (
-              <TipOfTheDay tips={post.tips} />
-            )}
-
             {/* Tags */}
             {post.tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-8 pt-6 border-t border-[#F4F7FB]">
@@ -524,6 +518,53 @@ export default function BlogPostPage() {
           margin: 1.5rem 0;
         }
         .prose-blog img { max-width: 100%; height: auto; }
+        .prose-blog .tips-section {
+          background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 50%, #f8fafc 100%);
+          border-radius: 1rem;
+          overflow: hidden;
+          margin: 2rem 0;
+        }
+        .prose-blog .tips-header {
+          font-family: var(--font-syne), sans-serif;
+          font-size: 0.7rem;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: #0D1B2A;
+          padding: 0.875rem 1.25rem;
+          border-bottom: 1px solid rgba(148,163,184,0.4);
+        }
+        .prose-blog .tips-list {
+          list-style: none;
+          padding: 1rem 1.25rem;
+          margin: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+        .prose-blog .tips-list li {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.75rem;
+          color: #3A4A5C;
+          font-size: 0.875rem;
+          line-height: 1.6;
+          margin: 0;
+        }
+        .prose-blog .tip-num {
+          flex-shrink: 0;
+          width: 1.25rem;
+          height: 1.25rem;
+          border-radius: 50%;
+          background: #2251A3;
+          color: #fff;
+          font-size: 0.625rem;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-top: 0.125rem;
+        }
         @media (max-width: 640px) {
           .prose-blog div[style*="display:grid"],
           .prose-blog div[style*="display: grid"] {
@@ -541,30 +582,6 @@ export default function BlogPostPage() {
           .prose-blog p { font-size: 0.9375rem; }
         }
       `}</style>
-    </div>
-  );
-}
-
-function TipOfTheDay({ tips }: { tips: string[] }) {
-  return (
-    <div
-      className="rounded-2xl my-8 overflow-hidden"
-      style={{ background: "linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 50%, #f8fafc 100%)" }}
-    >
-      <div className="px-5 py-3.5 border-b border-slate-200/70 flex items-center gap-2">
-        <span className="text-base">💡</span>
-        <span className="font-syne font-bold text-xs text-[#0D1B2A] uppercase tracking-widest">Tip of the Day</span>
-      </div>
-      <ul className="px-5 py-4 space-y-3">
-        {tips.map((tip, i) => (
-          <li key={i} className="flex items-start gap-3">
-            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#2251A3] text-white text-[10px] font-bold flex items-center justify-center mt-0.5">
-              {i + 1}
-            </span>
-            <span className="font-dm text-sm text-[#3A4A5C] leading-relaxed">{tip}</span>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
