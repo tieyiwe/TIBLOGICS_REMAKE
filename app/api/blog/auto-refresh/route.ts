@@ -1,8 +1,11 @@
 export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
+import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
 import resend from "@/lib/resend";
+
+const anthropic = new Anthropic();
 
 const REFRESH_INTERVAL_MS = 48 * 60 * 60 * 1000; // 48 hours
 
@@ -281,13 +284,79 @@ Return ONLY a JSON array:
   }
 }
 
+async function translatePostContent(
+  slug: string,
+  post: { title: string; excerpt: string; content: string },
+  language: "fr" | "sw"
+): Promise<void> {
+  const cacheKey = `tx:${slug}:${language}`;
+  const existing = await prisma.adminSettings.findUnique({ where: { key: cacheKey } });
+  if (existing) return;
+  const langNames = { fr: "French", sw: "Swahili" };
+  const prompt = `Translate the following article into ${langNames[language]}.
+
+Rules:
+- For the "content" field (HTML): preserve ALL HTML tags, attributes, and inline styles exactly. Only translate the visible text inside tags.
+- For "title" and "excerpt": translate directly.
+- Return ONLY a valid JSON object with exactly these three keys: title, excerpt, content.
+- No markdown fences, no explanation, just raw JSON.
+
+---
+TITLE:
+${post.title}
+
+EXCERPT:
+${post.excerpt}
+
+CONTENT (HTML – preserve all tags and attributes):
+${post.content.slice(0, 6000)}`;
+  const response = await anthropic.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 8192,
+    messages: [{ role: "user", content: prompt }],
+  });
+  const raw = response.content[0].type === "text" ? response.content[0].text.trim() : "";
+  const jsonStr = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "");
+  const translated = JSON.parse(jsonStr);
+  await prisma.adminSettings.upsert({
+    where: { key: cacheKey },
+    create: { key: cacheKey, value: JSON.stringify(translated) },
+    update: { value: JSON.stringify(translated) },
+  });
+}
+
+async function patchMissingTranslations(): Promise<number> {
+  let patched = 0;
+  try {
+    const articles = await prisma.blogPost.findMany({
+      select: { slug: true, title: true, excerpt: true, content: true },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+    for (const article of articles) {
+      if (patched >= 4) break;
+      let needsAny = false;
+      for (const lang of ["fr", "sw"] as const) {
+        const exists = await prisma.adminSettings.findUnique({ where: { key: `tx:${article.slug}:${lang}` } });
+        if (!exists) { needsAny = true; break; }
+      }
+      if (!needsAny) continue;
+      for (const lang of ["fr", "sw"] as const) {
+        try { await translatePostContent(article.slug, article, lang); } catch { /* skip */ }
+      }
+      patched++;
+    }
+  } catch { /* ignore */ }
+  return patched;
+}
+
 async function patchMissingTips(): Promise<number> {
   let patched = 0;
   try {
     const posts = await prisma.blogPost.findMany({
       where: { content: { not: { contains: "tips-section" } } },
       select: { id: true, title: true, content: true },
-      take: 8,
+      take: 20,
     });
     for (const post of posts) {
       const tipsHtml = await generateTips(post.title, post.content);
@@ -1382,8 +1451,11 @@ export async function GET(req: NextRequest) {
   // Reassign cover images on any articles that share an image
   const imagesPatched = await patchDuplicateCoverImages(usedImages);
 
-  // Backfill tips for articles that don't have them yet (up to 8 per run)
+  // Backfill tips for articles that don't have them yet (up to 20 per run)
   const tipsPatched = await patchMissingTips();
+
+  // Pre-translate articles missing fr/sw cache (up to 4 per run)
+  const translationsPatched = await patchMissingTranslations();
 
   // Always purge auto-generated stub posts (content under 300 chars — generation failures)
   try {
@@ -1534,6 +1606,11 @@ export async function GET(req: NextRequest) {
         },
       });
       postsAdded++;
+      // Pre-translate into fr and sw immediately so users never wait
+      const newPost = { title: item.title, excerpt: generated.excerpt, content: generated.content + tipsHtml };
+      for (const lang of ["fr", "sw"] as const) {
+        try { await translatePostContent(slug, newPost, lang); } catch { /* non-blocking */ }
+      }
     } catch (e) {
       errors.push(String(e));
     }
@@ -1558,5 +1635,5 @@ export async function GET(req: NextRequest) {
     });
   } catch { /* ignore */ }
 
-  return NextResponse.json({ message: `Added ${postsAdded} new posts`, postsAdded, imagesPatched, tipsPatched });
+  return NextResponse.json({ message: `Added ${postsAdded} new posts`, postsAdded, imagesPatched, tipsPatched, translationsPatched });
 }
