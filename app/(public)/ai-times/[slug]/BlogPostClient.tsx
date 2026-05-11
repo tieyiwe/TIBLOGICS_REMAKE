@@ -22,6 +22,7 @@ interface BlogPost {
   sourceUrl?: string;
   sourceTitle?: string;
   viewCount: number;
+  tips: string[];
   createdAt: string;
 }
 
@@ -368,6 +369,11 @@ export default function BlogPostPage() {
               />
             )}
 
+            {/* Tip of the Day */}
+            {post.tips && post.tips.length > 0 && (
+              <TipOfTheDay tips={post.tips} />
+            )}
+
             {/* Tags */}
             {post.tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-8 pt-6 border-t border-[#F4F7FB]">
@@ -535,6 +541,30 @@ export default function BlogPostPage() {
           .prose-blog p { font-size: 0.9375rem; }
         }
       `}</style>
+    </div>
+  );
+}
+
+function TipOfTheDay({ tips }: { tips: string[] }) {
+  return (
+    <div
+      className="rounded-2xl my-8 overflow-hidden"
+      style={{ background: "linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 50%, #f8fafc 100%)" }}
+    >
+      <div className="px-5 py-3.5 border-b border-slate-200/70 flex items-center gap-2">
+        <span className="text-base">💡</span>
+        <span className="font-syne font-bold text-xs text-[#0D1B2A] uppercase tracking-widest">Tip of the Day</span>
+      </div>
+      <ul className="px-5 py-4 space-y-3">
+        {tips.map((tip, i) => (
+          <li key={i} className="flex items-start gap-3">
+            <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#2251A3] text-white text-[10px] font-bold flex items-center justify-center mt-0.5">
+              {i + 1}
+            </span>
+            <span className="font-dm text-sm text-[#3A4A5C] leading-relaxed">{tip}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
