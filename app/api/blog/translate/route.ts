@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import anthropic from "@/lib/claude";
+import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
 
-export const maxDuration = 120;
+export const maxDuration = 60;
+
+const haiku = new Anthropic().messages;
 
 const LANG_NAMES: Record<string, string> = {
   fr: "French",
@@ -16,6 +18,15 @@ export async function POST(req: NextRequest) {
     if (!slug || !LANG_NAMES[language]) {
       return NextResponse.json({ error: "slug and language (fr|sw) required" }, { status: 400 });
     }
+
+    // Check DB cache first — instant if already translated
+    const cacheKey = `tx:${slug}:${language}`;
+    try {
+      const cached = await prisma.adminSettings.findUnique({ where: { key: cacheKey } });
+      if (cached?.value) {
+        return NextResponse.json(JSON.parse(cached.value));
+      }
+    } catch { /* cache miss — proceed */ }
 
     const post = await prisma.blogPost.findUnique({
       where: { slug },
@@ -44,8 +55,8 @@ ${post.excerpt}
 CONTENT (HTML – preserve all tags and attributes):
 ${post.content}`;
 
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
+    const response = await haiku.create({
+      model: "claude-haiku-4-5-20251001",
       max_tokens: 8192,
       messages: [{ role: "user", content: prompt }],
     });
@@ -54,6 +65,16 @@ ${post.content}`;
     const jsonStr = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "");
 
     const translated = JSON.parse(jsonStr);
+
+    // Save to DB cache so future requests for this slug+language are instant
+    try {
+      await prisma.adminSettings.upsert({
+        where: { key: cacheKey },
+        create: { key: cacheKey, value: JSON.stringify(translated) },
+        update: { value: JSON.stringify(translated) },
+      });
+    } catch { /* non-blocking */ }
+
     return NextResponse.json(translated);
   } catch (err) {
     console.error("[POST /api/blog/translate]", err);

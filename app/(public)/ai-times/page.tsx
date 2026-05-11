@@ -72,6 +72,7 @@ export default function BlogPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [featuredImgFailed, setFeaturedImgFailed] = useState(false);
+  const [showOlder, setShowOlder] = useState(false);
 
   useEffect(() => {
     trackPageVisit("/ai-times");
@@ -136,14 +137,16 @@ export default function BlogPage() {
   }, [fetchPosts]);
 
   const showFeatured = category === "all" && !search;
-  // Only pin a "featured" article to the hero if it was published within the last 14 days;
-  // otherwise fall back to the newest article so fresh content always leads.
   const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
+  const fourDaysAgo = Date.now() - 4 * 24 * 60 * 60 * 1000;
   const recentFeatured = posts.find(
     (p) => p.featured && new Date(p.createdAt).getTime() > fourteenDaysAgo
   );
   const featured = showFeatured ? (recentFeatured ?? posts[0]) : null;
   const grid = featured ? posts.filter((p) => p.id !== featured.id) : posts;
+  const recentGrid = grid.filter((p) => new Date(p.createdAt).getTime() >= fourDaysAgo);
+  const olderGrid = grid.filter((p) => new Date(p.createdAt).getTime() < fourDaysAgo);
+  const visibleGrid = showOlder ? grid : (recentGrid.length > 0 ? recentGrid : grid);
 
   return (
     <div className="pt-32 sm:pt-44 pb-36 sm:pb-20 min-h-screen bg-[#F4F7FB]">
@@ -292,10 +295,27 @@ export default function BlogPage() {
 
             {/* Post grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {grid.map((post) => (
+              {visibleGrid.map((post) => (
                 <PostCard key={post.id} post={post} />
               ))}
             </div>
+
+            {/* Load more older articles */}
+            {!showOlder && olderGrid.length > 0 && recentGrid.length > 0 && (
+              <div className="mt-10 text-center">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="flex-1 h-px bg-[#D2DCE8]" />
+                  <span className="font-dm text-sm text-[#7A8FA6]">{olderGrid.length} more article{olderGrid.length !== 1 ? "s" : ""}</span>
+                  <div className="flex-1 h-px bg-[#D2DCE8]" />
+                </div>
+                <button
+                  onClick={() => setShowOlder(true)}
+                  className="inline-flex items-center gap-2 bg-white border border-[#D2DCE8] hover:border-[#2251A3] hover:text-[#2251A3] text-[#3A4A5C] font-dm font-medium text-sm px-8 py-3 rounded-2xl shadow-sm transition-all duration-200"
+                >
+                  Load More Articles ↓
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>
