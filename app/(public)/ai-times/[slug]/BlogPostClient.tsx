@@ -285,6 +285,8 @@ export default function BlogPostPage() {
                 className="w-full h-full object-cover object-top"
                 loading="eager"
                 fetchPriority="high"
+                decoding="sync"
+                sizes="(max-width:768px) 100vw, 768px"
                 onError={() => heroImgFailed ? setHeroCoverFailed(true) : setHeroImgFailed(true)}
               />
             </div>

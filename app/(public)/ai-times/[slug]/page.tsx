@@ -94,6 +94,7 @@ export default async function BlogPostPage(
   const SITE_URL_LOCAL = (process.env.NEXTAUTH_URL || "https://tiblogics.com").replace(/\/$/, "");
 
   let jsonLd: object | null = null;
+  let heroCoverUrl: string | null = null;
   try {
     const { prisma } = await import("@/lib/prisma");
     const post = await prisma.blogPost.findUnique({
@@ -101,6 +102,7 @@ export default async function BlogPostPage(
       select: { title: true, excerpt: true, coverImage: true, author: true, createdAt: true, updatedAt: true, tags: true },
     });
     if (post) {
+      heroCoverUrl = post.coverImage ?? null;
       const ogImage = toOgImage(post.coverImage);
       jsonLd = {
         "@context": "https://schema.org",
@@ -127,6 +129,17 @@ export default async function BlogPostPage(
 
   return (
     <>
+      {/* Preload the hero cover image so the browser fetches it before JS executes,
+          directly improving LCP on mobile. Next.js hoists <link> tags to <head>. */}
+      {heroCoverUrl && (
+        <link
+          rel="preload"
+          as="image"
+          href={heroCoverUrl}
+          // @ts-expect-error — fetchPriority is valid HTML but not yet in React types
+          fetchPriority="high"
+        />
+      )}
       {jsonLd && (
         <script
           type="application/ld+json"
