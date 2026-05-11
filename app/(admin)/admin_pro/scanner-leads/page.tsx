@@ -7,7 +7,7 @@ const leads = [
   { id: "2", url: "dentalsmile.com", date: "Apr 15, 2026", overallScore: 61, aiScore: 18, seoScore: 72, perfScore: 55, uxScore: 56, email: null, bookedCall: false },
   { id: "3", url: "techstartupdc.io", date: "Apr 14, 2026", overallScore: 74, aiScore: 45, seoScore: 80, perfScore: 70, uxScore: 72, email: "founder@techstartup.io", bookedCall: false },
   { id: "4", url: "localrestaurant.com", date: "Apr 13, 2026", overallScore: 39, aiScore: 12, seoScore: 38, perfScore: 42, uxScore: 37, email: null, bookedCall: false },
-  { id: "5", url: "tiblogics.com", date: "Apr 12, 2026", overallScore: 48, aiScore: 22, seoScore: 42, perfScore: 55, uxScore: 48, email: null, bookedCall: false },
+  { id: "5", url: "tiblogics.com", date: "Apr 12, 2026", overallScore: 91, aiScore: 95, seoScore: 91, perfScore: 82, uxScore: 88, email: null, bookedCall: false },
 ];
 
 function scoreColor(score: number): string {
