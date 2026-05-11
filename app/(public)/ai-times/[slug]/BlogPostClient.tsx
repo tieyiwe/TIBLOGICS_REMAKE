@@ -142,9 +142,9 @@ export default function BlogPostPage() {
         }
       } catch { /* silent */ }
     };
-    // 300ms so the article renders first but fetch starts as soon as possible
-    const t = setTimeout(() => { prefetch("fr"); prefetch("sw"); }, 300);
-    return () => clearTimeout(t);
+    // Start immediately — Haiku + DB cache means first translation is fast, subsequent ones instant
+    prefetch("fr");
+    prefetch("sw");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [post?.id]);
 
@@ -344,7 +344,23 @@ export default function BlogPostPage() {
             <div className="flex items-center gap-2 mb-5 flex-wrap">
               <span className="text-xs text-[#7A8FA6] font-medium">Translate:</span>
               {([["en","🇬🇧 English"],["fr","🇫🇷 Français"],["sw","🇰🇪 Swahili"]] as const).map(([lang, label]) => (
-                <button key={lang} onClick={() => handleTranslate(lang)} disabled={translating}
+                <button key={lang}
+                  onClick={() => handleTranslate(lang)}
+                  onMouseEnter={() => {
+                    if (lang !== "en" && !translations[lang] && post) {
+                      fetch("/api/blog/translate", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ slug, language: lang }),
+                      }).then(r => r.ok ? r.json() : null).then(data => {
+                        if (data) {
+                          setTranslations(prev => ({ ...prev, [lang]: data }));
+                          try { localStorage.setItem(`tx:${slug}:${lang}`, JSON.stringify({ data, ts: Date.now() })); } catch { /* quota */ }
+                        }
+                      }).catch(() => {/* silent */});
+                    }
+                  }}
+                  disabled={translating}
                   className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-all ${
                     language === lang ? "bg-[#2251A3] text-white border-[#2251A3]" : "bg-white text-[#3A4A5C] border-[#D2DCE8] hover:border-[#2251A3] hover:text-[#2251A3]"
                   } ${translating && lang !== language ? "opacity-50 cursor-not-allowed" : ""}`}>
