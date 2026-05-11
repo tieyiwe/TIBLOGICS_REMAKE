@@ -1001,7 +1001,7 @@ For a logistics company: an agent tracks shipments, updates clients, escalates d
 ];
 
 // Tieyiwe Bass personal article — Unsplash fallback used when local PNG not committed
-const TIEYIWE_BASS_FALLBACK_IMAGE = "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80";
+const TIEYIWE_BASS_FALLBACK_IMAGE = "https://tiblogics.com/tieyiwe-bass-cover.png";
 
 // Patch the Tieyiwe Bass article cover if it's still pointing at the local PNG
 // Reassign unique cover images to any AI-generated articles that share an image
