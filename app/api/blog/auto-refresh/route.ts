@@ -249,6 +249,49 @@ Return a JSON object:
   }
 }
 
+async function generateTips(title: string, content: string): Promise<string[]> {
+  const plain = content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").slice(0, 800);
+  const prompt = `Based on this article titled "${title}", write exactly 2-3 short, practical tips related to the topic. Each tip must be a single sentence (max 160 chars), actionable, and specific.
+
+Article summary: ${plain}
+
+Return ONLY a JSON array:
+["Tip one.", "Tip two.", "Tip three."]`;
+  try {
+    const raw = await streamChat(
+      [{ role: "user", content: prompt }],
+      "You are a practical AI advisor. Generate concise, actionable tips.",
+      300
+    );
+    const match = raw.match(/\[[\s\S]*?\]/);
+    if (!match) throw new Error("no array");
+    const tips: unknown[] = JSON.parse(match[0]);
+    if (!Array.isArray(tips) || tips.length < 2) throw new Error("too short");
+    return tips.slice(0, 3).map((t) => String(t).slice(0, 180));
+  } catch {
+    return [];
+  }
+}
+
+async function patchMissingTips(): Promise<number> {
+  let patched = 0;
+  try {
+    const posts = await prisma.blogPost.findMany({
+      where: { tips: { isEmpty: true } },
+      select: { id: true, title: true, content: true },
+      take: 8,
+    });
+    for (const post of posts) {
+      const tips = await generateTips(post.title, post.content);
+      if (tips.length > 0) {
+        await prisma.blogPost.update({ where: { id: post.id }, data: { tips } });
+        patched++;
+      }
+    }
+  } catch { /* ignore */ }
+  return patched;
+}
+
 const SEED_POSTS = [
   {
     title: "5 Ways AI Is Helping Small Businesses Cut Costs Without Cutting Corners",
@@ -947,7 +990,7 @@ For a logistics company: an agent tracks shipments, updates clients, escalates d
 ];
 
 // Tieyiwe Bass personal article — Unsplash fallback used when local PNG not committed
-const TIEYIWE_BASS_FALLBACK_IMAGE = "https://tiblogics.com/tieyiwe-bass-cover.png";
+const TIEYIWE_BASS_FALLBACK_IMAGE = "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80";
 
 // Patch the Tieyiwe Bass article cover if it's still pointing at the local PNG
 // Reassign unique cover images to any AI-generated articles that share an image
@@ -1181,11 +1224,22 @@ export async function GET(req: NextRequest) {
     usedImages = new Set();
   }
 
+  // Rename legacy "Echelon AI" author to "Echelon AI by TIBLOGICS" on existing articles
+  try {
+    await prisma.blogPost.updateMany({
+      where: { author: "Echelon AI" },
+      data: { author: "Echelon AI by TIBLOGICS" },
+    });
+  } catch { /* ignore */ }
+
   // Fix Tieyiwe Bass article cover if pointing at local file
   await patchTieyiweCover();
 
   // Reassign cover images on any articles that share an image
   const imagesPatched = await patchDuplicateCoverImages(usedImages);
+
+  // Backfill tips for articles that don't have them yet (up to 8 per run)
+  const tipsPatched = await patchMissingTips();
 
   // Always purge auto-generated stub posts (content under 300 chars — generation failures)
   try {
@@ -1300,6 +1354,7 @@ export async function GET(req: NextRequest) {
       const generated = await generatePost(item.title, item.url, item.source);
       if (!generated) continue;
       const meta = CATEGORY_META[generated.category] ?? CATEGORY_META["industry"];
+      const tips = await generateTips(item.title, generated.content);
 
       const baseSlug = item.title
         .toLowerCase()
@@ -1325,13 +1380,14 @@ export async function GET(req: NextRequest) {
           coverEmoji: meta.emoji,
           coverGradient: meta.gradient,
           coverImage: pickFreshImage(generated.category, usedImages),
-          author: "Echelon AI",
+          author: "Echelon AI by TIBLOGICS",
           readingTime: Math.ceil(generated.content.replace(/<[^>]*>/g, "").split(" ").length / 200),
           featured: false,
           published: true,
           aiGenerated: true,
           sourceUrl: item.url,
           sourceTitle: item.source,
+          tips,
         },
       });
       postsAdded++;
@@ -1359,5 +1415,5 @@ export async function GET(req: NextRequest) {
     });
   } catch { /* ignore */ }
 
-  return NextResponse.json({ message: `Added ${postsAdded} new posts`, postsAdded, imagesPatched });
+  return NextResponse.json({ message: `Added ${postsAdded} new posts`, postsAdded, imagesPatched, tipsPatched });
 }
