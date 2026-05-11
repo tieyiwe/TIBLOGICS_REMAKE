@@ -967,8 +967,8 @@ async function patchDuplicateCoverImages(usedImages: Set<string>): Promise<numbe
 
       if (!seenImages.has(post.coverImage)) {
         seenImages.add(post.coverImage);
-      } else {
-        // Duplicate — reassign regardless of aiGenerated so ALL duplicates get fixed
+      } else if (post.aiGenerated) {
+        // Only reassign AI-generated duplicates — never touch manually-curated covers
         const newImage = pickFreshImage(post.category, usedImages);
         await prisma.blogPost.update({
           where: { id: post.id },
@@ -987,7 +987,8 @@ async function patchTieyiweCover() {
       where: { title: { contains: "Nobody Talks About the People Cleaning", mode: "insensitive" } },
       select: { id: true, coverImage: true },
     });
-    if (post && (!post.coverImage || post.coverImage.startsWith("/"))) {
+    // Always enforce the correct cover — not just when it starts with "/"
+    if (post && post.coverImage !== TIEYIWE_BASS_FALLBACK_IMAGE) {
       await prisma.blogPost.update({
         where: { id: post.id },
         data: { coverImage: TIEYIWE_BASS_FALLBACK_IMAGE },
