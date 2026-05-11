@@ -107,7 +107,25 @@ export default function BlogPostPage() {
   const [translating, setTranslating] = useState(false);
   const [translations, setTranslations] = useState<Record<string, { title: string; excerpt: string; content: string }>>({});
 
-  // Pre-fetch both translations silently after the article loads
+  // Load translations from localStorage cache on mount (instant for returning visitors)
+  useEffect(() => {
+    if (!slug) return;
+    const cached: Record<string, { title: string; excerpt: string; content: string }> = {};
+    const ttl = 24 * 60 * 60 * 1000; // 24h
+    for (const lang of ["fr", "sw"] as const) {
+      try {
+        const raw = localStorage.getItem(`tx:${slug}:${lang}`);
+        if (raw) {
+          const { data, ts } = JSON.parse(raw);
+          if (Date.now() - ts < ttl) cached[lang] = data;
+          else localStorage.removeItem(`tx:${slug}:${lang}`);
+        }
+      } catch { /* ignore */ }
+    }
+    if (Object.keys(cached).length > 0) setTranslations(cached);
+  }, [slug]);
+
+  // Background pre-fetch: starts quickly, saves result to localStorage for next visit
   useEffect(() => {
     if (!post || !slug) return;
     const prefetch = async (lang: "fr" | "sw") => {
@@ -120,11 +138,12 @@ export default function BlogPostPage() {
         if (res.ok) {
           const data = await res.json();
           setTranslations(prev => ({ ...prev, [lang]: data }));
+          try { localStorage.setItem(`tx:${slug}:${lang}`, JSON.stringify({ data, ts: Date.now() })); } catch { /* quota */ }
         }
       } catch { /* silent */ }
     };
-    // Small delay so it doesn't compete with the initial page render
-    const t = setTimeout(() => { prefetch("fr"); prefetch("sw"); }, 1500);
+    // 300ms so the article renders first but fetch starts as soon as possible
+    const t = setTimeout(() => { prefetch("fr"); prefetch("sw"); }, 300);
     return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [post?.id]);
@@ -136,7 +155,6 @@ export default function BlogPostPage() {
 
   function handleTranslate(lang: "en" | "fr" | "sw") {
     setLanguage(lang);
-    // Show spinner only if background fetch hasn't finished yet
     if (lang !== "en" && !translations[lang]) setTranslating(true);
     else setTranslating(false);
   }
