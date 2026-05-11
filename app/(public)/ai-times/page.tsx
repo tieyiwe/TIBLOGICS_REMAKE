@@ -83,7 +83,7 @@ export default function BlogPage() {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 10000);
     try {
-      const params = new URLSearchParams({ limit: "24" });
+      const params = new URLSearchParams({ limit: "100" });
       if (category !== "all") params.set("category", category);
       if (search) params.set("search", search);
       const res = await fetch(`/api/blog/posts?${params}`, { signal: controller.signal });
