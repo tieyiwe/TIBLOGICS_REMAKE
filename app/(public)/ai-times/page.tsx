@@ -138,15 +138,14 @@ export default function BlogPage() {
 
   const showFeatured = category === "all" && !search;
   const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
-  const fourDaysAgo = Date.now() - 4 * 24 * 60 * 60 * 1000;
   const recentFeatured = posts.find(
     (p) => p.featured && new Date(p.createdAt).getTime() > fourteenDaysAgo
   );
   const featured = showFeatured ? (recentFeatured ?? posts[0]) : null;
   const grid = featured ? posts.filter((p) => p.id !== featured.id) : posts;
-  const recentGrid = grid.filter((p) => new Date(p.createdAt).getTime() >= fourDaysAgo);
-  const olderGrid = grid.filter((p) => new Date(p.createdAt).getTime() < fourDaysAgo);
-  const visibleGrid = showOlder ? grid : (recentGrid.length > 0 ? recentGrid : grid);
+  const INITIAL_COUNT = 9;
+  const visibleGrid = showOlder ? grid : grid.slice(0, INITIAL_COUNT);
+  const hiddenCount = Math.max(0, grid.length - INITIAL_COUNT);
 
   return (
     <div className="pt-32 sm:pt-44 pb-36 sm:pb-20 min-h-screen bg-[#F4F7FB]">
@@ -301,11 +300,11 @@ export default function BlogPage() {
             </div>
 
             {/* Load more older articles */}
-            {!showOlder && olderGrid.length > 0 && recentGrid.length > 0 && (
+            {!showOlder && hiddenCount > 0 && (
               <div className="mt-10 text-center">
                 <div className="flex items-center gap-4 mb-6">
                   <div className="flex-1 h-px bg-[#D2DCE8]" />
-                  <span className="font-dm text-sm text-[#7A8FA6]">{olderGrid.length} more article{olderGrid.length !== 1 ? "s" : ""}</span>
+                  <span className="font-dm text-sm text-[#7A8FA6]">{hiddenCount} more article{hiddenCount !== 1 ? "s" : ""}</span>
                   <div className="flex-1 h-px bg-[#D2DCE8]" />
                 </div>
                 <button
