@@ -1437,11 +1437,11 @@ export async function GET(req: NextRequest) {
     usedImages = new Set();
   }
 
-  // Rename legacy "Echelon AI" author to "Echelon AI by TIBLOGICS" on existing articles
+  // Rename legacy "Echelon AI" author to "Echelon by TIBLOGICS" on existing articles
   try {
     await prisma.blogPost.updateMany({
-      where: { author: "Echelon AI" },
-      data: { author: "Echelon AI by TIBLOGICS" },
+      where: { author: { in: ["Echelon AI", "Echelon AI by TIBLOGICS"] } },
+      data: { author: "Echelon by TIBLOGICS" },
     });
   } catch { /* ignore */ }
 
@@ -1596,7 +1596,7 @@ export async function GET(req: NextRequest) {
           coverEmoji: meta.emoji,
           coverGradient: meta.gradient,
           coverImage: pickFreshImage(generated.category, usedImages),
-          author: "Echelon AI by TIBLOGICS",
+          author: "Echelon by TIBLOGICS",
           readingTime: Math.ceil(generated.content.replace(/<[^>]*>/g, "").split(" ").length / 200),
           featured: false,
           published: true,
