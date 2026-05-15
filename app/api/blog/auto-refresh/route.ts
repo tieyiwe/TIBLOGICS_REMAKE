@@ -1321,6 +1321,31 @@ async function patchTieyiweCover() {
   } catch { /* ignore */ }
 }
 
+// Enforce correct covers for specific AI-generated articles where auto-pick produced a bad image
+const ARTICLE_COVER_OVERRIDES: Array<{ titleFragment: string; coverImage: string }> = [
+  {
+    titleFragment: "Codex",
+    coverImage: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=800&q=80",
+  },
+];
+
+async function patchArticleCoverOverrides() {
+  for (const override of ARTICLE_COVER_OVERRIDES) {
+    try {
+      const post = await prisma.blogPost.findFirst({
+        where: { title: { contains: override.titleFragment, mode: "insensitive" } },
+        select: { id: true, coverImage: true },
+      });
+      if (post && post.coverImage !== override.coverImage) {
+        await prisma.blogPost.update({
+          where: { id: post.id },
+          data: { coverImage: override.coverImage },
+        });
+      }
+    } catch { /* ignore */ }
+  }
+}
+
 // Editorial spotlights — always checked and inserted if missing (even when DB has posts)
 const EDITORIAL_SPOTLIGHTS = [
   {
@@ -1515,6 +1540,9 @@ export async function GET(req: NextRequest) {
 
   // Fix Tieyiwe Bass article cover if pointing at local file
   await patchTieyiweCover();
+
+  // Enforce cover overrides for specific articles with bad auto-picked images
+  await patchArticleCoverOverrides();
 
   // Reassign cover images on any articles that share an image
   const imagesPatched = await patchDuplicateCoverImages(usedImages);
