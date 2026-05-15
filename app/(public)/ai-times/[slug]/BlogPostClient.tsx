@@ -113,6 +113,9 @@ export default function BlogPostPage({
   const [translating, setTranslating] = useState(false);
   const [translations, setTranslations] = useState<Record<string, { title: string; excerpt: string; content: string }>>(preloadedTranslations);
 
+  // Scroll to top on every article open — client-side navigation retains previous scroll position
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   // Load translations from localStorage cache on mount (instant for returning visitors)
   useEffect(() => {
     if (!slug) return;
