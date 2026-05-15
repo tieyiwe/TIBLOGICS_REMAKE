@@ -1514,6 +1514,10 @@ export async function GET(req: NextRequest) {
     });
   }
 
+  // Always run cover patches — independent of refresh schedule
+  await patchTieyiweCover();
+  await patchArticleCoverOverrides();
+
   if (!needsRefresh) {
     return NextResponse.json({ message: "Content is up to date", postsAdded: 0 });
   }
@@ -1537,12 +1541,6 @@ export async function GET(req: NextRequest) {
       data: { author: "Echelon by TIBLOGICS" },
     });
   } catch { /* ignore */ }
-
-  // Fix Tieyiwe Bass article cover if pointing at local file
-  await patchTieyiweCover();
-
-  // Enforce cover overrides for specific articles with bad auto-picked images
-  await patchArticleCoverOverrides();
 
   // Reassign cover images on any articles that share an image
   const imagesPatched = await patchDuplicateCoverImages(usedImages);
