@@ -114,7 +114,12 @@ export default function BlogPostPage({
   const [translations, setTranslations] = useState<Record<string, { title: string; excerpt: string; content: string }>>(preloadedTranslations);
 
   // Scroll to top on every article open — client-side navigation retains previous scroll position
-  useEffect(() => { window.scrollTo(0, 0); }, []);
+  useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: "instant" }); }, []);
+
+  // Also scroll to top once the post data arrives (content expansion can shift position)
+  useEffect(() => {
+    if (post) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [post?.id]);
 
   // Load translations from localStorage cache on mount (instant for returning visitors)
   useEffect(() => {
