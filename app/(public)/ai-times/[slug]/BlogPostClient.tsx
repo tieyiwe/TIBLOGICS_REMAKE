@@ -92,7 +92,13 @@ function RelatedCard({ post: r }: { post: RelatedPost }) {
   );
 }
 
-export default function BlogPostPage() {
+type Translation = { title: string; excerpt: string; content: string };
+
+export default function BlogPostPage({
+  preloadedTranslations = {},
+}: {
+  preloadedTranslations?: Record<string, Translation>;
+}) {
   const params = useParams();
   const slug = params?.slug as string;
   const [post, setPost] = useState<BlogPost | null>(null);
@@ -105,7 +111,7 @@ export default function BlogPostPage() {
   const [heroCoverFailed, setHeroCoverFailed] = useState(false);
   const [language, setLanguage] = useState<"en" | "fr" | "sw">("en");
   const [translating, setTranslating] = useState(false);
-  const [translations, setTranslations] = useState<Record<string, { title: string; excerpt: string; content: string }>>({});
+  const [translations, setTranslations] = useState<Record<string, { title: string; excerpt: string; content: string }>>(preloadedTranslations);
 
   // Load translations from localStorage cache on mount (instant for returning visitors)
   useEffect(() => {
@@ -122,13 +128,14 @@ export default function BlogPostPage() {
         }
       } catch { /* ignore */ }
     }
-    if (Object.keys(cached).length > 0) setTranslations(cached);
+    if (Object.keys(cached).length > 0) setTranslations(prev => ({ ...prev, ...cached }));
   }, [slug]);
 
   // Background pre-fetch: starts quickly, saves result to localStorage for next visit
   useEffect(() => {
     if (!post || !slug) return;
     const prefetch = async (lang: "fr" | "sw") => {
+      if (preloadedTranslations[lang]) return; // already loaded server-side, no round-trip needed
       try {
         const res = await fetch("/api/blog/translate", {
           method: "POST",
@@ -142,7 +149,6 @@ export default function BlogPostPage() {
         }
       } catch { /* silent */ }
     };
-    // Start immediately — Haiku + DB cache means first translation is fast, subsequent ones instant
     prefetch("fr");
     prefetch("sw");
   // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -50,6 +50,23 @@ ${post.content.slice(0, 6000)}`;
   return true;
 }
 
+// Run at most `concurrency` promises at once
+async function runWithConcurrency<T>(
+  tasks: (() => Promise<T>)[],
+  concurrency: number
+): Promise<T[]> {
+  const results: T[] = [];
+  let index = 0;
+  async function worker() {
+    while (index < tasks.length) {
+      const i = index++;
+      results[i] = await tasks[i]();
+    }
+  }
+  await Promise.all(Array.from({ length: concurrency }, worker));
+  return results;
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const secret = searchParams.get("secret");
@@ -57,17 +74,23 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Optional: limit articles per call to avoid timeout on very large DBs
+  const limitParam = searchParams.get("limit");
+  const limit = limitParam ? parseInt(limitParam, 10) : 50;
+
   const articles = await prisma.blogPost.findMany({
     select: { slug: true, title: true, excerpt: true, content: true },
     orderBy: { createdAt: "desc" },
+    take: limit,
   });
 
   let translated = 0;
   let skipped = 0;
   const errors: string[] = [];
 
-  for (const article of articles) {
-    for (const lang of ["fr", "sw"] as const) {
+  // Build all tasks (article × language pairs)
+  const tasks = articles.flatMap((article) =>
+    (["fr", "sw"] as const).map((lang) => async () => {
       try {
         const done = await translateOne(article.slug, article, lang);
         if (done) translated++;
@@ -75,8 +98,11 @@ export async function GET(req: NextRequest) {
       } catch (e) {
         errors.push(`${article.slug}:${lang} — ${String(e).slice(0, 100)}`);
       }
-    }
-  }
+    })
+  );
 
-  return NextResponse.json({ translated, skipped, errors: errors.slice(0, 10) });
+  // Run 6 translations concurrently — fast enough to finish within 300s, safe for rate limits
+  await runWithConcurrency(tasks, 6);
+
+  return NextResponse.json({ translated, skipped, total: articles.length * 2, errors: errors.slice(0, 10) });
 }

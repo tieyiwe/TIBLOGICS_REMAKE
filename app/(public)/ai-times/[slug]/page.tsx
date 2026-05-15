@@ -95,12 +95,19 @@ export default async function BlogPostPage(
 
   let jsonLd: object | null = null;
   let heroCoverUrl: string | null = null;
+  let preloadedTranslations: Record<string, { title: string; excerpt: string; content: string }> = {};
   try {
     const { prisma } = await import("@/lib/prisma");
-    const post = await prisma.blogPost.findUnique({
-      where: { slug },
-      select: { title: true, excerpt: true, coverImage: true, author: true, createdAt: true, updatedAt: true, tags: true },
-    });
+    const [post, frCache, swCache] = await Promise.all([
+      prisma.blogPost.findUnique({
+        where: { slug },
+        select: { title: true, excerpt: true, coverImage: true, author: true, createdAt: true, updatedAt: true, tags: true },
+      }),
+      prisma.adminSettings.findUnique({ where: { key: `tx:${slug}:fr` } }),
+      prisma.adminSettings.findUnique({ where: { key: `tx:${slug}:sw` } }),
+    ]);
+    if (frCache?.value) preloadedTranslations.fr = JSON.parse(frCache.value);
+    if (swCache?.value) preloadedTranslations.sw = JSON.parse(swCache.value);
     if (post) {
       heroCoverUrl = post.coverImage ?? null;
       const ogImage = toOgImage(post.coverImage);
@@ -145,7 +152,7 @@ export default async function BlogPostPage(
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       )}
-      <BlogPostClient />
+      <BlogPostClient preloadedTranslations={preloadedTranslations} />
     </>
   );
 }
