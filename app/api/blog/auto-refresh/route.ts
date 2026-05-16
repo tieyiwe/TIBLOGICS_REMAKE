@@ -1414,46 +1414,52 @@ async function patchArticleCoverOverrides() {
   }
 }
 
-// Rotate the 2 featured articles every 7 days so every article eventually gets a spotlight
+// Slot 1: always the newest article. Slot 2: rotates weekly through the rest.
 async function patchFeaturedRotation(): Promise<void> {
   try {
     const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-    const [lastRotationSetting, indexSetting] = await Promise.all([
-      prisma.adminSettings.findUnique({ where: { key: "featured:last_rotation" } }),
-      prisma.adminSettings.findUnique({ where: { key: "featured:current_index" } }),
-    ]);
-
-    const lastRotation = lastRotationSetting ? parseInt(lastRotationSetting.value) : 0;
-    if (Date.now() - lastRotation < WEEK_MS) return; // Not time yet
 
     const articles = await prisma.blogPost.findMany({
       where: { published: true },
       select: { id: true },
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: "desc" }, // newest first
     });
     if (articles.length < 2) return;
 
-    const currentIndex = indexSetting ? parseInt(indexSetting.value) : 0;
-    const nextIndex = (currentIndex + 2) % articles.length;
-    const id1 = articles[nextIndex % articles.length].id;
-    const id2 = articles[(nextIndex + 1) % articles.length].id;
+    const newestId = articles[0].id;
+    const rest = articles.slice(1); // all except newest
+
+    // Slot 2 rotates weekly
+    const [lastRotationSetting, indexSetting] = await Promise.all([
+      prisma.adminSettings.findUnique({ where: { key: "featured:last_rotation" } }),
+      prisma.adminSettings.findUnique({ where: { key: "featured:current_index" } }),
+    ]);
+    const lastRotation = lastRotationSetting ? parseInt(lastRotationSetting.value) : 0;
+    const needsRotation = Date.now() - lastRotation >= WEEK_MS;
+
+    let rotatingIndex = indexSetting ? parseInt(indexSetting.value) : 0;
+    if (needsRotation) rotatingIndex = (rotatingIndex + 1) % rest.length;
+
+    const rotatingId = rest[rotatingIndex % rest.length].id;
 
     // Clear all featured flags then set exactly 2
     await prisma.blogPost.updateMany({ data: { featured: false } });
-    await prisma.blogPost.updateMany({ where: { id: { in: [id1, id2] } }, data: { featured: true } });
+    await prisma.blogPost.updateMany({ where: { id: { in: [newestId, rotatingId] } }, data: { featured: true } });
 
-    await Promise.all([
-      prisma.adminSettings.upsert({
-        where: { key: "featured:last_rotation" },
-        create: { key: "featured:last_rotation", value: String(Date.now()) },
-        update: { value: String(Date.now()) },
-      }),
-      prisma.adminSettings.upsert({
-        where: { key: "featured:current_index" },
-        create: { key: "featured:current_index", value: String(nextIndex) },
-        update: { value: String(nextIndex) },
-      }),
-    ]);
+    if (needsRotation) {
+      await Promise.all([
+        prisma.adminSettings.upsert({
+          where: { key: "featured:last_rotation" },
+          create: { key: "featured:last_rotation", value: String(Date.now()) },
+          update: { value: String(Date.now()) },
+        }),
+        prisma.adminSettings.upsert({
+          where: { key: "featured:current_index" },
+          create: { key: "featured:current_index", value: String(rotatingIndex) },
+          update: { value: String(rotatingIndex) },
+        }),
+      ]);
+    }
   } catch { /* ignore */ }
 }
 

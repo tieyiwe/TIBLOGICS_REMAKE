@@ -140,12 +140,12 @@ export default function BlogPage() {
   const showFeatured = category === "all" && !search;
   const featuredPosts = showFeatured
     ? (() => {
-        const marked = posts.filter((p) => p.featured).slice(0, 2);
-        if (marked.length >= 2) return marked;
-        // Fill up to 2 from newest if not enough marked
-        const ids = new Set(marked.map((p) => p.id));
-        const fill = posts.filter((p) => !ids.has(p.id)).slice(0, 2 - marked.length);
-        return [...marked, ...fill];
+        const marked = posts.filter((p) => p.featured);
+        // Slot 1 = newest article always, slot 2 = the other marked one (rotating)
+        const newest = posts[0];
+        const rotating = marked.find((p) => p.id !== newest?.id) ?? posts[1];
+        const result = newest ? [newest, rotating].filter(Boolean) : posts.slice(0, 2);
+        return result.slice(0, 2);
       })()
     : [];
   const featuredIds = new Set(featuredPosts.map((p) => p.id));
