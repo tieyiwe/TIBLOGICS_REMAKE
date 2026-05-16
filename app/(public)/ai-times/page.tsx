@@ -72,6 +72,7 @@ export default function BlogPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [featuredImgFailed, setFeaturedImgFailed] = useState(false);
+  const [featured2ImgFailed, setFeatured2ImgFailed] = useState(false);
   const [showOlder, setShowOlder] = useState(false);
 
   useEffect(() => {
@@ -137,12 +138,18 @@ export default function BlogPage() {
   }, [fetchPosts]);
 
   const showFeatured = category === "all" && !search;
-  const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
-  const recentFeatured = posts.find(
-    (p) => p.featured && new Date(p.createdAt).getTime() > fourteenDaysAgo
-  );
-  const featured = showFeatured ? (recentFeatured ?? posts[0]) : null;
-  const grid = featured ? posts.filter((p) => p.id !== featured.id) : posts;
+  const featuredPosts = showFeatured
+    ? (() => {
+        const marked = posts.filter((p) => p.featured).slice(0, 2);
+        if (marked.length >= 2) return marked;
+        // Fill up to 2 from newest if not enough marked
+        const ids = new Set(marked.map((p) => p.id));
+        const fill = posts.filter((p) => !ids.has(p.id)).slice(0, 2 - marked.length);
+        return [...marked, ...fill];
+      })()
+    : [];
+  const featuredIds = new Set(featuredPosts.map((p) => p.id));
+  const grid = posts.filter((p) => !featuredIds.has(p.id));
   const INITIAL_COUNT = 9;
   const visibleGrid = showOlder ? grid : grid.slice(0, INITIAL_COUNT);
   const hiddenCount = Math.max(0, grid.length - INITIAL_COUNT);
@@ -243,48 +250,51 @@ export default function BlogPage() {
           </div>
         ) : (
           <>
-            {/* Featured post */}
-            {featured && showFeatured && (
-              <Link href={`/ai-times/${featured.slug}`} className="group block mb-10">
-                <div className="bg-white border border-[#D2DCE8] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 lg:flex">
-                  <div className="lg:w-96 h-64 lg:h-auto flex-shrink-0 overflow-hidden relative">
-                    {featured.coverImage && !featuredImgFailed ? (
-                      <img src={featured.coverImage} alt="" className="w-full h-full object-cover" loading="eager" fetchPriority="high" decoding="sync" sizes="(max-width:1024px) 100vw, 384px" onError={() => setFeaturedImgFailed(true)} />
-                    ) : (
-                      <div className={`${gradientClass(featured.coverGradient)} w-full h-full flex items-center justify-center`}>
-                        <span className="text-8xl">{featured.coverEmoji}</span>
+            {/* Featured posts — 2 rotating articles */}
+            {featuredPosts.length > 0 && showFeatured && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-10">
+                {featuredPosts.map((fp, idx) => {
+                  const imgFailed = idx === 0 ? featuredImgFailed : featured2ImgFailed;
+                  const setImgFailed = idx === 0 ? setFeaturedImgFailed : setFeatured2ImgFailed;
+                  return (
+                    <Link key={fp.id} href={`/ai-times/${fp.slug}`} className="group block">
+                      <div className="bg-white border border-[#D2DCE8] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 h-full flex flex-col">
+                        <div className="h-52 flex-shrink-0 overflow-hidden relative">
+                          {fp.coverImage && !imgFailed ? (
+                            <img src={fp.coverImage} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="eager" fetchPriority="high" decoding="sync" onError={() => setImgFailed(true)} />
+                          ) : (
+                            <div className={`${gradientClass(fp.coverGradient)} w-full h-full flex items-center justify-center`}>
+                              <span className="text-7xl">{fp.coverEmoji}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-6 flex flex-col flex-1 justify-between">
+                          <div>
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="bg-[#F47C20] text-white text-xs font-extrabold font-syne px-2.5 py-1 rounded-full uppercase tracking-wide">
+                                Featured
+                              </span>
+                              <CategoryBadge category={fp.category} />
+                            </div>
+                            <h2 className="font-syne font-extrabold text-xl text-[#0D1B2A] mb-2 group-hover:text-[#2251A3] transition-colors leading-tight line-clamp-2">
+                              {fp.title}
+                            </h2>
+                            <p className="font-dm text-[#3A4A5C] text-sm leading-relaxed line-clamp-2">
+                              {fp.excerpt}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3 text-xs font-dm text-[#7A8FA6] mt-4">
+                            <span className="flex items-center gap-1"><Clock size={12} /> {fp.readingTime} min read</span>
+                            <span>·</span>
+                            <span>{timeAgo(fp.createdAt)}</span>
+                            {fp.aiGenerated && <><span>·</span><span className="text-[#2251A3]">AI Curated</span></>}
+                          </div>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                  <div className="p-8 flex flex-col justify-center">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="bg-[#F47C20] text-white text-xs font-extrabold font-syne px-2.5 py-1 rounded-full uppercase tracking-wide">
-                        Featured
-                      </span>
-                      <CategoryBadge category={featured.category} />
-                    </div>
-                    <h2 className="font-syne font-extrabold text-2xl md:text-3xl text-[#0D1B2A] mb-3 group-hover:text-[#2251A3] transition-colors leading-tight">
-                      {featured.title}
-                    </h2>
-                    <p className="font-dm text-[#3A4A5C] text-base leading-relaxed mb-5 line-clamp-2">
-                      {featured.excerpt}
-                    </p>
-                    <div className="flex items-center gap-3 text-xs font-dm text-[#7A8FA6]">
-                      <span className="flex items-center gap-1">
-                        <Clock size={12} /> {featured.readingTime} min read
-                      </span>
-                      <span>·</span>
-                      <span>{timeAgo(featured.createdAt)}</span>
-                      {featured.aiGenerated && (
-                        <>
-                          <span>·</span>
-                          <span className="text-[#2251A3]">AI Curated</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </Link>
+                    </Link>
+                  );
+                })}
+              </div>
             )}
 
             {/* Tips spotlight */}
