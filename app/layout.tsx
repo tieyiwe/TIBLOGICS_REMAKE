@@ -78,7 +78,7 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     title: DEFAULT_TITLE,
     description: DEFAULT_DESC,
-    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: "TIBLOGICS — AI Implementation Agency" }],
+    images: [{ url: `${SITE_URL}/Main_domain_preview.png`, width: 1200, height: 630, alt: "TIBLOGICS — AI Solutions. Real Business Impact." }],
   },
   twitter: {
     card: "summary_large_image",
@@ -86,7 +86,7 @@ export const metadata: Metadata = {
     description: DEFAULT_DESC,
     creator: "@tiblogics",
     site: "@tiblogics",
-    images: [`${SITE_URL}/og-image.png`],
+    images: [`${SITE_URL}/Main_domain_preview.png`],
   },
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
@@ -115,7 +115,7 @@ const jsonLd = {
         width: 512, height: 512,
         caption: "TIBLOGICS",
       },
-      image: `${SITE_URL}/og-image.png`,
+      image: `${SITE_URL}/Main_domain_preview.png`,
       description: DEFAULT_DESC,
       email: "ai@tiblogics.com",
       contactPoint: [
@@ -192,7 +192,7 @@ const jsonLd = {
       description: DEFAULT_DESC,
       isPartOf: { "@id": `${SITE_URL}/#website` },
       about: { "@id": `${SITE_URL}/#organization` },
-      primaryImageOfPage: { "@type": "ImageObject", url: `${SITE_URL}/og-image.png` },
+      primaryImageOfPage: { "@type": "ImageObject", url: `${SITE_URL}/Main_domain_preview.png` },
       breadcrumb: {
         "@type": "BreadcrumbList",
         itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: SITE_URL }],
