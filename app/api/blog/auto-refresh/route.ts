@@ -1268,6 +1268,74 @@ For a logistics company: an agent tracks shipments, updates clients, escalates d
     featured: false,
     content: `<h2>The English Default and Its Hidden Costs</h2><p>Every major AI model in widespread business use — GPT-4o, Claude, Gemini — was trained predominantly on English-language text. The implications are subtle but significant. These models think in English first. When they process or generate content in other languages, they are effectively translating through an English cognitive layer. The result is AI that works, but works noticeably less well — producing outputs that are grammatically correct but tonally off, culturally generic, or simply less natural than a native speaker would produce.</p><p>For businesses operating in markets where French, Swahili, Arabic, Portuguese, or any of hundreds of other languages are primary, this is not a minor inconvenience. It's a performance gap that directly affects customer experience.</p><h2>Where the Gap Shows Up in Practice</h2><p><strong>Customer service AI:</strong> A chatbot that responds in technically correct Swahili but with unnatural phrasing loses customer trust immediately. Native speakers recognize AI-generated text that doesn't sound like a person — and it damages the brand more than no AI at all.</p><p><strong>Content generation:</strong> AI-written marketing copy for French African markets that reads as translated-from-English rather than written-in-French fails to resonate. Cultural references, idioms, and tone register are all rooted in the source language — and they don't survive translation-as-afterthought.</p><p><strong>Document analysis:</strong> Legal, financial, and compliance documents in local languages are processed less accurately by English-first models. Errors or missed nuance in these contexts carry real risk.</p><h2>What's Changing</h2><p>Several developments are narrowing the gap. Anthropic, OpenAI, and Google are all investing in multilingual training data — and the improvements in recent model generations are visible for major world languages. More significantly, specialized multilingual models are emerging: Aya (Cohere's open multilingual model), AfroLM, and others trained specifically on African language data are delivering meaningfully better results for Swahili, Yoruba, Hausa, and other underrepresented languages.</p><p>For businesses building custom AI solutions, RAG architectures with language-specific knowledge bases can substantially compensate for base model limitations — grounding AI responses in your actual business content rather than depending on the model's language training alone.</p><h2>The Business Opportunity</h2><p>The language gap represents a genuine competitive opening. Businesses that build AI solutions with proper multilingual capability — not just surface-level translation, but language-native understanding — deliver meaningfully better experiences in markets where most competitors are using English-first tools with inadequate localization. In African markets especially, where mobile-first populations are increasingly AI-aware, language-native AI is a differentiator that creates real loyalty.</p><p><strong>Practical takeaway:</strong> If your business serves non-English speaking customers, test your current AI tools in your customers' primary language. Ask a native speaker to evaluate the output quality honestly. If the quality gap is significant, it's worth either evaluating multilingual-specific tools or building a RAG knowledge base in the target language to compensate.</p>`,
   },
+
+  // ── Third batch — including Trump-China tech content ───────────────────────
+  {
+    title: "Trump's China Visit and the AI Chip Deal: What It Actually Means for Tech Businesses",
+    excerpt: "The Trump-China tech summit produced a surprise framework on AI chip trade — here's what changed, what didn't, and what business owners should watch.",
+    category: "breaking",
+    tags: ["trump", "china", "ai chips", "semiconductor", "trade policy", "tech geopolitics"],
+    coverEmoji: "⚡",
+    coverGradient: "from-red-600 to-orange-500",
+    coverImage: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80",
+    featured: false,
+    content: `<h2>What Happened in the Trump-China Tech Summit</h2><p>President Trump's high-profile visit to China produced an unexpected outcome in the technology sector: a preliminary framework for resuming limited AI chip exports to Chinese commercial enterprises, paired with new verification requirements intended to prevent military diversion. The announcement landed with the kind of ambiguity that tends to define US-China trade agreements — enough concession to call it a deal, enough restriction to maintain strategic cover on both sides.</p><p>For global technology businesses, the question isn't what diplomats agreed to in principle. It's what actually changes on the ground — and when.</p><h2>The Core Issue: AI Chips as Strategic Currency</h2><p>The US export restriction regime on advanced semiconductors — particularly Nvidia's H100 and its successors — has been one of the defining technology policy moves of the past three years. By restricting China's access to the hardware required to train large AI models at scale, the US aimed to preserve a compute advantage in frontier AI development.</p><p>The Trump-China framework introduces a tiered licensing system. Chinese commercial companies can apply for expedited licenses to import chips below a specified compute threshold — high enough for most business AI applications, restricted enough to limit cutting-edge model training. Military-adjacent entities remain fully blocked.</p><h2>What This Changes for Technology Businesses</h2><p><strong>For US chip manufacturers:</strong> The restricted export market just got somewhat larger. Nvidia, AMD, and Intel have all been developing downgraded variants of their flagship chips for the Chinese market. A clearer legal pathway for commercial sales reduces uncertainty for those product lines.</p><p><strong>For cloud providers:</strong> US hyperscalers with China operations — or those evaluating market re-entry — now have a more defined regulatory environment. The compute threshold in the framework is broadly consistent with what's needed to run, rather than train, large models, meaning enterprise AI deployment in China becomes somewhat more feasible.</p><p><strong>For businesses using Chinese AI tools:</strong> The framework doesn't directly affect access to Chinese AI models (DeepSeek, Qwen, etc.) in Western markets. Those are software products, not hardware, and operate under different regulatory categories.</p><h2>What Hasn't Changed</h2><p>The fundamental strategic competition between US and Chinese AI development continues regardless of this agreement. The compute gap the export restrictions created won't close from a framework that permits commercial-grade chips while blocking frontier compute. Chinese AI labs will continue investing in domestic chip development — SMIC, Huawei's Ascend line, and several others. The diplomatic handshake doesn't alter the underlying race.</p><h2>What This Means for Small Businesses</h2><p>For most small businesses, the immediate practical impact is minimal. The chips in question power the data centers that run the AI tools you already use — your access to ChatGPT, Claude, or any cloud-based AI service is unchanged. The longer-term implication is market structure: a somewhat more open chip market in China may accelerate Chinese AI product development, which affects the competitive landscape for AI tools globally over a 3–5 year horizon.</p><p><strong>Practical takeaway:</strong> Watch for downstream effects on AI tool pricing and availability over the next 12–18 months as this framework gets implemented. The most important business decision right now is building AI capabilities — not waiting to see how geopolitics resolves.</p>`,
+  },
+  {
+    title: "US-China AI Race: How the Geopolitical Rivalry Is Reshaping the Tools Your Business Uses",
+    excerpt: "The US-China technology competition isn't abstract — it's directly shaping which AI tools get built, funded, and made available to businesses worldwide.",
+    category: "industry",
+    tags: ["us china", "ai competition", "geopolitics", "deepseek", "ai tools", "trade"],
+    coverEmoji: "🌐",
+    coverGradient: "from-slate-600 to-gray-500",
+    coverImage: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80",
+    featured: false,
+    content: `<h2>The Competition You're Already Participating In</h2><p>Every time you open ChatGPT, Claude, or a Chinese AI tool like DeepSeek, you are participating — as a consumer — in the most consequential technology competition of the current era. The US-China AI race is not just a story for defense analysts and policy papers. It is actively shaping the capabilities, pricing, availability, and regulatory environment of the AI tools that small businesses are building on right now.</p><h2>How the Race Has Shaped the Market</h2><p>The most visible effect has been compression of capability timelines. Competition is the most powerful forcing function in technology, and the rivalry between US and Chinese AI labs has accelerated development on both sides significantly faster than either ecosystem would have moved alone.</p><p>DeepSeek's January 2025 release was the clearest example. DeepSeek R1 matched the reasoning performance of OpenAI's best models at a fraction of the training cost, trained under compute restrictions that forced architectural efficiency. The response from US labs was immediate investment in efficiency research. Both ecosystems got better, faster, because of each other.</p><p><strong>The result for businesses:</strong> More capable AI tools, at lower prices, arriving faster than previously projected. The race is subsidizing your tools.</p><h2>The Risk Side of Geopolitical AI</h2><p>The same competition creates real risks for businesses that build on it.</p><p><strong>Sudden access changes:</strong> A business that builds core workflows on a Chinese AI tool faces regulatory risk if access is restricted — just as Chinese companies building on US tools face the same risk from the other direction. Geopolitical decisions can change overnight what was assumed to be a stable infrastructure choice.</p><p><strong>Data sovereignty questions:</strong> Depending on where you operate and who your customers are, using AI tools from a specific national origin may create compliance exposure. Healthcare, financial services, and government-adjacent businesses face the sharpest version of this question.</p><p><strong>Tool availability divergence:</strong> The market is increasingly splitting into US-origin and China-origin AI ecosystems. Businesses operating across both regions may find they need to maintain separate AI stacks — a cost and complexity consideration that didn't exist two years ago.</p><h2>What a Thoughtful Business Does About This</h2><p>The answer isn't to avoid AI tools until geopolitics stabilizes — that's not a viable strategy and the stabilization may never come. It's to build with portability in mind.</p><ul><li>Avoid deep coupling to a single provider's proprietary features where possible</li><li>Use abstraction layers (LiteLLM, LangChain, etc.) that make model switching practical</li><li>Keep your business data and logic separate from the AI layer — so changing models doesn't require rebuilding from scratch</li><li>Understand the national origin and data handling of the AI tools you use for sensitive business functions</li></ul><p><strong>Practical takeaway:</strong> Build AI into your business. But build it so you could swap the model underneath if you needed to. Provider flexibility is the best hedge against a geopolitical risk you can't predict or control.</p>`,
+  },
+  {
+    title: "How to Use AI to Build Your First Automated Client Onboarding System",
+    excerpt: "Manual onboarding costs you hours per client and makes first impressions inconsistent. AI can make your process instant, professional, and scalable.",
+    category: "ai-business",
+    tags: ["client onboarding", "automation", "ai tools", "crm", "small business"],
+    coverEmoji: "💼",
+    coverGradient: "from-[#1B3A6B] to-[#2251A3]",
+    coverImage: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=800&q=80",
+    featured: false,
+    content: `<h2>Why Most Onboarding Processes Break at Scale</h2><p>Client onboarding is one of those processes that feels manageable when you have five clients and completely falls apart when you have fifteen. The welcome email takes an hour to personalize. The contract needs to be drafted, sent, and chased. The intake form gets lost. The kickoff call isn't scheduled until day three. By the time the client is actually working with you, their enthusiasm has already cooled.</p><p>AI doesn't just speed up bad onboarding. It gives you the structure to build good onboarding that runs without you.</p><h2>The Four Stages to Automate</h2><p><strong>Stage 1: Instant welcome.</strong> The moment a client signs a contract or pays an invoice, an automated workflow sends a personalized welcome message — their name, their service, the name of their contact at your company, and a clear "here's what happens next" outline. AI drafts this from a template that uses client-specific data. No delay, no copy-paste.</p><p><strong>Stage 2: Intake without friction.</strong> Every client needs to give you information before you can do your best work. AI-powered intake forms ask the right questions in the right order, skip irrelevant sections based on previous answers, and summarize the completed intake for your team in a format they can act on immediately. Tools like Typeform with AI integration, or custom chatbot-based intake flows, reduce the time clients spend and the time your team spends decoding their answers.</p><p><strong>Stage 3: Document generation.</strong> Welcome packets, SOW documents, access instructions, brand guidelines questionnaires — these follow the same structure every time. AI generates first drafts of all of them using the intake data, ready for a quick human review before sending. A task that took ninety minutes becomes a ten-minute review.</p><p><strong>Stage 4: Scheduled touchpoints.</strong> The first week of a client relationship sets the tone for the entire engagement. AI scheduling tools set up a cadence of check-in messages, milestone reminders, and status updates automatically — so your client hears from you at the right moments without your team having to remember to reach out.</p><h2>The Tools That Make This Work</h2><ul><li><strong>Zapier or Make:</strong> Connect your contract tool (DocuSign, PandaDoc), your CRM, your email, and your project management platform into a single automated workflow</li><li><strong>AI writing assistants:</strong> Draft welcome messages, intake summaries, and document templates using your brand voice</li><li><strong>Calendly or Cal.com:</strong> Automated kickoff call scheduling triggered immediately after contract signing</li><li><strong>Notion or ClickUp AI:</strong> Auto-generate project setup from intake data</li></ul><h2>What This Means for Small Businesses</h2><p>A polished, fast, consistent onboarding experience is one of the most powerful trust signals a small business can send. It communicates that you're organized, that you respect the client's time, and that working with you will feel different from working with someone who wings it. AI makes that experience achievable without a full operations team.</p><p><strong>Practical takeaway:</strong> Map your current onboarding process step by step. Circle every step that follows the same pattern for every client. Those are your automation candidates. Start with the welcome message and intake form — those two alone reduce the first-week friction that costs client confidence.</p>`,
+  },
+  {
+    title: "The AI Tools That Actually Save Time for Freelancers and Solo Consultants",
+    excerpt: "Solo operators don't need enterprise AI stacks. They need the right 4-5 tools that eliminate the admin work eating their billable hours.",
+    category: "tips",
+    tags: ["freelancers", "consultants", "ai tools", "productivity", "solo business"],
+    coverEmoji: "💡",
+    coverGradient: "from-purple-600 to-violet-500",
+    coverImage: "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800&q=80",
+    featured: false,
+    content: `<h2>The Solo Operator's AI Problem</h2><p>Most AI tool recommendations are written for teams. The "best AI for your business" listicles assume you have a marketing department, an ops team, and someone dedicated to testing new software. Solo consultants and freelancers have one person doing all of those things — and their time calculus is completely different.</p><p>For a solo operator, the question isn't "which AI tools should we evaluate across our organization." It's "which tools give me back the most hours with the least setup, so I can spend those hours on the work that actually pays."</p><h2>The 5 That Actually Move the Needle</h2><p><strong>1. AI writing assistant (Claude or ChatGPT Pro).</strong> The single highest-leverage tool for most freelancers. Proposals, client emails, project summaries, invoicing cover letters, content drafts, meeting agendas — all of these follow patterns, and AI handles the first draft faster than you can open a blank document. The real gain isn't the typing time. It's the cognitive load of starting from nothing. Pick one, learn it well, and use it for everything written.</p><p><strong>2. AI meeting transcription and notes (Otter.ai or Fireflies).</strong> Client calls produce decisions, action items, and commitments that need to be documented. Doing that manually during the call splits your attention. Doing it after the call takes time you don't have. AI transcription captures everything, generates a summary, and extracts action items automatically. After two weeks, the searchable call history becomes a client relationship asset.</p><p><strong>3. AI scheduling (Reclaim or Calendly with AI features).</strong> Time zone math, availability negotiation, reminder chasing — this overhead compounds across a full client roster. AI scheduling eliminates the back-and-forth entirely and protects focus blocks so client meetings don't scatter your best working hours.</p><p><strong>4. AI invoicing and admin (FreshBooks AI, QuickBooks with Intuit Assist, or similar).</strong> Late invoices are a cash flow problem. Chasing them manually is a relationship problem. AI-powered accounting tools flag overdue invoices, draft reminder messages, and categorize expenses automatically. Setup takes an afternoon; the time saved compounds monthly.</p><p><strong>5. AI research (Perplexity Pro).</strong> Client work requires staying current on their industry, their competitors, and their market. Perplexity compresses research time dramatically — sourced answers in seconds rather than browser tabs open for hours. For client-facing consultants, looking informed quickly is a competitive advantage.</p><h2>What to Skip</h2><p>Project management AI, team collaboration AI, HR AI — skip all of it. You're not a team. The overhead of configuring and maintaining tools designed for organizational complexity will cost more time than they save for a solo operator. Keep your stack small and get genuinely good at each tool in it.</p><p><strong>Practical takeaway:</strong> Pick the one category from the list above where you're currently losing the most time. Add that tool this week, use it for 30 days, then evaluate whether it actually returned the hours you expected before adding anything else.</p>`,
+  },
+  {
+    title: "Google's AI Overviews Are Changing Search — What Businesses Need to Know About Visibility",
+    excerpt: "Google's AI Overviews are answering questions before users click anything. Here's what this means for your content strategy and online visibility.",
+    category: "breaking",
+    tags: ["google", "ai overviews", "seo", "search", "content strategy", "visibility"],
+    coverEmoji: "⚡",
+    coverGradient: "from-red-600 to-orange-500",
+    coverImage: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=800&q=80",
+    featured: false,
+    content: `<h2>Search Just Changed — Again</h2><p>Google's AI Overviews — the AI-generated summaries that appear above organic search results — are now the default experience for a significant portion of queries in the US and expanding globally. When a user searches for "how to automate customer follow-ups" or "best AI tools for small business," they increasingly see a direct AI answer before they see any website links. The implications for content creators and businesses that depend on search traffic are real and require deliberate adjustment.</p><h2>What AI Overviews Actually Do</h2><p>AI Overviews synthesize information from multiple web sources and present a direct answer to the user's query at the top of the results page. Sources are cited with small reference links, but the summary is designed to answer the question completely — meaning many users get what they need without clicking through to any website.</p><p>For informational queries (how-to, what-is, comparison questions), click-through rates have dropped measurably for organic results that appear below the AI Overview. For navigational queries (searching for a specific brand or service), the impact is smaller — users searching for you specifically still navigate to you.</p><h2>What Changes for Your Content Strategy</h2><p><strong>Surface-level informational content is increasingly displaced.</strong> A blog post that answers "what is RAG?" well enough to rank will now compete with an AI Overview that answers the same question directly. Generic, definitional content has less differentiated value in this environment.</p><p><strong>Original expertise, proprietary data, and specific experience become more valuable.</strong> AI Overviews synthesize what's already on the web. Content that contains original research, specific case studies, first-hand experience, or proprietary frameworks can't be fully replicated from existing sources — making it more likely to be cited in an AI Overview and more valuable when users do click through.</p><p><strong>Your business information needs to be in Google's structured data ecosystem.</strong> For local and service businesses, Google Business Profile, structured data markup (schema.org), and consistent NAP (name, address, phone) data across the web affect how and whether your business appears in AI-generated responses to relevant queries.</p><h2>What Doesn't Change</h2><p>High-intent queries — "AI consulting services near me," "book a discovery call for AI implementation" — still drive navigational behavior. Users with purchase intent click. Users with learning intent increasingly don't. Build your content strategy accordingly: informational content earns visibility and trust; transactional pages earn revenue.</p><h2>What This Means for Small Businesses</h2><p>The businesses that will maintain and grow search visibility in an AI Overview world are those with genuine depth — specific expertise, original case studies, and content that reflects real-world experience rather than synthesized information. Shallow content farms are collateral damage. Businesses with real knowledge to share are well-positioned.</p><p><strong>Practical takeaway:</strong> Audit your current content for pieces that could be summarized entirely by an AI without losing value. Those are vulnerable. Identify two or three topics where your business has genuine original experience or proprietary data — and build content there. That's the defensible category.</p>`,
+  },
+  {
+    title: "How a West African Fintech Used AI to Cut Customer Verification From 3 Days to 8 Minutes",
+    excerpt: "A Lagos-based fintech was losing customers to KYC delays. An AI-powered verification system changed the conversion math entirely.",
+    category: "case-studies",
+    tags: ["fintech", "africa", "kyc", "ai automation", "customer onboarding", "case study"],
+    coverEmoji: "📊",
+    coverGradient: "from-[#F47C20] to-yellow-500",
+    coverImage: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=800&q=80",
+    featured: false,
+    content: `<h2>The Problem: Losing Customers at the Door</h2><p>A Lagos-based digital lending platform was experiencing a conversion crisis that its founders initially attributed to product-market fit. Users downloaded the app, started the registration process — and left. The drop-off rate at the KYC (Know Your Customer) verification step was 67%. Of every three users who attempted to verify their identity, two abandoned before completing the process.</p><p>The culprit wasn't the product. It was the wait. Manual document review by the compliance team took an average of three business days. In a market where users could get a competitor's decision in minutes, three days was too long. Most users who waited never came back.</p><h2>The AI-Powered Verification System</h2><p>The company implemented an AI document verification and biometric matching system that automated the KYC process for standard cases. The system handled four tasks that previously required human review:</p><ul><li><strong>Document authenticity check:</strong> AI analyzed uploaded ID documents for tampering, expiry, and format consistency against a database of valid Nigerian government ID formats</li><li><strong>Data extraction:</strong> Name, date of birth, ID number, and address were extracted automatically and matched against the application data the user had entered</li><li><strong>Biometric matching:</strong> Selfie-to-ID photo comparison using facial recognition to confirm the applicant was the document holder</li><li><strong>Risk scoring:</strong> A risk model assessed each application against fraud indicators and flagged high-risk cases for human review while clearing standard cases automatically</li></ul><p>Standard cases — approximately 74% of all applications — were approved or declined with a verified decision in under 10 minutes. High-risk flagged cases went to the compliance team with the AI analysis already completed, reducing their review time from 45 minutes to 12 minutes per case.</p><h2>The Results</h2><p>Within 90 days of deployment, the KYC drop-off rate fell from 67% to 18%. The time-to-decision for standard applications dropped from an average of 3 business days to 8 minutes. Fraud rates in the approved cohort remained stable — the AI system caught comparable patterns to manual review while processing volumes the team could never have handled manually.</p><p>The business impact was significant: the same marketing spend that was previously generating one approved customer for every three who attempted verification was now generating more than two. Customer acquisition cost dropped by 43% without touching the marketing budget.</p><h2>What Made This Implementation Work</h2><p>Two decisions were critical. First, the team resisted the temptation to automate everything. Human review remained mandatory for flagged cases, which maintained compliance integrity and caught edge cases the model hadn't seen before — feeding back into model improvements over time.</p><p>Second, the system was designed for Nigerian market conditions from the start — trained on Nigerian ID formats, tuned for the photo quality typically produced by mid-range Android cameras common in the market, and optimized for low-bandwidth connectivity. A generic global KYC solution would have had significantly worse performance on the same population.</p><h2>What This Means for Small Businesses</h2><p>Any business with an identity verification or document review step in its customer acquisition flow should evaluate whether AI can compress that timeline. The conversion math is straightforward: shorter wait times mean higher completion rates. For fintech, healthcare, legal services, and any regulated industry with compliance gates, this is among the clearest ROI cases for AI implementation available.</p><p><strong>Practical takeaway:</strong> Calculate the drop-off rate at every step of your customer acquisition process. If a single step has a drop-off above 30%, it deserves a friction audit. For compliance or verification steps, AI automation is likely the fastest path to meaningful conversion improvement.</p>`,
+  },
 ];
 
 // Tieyiwe Bass personal article — Unsplash fallback used when local PNG not committed
@@ -1344,6 +1412,49 @@ async function patchArticleCoverOverrides() {
       }
     } catch { /* ignore */ }
   }
+}
+
+// Rotate the 2 featured articles every 7 days so every article eventually gets a spotlight
+async function patchFeaturedRotation(): Promise<void> {
+  try {
+    const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+    const [lastRotationSetting, indexSetting] = await Promise.all([
+      prisma.adminSettings.findUnique({ where: { key: "featured:last_rotation" } }),
+      prisma.adminSettings.findUnique({ where: { key: "featured:current_index" } }),
+    ]);
+
+    const lastRotation = lastRotationSetting ? parseInt(lastRotationSetting.value) : 0;
+    if (Date.now() - lastRotation < WEEK_MS) return; // Not time yet
+
+    const articles = await prisma.blogPost.findMany({
+      where: { published: true },
+      select: { id: true },
+      orderBy: { createdAt: "asc" },
+    });
+    if (articles.length < 2) return;
+
+    const currentIndex = indexSetting ? parseInt(indexSetting.value) : 0;
+    const nextIndex = (currentIndex + 2) % articles.length;
+    const id1 = articles[nextIndex % articles.length].id;
+    const id2 = articles[(nextIndex + 1) % articles.length].id;
+
+    // Clear all featured flags then set exactly 2
+    await prisma.blogPost.updateMany({ data: { featured: false } });
+    await prisma.blogPost.updateMany({ where: { id: { in: [id1, id2] } }, data: { featured: true } });
+
+    await Promise.all([
+      prisma.adminSettings.upsert({
+        where: { key: "featured:last_rotation" },
+        create: { key: "featured:last_rotation", value: String(Date.now()) },
+        update: { value: String(Date.now()) },
+      }),
+      prisma.adminSettings.upsert({
+        where: { key: "featured:current_index" },
+        create: { key: "featured:current_index", value: String(nextIndex) },
+        update: { value: String(nextIndex) },
+      }),
+    ]);
+  } catch { /* ignore */ }
 }
 
 // Editorial spotlights — always checked and inserted if missing (even when DB has posts)
@@ -1474,13 +1585,15 @@ export async function GET(req: NextRequest) {
   const force = searchParams.get("force") === "true";
 
   // Verify caller: Vercel cron sends Authorization: Bearer <CRON_SECRET>
+  // External cron services (cron-job.org, Upstash, etc.) can use ?secret=<CRON_SECRET>
   // Allow unauthenticated check-only requests (admin status polling)
   if (!checkOnly) {
     const cronSecret = process.env.CRON_SECRET;
     const authHeader = req.headers.get("authorization");
     const isVercelCron = cronSecret && authHeader === `Bearer ${cronSecret}`;
+    const isExternalCron = cronSecret && searchParams.get("secret") === cronSecret;
     const isForceFromAdmin = force; // admin page uses ?force=true (protected by admin session at page level)
-    if (cronSecret && !isVercelCron && !isForceFromAdmin) {
+    if (cronSecret && !isVercelCron && !isExternalCron && !isForceFromAdmin) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
   }
@@ -1514,6 +1627,11 @@ export async function GET(req: NextRequest) {
     });
   }
 
+  // Always run cover patches and featured rotation — independent of refresh schedule
+  await patchTieyiweCover();
+  await patchArticleCoverOverrides();
+  await patchFeaturedRotation();
+
   if (!needsRefresh) {
     return NextResponse.json({ message: "Content is up to date", postsAdded: 0 });
   }
@@ -1537,12 +1655,6 @@ export async function GET(req: NextRequest) {
       data: { author: "Echelon by TIBLOGICS" },
     });
   } catch { /* ignore */ }
-
-  // Fix Tieyiwe Bass article cover if pointing at local file
-  await patchTieyiweCover();
-
-  // Enforce cover overrides for specific articles with bad auto-picked images
-  await patchArticleCoverOverrides();
 
   // Reassign cover images on any articles that share an image
   const imagesPatched = await patchDuplicateCoverImages(usedImages);
