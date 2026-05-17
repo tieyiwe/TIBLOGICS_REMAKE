@@ -1397,7 +1397,7 @@ const ARTICLE_COVER_OVERRIDES: Array<{ titleFragment: string; coverImage: string
   },
   {
     titleFragment: "neural net learn to play Snake",
-    coverImage: "https://images.unsplash.com/photo-1593720213428-28a5b9e94613?auto=format&fit=crop&w=800&q=80",
+    coverImage: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80",
   },
   {
     titleFragment: "0-click exploit",
@@ -1420,6 +1420,29 @@ async function patchArticleCoverOverrides() {
       }
     } catch { /* ignore */ }
   }
+}
+
+// Assign a real cover image to any published article that has none
+async function patchAllMissingCovers(): Promise<void> {
+  try {
+    const missing = await prisma.blogPost.findMany({
+      where: { published: true, OR: [{ coverImage: null }, { coverImage: "" }] },
+      select: { id: true, category: true },
+    });
+    if (missing.length === 0) return;
+
+    const usedSet = new Set<string>(
+      (await prisma.blogPost.findMany({
+        where: { coverImage: { not: null } },
+        select: { coverImage: true },
+      })).map((p) => p.coverImage!)
+    );
+
+    for (const post of missing) {
+      const img = pickFreshImage(post.category, usedSet);
+      await prisma.blogPost.update({ where: { id: post.id }, data: { coverImage: img } });
+    }
+  } catch { /* non-blocking */ }
 }
 
 // Slot 1: always the newest article. Slot 2: rotates weekly through the rest.
@@ -1644,6 +1667,7 @@ export async function GET(req: NextRequest) {
   // Always run cover patches and featured rotation — independent of refresh schedule
   await patchTieyiweCover();
   await patchArticleCoverOverrides();
+  await patchAllMissingCovers();
   await patchFeaturedRotation();
 
   if (!needsRefresh) {
