@@ -1395,6 +1395,14 @@ const ARTICLE_COVER_OVERRIDES: Array<{ titleFragment: string; coverImage: string
     titleFragment: "Codex",
     coverImage: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=800&q=80",
   },
+  {
+    titleFragment: "neural net learn to play Snake",
+    coverImage: "https://images.unsplash.com/photo-1593720213428-28a5b9e94613?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    titleFragment: "0-click exploit",
+    coverImage: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80",
+  },
 ];
 
 async function patchArticleCoverOverrides() {
