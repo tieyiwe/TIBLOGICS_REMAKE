@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import {
   MoreVertical, Download, Search, Loader2, X, CheckCircle,
   Video, Trash2, Ban, CheckCheck, Clock, AlertCircle, ExternalLink, Send, CalendarClock,
+  Brain, Mic, MicOff, RefreshCw, Sparkles, MessageSquare,
 } from "lucide-react";
 
 interface Appointment {
@@ -112,6 +113,99 @@ function DetailPanel({
   const [suggestedDate, setSuggestedDate] = useState("");
   const [suggestedTimeSlot, setSuggestedTimeSlot] = useState("");
   const [rescheduleMessage, setRescheduleMessage] = useState("");
+
+  // Session Intelligence state
+  const [detailTab, setDetailTab] = useState<"details" | "intel">("details");
+  const [brief, setBrief] = useState<{ text: string; generatedAt: string; hasChatHistory: boolean; chatMessageCount: number } | null>(null);
+  const [briefLoading, setBriefLoading] = useState(false);
+  const [voiceAnalysis, setVoiceAnalysis] = useState<{ text: string; transcript: string; analyzedAt: string; wordCount: number } | null>(null);
+  const [voiceLoading, setVoiceLoading] = useState(false);
+  const [transcript, setTranscript] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
+
+  // Load cached brief on mount
+  useEffect(() => {
+    fetch(`/api/admin/appointments/${appt.id}/brief`)
+      .then((r) => r.json())
+      .then((d) => { if (d.brief) setBrief(d.brief); })
+      .catch(() => {});
+    fetch(`/api/admin/appointments/${appt.id}/voice`)
+      .then((r) => r.json())
+      .then((d) => { if (d.analysis) setVoiceAnalysis(d.analysis); })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appt.id]);
+
+  async function handleGenerateBrief() {
+    setBriefLoading(true);
+    try {
+      const res = await fetch(`/api/admin/appointments/${appt.id}/brief`, { method: "POST" });
+      if (!res.ok) throw new Error();
+      const d = await res.json();
+      setBrief(d.brief);
+    } catch {
+      showToast("err", "Failed to generate brief.");
+    } finally {
+      setBriefLoading(false);
+    }
+  }
+
+  async function handleAnalyzeVoice() {
+    if (!transcript.trim() || transcript.trim().split(/\s+/).length < 5) {
+      showToast("err", "Transcript too short — add more content first.");
+      return;
+    }
+    setVoiceLoading(true);
+    try {
+      const res = await fetch(`/api/admin/appointments/${appt.id}/voice`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transcript }),
+      });
+      if (!res.ok) throw new Error();
+      const d = await res.json();
+      setVoiceAnalysis(d.analysis);
+    } catch {
+      showToast("err", "Analysis failed.");
+    } finally {
+      setVoiceLoading(false);
+    }
+  }
+
+  function toggleRecording() {
+    if (isRecording) {
+      recognitionRef.current?.stop();
+      setIsRecording(false);
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      showToast("err", "Voice recording not supported in this browser. Use Chrome.");
+      return;
+    }
+    const rec = new SR();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = "en-US";
+    let finalText = transcript;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rec.onresult = (e: any) => {
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalText += e.results[i][0].transcript + " ";
+        else interim += e.results[i][0].transcript;
+      }
+      setTranscript(finalText + interim);
+    };
+    rec.onerror = () => { setIsRecording(false); };
+    rec.onend = () => { setIsRecording(false); setTranscript(finalText); };
+    rec.start();
+    recognitionRef.current = rec;
+    setIsRecording(true);
+  }
 
   function showToast(type: "ok" | "err", msg: string) {
     setToast({ type, msg });
@@ -279,7 +373,147 @@ function DetailPanel({
           </div>
         )}
 
+        {/* Tab switcher */}
+        <div className="flex border-b border-[#D2DCE8] px-6 sticky top-[73px] bg-white z-10">
+          {([["details", "Details"], ["intel", "Session Intel"]] as const).map(([tab, label]) => (
+            <button
+              key={tab}
+              onClick={() => setDetailTab(tab)}
+              className={`px-4 py-3 text-sm font-dm font-medium border-b-2 transition-colors ${
+                detailTab === tab
+                  ? "border-[#1B3A6B] text-[#1B3A6B]"
+                  : "border-transparent text-[#7A8FA6] hover:text-[#0D1B2A]"
+              }`}
+            >
+              {tab === "intel" && <Brain size={13} className="inline mr-1.5 mb-0.5" />}
+              {label}
+            </button>
+          ))}
+        </div>
+
         <div className="flex-1 px-6 py-5 space-y-6">
+
+          {/* ── SESSION INTELLIGENCE TAB ── */}
+          {detailTab === "intel" && (
+            <div className="space-y-5">
+
+              {/* AI Client Brief */}
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="font-dm text-sm font-semibold text-[#0D1B2A] flex items-center gap-1.5">
+                    <Sparkles size={14} className="text-[#F47C20]" /> Pre-Session AI Brief
+                  </p>
+                  <button
+                    onClick={handleGenerateBrief}
+                    disabled={briefLoading}
+                    className="flex items-center gap-1.5 text-xs font-dm text-[#2251A3] hover:underline disabled:opacity-50"
+                  >
+                    {briefLoading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                    {brief ? "Regenerate" : "Generate Brief"}
+                  </button>
+                </div>
+                {!brief && !briefLoading && (
+                  <div className="bg-[#F4F7FB] rounded-xl p-4 text-center">
+                    <Brain size={24} className="text-[#B0BEC5] mx-auto mb-2" />
+                    <p className="font-dm text-sm text-[#7A8FA6]">Generate an AI brief to get client insights, recommended approach, and opening questions before the session.</p>
+                    <button
+                      onClick={handleGenerateBrief}
+                      className="mt-3 px-4 py-2 bg-[#1B3A6B] text-white text-sm font-dm font-semibold rounded-xl hover:bg-[#2251A3] transition-colors"
+                    >
+                      Generate Now
+                    </button>
+                  </div>
+                )}
+                {briefLoading && (
+                  <div className="bg-[#F4F7FB] rounded-xl p-6 flex items-center justify-center gap-2">
+                    <Loader2 size={16} className="animate-spin text-[#2251A3]" />
+                    <span className="font-dm text-sm text-[#7A8FA6]">Analyzing client data…</span>
+                  </div>
+                )}
+                {brief && !briefLoading && (
+                  <div className="bg-[#F4F7FB] rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      {brief.hasChatHistory && (
+                        <span className="flex items-center gap-1 text-xs font-dm text-[#2251A3] bg-[#EBF0FA] px-2 py-0.5 rounded-full">
+                          <MessageSquare size={10} /> {brief.chatMessageCount} chat msgs
+                        </span>
+                      )}
+                      <span className="text-xs font-dm text-[#B0BEC5]">
+                        Generated {new Date(brief.generatedAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="font-dm text-sm text-[#3A4A5C] whitespace-pre-wrap leading-relaxed">
+                      {brief.text}
+                    </div>
+                  </div>
+                )}
+              </section>
+
+              {/* Divider */}
+              <div className="border-t border-[#F4F7FB]" />
+
+              {/* Voice & Session Analysis */}
+              <section>
+                <p className="font-dm text-sm font-semibold text-[#0D1B2A] flex items-center gap-1.5 mb-1">
+                  <Mic size={14} className="text-[#F47C20]" /> Voice & Session Analysis
+                </p>
+                <p className="font-dm text-xs text-[#7A8FA6] mb-3">
+                  Record live or paste a transcript from the session. AI will detect mood, key issues, urgency, and recommended follow-ups.
+                </p>
+
+                {/* Voice recording controls */}
+                <div className="flex gap-2 mb-2">
+                  <button
+                    onClick={toggleRecording}
+                    className={`flex items-center gap-1.5 px-3 py-2 text-sm font-dm font-semibold rounded-xl transition-colors ${
+                      isRecording
+                        ? "bg-red-100 text-red-600 hover:bg-red-200 animate-pulse"
+                        : "bg-[#EBF0FA] text-[#2251A3] hover:bg-[#2251A3] hover:text-white"
+                    }`}
+                  >
+                    {isRecording ? <><MicOff size={13} /> Stop Recording</> : <><Mic size={13} /> Record Voice</>}
+                  </button>
+                  {transcript && (
+                    <button onClick={() => setTranscript("")} className="text-xs text-[#7A8FA6] hover:text-red-500 font-dm">Clear</button>
+                  )}
+                </div>
+
+                <textarea
+                  value={transcript}
+                  onChange={(e) => setTranscript(e.target.value)}
+                  placeholder="Transcript appears here as you speak, or paste it manually…"
+                  rows={5}
+                  className="w-full px-3 py-2.5 text-sm font-dm border border-[#D2DCE8] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3] bg-white resize-none"
+                />
+                <p className="font-dm text-xs text-[#B0BEC5] mt-1 mb-3">
+                  {transcript.trim().split(/\s+/).filter(Boolean).length} words
+                </p>
+
+                <button
+                  onClick={handleAnalyzeVoice}
+                  disabled={voiceLoading || transcript.trim().split(/\s+/).length < 5}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#F47C20] text-white text-sm font-dm font-semibold rounded-xl hover:bg-[#d96a15] transition-colors disabled:opacity-50"
+                >
+                  {voiceLoading ? <Loader2 size={14} className="animate-spin" /> : <Brain size={14} />}
+                  Analyze Session
+                </button>
+
+                {voiceAnalysis && !voiceLoading && (
+                  <div className="mt-4 bg-[#F4F7FB] rounded-xl p-4">
+                    <p className="font-dm text-xs text-[#B0BEC5] mb-3">
+                      Analyzed {new Date(voiceAnalysis.analyzedAt).toLocaleString()} · {voiceAnalysis.wordCount} words
+                    </p>
+                    <div className="font-dm text-sm text-[#3A4A5C] whitespace-pre-wrap leading-relaxed">
+                      {voiceAnalysis.text}
+                    </div>
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
+
+          {/* ── DETAILS TAB ── */}
+          {detailTab === "details" && <>
           {/* Meeting Details */}
           <section className="bg-[#F4F7FB] rounded-2xl p-4 space-y-2">
             <p className="font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide mb-3">Meeting Details</p>
@@ -490,6 +724,7 @@ function DetailPanel({
           </section>
 
           <p className="font-dm text-xs text-[#B0BEC5] pb-4">Booked on {fmtDate(appt.createdAt)}</p>
+          </>}
         </div>
       </div>
     </div>

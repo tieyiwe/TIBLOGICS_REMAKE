@@ -116,6 +116,20 @@ export default function EchelonFloat() {
   const [blockedDateSet, setBlockedDateSet] = useState<Set<string>>(new Set());
   const ctaVisibleRef = useRef(false);
   const isOpenRef = useRef(false);
+  const sessionIdRef = useRef<string>("");
+
+  // Generate or restore a persistent session ID for this browser session
+  useEffect(() => {
+    if (isAdmin) return;
+    try {
+      let sid = sessionStorage.getItem("tibo_session_id");
+      if (!sid) {
+        sid = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+        sessionStorage.setItem("tibo_session_id", sid);
+      }
+      sessionIdRef.current = sid;
+    } catch { sessionIdRef.current = `${Date.now()}`; }
+  }, [isAdmin]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -266,11 +280,23 @@ export default function EchelonFloat() {
 
       const hasBooking = full.includes(BOOKING_MARKER);
       const clean = full.replace(BOOKING_MARKER, "").trim();
-      setMessages((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = { role: "assistant", content: clean };
-        return updated;
-      });
+      const finalMessages = (() => {
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { role: "assistant", content: clean };
+          // Save to backend (fire-and-forget) so expert can see conversation
+          if (sessionIdRef.current) {
+            fetch("/api/sessions/chat", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ sessionId: sessionIdRef.current, messages: updated }),
+            }).catch(() => {});
+          }
+          return updated;
+        });
+        return null;
+      })();
+      void finalMessages;
       if (hasBooking) setBookingStep("prompt");
       if (!isOpen) setHasUnread(true);
     } catch {
@@ -320,6 +346,7 @@ export default function EchelonFloat() {
           email: form.email,
           phone: form.phone || null,
           goalNotes: "Booked via TIBS chat assistant",
+          sessionId: sessionIdRef.current || undefined,
         }),
       });
       if (!res.ok) throw new Error("Booking failed");
