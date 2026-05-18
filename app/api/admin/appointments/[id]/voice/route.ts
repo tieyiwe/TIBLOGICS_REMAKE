@@ -2,17 +2,20 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const unauth = await requireAdmin();
   if (unauth) return unauth;
 
-  const record = await prisma.adminSettings.findUnique({ where: { key: `voice:${params.id}` } });
+  const { id } = await params;
+  const record = await prisma.adminSettings.findUnique({ where: { key: `voice:${id}` } });
   return NextResponse.json({ analysis: record ? JSON.parse(record.value) : null });
 }
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const unauth = await requireAdmin();
   if (unauth) return unauth;
+
+  const { id } = await params;
 
   try {
     const { transcript, source = "session" } = await req.json();
@@ -21,7 +24,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     }
 
     const appt = await prisma.appointment.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: { firstName: true, lastName: true, serviceType: true, goalNotes: true },
     });
 
@@ -83,9 +86,9 @@ Be precise and clinical. Flag anything that needs immediate attention.`;
     };
 
     await prisma.adminSettings.upsert({
-      where: { key: `voice:${params.id}` },
+      where: { key: `voice:${id}` },
       update: { value: JSON.stringify(result) },
-      create: { key: `voice:${params.id}`, value: JSON.stringify(result) },
+      create: { key: `voice:${id}`, value: JSON.stringify(result) },
     });
 
     return NextResponse.json({ analysis: result });

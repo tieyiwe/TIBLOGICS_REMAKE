@@ -2,24 +2,27 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const unauth = await requireAdmin();
   if (unauth) return unauth;
 
-  const record = await prisma.adminSettings.findUnique({ where: { key: `brief:${params.id}` } });
+  const { id } = await params;
+  const record = await prisma.adminSettings.findUnique({ where: { key: `brief:${id}` } });
   return NextResponse.json({ brief: record ? JSON.parse(record.value) : null });
 }
 
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const unauth = await requireAdmin();
   if (unauth) return unauth;
 
+  const { id } = await params;
+
   try {
-    const appt = await prisma.appointment.findUnique({ where: { id: params.id } });
+    const appt = await prisma.appointment.findUnique({ where: { id } });
     if (!appt) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     // Fetch linked session chat history
-    const sessionRecord = await prisma.adminSettings.findUnique({ where: { key: `appt:sid:${params.id}` } });
+    const sessionRecord = await prisma.adminSettings.findUnique({ where: { key: `appt:sid:${id}` } });
     let chatHistory: Array<{ role: string; content: string }> = [];
     if (sessionRecord?.value) {
       const chatRecord = await prisma.adminSettings.findUnique({ where: { key: `chat:${sessionRecord.value}` } });
@@ -101,9 +104,9 @@ Be direct and specific. This is for the expert's eyes only — no fluff.`;
     };
 
     await prisma.adminSettings.upsert({
-      where: { key: `brief:${params.id}` },
+      where: { key: `brief:${id}` },
       update: { value: JSON.stringify(result) },
-      create: { key: `brief:${params.id}`, value: JSON.stringify(result) },
+      create: { key: `brief:${id}`, value: JSON.stringify(result) },
     });
 
     return NextResponse.json({ brief: result });
