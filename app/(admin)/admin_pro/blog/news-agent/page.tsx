@@ -50,7 +50,7 @@ export default function NewsAgentPage() {
         });
         if (res.ok) {
           const d = await res.json();
-          setActionFeedback(`✅ Post created: "${d.post?.title}" — <a href="/blog/${d.post?.slug}" target="_blank" class="underline">View →</a>`);
+          setActionFeedback(`✅ Post created: "${d.post?.title}" — <a href="/ai-times/${d.post?.slug}" target="_blank" class="underline">View →</a>`);
         } else {
           setActionFeedback("❌ Failed to generate post.");
         }
@@ -62,7 +62,7 @@ export default function NewsAgentPage() {
         });
         if (res.ok) {
           const d = await res.json();
-          setActionFeedback(`✅ Post created: "${d.post?.title}" — <a href="/blog/${d.post?.slug}" target="_blank" class="underline">View →</a>`);
+          setActionFeedback(`✅ Post created: "${d.post?.title}" — <a href="/ai-times/${d.post?.slug}" target="_blank" class="underline">View →</a>`);
         } else {
           setActionFeedback("❌ Failed to create post.");
         }

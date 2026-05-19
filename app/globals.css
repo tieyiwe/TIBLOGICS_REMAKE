@@ -160,6 +160,29 @@
 .typing-dot:nth-child(2) { animation-delay: 0.2s; }
 .typing-dot:nth-child(3) { animation-delay: 0.4s; }
 
+/* ── Browser translation resilience ─────────────────────────────────────────
+   Google Translate and other browser translators inject <font> elements around
+   translated text. <font> is display:inline by default, which breaks flex/grid
+   layouts when it becomes a direct child of a flex/grid container.
+   display:contents makes <font> transparent to the layout engine so its text
+   children act as if they were direct children — layouts stay intact. */
+font {
+  display: contents;
+}
+
+/* Prevent long translated words (German, Finnish, etc.) from overflowing */
+p, h1, h2, h3, h4, h5, h6, li, td, th, blockquote, label, span {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Flex children must be able to shrink below their content size so longer
+   translated text doesn't push siblings out of the container */
+.flex > *,
+.inline-flex > * {
+  min-width: 0;
+}
+
 /* ── Native mobile feel ─────────────────────────────────────────────────────── */
 
 /* Remove 300 ms tap delay on all interactive elements */
