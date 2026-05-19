@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Clock, ArrowLeft, Share2, BookOpen, ExternalLink, Calendar, MessageCircle, X } from "lucide-react";
+import { Clock, ArrowLeft, Share2, BookOpen, ExternalLink, Calendar, MessageCircle, X, TrendingUp, Flame } from "lucide-react";
 
 interface BlogPost {
   id: string;
@@ -29,11 +29,21 @@ interface RelatedPost {
   id: string;
   slug: string;
   title: string;
+  excerpt: string;
   coverEmoji: string;
   coverGradient: string;
   coverImage?: string;
   readingTime: number;
+  viewCount: number;
+  category: string;
   createdAt: string;
+}
+
+function trendingLabel(viewCount: number): { text: string; icon: "flame" | "trending" } | null {
+  if (viewCount >= 150) return { text: "🔥 Trending right now", icon: "flame" };
+  if (viewCount >= 75)  return { text: "📈 Popular this week",  icon: "trending" };
+  if (viewCount >= 30)  return { text: "👀 Being read by many", icon: "trending" };
+  return null;
 }
 
 const GRADIENT_MAP: Record<string, string> = {
@@ -107,6 +117,12 @@ export default function BlogPostPage({
   const [copied, setCopied] = useState(false);
   const [widgetVisible, setWidgetVisible] = useState(false);
   const [widgetDismissed, setWidgetDismissed] = useState(false);
+  const [readProgress, setReadProgress] = useState(0);
+  const [nextPost, setNextPost] = useState<RelatedPost | null>(null);
+  const [nextImgFailed, setNextImgFailed] = useState(false);
+  const [nextUpVisible, setNextUpVisible] = useState(false);
+  const [nextUpDismissed, setNextUpDismissed] = useState(false);
+  const articleRef = useRef<HTMLElement>(null);
   const [heroImgFailed, setHeroImgFailed] = useState(false);
   const [heroCoverFailed, setHeroCoverFailed] = useState(false);
   const [language, setLanguage] = useState<"en" | "fr" | "sw">("en");
@@ -177,15 +193,40 @@ export default function BlogPostPage({
     ? translations[language]
     : post ? { title: post.title, excerpt: post.excerpt, content: post.content } : null;
 
+  // Reading progress — measured against the article element so the bar reflects
+  // how far through the actual content the reader is, not the whole page.
   useEffect(() => {
     function onScroll() {
-      if (!widgetDismissed && window.scrollY > 400) setWidgetVisible(true);
+      const el = articleRef.current;
+      if (!el) return;
+      const { top, height } = el.getBoundingClientRect();
+      const scrolledThrough = window.innerHeight - top;
+      const pct = Math.min(100, Math.max(0, (scrolledThrough / height) * 100));
+      setReadProgress(pct);
+
+      // Show "Next Up" card when 65 % through — more compelling than showing it at the end
+      if (pct >= 65 && !nextUpDismissed) {
+        setNextUpVisible(true);
+        // Next article is the highest-retention action at this point; retire the booking widget
+        setWidgetVisible(false);
+        setWidgetDismissed(true);
+      }
+
+      // Booking widget — only while Next Up card is not yet visible
+      if (!widgetDismissed && window.scrollY > 400 && pct < 65) setWidgetVisible(true);
     }
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [widgetDismissed]);
+  }, [widgetDismissed, nextUpDismissed]);
 
-  // Dismiss CTA when Tibo chat opens or Tibo idle greeting appears
+  // Seed nextPost from the first related article that differs from the current one
+  useEffect(() => {
+    if (related.length > 0 && !nextPost) {
+      setNextPost(related.find((r) => r.slug !== slug) ?? related[0]);
+    }
+  }, [related, slug]);
+
+  // Dismiss booking CTA when Tibo chat opens or Tibo idle greeting appears
   useEffect(() => {
     const dismiss = () => {
       setWidgetVisible(false);
@@ -267,6 +308,13 @@ export default function BlogPostPage({
     <div className="pt-32 sm:pt-44 pb-36 sm:pb-20 min-h-screen bg-[#F4F7FB]">
       {/* Sticky back bar — always visible while reading */}
       <div className="sticky top-20 sm:top-44 z-30 bg-white/95 backdrop-blur-sm border-b border-[#D2DCE8] shadow-sm">
+        {/* Reading progress bar */}
+        <div className="h-[3px] bg-[#E8EFF8] w-full">
+          <div
+            className="h-full bg-[#F47C20] transition-[width] duration-150 ease-out"
+            style={{ width: `${readProgress}%` }}
+          />
+        </div>
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
           <Link
             href="/ai-times"
@@ -274,9 +322,16 @@ export default function BlogPostPage({
           >
             <ArrowLeft size={15} /> Back to AI TIMES
           </Link>
-          <span className="hidden sm:block font-syne font-bold text-xs text-[#F47C20] tracking-wide uppercase">
-            The #1 AI Digestable Knowledge
-          </span>
+          {readProgress > 5 && post ? (
+            <span className="hidden sm:flex items-center gap-1 text-xs font-dm text-[#7A8FA6]">
+              <Clock size={11} />
+              {Math.max(1, Math.ceil(((100 - readProgress) / 100) * post.readingTime))} min left
+            </span>
+          ) : (
+            <span className="hidden sm:block font-syne font-bold text-xs text-[#F47C20] tracking-wide uppercase">
+              The #1 AI Digestable Knowledge
+            </span>
+          )}
           <button
             onClick={handleShare}
             className="inline-flex items-center gap-1.5 text-xs font-dm text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors"
@@ -288,7 +343,7 @@ export default function BlogPostPage({
 
       {/* Hero cover + Article card */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 mt-6 relative z-10">
-        <article className="bg-white border border-[#D2DCE8] rounded-3xl overflow-hidden shadow-sm">
+        <article ref={articleRef} className="bg-white border border-[#D2DCE8] rounded-3xl overflow-hidden shadow-sm">
 
           {/* Cover image — constrained to card width */}
           {post.coverImage && !heroCoverFailed ? (
@@ -467,7 +522,79 @@ export default function BlogPostPage({
         )}
       </div>
 
-      {/* Floating CTA widget */}
+      {/* ── Next Up card — slides in when reader is 65 % through the article ── */}
+      {nextUpVisible && !nextUpDismissed && nextPost && (
+        <div className="fixed bottom-24 sm:bottom-6 right-4 sm:right-6 z-40 w-72 animate-fade-in">
+          <div className="bg-white border border-[#D2DCE8] rounded-2xl shadow-2xl overflow-hidden">
+            {/* Header row */}
+            <div className="flex items-center justify-between px-4 pt-3 pb-1.5 border-b border-[#F4F7FB]">
+              <span className="text-[0.65rem] font-dm font-bold tracking-widest text-[#7A8FA6] uppercase">
+                Up Next
+              </span>
+              <button
+                onClick={() => { setNextUpVisible(false); setNextUpDismissed(true); }}
+                className="text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors"
+                aria-label="Dismiss"
+              >
+                <X size={13} />
+              </button>
+            </div>
+
+            {/* Social proof badge */}
+            {trendingLabel(nextPost.viewCount) && (
+              <div className="px-4 pt-2 pb-0 flex items-center gap-1.5">
+                {nextPost.viewCount >= 150
+                  ? <Flame size={12} className="text-[#F47C20]" />
+                  : <TrendingUp size={12} className="text-[#2251A3]" />}
+                <span className={`text-[0.7rem] font-dm font-semibold ${nextPost.viewCount >= 150 ? "text-[#F47C20]" : "text-[#2251A3]"}`}>
+                  {trendingLabel(nextPost.viewCount)!.text}
+                </span>
+              </div>
+            )}
+
+            {/* Article preview */}
+            <Link
+              href={`/ai-times/${nextPost.slug}`}
+              className="block px-4 pt-3 pb-4 group"
+              onClick={() => { setNextUpVisible(false); setNextUpDismissed(true); }}
+            >
+              <div className="flex gap-3 items-start mb-3">
+                {/* Thumbnail */}
+                <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
+                  {nextPost.coverImage && !nextImgFailed ? (
+                    <img
+                      src={nextPost.coverImage}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={() => setNextImgFailed(true)}
+                    />
+                  ) : (
+                    <div className={`${gradientClass(nextPost.coverGradient)} w-full h-full flex items-center justify-center`}>
+                      <span className="text-2xl">{nextPost.coverEmoji}</span>
+                    </div>
+                  )}
+                </div>
+                {/* Text */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-syne font-bold text-sm text-[#0D1B2A] group-hover:text-[#2251A3] line-clamp-3 leading-snug transition-colors">
+                    {nextPost.title}
+                  </p>
+                  <p className="text-[0.7rem] text-[#7A8FA6] mt-1.5 flex items-center gap-1 font-dm">
+                    <Clock size={9} /> {nextPost.readingTime} min read
+                  </p>
+                </div>
+              </div>
+              {/* CTA button */}
+              <div className="w-full bg-[#1B3A6B] group-hover:bg-[#2251A3] text-white text-xs font-dm font-semibold text-center py-2 rounded-xl transition-colors">
+                Read Next →
+              </div>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Floating booking CTA widget */}
       {widgetVisible && !widgetDismissed && (
         <div className="fixed bottom-24 sm:bottom-6 right-4 sm:right-6 z-40 max-w-xs w-[calc(100vw-2rem)] sm:w-full animate-fade-in">
           <div className="bg-[#1B3A6B] text-white rounded-2xl shadow-2xl overflow-hidden">
