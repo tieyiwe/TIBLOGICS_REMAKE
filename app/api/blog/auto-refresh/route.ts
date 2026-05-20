@@ -1892,6 +1892,227 @@ const EDITORIAL_SPOTLIGHTS = [
 
 <p><strong>Practical takeaway:</strong> Audit your phone-based workflows. Any outbound call that follows a script (appointment reminders, payment reminders, survey calls) is a candidate for voice AI deployment today. Use Vapi or Retell AI to build a proof-of-concept — both offer generous free tiers for testing.</p>`,
   },
+  {
+    title: "Google Just Said Yes to AI in Interviews. Experts Are Thrilled. Everyone Else Should Be Terrified.",
+    excerpt: "The search giant's AI-assisted coding rounds signal something deeper than a policy update. They expose a truth the industry has long resisted: the best AI user in the room is always the most knowledgeable one.",
+    category: "industry",
+    tags: ["google", "ai hiring", "future of work", "expertise", "token efficiency", "prompt engineering", "interviews"],
+    coverEmoji: "🌐",
+    coverGradient: "from-slate-600 to-gray-500",
+    coverImage: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=1200&q=80",
+    author: "Tieyiwe Bass · TIBLOGICS",
+    featured: true,
+    content: `<p style="font-size:1.05rem;line-height:1.8"><span style="font-family:var(--font-syne),serif;font-size:3.5rem;font-weight:700;float:left;line-height:0.85;margin-right:8px;margin-top:6px;color:#0D1B2A">F</span>or decades, the coding interview was tech's most sacred ritual. Whiteboard in hand, candidate across the table — no hints, no documentation, no tools. Just raw recall versus a ticking clock. Google perfected this format, and the industry genuflected accordingly. What Google tested, the rest of Silicon Valley tested.</p>
+
+<p>That era just ended.</p>
+
+<p>According to an internal document reviewed by <em>Business Insider</em>, Google is piloting a new interview format that allows — and actively evaluates — the use of AI during a live coding session. Starting in the second half of 2026, select junior and mid-level software engineering candidates will be permitted to use Gemini, Google's own AI assistant, during the code comprehension round. Instead of writing from scratch, candidates will read, debug, and optimise an existing codebase alongside an AI assistant.</p>
+
+<p>The rationale is almost disarming in its honesty: three-quarters of new code written inside Google is now AI-generated. The company sees little logic in testing candidates on a workflow that no longer reflects how engineers actually work.</p>
+
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:1.75rem 0">
+  <div style="background:#F4F7FB;border-radius:10px;padding:1rem;text-align:center;border:1px solid #D2DCE8">
+    <div style="font-family:var(--font-syne),serif;font-size:2rem;font-weight:700;color:#0D1B2A;line-height:1.1">75%</div>
+    <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:.1em;color:#7A8FA6;margin-top:4px;line-height:1.4">of new Google code is now AI-generated</div>
+  </div>
+  <div style="background:#F4F7FB;border-radius:10px;padding:1rem;text-align:center;border:1px solid #D2DCE8">
+    <div style="font-family:var(--font-syne),serif;font-size:2rem;font-weight:700;color:#0D1B2A;line-height:1.1">22%</div>
+    <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:.1em;color:#7A8FA6;margin-top:4px;line-height:1.4">of job seekers already use AI in live interviews</div>
+  </div>
+  <div style="background:#F4F7FB;border-radius:10px;padding:1rem;text-align:center;border:1px solid #D2DCE8">
+    <div style="font-family:var(--font-syne),serif;font-size:2rem;font-weight:700;color:#0D1B2A;line-height:1.1">4+</div>
+    <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:.1em;color:#7A8FA6;margin-top:4px;line-height:1.4">major tech firms now allow AI in coding rounds</div>
+  </div>
+</div>
+
+<blockquote>"I guess this is like asking a kid to take a math test without a calculator." <br/><cite style="font-size:0.75rem;letter-spacing:.08em;text-transform:uppercase;font-style:normal;color:#7A8FA6">— Emily Cohen, Head of People &amp; Operations, Cognition AI</cite></blockquote>
+
+<h2>What Google Is Actually Testing</h2>
+<p>Read the fine print and something important surfaces. Interviewers will explicitly evaluate "AI fluency" — the ability to engineer effective prompts, validate AI output, and debug when the model gets it wrong. This is not a rubber stamp on AI dependency. It is a structured test of <em>how well a candidate commands AI to reach a correct outcome</em>.</p>
+<p>That distinction matters enormously. Because the moment you allow AI into an interview room, you introduce a variable that separates candidates faster than any whiteboard ever could: domain depth.</p>
+
+<div style="background:#EBF0FA;border-left:3px solid #1B3A6B;padding:1rem 1.25rem;margin:1.5rem 0;border-radius:0 8px 8px 0">
+  <div style="font-size:0.65rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:.4rem;color:#2251A3">Editor's Analysis</div>
+  <p style="font-size:0.875rem;line-height:1.6;margin-bottom:0;color:#1B3A6B;font-weight:500">Google is not lowering the bar. It is raising it in a direction most candidates are not prepared for. Knowing how to open a chat interface means nothing. Knowing how to ask the right question, recognise a wrong answer, and push toward the optimal solution — that requires genuine expertise.</p>
+</div>
+
+<h2>The Hidden Thesis: Subject Matter Experts Always Win</h2>
+<p>When two candidates sit down with the same AI tool and face the same problem, what separates them is not who can type faster. It is who understands the problem deeply enough to know whether the AI's answer is good, mediocre, or dangerously wrong.</p>
+<p>AI is a multiplier. Like any multiplier, it amplifies what you bring to it. A shallow prompt from a novice returns shallow output — faster. A precise, expert prompt returns insight the novice would not even know to ask for. The AI does not close the expertise gap. It widens it.</p>
+<p>The clearest way to see this is to compare how an expert and an average user approach the <em>same task</em> across different fields.</p>
+
+<div style="margin:2rem 0">
+
+  <div style="border:1px solid #D2DCE8;border-radius:10px;overflow:hidden;margin-bottom:1.25rem">
+    <div style="background:#0D1B2A;color:white;padding:.6rem 1rem;font-size:0.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase">Finance &amp; Investment Analysis</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr">
+      <div style="padding:1rem;border-right:1px solid #E8EFF8">
+        <span style="font-size:0.65rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;background:#EAF5D8;color:#27500A;padding:3px 8px;border-radius:100px;display:inline-block;margin-bottom:.6rem">CFA / Finance Expert</span>
+        <p style="font-size:0.8rem;font-style:italic;line-height:1.55;margin-bottom:.4rem;border-left:2px solid #D2DCE8;padding-left:8px">"Analyse this company's free cash flow trend over 5 years, flag divergence from reported net income, and identify non-cash adjustments that could indicate earnings quality issues. Use DuPont decomposition to isolate the ROE drivers."</p>
+        <p style="font-size:0.75rem;color:#7A8FA6;line-height:1.5;margin:0">Applies a named framework, anticipates where models mislead, and scopes the request precisely.</p>
+      </div>
+      <div style="padding:1rem">
+        <span style="font-size:0.65rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;background:#FEF0E3;color:#E05F00;padding:3px 8px;border-radius:100px;display:inline-block;margin-bottom:.6rem">Average Joe</span>
+        <p style="font-size:0.8rem;font-style:italic;line-height:1.55;margin-bottom:.4rem;border-left:2px solid #D2DCE8;padding-left:8px">"Is this a good stock to buy?"</p>
+        <p style="font-size:0.75rem;color:#7A8FA6;line-height:1.5;margin:0">No framework, no context. The AI returns generic caveats and a surface-level summary useful to no one.</p>
+      </div>
+    </div>
+    <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.12em;color:#7A8FA6;text-align:center;padding:.4rem;background:#F4F7FB;border-top:1px solid #E8EFF8;border-bottom:1px solid #E8EFF8">Outcome</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr">
+      <div style="padding:.75rem 1rem;font-size:0.8rem;line-height:1.5;border-right:1px solid #E8EFF8"><strong style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.1em;color:#27500A;display:block;margin-bottom:.25rem">Expert gets →</strong>A structured earnings quality report with flagged ratios, a DuPont breakdown, and actionable investment insight.</div>
+      <div style="padding:.75rem 1rem;font-size:0.8rem;line-height:1.5"><strong style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.1em;color:#E05F00;display:block;margin-bottom:.25rem">Average Joe gets →</strong>"This stock has both risks and opportunities." A disclaimer-laden non-answer.</div>
+    </div>
+  </div>
+
+  <div style="border:1px solid #D2DCE8;border-radius:10px;overflow:hidden;margin-bottom:1.25rem">
+    <div style="background:#0D1B2A;color:white;padding:.6rem 1rem;font-size:0.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase">Software Engineering</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr">
+      <div style="padding:1rem;border-right:1px solid #E8EFF8">
+        <span style="font-size:0.65rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;background:#EAF5D8;color:#27500A;padding:3px 8px;border-radius:100px;display:inline-block;margin-bottom:.6rem">Senior SWE</span>
+        <p style="font-size:0.8rem;font-style:italic;line-height:1.55;margin-bottom:.4rem;border-left:2px solid #D2DCE8;padding-left:8px">"This Node.js service handles 10k req/s. The p99 latency spikes every ~4 minutes. I suspect GC pressure from large object allocations in the request pipeline. Suggest targeted profiling steps and refactor options that avoid heap fragmentation."</p>
+        <p style="font-size:0.75rem;color:#7A8FA6;line-height:1.5;margin:0">Diagnoses before asking. Provides system context, names the likely root cause, requests a scoped solution.</p>
+      </div>
+      <div style="padding:1rem">
+        <span style="font-size:0.65rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;background:#FEF0E3;color:#E05F00;padding:3px 8px;border-radius:100px;display:inline-block;margin-bottom:.6rem">Junior / Non-Expert</span>
+        <p style="font-size:0.8rem;font-style:italic;line-height:1.55;margin-bottom:.4rem;border-left:2px solid #D2DCE8;padding-left:8px">"My app is slow. How do I fix it?"</p>
+        <p style="font-size:0.75rem;color:#7A8FA6;line-height:1.5;margin:0">No context, no hypothesis. The AI returns a generic checklist — none of which may apply to this architecture.</p>
+      </div>
+    </div>
+    <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.12em;color:#7A8FA6;text-align:center;padding:.4rem;background:#F4F7FB;border-top:1px solid #E8EFF8;border-bottom:1px solid #E8EFF8">Outcome</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr">
+      <div style="padding:.75rem 1rem;font-size:0.8rem;line-height:1.5;border-right:1px solid #E8EFF8"><strong style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.1em;color:#27500A;display:block;margin-bottom:.25rem">Expert gets →</strong>Targeted profiling commands, specific refactoring patterns for the GC issue, and benchmark strategies tailored to their stack.</div>
+      <div style="padding:.75rem 1rem;font-size:0.8rem;line-height:1.5"><strong style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.1em;color:#E05F00;display:block;margin-bottom:.25rem">Average Joe gets →</strong>A 10-point generic optimisation article. Hours of irrelevant debugging ahead.</div>
+    </div>
+  </div>
+
+  <div style="border:1px solid #D2DCE8;border-radius:10px;overflow:hidden;margin-bottom:1.25rem">
+    <div style="background:#0D1B2A;color:white;padding:.6rem 1rem;font-size:0.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase">Medicine &amp; Clinical Decision-Making</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr">
+      <div style="padding:1rem;border-right:1px solid #E8EFF8">
+        <span style="font-size:0.65rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;background:#EAF5D8;color:#27500A;padding:3px 8px;border-radius:100px;display:inline-block;margin-bottom:.6rem">Attending Physician</span>
+        <p style="font-size:0.8rem;font-style:italic;line-height:1.55;margin-bottom:.4rem;border-left:2px solid #D2DCE8;padding-left:8px">"Patient is a 58-year-old male, T2DM, CKD stage 3, new onset atrial fibrillation. Current meds: metformin, lisinopril. Evaluate anticoagulation options factoring renal dosing constraints and bleeding risk using CHA₂DS₂-VASc and HAS-BLED."</p>
+        <p style="font-size:0.75rem;color:#7A8FA6;line-height:1.5;margin:0">Applies structured clinical scoring tools, accounts for comorbidities, requests pharmacokinetically appropriate options — not a general list.</p>
+      </div>
+      <div style="padding:1rem">
+        <span style="font-size:0.65rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;background:#FEF0E3;color:#E05F00;padding:3px 8px;border-radius:100px;display:inline-block;margin-bottom:.6rem">Average Patient</span>
+        <p style="font-size:0.8rem;font-style:italic;line-height:1.55;margin-bottom:.4rem;border-left:2px solid #D2DCE8;padding-left:8px">"My heart is beating weird. What medicine should I take?"</p>
+        <p style="font-size:0.75rem;color:#7A8FA6;line-height:1.5;margin:0">Cannot specify the condition, evaluate the output, or safely act on the answer. The AI rightly hedges.</p>
+      </div>
+    </div>
+    <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.12em;color:#7A8FA6;text-align:center;padding:.4rem;background:#F4F7FB;border-top:1px solid #E8EFF8;border-bottom:1px solid #E8EFF8">Outcome</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr">
+      <div style="padding:.75rem 1rem;font-size:0.8rem;line-height:1.5;border-right:1px solid #E8EFF8"><strong style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.1em;color:#27500A;display:block;margin-bottom:.25rem">Expert gets →</strong>A nuanced comparison of apixaban vs. rivaroxaban with renal-adjusted dosing and scored bleeding risk — actionable clinical insight.</div>
+      <div style="padding:.75rem 1rem;font-size:0.8rem;line-height:1.5"><strong style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.1em;color:#E05F00;display:block;margin-bottom:.25rem">Average Joe gets →</strong>"Please consult your healthcare provider." A dead end.</div>
+    </div>
+  </div>
+
+  <div style="border:1px solid #D2DCE8;border-radius:10px;overflow:hidden;margin-bottom:1.25rem">
+    <div style="background:#0D1B2A;color:white;padding:.6rem 1rem;font-size:0.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase">Legal &amp; Contract Analysis</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr">
+      <div style="padding:1rem;border-right:1px solid #E8EFF8">
+        <span style="font-size:0.65rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;background:#EAF5D8;color:#27500A;padding:3px 8px;border-radius:100px;display:inline-block;margin-bottom:.6rem">Corporate Attorney</span>
+        <p style="font-size:0.8rem;font-style:italic;line-height:1.55;margin-bottom:.4rem;border-left:2px solid #D2DCE8;padding-left:8px">"Review this SaaS MSA for one-sided indemnification clauses, uncapped liability exposure, and auto-renewal terms conflicting with enterprise procurement policies. Flag any IP ownership ambiguity in the work-for-hire clause."</p>
+        <p style="font-size:0.75rem;color:#7A8FA6;line-height:1.5;margin:0">Uses precise legal terminology, defines exact scope of review, knows which clauses carry real risk.</p>
+      </div>
+      <div style="padding:1rem">
+        <span style="font-size:0.65rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;background:#FEF0E3;color:#E05F00;padding:3px 8px;border-radius:100px;display:inline-block;margin-bottom:.6rem">Average Business Owner</span>
+        <p style="font-size:0.8rem;font-style:italic;line-height:1.55;margin-bottom:.4rem;border-left:2px solid #D2DCE8;padding-left:8px">"Can you check this contract and tell me if it's okay to sign?"</p>
+        <p style="font-size:0.75rem;color:#7A8FA6;line-height:1.5;margin:0">No legal framework applied. The AI may flag obvious issues but misses the subtle risk clauses an expert catches immediately.</p>
+      </div>
+    </div>
+    <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.12em;color:#7A8FA6;text-align:center;padding:.4rem;background:#F4F7FB;border-top:1px solid #E8EFF8;border-bottom:1px solid #E8EFF8">Outcome</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr">
+      <div style="padding:.75rem 1rem;font-size:0.8rem;line-height:1.5;border-right:1px solid #E8EFF8"><strong style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.1em;color:#27500A;display:block;margin-bottom:.25rem">Expert gets →</strong>A clause-by-clause risk register with negotiation leverage points and recommended redlines — boardroom-ready.</div>
+      <div style="padding:.75rem 1rem;font-size:0.8rem;line-height:1.5"><strong style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.1em;color:#E05F00;display:block;margin-bottom:.25rem">Average Joe gets →</strong>"This contract seems standard, but consult a lawyer for anything binding." Signing blind.</div>
+    </div>
+  </div>
+
+  <div style="border:1px solid #D2DCE8;border-radius:10px;overflow:hidden;margin-bottom:1.25rem">
+    <div style="background:#0D1B2A;color:white;padding:.6rem 1rem;font-size:0.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase">Education &amp; Curriculum Design</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr">
+      <div style="padding:1rem;border-right:1px solid #E8EFF8">
+        <span style="font-size:0.65rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;background:#EAF5D8;color:#27500A;padding:3px 8px;border-radius:100px;display:inline-block;margin-bottom:.6rem">Curriculum Specialist</span>
+        <p style="font-size:0.8rem;font-style:italic;line-height:1.55;margin-bottom:.4rem;border-left:2px solid #D2DCE8;padding-left:8px">"Design a 3-lesson sequence for 2nd graders on place value using Bruner's CPA (Concrete–Pictorial–Abstract) progression. Include formative assessment checkpoints and differentiation strategies for students reading 1–2 grade levels below."</p>
+        <p style="font-size:0.75rem;color:#7A8FA6;line-height:1.5;margin:0">Applies a named pedagogical framework, specifies learner profile, structures output to match how effective instruction is actually designed.</p>
+      </div>
+      <div style="padding:1rem">
+        <span style="font-size:0.65rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;background:#FEF0E3;color:#E05F00;padding:3px 8px;border-radius:100px;display:inline-block;margin-bottom:.6rem">Non-Educator Parent</span>
+        <p style="font-size:0.8rem;font-style:italic;line-height:1.55;margin-bottom:.4rem;border-left:2px solid #D2DCE8;padding-left:8px">"How do I teach my kid about numbers?"</p>
+        <p style="font-size:0.75rem;color:#7A8FA6;line-height:1.5;margin:0">Too broad, no grade anchor, no framework. The AI returns generic activities disconnected from how the child's classroom teaches the concept.</p>
+      </div>
+    </div>
+    <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.12em;color:#7A8FA6;text-align:center;padding:.4rem;background:#F4F7FB;border-top:1px solid #E8EFF8;border-bottom:1px solid #E8EFF8">Outcome</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr">
+      <div style="padding:.75rem 1rem;font-size:0.8rem;line-height:1.5;border-right:1px solid #E8EFF8"><strong style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.1em;color:#27500A;display:block;margin-bottom:.25rem">Expert gets →</strong>A structured lesson sequence with scaffolded objectives, assessment rubrics, and differentiated extensions — ready to deploy.</div>
+      <div style="padding:.75rem 1rem;font-size:0.8rem;line-height:1.5"><strong style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.1em;color:#E05F00;display:block;margin-bottom:.25rem">Average Joe gets →</strong>"Try counting blocks together!" Engaging, but no pedagogical depth or progression.</div>
+    </div>
+  </div>
+
+</div>
+
+<blockquote>"The AI does not close the expertise gap. It widens it. Every field, every task, every prompt." <br/><cite style="font-size:0.75rem;letter-spacing:.08em;text-transform:uppercase;font-style:normal;color:#7A8FA6">— TIBLOGICS AI Times</cite></blockquote>
+
+<h2>The Implication for Your Career</h2>
+<p>Across every field above, the pattern is identical. The expert does not just get a better answer — they get an answer that is actually <em>usable</em>. The average user gets noise they cannot evaluate. And that gap compounds over time: the expert uses AI to accelerate their expertise, while the novice uses AI to bypass learning they have not yet done — and eventually stalls when the outputs stop being good enough.</p>
+<p>Google's pilot encodes this reality into hiring. By evaluating prompt engineering, output validation, and debugging during a live session, they are measuring something specific: can you tell when the AI is wrong? That question has only one honest answer — not unless you know the subject.</p>
+
+<div style="background:#EBF0FA;border-left:3px solid #1B3A6B;padding:1rem 1.25rem;margin:1.5rem 0;border-radius:0 8px 8px 0">
+  <div style="font-size:0.65rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:.4rem;color:#2251A3">The TIBLOGICS Perspective</div>
+  <p style="font-size:0.875rem;line-height:1.6;margin-bottom:0;color:#1B3A6B;font-weight:500">The professionals most at risk in the AI era are not those who lack AI skills. They are those who lack domain skills and expect AI to cover the gap. It never does. Not sustainably. Go deeper in your field. The best prompt engineer in any room is always the person who knows the subject so well they can tell when the model is lying.</p>
+</div>
+
+<h2>A Broader Industry Reckoning</h2>
+<p>Google is not moving alone. Meta launched AI-enabled coding rounds in late 2025. Canva publicly stated it <em>expects</em> engineering candidates to use Copilot, Cursor, and Claude during technical interviews. Shopify and Rippling followed. The whiteboard-only interview is an artefact of a pre-AI world — and the industry knows it.</p>
+<p>What remains to be seen is whether companies will follow Google's lead in structuring the evaluation — not just opening the door to AI, but actively measuring how candidates interact with it. Allowing AI is easy. Building an assessment framework that distinguishes an expert using AI from a novice leaning on it — that requires deep thinking about what professional competence actually means in 2026.</p>
+<p>Google is betting on expertise. The smartest companies always were.</p>
+
+<div style="border:1.5px solid #D2DCE8;border-radius:10px;overflow:hidden;margin:2.5rem 0">
+  <div style="background:#0D1B2A;color:white;padding:.75rem 1.25rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <span style="font-size:0.65rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;background:white;color:#0D1B2A;padding:3px 9px;border-radius:100px;flex-shrink:0">Bonus Take</span>
+    <span style="font-family:var(--font-syne),serif;font-size:0.95rem;font-weight:700;font-style:italic">From the Founder's Desk — Tieyiwe Bassole</span>
+  </div>
+  <div style="padding:1.25rem 1.5rem 1.5rem">
+    <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:.12em;color:#7A8FA6;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid #E8EFF8"><strong style="color:#0D1B2A;font-weight:600">Tieyiwe Bassole</strong> &nbsp;·&nbsp; Founder, TIBLOGICS &nbsp;·&nbsp; AI Implementation Strategist</div>
+    <p>I want to add something the industry has not yet talked about — and I think it is going to become a very real evaluation metric sooner than people expect.</p>
+    <p><strong>Token consumption.</strong></p>
+    <p>Think about it. If companies are already allowing AI in interviews, the next logical step is instrumenting the session. And once you can measure how a candidate uses an AI tool in real time, one of the most revealing signals you could capture is: <em>how many tokens did it take them to get to the right answer?</em></p>
+    <blockquote>"The expert arrives at the solution in three precise prompts. The novice burns twenty trying to figure out what question to ask." <br/><cite style="font-size:0.75rem;letter-spacing:.08em;text-transform:uppercase;font-style:normal;color:#7A8FA6">— Tieyiwe Bassole, Founder, TIBLOGICS</cite></blockquote>
+    <p>Here is my thesis: experts will consistently reach the correct solution while consuming significantly fewer tokens than novices. Not because they type less — but because they operate from a much shorter learning curve. The novice walks into the session still figuring out the domain <em>and</em> the tool simultaneously. Their token spend looks like exploration. The expert already knows what they are looking for. Their token spend looks like execution.</p>
+    <p>An expert software engineer does not ask the AI to explain what garbage collection is before asking about GC pressure. A seasoned finance analyst does not prompt the AI to define free cash flow before requesting a DuPont decomposition. They skip the orientation phase entirely — and that compression shows up directly in the token log.</p>
+    <div style="margin:1.25rem 0;background:#F4F7FB;border-radius:10px;padding:1rem 1.25rem">
+      <div style="font-size:0.65rem;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#7A8FA6;margin-bottom:.85rem">Illustrative token spend to reach correct solution — same task, same AI</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:.7rem">
+        <div style="font-size:0.75rem;width:115px;flex-shrink:0;line-height:1.3">Domain expert</div>
+        <div style="flex:1;background:white;border-radius:4px;height:22px;overflow:hidden;border:1px solid #D2DCE8">
+          <div style="width:28%;height:100%;background:#C0DD97;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:0.7rem;font-weight:600;color:#27500A">Precise</div>
+        </div>
+        <div style="font-size:0.75rem;color:#7A8FA6;width:75px;text-align:right;flex-shrink:0">~1,200 tokens</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:.7rem">
+        <div style="font-size:0.75rem;width:115px;flex-shrink:0;line-height:1.3">Intermediate user</div>
+        <div style="flex:1;background:white;border-radius:4px;height:22px;overflow:hidden;border:1px solid #D2DCE8">
+          <div style="width:58%;height:100%;background:#FAC775;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:0.7rem;font-weight:600;color:#633806">Iterating</div>
+        </div>
+        <div style="font-size:0.75rem;color:#7A8FA6;width:75px;text-align:right;flex-shrink:0">~3,800 tokens</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="font-size:0.75rem;width:115px;flex-shrink:0;line-height:1.3">Novice / no domain</div>
+        <div style="flex:1;background:white;border-radius:4px;height:22px;overflow:hidden;border:1px solid #D2DCE8">
+          <div style="width:92%;height:100%;background:#F5C4B3;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:0.7rem;font-weight:600;color:#712B13">Exploring</div>
+        </div>
+        <div style="font-size:0.75rem;color:#7A8FA6;width:75px;text-align:right;flex-shrink:0">~7,500 tokens</div>
+      </div>
+    </div>
+    <p>This matters far beyond interviews. In a real work environment, token spend is operating cost. A team of shallow AI users burning 6× more tokens than a team of domain experts to produce equivalent output is a direct line to eroded margins and slower delivery. Token efficiency is about to become a proxy for professional competence — and at scale, a real line item on the P&amp;L.</p>
+    <div style="background:#EBF0FA;border-left:3px solid #F47C20;padding:1rem 1.25rem;margin:1.5rem 0;border-radius:0 8px 8px 0">
+      <div style="font-size:0.65rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:.4rem;color:#F47C20">The Prediction</div>
+      <p style="font-size:0.875rem;line-height:1.6;margin-bottom:0;color:#1B3A6B;font-weight:500">Within the next two hiring cycles, at least one major tech company will add token efficiency to their AI interview rubric — measuring not just whether the candidate found the solution, but how economically they got there. Screenshot this.</p>
+    </div>
+    <p>Google opened the door to AI in interviews. The next evolution is measuring the <em>quality</em> of how candidates use it. And when that happens, the token log will tell you everything about who actually knows their craft — and who was hoping the AI would figure it out for them.</p>
+    <p><strong>Expertise was never optional. It just became measurable in a brand new way.</strong></p>
+  </div>
+</div>`,
+  },
 ];
 
 const OWNER_EMAIL = "tieyiwebass@gmail.com";
