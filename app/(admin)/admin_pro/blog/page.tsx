@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   RefreshCw, Plus, Trash2, Eye, EyeOff, Star, Loader2,
-  Zap, Bot, BarChart2, FileText,
+  Zap, Bot, BarChart2, FileText, ImageIcon,
 } from "lucide-react";
 
 interface Post {
@@ -13,6 +13,7 @@ interface Post {
   title: string;
   category: string;
   coverEmoji: string;
+  coverImage: string | null;
   featured: boolean;
   published: boolean;
   aiGenerated: boolean;
@@ -133,6 +134,21 @@ export default function BlogAdminPage() {
     setPosts((ps) =>
       ps.map((p) => (p.id === id ? { ...p, featured: !current } : p))
     );
+  }
+
+  async function updateCoverImage(id: string, currentCover: string | null) {
+    const isBroken = !currentCover || currentCover.startsWith("/");
+    const msg = isBroken
+      ? "Enter a new cover image URL (Unsplash recommended):\n⚠️ Current cover is a local file that won't load in production."
+      : "Enter a new cover image URL:";
+    const newUrl = window.prompt(msg, currentCover ?? "");
+    if (!newUrl || newUrl === currentCover) return;
+    await fetch(`/api/blog/posts/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ coverImage: newUrl }),
+    });
+    setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, coverImage: newUrl } : p)));
   }
 
   async function deletePost(id: string) {
@@ -370,6 +386,21 @@ export default function BlogAdminPage() {
                         >
                           <Eye size={14} />
                         </Link>
+                        <button
+                          onClick={() => updateCoverImage(p.id, p.coverImage)}
+                          className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
+                            !p.coverImage || p.coverImage.startsWith("/")
+                              ? "text-red-400 hover:bg-red-50 hover:text-red-600"
+                              : "text-[#7A8FA6] hover:bg-[#F4F7FB] hover:text-[#2251A3]"
+                          }`}
+                          title={
+                            !p.coverImage || p.coverImage.startsWith("/")
+                              ? "⚠️ Local cover — won't load in production. Click to fix."
+                              : "Edit cover image URL"
+                          }
+                        >
+                          <ImageIcon size={14} />
+                        </button>
                         {(() => {
                           const featuredCount = posts.filter((x) => x.featured).length;
                           const atMax = featuredCount >= 2 && !p.featured;
