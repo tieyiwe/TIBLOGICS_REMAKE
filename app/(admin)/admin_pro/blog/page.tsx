@@ -49,6 +49,7 @@ export default function BlogAdminPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [repairing, setRepairing] = useState(false);
   const [repairResult, setRepairResult] = useState<string | null>(null);
+  const [featuredError, setFeaturedError] = useState<string | null>(null);
   const [stats, setStats] = useState({ total: 0, published: 0, aiGenerated: 0, totalViews: 0 });
 
   async function loadData() {
@@ -116,6 +117,14 @@ export default function BlogAdminPage() {
   }
 
   async function toggleFeatured(id: string, current: boolean) {
+    if (!current) {
+      const featuredCount = posts.filter((p) => p.featured).length;
+      if (featuredCount >= 2) {
+        setFeaturedError("Max 2 featured articles allowed. Unfeature one first.");
+        setTimeout(() => setFeaturedError(null), 4000);
+        return;
+      }
+    }
     await fetch(`/api/blog/posts/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -186,6 +195,13 @@ export default function BlogAdminPage() {
         <div className="bg-green-50 border border-green-200 text-green-800 rounded-xl px-4 py-3 text-sm font-dm flex items-center justify-between">
           <span>{repairResult}</span>
           <button onClick={() => setRepairResult(null)} className="text-green-600 hover:text-green-800 ml-4">✕</button>
+        </div>
+      )}
+
+      {featuredError && (
+        <div className="bg-orange-50 border border-orange-200 text-orange-800 rounded-xl px-4 py-3 text-sm font-dm flex items-center justify-between">
+          <span>⭐ {featuredError}</span>
+          <button onClick={() => setFeaturedError(null)} className="text-orange-600 hover:text-orange-800 ml-4">✕</button>
         </div>
       )}
 
@@ -354,17 +370,25 @@ export default function BlogAdminPage() {
                         >
                           <Eye size={14} />
                         </Link>
-                        <button
-                          onClick={() => toggleFeatured(p.id, p.featured)}
-                          className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
-                            p.featured
-                              ? "bg-[#FEF0E3] text-[#F47C20] hover:bg-orange-100"
-                              : "hover:bg-[#FEF0E3] text-[#7A8FA6] hover:text-[#F47C20]"
-                          }`}
-                          title={p.featured ? "Unfeature" : "Feature this post"}
-                        >
-                          <Star size={14} className={p.featured ? "fill-current" : ""} />
-                        </button>
+                        {(() => {
+                          const featuredCount = posts.filter((x) => x.featured).length;
+                          const atMax = featuredCount >= 2 && !p.featured;
+                          return (
+                            <button
+                              onClick={() => toggleFeatured(p.id, p.featured)}
+                              className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
+                                p.featured
+                                  ? "bg-[#FEF0E3] text-[#F47C20] hover:bg-orange-100"
+                                  : atMax
+                                  ? "text-[#D2DCE8] cursor-not-allowed"
+                                  : "hover:bg-[#FEF0E3] text-[#7A8FA6] hover:text-[#F47C20]"
+                              }`}
+                              title={p.featured ? "Unfeature" : atMax ? "Max 2 featured — unfeature one first" : "Feature this post"}
+                            >
+                              <Star size={14} className={p.featured ? "fill-current" : ""} />
+                            </button>
+                          );
+                        })()}
                         <button
                           onClick={() => togglePublish(p.id, p.published)}
                           className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#F4F7FB] text-[#7A8FA6] transition-colors"

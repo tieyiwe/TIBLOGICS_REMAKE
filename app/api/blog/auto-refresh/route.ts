@@ -1461,22 +1461,28 @@ async function patchAllMissingCovers(): Promise<void> {
   } catch { /* non-blocking */ }
 }
 
-// Slot 1: always the newest article. Slot 2: rotates weekly through the rest.
+// Auto-feature rotation: only runs when admin has NOT manually selected featured articles.
+// If 2 articles are already marked featured, rotation is skipped to preserve manual choices.
 async function patchFeaturedRotation(): Promise<void> {
   try {
     const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
     const articles = await prisma.blogPost.findMany({
       where: { published: true },
-      select: { id: true },
-      orderBy: { createdAt: "desc" }, // newest first
+      select: { id: true, featured: true },
+      orderBy: { createdAt: "desc" },
     });
     if (articles.length < 2) return;
 
-    const newestId = articles[0].id;
-    const rest = articles.slice(1); // all except newest
+    const manuallyFeatured = articles.filter((a) => a.featured);
 
-    // Slot 2 rotates weekly
+    // Admin has manually chosen 2 — respect it, don't touch featured flags
+    if (manuallyFeatured.length >= 2) return;
+
+    // If 0 or 1 are featured, auto-fill remaining slots via weekly rotation
+    const newestId = articles[0].id;
+    const rest = articles.slice(1).filter((a) => !a.featured);
+
     const [lastRotationSetting, indexSetting] = await Promise.all([
       prisma.adminSettings.findUnique({ where: { key: "featured:last_rotation" } }),
       prisma.adminSettings.findUnique({ where: { key: "featured:current_index" } }),
@@ -1485,13 +1491,22 @@ async function patchFeaturedRotation(): Promise<void> {
     const needsRotation = Date.now() - lastRotation >= WEEK_MS;
 
     let rotatingIndex = indexSetting ? parseInt(indexSetting.value) : 0;
-    if (needsRotation) rotatingIndex = (rotatingIndex + 1) % rest.length;
+    if (needsRotation) rotatingIndex = (rotatingIndex + 1) % Math.max(rest.length, 1);
 
-    const rotatingId = rest[rotatingIndex % rest.length].id;
+    const idsToFeature = new Set<string>(manuallyFeatured.map((a) => a.id));
+    if (!idsToFeature.has(newestId)) idsToFeature.add(newestId);
+    if (idsToFeature.size < 2 && rest.length > 0) {
+      idsToFeature.add(rest[rotatingIndex % rest.length].id);
+    }
 
-    // Clear all featured flags then set exactly 2
-    await prisma.blogPost.updateMany({ data: { featured: false } });
-    await prisma.blogPost.updateMany({ where: { id: { in: [newestId, rotatingId] } }, data: { featured: true } });
+    // Only update articles that need to change — never wipe existing manual flags
+    const toEnable = articles.filter((a) => idsToFeature.has(a.id) && !a.featured);
+    const toDisable = articles.filter((a) => !idsToFeature.has(a.id) && a.featured);
+
+    await Promise.all([
+      ...toEnable.map((a) => prisma.blogPost.update({ where: { id: a.id }, data: { featured: true } })),
+      ...toDisable.map((a) => prisma.blogPost.update({ where: { id: a.id }, data: { featured: false } })),
+    ]);
 
     if (needsRotation) {
       await Promise.all([
