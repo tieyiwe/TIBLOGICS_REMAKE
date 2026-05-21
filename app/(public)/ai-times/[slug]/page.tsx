@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { Suspense } from "react";
 import fs from "fs";
 import path from "path";
+import Anthropic from "@anthropic-ai/sdk";
 import BlogPostClient from "./BlogPostClient";
 
 const SITE_URL = (process.env.NEXTAUTH_URL || "https://tiblogics.com").replace(/\/$/, "");
@@ -9,6 +10,58 @@ const FALLBACK_IMAGE = `${SITE_URL}/og-image.png`;
 
 const LOCALE_MAP: Record<string, string> = { en: "en_US", fr: "fr_FR", sw: "sw_KE" };
 const LANG_LABEL: Record<string, string> = { fr: "Français", sw: "Kiswahili" };
+const LANG_NAMES: Record<string, string> = { fr: "French", sw: "Swahili" };
+
+// Translate only title+excerpt for OG metadata. Uses a separate DB key (tx-meta:)
+// so it doesn't collide with the full article translation cache (tx:).
+async function translateMeta(
+  prisma: import("@prisma/client").PrismaClient,
+  slug: string,
+  lang: "fr" | "sw",
+  title: string,
+  excerpt: string
+): Promise<{ title: string; excerpt: string }> {
+  const metaKey = `tx-meta:${slug}:${lang}`;
+
+  // Check meta-only cache first
+  try {
+    const cached = await prisma.adminSettings.findUnique({ where: { key: metaKey } });
+    if (cached?.value) {
+      const parsed = JSON.parse(cached.value);
+      if (parsed.title && parsed.excerpt) return parsed;
+    }
+  } catch { /* cache miss */ }
+
+  const langName = LANG_NAMES[lang];
+  const prompt = `Translate the title and excerpt below into ${langName}.
+Return ONLY a raw JSON object with exactly two keys: "title" and "excerpt". No markdown, no explanation.
+
+TITLE: ${title}
+
+EXCERPT: ${excerpt.slice(0, 300)}`;
+
+  const haiku = new Anthropic().messages;
+  const response = await haiku.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 512,
+    messages: [{ role: "user", content: prompt }],
+  });
+
+  const raw = response.content[0].type === "text" ? response.content[0].text.trim() : "";
+  const jsonStr = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "");
+  const tx: { title?: string; excerpt?: string } = JSON.parse(jsonStr);
+
+  if (!tx.title || !tx.excerpt) throw new Error("incomplete translation");
+
+  // Cache so the next social crawl for this slug+lang is instant
+  prisma.adminSettings.upsert({
+    where: { key: metaKey },
+    create: { key: metaKey, value: JSON.stringify(tx) },
+    update: { value: JSON.stringify(tx) },
+  }).catch(() => {});
+
+  return { title: tx.title, excerpt: tx.excerpt };
+}
 
 function toOgImage(coverImage: string | null): string {
   if (!coverImage) return FALLBACK_IMAGE;
@@ -63,12 +116,23 @@ export async function generateMetadata(
     // Use translated title/description if available and language is not English
     let title = post.title;
     let description = post.excerpt.slice(0, 200);
-    if (lang !== "en" && txCache?.value) {
-      try {
-        const tx = JSON.parse(txCache.value);
-        if (tx.title) title = tx.title;
-        if (tx.excerpt) description = tx.excerpt.slice(0, 200);
-      } catch { /* fall back to English */ }
+    if (lang !== "en") {
+      if (txCache?.value) {
+        // Full article translation already cached — use it
+        try {
+          const tx = JSON.parse(txCache.value);
+          if (tx.title) title = tx.title;
+          if (tx.excerpt) description = tx.excerpt.slice(0, 200);
+        } catch { /* fall back to English */ }
+      } else {
+        // No cache yet — generate a quick title+excerpt translation so social previews
+        // show the correct language even before any human has visited the page.
+        try {
+          const meta = await translateMeta(prisma, slug, lang as "fr" | "sw", post.title, post.excerpt);
+          title = meta.title;
+          description = meta.excerpt.slice(0, 200);
+        } catch { /* fall back to English title/description */ }
+      }
     }
 
     const pageUrl = lang === "en"
