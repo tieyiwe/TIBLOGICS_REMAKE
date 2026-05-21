@@ -54,7 +54,7 @@ export default function BlogAdminPage() {
   async function loadData() {
     try {
       const [postsRes, breakingRes, statusRes] = await Promise.all([
-        fetch("/api/blog/posts?limit=200"),
+        fetch("/api/blog/posts?limit=1000"),
         fetch("/api/blog/breaking-news"),
         fetch("/api/blog/auto-refresh?check=true"),
       ]);
