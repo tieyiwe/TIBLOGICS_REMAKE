@@ -113,6 +113,17 @@ export default function BlogAdminPage() {
     );
   }
 
+  async function toggleFeatured(id: string, current: boolean) {
+    await fetch(`/api/blog/posts/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ featured: !current }),
+    });
+    setPosts((ps) =>
+      ps.map((p) => (p.id === id ? { ...p, featured: !current } : p))
+    );
+  }
+
   async function deletePost(id: string) {
     const post = posts.find((p) => p.id === id);
     const isManual = post && !post.aiGenerated;
@@ -334,12 +345,24 @@ export default function BlogAdminPage() {
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-1">
                         <Link
-                          href={`/blog/${p.slug}`}
+                          href={`/ai-times/${p.slug}`}
                           target="_blank"
                           className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#EBF0FA] text-[#7A8FA6] hover:text-[#2251A3] transition-colors"
+                          title="View post"
                         >
                           <Eye size={14} />
                         </Link>
+                        <button
+                          onClick={() => toggleFeatured(p.id, p.featured)}
+                          className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
+                            p.featured
+                              ? "bg-[#FEF0E3] text-[#F47C20] hover:bg-orange-100"
+                              : "hover:bg-[#FEF0E3] text-[#7A8FA6] hover:text-[#F47C20]"
+                          }`}
+                          title={p.featured ? "Unfeature" : "Feature this post"}
+                        >
+                          <Star size={14} className={p.featured ? "fill-current" : ""} />
+                        </button>
                         <button
                           onClick={() => togglePublish(p.id, p.published)}
                           className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#F4F7FB] text-[#7A8FA6] transition-colors"
@@ -350,6 +373,7 @@ export default function BlogAdminPage() {
                         <button
                           onClick={() => deletePost(p.id)}
                           className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-[#7A8FA6] hover:text-red-500 transition-colors"
+                          title="Delete post"
                         >
                           <Trash2 size={14} />
                         </button>

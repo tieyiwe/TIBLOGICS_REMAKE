@@ -2494,17 +2494,29 @@ export async function GET(req: NextRequest) {
   } catch { /* ignore if table missing */ }
 
   try {
-    // Always insert editorial spotlights if not already present
+    // Fetch all existing titles once — avoids N sequential DB round-trips in the seeding loops
+    const allExisting = await prisma.blogPost.findMany({
+      select: { id: true, title: true, slug: true, author: true, coverImage: true },
+    });
+    const existingTitles = new Set(allExisting.map((p) => p.title.toLowerCase().trim()));
+    const existingSlugSet = new Set(allExisting.map((p) => p.slug));
+    function titleExists(t: string) {
+      const norm = t.toLowerCase().trim();
+      return [...existingTitles].some((et) => et.includes(norm.slice(0, 50)) || norm.includes(et.slice(0, 50)));
+    }
+    function freshSlug(base: string) {
+      let s = base; let i = 1;
+      while (existingSlugSet.has(s)) s = `${base}-${i++}`;
+      existingSlugSet.add(s);
+      return s;
+    }
+
+    // Insert editorial spotlights not already in DB
     for (const sp of EDITORIAL_SPOTLIGHTS) {
       try {
-        const dupCheck = await prisma.blogPost.findFirst({
-          where: { title: { contains: sp.title.slice(0, 50), mode: "insensitive" } },
-          select: { id: true },
-        });
-        if (dupCheck) continue;
-        const baseSlug = sp.title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-").slice(0, 70);
-        let slug = baseSlug; let si = 1;
-        while (await prisma.blogPost.findUnique({ where: { slug } })) slug = `${baseSlug}-${si++}`;
+        if (titleExists(sp.title)) continue;
+        const base = sp.title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-").slice(0, 70);
+        const slug = freshSlug(base);
         await prisma.blogPost.create({
           data: {
             slug, title: sp.title, excerpt: sp.excerpt, content: sp.content,
@@ -2516,51 +2528,46 @@ export async function GET(req: NextRequest) {
           },
         });
         postsAdded++;
-        // Pre-translate immediately so language buttons are instant
+        existingTitles.add(sp.title.toLowerCase().trim());
+        // Fire translations in background — don't block the refresh response
         const spotlightPost = { title: sp.title, excerpt: sp.excerpt, content: sp.content };
         for (const lang of ["fr", "sw"] as const) {
-          try { await translatePostContent(slug, spotlightPost, lang); } catch { /* non-blocking */ }
+          translatePostContent(slug, spotlightPost, lang).catch(() => {});
         }
       } catch { /* skip duplicate */ }
     }
 
     // Patch author on any spotlight that already exists with wrong author
-    for (const sp of EDITORIAL_SPOTLIGHTS) {
-      const spAuthor = (sp as { author?: string }).author;
-      if (!spAuthor) continue;
-      try {
-        const existing = await prisma.blogPost.findFirst({
-          where: { title: { contains: sp.title.slice(0, 50), mode: "insensitive" } },
-          select: { id: true, author: true },
-        });
-        if (existing && existing.author !== spAuthor) {
-          await prisma.blogPost.update({ where: { id: existing.id }, data: { author: spAuthor } });
-        }
-      } catch { /* ignore */ }
+    const spAuthorMap = new Map(
+      EDITORIAL_SPOTLIGHTS.filter((sp) => (sp as { author?: string }).author)
+        .map((sp) => [sp.title.toLowerCase().trim(), (sp as { author?: string }).author!])
+    );
+    const toAuthorPatch = allExisting.filter((p) => {
+      const expected = spAuthorMap.get(p.title.toLowerCase().trim());
+      return expected && p.author !== expected;
+    });
+    if (toAuthorPatch.length > 0) {
+      await Promise.all(
+        toAuthorPatch.map((p) =>
+          prisma.blogPost.update({ where: { id: p.id }, data: { author: spAuthorMap.get(p.title.toLowerCase().trim())! } })
+        )
+      );
     }
 
-    // Always ensure all seed posts are present (safe — each checks for duplicates first)
+    // Insert seed posts not already in DB
     for (let idx = 0; idx < SEED_POSTS.length; idx++) {
       const sp = SEED_POSTS[idx];
       try {
-        const dupCheck = await prisma.blogPost.findFirst({
-          where: { title: { contains: sp.title.slice(0, 50), mode: "insensitive" } },
-          select: { id: true, coverImage: true },
-        });
-        if (dupCheck) {
-          // Patch missing or local-file coverImage with the Unsplash fallback from seed
-          const needsPatch = !dupCheck.coverImage || dupCheck.coverImage.startsWith("/");
+        const existing = allExisting.find((p) => p.title.toLowerCase().trim().includes(sp.title.toLowerCase().slice(0, 50)));
+        if (existing) {
+          const needsPatch = !existing.coverImage || existing.coverImage.startsWith("/");
           if (needsPatch && sp.coverImage && !sp.coverImage.startsWith("/")) {
-            await prisma.blogPost.update({
-              where: { id: dupCheck.id },
-              data: { coverImage: sp.coverImage },
-            });
+            await prisma.blogPost.update({ where: { id: existing.id }, data: { coverImage: sp.coverImage } });
           }
           continue;
         }
-        const baseSlug = sp.title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-").slice(0, 70);
-        let slug = baseSlug; let si = 1;
-        while (await prisma.blogPost.findUnique({ where: { slug } })) slug = `${baseSlug}-${si++}`;
+        const base = sp.title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-").slice(0, 70);
+        const slug = freshSlug(base);
         await prisma.blogPost.create({
           data: {
             slug, title: sp.title, excerpt: sp.excerpt, content: sp.content,
@@ -2572,10 +2579,10 @@ export async function GET(req: NextRequest) {
           },
         });
         postsAdded++;
-        // Pre-translate immediately so language buttons are instant for new seed posts
+        existingTitles.add(sp.title.toLowerCase().trim());
         const seedPost = { title: sp.title, excerpt: sp.excerpt, content: sp.content };
         for (const lang of ["fr", "sw"] as const) {
-          try { await translatePostContent(slug, seedPost, lang); } catch { /* non-blocking */ }
+          translatePostContent(slug, seedPost, lang).catch(() => {});
         }
       } catch { /* skip duplicate */ }
     }
@@ -2596,65 +2603,60 @@ export async function GET(req: NextRequest) {
     ...devArticles.map((a) => ({ title: a.title, url: a.url, source: "DEV.to" })),
   ];
 
-  for (const item of sources.slice(0, 5)) {
-    try {
-      const existing = await prisma.blogPost.findFirst({
-        where: {
-          OR: [
-            { title: { contains: item.title.slice(0, 50), mode: "insensitive" } },
-            ...(item.url ? [{ sourceUrl: item.url }] : []),
-          ],
-        },
-      });
-      if (existing) continue;
+  // Fetch existing slugs and URLs once more for source-article dedup
+  const existingSourceUrls = new Set(
+    (await prisma.blogPost.findMany({ select: { sourceUrl: true } }))
+      .map((p) => p.sourceUrl)
+      .filter(Boolean) as string[]
+  );
+  const existingSourceTitles = new Set(
+    (await prisma.blogPost.findMany({ select: { title: true } }))
+      .map((p) => p.title.toLowerCase())
+  );
 
-      const generated = await generatePost(item.title, item.url, item.source);
-      if (!generated) continue;
-      const meta = CATEGORY_META[generated.category] ?? CATEGORY_META["industry"];
-      const tipsHtml = await generateTips(item.title, generated.content);
+  const newSources = sources.slice(0, 5).filter((item) => {
+    if (item.url && existingSourceUrls.has(item.url)) return false;
+    if (existingSourceTitles.has(item.title.toLowerCase())) return false;
+    return true;
+  });
 
-      const baseSlug = item.title
-        .toLowerCase()
-        .replace(/[^a-z0-9\s]/g, "")
-        .trim()
-        .replace(/\s+/g, "-")
-        .slice(0, 70);
+  // Process up to 3 source articles concurrently to cut wait time
+  const CONCURRENCY = 3;
+  for (let i = 0; i < newSources.length; i += CONCURRENCY) {
+    const batch = newSources.slice(i, i + CONCURRENCY);
+    await Promise.all(batch.map(async (item) => {
+      try {
+        const generated = await generatePost(item.title, item.url, item.source);
+        if (!generated) return;
+        const meta = CATEGORY_META[generated.category] ?? CATEGORY_META["industry"];
+        const [tipsHtml] = await Promise.all([generateTips(item.title, generated.content)]);
 
-      let slug = baseSlug;
-      let i = 1;
-      while (await prisma.blogPost.findUnique({ where: { slug } })) {
-        slug = `${baseSlug}-${i++}`;
+        const baseSlug = item.title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-").slice(0, 70);
+        let slug = baseSlug; let si = 1;
+        while (await prisma.blogPost.findUnique({ where: { slug } })) slug = `${baseSlug}-${si++}`;
+
+        await prisma.blogPost.create({
+          data: {
+            slug, title: item.title, excerpt: generated.excerpt,
+            content: generated.content + tipsHtml, category: generated.category,
+            tags: generated.tags, coverEmoji: meta.emoji, coverGradient: meta.gradient,
+            coverImage: pickFreshImage(generated.category, usedImages),
+            author: "Echelon by TIBLOGICS",
+            readingTime: Math.ceil(generated.content.replace(/<[^>]*>/g, "").split(" ").length / 200),
+            featured: false, published: true, aiGenerated: true,
+            sourceUrl: item.url, sourceTitle: item.source,
+          },
+        });
+        postsAdded++;
+        // Translations fire in background — don't block response
+        const newPost = { title: item.title, excerpt: generated.excerpt, content: generated.content + tipsHtml };
+        for (const lang of ["fr", "sw"] as const) {
+          translatePostContent(slug, newPost, lang).catch(() => {});
+        }
+      } catch (e) {
+        errors.push(String(e));
       }
-
-      await prisma.blogPost.create({
-        data: {
-          slug,
-          title: item.title,
-          excerpt: generated.excerpt,
-          content: generated.content + tipsHtml,
-          category: generated.category,
-          tags: generated.tags,
-          coverEmoji: meta.emoji,
-          coverGradient: meta.gradient,
-          coverImage: pickFreshImage(generated.category, usedImages),
-          author: "Echelon by TIBLOGICS",
-          readingTime: Math.ceil(generated.content.replace(/<[^>]*>/g, "").split(" ").length / 200),
-          featured: false,
-          published: true,
-          aiGenerated: true,
-          sourceUrl: item.url,
-          sourceTitle: item.source,
-        },
-      });
-      postsAdded++;
-      // Pre-translate into fr and sw immediately so users never wait
-      const newPost = { title: item.title, excerpt: generated.excerpt, content: generated.content + tipsHtml };
-      for (const lang of ["fr", "sw"] as const) {
-        try { await translatePostContent(slug, newPost, lang); } catch { /* non-blocking */ }
-      }
-    } catch (e) {
-      errors.push(String(e));
-    }
+    }));
   }
 
   // Update last refresh timestamp — ignore if table missing
