@@ -1373,6 +1373,33 @@ async function patchDuplicateCoverImages(usedImages: Set<string>): Promise<numbe
   return patched;
 }
 
+// Patch Google interview article to ensure its content matches the full original HTML.
+// Checks for the missing divider + "Expert vs. Average" subheading as a signal.
+async function patchGoogleInterviewContent() {
+  try {
+    const post = await prisma.blogPost.findFirst({
+      where: { title: { contains: "Google Just Said Yes to AI in Interviews", mode: "insensitive" } },
+      select: { id: true, content: true },
+    });
+    if (!post) return;
+    // If either missing section is absent, replace the entire content with the full version
+    const missingDivider = !post.content.includes("Expert vs. Average: The Same AI");
+    const missingFooter = !post.content.includes("tiblogics.com");
+    if (missingDivider || missingFooter) {
+      // Pull the full content from EDITORIAL_SPOTLIGHTS
+      const spotlight = EDITORIAL_SPOTLIGHTS.find((s) =>
+        s.title.includes("Google Just Said Yes to AI in Interviews")
+      );
+      if (spotlight) {
+        await prisma.blogPost.update({
+          where: { id: post.id },
+          data: { content: spotlight.content, coverImage: "/google-ai-interview-cover.png" },
+        });
+      }
+    }
+  } catch { /* ignore */ }
+}
+
 async function patchTieyiweCover() {
   try {
     const post = await prisma.blogPost.findFirst({
@@ -1972,6 +1999,9 @@ const EDITORIAL_SPOTLIGHTS = [
 <p>AI is a multiplier. Like any multiplier, it amplifies what you bring to it. A shallow prompt from a novice returns shallow output — faster. A precise, expert prompt returns insight the novice would not even know to ask for. The AI does not close the expertise gap. It widens it.</p>
 <p>The clearest way to see this is to compare how an expert and an average user approach the <em>same task</em> across different fields.</p>
 
+<div style="text-align:center;margin:1.5rem 0;color:#9a9a9a;font-size:14px;letter-spacing:.4em">— · —</div>
+<h2>Expert vs. Average: The Same AI, Very Different Results</h2>
+
 <div style="margin:2rem 0">
 
   <div style="border:1px solid #D2DCE8;border-radius:10px;overflow:hidden;margin-bottom:1.25rem">
@@ -2081,6 +2111,8 @@ const EDITORIAL_SPOTLIGHTS = [
 
 </div>
 
+<div style="text-align:center;margin:1.5rem 0;color:#9a9a9a;font-size:14px;letter-spacing:.4em">— · —</div>
+
 <blockquote>"The AI does not close the expertise gap. It widens it. Every field, every task, every prompt." <br/><cite style="font-size:0.75rem;letter-spacing:.08em;text-transform:uppercase;font-style:normal;color:#7A8FA6">— TIBLOGICS AI Times</cite></blockquote>
 
 <h2>The Implication for Your Career</h2>
@@ -2141,6 +2173,19 @@ const EDITORIAL_SPOTLIGHTS = [
     </div>
     <p>Google opened the door to AI in interviews. The next evolution is measuring the <em>quality</em> of how candidates use it. And when that happens, the token log will tell you everything about who actually knows their craft — and who was hoping the AI would figure it out for them.</p>
     <p><strong>Expertise was never optional. It just became measurable in a brand new way.</strong></p>
+  </div>
+</div>
+
+<hr style="border:none;border-top:2px solid #0D1B2A;margin:2rem 0 .75rem" />
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+  <div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#7A8FA6;font-weight:300">TIBLOGICS AI Times &nbsp;·&nbsp; tiblogics.com &nbsp;·&nbsp; © 2026</div>
+  <div>
+    <span style="display:inline-block;border:.5px solid #D2DCE8;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:100px;color:#7A8FA6;margin-right:5px;margin-top:6px">AI Hiring</span>
+    <span style="display:inline-block;border:.5px solid #D2DCE8;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:100px;color:#7A8FA6;margin-right:5px;margin-top:6px">Google</span>
+    <span style="display:inline-block;border:.5px solid #D2DCE8;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:100px;color:#7A8FA6;margin-right:5px;margin-top:6px">Future of Work</span>
+    <span style="display:inline-block;border:.5px solid #D2DCE8;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:100px;color:#7A8FA6;margin-right:5px;margin-top:6px">Expertise</span>
+    <span style="display:inline-block;border:.5px solid #D2DCE8;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:100px;color:#7A8FA6;margin-right:5px;margin-top:6px">Token Efficiency</span>
+    <span style="display:inline-block;border:.5px solid #D2DCE8;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:100px;color:#7A8FA6;margin-top:6px">Prompt Engineering</span>
   </div>
 </div>`,
   },
@@ -2499,6 +2544,7 @@ export async function GET(req: NextRequest) {
 
   // Fast DB-only patches — always run, no Claude calls
   await Promise.all([
+    patchGoogleInterviewContent(),
     patchTieyiweCover(),
     patchArticleCoverOverrides(),
     patchAllMissingCovers(),
