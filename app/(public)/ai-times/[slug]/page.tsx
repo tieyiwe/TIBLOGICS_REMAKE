@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { Suspense } from "react";
 import BlogPostClient from "./BlogPostClient";
 
 const SITE_URL = (process.env.NEXTAUTH_URL || "https://tiblogics.com").replace(/\/$/, "");
@@ -152,7 +153,9 @@ export default async function BlogPostPage(
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       )}
-      <BlogPostClient preloadedTranslations={preloadedTranslations} />
+      <Suspense fallback={null}>
+        <BlogPostClient preloadedTranslations={preloadedTranslations} />
+      </Suspense>
     </>
   );
 }

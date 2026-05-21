@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { Clock, ArrowLeft, Share2, BookOpen, ExternalLink, Calendar, MessageCircle, X, TrendingUp, Flame } from "lucide-react";
 
 interface BlogPost {
@@ -111,6 +111,7 @@ export default function BlogPostPage({
 }) {
   const params = useParams();
   const slug = params?.slug as string;
+  const searchParams = useSearchParams();
   const [post, setPost] = useState<BlogPost | null>(null);
   const [related, setRelated] = useState<RelatedPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,8 +126,9 @@ export default function BlogPostPage({
   const articleRef = useRef<HTMLElement>(null);
   const [heroImgFailed, setHeroImgFailed] = useState(false);
   const [heroCoverFailed, setHeroCoverFailed] = useState(false);
-  const [language, setLanguage] = useState<"en" | "fr" | "sw">("en");
-  const [translating, setTranslating] = useState(false);
+  const initialLang = (searchParams?.get("lang") ?? "en") as "en" | "fr" | "sw";
+  const [language, setLanguage] = useState<"en" | "fr" | "sw">(["en","fr","sw"].includes(initialLang) ? initialLang : "en");
+  const [translating, setTranslating] = useState<boolean>(initialLang !== "en" && !preloadedTranslations[initialLang]);
   const [translations, setTranslations] = useState<Record<string, { title: string; excerpt: string; content: string }>>(preloadedTranslations);
 
   // Scroll to top on every article open — client-side navigation retains previous scroll position
@@ -187,6 +189,14 @@ export default function BlogPostPage({
     setLanguage(lang);
     if (lang !== "en" && !translations[lang]) setTranslating(true);
     else setTranslating(false);
+    // Sync URL so shared links land on the chosen language
+    const url = new URL(window.location.href);
+    if (lang === "en") {
+      url.searchParams.delete("lang");
+    } else {
+      url.searchParams.set("lang", lang);
+    }
+    window.history.replaceState(null, "", url.toString());
   }
 
   const display = language !== "en" && translations[language]
