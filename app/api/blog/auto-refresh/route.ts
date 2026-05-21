@@ -1379,23 +1379,27 @@ async function patchGoogleInterviewContent() {
   try {
     const post = await prisma.blogPost.findFirst({
       where: { title: { contains: "Google Just Said Yes to AI in Interviews", mode: "insensitive" } },
-      select: { id: true, content: true },
+      select: { id: true, content: true, coverImage: true },
     });
     if (!post) return;
-    // If either missing section is absent, replace the entire content with the full version
+    const spotlight = EDITORIAL_SPOTLIGHTS.find((s) =>
+      s.title.includes("Google Just Said Yes to AI in Interviews")
+    );
+    if (!spotlight) return;
+
     const missingDivider = !post.content.includes("Expert vs. Average: The Same AI");
     const missingFooter = !post.content.includes("tiblogics.com");
-    if (missingDivider || missingFooter) {
-      // Pull the full content from EDITORIAL_SPOTLIGHTS
-      const spotlight = EDITORIAL_SPOTLIGHTS.find((s) =>
-        s.title.includes("Google Just Said Yes to AI in Interviews")
-      );
-      if (spotlight) {
-        await prisma.blogPost.update({
-          where: { id: post.id },
-          data: { content: spotlight.content, coverImage: "/google-ai-interview-cover.png" },
-        });
-      }
+    // Also fix cover if it's still pointing at the missing local file
+    const badCover = !post.coverImage || post.coverImage.startsWith("/");
+
+    if (missingDivider || missingFooter || badCover) {
+      await prisma.blogPost.update({
+        where: { id: post.id },
+        data: {
+          ...(missingDivider || missingFooter ? { content: spotlight.content } : {}),
+          ...(badCover ? { coverImage: spotlight.coverImage } : {}),
+        },
+      });
     }
   } catch { /* ignore */ }
 }
@@ -1957,7 +1961,7 @@ const EDITORIAL_SPOTLIGHTS = [
     tags: ["google", "ai hiring", "future of work", "expertise", "token efficiency", "prompt engineering", "interviews"],
     coverEmoji: "🌐",
     coverGradient: "from-slate-600 to-gray-500",
-    coverImage: "/google-ai-interview-cover.png",
+    coverImage: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=1200&h=630&q=80",
     author: "Tieyiwe Bass · TIBLOGICS",
     featured: true,
     content: `<p style="font-size:1.05rem;line-height:1.8"><span style="font-family:var(--font-syne),serif;font-size:3.5rem;font-weight:700;float:left;line-height:0.85;margin-right:8px;margin-top:6px;color:#0D1B2A">F</span>or decades, the coding interview was tech's most sacred ritual. Whiteboard in hand, candidate across the table — no hints, no documentation, no tools. Just raw recall versus a ticking clock. Google perfected this format, and the industry genuflected accordingly. What Google tested, the rest of Silicon Valley tested.</p>

@@ -1,5 +1,7 @@
 import { Metadata } from "next";
 import { Suspense } from "react";
+import fs from "fs";
+import path from "path";
 import BlogPostClient from "./BlogPostClient";
 
 const SITE_URL = (process.env.NEXTAUTH_URL || "https://tiblogics.com").replace(/\/$/, "");
@@ -22,7 +24,15 @@ function toOgImage(coverImage: string | null): string {
     }
     return coverImage;
   } catch {
-    return coverImage.startsWith("/") ? `${SITE_URL}${coverImage}` : FALLBACK_IMAGE;
+    if (coverImage.startsWith("/")) {
+      // Only serve local files that are actually deployed in /public
+      try {
+        const filePath = path.join(process.cwd(), "public", coverImage);
+        if (fs.existsSync(filePath)) return `${SITE_URL}${coverImage}`;
+      } catch { /* fall through */ }
+      return FALLBACK_IMAGE;
+    }
+    return FALLBACK_IMAGE;
   }
 }
 
