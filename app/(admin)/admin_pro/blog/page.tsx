@@ -54,7 +54,7 @@ export default function BlogAdminPage() {
   async function loadData() {
     try {
       const [postsRes, breakingRes, statusRes] = await Promise.all([
-        fetch("/api/blog/posts?limit=50"),
+        fetch("/api/blog/posts?limit=200"),
         fetch("/api/blog/breaking-news"),
         fetch("/api/blog/auto-refresh?check=true"),
       ]);
@@ -82,7 +82,9 @@ export default function BlogAdminPage() {
 
   async function triggerRefresh() {
     setRefreshing(true);
-    await fetch("/api/blog/auto-refresh?force=true");
+    try {
+      await fetch("/api/blog/auto-refresh?force=true");
+    } catch { /* ignore network errors */ }
     await loadData();
     setRefreshing(false);
   }

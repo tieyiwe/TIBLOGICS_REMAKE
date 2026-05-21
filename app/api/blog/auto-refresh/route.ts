@@ -325,7 +325,7 @@ ${post.content.slice(0, 6000)}`;
   });
 }
 
-async function patchMissingTranslations(): Promise<number> {
+async function patchMissingTranslations(limit = 2): Promise<number> {
   let patched = 0;
   try {
     const articles = await prisma.blogPost.findMany({
@@ -334,7 +334,7 @@ async function patchMissingTranslations(): Promise<number> {
       take: 50,
     });
     for (const article of articles) {
-      if (patched >= 4) break;
+      if (patched >= limit) break;
       let needsAny = false;
       for (const lang of ["fr", "sw"] as const) {
         const exists = await prisma.adminSettings.findUnique({ where: { key: `tx:${article.slug}:${lang}` } });
@@ -350,13 +350,13 @@ async function patchMissingTranslations(): Promise<number> {
   return patched;
 }
 
-async function patchMissingTips(): Promise<number> {
+async function patchMissingTips(limit = 3): Promise<number> {
   let patched = 0;
   try {
     const posts = await prisma.blogPost.findMany({
       where: { content: { not: { contains: "tips-section" } } },
       select: { id: true, title: true, content: true },
-      take: 20,
+      take: limit,
     });
     for (const post of posts) {
       const tipsHtml = await generateTips(post.title, post.content);
@@ -2449,11 +2449,13 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // Always run cover patches and featured rotation — independent of refresh schedule
-  await patchTieyiweCover();
-  await patchArticleCoverOverrides();
-  await patchAllMissingCovers();
-  await patchFeaturedRotation();
+  // Fast DB-only patches — always run, no Claude calls
+  await Promise.all([
+    patchTieyiweCover(),
+    patchArticleCoverOverrides(),
+    patchAllMissingCovers(),
+    patchFeaturedRotation(),
+  ]);
 
   if (!needsRefresh) {
     return NextResponse.json({ message: "Content is up to date", postsAdded: 0 });
@@ -2482,11 +2484,18 @@ export async function GET(req: NextRequest) {
   // Reassign cover images on any articles that share an image
   const imagesPatched = await patchDuplicateCoverImages(usedImages);
 
-  // Backfill tips for articles that don't have them yet (up to 20 per run)
-  const tipsPatched = await patchMissingTips();
-
-  // Pre-translate articles missing fr/sw cache (up to 4 per run)
-  const translationsPatched = await patchMissingTranslations();
+  // Tips and translation patching: fire in background on manual admin refresh (force=true)
+  // so the response returns quickly. On scheduled cron runs, await them (cron has time budget).
+  if (force) {
+    // Background — don't block the admin refresh response
+    patchMissingTips(3).catch(() => {});
+    patchMissingTranslations(2).catch(() => {});
+  } else {
+    await patchMissingTips(3);
+    await patchMissingTranslations(2);
+  }
+  const tipsPatched = 0;
+  const translationsPatched = 0;
 
   // Always purge auto-generated stub posts (content under 300 chars — generation failures)
   try {
