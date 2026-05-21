@@ -1423,25 +1423,41 @@ async function patchArticleCoverOverrides() {
 }
 
 // Assign a real cover image to any published article that has none
+// Known placeholder / blank images that should be replaced with real covers
+const BLANK_COVER_PATTERNS = [
+  "/og-image.png",
+  "/placeholder.png",
+  "/placeholder",
+  "/default-cover.png",
+  "placeholder",
+];
+function isBlankCover(url: string | null): boolean {
+  if (!url || url.trim() === "") return true;
+  const lower = url.toLowerCase();
+  return BLANK_COVER_PATTERNS.some((p) => lower === p || lower.endsWith(p));
+}
+
 async function patchAllMissingCovers(): Promise<void> {
   try {
-    const missing = await prisma.blogPost.findMany({
-      where: { published: true, OR: [{ coverImage: null }, { coverImage: "" }] },
-      select: { id: true, category: true },
+    const allPosts = await prisma.blogPost.findMany({
+      where: { published: true },
+      select: { id: true, category: true, coverImage: true },
     });
-    if (missing.length === 0) return;
 
     const usedSet = new Set<string>(
-      (await prisma.blogPost.findMany({
-        where: { coverImage: { not: null } },
-        select: { coverImage: true },
-      })).map((p) => p.coverImage!)
+      allPosts.map((p) => p.coverImage).filter((img): img is string => !!img && !isBlankCover(img))
     );
 
-    for (const post of missing) {
-      const img = pickFreshImage(post.category, usedSet);
-      await prisma.blogPost.update({ where: { id: post.id }, data: { coverImage: img } });
-    }
+    const needsCover = allPosts.filter((p) => isBlankCover(p.coverImage ?? null));
+    if (needsCover.length === 0) return;
+
+    await Promise.all(
+      needsCover.map((post) => {
+        const img = pickFreshImage(post.category, usedSet);
+        usedSet.add(img);
+        return prisma.blogPost.update({ where: { id: post.id }, data: { coverImage: img } });
+      })
+    );
   } catch { /* non-blocking */ }
 }
 
@@ -2449,6 +2465,23 @@ export async function GET(req: NextRequest) {
     });
   }
 
+  // Idempotency lock — prevent duplicate runs from concurrent clicks or tabs.
+  // Uses the DB so it works across multiple server instances.
+  const LOCK_KEY = "blog_refresh_lock";
+  const LOCK_TTL_MS = 5 * 60 * 1000; // 5 minutes max — stale locks auto-expire
+  try {
+    const lock = await prisma.adminSettings.findUnique({ where: { key: LOCK_KEY } });
+    if (lock) {
+      const lockedAt = new Date(lock.value).getTime();
+      if (Date.now() - lockedAt < LOCK_TTL_MS) {
+        return NextResponse.json({ message: "Refresh already in progress", postsAdded: 0 });
+      }
+      // Stale lock — clear it and proceed
+      await prisma.adminSettings.delete({ where: { key: LOCK_KEY } });
+    }
+    await prisma.adminSettings.create({ data: { key: LOCK_KEY, value: new Date().toISOString() } });
+  } catch { /* lock table may not exist — proceed anyway */ }
+
   // Fast DB-only patches — always run, no Claude calls
   await Promise.all([
     patchTieyiweCover(),
@@ -2686,6 +2719,9 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch { /* ignore */ }
+
+  // Release the idempotency lock
+  try { await prisma.adminSettings.delete({ where: { key: LOCK_KEY } }); } catch { /* ignore */ }
 
   return NextResponse.json({ message: `Added ${postsAdded} new posts`, postsAdded, imagesPatched, tipsPatched, translationsPatched });
 }
