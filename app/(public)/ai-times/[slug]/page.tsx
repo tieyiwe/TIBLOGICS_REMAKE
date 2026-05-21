@@ -5,6 +5,9 @@ import BlogPostClient from "./BlogPostClient";
 const SITE_URL = (process.env.NEXTAUTH_URL || "https://tiblogics.com").replace(/\/$/, "");
 const FALLBACK_IMAGE = `${SITE_URL}/og-image.png`;
 
+const LOCALE_MAP: Record<string, string> = { en: "en_US", fr: "fr_FR", sw: "sw_KE" };
+const LANG_LABEL: Record<string, string> = { fr: "Français", sw: "Kiswahili" };
+
 function toOgImage(coverImage: string | null): string {
   if (!coverImage) return FALLBACK_IMAGE;
   try {
@@ -24,59 +27,79 @@ function toOgImage(coverImage: string | null): string {
 }
 
 export async function generateMetadata(
-  { params }: { params: Promise<{ slug: string }> }
+  { params, searchParams }: {
+    params: Promise<{ slug: string }>;
+    searchParams: Promise<Record<string, string>>;
+  }
 ): Promise<Metadata> {
   try {
     const { slug } = await params;
+    const sp = await searchParams;
+    const lang = (["fr", "sw"].includes(sp?.lang) ? sp.lang : "en") as "en" | "fr" | "sw";
+
     const { prisma } = await import("@/lib/prisma");
-    const post = await prisma.blogPost.findUnique({
-      where: { slug },
-      select: {
-        title: true,
-        excerpt: true,
-        coverImage: true,
-        tags: true,
-        author: true,
-        category: true,
-        createdAt: true,
-      },
-    });
+    const [post, txCache] = await Promise.all([
+      prisma.blogPost.findUnique({
+        where: { slug },
+        select: { title: true, excerpt: true, coverImage: true, tags: true, author: true, category: true, createdAt: true },
+      }),
+      lang !== "en"
+        ? prisma.adminSettings.findUnique({ where: { key: `tx:${slug}:${lang}` } })
+        : Promise.resolve(null),
+    ]);
 
     if (!post) return { title: "Post Not Found | AI Times" };
 
-    const pageUrl = `${SITE_URL}/ai-times/${slug}`;
+    // Use translated title/description if available and language is not English
+    let title = post.title;
+    let description = post.excerpt.slice(0, 200);
+    if (lang !== "en" && txCache?.value) {
+      try {
+        const tx = JSON.parse(txCache.value);
+        if (tx.title) title = tx.title;
+        if (tx.excerpt) description = tx.excerpt.slice(0, 200);
+      } catch { /* fall back to English */ }
+    }
+
+    const pageUrl = lang === "en"
+      ? `${SITE_URL}/ai-times/${slug}`
+      : `${SITE_URL}/ai-times/${slug}?lang=${lang}`;
+    const canonicalUrl = `${SITE_URL}/ai-times/${slug}`; // canonical always points to English
     const ogImage = toOgImage(post.coverImage);
-    const description = post.excerpt.slice(0, 200);
+    const locale = LOCALE_MAP[lang] ?? "en_US";
+    const siteName = lang !== "en"
+      ? `AI Times | TIBLOGICS (${LANG_LABEL[lang]})`
+      : "AI Times | TIBLOGICS";
 
     return {
-      title: `${post.title} | AI Times by TIBLOGICS`,
+      title: `${title} | AI Times by TIBLOGICS`,
       description,
       keywords: post.tags,
-      alternates: { canonical: pageUrl },
+      alternates: {
+        canonical: canonicalUrl,
+        languages: {
+          "en": `${SITE_URL}/ai-times/${slug}`,
+          "fr": `${SITE_URL}/ai-times/${slug}?lang=fr`,
+          "sw": `${SITE_URL}/ai-times/${slug}?lang=sw`,
+        },
+      },
       authors: [{ name: post.author }],
       openGraph: {
-        title: post.title,
+        title,
         description,
         type: "article",
         url: pageUrl,
-        siteName: "AI Times | TIBLOGICS",
+        siteName,
+        locale,
         publishedTime: post.createdAt.toISOString(),
         authors: [post.author],
         section: post.category,
         tags: post.tags,
-        images: [
-          {
-            url: ogImage,
-            width: 1200,
-            height: 630,
-            alt: post.title,
-            type: "image/jpeg",
-          },
-        ],
+        images: [{ url: ogImage, width: 1200, height: 630, alt: title, type: "image/jpeg" }],
       },
       twitter: {
         card: "summary_large_image",
-        title: post.title,
+        title,
         description,
         images: [ogImage],
         creator: "@tiblogics",
