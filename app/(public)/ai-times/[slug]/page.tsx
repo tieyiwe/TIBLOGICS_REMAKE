@@ -63,8 +63,19 @@ EXCERPT: ${excerpt.slice(0, 300)}`;
   return { title: tx.title, excerpt: tx.excerpt };
 }
 
-function toOgImage(coverImage: string | null): string {
-  if (!coverImage) return FALLBACK_IMAGE;
+const CATEGORY_OG_FALLBACK: Record<string, string> = {
+  "breaking":     "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&h=630&q=80",
+  "ai-business":  "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=1200&h=630&q=80",
+  "tips":         "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=1200&h=630&q=80",
+  "tools":        "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&h=630&q=80",
+  "case-studies": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&h=630&q=80",
+  "industry":     "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=1200&h=630&q=80",
+};
+
+function toOgImage(coverImage: string | null, category?: string | null): string {
+  const fallback = CATEGORY_OG_FALLBACK[category ?? ""] ?? FALLBACK_IMAGE;
+
+  if (!coverImage) return fallback;
   try {
     const url = new URL(coverImage);
     if (url.hostname === "images.unsplash.com") {
@@ -75,17 +86,17 @@ function toOgImage(coverImage: string | null): string {
       url.searchParams.set("q", "80");
       return url.toString();
     }
+    // Any other valid external URL — use as-is
     return coverImage;
   } catch {
     if (coverImage.startsWith("/")) {
-      // Only serve local files that are actually deployed in /public
+      // Only serve local files actually deployed in /public
       try {
         const filePath = path.join(process.cwd(), "public", coverImage);
         if (fs.existsSync(filePath)) return `${SITE_URL}${coverImage}`;
       } catch { /* fall through */ }
-      return FALLBACK_IMAGE;
     }
-    return FALLBACK_IMAGE;
+    return fallback;
   }
 }
 
@@ -139,7 +150,7 @@ export async function generateMetadata(
       ? `${SITE_URL}/ai-times/${slug}`
       : `${SITE_URL}/ai-times/${slug}?lang=${lang}`;
     const canonicalUrl = `${SITE_URL}/ai-times/${slug}`; // canonical always points to English
-    const ogImage = toOgImage(post.coverImage);
+    const ogImage = toOgImage(post.coverImage, post.category);
     const locale = LOCALE_MAP[lang] ?? "en_US";
     const siteName = lang !== "en"
       ? `AI Times | TIBLOGICS (${LANG_LABEL[lang]})`
@@ -199,7 +210,7 @@ export default async function BlogPostPage(
     const [post, frCache, swCache] = await Promise.all([
       prisma.blogPost.findUnique({
         where: { slug },
-        select: { title: true, excerpt: true, coverImage: true, author: true, createdAt: true, updatedAt: true, tags: true },
+        select: { title: true, excerpt: true, coverImage: true, category: true, author: true, createdAt: true, updatedAt: true, tags: true },
       }),
       prisma.adminSettings.findUnique({ where: { key: `tx:${slug}:fr` } }),
       prisma.adminSettings.findUnique({ where: { key: `tx:${slug}:sw` } }),
@@ -208,7 +219,7 @@ export default async function BlogPostPage(
     if (swCache?.value) preloadedTranslations.sw = JSON.parse(swCache.value);
     if (post) {
       heroCoverUrl = post.coverImage ?? null;
-      const ogImage = toOgImage(post.coverImage);
+      const ogImage = toOgImage(post.coverImage, post.category);
       jsonLd = {
         "@context": "https://schema.org",
         "@type": "Article",
