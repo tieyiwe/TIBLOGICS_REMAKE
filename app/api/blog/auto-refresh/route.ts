@@ -1389,16 +1389,11 @@ async function patchGoogleInterviewContent() {
 
     const missingDivider = !post.content.includes("Expert vs. Average: The Same AI");
     const missingFooter = !post.content.includes("tiblogics.com");
-    // Also fix cover if it's still pointing at the missing local file
-    const badCover = !post.coverImage || post.coverImage.startsWith("/");
 
-    if (missingDivider || missingFooter || badCover) {
+    if (missingDivider || missingFooter) {
       await prisma.blogPost.update({
         where: { id: post.id },
-        data: {
-          ...(missingDivider || missingFooter ? { content: spotlight.content } : {}),
-          ...(badCover ? { coverImage: spotlight.coverImage } : {}),
-        },
+        data: { content: spotlight.content, coverImage: spotlight.coverImage },
       });
     }
   } catch { /* ignore */ }
@@ -1961,7 +1956,7 @@ const EDITORIAL_SPOTLIGHTS = [
     tags: ["google", "ai hiring", "future of work", "expertise", "token efficiency", "prompt engineering", "interviews"],
     coverEmoji: "🌐",
     coverGradient: "from-slate-600 to-gray-500",
-    coverImage: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=1200&h=630&q=80",
+    coverImage: "/google-ai-interview-cover.png",
     author: "Tieyiwe Bass · TIBLOGICS",
     featured: true,
     content: `<p style="font-size:1.05rem;line-height:1.8"><span style="font-family:var(--font-syne),serif;font-size:3.5rem;font-weight:700;float:left;line-height:0.85;margin-right:8px;margin-top:6px;color:#0D1B2A">F</span>or decades, the coding interview was tech's most sacred ritual. Whiteboard in hand, candidate across the table — no hints, no documentation, no tools. Just raw recall versus a ticking clock. Google perfected this format, and the industry genuflected accordingly. What Google tested, the rest of Silicon Valley tested.</p>
