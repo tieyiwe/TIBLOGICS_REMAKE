@@ -69,7 +69,7 @@ const CATEGORY_OG_FALLBACK: Record<string, string> = {
   "tips":         "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=1200&h=630&q=80",
   "tools":        "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&h=630&q=80",
   "case-studies": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&h=630&q=80",
-  "industry":     "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=1200&h=630&q=80",
+  "industry":     "https://source.unsplash.com/1j2rA44PkRE/1200x630",
 };
 
 function toOgImage(coverImage: string | null, category?: string | null): string {
@@ -85,6 +85,11 @@ function toOgImage(coverImage: string | null, category?: string | null): string 
       url.searchParams.set("h", "630");
       url.searchParams.set("q", "80");
       return url.toString();
+    }
+    if (url.hostname === "source.unsplash.com") {
+      // source.unsplash.com/{id} or source.unsplash.com/{id}/{w}x{h}
+      const id = url.pathname.split("/").filter(Boolean)[0];
+      return `https://source.unsplash.com/${id}/1200x630`;
     }
     // Any other valid external URL — use as-is
     return coverImage;
