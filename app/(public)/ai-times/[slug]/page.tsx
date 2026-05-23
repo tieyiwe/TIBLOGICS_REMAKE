@@ -69,7 +69,7 @@ const CATEGORY_OG_FALLBACK: Record<string, string> = {
   "tips":         "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=1200&h=630&q=80",
   "tools":        "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&h=630&q=80",
   "case-studies": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&h=630&q=80",
-  "industry":     "https://source.unsplash.com/1j2rA44PkRE/1200x630",
+  "industry":     "https://images.unsplash.com/photo-1779509742657-97f3e5c76f4f?auto=format&fit=crop&w=1200&h=630&q=80",
 };
 
 function toOgImage(coverImage: string | null, category?: string | null): string {

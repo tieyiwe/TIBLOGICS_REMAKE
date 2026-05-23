@@ -1956,7 +1956,7 @@ const EDITORIAL_SPOTLIGHTS = [
     tags: ["google", "ai hiring", "future of work", "expertise", "token efficiency", "prompt engineering", "interviews"],
     coverEmoji: "🌐",
     coverGradient: "from-slate-600 to-gray-500",
-    coverImage: "https://source.unsplash.com/1j2rA44PkRE/1200x630",
+    coverImage: "https://images.unsplash.com/photo-1779509742657-97f3e5c76f4f?auto=format&fit=crop&w=800&q=80",
     author: "Tieyiwe Bass · TIBLOGICS",
     featured: true,
     content: `<p style="font-size:1.05rem;line-height:1.8"><span style="font-family:var(--font-syne),serif;font-size:3.5rem;font-weight:700;float:left;line-height:0.85;margin-right:8px;margin-top:6px;color:#0D1B2A">F</span>or decades, the coding interview was tech's most sacred ritual. Whiteboard in hand, candidate across the table — no hints, no documentation, no tools. Just raw recall versus a ticking clock. Google perfected this format, and the industry genuflected accordingly. What Google tested, the rest of Silicon Valley tested.</p>
