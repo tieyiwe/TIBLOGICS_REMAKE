@@ -1389,15 +1389,11 @@ async function patchGoogleInterviewContent() {
 
     const missingDivider = !post.content.includes("Expert vs. Average: The Same AI");
     const missingFooter = !post.content.includes("tiblogics.com");
-    const wrongCover = post.coverImage !== spotlight.coverImage;
 
-    if (missingDivider || missingFooter || wrongCover) {
+    if (missingDivider || missingFooter) {
       await prisma.blogPost.update({
         where: { id: post.id },
-        data: {
-          ...(missingDivider || missingFooter ? { content: spotlight.content } : {}),
-          ...(wrongCover ? { coverImage: spotlight.coverImage } : {}),
-        },
+        data: { content: spotlight.content },
       });
     }
   } catch { /* ignore */ }
