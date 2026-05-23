@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 const OWNER_EMAIL = "tieyiwebass@gmail.com";
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     CredentialsProvider({
       name: "credentials",

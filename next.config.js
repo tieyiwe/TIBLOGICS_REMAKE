@@ -4,15 +4,15 @@
 // NextAuth requires this to match the actual hostname for cookie domain and
 // CSRF validation to work correctly in production.
 if (!process.env.NEXTAUTH_URL) {
-  if (process.env.REPLIT_DEV_DOMAIN) {
-    // Replit dev workspace
-    process.env.NEXTAUTH_URL = `https://${process.env.REPLIT_DEV_DOMAIN}`;
-  } else if (process.env.NEXT_PUBLIC_APP_URL) {
-    // Explicitly configured production URL (recommended: set this in prod secrets)
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    // Explicitly configured production URL — highest priority (set in Replit Secrets)
     process.env.NEXTAUTH_URL = process.env.NEXT_PUBLIC_APP_URL;
   } else if (process.env.VERCEL_URL) {
     // Vercel auto-injects the deployment URL
     process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`;
+  } else if (process.env.REPLIT_DEV_DOMAIN) {
+    // Replit dev workspace fallback (not for custom-domain production)
+    process.env.NEXTAUTH_URL = `https://${process.env.REPLIT_DEV_DOMAIN}`;
   } else {
     // Hard fallback for tiblogics.com production deployment
     process.env.NEXTAUTH_URL = "https://tiblogics.com";
