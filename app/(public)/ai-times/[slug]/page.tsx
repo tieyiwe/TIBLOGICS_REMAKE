@@ -180,7 +180,7 @@ export async function generateMetadata(
         authors: [post.author],
         section: post.category,
         tags: post.tags,
-        images: [{ url: ogImage, width: 1200, height: 630, alt: title, type: "image/jpeg" }],
+        images: [{ url: ogImage, width: 1200, height: 630, alt: title, type: ogImage.toLowerCase().includes(".png") ? "image/png" : "image/jpeg" }],
       },
       twitter: {
         card: "summary_large_image",
