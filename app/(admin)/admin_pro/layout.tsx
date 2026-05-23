@@ -1,21 +1,32 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { SessionWrapper } from "@/components/admin/SessionWrapper";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminHeader from "@/components/admin/AdminHeader";
 
+// Routes inside the (admin) group that must render WITHOUT the auth guard
+const PUBLIC_ADMIN_ROUTES = ["/admin_pro/login", "/admin_pro/accept-invite"];
+
 function AdminGuard({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
+
+  const isPublic = PUBLIC_ADMIN_ROUTES.some(
+    (p) => pathname === p || pathname.startsWith(p + "/")
+  );
 
   useEffect(() => {
-    if (status === "unauthenticated") {
+    if (!isPublic && status === "unauthenticated") {
       router.replace("/admin_pro/login");
     }
-  }, [status, router]);
+  }, [status, router, isPublic]);
+
+  // Let login / accept-invite render without the guard shell
+  if (isPublic) return <>{children}</>;
 
   if (status === "loading") {
     return (
