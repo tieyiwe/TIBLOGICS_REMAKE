@@ -54,7 +54,7 @@ ${prospect ? `\nLEAD INTELLIGENCE:
 - Business Type: ${prospect.business ?? "Unknown"}
 - Industry: ${prospect.industry ?? "Unknown"}
 - Budget Signal: ${prospect.budget ?? "Unknown"}
-- Pain Points: ${prospect.challenge ?? "Unknown"}` : ""}
+- Pain Points: ${prospect.mainChallenge ?? "Unknown"}` : ""}
 
 PRE-BOOKING CHAT WITH AI ASSISTANT:
 ${chatText}
