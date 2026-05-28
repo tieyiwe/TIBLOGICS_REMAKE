@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 
-type Mode = "checking" | "setup" | "login";
+type Mode = "checking" | "setup" | "login" | "reset";
 
 const SPINNER = (
   <svg
@@ -31,6 +31,14 @@ export default function AdminLoginPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [setupError, setSetupError] = useState("");
   const [setupLoading, setSetupLoading] = useState(false);
+
+  // Reset state
+  const [masterPassword, setMasterPassword] = useState("");
+  const [resetNew, setResetNew] = useState("");
+  const [resetConfirm, setResetConfirm] = useState("");
+  const [resetError, setResetError] = useState("");
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/setup")
@@ -63,7 +71,6 @@ export default function AdminLoginPage() {
         setSetupLoading(false);
         return;
       }
-      // Auto sign-in after setup
       const result = await signIn("credentials", {
         email: "tieyiwebass@gmail.com",
         password: newPassword,
@@ -97,6 +104,50 @@ export default function AdminLoginPage() {
       setLoginError("Invalid email or password. Please try again.");
     } else if (result?.url) {
       window.location.href = result.url;
+    }
+  }
+
+  async function handleReset(e: React.FormEvent) {
+    e.preventDefault();
+    setResetError("");
+    if (resetNew !== resetConfirm) {
+      setResetError("New passwords do not match.");
+      return;
+    }
+    if (resetNew.length < 8) {
+      setResetError("New password must be at least 8 characters.");
+      return;
+    }
+    setResetLoading(true);
+    try {
+      const res = await fetch("/api/admin/recover-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ masterPassword, newPassword: resetNew }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setResetError(data.error ?? "Reset failed. Please try again.");
+        setResetLoading(false);
+        return;
+      }
+      setResetSuccess(true);
+      setResetLoading(false);
+      // Auto sign-in with new password
+      const result = await signIn("credentials", {
+        email: "tieyiwebass@gmail.com",
+        password: resetNew,
+        callbackUrl: "/admin_pro",
+        redirect: false,
+      });
+      if (result?.url) {
+        window.location.href = result.url;
+      } else {
+        setMode("login");
+      }
+    } catch {
+      setResetError("Network error. Please try again.");
+      setResetLoading(false);
     }
   }
 
@@ -166,48 +217,133 @@ export default function AdminLoginPage() {
         )}
 
         {mode === "login" && (
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-1.5">
-              <label htmlFor="email" className="block text-sm font-medium text-[#3A4A5C]">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@tiblogics.com"
-                className="input-base w-full"
-              />
+          <>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-1.5">
+                <label htmlFor="email" className="block text-sm font-medium text-[#3A4A5C]">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@tiblogics.com"
+                  className="input-base w-full"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="password" className="block text-sm font-medium text-[#3A4A5C]">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="input-base w-full"
+                />
+              </div>
+              {loginError && (
+                <p className="text-red-500 text-sm text-center">{loginError}</p>
+              )}
+              <button
+                type="submit"
+                disabled={loginLoading}
+                className="btn-primary w-full justify-center mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {loginLoading ? <>{SPINNER} Signing in…</> : "Sign In"}
+              </button>
+            </form>
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => { setResetError(""); setResetSuccess(false); setMode("reset"); }}
+                className="text-xs font-dm text-[#7A8FA6] hover:text-[#2251A3] transition-colors underline underline-offset-2"
+              >
+                Forgot password?
+              </button>
             </div>
-            <div className="space-y-1.5">
-              <label htmlFor="password" className="block text-sm font-medium text-[#3A4A5C]">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="input-base w-full"
-              />
+          </>
+        )}
+
+        {mode === "reset" && (
+          <>
+            <div className="mb-5 text-center">
+              <h2 className="font-syne font-bold text-[#1B3A6B] text-lg">Reset Password</h2>
+              <p className="text-[#7A8FA6] text-xs mt-1 max-w-xs mx-auto">
+                Enter your <span className="font-semibold text-[#3A4A5C]">ADMIN_PASSWORD</span> Replit Secret as the recovery key, then set a new password.
+              </p>
             </div>
-            {loginError && (
-              <p className="text-red-500 text-sm text-center">{loginError}</p>
+
+            {resetSuccess ? (
+              <div className="text-center py-4">
+                <p className="text-green-600 font-dm text-sm font-semibold">✓ Password reset! Signing you in…</p>
+              </div>
+            ) : (
+              <form onSubmit={handleReset} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-[#3A4A5C]">Recovery Key (ADMIN_PASSWORD)</label>
+                  <input
+                    type="password"
+                    autoComplete="off"
+                    required
+                    value={masterPassword}
+                    onChange={(e) => setMasterPassword(e.target.value)}
+                    placeholder="Your ADMIN_PASSWORD secret value"
+                    className="input-base w-full"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-[#3A4A5C]">New Password</label>
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    value={resetNew}
+                    onChange={(e) => setResetNew(e.target.value)}
+                    placeholder="Min. 8 characters"
+                    className="input-base w-full"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-[#3A4A5C]">Confirm New Password</label>
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    value={resetConfirm}
+                    onChange={(e) => setResetConfirm(e.target.value)}
+                    placeholder="Re-enter new password"
+                    className="input-base w-full"
+                  />
+                </div>
+                {resetError && (
+                  <p className="text-red-500 text-sm text-center">{resetError}</p>
+                )}
+                <button
+                  type="submit"
+                  disabled={resetLoading}
+                  className="btn-primary w-full justify-center mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {resetLoading ? <>{SPINNER} Resetting…</> : "Reset Password"}
+                </button>
+              </form>
             )}
-            <button
-              type="submit"
-              disabled={loginLoading}
-              className="btn-primary w-full justify-center mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {loginLoading ? <>{SPINNER} Signing in…</> : "Sign In"}
-            </button>
-          </form>
+
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => setMode("login")}
+                className="text-xs font-dm text-[#7A8FA6] hover:text-[#2251A3] transition-colors underline underline-offset-2"
+              >
+                ← Back to Sign In
+              </button>
+            </div>
+          </>
         )}
       </div>
     </div>
