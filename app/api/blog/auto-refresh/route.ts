@@ -171,7 +171,7 @@ async function fetchHackerNews(): Promise<HNStory[]> {
     ).then((r) => r.json());
 
     const stories = await Promise.all(
-      topIds.slice(0, 60).map((id) =>
+      topIds.slice(0, 100).map((id) =>
         fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`, {
           signal: AbortSignal.timeout(5000),
         })
@@ -183,7 +183,7 @@ async function fetchHackerNews(): Promise<HNStory[]> {
     const thirtyDaysAgo = Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60;
     return stories
       .filter((s): s is HNStory => s && s.title && isAIRelated(s.title) && s.time > thirtyDaysAgo)
-      .slice(0, 8);
+      .slice(0, 15);
   } catch {
     return [];
   }
@@ -192,13 +192,13 @@ async function fetchHackerNews(): Promise<HNStory[]> {
 async function fetchDevTo(): Promise<DevArticle[]> {
   try {
     const articles: DevArticle[] = await fetch(
-      "https://dev.to/api/articles?tag=ai&per_page=10&top=2",
+      "https://dev.to/api/articles?tag=ai&per_page=20&top=3",
       { signal: AbortSignal.timeout(8000) }
     ).then((r) => r.json());
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     return articles
       .filter((a) => isAIRelated(a.title) && a.published_at > thirtyDaysAgo)
-      .slice(0, 5);
+      .slice(0, 10);
   } catch {
     return [];
   }
@@ -2716,11 +2716,13 @@ export async function GET(req: NextRequest) {
       .map((p) => p.title.toLowerCase())
   );
 
-  const newSources = sources.slice(0, 5).filter((item) => {
+  // Filter out already-published sources FIRST, then cap at 5 new articles per refresh.
+  // Previously slicing before filtering caused 0 articles when the top 5 were all dupes.
+  const newSources = sources.filter((item) => {
     if (item.url && existingSourceUrls.has(item.url)) return false;
     if (existingSourceTitles.has(item.title.toLowerCase())) return false;
     return true;
-  });
+  }).slice(0, 5);
 
   // Process up to 3 source articles concurrently to cut wait time
   const CONCURRENCY = 3;
