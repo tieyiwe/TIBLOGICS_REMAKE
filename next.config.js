@@ -4,17 +4,18 @@
 // NextAuth requires this to match the actual hostname for cookie domain and
 // CSRF validation to work correctly in production.
 if (!process.env.NEXTAUTH_URL) {
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    // Explicitly configured production URL — highest priority (set in Replit Secrets)
-    process.env.NEXTAUTH_URL = process.env.NEXT_PUBLIC_APP_URL;
-  } else if (process.env.VERCEL_URL) {
-    // Vercel auto-injects the deployment URL
-    process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`;
-  } else if (process.env.REPLIT_DEV_DOMAIN) {
-    // Replit dev workspace fallback (not for custom-domain production)
+  if (process.env.NODE_ENV !== "production" && process.env.REPLIT_DEV_DOMAIN) {
+    // Dev workspace: auth must point at the dev URL, not the production domain
     process.env.NEXTAUTH_URL = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+  } else if (process.env.NEXT_PUBLIC_APP_URL) {
+    // Production with explicitly configured custom domain (set in Replit Secrets)
+    process.env.NEXTAUTH_URL = process.env.NEXT_PUBLIC_APP_URL;
+  } else if (process.env.REPLIT_DEV_DOMAIN) {
+    // Production on Replit without a custom domain configured
+    process.env.NEXTAUTH_URL = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+  } else if (process.env.VERCEL_URL) {
+    process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`;
   } else {
-    // Hard fallback for tiblogics.com production deployment
     process.env.NEXTAUTH_URL = "https://tiblogics.com";
   }
 }
