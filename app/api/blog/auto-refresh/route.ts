@@ -1,4 +1,4 @@
-export const maxDuration = 120;
+export const maxDuration = 300;
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
@@ -24,7 +24,7 @@ const CATEGORY_IMAGES: Record<string, string[]> = {
     "https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1518432031352-d6fc5c10da5a?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80",
-    "https://images.unsplash.com/photo-1535378620166-273bee7c-17c2?auto=format&fit=crop&w=800&q=80",
+    "https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1620288627223-53302f4e8c74?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1495592822108-9e6261896da8?auto=format&fit=crop&w=800&q=80",
     "https://images.unsplash.com/photo-1560472355-536de3962603?auto=format&fit=crop&w=800&q=80",
@@ -131,6 +131,113 @@ function pickFreshImage(category: string, usedImages: Set<string>): string {
   usedImages.add(pick);
   return pick;
 }
+
+// Per-category topic bank — rotated each batch to guarantee fresh content per category.
+// Topics are marked used in DB (key: "blog_used_topics") and reset when pool exhausts.
+const CATEGORY_TOPIC_BANK: Record<string, string[]> = {
+  "breaking": [
+    "OpenAI Releases o3: What the New Reasoning Model Means for Business AI",
+    "Google Gemini 2.0 Flash Reshapes What Fast AI Means for Businesses",
+    "Anthropic Raises Series E: Why the Investment Signals AI's Next Chapter",
+    "Meta Open-Sources Llama 4: How Free Frontier AI Changes the Cost of Building",
+    "The EU AI Act Is Fully in Force: Your Business Compliance Checklist",
+    "Microsoft Copilot Studio Gets Agentic Capabilities: What's Now Possible",
+    "Apple Intelligence Expands to More Devices: Business Workflows That Benefit",
+    "Nvidia's Blackwell Architecture Explained: Why It Matters for AI Pricing",
+    "OpenAI Launches Projects and Memory: The Upgrade That Changes How You Use ChatGPT",
+    "Sam Altman Predicts AGI Within 5 Years: What It Means If He's Right",
+    "Google Announces AI-Powered Search Overhaul: The New Visibility Rules for Businesses",
+    "DeepSeek R2 Arrives: Another Model That Outperforms at a Fraction of the Cost",
+    "OpenAI's Operator Agent Browses the Web Autonomously: First Business Applications",
+    "The US AI Executive Order: New Rules Every Business Deploying AI Must Know",
+    "Perplexity AI Launches Business Tier: Is the Research Assistant Now Enterprise-Ready?",
+  ],
+  "ai-business": [
+    "How to Build an AI-Powered Lead Qualification System Without a CRM Upgrade",
+    "AI for Accounts Receivable: Cutting Payment Delays and Chasing Invoices Automatically",
+    "Building an AI Employee Onboarding System That Works While You Sleep",
+    "How AI Is Transforming Customer Retention for Subscription Businesses",
+    "AI Competitive Intelligence: How Small Businesses Track Rivals Without a Research Team",
+    "Using AI to Write Better Proposals and Win More Business",
+    "AI-Powered Performance Reviews: Saving HR Time While Improving Consistency",
+    "How AI Is Changing Pricing Strategy for Small and Mid-Sized Businesses",
+    "Using AI to Manage and Triage Business Email at Scale",
+    "How to Build a Revenue Intelligence System With AI and Your Existing CRM",
+    "AI for Business Development: Finding and Qualifying Opportunities Faster",
+    "The AI Customer Success Stack: Tools That Reduce Churn Without Adding Headcount",
+    "How AI Is Eliminating the Weekly Status Meeting",
+    "AI-Generated Business Reports: Getting Weekly Insights Without Weekly Labor",
+    "Using AI to Systemize and Document Your Business Processes",
+  ],
+  "tips": [
+    "The 5 Prompt Patterns That Produce Consistently Better Business AI Output",
+    "How to Build a Personal AI Assistant Using Claude Projects",
+    "The AI Workflow Stack Every Freelancer Should Have Running by Next Week",
+    "How to Use Perplexity AI to Research Competitors in Under 10 Minutes",
+    "Building a Daily AI Briefing That Keeps You Current Without the Noise",
+    "How to Evaluate Any AI Tool in 30 Minutes Before Committing",
+    "Writing System Prompts That Make Your AI Consistent and On-Brand",
+    "How to Use AI to Produce a Month of Content in a Single Afternoon",
+    "The Anti-Hallucination Checklist: Verifying AI Output Before You Use It",
+    "How to Introduce AI Tools to a Skeptical Team Without Losing Buy-In",
+    "Building a Prompt Library Your Whole Team Can Use and Trust",
+    "How to Use AI to Speed Up Your Weekly Reporting by 80 Percent",
+    "Getting Consistent AI Results: The Role Task Context Constraint Framework",
+    "How to Automate Your Most Time-Consuming Business Task This Week",
+    "AI Output Editing: The Fast Workflow That Makes AI Writing Sound Human",
+  ],
+  "tools": [
+    "Notion AI vs. Coda AI: Which Document Intelligence Tool Wins for Small Teams?",
+    "The Best AI Tools for Business Writing in 2025: An Honest Comparison",
+    "AI Legal Research Tools That Help Non-Lawyers Navigate Contracts",
+    "Descript vs. Otter.ai vs. Fireflies: Which Meeting AI Is Worth Paying For?",
+    "The Best AI Image Generation Tools for Business Marketing in 2025",
+    "HubSpot AI Features vs. Zoho Zia: Which CRM AI Actually Helps Sales?",
+    "AI Bookkeeping Tools That Handle the Work Your Accountant Bills You For",
+    "The Best Free AI Tools for Small Business Owners Right Now",
+    "Canva AI vs. Adobe Firefly: Which Design AI Delivers More for Non-Designers?",
+    "AI Social Media Tools That Actually Save Time and Maintain Brand Voice",
+    "Make vs. Zapier in 2025: Which Automation Platform Has Pulled Ahead?",
+    "The Best AI Writing Assistants for Email and Business Communication",
+    "AI Proposal and Quoting Tools for Service Businesses",
+    "Google NotebookLM for Business: Building a Queryable Knowledge Base for Free",
+    "Voice AI for Business: Tools That Handle Calls and Meetings Intelligently",
+  ],
+  "case-studies": [
+    "How a Physical Therapy Clinic Reduced No-Shows by 60 Percent With AI Scheduling",
+    "How a Real Estate Agency Qualified 10x More Leads Using an AI Pre-Screener",
+    "A Trucking Company Cut Fuel Costs 18 Percent Using AI Route Optimization",
+    "How an E-Commerce Brand Doubled Email Revenue With AI Personalization",
+    "A Construction Firm Reduced Bid Preparation Time by 70 Percent With AI",
+    "How a Dental Practice Automated Patient Communications and Grew 40 Percent",
+    "A Law Firm Automated Contract Review and Recovered 60 Attorney Hours Per Month",
+    "How a Caribbean Logistics Business Handled 78 Percent of Inquiries With an AI Agent",
+    "A Training Company Used AI Tutoring and Improved Student Pass Rates by 35 Percent",
+    "How an HR Consulting Firm Automated Compliance Reporting and Won New Retainers",
+    "A Gym Chain Reduced Member Churn by 22 Percent Using AI Engagement Predictions",
+    "How a Caribbean Logistics Operator Scaled Throughput 40 Percent Without New Hires",
+    "A Financial Advisory Firm Used AI to Prepare Reports 4x Faster With Higher Quality",
+    "How a Boutique Hotel Increased Direct Bookings Using AI Personalized Offers",
+    "A Tech Recruiting Firm Cut Time-to-Hire by 50 Percent With AI Resume Screening",
+  ],
+  "industry": [
+    "The State of AI Adoption in Professional Services: 2025 Benchmarks",
+    "How AI Is Reshaping the Future of Remote and Hybrid Work",
+    "AI in Retail: From Inventory Optimization to Personalized Shopping Experiences",
+    "The AI Skills Gap Is Growing: What Business Leaders Must Do in the Next 12 Months",
+    "How AI Is Transforming the Healthcare Revenue Cycle",
+    "AI and Cybersecurity: How Businesses Are Fighting AI-Powered Attacks With AI",
+    "The Rise of Agentic AI: What's Actually Deployed vs. What's Still Hype",
+    "AI in Financial Services: The Tools That Are Changing How Money Moves",
+    "How AI Is Disrupting the Insurance Industry From Claims to Customer Experience",
+    "The Creator Economy and AI: New Business Models Emerging From the Shift",
+    "AI in Real Estate: How Agents Brokers and Developers Are Adapting",
+    "How AI Is Changing Supply Chain Resilience for Mid-Market Businesses",
+    "The Impact of AI on Customer Expectations: The New Service Standard",
+    "AI and the Future of Professional Learning and Development",
+    "How African Businesses Are Leapfrogging Legacy Systems With AI-First Operations",
+  ],
+};
 
 const CATEGORY_META: Record<string, { emoji: string; gradient: string }> = {
   "breaking":    { emoji: "⚡", gradient: "from-red-600 to-orange-500" },
@@ -1448,6 +1555,25 @@ async function patchArticleCoverOverrides() {
   }
 }
 
+// Replace known-broken cover image URLs with working fallbacks
+const BROKEN_IMAGE_REPLACEMENTS: Record<string, string> = {
+  "https://images.unsplash.com/photo-1535378620166-273bee7c-17c2?auto=format&fit=crop&w=800&q=80":
+    "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=800&q=80",
+};
+async function patchBrokenImages(): Promise<number> {
+  let patched = 0;
+  for (const [bad, good] of Object.entries(BROKEN_IMAGE_REPLACEMENTS)) {
+    try {
+      const result = await prisma.blogPost.updateMany({
+        where: { coverImage: bad },
+        data: { coverImage: good },
+      });
+      patched += result.count;
+    } catch { /* ignore */ }
+  }
+  return patched;
+}
+
 // Assign a real cover image to any published article that has none
 // Known placeholder / blank images that should be replaced with real covers
 const BLANK_COVER_PATTERNS = [
@@ -2546,6 +2672,7 @@ export async function GET(req: NextRequest) {
     patchGoogleInterviewContent(),
     patchTieyiweCover(),
     patchArticleCoverOverrides(),
+    patchBrokenImages(),
     patchAllMissingCovers(),
     patchFeaturedRotation(),
   ]);
@@ -2595,13 +2722,16 @@ export async function GET(req: NextRequest) {
     await prisma.$executeRaw`DELETE FROM "BlogPost" WHERE "aiGenerated" = true AND LENGTH("content") < 300`;
   } catch { /* ignore if table missing */ }
 
+  // Declared outside try so topic-bank generation loop can reference them after seeding
+  let existingTitles: Set<string> = new Set();
+
   try {
     // Fetch all existing titles once — avoids N sequential DB round-trips in the seeding loops
     const allExisting = await prisma.blogPost.findMany({
       select: { id: true, title: true, slug: true, author: true, coverImage: true },
     });
-    const existingTitles = new Set(allExisting.map((p) => p.title.toLowerCase().trim()));
-    const existingSlugSet = new Set(allExisting.map((p) => p.slug));
+    existingTitles = new Set(allExisting.map((p: { title: string }) => p.title.toLowerCase().trim()));
+    const existingSlugSet = new Set(allExisting.map((p: { slug: string }) => p.slug));
     function titleExists(t: string) {
       const norm = t.toLowerCase().trim();
       return [...existingTitles].some((et) => et.includes(norm.slice(0, 50)) || norm.includes(et.slice(0, 50)));
@@ -2694,46 +2824,76 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Database tables missing. Run: npx prisma db push", detail: msg }, { status: 503 });
   }
 
-  // Fetch fresh AI-generated posts from external sources
-  const [hnStories, devArticles] = await Promise.all([
-    fetchHackerNews(),
-    fetchDevTo(),
-  ]);
+  // Build per-category generation queue from topic bank (minimum 3 per category).
+  const MIN_PER_CATEGORY = 3;
+  const CATEGORIES_LIST = ["breaking", "ai-business", "tips", "tools", "case-studies", "industry"] as const;
 
-  const sources: Array<{ title: string; url?: string; source: string }> = [
+  // Load previously used topics so we don't repeat within the recent history
+  const USED_TOPICS_KEY = "blog_used_topics";
+  let usedTopicsArr: string[] = [];
+  try {
+    const setting = await prisma.adminSettings.findUnique({ where: { key: USED_TOPICS_KEY } });
+    usedTopicsArr = setting ? JSON.parse(setting.value) : [];
+  } catch { /* ignore */ }
+  const usedTopicsSet = new Set<string>(usedTopicsArr);
+
+  type GenItem = { title: string; category: string; url?: string; sourceLabel: string };
+  const topicBankItems: GenItem[] = [];
+
+  for (const cat of CATEGORIES_LIST) {
+    const pool = CATEGORY_TOPIC_BANK[cat] ?? [];
+    let unused = pool.filter(
+      (t) => !usedTopicsSet.has(t) && !existingTitles.has(t.toLowerCase())
+    );
+    // Pool exhausted — reset used topics for this category and retry
+    if (unused.length < MIN_PER_CATEGORY) {
+      pool.forEach((t) => usedTopicsSet.delete(t));
+      unused = pool.filter((t) => !existingTitles.has(t.toLowerCase()));
+    }
+    // Shuffle for variety across refreshes
+    const shuffled = [...unused].sort(() => Math.random() - 0.5);
+    shuffled.slice(0, MIN_PER_CATEGORY).forEach((t) =>
+      topicBankItems.push({ title: t, category: cat, sourceLabel: `TIBLOGICS ${cat}` })
+    );
+  }
+
+  // Also pull up to 3 real-world news stories as bonus breaking content
+  const [hnStories, devArticles] = await Promise.all([fetchHackerNews(), fetchDevTo()]);
+  const externalSources: Array<{ title: string; url?: string; source: string }> = [
     ...hnStories.map((s) => ({ title: s.title, url: s.url, source: "Hacker News" })),
     ...devArticles.map((a) => ({ title: a.title, url: a.url, source: "DEV.to" })),
   ];
-
-  // Fetch existing slugs and URLs once more for source-article dedup
   const existingSourceUrls = new Set(
     (await prisma.blogPost.findMany({ select: { sourceUrl: true } }))
-      .map((p) => p.sourceUrl)
-      .filter(Boolean) as string[]
+      .map((p) => p.sourceUrl).filter(Boolean) as string[]
   );
-  const existingSourceTitles = new Set(
+  const existingSourceTitlesForDedup = new Set(
     (await prisma.blogPost.findMany({ select: { title: true } }))
       .map((p) => p.title.toLowerCase())
   );
+  const newExternalSources: GenItem[] = externalSources
+    .filter((item) => {
+      if (item.url && existingSourceUrls.has(item.url)) return false;
+      if (existingSourceTitlesForDedup.has(item.title.toLowerCase())) return false;
+      return true;
+    })
+    .slice(0, 3)
+    .map((item) => ({ title: item.title, category: "", url: item.url, sourceLabel: item.source }));
 
-  // Filter out already-published sources FIRST, then cap at 5 new articles per refresh.
-  // Previously slicing before filtering caused 0 articles when the top 5 were all dupes.
-  const newSources = sources.filter((item) => {
-    if (item.url && existingSourceUrls.has(item.url)) return false;
-    if (existingSourceTitles.has(item.title.toLowerCase())) return false;
-    return true;
-  }).slice(0, 5);
+  const allToGenerate: GenItem[] = [...topicBankItems, ...newExternalSources];
 
-  // Process up to 3 source articles concurrently to cut wait time
-  const CONCURRENCY = 3;
-  for (let i = 0; i < newSources.length; i += CONCURRENCY) {
-    const batch = newSources.slice(i, i + CONCURRENCY);
+  // Process articles in parallel batches of 6
+  const CONCURRENCY = 6;
+  for (let i = 0; i < allToGenerate.length; i += CONCURRENCY) {
+    const batch = allToGenerate.slice(i, i + CONCURRENCY);
     await Promise.all(batch.map(async (item) => {
       try {
-        const generated = await generatePost(item.title, item.url, item.source);
+        const generated = await generatePost(item.title, item.url, item.sourceLabel);
         if (!generated) return;
-        const meta = CATEGORY_META[generated.category] ?? CATEGORY_META["industry"];
-        const [tipsHtml] = await Promise.all([generateTips(item.title, generated.content)]);
+        // For topic-bank items, enforce the intended category regardless of Claude's pick
+        const finalCategory = item.category || generated.category;
+        const meta = CATEGORY_META[finalCategory] ?? CATEGORY_META["industry"];
+        const tipsHtml = await generateTips(item.title, generated.content);
 
         const baseSlug = item.title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-").slice(0, 70);
         let slug = baseSlug; let si = 1;
@@ -2742,17 +2902,17 @@ export async function GET(req: NextRequest) {
         await prisma.blogPost.create({
           data: {
             slug, title: item.title, excerpt: generated.excerpt,
-            content: generated.content + tipsHtml, category: generated.category,
+            content: generated.content + tipsHtml, category: finalCategory,
             tags: generated.tags, coverEmoji: meta.emoji, coverGradient: meta.gradient,
-            coverImage: pickFreshImage(generated.category, usedImages),
+            coverImage: pickFreshImage(finalCategory, usedImages),
             author: "Echelon by TIBLOGICS",
             readingTime: Math.ceil(generated.content.replace(/<[^>]*>/g, "").split(" ").length / 200),
             featured: false, published: true, aiGenerated: true,
-            sourceUrl: item.url, sourceTitle: item.source,
+            sourceUrl: item.url,
+            sourceTitle: item.category ? undefined : item.sourceLabel,
           },
         });
         postsAdded++;
-        // Translations fire in background — don't block response
         const newPost = { title: item.title, excerpt: generated.excerpt, content: generated.content + tipsHtml };
         for (const lang of ["fr", "sw"] as const) {
           translatePostContent(slug, newPost, lang).catch(() => {});
@@ -2762,6 +2922,16 @@ export async function GET(req: NextRequest) {
       }
     }));
   }
+
+  // Persist used topics (keep last 300 entries to prevent unbounded growth)
+  try {
+    const updatedTopics = [...usedTopicsSet, ...topicBankItems.map((t) => t.title)];
+    await prisma.adminSettings.upsert({
+      where: { key: USED_TOPICS_KEY },
+      create: { key: USED_TOPICS_KEY, value: JSON.stringify(updatedTopics.slice(-300)) },
+      update: { value: JSON.stringify(updatedTopics.slice(-300)) },
+    });
+  } catch { /* ignore */ }
 
   // Update last refresh timestamp — ignore if table missing
   try {
