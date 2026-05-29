@@ -276,7 +276,7 @@ export default function AdminLoginPage() {
             <div className="mb-5 text-center">
               <h2 className="font-syne font-bold text-[#1B3A6B] text-lg">Reset Password</h2>
               <p className="text-[#7A8FA6] text-xs mt-1 max-w-xs mx-auto">
-                Enter your <span className="font-semibold text-[#3A4A5C]">ADMIN_PASSWORD</span> Replit Secret as the recovery key, then set a new password.
+                Enter your <span className="font-semibold text-[#3A4A5C]">Admin Super Password</span> to verify your identity, then set a new password.
               </p>
             </div>
 
@@ -287,14 +287,14 @@ export default function AdminLoginPage() {
             ) : (
               <form onSubmit={handleReset} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-[#3A4A5C]">Recovery Key (ADMIN_PASSWORD)</label>
+                  <label className="block text-sm font-medium text-[#3A4A5C]">Admin Super Password</label>
                   <input
                     type="password"
                     autoComplete="off"
                     required
                     value={masterPassword}
                     onChange={(e) => setMasterPassword(e.target.value)}
-                    placeholder="Your ADMIN_PASSWORD secret value"
+                    placeholder="Enter your admin super password"
                     className="input-base w-full"
                   />
                 </div>
