@@ -5,7 +5,7 @@ import SmartRecommendations from "@/components/public/SmartRecommendations";
 import { useEffect } from "react";
 import { trackPageVisit } from "@/lib/recommendations";
 
-const tools = [
+const ALL_TOOLS = [
   {
     icon: Search,
     name: "Website AI Scanner",
@@ -13,6 +13,7 @@ const tools = [
     href: "/tools/scanner",
     color: "#2251A3",
     tag: "Free",
+    retired: false,
   },
   {
     icon: Bot,
@@ -21,6 +22,7 @@ const tools = [
     href: "/tools/advisor",
     color: "#F47C20",
     tag: "Free",
+    retired: true,
   },
   {
     icon: Calculator,
@@ -29,8 +31,13 @@ const tools = [
     href: "/tools/calculator",
     color: "#7c3aed",
     tag: "Free",
+    retired: false,
   },
 ];
+
+const tools = ALL_TOOLS.filter(
+  (t) => !t.retired || process.env.NODE_ENV !== "production"
+);
 
 export default function ToolsPage() {
   useEffect(() => {
