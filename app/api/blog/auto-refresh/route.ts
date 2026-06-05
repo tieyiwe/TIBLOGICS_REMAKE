@@ -1687,7 +1687,7 @@ const EDITORIAL_SPOTLIGHTS = [
     coverEmoji: "🤖",
     coverGradient: "from-purple-600 to-violet-500",
     coverImage: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=800&q=80",
-    author: "Tieyiwe Bass · TIBLOGICS",
+    author: "Tieyiwe Bass · Founder, TIBLOGICS",
     featured: false,
     content: `<p>Claude just got significantly more capable in a way that most end users won't immediately notice — but every developer building agents should understand immediately. Anthropic's Dreaming feature gives Claude agents the ability to reason in the background between interactions: processing context, planning multi-step actions, and arriving at responses that reflect deeper preparation rather than reactive generation. If you've built agents for clients, some of those builds are already behind the curve. Here's what changed and exactly what to do about it.</p>
 
@@ -1966,7 +1966,7 @@ const EDITORIAL_SPOTLIGHTS = [
     coverEmoji: "🌐",
     coverGradient: "from-slate-600 to-gray-500",
     coverImage: "https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=800&q=80",
-    author: "Tieyiwe Bass · TIBLOGICS",
+    author: "Tieyiwe Bass · Founder, TIBLOGICS",
     featured: false,
     content: `<p>The narrative around AI adoption in Africa has been dominated by two extremes: techno-optimism about leapfrogging infrastructure limitations, and skepticism about connectivity, compute access, and regulatory readiness. Both miss what's actually happening on the ground. In the major commercial centers of West Africa, East Africa, and North Africa, AI adoption by businesses is accelerating rapidly — shaped by the specific constraints and opportunities of each market in ways that are producing genuinely distinct patterns.</p>
 
@@ -2083,7 +2083,7 @@ const EDITORIAL_SPOTLIGHTS = [
     coverEmoji: "🌐",
     coverGradient: "from-slate-600 to-gray-500",
     coverImage: "https://images.unsplash.com/photo-1779509742657-97f3e5c76f4f?auto=format&fit=crop&w=800&q=80",
-    author: "Tieyiwe Bass · TIBLOGICS",
+    author: "Tieyiwe Bass · Founder, TIBLOGICS",
     featured: true,
     content: `<p style="font-size:1.05rem;line-height:1.8"><span style="font-family:var(--font-syne),serif;font-size:3.5rem;font-weight:700;float:left;line-height:0.85;margin-right:8px;margin-top:6px;color:#0D1B2A">F</span>or decades, the coding interview was tech's most sacred ritual. Whiteboard in hand, candidate across the table — no hints, no documentation, no tools. Just raw recall versus a ticking clock. Google perfected this format, and the industry genuflected accordingly. What Google tested, the rest of Silicon Valley tested.</p>
 
@@ -2698,6 +2698,14 @@ export async function GET(req: NextRequest) {
     await prisma.blogPost.updateMany({
       where: { author: { in: ["Echelon AI", "Echelon AI by TIBLOGICS"] } },
       data: { author: "Echelon by TIBLOGICS" },
+    });
+  } catch { /* ignore */ }
+
+  // Ensure "Founder" title is present on all Tieyiwe Bass articles
+  try {
+    await prisma.blogPost.updateMany({
+      where: { author: "Tieyiwe Bass · TIBLOGICS" },
+      data: { author: "Tieyiwe Bass · Founder, TIBLOGICS" },
     });
   } catch { /* ignore */ }
 
