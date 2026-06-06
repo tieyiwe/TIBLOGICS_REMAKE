@@ -1,530 +1,166 @@
-"use client";
+import prisma from "@/lib/prisma";
+import BlogPageClient, { type BlogPost } from "./BlogPageClient";
 
-import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
-import { Search, Clock, Zap, RefreshCw, Send } from "lucide-react";
-import { trackPageVisit } from "@/lib/recommendations";
-import SmartRecommendations from "@/components/public/SmartRecommendations";
-
-interface BlogPost {
-  id: string;
-  slug: string;
-  title: string;
-  excerpt: string;
-  category: string;
-  tags: string[];
-  coverImage?: string;
-  coverEmoji: string;
-  coverGradient: string;
-  author: string;
-  readingTime: number;
-  featured: boolean;
-  aiGenerated: boolean;
-  createdAt: string;
-}
-
-interface BreakingNews {
-  id: string;
-  headline: string;
-  summary: string;
-  sourceUrl?: string;
-  source?: string;
-}
-
-const CATEGORIES = [
-  { id: "all", label: "All" },
-  { id: "breaking", label: "⚡ Breaking" },
-  { id: "ai-business", label: "💼 AI for Business" },
-  { id: "tips", label: "💡 Tips & Tricks" },
-  { id: "tools", label: "🔧 Tools" },
-  { id: "case-studies", label: "📊 Case Studies" },
-  { id: "industry", label: "🌐 Industry" },
+// Mirrors the seed data in /api/blog/seed/route.ts — keep in sync if updated.
+const QUICK_SEEDS = [
+  {
+    title: "5 Ways AI Is Helping Small Businesses Cut Costs Without Cutting Corners",
+    excerpt: "AI isn't just for enterprise — small businesses that move first are already seeing real savings.",
+    category: "ai-business",
+    tags: ["ai", "small business", "automation", "cost savings"],
+    coverEmoji: "💼",
+    coverGradient: "from-[#1B3A6B] to-[#2251A3]",
+    coverImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=800&q=80",
+    featured: true,
+    content: `<p>For years, AI was something you read about in tech news and assumed was built for companies with massive budgets. That story is changing fast — and the businesses winning right now are the ones that moved early.</p><h2>1. Automating Customer Follow-Ups</h2><p>One of the most common time sinks for small business owners is following up with leads and clients. AI-powered automation tools can send personalized follow-up messages, appointment reminders, and check-in emails automatically — all triggered by actions your customers take.</p><h2>2. Handling Repetitive Customer Questions</h2><p>If your inbox or front desk regularly fields the same 10 questions, an AI chat assistant can handle those instantly — 24/7, with no wait time.</p><h2>3. Smarter Scheduling</h2><p>For service businesses, intelligent scheduling tools are eliminating double-bookings, optimizing routes, and reducing no-shows through automated reminders.</p><h2>4. AI-Assisted Proposals</h2><p>AI tools can now generate first-draft proposals, scope-of-work documents, and pricing breakdowns — turning a 2-hour task into a 10-minute review.</p><h2>What This Means for Small Businesses</h2><p>The playing field is leveling. The question isn't whether you can afford AI — it's whether you can afford to keep doing things manually while your competitors don't.</p><p><strong>Practical takeaway:</strong> Pick one repetitive task that costs your team more than 3 hours a week and ask: could an AI tool handle this?</p>`,
+  },
+  {
+    title: "What Is RAG and Why Should Your Business Actually Care?",
+    excerpt: "Retrieval-Augmented Generation is the technology making AI actually useful for business-specific knowledge.",
+    category: "tips",
+    tags: ["rag", "ai", "knowledge base", "llm"],
+    coverEmoji: "💡",
+    coverGradient: "from-purple-600 to-violet-500",
+    coverImage: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=800&q=80",
+    featured: false,
+    content: `<p>You've probably heard people talk about AI hallucinating — making up facts with complete confidence. RAG (Retrieval-Augmented Generation) is the architecture that fixes this.</p><h2>The Problem RAG Solves</h2><p>A general-purpose AI model like ChatGPT or Claude doesn't know your company's pricing, your internal processes, or your client history. RAG connects the AI to your actual knowledge sources before it answers.</p><h2>How It Works</h2><p>Think of it like giving an AI a searchable library. When a user asks a question, the system retrieves relevant documents first, then the AI writes a response based on what it found.</p><h2>Real Business Applications</h2><ul><li><strong>Internal knowledge assistant:</strong> Your team gets accurate answers instantly.</li><li><strong>Customer support AI:</strong> Answers product questions using your actual documentation.</li><li><strong>Contract analysis:</strong> Upload agreements — let the AI summarize and flag what matters.</li></ul><h2>What This Means for Small Businesses</h2><p>Businesses of all sizes can now deploy AI assistants that know their specific context — making every customer interaction faster and more accurate.</p>`,
+  },
+  {
+    title: "From Chatbot to AI Agent: The Difference That Changes Everything",
+    excerpt: "A chatbot answers questions. An AI agent takes action. Understanding the difference reshapes how you think about automation.",
+    category: "breaking",
+    tags: ["ai agents", "chatbots", "automation", "business ai"],
+    coverEmoji: "⚡",
+    coverGradient: "from-red-600 to-orange-500",
+    coverImage: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=800&q=80",
+    featured: false,
+    content: `<p>When most people think of business AI, they picture a chat window in the corner of a website — a bot that answers FAQs. That's a chatbot, and while useful, it's only a fraction of what AI can do for your business today.</p><h2>What a Chatbot Does</h2><p>A chatbot is reactive. It waits for a user to ask something, matches the question to a response, and replies. It doesn't initiate actions or connect to other systems.</p><h2>What an AI Agent Does</h2><p>An AI agent is proactive and autonomous. It can monitor your CRM for uncontacted leads, read an incoming email and create a task, check inventory levels and submit reorder requests — all without being asked.</p><h2>Why This Matters</h2><p>The shift from chatbot to agent is the shift from "helpful information" to "work actually getting done." A chatbot reduces inbound support volume. An AI agent eliminates entire categories of manual work.</p><h2>What This Means for Small Businesses</h2><p>You don't need a 50-person team to deploy AI agents. With the right implementation, a 3-person operation can have AI handling the equivalent of a full-time coordinator's workload.</p>`,
+  },
+  {
+    title: "The AI Tools Actually Worth Your Attention Right Now",
+    excerpt: "From document intelligence to autonomous agents, these are the tools reshaping how businesses actually operate.",
+    category: "tools",
+    tags: ["ai tools", "productivity", "business software", "automation"],
+    coverEmoji: "🔧",
+    coverGradient: "from-teal-600 to-emerald-500",
+    coverImage: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?auto=format&fit=crop&w=800&q=80",
+    featured: false,
+    content: `<p>The AI tools market has matured rapidly. Two years ago, most businesses were experimenting with basic chatbots. Today, the tools available to even small businesses would have seemed enterprise-only not long ago.</p><h2>Document Intelligence</h2><p>Tools in this space extract structured data from invoices, contracts, and forms; summarize long reports; and compare agreements side by side. For businesses handling any volume of paperwork, this alone can save dozens of hours per week.</p><h2>AI-Powered Customer Communication</h2><p>The new generation of AI communication tools handle multi-turn conversations, escalate intelligently to humans, draft and send emails based on triggers, and maintain context across channels.</p><h2>Workflow Automation Platforms</h2><p>AI has fundamentally upgraded no-code automation. Modern platforms can ingest unstructured inputs — an email, a form, a voice note — interpret intent, and trigger the right action in the right system.</p><h2>What This Means for Small Businesses</h2><p>The tooling is here. What most small businesses still lack is implementation — someone who understands their specific context and can configure these tools to actually solve their problems.</p>`,
+  },
+  {
+    title: "How a Small Law Firm Reduced Contract Review Time by 80% With AI",
+    excerpt: "A three-attorney firm was spending 40% of billable hours on contract review. AI cut that to under 10% — without changing what clients paid.",
+    category: "case-studies",
+    tags: ["legal", "ai", "contract review", "case study"],
+    coverEmoji: "📊",
+    coverGradient: "from-[#F47C20] to-yellow-500",
+    coverImage: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?auto=format&fit=crop&w=800&q=80",
+    featured: false,
+    content: `<p>A three-attorney immigration and business law firm was facing a familiar problem: a disproportionate amount of time spent on contract review — reading, flagging issues, comparing drafts, and summarizing key terms for clients.</p><h2>The Problem</h2><p>Contract review for a single commercial lease agreement could take three to four hours. The founding partner estimated that 40% of her billable time fell into this category.</p><h2>The Implementation</h2><p>The firm implemented an AI contract review system that could ingest PDF and Word agreements and produce a structured analysis — clause-by-clause summary, flagged non-standard provisions, missing standard protections, and a plain-English client summary.</p><h2>The Results</h2><p>Within 60 days, a commercial lease that previously took four hours now took 45 minutes. Across the firm's monthly volume, this translated to roughly 60 recovered attorney hours per month.</p><h2>What This Means for Small Businesses</h2><p>Professional service firms often assume AI isn't applicable to their work because it requires judgment. The reality is that much of the time consumed is pattern-matching and documentation — exactly what AI handles best.</p>`,
+  },
+  {
+    title: "The State of AI Adoption in Professional Services: 2026 Benchmarks",
+    excerpt: "New data on how law firms, consultancies, and accounting practices are deploying AI — and what separates early leaders from laggards.",
+    category: "industry",
+    tags: ["ai adoption", "professional services", "benchmarks", "industry trends"],
+    coverEmoji: "🌐",
+    coverGradient: "from-slate-600 to-gray-500",
+    coverImage: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80",
+    featured: false,
+    content: `<p>AI adoption in professional services has crossed the early-adopter phase. As of mid-2026, the question is no longer whether to adopt AI, but how fast and how deep.</p><h2>Where Adoption Is Happening</h2><p>Document review, research summarization, and client communication drafting are the three highest-adoption use cases across legal, accounting, and consulting. Together, they account for more than 60% of professional services AI deployments.</p><h2>The Productivity Gap</h2><p>Firms in the top quartile of AI adoption report 35–50% faster turnaround on routine deliverables compared to non-adopters. The gap is widening, not narrowing — early movers are compounding their advantage as they iterate.</p><h2>What's Holding Back Laggards</h2><p>The two most common blockers: concerns about data privacy and a lack of clear internal ownership for AI initiatives. Both are solvable with planning, but they require executive commitment to solve.</p><h2>What This Means for Small Businesses</h2><p>In professional services, AI is moving from competitive advantage to table stakes. Firms that haven't started yet are not in a neutral position — they're falling behind firms that started 12–18 months ago.</p>`,
+  },
 ];
 
-const GRADIENT_MAP: Record<string, string> = {
-  "from-red-600 to-orange-500": "bg-gradient-to-br from-red-600 to-orange-500",
-  "from-[#1B3A6B] to-[#2251A3]": "bg-gradient-to-br from-[#1B3A6B] to-[#2251A3]",
-  "from-purple-600 to-violet-500": "bg-gradient-to-br from-purple-600 to-violet-500",
-  "from-teal-600 to-emerald-500": "bg-gradient-to-br from-teal-600 to-emerald-500",
-  "from-[#F47C20] to-yellow-500": "bg-gradient-to-br from-[#F47C20] to-yellow-500",
-  "from-slate-600 to-gray-500": "bg-gradient-to-br from-slate-600 to-gray-500",
-};
-
-function gradientClass(g: string): string {
-  return GRADIENT_MAP[g] ?? "bg-gradient-to-br from-[#1B3A6B] to-[#2251A3]";
+function slugify(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .slice(0, 80);
 }
 
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const h = Math.floor(diff / 3600000);
-  const d = Math.floor(h / 24);
-  if (h < 1) return "Just now";
-  if (h < 24) return `${h}h ago`;
-  if (d < 7) return `${d}d ago`;
-  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
+async function seedIfEmpty(): Promise<void> {
+  const existingTitles = new Set(
+    (await prisma.blogPost.findMany({ select: { title: true } })).map((p) =>
+      p.title.toLowerCase()
+    )
+  );
 
-export default function BlogPage() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [breaking, setBreaking] = useState<BreakingNews | null>(null);
-  const [category, setCategory] = useState("all");
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [featuredImgFailed, setFeaturedImgFailed] = useState(false);
-  const [featured2ImgFailed, setFeatured2ImgFailed] = useState(false);
-  const [showOlder, setShowOlder] = useState(false);
+  for (const seed of QUICK_SEEDS) {
+    if (existingTitles.has(seed.title.toLowerCase())) continue;
 
-  useEffect(() => {
-    trackPageVisit("/ai-times");
-  }, []);
-
-  const fetchPosts = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 10000);
-    try {
-      const params = new URLSearchParams({ limit: "100" });
-      if (category !== "all") params.set("category", category);
-      if (search) params.set("search", search);
-      const res = await fetch(`/api/blog/posts?${params}`, { signal: controller.signal });
-      clearTimeout(timer);
-      const data = await res.json();
-      setPosts(data.posts ?? []);
-    } catch {
-      // timeout or network error — leave posts as-is
-    } finally {
-      clearTimeout(timer);
-      if (!silent) setLoading(false);
-    }
-  }, [category, search]);
-
-  useEffect(() => {
-    fetchPosts();
-  }, [fetchPosts]);
-
-  useEffect(() => {
-    fetch("/api/blog/breaking-news")
-      .then((r) => r.json())
-      .then((d) => setBreaking(d.news));
-  }, []);
-
-  // On mount: seed static articles immediately (no Claude needed), then trigger
-  // the heavier AI refresh in the background. This guarantees content in < 2s
-  // even on a brand-new production database.
-  useEffect(() => {
-    let alive = true;
-    let pollId: ReturnType<typeof setInterval> | null = null;
-
-    async function bootstrap() {
-      try {
-        // 1. Check how many posts are currently in the DB
-        const check = await fetch("/api/blog/posts?limit=1")
-          .then((r) => r.json())
-          .catch(() => ({ total: 0 }));
-        const isEmpty = (check.total ?? 0) === 0;
-
-        if (!isEmpty) return; // DB already has content — nothing to do
-
-        // 2. DB is empty: show spinner and seed static articles immediately
-        if (alive) setRefreshing(true);
-
-        const seedRes = await fetch("/api/blog/seed", { method: "POST" }).catch(() => null);
-        const seedData = seedRes ? await seedRes.json().catch(() => ({})) : {};
-
-        if (!alive) return;
-
-        if (seedRes?.ok && (seedData.inserted ?? 0) > 0) {
-          // Seed worked — fetch posts and hide spinner right away
-          await fetchPosts(true);
-          if (alive) setRefreshing(false);
-        } else {
-          // Seed failed (likely DB tables missing) — stop spinner, show empty state
-          if (alive) setRefreshing(false);
-          return;
-        }
-
-        // 3. Fire the heavy AI refresh in background (no awaiting, no blocking)
-        fetch("/api/blog/auto-refresh?force=true").catch(() => {});
-
-        // 4. Poll every 6s for up to 60s to pick up AI-generated articles as they arrive
-        let attempts = 0;
-        pollId = setInterval(async () => {
-          if (!alive) { clearInterval(pollId!); return; }
-          attempts++;
-          await fetchPosts(true);
-          if (attempts >= 10) clearInterval(pollId!); // stop after 60s
-        }, 6000);
-
-      } catch {
-        if (alive) setRefreshing(false);
-      }
+    const base = slugify(seed.title);
+    let slug = base;
+    let i = 1;
+    while (await prisma.blogPost.findUnique({ where: { slug } })) {
+      slug = `${base}-${i++}`;
     }
 
-    bootstrap();
-
-    return () => {
-      alive = false;
-      if (pollId) clearInterval(pollId);
-    };
-  }, []); // run once on mount — fetchPosts is stable via useCallback
-
-  const showFeatured = category === "all" && !search;
-  const featuredPosts = showFeatured
-    ? (() => {
-        // Use admin-selected featured articles (up to 2), newest first.
-        // If fewer than 2 are marked featured, fill remaining slots from the most recent posts.
-        const marked = posts.filter((p) => p.featured);
-        if (marked.length >= 2) return marked.slice(0, 2);
-        const fillers = posts.filter((p) => !marked.some((m) => m.id === p.id));
-        return [...marked, ...fillers].slice(0, 2);
-      })()
-    : [];
-  const featuredIds = new Set(featuredPosts.map((p) => p.id));
-  const grid = posts.filter((p) => !featuredIds.has(p.id));
-  const INITIAL_COUNT = 9;
-  const visibleGrid = showOlder ? grid : grid.slice(0, INITIAL_COUNT);
-  const hiddenCount = Math.max(0, grid.length - INITIAL_COUNT);
-
-  return (
-    <div className="pt-32 sm:pt-44 pb-36 sm:pb-20 min-h-screen bg-[#F4F7FB]">
-      {/* Breaking news ticker */}
-      {breaking && (
-        <div className="bg-red-600 text-white py-2.5 px-4 flex items-center gap-3">
-          <span className="flex-shrink-0 bg-white text-red-600 text-xs font-extrabold font-syne px-2 py-0.5 rounded flex items-center gap-1">
-            <Zap size={11} /> BREAKING
-          </span>
-          <p className="text-sm font-dm font-medium truncate flex-1">{breaking.headline}</p>
-          {breaking.sourceUrl && (
-            <a
-              href={breaking.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-shrink-0 text-white/80 text-xs underline hover:text-white"
-            >
-              Source →
-            </a>
-          )}
-        </div>
-      )}
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center py-12">
-          <span className="section-tag">TIBLOGICS</span>
-          <h1
-            className="text-5xl md:text-7xl text-[#0D1B2A] mt-3 tracking-widest font-bold"
-            style={{ fontFamily: "var(--font-masthead)" }}
-          >
-            AI TIMES
-          </h1>
-          <p className="font-syne font-bold text-[#F47C20] text-xl md:text-2xl mt-2 tracking-wide">
-            The #1 AI Digestable Knowledge
-          </p>
-          <p className="font-dm text-[#3A4A5C] text-base mt-2 max-w-xl mx-auto">
-            Practical AI knowledge for businesses, builders, and curious minds.
-          </p>
-          {refreshing && (
-            <p className="flex items-center justify-center gap-1.5 text-xs text-[#7A8FA6] mt-2 font-dm">
-              <RefreshCw size={12} className="animate-spin" /> Refreshing content with latest AI news…
-            </p>
-          )}
-        </div>
-
-        {/* Search */}
-        <div className="relative max-w-md mx-auto mb-8">
-          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#7A8FA6]" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search posts…"
-            className="w-full pl-11 pr-4 py-3 bg-white border border-[#D2DCE8] rounded-2xl text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3] shadow-sm"
-          />
-        </div>
-
-        {/* Category filter */}
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-8 scrollbar-hide">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setCategory(cat.id)}
-              className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-dm font-medium transition-all duration-200 ${
-                category === cat.id
-                  ? "bg-[#1B3A6B] text-white shadow-sm"
-                  : "bg-[#EBF0FA] border border-[#D2DCE8] text-[#3A4A5C] hover:bg-[#1B3A6B] hover:border-[#1B3A6B] hover:text-white"
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl overflow-hidden border border-[#D2DCE8] animate-pulse">
-                <div className="h-44 bg-[#E8EFF8]" />
-                <div className="p-5 space-y-3">
-                  <div className="h-3 bg-[#E8EFF8] rounded w-1/3" />
-                  <div className="h-5 bg-[#E8EFF8] rounded w-4/5" />
-                  <div className="h-3 bg-[#E8EFF8] rounded w-full" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : posts.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-5xl mb-4">📰</p>
-            <h3 className="font-syne font-bold text-xl text-[#0D1B2A] mb-2">No posts yet</h3>
-            <p className="font-dm text-[#7A8FA6] text-sm max-w-xs mx-auto">
-              Content will auto-populate when the blog refreshes. Check back soon!
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* Featured posts — 2 rotating articles */}
-            {featuredPosts.length > 0 && showFeatured && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-10">
-                {featuredPosts.map((fp, idx) => {
-                  const imgFailed = idx === 0 ? featuredImgFailed : featured2ImgFailed;
-                  const setImgFailed = idx === 0 ? setFeaturedImgFailed : setFeatured2ImgFailed;
-                  return (
-                    <Link key={fp.id} href={`/ai-times/${fp.slug}`} className="group block">
-                      <div className="bg-white border border-[#D2DCE8] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 h-full flex flex-col">
-                        <div className="h-52 flex-shrink-0 overflow-hidden relative">
-                          {fp.coverImage && !imgFailed ? (
-                            <img src={fp.coverImage} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="eager" fetchPriority="high" decoding="sync" onError={() => setImgFailed(true)} />
-                          ) : (
-                            <div className={`${gradientClass(fp.coverGradient)} w-full h-full flex items-center justify-center`}>
-                              <span className="text-7xl">{fp.coverEmoji}</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-6 flex flex-col flex-1 justify-between">
-                          <div>
-                            <div className="flex items-center gap-2 mb-3">
-                              <span className="bg-[#F47C20] text-white text-xs font-extrabold font-syne px-2.5 py-1 rounded-full uppercase tracking-wide">
-                                Featured
-                              </span>
-                              <CategoryBadge category={fp.category} />
-                            </div>
-                            <h2 className="font-syne font-extrabold text-xl text-[#0D1B2A] mb-2 group-hover:text-[#2251A3] transition-colors leading-tight line-clamp-2">
-                              {fp.title}
-                            </h2>
-                            <p className="font-dm text-[#3A4A5C] text-sm leading-relaxed line-clamp-2">
-                              {fp.excerpt}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-3 text-xs font-dm text-[#7A8FA6] mt-4">
-                            <span className="flex items-center gap-1"><Clock size={12} /> {fp.readingTime} min read</span>
-                            <span>·</span>
-                            <span>{timeAgo(fp.createdAt)}</span>
-                            {fp.aiGenerated && <><span>·</span><span className="text-[#2251A3]">AI Curated</span></>}
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Tips spotlight */}
-            {showFeatured && (
-              <TipsSpotlight posts={posts.filter((p) => p.category === "tips").slice(0, 3)} />
-            )}
-
-            {/* Post grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {visibleGrid.map((post) => (
-                <PostCard key={post.id} post={post} />
-              ))}
-            </div>
-
-            {/* Load more older articles */}
-            {!showOlder && hiddenCount > 0 && (
-              <div className="mt-10 text-center">
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="flex-1 h-px bg-[#D2DCE8]" />
-                  <span className="font-dm text-sm text-[#7A8FA6]">{hiddenCount} more article{hiddenCount !== 1 ? "s" : ""}</span>
-                  <div className="flex-1 h-px bg-[#D2DCE8]" />
-                </div>
-                <button
-                  onClick={() => setShowOlder(true)}
-                  className="inline-flex items-center gap-2 bg-white border border-[#D2DCE8] hover:border-[#2251A3] hover:text-[#2251A3] text-[#3A4A5C] font-dm font-medium text-sm px-8 py-3 rounded-2xl shadow-sm transition-all duration-200"
-                >
-                  Load More Articles ↓
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Newsletter signup */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
-        <NewsletterSignup />
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
-        <SmartRecommendations currentPage="/ai-times" compact />
-      </div>
-    </div>
-  );
+    await prisma.blogPost.create({
+      data: {
+        slug,
+        title: seed.title,
+        excerpt: seed.excerpt,
+        content: seed.content,
+        category: seed.category,
+        tags: seed.tags,
+        coverEmoji: seed.coverEmoji,
+        coverGradient: seed.coverGradient,
+        coverImage: seed.coverImage,
+        author: "TIBLOGICS Editorial",
+        readingTime: Math.ceil(
+          seed.content.replace(/<[^>]*>/g, "").split(" ").length / 200
+        ),
+        featured: seed.featured,
+        published: true,
+        aiGenerated: false,
+      },
+    });
+  }
 }
 
-function CategoryBadge({ category }: { category: string }) {
-  const labels: Record<string, string> = {
-    "breaking": "⚡ Breaking",
-    "ai-business": "💼 AI for Business",
-    "tips": "💡 Tips",
-    "tools": "🔧 Tools",
-    "case-studies": "📊 Case Study",
-    "industry": "🌐 Industry",
-  };
-  return (
-    <span className="bg-[#EBF0FA] text-[#2251A3] text-xs font-medium font-dm px-2.5 py-1 rounded-full">
-      {labels[category] ?? category}
-    </span>
-  );
-}
+export default async function BlogPage() {
+  let initialPosts: BlogPost[] = [];
 
-function PostCard({ post }: { post: BlogPost }) {
-  const [imgFailed, setImgFailed] = useState(false);
-  return (
-    <Link href={`/ai-times/${post.slug}`} className="group">
-      <article className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 h-full flex flex-col">
-        <div className="h-44 overflow-hidden relative">
-          {post.coverImage && !imgFailed ? (
-            <img
-              src={post.coverImage}
-              alt=""
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              loading="lazy"
-              onError={() => setImgFailed(true)}
-            />
-          ) : (
-            <div className={`${gradientClass(post.coverGradient)} w-full h-full flex items-center justify-center`}>
-              <span className="text-6xl group-hover:scale-110 transition-transform duration-300">
-                {post.coverEmoji}
-              </span>
-            </div>
-          )}
-        </div>
-        <div className="p-5 flex flex-col flex-1">
-          <CategoryBadge category={post.category} />
-          <h3 className="font-syne font-bold text-base text-[#0D1B2A] mt-3 mb-2 group-hover:text-[#2251A3] transition-colors leading-snug line-clamp-2">
-            {post.title}
-          </h3>
-          <p className="font-dm text-sm text-[#7A8FA6] leading-relaxed line-clamp-3 flex-1">
-            {post.excerpt}
-          </p>
-          <div className="flex items-center gap-2 mt-4 text-xs font-dm text-[#7A8FA6]">
-            <Clock size={11} />
-            <span>{post.readingTime} min</span>
-            <span>·</span>
-            <span>{timeAgo(post.createdAt)}</span>
-          </div>
-        </div>
-      </article>
-    </Link>
-  );
-}
+  try {
+    const count = await prisma.blogPost.count({ where: { published: true } });
 
-function NewsletterSignup() {
-  const [email, setEmail] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email) return;
-    setStatus("loading");
-    try {
-      const res = await fetch("/api/newsletter/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, firstName: firstName || undefined, source: "blog_page" }),
-      });
-      setStatus(res.ok ? "success" : "error");
-    } catch {
-      setStatus("error");
+    if (count === 0) {
+      await seedIfEmpty();
     }
+
+    const rows = await prisma.blogPost.findMany({
+      where: { published: true },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        excerpt: true,
+        category: true,
+        tags: true,
+        coverImage: true,
+        coverEmoji: true,
+        coverGradient: true,
+        author: true,
+        readingTime: true,
+        featured: true,
+        aiGenerated: true,
+        createdAt: true,
+      },
+    });
+
+    initialPosts = rows.map((p) => ({
+      ...p,
+      coverImage: p.coverImage ?? undefined,
+      createdAt: p.createdAt.toISOString(),
+    }));
+  } catch (err) {
+    console.error("[AI Times SSR]", err);
+    // Return page with empty posts; client will show the empty state gracefully.
   }
 
-  return (
-    <div className="bg-gradient-to-br from-[#1B3A6B] to-[#2251A3] rounded-3xl p-10 text-center">
-      <span className="inline-block bg-[#F47C20]/20 text-[#F47C20] text-xs font-dm font-semibold px-3 py-1 rounded-full mb-4 uppercase tracking-wide">
-        Free Newsletter
-      </span>
-      <h2 className="font-syne font-extrabold text-2xl md:text-3xl text-white mb-3">
-        AI insights delivered to your inbox.
-      </h2>
-      <p className="font-dm text-white/70 text-base max-w-lg mx-auto mb-7">
-        Weekly tips on AI best practices, readiness strategies, and mistakes to avoid — curated for small businesses by Echelon.
-      </p>
-      {status === "success" ? (
-        <div className="inline-flex items-center gap-2 bg-white/10 text-white font-dm text-sm px-6 py-3 rounded-2xl">
-          You&rsquo;re subscribed! Welcome aboard.
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-          <input
-            type="text"
-            placeholder="First name (optional)"
-            value={firstName}
-            onChange={e => setFirstName(e.target.value)}
-            className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 font-dm text-sm focus:outline-none focus:border-white/50"
-          />
-          <input
-            type="email"
-            placeholder="Your email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-            className="flex-[2] px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 font-dm text-sm focus:outline-none focus:border-white/50"
-          />
-          <button type="submit" disabled={status === "loading"}
-            className="flex items-center justify-center gap-2 bg-[#F47C20] hover:bg-[#D85A30] text-white font-dm font-semibold px-5 py-3 rounded-xl transition-colors disabled:opacity-70 flex-shrink-0"
-          >
-            {status === "loading" ? (
-              <RefreshCw size={15} className="animate-spin" />
-            ) : (
-              <><Send size={14} /> Subscribe</>
-            )}
-          </button>
-        </form>
-      )}
-      {status === "error" && (
-        <p className="text-red-300 text-xs font-dm mt-3">Something went wrong. Please try again.</p>
-      )}
-      <p className="text-white/40 text-xs font-dm mt-4">No spam. Unsubscribe anytime.</p>
-    </div>
-  );
-}
-
-function TipsSpotlight({ posts }: { posts: BlogPost[] }) {
-  if (posts.length === 0) return null;
-  return (
-    <div className="mb-10">
-      <div className="flex items-center gap-2 mb-4">
-        <span className="text-xl">💡</span>
-        <h2 className="font-syne font-bold text-lg text-[#0D1B2A]">Tips & Tricks Spotlight</h2>
-        <Link href="#" onClick={() => {}} className="ml-auto text-xs text-[#2251A3] font-dm hover:underline">
-          View all tips →
-        </Link>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {posts.map((p) => (
-          <Link key={p.id} href={`/ai-times/${p.slug}`} className="group bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-100 rounded-2xl p-5 hover:shadow-md transition-all duration-200">
-            <p className="font-syne font-bold text-sm text-[#0D1B2A] group-hover:text-purple-700 line-clamp-2 mb-2">
-              {p.title}
-            </p>
-            <p className="font-dm text-xs text-[#7A8FA6] line-clamp-2">{p.excerpt}</p>
-            <p className="text-xs text-purple-500 font-dm mt-3">{p.readingTime} min read →</p>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
+  return <BlogPageClient initialPosts={initialPosts} />;
 }
