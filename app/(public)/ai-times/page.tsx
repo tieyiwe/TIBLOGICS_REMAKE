@@ -111,6 +111,9 @@ export default function BlogPage() {
 
   // Auto-refresh check on page load
   useEffect(() => {
+    let pollId: ReturnType<typeof setInterval> | null = null;
+    let alive = true;
+
     async function checkAndRefresh() {
       try {
         const checkRes = await fetch("/api/blog/auto-refresh?check=true");
@@ -118,23 +121,40 @@ export default function BlogPage() {
         const currentPosts = await fetch("/api/blog/posts?limit=1").then(r => r.json());
         const isEmpty = (currentPosts.total ?? 0) === 0;
 
+        if (!alive) return;
+
         if (checkData.needsRefresh || isEmpty) {
           setRefreshing(true);
-          try {
-            const url = isEmpty
-              ? "/api/blog/auto-refresh?force=true"
-              : "/api/blog/auto-refresh";
-            await fetch(url);
-          } finally {
+
+          // Always use ?force=true so the request is allowed even when CRON_SECRET is set.
+          // The seed posts are inserted within the first few seconds; we poll until they appear.
+          fetch("/api/blog/auto-refresh?force=true").catch(() => {});
+
+          // Poll every 4 seconds for up to 3 minutes until posts appear
+          let attempts = 0;
+          pollId = setInterval(async () => {
+            if (!alive) { clearInterval(pollId!); return; }
+            attempts++;
             await fetchPosts(true);
-            setRefreshing(false);
-          }
+            const check = await fetch("/api/blog/posts?limit=1")
+              .then(r => r.json())
+              .catch(() => ({ total: 0 }));
+            if ((check.total ?? 0) > 0 || attempts >= 45) {
+              clearInterval(pollId!);
+              if (alive) setRefreshing(false);
+            }
+          }, 4000);
         }
       } catch {
-        setRefreshing(false);
+        if (alive) setRefreshing(false);
       }
     }
     checkAndRefresh();
+
+    return () => {
+      alive = false;
+      if (pollId) clearInterval(pollId);
+    };
   }, [fetchPosts]);
 
   const showFeatured = category === "all" && !search;
