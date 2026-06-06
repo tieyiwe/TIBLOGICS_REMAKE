@@ -188,16 +188,16 @@ const CATEGORY_TOPIC_BANK: Record<string, string[]> = {
   ],
   "tools": [
     "Notion AI vs. Coda AI: Which Document Intelligence Tool Wins for Small Teams?",
-    "The Best AI Tools for Business Writing in 2025: An Honest Comparison",
+    "The Best AI Tools for Business Writing in 2026: An Honest Comparison",
     "AI Legal Research Tools That Help Non-Lawyers Navigate Contracts",
     "Descript vs. Otter.ai vs. Fireflies: Which Meeting AI Is Worth Paying For?",
-    "The Best AI Image Generation Tools for Business Marketing in 2025",
+    "The Best AI Image Generation Tools for Business Marketing in 2026",
     "HubSpot AI Features vs. Zoho Zia: Which CRM AI Actually Helps Sales?",
     "AI Bookkeeping Tools That Handle the Work Your Accountant Bills You For",
     "The Best Free AI Tools for Small Business Owners Right Now",
     "Canva AI vs. Adobe Firefly: Which Design AI Delivers More for Non-Designers?",
     "AI Social Media Tools That Actually Save Time and Maintain Brand Voice",
-    "Make vs. Zapier in 2025: Which Automation Platform Has Pulled Ahead?",
+    "Make vs. Zapier in 2026: Which Automation Platform Has Pulled Ahead?",
     "The Best AI Writing Assistants for Email and Business Communication",
     "AI Proposal and Quoting Tools for Service Businesses",
     "Google NotebookLM for Business: Building a Queryable Knowledge Base for Free",
@@ -221,7 +221,7 @@ const CATEGORY_TOPIC_BANK: Record<string, string[]> = {
     "A Tech Recruiting Firm Cut Time-to-Hire by 50 Percent With AI Resume Screening",
   ],
   "industry": [
-    "The State of AI Adoption in Professional Services: 2025 Benchmarks",
+    "The State of AI Adoption in Professional Services: 2026 Benchmarks",
     "How AI Is Reshaping the Future of Remote and Hybrid Work",
     "AI in Retail: From Inventory Optimization to Personalized Shopping Experiences",
     "The AI Skills Gap Is Growing: What Business Leaders Must Do in the Next 12 Months",
@@ -311,15 +311,18 @@ async function fetchDevTo(): Promise<DevArticle[]> {
   }
 }
 
+const CURRENT_YEAR = new Date().getFullYear(); // resolves at runtime on server
+
 async function generatePost(
   title: string,
   sourceUrl: string | undefined,
   sourceTitle: string
 ): Promise<{ excerpt: string; content: string; category: string; tags: string[] } | null> {
-  const prompt = `Write an informative, engaging blog post for TIBLOGICS (an AI agency blog) based on this news:
+  const prompt = `Write an informative, engaging blog post for TIBLOGICS (an AI agency blog) based on this topic:
 
 Title: "${title}"
 Source: ${sourceTitle}
+Current date context: Mid-${CURRENT_YEAR}
 
 Requirements:
 - 450-600 words
@@ -329,6 +332,7 @@ Requirements:
 - End with a practical takeaway
 - Tone: expert but accessible, no jargon without explanation
 - Include HTML formatting: <h2>, <p>, <ul>, <li>, <strong>
+- IMPORTANT: The current year is ${CURRENT_YEAR}. Do NOT write "in 2025" or "in 2024" as if those are current or future. Any year-specific references must use ${CURRENT_YEAR} as the present, and treat 2024/2025 as past years only when historically relevant.
 
 Also determine:
 - category: one of [breaking, ai-business, tips, tools, case-studies, industry]
@@ -346,7 +350,7 @@ Return a JSON object:
   try {
     const raw = await streamChat(
       [{ role: "user", content: prompt }],
-      "You are a professional AI technology journalist writing for an AI agency blog. Write engaging, accurate, practical content.",
+      `You are a professional AI technology journalist writing for an AI agency blog. The current year is ${CURRENT_YEAR}. Write engaging, accurate, practical content that reflects the AI landscape as of mid-${CURRENT_YEAR}. Never describe 2025 or 2024 as "this year" or "the current year".`,
       2000
     );
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
@@ -1574,6 +1578,24 @@ async function patchBrokenImages(): Promise<number> {
   return patched;
 }
 
+// Delete AI-generated articles whose titles contain stale year references (2024, 2025).
+// They will be replaced by fresh 2026 content in the same refresh cycle.
+async function patchStaleArticles(): Promise<number> {
+  try {
+    const staleYearPattern = /\b(2024|2025)\b/;
+    const candidates = await prisma.blogPost.findMany({
+      where: { aiGenerated: true },
+      select: { id: true, title: true },
+    });
+    const stale = candidates.filter((p) => staleYearPattern.test(p.title));
+    if (stale.length === 0) return 0;
+    await prisma.blogPost.deleteMany({ where: { id: { in: stale.map((p) => p.id) } } });
+    return stale.length;
+  } catch {
+    return 0;
+  }
+}
+
 // Assign a real cover image to any published article that has none
 // Known placeholder / blank images that should be replaced with real covers
 const BLANK_COVER_PATTERNS = [
@@ -2675,6 +2697,7 @@ export async function GET(req: NextRequest) {
     patchBrokenImages(),
     patchAllMissingCovers(),
     patchFeaturedRotation(),
+    patchStaleArticles(),
   ]);
 
   if (!needsRefresh) {
