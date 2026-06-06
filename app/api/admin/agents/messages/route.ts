@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/require-admin";
 
 export async function GET(req: NextRequest) {
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   const { searchParams } = new URL(req.url);
   const toAgent = searchParams.get("toAgent");
   const unreadOnly = searchParams.get("unread") === "true";
@@ -18,6 +22,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   const body = await req.json();
   const msg = await prisma.agentMessage.create({ data: body });
   return NextResponse.json(msg, { status: 201 });

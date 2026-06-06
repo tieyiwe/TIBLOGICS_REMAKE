@@ -1,6 +1,7 @@
 export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/claude";
+import { requireAdmin } from "@/lib/require-admin";
 
 const NEWS_AGENT_SYSTEM = `You are Echelon — the TIBLOGICS internal AI agent for managing the blog and newsletter.
 
@@ -51,25 +52,9 @@ You are an expert AI journalist who knows the latest in:
 
 Be concise, proactive, and professional. When drafting newsletters, make them engaging and value-packed. Always suggest actionable next steps. Always include the action block — every time, no exceptions.`;
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + 3600000 });
-    return true;
-  }
-  if (entry.count >= 40) return false;
-  entry.count++;
-  return true;
-}
-
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for") ?? "unknown";
-  if (!checkRateLimit(ip)) {
-    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
-  }
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
 
   try {
     const { messages } = await req.json();

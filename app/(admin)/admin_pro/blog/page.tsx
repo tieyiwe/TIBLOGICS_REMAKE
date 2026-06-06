@@ -118,22 +118,35 @@ export default function BlogAdminPage() {
   }
 
   async function toggleFeatured(id: string, current: boolean) {
-    if (!current) {
-      const featuredCount = posts.filter((p) => p.featured).length;
-      if (featuredCount >= 2) {
-        setFeaturedError("Max 2 featured articles allowed. Unfeature one first.");
-        setTimeout(() => setFeaturedError(null), 4000);
-        return;
-      }
+    if (current) {
+      // Unfeature this article
+      await fetch(`/api/blog/posts/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ featured: false }),
+      });
+      setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, featured: false } : p)));
+      return;
     }
+
+    // Featuring: if already at limit, auto-bump the oldest featured out first
+    const currentlyFeatured = posts.filter((p) => p.featured);
+    if (currentlyFeatured.length >= 2) {
+      const toBump = currentlyFeatured[0];
+      await fetch(`/api/blog/posts/${toBump.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ featured: false }),
+      });
+      setPosts((ps) => ps.map((p) => (p.id === toBump.id ? { ...p, featured: false } : p)));
+    }
+
     await fetch(`/api/blog/posts/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ featured: !current }),
+      body: JSON.stringify({ featured: true }),
     });
-    setPosts((ps) =>
-      ps.map((p) => (p.id === id ? { ...p, featured: !current } : p))
-    );
+    setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, featured: true } : p)));
   }
 
   async function updateCoverImage(id: string, currentCover: string | null) {
@@ -403,18 +416,15 @@ export default function BlogAdminPage() {
                         </button>
                         {(() => {
                           const featuredCount = posts.filter((x) => x.featured).length;
-                          const atMax = featuredCount >= 2 && !p.featured;
                           return (
                             <button
                               onClick={() => toggleFeatured(p.id, p.featured)}
                               className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
                                 p.featured
                                   ? "bg-[#FEF0E3] text-[#F47C20] hover:bg-orange-100"
-                                  : atMax
-                                  ? "text-[#D2DCE8] cursor-not-allowed"
                                   : "hover:bg-[#FEF0E3] text-[#7A8FA6] hover:text-[#F47C20]"
                               }`}
-                              title={p.featured ? "Unfeature" : atMax ? "Max 2 featured — unfeature one first" : "Feature this post"}
+                              title={p.featured ? "Unfeature" : featuredCount >= 2 ? "Feature this post (replaces oldest featured)" : "Feature this post"}
                             >
                               <Star size={14} className={p.featured ? "fill-current" : ""} />
                             </button>

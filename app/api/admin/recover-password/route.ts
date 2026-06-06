@@ -2,9 +2,28 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
+const recoverRateLimit = new Map<string, { count: number; resetAt: number }>();
+
+function checkRecoverRate(ip: string): boolean {
+  const now = Date.now();
+  const entry = recoverRateLimit.get(ip);
+  if (!entry || now > entry.resetAt) {
+    recoverRateLimit.set(ip, { count: 1, resetAt: now + 3600000 }); // 1-hr window
+    return true;
+  }
+  if (entry.count >= 5) return false; // max 5 attempts/hr
+  entry.count++;
+  return true;
+}
+
 // No session required — this is the locked-out recovery path.
 // Caller must supply the ADMIN_PASSWORD env var value as proof of ownership.
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  if (!checkRecoverRate(ip)) {
+    return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
+  }
+
   try {
     const { masterPassword, newPassword } = await req.json();
 
