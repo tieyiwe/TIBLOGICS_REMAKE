@@ -109,53 +109,65 @@ export default function BlogPage() {
       .then((d) => setBreaking(d.news));
   }, []);
 
-  // Auto-refresh check on page load
+  // On mount: seed static articles immediately (no Claude needed), then trigger
+  // the heavier AI refresh in the background. This guarantees content in < 2s
+  // even on a brand-new production database.
   useEffect(() => {
-    let pollId: ReturnType<typeof setInterval> | null = null;
     let alive = true;
+    let pollId: ReturnType<typeof setInterval> | null = null;
 
-    async function checkAndRefresh() {
+    async function bootstrap() {
       try {
-        const checkRes = await fetch("/api/blog/auto-refresh?check=true");
-        const checkData = await checkRes.json();
-        const currentPosts = await fetch("/api/blog/posts?limit=1").then(r => r.json());
-        const isEmpty = (currentPosts.total ?? 0) === 0;
+        // 1. Check how many posts are currently in the DB
+        const check = await fetch("/api/blog/posts?limit=1")
+          .then((r) => r.json())
+          .catch(() => ({ total: 0 }));
+        const isEmpty = (check.total ?? 0) === 0;
+
+        if (!isEmpty) return; // DB already has content — nothing to do
+
+        // 2. DB is empty: show spinner and seed static articles immediately
+        if (alive) setRefreshing(true);
+
+        const seedRes = await fetch("/api/blog/seed", { method: "POST" }).catch(() => null);
+        const seedData = seedRes ? await seedRes.json().catch(() => ({})) : {};
 
         if (!alive) return;
 
-        if (checkData.needsRefresh || isEmpty) {
-          setRefreshing(true);
-
-          // Always use ?force=true so the request is allowed even when CRON_SECRET is set.
-          // The seed posts are inserted within the first few seconds; we poll until they appear.
-          fetch("/api/blog/auto-refresh?force=true").catch(() => {});
-
-          // Poll every 4 seconds for up to 3 minutes until posts appear
-          let attempts = 0;
-          pollId = setInterval(async () => {
-            if (!alive) { clearInterval(pollId!); return; }
-            attempts++;
-            await fetchPosts(true);
-            const check = await fetch("/api/blog/posts?limit=1")
-              .then(r => r.json())
-              .catch(() => ({ total: 0 }));
-            if ((check.total ?? 0) > 0 || attempts >= 45) {
-              clearInterval(pollId!);
-              if (alive) setRefreshing(false);
-            }
-          }, 4000);
+        if (seedRes?.ok && (seedData.inserted ?? 0) > 0) {
+          // Seed worked — fetch posts and hide spinner right away
+          await fetchPosts(true);
+          if (alive) setRefreshing(false);
+        } else {
+          // Seed failed (likely DB tables missing) — stop spinner, show empty state
+          if (alive) setRefreshing(false);
+          return;
         }
+
+        // 3. Fire the heavy AI refresh in background (no awaiting, no blocking)
+        fetch("/api/blog/auto-refresh?force=true").catch(() => {});
+
+        // 4. Poll every 6s for up to 60s to pick up AI-generated articles as they arrive
+        let attempts = 0;
+        pollId = setInterval(async () => {
+          if (!alive) { clearInterval(pollId!); return; }
+          attempts++;
+          await fetchPosts(true);
+          if (attempts >= 10) clearInterval(pollId!); // stop after 60s
+        }, 6000);
+
       } catch {
         if (alive) setRefreshing(false);
       }
     }
-    checkAndRefresh();
+
+    bootstrap();
 
     return () => {
       alive = false;
       if (pollId) clearInterval(pollId);
     };
-  }, [fetchPosts]);
+  }, []); // run once on mount — fetchPosts is stable via useCallback
 
   const showFeatured = category === "all" && !search;
   const featuredPosts = showFeatured
