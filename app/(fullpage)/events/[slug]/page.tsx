@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
 import prisma from "@/lib/prisma";
+import type { Event } from "@prisma/client";
 import TrainingLandingPage from "./TrainingLandingPage";
 import Link from "next/link";
 import { Calendar, MapPin, Clock, Users, DollarSign, ArrowLeft } from "lucide-react";
 
 interface Props { params: Promise<{ slug: string }> }
 
-// Auto-seed the training event on first load so the page works on a fresh DB.
 const TRAINING_EVENT_SEED = {
   slug: "ai-practical-training-cohort-1",
   title: "AI Practical Training — Cohort 1",
@@ -31,12 +31,11 @@ const TRAINING_EVENT_SEED = {
 export default async function EventPage({ params }: Props) {
   const { slug } = await params;
 
-  let event: typeof TRAINING_EVENT_SEED & { id: string; createdAt: Date; updatedAt: Date; stripePaymentLink?: string | null } | null = null;
+  let event: Event | null = null;
 
   try {
     let raw = await prisma.event.findUnique({ where: { slug } });
 
-    // Auto-seed the training event if it doesn't exist yet.
     if (!raw && slug === "ai-practical-training-cohort-1") {
       raw = await prisma.event.create({ data: TRAINING_EVENT_SEED });
     }
@@ -44,7 +43,7 @@ export default async function EventPage({ params }: Props) {
     if (!raw) return notFound();
     if (!raw.published) return notFound();
 
-    event = raw as unknown as NonNullable<typeof event>;
+    event = raw;
   } catch {
     return notFound();
   }
@@ -64,7 +63,7 @@ export default async function EventPage({ params }: Props) {
     );
   }
 
-  // All other event types — clean detail page (no platform nav since we're in (fullpage) group)
+  // All other event types — clean detail page
   const isFree = event.price === 0;
   const priceDisplay = isFree ? "Free" : `$${(event.price / 100).toFixed(0)} ${event.currency}`;
   const formatDate = (d: Date) =>
@@ -92,7 +91,7 @@ export default async function EventPage({ params }: Props) {
                 {event.date && (
                   <div className="flex items-start gap-3">
                     <Calendar size={16} className="text-[#F47C20] mt-0.5 flex-shrink-0" />
-                    <div><p className="font-dm font-semibold text-[#0D1B2A]">Date</p><p className="font-dm text-[#3A4A5C]">{formatDate(new Date(event.date))}</p></div>
+                    <div><p className="font-dm font-semibold text-[#0D1B2A]">Date</p><p className="font-dm text-[#3A4A5C]">{formatDate(event.date)}</p></div>
                   </div>
                 )}
                 {event.timeSlot && (
