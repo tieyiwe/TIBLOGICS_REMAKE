@@ -423,59 +423,65 @@ function EventCard({ event }: { event: EventItem }) {
 }
 
 function ComingSoonCard() {
-  const [notifyOpen, setNotifyOpen] = useState(false);
-
   return (
-    <>
-      {notifyOpen && <NotifyModal eventName="Practical AI Training" onClose={() => setNotifyOpen(false)} />}
-      <div className="bg-white border-2 border-[#F47C20]/30 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col relative">
-        <div className="w-full h-48 bg-gradient-to-br from-[#1B3A6B] via-[#2251A3] to-[#F47C20] flex items-center justify-center relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-4 left-4 w-16 h-16 border-2 border-white rounded-full" />
-            <div className="absolute bottom-6 right-6 w-24 h-24 border-2 border-white rounded-full" />
-            <div className="absolute top-12 right-12 w-8 h-8 border border-white rounded-full" />
+    <Link
+      href="/events/ai-practical-training-cohort-1"
+      className="bg-white border-2 border-[#F47C20]/50 rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex flex-col relative group"
+    >
+      <div className="w-full h-48 bg-gradient-to-br from-[#131A1B] via-[#1B3A6B] to-[#F47C20] flex items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-4 left-4 w-16 h-16 border-2 border-white rounded-full" />
+          <div className="absolute bottom-6 right-6 w-24 h-24 border-2 border-white rounded-full" />
+          <div className="absolute top-12 right-12 w-8 h-8 border border-white rounded-full" />
+        </div>
+        <div className="text-center z-10">
+          <div className="text-4xl mb-2">🚀</div>
+          <p className="font-syne font-bold text-white text-lg">Practical AI Training</p>
+          <p className="font-dm text-white/70 text-xs mt-1">Cohort 1 · Jun 20 – Jul 11</p>
+        </div>
+      </div>
+
+      <div className="p-6 flex flex-col flex-1 gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#2251A3]/10 text-[#2251A3]">
+            TRAINING
+          </span>
+          <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 ml-auto">
+            Registration Open
+          </span>
+        </div>
+
+        <h3 className="font-syne font-bold text-lg text-[#0D1B2A] leading-snug group-hover:text-[#F47C20] transition-colors">
+          🚀 AI Practical Training — Cohort 1
+        </h3>
+
+        <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed flex-1">
+          4 live Saturday sessions on Zoom. Go from curious to capable — writing with AI, building income, creating automations, and vibe coding. Starts June 20.
+        </p>
+
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
+            <Calendar size={13} />
+            <span>Jun 20 – Jul 11, 2026 · Saturdays</span>
           </div>
-          <div className="text-center z-10">
-            <div className="text-4xl mb-2">🚀</div>
-            <p className="font-syne font-bold text-white text-lg">Practical AI Training</p>
+          <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
+            <Clock size={13} />
+            <span>9:30AM – 1:00PM ET</span>
+          </div>
+          <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
+            <MapPin size={13} />
+            <span>Live on Zoom</span>
           </div>
         </div>
 
-        <div className="p-6 flex flex-col flex-1 gap-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#2251A3]/10 text-[#2251A3]">
-              TRAINING
-            </span>
-            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20] text-white ml-auto">
-              Coming Soon
-            </span>
-          </div>
-
-          <h3 className="font-syne font-bold text-lg text-[#0D1B2A] leading-snug">
-            🚀 Practical AI Training
-          </h3>
-
-          <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed flex-1">
-            Hands-on AI implementation training for business owners, teams, and individuals. Learn to build workflows, automate tasks, advance your career, and create new income streams with AI.
-          </p>
-
-          <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-            <MapPin size={13} />
-            <span>Online · Live Sessions</span>
-          </div>
-
-          <div className="flex gap-2 mt-2 pt-3 border-t border-[#D2DCE8]">
-            <button
-              onClick={() => setNotifyOpen(true)}
-              className="flex items-center justify-center gap-2 flex-1 text-center font-dm font-semibold text-sm text-white bg-[#F47C20] hover:bg-[#e06a10] transition-colors py-2 rounded-xl"
-            >
-              <Bell size={14} />
-              Join Waitlist
-            </button>
+        <div className="flex gap-2 mt-2 pt-3 border-t border-[#D2DCE8]">
+          <div className="flex items-center justify-center gap-2 flex-1 text-center font-dm font-semibold text-sm text-white bg-[#F47C20] group-hover:bg-[#e06a10] transition-colors py-2 rounded-xl">
+            <ArrowRight size={14} />
+            View Training →
           </div>
         </div>
       </div>
-    </>
+    </Link>
   );
 }
 
