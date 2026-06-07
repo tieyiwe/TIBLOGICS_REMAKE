@@ -151,6 +151,11 @@ const CATEGORY_TOPIC_BANK: Record<string, string[]> = {
     "OpenAI's Operator Agent Browses the Web Autonomously: First Business Applications",
     "The US AI Executive Order: New Rules Every Business Deploying AI Must Know",
     "Perplexity AI Launches Business Tier: Is the Research Assistant Now Enterprise-Ready?",
+    "AI Trading Algorithms Now Control 70% of Market Volume: What It Means for Investors",
+    "Federal Reserve Uses AI for Economic Forecasting: The New Playbook for Rate Decisions",
+    "S&P 500 AI Index Outperforms Benchmarks by 40%: The Sectors Leading the Rally",
+    "Wall Street's AI Arms Race: How Goldman, JPMorgan, and BlackRock Are Restructuring Around AI",
+    "AI-Driven Recession Predictions: What the Models Are Saying That Economists Are Missing",
   ],
   "ai-business": [
     "How to Build an AI-Powered Lead Qualification System Without a CRM Upgrade",
@@ -236,6 +241,11 @@ const CATEGORY_TOPIC_BANK: Record<string, string[]> = {
     "The Impact of AI on Customer Expectations: The New Service Standard",
     "AI and the Future of Professional Learning and Development",
     "How African Businesses Are Leapfrogging Legacy Systems With AI-First Operations",
+    "How AI Is Reshaping Stock Market Analysis and Portfolio Management in 2026",
+    "AI and the Global Economy: What Labor Market Data Is Telling Us About Automation",
+    "The AI Wealth Gap: How Artificial Intelligence Is Concentrating Economic Power",
+    "How AI Is Changing Inflation Forecasting and Monetary Policy for Central Banks",
+    "AI and Trade: How Tariff Modeling and Supply Chain AI Are Reshaping Global Commerce",
   ],
 };
 
@@ -2871,15 +2881,23 @@ export async function GET(req: NextRequest) {
   type GenItem = { title: string; category: string; url?: string; sourceLabel: string };
   const topicBankItems: GenItem[] = [];
 
+  // Check whether a proposed topic is too similar to any existing title (partial substring match)
+  function topicIsDuplicate(t: string): boolean {
+    const norm = t.toLowerCase().trim();
+    return [...existingTitles].some(
+      (et) => et.includes(norm.slice(0, 40)) || norm.includes(et.slice(0, 40))
+    );
+  }
+
   for (const cat of CATEGORIES_LIST) {
     const pool = CATEGORY_TOPIC_BANK[cat] ?? [];
     let unused = pool.filter(
-      (t) => !usedTopicsSet.has(t) && !existingTitles.has(t.toLowerCase())
+      (t) => !usedTopicsSet.has(t) && !topicIsDuplicate(t)
     );
     // Pool exhausted — reset used topics for this category and retry
     if (unused.length < MIN_PER_CATEGORY) {
       pool.forEach((t) => usedTopicsSet.delete(t));
-      unused = pool.filter((t) => !existingTitles.has(t.toLowerCase()));
+      unused = pool.filter((t) => !topicIsDuplicate(t));
     }
     // Shuffle for variety across refreshes
     const shuffled = [...unused].sort(() => Math.random() - 0.5);

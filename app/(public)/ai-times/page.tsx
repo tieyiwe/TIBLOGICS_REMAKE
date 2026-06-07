@@ -1,6 +1,9 @@
 import prisma from "@/lib/prisma";
 import BlogPageClient, { type BlogPost } from "./BlogPageClient";
 
+// Cache the full page HTML for 60 seconds; regenerate in the background after.
+export const revalidate = 60;
+
 // Mirrors the seed data in /api/blog/seed/route.ts — keep in sync if updated.
 const QUICK_SEEDS = [
   {

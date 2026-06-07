@@ -72,7 +72,7 @@ export default function BlogPageClient({ initialPosts }: { initialPosts: BlogPos
   const [loading, setLoading] = useState(false);
   const [featuredImgFailed, setFeaturedImgFailed] = useState(false);
   const [featured2ImgFailed, setFeatured2ImgFailed] = useState(false);
-  const [showOlder, setShowOlder] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(9);
 
   // Skip the first fetchPosts call on mount when SSR already provided posts.
   const skipInitialFetch = useRef(initialPosts.length > 0);
@@ -126,9 +126,8 @@ export default function BlogPageClient({ initialPosts }: { initialPosts: BlogPos
     : [];
   const featuredIds = new Set(featuredPosts.map((p) => p.id));
   const grid = posts.filter((p) => !featuredIds.has(p.id));
-  const INITIAL_COUNT = 9;
-  const visibleGrid = showOlder ? grid : grid.slice(0, INITIAL_COUNT);
-  const hiddenCount = Math.max(0, grid.length - INITIAL_COUNT);
+  const visibleGrid = grid.slice(0, visibleCount);
+  const hiddenCount = Math.max(0, grid.length - visibleCount);
 
   return (
     <div className="pt-32 sm:pt-44 pb-36 sm:pb-20 min-h-screen bg-[#F4F7FB]">
@@ -280,8 +279,8 @@ export default function BlogPageClient({ initialPosts }: { initialPosts: BlogPos
               ))}
             </div>
 
-            {/* Load more older articles */}
-            {!showOlder && hiddenCount > 0 && (
+            {/* Load more */}
+            {hiddenCount > 0 && (
               <div className="mt-10 text-center">
                 <div className="flex items-center gap-4 mb-6">
                   <div className="flex-1 h-px bg-[#D2DCE8]" />
@@ -289,10 +288,10 @@ export default function BlogPageClient({ initialPosts }: { initialPosts: BlogPos
                   <div className="flex-1 h-px bg-[#D2DCE8]" />
                 </div>
                 <button
-                  onClick={() => setShowOlder(true)}
+                  onClick={() => setVisibleCount((c) => c + 9)}
                   className="inline-flex items-center gap-2 bg-white border border-[#D2DCE8] hover:border-[#2251A3] hover:text-[#2251A3] text-[#3A4A5C] font-dm font-medium text-sm px-8 py-3 rounded-2xl shadow-sm transition-all duration-200"
                 >
-                  Load More Articles ↓
+                  Load {Math.min(9, hiddenCount)} More Articles ↓
                 </button>
               </div>
             )}
