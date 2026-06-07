@@ -44,7 +44,7 @@ export default async function EventPage({ params }: Props) {
     if (!raw) return notFound();
     if (!raw.published) return notFound();
 
-    event = raw as typeof event;
+    event = raw as unknown as NonNullable<typeof event>;
   } catch {
     return notFound();
   }
