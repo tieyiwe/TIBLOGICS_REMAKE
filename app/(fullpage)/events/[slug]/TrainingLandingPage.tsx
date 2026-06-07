@@ -198,25 +198,15 @@ function CountdownUnit({ value, label }: { value: string; label: string }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-export default function TrainingLandingPage({ startDate, spots, stripeLink, registrationOpen }: Props) {
+// Isolated so its 1-second setInterval re-render doesn't bubble up to the parent
+function CountdownTimer({ startDate }: { startDate: string }) {
   const TARGET = new Date(startDate);
-
   const [cd, setCd] = useState({ d: 0, h: 0, m: 0, s: 0 });
-  const [faqOpen, setFaqOpen] = useState<number | null>(null);
-  const [activePayment, setActivePayment] = useState("paypal");
-  const [formData, setFormData] = useState({
-    firstName: "", lastName: "", email: "", whatsapp: "",
-    role: "", goal: "", referral: "",
-  });
-  const [formStatus, setFormStatus] = useState<"idle"|"loading"|"success"|"error">("idle");
-  const [toastMsg, setToastMsg] = useState("");
 
-  // Countdown
   useEffect(() => {
     const tick = () => {
       const diff = TARGET.getTime() - Date.now();
-      if (diff <= 0) { setCd({ d:0, h:0, m:0, s:0 }); return; }
+      if (diff <= 0) { setCd({ d: 0, h: 0, m: 0, s: 0 }); return; }
       setCd({
         d: Math.floor(diff / 86400000),
         h: Math.floor((diff % 86400000) / 3600000),
@@ -228,6 +218,30 @@ export default function TrainingLandingPage({ startDate, spots, stripeLink, regi
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, []); // eslint-disable-line
+
+  return (
+    <div style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap" }}>
+      <CountdownUnit value={pad(cd.d)} label="Days" />
+      <span style={{ fontFamily: syne, fontWeight: 800, fontSize: "2.4rem", alignSelf: "center", color: "rgba(255,255,255,.2)", marginBottom: "28px" }}>:</span>
+      <CountdownUnit value={pad(cd.h)} label="Hours" />
+      <span style={{ fontFamily: syne, fontWeight: 800, fontSize: "2.4rem", alignSelf: "center", color: "rgba(255,255,255,.2)", marginBottom: "28px" }}>:</span>
+      <CountdownUnit value={pad(cd.m)} label="Minutes" />
+      <span style={{ fontFamily: syne, fontWeight: 800, fontSize: "2.4rem", alignSelf: "center", color: "rgba(255,255,255,.2)", marginBottom: "28px" }}>:</span>
+      <CountdownUnit value={pad(cd.s)} label="Seconds" />
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+export default function TrainingLandingPage({ startDate, spots, stripeLink, registrationOpen }: Props) {
+  const [faqOpen, setFaqOpen] = useState<number | null>(null);
+  const [activePayment, setActivePayment] = useState("paypal");
+  const [formData, setFormData] = useState({
+    firstName: "", lastName: "", email: "", whatsapp: "",
+    role: "", goal: "", referral: "",
+  });
+  const [formStatus, setFormStatus] = useState<"idle"|"loading"|"success"|"error">("idle");
+  const [toastMsg, setToastMsg] = useState("");
 
   // Scroll reveal
   useEffect(() => {
@@ -409,15 +423,7 @@ export default function TrainingLandingPage({ startDate, spots, stripeLink, regi
       <section style={{ padding: "80px 24px", background: `linear-gradient(180deg, ${S.darker} 0%, ${S.dark} 100%)` }}>
         <div style={{ maxWidth: "700px", margin: "0 auto", textAlign: "center" }} className="reveal">
           <div style={{ fontFamily: dm, fontSize: ".8rem", color: S.muted, letterSpacing: ".15em", textTransform: "uppercase", marginBottom: "12px" }}>Registration Closes — Training Starts June 20, 2026</div>
-          <div style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap" }}>
-            <CountdownUnit value={pad(cd.d)} label="Days" />
-            <span style={{ fontFamily: syne, fontWeight: 800, fontSize: "2.4rem", alignSelf: "center", color: "rgba(255,255,255,.2)", marginBottom: "28px" }}>:</span>
-            <CountdownUnit value={pad(cd.h)} label="Hours" />
-            <span style={{ fontFamily: syne, fontWeight: 800, fontSize: "2.4rem", alignSelf: "center", color: "rgba(255,255,255,.2)", marginBottom: "28px" }}>:</span>
-            <CountdownUnit value={pad(cd.m)} label="Minutes" />
-            <span style={{ fontFamily: syne, fontWeight: 800, fontSize: "2.4rem", alignSelf: "center", color: "rgba(255,255,255,.2)", marginBottom: "28px" }}>:</span>
-            <CountdownUnit value={pad(cd.s)} label="Seconds" />
-          </div>
+          <CountdownTimer startDate={startDate} />
         </div>
       </section>
 
