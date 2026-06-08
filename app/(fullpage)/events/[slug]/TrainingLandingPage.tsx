@@ -406,7 +406,7 @@ export default function TrainingLandingPage({ startDate, spots, stripeLink, regi
           {[
             { n:"4", l:"Weekend Sessions" }, { n:"12", l:"Hours of Training" },
             { n:"100+", l:"Prompts in Library" }, { n:"$649", l:"All Inclusive" },
-            { n:"🔥", l:"First Come First Served" },
+            { n:"🔥", l:"Limited Seats Per Cohort — First Come, First Served" },
           ].map((s, i) => (
             <div key={i} className="stagger-child" style={{
               textAlign: "center", padding: "0 20px",
@@ -585,7 +585,7 @@ export default function TrainingLandingPage({ startDate, spots, stripeLink, regi
             {/* Pulse warning */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
               <span className="pulsing-dot" />
-              <span style={{ fontSize: ".8rem", color: S.orange, fontWeight: 600 }}>Limited seats — first come, first served</span>
+              <span style={{ fontSize: ".8rem", color: S.orange, fontWeight: 600 }}>Limited seats per cohort — first come, first served</span>
             </div>
           </div>
 
@@ -665,7 +665,7 @@ export default function TrainingLandingPage({ startDate, spots, stripeLink, regi
           <div style={{ textAlign:"center", marginBottom:"40px" }}>
             <div style={{ fontFamily:dm, fontSize:".75rem", color:S.orange, letterSpacing:".18em", textTransform:"uppercase", marginBottom:"12px" }}>Registration</div>
             <h2 style={{ fontFamily:syne, fontWeight:800, fontSize:"clamp(1.8rem,3vw,2.4rem)", marginBottom:"14px" }}>Reserve your spot.</h2>
-            <p style={{ color:S.muted, fontSize:".9rem", lineHeight:1.7, maxWidth:"480px", margin:"0 auto" }}>Training starts June 20, 2026. Fill in your details — confirmation and all session details sent within 24hrs. Limited seats — first come, first served.</p>
+            <p style={{ color:S.muted, fontSize:".9rem", lineHeight:1.7, maxWidth:"480px", margin:"0 auto" }}>Training starts June 20, 2026. Fill in your details — confirmation and all session details sent within 24hrs. Limited seats per cohort — first come, first served.</p>
           </div>
 
           {formStatus === "success" ? (
