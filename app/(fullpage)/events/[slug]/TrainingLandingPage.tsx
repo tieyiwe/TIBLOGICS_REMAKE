@@ -732,8 +732,7 @@ export default function TrainingLandingPage({ startDate, spots, stripeLink, regi
                     {[
                       { id:"paypal", icon:"🅿️", label:"PayPal", sub:"Instant · Secure" },
                       { id:"card", icon:"💳", label:"Credit / Debit", sub:"Visa · Mastercard" },
-                      { id:"wave", icon:"📱", label:"Wave / Mobile", sub:"Africa-friendly" },
-                      { id:"bank", icon:"🏦", label:"Bank Transfer", sub:"Instructions by email" },
+                      { id:"zelle", icon:"💜", label:"Zelle", sub:"US bank transfer" },
                     ].map(p=>(
                       <div key={p.id} className={`payment-opt${activePayment===p.id?" selected":""}`}
                         onClick={()=>setActivePayment(p.id)}
@@ -747,6 +746,23 @@ export default function TrainingLandingPage({ startDate, spots, stripeLink, regi
                       </div>
                     ))}
                   </div>
+
+                  {/* Zelle QR placeholder — shown when Zelle is selected */}
+                  {activePayment === "zelle" && (
+                    <div style={{ marginTop:"16px", background:"rgba(139,92,246,.07)", border:"1px solid rgba(139,92,246,.25)", borderRadius:"16px", padding:"24px", textAlign:"center" }}>
+                      <div style={{ fontFamily:syne, fontWeight:700, fontSize:".9rem", color:"#a78bfa", marginBottom:"14px" }}>Scan to pay via Zelle</div>
+                      {/* ── REPLACE THIS BLOCK WITH YOUR ZELLE QR CODE IMAGE ── */}
+                      <div style={{ width:"160px", height:"160px", margin:"0 auto 14px", background:"rgba(255,255,255,.06)", border:`2px dashed rgba(139,92,246,.4)`, borderRadius:"12px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"8px" }}>
+                        <span style={{ fontSize:"2rem" }}>📷</span>
+                        <span style={{ fontSize:".72rem", color:S.muted, lineHeight:1.4 }}>QR Code<br/>Coming Soon</span>
+                      </div>
+                      {/* ──────────────────────────────────────────────────────── */}
+                      <div style={{ fontSize:".8rem", color:S.muted, lineHeight:1.65 }}>
+                        Send <strong style={{ color:"#fff" }}>$649</strong> via Zelle, then submit the form.<br/>
+                        Confirmation sent within 24hrs once payment is verified.
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Submit */}
