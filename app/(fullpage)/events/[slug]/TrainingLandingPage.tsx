@@ -4,8 +4,14 @@ import { useState, useEffect } from "react";
 
 interface Props {
   eventSlug: string;
+  eventTitle: string;
+  eventDescription: string;
   startDate: string;
   spots: number;
+  price: number;       // in cents, e.g. 64900 = $649
+  currency: string;
+  location: string;
+  timeSlot: string;
   stripeLink: string | null;
   registrationOpen: boolean;
 }
@@ -233,7 +239,13 @@ function CountdownTimer({ startDate }: { startDate: string }) {
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function TrainingLandingPage({ startDate, spots, stripeLink, registrationOpen }: Props) {
+export default function TrainingLandingPage({
+  eventTitle, eventDescription, startDate, spots,
+  price, currency, location, timeSlot,
+  stripeLink, registrationOpen,
+}: Props) {
+  const priceDisplay = price === 0 ? "Free" : `$${(price / 100).toFixed(0)} ${currency}`;
+  const isFree = price === 0;
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
   const [activePayment, setActivePayment] = useState("paypal");
   const [formData, setFormData] = useState({
@@ -333,7 +345,7 @@ export default function TrainingLandingPage({ startDate, spots, stripeLink, regi
             </svg>
             <div>
               <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.1rem", letterSpacing: ".06em" }}>TIBLOGICS</div>
-              <div className="nav-sub" style={{ fontSize: ".65rem", color: S.muted, letterSpacing: ".1em" }}>AI Implementation</div>
+              <div className="nav-sub" style={{ fontSize: ".65rem", color: S.muted, letterSpacing: ".1em" }}>Education Center</div>
             </div>
           </div>
           <a href="#register" className="cta-primary" style={{
@@ -358,7 +370,7 @@ export default function TrainingLandingPage({ startDate, spots, stripeLink, regi
             {/* Eyebrow */}
             <div className="hero-1" style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(244,124,76,.1)", border: "1px solid rgba(244,124,76,.25)", borderRadius: "30px", padding: "8px 16px", marginBottom: "28px" }}>
               <span className="pulsing-dot"/>
-              <span style={{ fontFamily: dm, fontSize: ".82rem", color: "#F9A738", fontWeight: 500 }}>Live on Zoom · Every Saturday 9:30AM · Starts June 20, 2026</span>
+              <span style={{ fontFamily: dm, fontSize: ".82rem", color: "#F9A738", fontWeight: 500 }}>{location} · {timeSlot}</span>
             </div>
 
             {/* Headline */}
@@ -385,7 +397,7 @@ export default function TrainingLandingPage({ startDate, spots, stripeLink, regi
             {/* CTAs */}
             <div className="hero-5" style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
               <a href="#register" className="cta-primary" style={{ padding: "15px 30px", borderRadius: "50px", fontFamily: syne, fontSize: "1rem", textDecoration: "none", letterSpacing: ".02em" }}>
-                Secure My Spot — $649
+                {isFree ? "Secure My Spot — Free" : `Secure My Spot — ${priceDisplay}`}
               </a>
               <a href="#curriculum" className="cta-outline" style={{ padding: "15px 26px", borderRadius: "50px", fontFamily: dm, fontSize: ".95rem", textDecoration: "none" }}>
                 See What&apos;s Inside
@@ -535,7 +547,7 @@ export default function TrainingLandingPage({ startDate, spots, stripeLink, regi
               <span style={{ fontFamily: syne, fontWeight: 700, fontSize: "1.4rem", color: S.muted, textDecoration: "line-through", marginRight: "12px" }}>$1,600</span>
               <span style={{ background: "#16a34a22", color: "#4ade80", border: "1px solid #16a34a44", borderRadius: "20px", padding: "4px 14px", fontSize: ".78rem", fontWeight: 600 }}>Founding Cohort Price</span>
             </div>
-            <div className="pricing-amount" style={{ fontFamily: syne, fontWeight: 800, fontSize: "5rem", lineHeight: 1, marginBottom: "8px" }}>$649</div>
+            <div className="pricing-amount" style={{ fontFamily: syne, fontWeight: 800, fontSize: "5rem", lineHeight: 1, marginBottom: "8px" }}>{priceDisplay}</div>
             <div style={{ color: S.orange, fontSize: ".88rem", fontWeight: 600, marginBottom: "6px" }}>🎁 You save $951 — Cohort 1 only</div>
             <div style={{ color: S.muted, fontSize: ".85rem", marginBottom: "20px" }}>Full access · All 4 live sessions · Everything below</div>
 
@@ -776,7 +788,7 @@ export default function TrainingLandingPage({ startDate, spots, stripeLink, regi
                       <span style={{ width:"18px", height:"18px", border:"2.5px solid rgba(0,0,0,.3)", borderTopColor:"#131A1B", borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite" }}/>
                       Processing…
                     </span>
-                  ) : "Complete Registration — $649"}
+                  ) : `Complete Registration${isFree ? "" : ` — ${priceDisplay}`}`}
                 </button>
 
                 {formStatus==="error" && (
@@ -838,7 +850,7 @@ export default function TrainingLandingPage({ startDate, spots, stripeLink, regi
           <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", justifyContent:"space-between", gap:"24px", marginBottom:"32px" }}>
             <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
               <div style={{ fontFamily:syne, fontWeight:800, fontSize:"1.2rem", letterSpacing:".06em" }}>TIBLOGICS</div>
-              <div style={{ fontSize:".75rem", color:S.muted }}>AI Implementation</div>
+              <div style={{ fontSize:".75rem", color:S.muted }}>Education Center</div>
             </div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:"24px" }}>
               <a href="mailto:design@tiblogics.com" style={{ color:S.muted, fontSize:".85rem", textDecoration:"none" }}>design@tiblogics.com</a>
