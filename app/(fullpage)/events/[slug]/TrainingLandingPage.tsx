@@ -532,12 +532,26 @@ export default function TrainingLandingPage({ startDate, spots, stripeLink, regi
             <div className="orb" style={{ width:300, height:300, background:"rgba(244,124,76,.08)", top:"-50px", right:"-80px" }} />
             <div style={{ fontFamily: dm, fontSize: ".78rem", color: S.muted, letterSpacing: ".1em", marginBottom: "20px" }}>Cohort 1 · June 20 – July 11, 2026 + Graduation TBA</div>
             <div style={{ marginBottom: "12px" }}>
-              <span style={{ fontFamily: syne, fontWeight: 700, fontSize: "1.4rem", color: S.muted, textDecoration: "line-through", marginRight: "12px" }}>$997</span>
+              <span style={{ fontFamily: syne, fontWeight: 700, fontSize: "1.4rem", color: S.muted, textDecoration: "line-through", marginRight: "12px" }}>$1,600</span>
               <span style={{ background: "#16a34a22", color: "#4ade80", border: "1px solid #16a34a44", borderRadius: "20px", padding: "4px 14px", fontSize: ".78rem", fontWeight: 600 }}>Founding Cohort Price</span>
             </div>
             <div className="pricing-amount" style={{ fontFamily: syne, fontWeight: 800, fontSize: "5rem", lineHeight: 1, marginBottom: "8px" }}>$649</div>
-            <div style={{ color: S.orange, fontSize: ".88rem", fontWeight: 600, marginBottom: "6px" }}>🎁 You save $348 — Cohort 1 only</div>
-            <div style={{ color: S.muted, fontSize: ".85rem", marginBottom: "28px" }}>Full access · All 4 live sessions · Everything below</div>
+            <div style={{ color: S.orange, fontSize: ".88rem", fontWeight: 600, marginBottom: "6px" }}>🎁 You save $951 — Cohort 1 only</div>
+            <div style={{ color: S.muted, fontSize: ".85rem", marginBottom: "20px" }}>Full access · All 4 live sessions · Everything below</div>
+
+            {/* Weekly cost breakdown */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "28px" }}>
+              <div style={{ background: "rgba(255,255,255,.04)", border: `1px solid ${S.border}`, borderRadius: "14px", padding: "14px 16px", textAlign: "center" }}>
+                <div style={{ fontFamily: dm, fontSize: ".7rem", color: S.muted, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: "6px" }}>Standard Rate</div>
+                <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.5rem", color: S.muted, textDecoration: "line-through", marginBottom: "2px" }}>$1,600</div>
+                <div style={{ fontSize: ".75rem", color: S.muted }}>≈ <strong style={{ color: "#aaa" }}>$400/week</strong> for 4 weeks</div>
+              </div>
+              <div style={{ background: "rgba(244,124,76,.08)", border: "1px solid rgba(244,124,76,.3)", borderRadius: "14px", padding: "14px 16px", textAlign: "center" }}>
+                <div style={{ fontFamily: dm, fontSize: ".7rem", color: S.orange, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: "6px" }}>Your Cohort 1 Price</div>
+                <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.5rem", color: "#fff", marginBottom: "2px" }}>$649</div>
+                <div style={{ fontSize: ".75rem", color: S.muted }}>≈ <strong style={{ color: S.orange }}>$162/week</strong> for 4 weeks</div>
+              </div>
+            </div>
 
             {/* Includes list */}
             <div style={{ textAlign: "left", marginBottom: "32px" }}>
