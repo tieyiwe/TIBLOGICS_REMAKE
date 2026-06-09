@@ -262,7 +262,7 @@ function CountdownTimer({ startDate }: { startDate: string }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function TrainingLandingPage({
-  eventTitle, eventDescription, startDate, spots,
+  eventSlug, eventTitle, eventDescription, startDate, spots,
   price, currency, location, timeSlot,
   stripeLink, registrationOpen,
 }: Props) {
@@ -306,9 +306,10 @@ export default function TrainingLandingPage({
         body: JSON.stringify({
           ...formData,
           paymentMethod: activePayment,
-          event: "AI Practical Training — Cohort 1",
-          price: 649,
-          currency: "USD",
+          event: eventTitle,
+          eventSlug,
+          price: price / 100,   // prop is cents; API expects dollars then multiplies ×100
+          currency,
         }),
       });
       if (res.ok) {

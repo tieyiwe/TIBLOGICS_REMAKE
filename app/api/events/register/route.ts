@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const { firstName, lastName, email, whatsapp, role, goal, referral, paymentMethod, event: eventName, price, currency } = body;
+    const { firstName, lastName, email, whatsapp, role, goal, referral, paymentMethod, event: eventName, eventSlug: bodySlug, price, currency } = body;
 
     if (!firstName || !lastName || !email || !paymentMethod || !eventName) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -35,7 +35,8 @@ export async function POST(req: NextRequest) {
     const slugMap: Record<string, string> = {
       "AI Practical Training — Cohort 1": "ai-practical-training-cohort-1",
     };
-    const eventSlug = slugMap[eventName] ?? eventName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    // Prefer explicit slug from form, then slugMap, then derive from title
+    const eventSlug = bodySlug ?? slugMap[eventName] ?? eventName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
     const registration = await prisma.eventRegistration.create({
       data: {

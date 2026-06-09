@@ -48,7 +48,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       await mailer.emails.send({
         to: reg.email,
         subject,
-        html: html.replace("{{firstName}}", reg.firstName),
+        html: html.replace(/\{\{firstName\}\}/g, reg.firstName),
       });
       sent++;
     } catch (e) {
