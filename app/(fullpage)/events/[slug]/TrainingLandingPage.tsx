@@ -66,19 +66,41 @@ body{overflow-x:hidden}
 .count-num{animation:countFlip .3s ease both}
 input,select,textarea{font-family:'DM Sans',sans-serif}
 input:focus,select:focus,textarea:focus{outline:none}
-@media(max-width:600px){
-  .hero-headline{font-size:clamp(2.2rem,7.5vw,3.5rem)!important;line-height:1.15!important}
-  .pricing-amount{font-size:3.5rem!important}
-  .form-row{flex-direction:column!important}
-  .pay-grid{grid-template-columns:1fr!important}
-  .stat-wrap{flex-wrap:wrap}
-  .nav-sub{display:none}
-  .hero-pills{flex-wrap:wrap!important}
-}
 @media(max-width:900px){
+  .hero-grid{grid-template-columns:1fr!important}
+  .hero-visual{display:none!important}
   .sessions-grid{grid-template-columns:repeat(2,1fr)!important}
   .outcomes-grid{grid-template-columns:repeat(2,1fr)!important}
   .includes-grid{grid-template-columns:repeat(2,1fr)!important}
+  .callout-grid{grid-template-columns:1fr!important}
+}
+@media(max-width:600px){
+  .hero-headline{font-size:clamp(2rem,7vw,2.8rem)!important;line-height:1.15!important}
+  .hero-grid{grid-template-columns:1fr!important;gap:0!important}
+  .hero-visual{display:none!important}
+  .hero-cta-wrap{flex-direction:column!important;width:100%!important}
+  .hero-cta-wrap a{width:100%!important;text-align:center!important;box-sizing:border-box!important}
+  .hero-section{padding:100px 18px 60px!important}
+  .pricing-amount{font-size:3.2rem!important}
+  .pricing-inner{padding:28px 20px!important}
+  .form-inner{padding:24px 18px!important}
+  .form-row{flex-direction:column!important}
+  .pay-grid{grid-template-columns:1fr!important}
+  .stat-wrap{flex-wrap:wrap;gap:12px!important}
+  .stat-item{border-right:none!important;padding:8px 16px!important}
+  .nav-sub{display:none}
+  .hero-pills{flex-wrap:wrap!important}
+  .countdown-wrap{gap:8px!important}
+  .countdown-unit{min-width:52px!important}
+  .countdown-num{font-size:1.7rem!important}
+  .countdown-sep{font-size:1.7rem!important;margin-bottom:24px!important}
+  .callout-grid{grid-template-columns:1fr!important}
+  .weekly-grid{grid-template-columns:1fr!important}
+  .sessions-grid{grid-template-columns:1fr!important}
+  .section-inner{padding:56px 18px!important}
+  .req-grid{grid-template-columns:1fr 1fr!important;gap:8px!important}
+  .footer-inner{flex-direction:column!important;align-items:flex-start!important;gap:16px!important}
+  .footer-links{flex-direction:column!important;gap:12px!important}
 }
 `;
 
@@ -189,12 +211,12 @@ function NeuralNet() {
 // ─── Countdown ────────────────────────────────────────────────────────────────
 function CountdownUnit({ value, label }: { value: string; label: string }) {
   return (
-    <div style={{ textAlign: "center", minWidth: "70px" }}>
+    <div className="countdown-unit" style={{ textAlign: "center", minWidth: "70px", flex: "0 0 auto" }}>
       <div style={{
         background: "rgba(255,255,255,0.06)", border: `1px solid ${S.border}`,
         borderRadius: "14px", padding: "16px 20px", marginBottom: "8px"
       }}>
-        <span className="count-num" key={value} style={{
+        <span className="count-num countdown-num" key={value} style={{
           display: "block", fontFamily: syne, fontWeight: 800,
           fontSize: "2.4rem", lineHeight: 1, color: "#fff"
         }}>{value}</span>
@@ -226,13 +248,13 @@ function CountdownTimer({ startDate }: { startDate: string }) {
   }, []); // eslint-disable-line
 
   return (
-    <div style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap" }}>
+    <div className="countdown-wrap" style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap" }}>
       <CountdownUnit value={pad(cd.d)} label="Days" />
-      <span style={{ fontFamily: syne, fontWeight: 800, fontSize: "2.4rem", alignSelf: "center", color: "rgba(255,255,255,.2)", marginBottom: "28px" }}>:</span>
+      <span className="countdown-sep" style={{ fontFamily: syne, fontWeight: 800, fontSize: "2.4rem", alignSelf: "center", color: "rgba(255,255,255,.2)", marginBottom: "28px" }}>:</span>
       <CountdownUnit value={pad(cd.h)} label="Hours" />
-      <span style={{ fontFamily: syne, fontWeight: 800, fontSize: "2.4rem", alignSelf: "center", color: "rgba(255,255,255,.2)", marginBottom: "28px" }}>:</span>
+      <span className="countdown-sep" style={{ fontFamily: syne, fontWeight: 800, fontSize: "2.4rem", alignSelf: "center", color: "rgba(255,255,255,.2)", marginBottom: "28px" }}>:</span>
       <CountdownUnit value={pad(cd.m)} label="Minutes" />
-      <span style={{ fontFamily: syne, fontWeight: 800, fontSize: "2.4rem", alignSelf: "center", color: "rgba(255,255,255,.2)", marginBottom: "28px" }}>:</span>
+      <span className="countdown-sep" style={{ fontFamily: syne, fontWeight: 800, fontSize: "2.4rem", alignSelf: "center", color: "rgba(255,255,255,.2)", marginBottom: "28px" }}>:</span>
       <CountdownUnit value={pad(cd.s)} label="Seconds" />
     </div>
   );
@@ -328,7 +350,7 @@ export default function TrainingLandingPage({
       <nav className="landing-nav" style={{
         position: "fixed", top: 0, left: 0, width: "100%", zIndex: 1000,
         background: "rgba(19,26,27,0.88)", backdropFilter: "blur(20px)",
-        borderBottom: `1px solid ${S.border}`, padding: "14px 24px"
+        borderBottom: `1px solid ${S.border}`, padding: "12px 18px"
       }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -349,14 +371,14 @@ export default function TrainingLandingPage({
             </div>
           </div>
           <a href="#register" className="cta-primary" style={{
-            padding: "10px 22px", borderRadius: "30px", fontFamily: syne,
-            fontSize: ".85rem", textDecoration: "none", letterSpacing: ".02em"
+            padding: "9px 16px", borderRadius: "30px", fontFamily: syne,
+            fontSize: ".8rem", textDecoration: "none", letterSpacing: ".02em", whiteSpace: "nowrap"
           }}>Reserve My Spot</a>
         </div>
       </nav>
 
       {/* ── HERO ── */}
-      <section style={{
+      <section className="hero-section" style={{
         minHeight: "100vh", display: "flex", alignItems: "center",
         padding: "120px 24px 80px", position: "relative", overflow: "hidden"
       }}>
@@ -365,7 +387,7 @@ export default function TrainingLandingPage({
         <div className="orb" style={{ width:500, height:500, background:"rgba(249,167,56,.08)", bottom:"-80px", right:"-120px", "--duration":"18s" } as React.CSSProperties} />
         <div className="orb" style={{ width:300, height:300, background:"rgba(34,81,163,.12)", top:"40%", left:"40%", "--duration":"11s" } as React.CSSProperties} />
 
-        <div style={{ maxWidth: "1200px", margin: "0 auto", width: "100%", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "60px", alignItems: "center" }}>
+        <div className="hero-grid" style={{ maxWidth: "1200px", margin: "0 auto", width: "100%", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "60px", alignItems: "center" }}>
           <div>
             {/* Eyebrow */}
             <div className="hero-1" style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(244,124,76,.1)", border: "1px solid rgba(244,124,76,.25)", borderRadius: "30px", padding: "8px 16px", marginBottom: "28px" }}>
@@ -395,7 +417,7 @@ export default function TrainingLandingPage({
             </div>
 
             {/* CTAs */}
-            <div className="hero-5" style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
+            <div className="hero-5 hero-cta-wrap" style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
               <a href="#register" className="cta-primary" style={{ padding: "15px 30px", borderRadius: "50px", fontFamily: syne, fontSize: "1rem", textDecoration: "none", letterSpacing: ".02em" }}>
                 {isFree ? "Secure My Spot — Free" : `Secure My Spot — ${priceDisplay}`}
               </a>
@@ -406,7 +428,7 @@ export default function TrainingLandingPage({
           </div>
 
           {/* Hero visual */}
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <div className="hero-visual" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
             <NeuralNet />
           </div>
         </div>
@@ -420,7 +442,7 @@ export default function TrainingLandingPage({
             { n:"100+", l:"Prompts in Library" }, { n:"$649", l:"All Inclusive" },
             { n:"🔥", l:"Limited Seats Per Cohort — First Come, First Served" },
           ].map((s, i) => (
-            <div key={i} className="stagger-child" style={{
+            <div key={i} className="stagger-child stat-item" style={{
               textAlign: "center", padding: "0 20px",
               borderRight: i < 4 ? `1px solid ${S.border}` : "none"
             }}>
@@ -447,7 +469,7 @@ export default function TrainingLandingPage({
             <h2 style={{ fontFamily: syne, fontWeight: 800, fontSize: "clamp(1.8rem,3vw,2.6rem)", marginBottom: "14px" }}>What you walk away with.</h2>
             <p style={{ color: S.muted, fontSize: ".95rem", maxWidth: "480px", margin: "0 auto", lineHeight: 1.7 }}>Every session builds a skill you can use the same day.</p>
           </div>
-          <div className="outcomes-grid reveal" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: "18px" }}>
+          <div className="outcomes-grid reveal" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: "18px" }}>
             {[
               { icon:"✍️", t:"AI writes it for you — instantly", d:"Anything you need written — done in seconds." },
               { icon:"🤖", t:"Your personal AI blueprint", d:"A powerful configuration that changes everything." },
@@ -540,7 +562,7 @@ export default function TrainingLandingPage({
       <section style={{ padding: "80px 24px" }}>
         <div style={{ maxWidth: "520px", margin: "0 auto" }} className="reveal">
           {/* Card */}
-          <div style={{ background: S.dark, border: `1px solid ${S.border}`, borderRadius: "24px", padding: "40px 36px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+          <div className="pricing-inner" style={{ background: S.dark, border: `1px solid ${S.border}`, borderRadius: "24px", padding: "40px 36px", textAlign: "center", position: "relative", overflow: "hidden" }}>
             <div className="orb" style={{ width:300, height:300, background:"rgba(244,124,76,.08)", top:"-50px", right:"-80px" }} />
             <div style={{ fontFamily: dm, fontSize: ".78rem", color: S.muted, letterSpacing: ".1em", marginBottom: "20px" }}>Cohort 1 · June 20 – July 11, 2026 + Graduation TBA</div>
             <div style={{ marginBottom: "12px" }}>
@@ -552,7 +574,7 @@ export default function TrainingLandingPage({
             <div style={{ color: S.muted, fontSize: ".85rem", marginBottom: "20px" }}>Full access · All 4 live sessions · Everything below</div>
 
             {/* Weekly cost breakdown */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "28px" }}>
+            <div className="weekly-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "28px" }}>
               <div style={{ background: "rgba(255,255,255,.04)", border: `1px solid ${S.border}`, borderRadius: "14px", padding: "14px 16px", textAlign: "center" }}>
                 <div style={{ fontFamily: dm, fontSize: ".7rem", color: S.muted, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: "6px" }}>Standard Rate</div>
                 <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.5rem", color: S.muted, textDecoration: "line-through", marginBottom: "2px" }}>$1,600</div>
@@ -630,7 +652,7 @@ export default function TrainingLandingPage({
             <h2 style={{ fontFamily:syne, fontWeight:800, fontSize:"clamp(1.8rem,3vw,2.6rem)", marginBottom:"14px" }}>Built to be your toolkit long after the training ends.</h2>
           </div>
 
-          <div className="includes-grid reveal" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))", gap:"18px", marginBottom:"40px" }}>
+          <div className="includes-grid reveal" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:"18px", marginBottom:"40px" }}>
             {[
               { t:"TIBLOGICS AI Playbook", s:"100+ Ready-to-Use AI Scripts", d:"Organised by use case — sales, writing, operations, marketing, and more. Ready on day one.", color:"#2251A3" },
               { t:"Your AI Identity Blueprint", s:"Personalised AI configuration", d:"Set it up in Session 2. Every AI response will feel made for you from that moment on.", color:"#22A387" },
@@ -658,7 +680,7 @@ export default function TrainingLandingPage({
           </div>
 
           {/* Live Fix callout */}
-          <div className="reveal" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"18px" }}>
+          <div className="reveal callout-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"18px" }}>
             <div style={{ background:"rgba(244,124,76,.07)", border:"1px solid rgba(244,124,76,.2)", borderRadius:"20px", padding:"24px" }}>
               <div style={{ fontFamily:syne, fontWeight:700, fontSize:"1rem", color:S.orange, marginBottom:"8px" }}>🔥 Live Fix — every session</div>
               <div style={{ color:S.muted, fontSize:".88rem", lineHeight:1.65 }}>One volunteer. Real problem. Fixed live with AI. Unscripted. Every session ends with a live demonstration on a real challenge from inside the room.</div>
@@ -693,7 +715,7 @@ export default function TrainingLandingPage({
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
-              <div style={{ background:S.dark, border:`1px solid ${S.border}`, borderRadius:"24px", padding:"36px 32px" }}>
+              <div className="form-inner" style={{ background:S.dark, border:`1px solid ${S.border}`, borderRadius:"24px", padding:"36px 32px" }}>
                 {/* Name row */}
                 <div className="form-row" style={{ display:"flex", gap:"14px", marginBottom:"16px" }}>
                   {(["firstName","lastName"] as const).map((k,i)=>(
@@ -847,12 +869,12 @@ export default function TrainingLandingPage({
       {/* ── FOOTER ── */}
       <footer style={{ padding:"48px 24px 32px", background:S.darker, borderTop:`1px solid ${S.border}` }}>
         <div style={{ maxWidth:"1000px", margin:"0 auto" }}>
-          <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", justifyContent:"space-between", gap:"24px", marginBottom:"32px" }}>
+          <div className="footer-inner" style={{ display:"flex", flexWrap:"wrap", alignItems:"center", justifyContent:"space-between", gap:"24px", marginBottom:"32px" }}>
             <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
               <div style={{ fontFamily:syne, fontWeight:800, fontSize:"1.2rem", letterSpacing:".06em" }}>TIBLOGICS</div>
               <div style={{ fontSize:".75rem", color:S.muted }}>Education Center</div>
             </div>
-            <div style={{ display:"flex", flexWrap:"wrap", gap:"24px" }}>
+            <div className="footer-links" style={{ display:"flex", flexWrap:"wrap", gap:"24px" }}>
               <a href="mailto:design@tiblogics.com" style={{ color:S.muted, fontSize:".85rem", textDecoration:"none" }}>design@tiblogics.com</a>
               <a href="https://www.tiblogics.com" target="_blank" rel="noopener noreferrer" style={{ color:S.muted, fontSize:".85rem", textDecoration:"none" }}>tiblogics.com</a>
               <a href="#register" style={{ color:S.orange, fontSize:".85rem", textDecoration:"none", fontWeight:600 }}>Register</a>
