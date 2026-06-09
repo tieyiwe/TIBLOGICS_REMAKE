@@ -5,6 +5,7 @@ import {
   Plus, Trash2, Eye, EyeOff, Pencil, X, Loader2, Calendar, Mail,
   Users, ToggleLeft, ToggleRight, Send, Copy, Check, ExternalLink,
   MessageSquare, ChevronDown, ChevronUp, Megaphone, UserCheck,
+  Phone, Briefcase, Target, Share2, StickyNote, Download,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -127,6 +128,9 @@ export default function AdminEventsPage() {
   const [msgForm, setMsgForm] = useState({ subject: "", body: "", recipients: "all" });
   const [msgStatus, setMsgStatus] = useState<"idle"|"sending"|"done"|"error">("idle");
   const [msgResult, setMsgResult] = useState("");
+  const [selectedReg, setSelectedReg] = useState<Registration | null>(null);
+  const [regNotes, setRegNotes] = useState("");
+  const [savingNotes, setSavingNotes] = useState(false);
 
   // ── Loaders ──────────────────────────────────────────────────────────────────
   const loadEvents = useCallback(async () => {
@@ -139,7 +143,7 @@ export default function AdminEventsPage() {
   const loadAllRegs = useCallback(async () => {
     setRegsLoading(true);
     try {
-      const res = await fetch("/api/events/register");
+      const res = await fetch("/api/admin/registrations");
       if (res.ok) setRegistrations((await res.json()).registrations ?? []);
     } finally { setRegsLoading(false); }
   }, []);
@@ -160,7 +164,7 @@ export default function AdminEventsPage() {
     }
   }
 
-  // ── Registration status update ────────────────────────────────────────────
+  // ── Registration status update (event panel) ─────────────────────────────
   async function updateRegStatus(eventId: string, registrationId: string, status: string) {
     await fetch(`/api/admin/events/${eventId}/registrations`, {
       method: "PATCH",
@@ -173,6 +177,32 @@ export default function AdminEventsPage() {
       setEventRegs(r => ({ ...r, [eventId]: data.registrations ?? [] }));
     }
     if (tab === "registrations") loadAllRegs();
+  }
+
+  // ── Registration update (global — Registrations tab) ─────────────────────
+  async function updateRegGlobal(id: string, data: { status?: string; notes?: string }) {
+    await fetch("/api/admin/registrations", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, ...data }),
+    });
+    setRegistrations(regs => regs.map(r => r.id === id ? { ...r, ...data } : r));
+  }
+
+  // ── Export registrations as CSV ───────────────────────────────────────────
+  function exportCSV() {
+    const headers = ["Name", "Email", "WhatsApp", "Role", "Goal", "Referral", "Event", "Payment", "Amount", "Currency", "Status", "Notes", "Date"];
+    const rows = filteredRegs.map(r => [
+      `${r.firstName} ${r.lastName}`, r.email, r.whatsapp ?? "", r.role ?? "", r.goal ?? "",
+      r.referral ?? "", r.eventName, r.paymentMethod,
+      r.price > 0 ? (r.price / 100).toFixed(0) : "0", r.currency, r.status,
+      (r.notes ?? "").replace(/"/g, '""'), fmtDateTime(r.createdAt),
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = "registrations.csv"; a.click();
+    URL.revokeObjectURL(url);
   }
 
   // ── Quick toggles ─────────────────────────────────────────────────────────
@@ -502,9 +532,15 @@ export default function AdminEventsPage() {
                 {f === "all" ? `All (${registrations.length})` : `${f} (${registrations.filter(r => r.status === f).length})`}
               </button>
             ))}
-            <button onClick={loadAllRegs} className="ml-auto p-1.5 rounded-lg text-[#7A8FA6] hover:text-[#2251A3] hover:bg-[#EBF0FA] transition-colors">
-              <Loader2 size={14} className={regsLoading ? "animate-spin" : ""} />
-            </button>
+            <div className="ml-auto flex items-center gap-2">
+              <button onClick={exportCSV} title="Export CSV"
+                className="inline-flex items-center gap-1.5 text-xs font-dm font-semibold px-3 py-1.5 rounded-lg border border-[#D2DCE8] text-[#3A4A5C] hover:border-[#2251A3] hover:text-[#2251A3] transition-colors">
+                <Download size={12} /> Export CSV
+              </button>
+              <button onClick={loadAllRegs} title="Refresh" className="p-1.5 rounded-lg text-[#7A8FA6] hover:text-[#2251A3] hover:bg-[#EBF0FA] transition-colors">
+                <Loader2 size={14} className={regsLoading ? "animate-spin" : ""} />
+              </button>
+            </div>
           </div>
 
           {regsLoading ? (
@@ -520,43 +556,46 @@ export default function AdminEventsPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-[#D2DCE8] bg-[#F4F7FB]">
-                      {["Name", "Email", "WhatsApp", "Event", "Payment", "Goal", "Status", "Date"].map(h => (
+                      {["Name", "Contact", "Event", "Payment", "Status", "Date", ""].map(h => (
                         <th key={h} className="text-left font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider px-4 py-3">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#D2DCE8]">
-                    {filteredRegs.map(r => {
-                      const eventObj = events.find(e => e.slug === r.eventSlug);
-                      return (
-                        <tr key={r.id} className="hover:bg-[#F4F7FB] transition-colors">
-                          <td className="px-4 py-3 font-dm text-sm font-semibold text-[#0D1B2A]">{r.firstName} {r.lastName}</td>
-                          <td className="px-4 py-3">
-                            <a href={`mailto:${r.email}`} className="font-dm text-xs text-[#2251A3] hover:underline flex items-center gap-1">
-                              <Mail size={11} />{r.email}
-                            </a>
-                          </td>
-                          <td className="px-4 py-3 font-dm text-xs text-[#3A4A5C]">{r.whatsapp || "—"}</td>
-                          <td className="px-4 py-3">
-                            <p className="font-dm text-xs text-[#3A4A5C] max-w-[140px] truncate">{r.eventName}</p>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="font-dm text-xs capitalize text-[#3A4A5C]">{r.paymentMethod}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <p className="font-dm text-xs text-[#7A8FA6] max-w-[140px] truncate" title={r.goal ?? ""}>{r.goal || "—"}</p>
-                          </td>
-                          <td className="px-4 py-3">
-                            {eventObj ? (
-                              <StatusBadge status={r.status} onChange={s => updateRegStatus(eventObj.id, r.id, s)} />
-                            ) : (
-                              <span className={`text-xs font-dm font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[r.status] ?? "bg-gray-100 text-gray-600"}`}>{r.status}</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 font-dm text-xs text-[#7A8FA6] whitespace-nowrap">{fmtDate(r.createdAt)}</td>
-                        </tr>
-                      );
-                    })}
+                    {filteredRegs.map(r => (
+                      <tr key={r.id} className="hover:bg-[#F4F7FB] transition-colors cursor-pointer" onClick={() => { setSelectedReg(r); setRegNotes(r.notes ?? ""); }}>
+                        <td className="px-4 py-3">
+                          <p className="font-dm text-sm font-semibold text-[#0D1B2A]">{r.firstName} {r.lastName}</p>
+                          {r.role && <p className="font-dm text-xs text-[#7A8FA6] mt-0.5">{r.role}</p>}
+                        </td>
+                        <td className="px-4 py-3">
+                          <a href={`mailto:${r.email}`} onClick={e => e.stopPropagation()} className="font-dm text-xs text-[#2251A3] hover:underline flex items-center gap-1 mb-0.5">
+                            <Mail size={10} />{r.email}
+                          </a>
+                          {r.whatsapp && (
+                            <p className="font-dm text-xs text-[#7A8FA6] flex items-center gap-1">
+                              <Phone size={10} />{r.whatsapp}
+                            </p>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="font-dm text-xs text-[#3A4A5C] max-w-[140px] truncate">{r.eventName}</p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="font-dm text-xs capitalize text-[#3A4A5C] block">{r.paymentMethod}</span>
+                          <span className="font-dm text-xs text-[#7A8FA6]">{r.price > 0 ? `$${(r.price / 100).toFixed(0)}` : "Free"}</span>
+                        </td>
+                        <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                          <StatusBadge status={r.status} onChange={s => updateRegGlobal(r.id, { status: s })} />
+                        </td>
+                        <td className="px-4 py-3 font-dm text-xs text-[#7A8FA6] whitespace-nowrap">{fmtDate(r.createdAt)}</td>
+                        <td className="px-4 py-3">
+                          <button className="p-1.5 rounded-lg text-[#7A8FA6] hover:text-[#2251A3] hover:bg-[#EBF0FA] transition-colors">
+                            <Eye size={13} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -759,6 +798,151 @@ export default function AdminEventsPage() {
                 {saving ? <Loader2 size={14} className="animate-spin" /> : null}
                 {editId ? "Save Changes" : "Create Event"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── REGISTRATION DETAIL MODAL ───────────────────────────────────────── */}
+      {selectedReg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/40 backdrop-blur-sm" onClick={() => setSelectedReg(null)}>
+          <div className="bg-white h-full w-full max-w-md shadow-2xl overflow-y-auto flex flex-col" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-start justify-between p-6 border-b border-[#D2DCE8] sticky top-0 bg-white z-10">
+              <div>
+                <h2 className="font-syne font-bold text-lg text-[#0D1B2A]">{selectedReg.firstName} {selectedReg.lastName}</h2>
+                <p className="font-dm text-xs text-[#7A8FA6] mt-0.5">Registered {fmtDateTime(selectedReg.createdAt)}</p>
+              </div>
+              <button onClick={() => setSelectedReg(null)} className="p-2 rounded-xl text-[#7A8FA6] hover:bg-[#F4F7FB] transition-colors"><X size={18} /></button>
+            </div>
+
+            <div className="p-6 flex flex-col gap-6 flex-1">
+              {/* Status */}
+              <div className="flex items-center justify-between">
+                <span className="font-dm font-semibold text-sm text-[#0D1B2A]">Status</span>
+                <StatusBadge status={selectedReg.status} onChange={async s => {
+                  await updateRegGlobal(selectedReg.id, { status: s });
+                  setSelectedReg(r => r ? { ...r, status: s } : null);
+                }} />
+              </div>
+
+              {/* Contact */}
+              <div>
+                <h3 className="font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider mb-3">Contact</h3>
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <Mail size={14} className="text-[#7A8FA6] shrink-0" />
+                    <a href={`mailto:${selectedReg.email}`} className="font-dm text-sm text-[#2251A3] hover:underline break-all">{selectedReg.email}</a>
+                  </div>
+                  {selectedReg.whatsapp ? (
+                    <div className="flex items-center gap-2.5">
+                      <Phone size={14} className="text-[#7A8FA6] shrink-0" />
+                      <a href={`https://wa.me/${selectedReg.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
+                        className="font-dm text-sm text-[#3A4A5C] hover:text-green-700">{selectedReg.whatsapp}</a>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2.5">
+                      <Phone size={14} className="text-[#D2DCE8] shrink-0" />
+                      <span className="font-dm text-sm text-[#D2DCE8]">No WhatsApp provided</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Professional */}
+              <div>
+                <h3 className="font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider mb-3">Professional</h3>
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex items-start gap-2.5">
+                    <Briefcase size={14} className="text-[#7A8FA6] shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-dm text-xs text-[#7A8FA6] mb-0.5">Role / Profession</p>
+                      <p className="font-dm text-sm text-[#0D1B2A]">{selectedReg.role || "—"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2.5">
+                    <Target size={14} className="text-[#7A8FA6] shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-dm text-xs text-[#7A8FA6] mb-0.5">Goal / What they want to achieve</p>
+                      <p className="font-dm text-sm text-[#0D1B2A]">{selectedReg.goal || "—"}</p>
+                    </div>
+                  </div>
+                  {selectedReg.referral && (
+                    <div className="flex items-start gap-2.5">
+                      <Share2 size={14} className="text-[#7A8FA6] shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-dm text-xs text-[#7A8FA6] mb-0.5">How they heard about us</p>
+                        <p className="font-dm text-sm text-[#0D1B2A]">{selectedReg.referral}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Registration Details */}
+              <div>
+                <h3 className="font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider mb-3">Registration Details</h3>
+                <div className="bg-[#F4F7FB] rounded-xl p-4 flex flex-col gap-2.5">
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="font-dm text-xs text-[#7A8FA6]">Event</span>
+                    <span className="font-dm text-xs font-semibold text-[#0D1B2A] text-right max-w-[60%]">{selectedReg.eventName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-dm text-xs text-[#7A8FA6]">Payment Method</span>
+                    <span className="font-dm text-xs font-semibold text-[#0D1B2A] capitalize">{selectedReg.paymentMethod}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-dm text-xs text-[#7A8FA6]">Amount</span>
+                    <span className="font-dm text-xs font-semibold text-[#0D1B2A]">
+                      {selectedReg.price > 0 ? `$${(selectedReg.price / 100).toFixed(0)} ${selectedReg.currency}` : "Free"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-dm text-xs text-[#7A8FA6]">Date Registered</span>
+                    <span className="font-dm text-xs font-semibold text-[#0D1B2A]">{fmtDateTime(selectedReg.createdAt)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider mb-2">
+                  <StickyNote size={11} className="inline mr-1.5" />Internal Notes
+                </label>
+                <textarea
+                  value={regNotes}
+                  onChange={e => setRegNotes(e.target.value)}
+                  placeholder="Add internal notes (payment confirmed, follow-up needed, etc.)..."
+                  rows={4}
+                  className="w-full border border-[#D2DCE8] rounded-xl px-3 py-2.5 font-dm text-sm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3] resize-none"
+                />
+                <button
+                  onClick={async () => {
+                    setSavingNotes(true);
+                    await updateRegGlobal(selectedReg.id, { notes: regNotes });
+                    setSelectedReg(r => r ? { ...r, notes: regNotes } : null);
+                    setSavingNotes(false);
+                  }}
+                  disabled={savingNotes}
+                  className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-dm font-semibold text-[#2251A3] hover:text-[#1B3A6B] disabled:opacity-50">
+                  {savingNotes ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
+                  {savingNotes ? "Saving…" : "Save notes"}
+                </button>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-2 border-t border-[#D2DCE8] mt-auto">
+                <a href={`mailto:${selectedReg.email}`}
+                  className="flex-1 inline-flex items-center justify-center gap-2 bg-[#EBF0FA] text-[#2251A3] font-dm font-semibold text-sm px-4 py-2.5 rounded-xl hover:bg-[#D2DCE8] transition-colors">
+                  <Mail size={14} /> Email
+                </a>
+                {selectedReg.whatsapp && (
+                  <a href={`https://wa.me/${selectedReg.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer"
+                    className="flex-1 inline-flex items-center justify-center gap-2 bg-[#F0FFF4] text-green-700 font-dm font-semibold text-sm px-4 py-2.5 rounded-xl hover:bg-[#DCFCE7] transition-colors">
+                    <Phone size={14} /> WhatsApp
+                  </a>
+                )}
+              </div>
             </div>
           </div>
         </div>
