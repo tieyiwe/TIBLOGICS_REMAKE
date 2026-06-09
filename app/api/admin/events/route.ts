@@ -10,8 +10,16 @@ function slugify(title: string) {
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const events = await prisma.event.findMany({ orderBy: { createdAt: "desc" } });
-  return NextResponse.json({ events });
+
+  const [events, regCounts] = await Promise.all([
+    prisma.event.findMany({ orderBy: { createdAt: "desc" } }),
+    prisma.eventRegistration.groupBy({
+      by: ["eventSlug", "status"],
+      _count: { id: true },
+    }),
+  ]);
+
+  return NextResponse.json({ events, regCounts });
 }
 
 export async function POST(req: NextRequest) {

@@ -1,19 +1,21 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Plus, Trash2, Eye, EyeOff, Pencil, X, Loader2, Calendar, Mail,
   Users, ToggleLeft, ToggleRight, Send, Copy, Check, ExternalLink,
   MessageSquare, ChevronDown, ChevronUp, Megaphone, UserCheck,
   Phone, Briefcase, Target, Share2, StickyNote, Download,
+  Search, Layers, AlertCircle, Tag, Clock,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface EventItem {
   id: string; title: string; slug: string; type: string;
   price: number; currency: string; location: string;
-  date?: string | null; timeSlot?: string | null; description: string;
-  content?: string | null; capacity?: number | null; spots?: number | null;
+  date?: string | null; endDate?: string | null; timeSlot?: string | null;
+  description: string; content?: string | null;
+  capacity?: number | null; spots?: number | null;
   coverImage?: string | null; stripePaymentLink?: string | null;
   registrationOpen: boolean; featured: boolean; published: boolean;
   tags: string[]; createdAt: string;
@@ -27,12 +29,14 @@ interface Registration {
   createdAt: string; eventName: string; eventSlug: string;
 }
 
+interface RegCountItem { eventSlug: string; status: string; _count: { id: number } }
+
 type FormData = {
   title: string; type: string; description: string; content: string;
-  date: string; timeSlot: string; location: string; price: string;
-  capacity: string; spots: string; coverImage: string;
-  stripePaymentLink: string; registrationOpen: boolean;
-  featured: boolean; published: boolean;
+  date: string; endDate: string; timeSlot: string; location: string;
+  price: string; capacity: string; spots: string; coverImage: string;
+  stripePaymentLink: string; tags: string;
+  registrationOpen: boolean; featured: boolean; published: boolean;
 };
 
 type Tab = "events" | "registrations" | "promote";
@@ -40,8 +44,8 @@ type Tab = "events" | "registrations" | "promote";
 // ─── Constants ────────────────────────────────────────────────────────────────
 const EMPTY_FORM: FormData = {
   title: "", type: "TRAINING", description: "", content: "",
-  date: "", timeSlot: "", location: "Online", price: "0",
-  capacity: "", spots: "", coverImage: "", stripePaymentLink: "",
+  date: "", endDate: "", timeSlot: "", location: "Online", price: "0",
+  capacity: "", spots: "", coverImage: "", stripePaymentLink: "", tags: "",
   registrationOpen: true, featured: false, published: false,
 };
 
@@ -53,10 +57,10 @@ const TYPE_COLORS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  pending:   "bg-yellow-100 text-yellow-700",
-  confirmed: "bg-green-100 text-green-700",
-  cancelled: "bg-red-100 text-red-700",
-  waitlisted:"bg-blue-100 text-blue-700",
+  pending:    "bg-yellow-100 text-yellow-700",
+  confirmed:  "bg-green-100 text-green-700",
+  cancelled:  "bg-red-100 text-red-700",
+  waitlisted: "bg-blue-100 text-blue-700",
 };
 
 function fmtDate(s: string) {
@@ -112,6 +116,7 @@ function StatusBadge({ status, onChange }: { status: string; onChange: (s: strin
 export default function AdminEventsPage() {
   const [tab, setTab] = useState<Tab>("events");
   const [events, setEvents] = useState<EventItem[]>([]);
+  const [regCounts, setRegCounts] = useState<RegCountItem[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
   const [regsLoading, setRegsLoading] = useState(false);
@@ -122,6 +127,8 @@ export default function AdminEventsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [regFilter, setRegFilter] = useState("all");
+  const [regSearch, setRegSearch] = useState("");
+  const [eventSearch, setEventSearch] = useState("");
   const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
   const [eventRegs, setEventRegs] = useState<Record<string, Registration[]>>({});
   const [msgModal, setMsgModal] = useState<EventItem | null>(null);
@@ -131,12 +138,27 @@ export default function AdminEventsPage() {
   const [selectedReg, setSelectedReg] = useState<Registration | null>(null);
   const [regNotes, setRegNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
+  const [selectedRegIds, setSelectedRegIds] = useState<Set<string>>(new Set());
+  const [bulkUpdating, setBulkUpdating] = useState(false);
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+  function getEventCounts(slug: string) {
+    const rows = regCounts.filter(r => r.eventSlug === slug);
+    const total = rows.reduce((s, r) => s + r._count.id, 0);
+    const confirmed = rows.find(r => r.status === "confirmed")?._count.id ?? 0;
+    const pending = rows.find(r => r.status === "pending")?._count.id ?? 0;
+    return { total, confirmed, pending };
+  }
 
   // ── Loaders ──────────────────────────────────────────────────────────────────
   const loadEvents = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/events");
-      if (res.ok) setEvents((await res.json()).events ?? []);
+      if (res.ok) {
+        const data = await res.json();
+        setEvents(data.events ?? []);
+        setRegCounts(data.regCounts ?? []);
+      }
     } finally { setLoading(false); }
   }, []);
 
@@ -151,6 +173,27 @@ export default function AdminEventsPage() {
   useEffect(() => { loadEvents(); }, [loadEvents]);
   useEffect(() => { if (tab === "registrations") loadAllRegs(); }, [tab, loadAllRegs]);
 
+  // ── Computed ──────────────────────────────────────────────────────────────────
+  const filteredEvents = useMemo(() =>
+    eventSearch.trim()
+      ? events.filter(e => e.title.toLowerCase().includes(eventSearch.toLowerCase()) || e.type.toLowerCase().includes(eventSearch.toLowerCase()))
+      : events,
+    [events, eventSearch]);
+
+  const filteredRegs = useMemo(() => {
+    let regs = regFilter === "all" ? registrations : registrations.filter(r => r.status === regFilter);
+    if (regSearch.trim()) {
+      const q = regSearch.toLowerCase();
+      regs = regs.filter(r =>
+        `${r.firstName} ${r.lastName}`.toLowerCase().includes(q) ||
+        r.email.toLowerCase().includes(q) ||
+        r.eventName.toLowerCase().includes(q) ||
+        (r.whatsapp ?? "").includes(q)
+      );
+    }
+    return regs;
+  }, [registrations, regFilter, regSearch]);
+
   // ── Event registrations expand ────────────────────────────────────────────
   async function toggleEventRegs(event: EventItem) {
     if (expandedEvent === event.id) { setExpandedEvent(null); return; }
@@ -164,7 +207,7 @@ export default function AdminEventsPage() {
     }
   }
 
-  // ── Registration status update (event panel) ─────────────────────────────
+  // ── Registration status updates ───────────────────────────────────────────
   async function updateRegStatus(eventId: string, registrationId: string, status: string) {
     await fetch(`/api/admin/events/${eventId}/registrations`, {
       method: "PATCH",
@@ -179,7 +222,6 @@ export default function AdminEventsPage() {
     if (tab === "registrations") loadAllRegs();
   }
 
-  // ── Registration update (global — Registrations tab) ─────────────────────
   async function updateRegGlobal(id: string, data: { status?: string; notes?: string }) {
     await fetch("/api/admin/registrations", {
       method: "PATCH",
@@ -189,7 +231,23 @@ export default function AdminEventsPage() {
     setRegistrations(regs => regs.map(r => r.id === id ? { ...r, ...data } : r));
   }
 
-  // ── Export registrations as CSV ───────────────────────────────────────────
+  async function bulkUpdateRegs(status: string) {
+    if (selectedRegIds.size === 0) return;
+    setBulkUpdating(true);
+    try {
+      await Promise.all([...selectedRegIds].map(id =>
+        fetch("/api/admin/registrations", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, status }),
+        })
+      ));
+      setRegistrations(regs => regs.map(r => selectedRegIds.has(r.id) ? { ...r, status } : r));
+      setSelectedRegIds(new Set());
+    } finally { setBulkUpdating(false); }
+  }
+
+  // ── Export CSV ────────────────────────────────────────────────────────────
   function exportCSV() {
     const headers = ["Name", "Email", "WhatsApp", "Role", "Goal", "Referral", "Event", "Payment", "Amount", "Currency", "Status", "Notes", "Date"];
     const rows = filteredRegs.map(r => [
@@ -228,18 +286,40 @@ export default function AdminEventsPage() {
     } finally { setTogglingId(null); }
   }
 
-  // ── Create / Edit ─────────────────────────────────────────────────────────
+  // ── Create / Edit / Clone ─────────────────────────────────────────────────
   function openCreate() { setEditId(null); setForm(EMPTY_FORM); setShowModal(true); }
+
   function openEdit(e: EventItem) {
     setEditId(e.id);
     setForm({
       title: e.title, type: e.type, description: e.description,
-      content: e.content ?? "", date: e.date ? new Date(e.date).toISOString().slice(0, 16) : "",
+      content: e.content ?? "",
+      date: e.date ? new Date(e.date).toISOString().slice(0, 16) : "",
+      endDate: e.endDate ? new Date(e.endDate).toISOString().slice(0, 16) : "",
       timeSlot: e.timeSlot ?? "", location: e.location, price: String(e.price),
       capacity: e.capacity != null ? String(e.capacity) : "",
       spots: e.spots != null ? String(e.spots) : "",
-      coverImage: e.coverImage ?? "", stripePaymentLink: e.stripePaymentLink ?? "",
+      coverImage: e.coverImage ?? "",
+      stripePaymentLink: e.stripePaymentLink ?? "",
+      tags: Array.isArray(e.tags) ? e.tags.join(", ") : "",
       registrationOpen: e.registrationOpen, featured: e.featured, published: e.published,
+    });
+    setShowModal(true);
+  }
+
+  function cloneEvent(e: EventItem) {
+    setEditId(null);
+    setForm({
+      title: `${e.title} (Copy)`, type: e.type, description: e.description,
+      content: e.content ?? "",
+      date: "", endDate: "",
+      timeSlot: e.timeSlot ?? "", location: e.location, price: String(e.price),
+      capacity: e.capacity != null ? String(e.capacity) : "",
+      spots: e.spots != null ? String(e.spots) : "",
+      coverImage: e.coverImage ?? "",
+      stripePaymentLink: e.stripePaymentLink ?? "",
+      tags: Array.isArray(e.tags) ? e.tags.join(", ") : "",
+      registrationOpen: false, featured: false, published: false,
     });
     setShowModal(true);
   }
@@ -251,15 +331,17 @@ export default function AdminEventsPage() {
       const payload = {
         title: form.title.trim(), type: form.type,
         description: form.description.trim(), content: form.content.trim() || null,
-        date: form.date || null, timeSlot: form.timeSlot.trim() || null,
+        date: form.date || null, endDate: form.endDate || null,
+        timeSlot: form.timeSlot.trim() || null,
         location: form.location.trim() || "Online",
         price: parseInt(form.price) || 0,
         capacity: form.capacity ? parseInt(form.capacity) : null,
         spots: form.spots ? parseInt(form.spots) : null,
         coverImage: form.coverImage.trim() || null,
         stripePaymentLink: form.stripePaymentLink.trim() || null,
+        tags: form.tags ? form.tags.split(",").map(t => t.trim()).filter(Boolean) : [],
         registrationOpen: form.registrationOpen, featured: form.featured,
-        published: form.published, tags: [],
+        published: form.published,
       };
       await fetch(editId ? `/api/admin/events/${editId}` : "/api/admin/events", {
         method: editId ? "PATCH" : "POST",
@@ -303,16 +385,12 @@ export default function AdminEventsPage() {
     }
   }
 
-  // ── Filtered registrations ────────────────────────────────────────────────
-  const filteredRegs = regFilter === "all"
-    ? registrations
-    : registrations.filter(r => r.status === regFilter);
-
   // ─── Stats ────────────────────────────────────────────────────────────────
+  const totalRegs = regCounts.reduce((s, r) => s + r._count.id, 0);
   const stats = [
     { label: "Events", value: events.length, color: "text-[#1B3A6B]" },
     { label: "Published", value: events.filter(e => e.published).length, color: "text-green-600" },
-    { label: "Registrations", value: registrations.length, color: "text-[#F47C20]" },
+    { label: "Registrations", value: totalRegs, color: "text-[#F47C20]" },
     { label: "Open Now", value: events.filter(e => e.registrationOpen && e.published).length, color: "text-emerald-600" },
   ];
 
@@ -355,6 +433,9 @@ export default function AdminEventsPage() {
                 : "border-transparent text-[#7A8FA6] hover:text-[#3A4A5C]"
             }`}>
             <t.icon size={15} /> {t.label}
+            {t.id === "registrations" && totalRegs > 0 && (
+              <span className="ml-0.5 bg-[#F47C20]/10 text-[#F47C20] text-xs font-semibold px-1.5 py-0.5 rounded-full">{totalRegs}</span>
+            )}
           </button>
         ))}
       </div>
@@ -365,165 +446,207 @@ export default function AdminEventsPage() {
           <div className="flex items-center justify-center py-20">
             <Loader2 size={24} className="animate-spin text-[#2251A3]" />
           </div>
-        ) : events.length === 0 ? (
-          <div className="bg-white border border-[#D2DCE8] rounded-2xl p-16 text-center">
-            <Calendar size={40} className="text-[#D2DCE8] mx-auto mb-4" />
-            <h3 className="font-syne font-bold text-lg text-[#0D1B2A] mb-2">No events yet</h3>
-            <button onClick={openCreate}
-              className="inline-flex items-center gap-2 bg-[#F47C20] hover:bg-[#e06a10] text-white font-dm font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors mt-4">
-              <Plus size={16} /> Create First Event
-            </button>
-          </div>
         ) : (
-          <div className="flex flex-col gap-3">
-            {events.map(event => {
-              const regs = eventRegs[event.id] ?? [];
-              const isExpanded = expandedEvent === event.id;
-              return (
-                <div key={event.id} className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden">
-                  {/* Event row */}
-                  <div className="flex items-center gap-3 px-4 py-3 flex-wrap">
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`text-xs font-dm font-semibold px-2 py-0.5 rounded-full ${TYPE_COLORS[event.type] ?? "bg-gray-100 text-gray-700"}`}>
-                          {event.type}
-                        </span>
-                        {event.featured && <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20]">Featured</span>}
-                        <p className="font-dm font-semibold text-sm text-[#0D1B2A] truncate">{event.title}</p>
-                      </div>
-                      <p className="font-dm text-xs text-[#7A8FA6] mt-0.5">
-                        {event.date ? fmtDate(event.date) : "No date"} · {event.location}
-                        {event.price > 0 ? ` · $${(event.price / 100).toFixed(0)}` : " · Free"}
-                      </p>
-                    </div>
+          <>
+            {/* Event search */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="relative flex-1 max-w-sm">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7A8FA6]" />
+                <input
+                  type="text" value={eventSearch} onChange={e => setEventSearch(e.target.value)}
+                  placeholder="Search events…"
+                  className="w-full pl-9 pr-3 py-2 text-sm font-dm border border-[#D2DCE8] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3]"
+                />
+              </div>
+              <span className="font-dm text-xs text-[#7A8FA6]">{filteredEvents.length} of {events.length}</span>
+            </div>
 
-                    {/* Toggles */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {/* Publish toggle */}
-                      <button onClick={() => togglePublished(event)}
-                        disabled={togglingId === event.id + "-pub"}
-                        title={event.published ? "Click to unpublish" : "Click to publish"}
-                        className={`inline-flex items-center gap-1.5 text-xs font-dm font-semibold px-2.5 py-1.5 rounded-full transition-colors ${
-                          event.published ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                        }`}>
-                        {togglingId === event.id + "-pub" ? <Loader2 size={10} className="animate-spin" /> : event.published ? <Eye size={10} /> : <EyeOff size={10} />}
-                        {event.published ? "Live" : "Draft"}
-                      </button>
+            {events.length === 0 ? (
+              <div className="bg-white border border-[#D2DCE8] rounded-2xl p-16 text-center">
+                <Calendar size={40} className="text-[#D2DCE8] mx-auto mb-4" />
+                <h3 className="font-syne font-bold text-lg text-[#0D1B2A] mb-2">No events yet</h3>
+                <button onClick={openCreate}
+                  className="inline-flex items-center gap-2 bg-[#F47C20] hover:bg-[#e06a10] text-white font-dm font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors mt-4">
+                  <Plus size={16} /> Create First Event
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {filteredEvents.map(event => {
+                  const regs = eventRegs[event.id] ?? [];
+                  const isExpanded = expandedEvent === event.id;
+                  const counts = getEventCounts(event.slug);
+                  const isSoldOut = event.spots != null && event.spots === 0;
+                  const isUpcoming = event.date && new Date(event.date) > new Date();
+                  const isPast = event.date && new Date(event.date) < new Date();
 
-                      {/* Registration toggle */}
-                      <button onClick={() => toggleRegistration(event)}
-                        disabled={togglingId === event.id + "-reg"}
-                        title={event.registrationOpen ? "Click to close registration" : "Click to open registration"}
-                        className={`inline-flex items-center gap-1.5 text-xs font-dm font-semibold px-2.5 py-1.5 rounded-full transition-colors ${
-                          event.registrationOpen ? "bg-blue-100 text-blue-700 hover:bg-blue-200" : "bg-red-100 text-red-600 hover:bg-red-200"
-                        }`}>
-                        {togglingId === event.id + "-reg"
-                          ? <Loader2 size={10} className="animate-spin" />
-                          : event.registrationOpen ? <ToggleRight size={12} /> : <ToggleLeft size={12} />}
-                        {event.registrationOpen ? "Reg Open" : "Reg Closed"}
-                      </button>
-
-                      {/* View link */}
-                      <a href={`/events/${event.slug}`} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-dm text-[#2251A3] hover:text-[#1B3A6B] px-2 py-1.5 rounded-lg hover:bg-[#EBF0FA] transition-colors">
-                        <ExternalLink size={11} /> View
-                      </a>
-
-                      {/* Registrations expand */}
-                      <button onClick={() => toggleEventRegs(event)}
-                        className="inline-flex items-center gap-1.5 text-xs font-dm font-semibold px-2.5 py-1.5 rounded-lg border border-[#D2DCE8] text-[#3A4A5C] hover:border-[#2251A3] hover:text-[#2251A3] transition-colors">
-                        <UserCheck size={11} />
-                        {isExpanded ? "Hide" : "Registrations"}
-                        {isExpanded ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
-                      </button>
-
-                      {/* Message */}
-                      <button onClick={() => { setMsgModal(event); setMsgStatus("idle"); setMsgForm({ subject: "", body: "", recipients: "all" }); setMsgResult(""); }}
-                        className="inline-flex items-center gap-1.5 text-xs font-dm font-semibold px-2.5 py-1.5 rounded-lg border border-[#D2DCE8] text-[#3A4A5C] hover:border-[#F47C20] hover:text-[#F47C20] transition-colors">
-                        <MessageSquare size={11} /> Message
-                      </button>
-
-                      {/* Edit */}
-                      <button onClick={() => openEdit(event)}
-                        className="p-1.5 rounded-lg text-[#7A8FA6] hover:text-[#2251A3] hover:bg-[#EBF0FA] transition-colors">
-                        <Pencil size={14} />
-                      </button>
-
-                      {/* Delete */}
-                      <button onClick={() => handleDelete(event.id)} disabled={deletingId === event.id}
-                        className="p-1.5 rounded-lg text-[#7A8FA6] hover:text-red-600 hover:bg-red-50 transition-colors">
-                        {deletingId === event.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Expanded registrations panel */}
-                  {isExpanded && (
-                    <div className="border-t border-[#D2DCE8] bg-[#F8FAFD]">
-                      {!eventRegs[event.id] ? (
-                        <div className="flex items-center justify-center py-6"><Loader2 size={18} className="animate-spin text-[#2251A3]" /></div>
-                      ) : regs.length === 0 ? (
-                        <div className="py-6 text-center">
-                          <p className="font-dm text-sm text-[#7A8FA6]">No registrations yet for this event.</p>
-                        </div>
-                      ) : (
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="border-b border-[#D2DCE8]">
-                                {["Name", "Email", "WhatsApp", "Payment", "Status", "Date", ""].map(h => (
-                                  <th key={h} className="text-left font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider px-4 py-2">{h}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-[#E8EEF5]">
-                              {regs.map(r => (
-                                <tr key={r.id} className="hover:bg-white transition-colors">
-                                  <td className="px-4 py-2.5 font-dm text-sm font-medium text-[#0D1B2A]">{r.firstName} {r.lastName}</td>
-                                  <td className="px-4 py-2.5">
-                                    <a href={`mailto:${r.email}`} className="font-dm text-xs text-[#2251A3] hover:underline flex items-center gap-1">
-                                      <Mail size={11} />{r.email}
-                                    </a>
-                                  </td>
-                                  <td className="px-4 py-2.5 font-dm text-xs text-[#3A4A5C]">{r.whatsapp || "—"}</td>
-                                  <td className="px-4 py-2.5">
-                                    <span className="font-dm text-xs text-[#3A4A5C] capitalize">{r.paymentMethod}</span>
-                                  </td>
-                                  <td className="px-4 py-2.5">
-                                    <StatusBadge status={r.status} onChange={s => updateRegStatus(event.id, r.id, s)} />
-                                  </td>
-                                  <td className="px-4 py-2.5 font-dm text-xs text-[#7A8FA6]">{fmtDateTime(r.createdAt)}</td>
-                                  <td className="px-4 py-2.5">
-                                    <a href={`mailto:${r.email}`} className="p-1 rounded text-[#7A8FA6] hover:text-[#2251A3] inline-flex">
-                                      <Send size={12} />
-                                    </a>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                          <div className="px-4 py-2.5 border-t border-[#D2DCE8] flex items-center gap-4">
-                            <span className="font-dm text-xs text-[#7A8FA6]">{regs.length} registration{regs.length !== 1 ? "s" : ""}</span>
-                            <span className="font-dm text-xs text-green-700">{regs.filter(r => r.status === "confirmed").length} confirmed</span>
-                            <span className="font-dm text-xs text-yellow-700">{regs.filter(r => r.status === "pending").length} pending</span>
+                  return (
+                    <div key={event.id} className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden">
+                      <div className="flex items-center gap-3 px-4 py-3 flex-wrap">
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`text-xs font-dm font-semibold px-2 py-0.5 rounded-full ${TYPE_COLORS[event.type] ?? "bg-gray-100 text-gray-700"}`}>
+                              {event.type}
+                            </span>
+                            {event.featured && <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20]">Featured</span>}
+                            {isSoldOut && <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-600">Sold Out</span>}
+                            {isPast && !isSoldOut && <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Past</span>}
+                            {isUpcoming && <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Upcoming</span>}
+                            <p className="font-dm font-semibold text-sm text-[#0D1B2A] truncate">{event.title}</p>
                           </div>
+                          <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                            <p className="font-dm text-xs text-[#7A8FA6]">
+                              {event.date ? fmtDate(event.date) : "No date"} · {event.location}
+                              {event.price > 0 ? ` · $${(event.price / 100).toFixed(0)}` : " · Free"}
+                            </p>
+                            {counts.total > 0 && (
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-dm text-xs font-semibold text-[#3A4A5C]">{counts.total} registered</span>
+                                {counts.confirmed > 0 && <span className="font-dm text-xs text-green-700">({counts.confirmed} confirmed)</span>}
+                                {counts.pending > 0 && <span className="font-dm text-xs text-yellow-700">({counts.pending} pending)</span>}
+                              </div>
+                            )}
+                            {Array.isArray(event.tags) && event.tags.length > 0 && (
+                              <div className="flex items-center gap-1">
+                                <Tag size={10} className="text-[#7A8FA6]" />
+                                <span className="font-dm text-xs text-[#7A8FA6]">{event.tags.slice(0, 3).join(", ")}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Controls */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {/* Publish toggle */}
+                          <button onClick={() => togglePublished(event)} disabled={togglingId === event.id + "-pub"}
+                            title={event.published ? "Click to unpublish" : "Click to publish"}
+                            className={`inline-flex items-center gap-1.5 text-xs font-dm font-semibold px-2.5 py-1.5 rounded-full transition-colors ${
+                              event.published ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                            }`}>
+                            {togglingId === event.id + "-pub" ? <Loader2 size={10} className="animate-spin" /> : event.published ? <Eye size={10} /> : <EyeOff size={10} />}
+                            {event.published ? "Live" : "Draft"}
+                          </button>
+
+                          {/* Registration toggle */}
+                          <button onClick={() => toggleRegistration(event)} disabled={togglingId === event.id + "-reg"}
+                            title={event.registrationOpen ? "Click to close registration" : "Click to open registration"}
+                            className={`inline-flex items-center gap-1.5 text-xs font-dm font-semibold px-2.5 py-1.5 rounded-full transition-colors ${
+                              event.registrationOpen ? "bg-blue-100 text-blue-700 hover:bg-blue-200" : "bg-red-100 text-red-600 hover:bg-red-200"
+                            }`}>
+                            {togglingId === event.id + "-reg" ? <Loader2 size={10} className="animate-spin" /> : event.registrationOpen ? <ToggleRight size={12} /> : <ToggleLeft size={12} />}
+                            {event.registrationOpen ? "Reg Open" : "Reg Closed"}
+                          </button>
+
+                          {/* View link */}
+                          <a href={`/events/${event.slug}`} target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-dm text-[#2251A3] hover:text-[#1B3A6B] px-2 py-1.5 rounded-lg hover:bg-[#EBF0FA] transition-colors">
+                            <ExternalLink size={11} /> View
+                          </a>
+
+                          {/* Registrations expand */}
+                          <button onClick={() => toggleEventRegs(event)}
+                            className="inline-flex items-center gap-1.5 text-xs font-dm font-semibold px-2.5 py-1.5 rounded-lg border border-[#D2DCE8] text-[#3A4A5C] hover:border-[#2251A3] hover:text-[#2251A3] transition-colors">
+                            <UserCheck size={11} />
+                            {isExpanded ? "Hide" : "Registrations"}
+                            {counts.total > 0 && !isExpanded && <span className="bg-[#2251A3]/10 text-[#2251A3] text-xs px-1.5 rounded-full">{counts.total}</span>}
+                            {isExpanded ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                          </button>
+
+                          {/* Message */}
+                          <button onClick={() => { setMsgModal(event); setMsgStatus("idle"); setMsgForm({ subject: "", body: "", recipients: "all" }); setMsgResult(""); }}
+                            className="inline-flex items-center gap-1.5 text-xs font-dm font-semibold px-2.5 py-1.5 rounded-lg border border-[#D2DCE8] text-[#3A4A5C] hover:border-[#F47C20] hover:text-[#F47C20] transition-colors">
+                            <MessageSquare size={11} /> Message
+                          </button>
+
+                          {/* Clone */}
+                          <button onClick={() => cloneEvent(event)} title="Duplicate event"
+                            className="p-1.5 rounded-lg text-[#7A8FA6] hover:text-[#F47C20] hover:bg-[#FEF0E3] transition-colors">
+                            <Layers size={14} />
+                          </button>
+
+                          {/* Edit */}
+                          <button onClick={() => openEdit(event)}
+                            className="p-1.5 rounded-lg text-[#7A8FA6] hover:text-[#2251A3] hover:bg-[#EBF0FA] transition-colors">
+                            <Pencil size={14} />
+                          </button>
+
+                          {/* Delete */}
+                          <button onClick={() => handleDelete(event.id)} disabled={deletingId === event.id}
+                            className="p-1.5 rounded-lg text-[#7A8FA6] hover:text-red-600 hover:bg-red-50 transition-colors">
+                            {deletingId === event.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Expanded registrations panel */}
+                      {isExpanded && (
+                        <div className="border-t border-[#D2DCE8] bg-[#F8FAFD]">
+                          {!eventRegs[event.id] ? (
+                            <div className="flex items-center justify-center py-6"><Loader2 size={18} className="animate-spin text-[#2251A3]" /></div>
+                          ) : regs.length === 0 ? (
+                            <div className="py-6 text-center">
+                              <p className="font-dm text-sm text-[#7A8FA6]">No registrations yet for this event.</p>
+                            </div>
+                          ) : (
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="border-b border-[#D2DCE8]">
+                                    {["Name", "Email", "WhatsApp", "Payment", "Status", "Date", ""].map(h => (
+                                      <th key={h} className="text-left font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider px-4 py-2">{h}</th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-[#E8EEF5]">
+                                  {regs.map(r => (
+                                    <tr key={r.id} className="hover:bg-white transition-colors">
+                                      <td className="px-4 py-2.5 font-dm text-sm font-medium text-[#0D1B2A]">{r.firstName} {r.lastName}</td>
+                                      <td className="px-4 py-2.5">
+                                        <a href={`mailto:${r.email}`} className="font-dm text-xs text-[#2251A3] hover:underline flex items-center gap-1">
+                                          <Mail size={11} />{r.email}
+                                        </a>
+                                      </td>
+                                      <td className="px-4 py-2.5 font-dm text-xs text-[#3A4A5C]">{r.whatsapp || "—"}</td>
+                                      <td className="px-4 py-2.5">
+                                        <span className="font-dm text-xs text-[#3A4A5C] capitalize">{r.paymentMethod}</span>
+                                      </td>
+                                      <td className="px-4 py-2.5">
+                                        <StatusBadge status={r.status} onChange={s => updateRegStatus(event.id, r.id, s)} />
+                                      </td>
+                                      <td className="px-4 py-2.5 font-dm text-xs text-[#7A8FA6]">{fmtDateTime(r.createdAt)}</td>
+                                      <td className="px-4 py-2.5">
+                                        <a href={`mailto:${r.email}`} className="p-1 rounded text-[#7A8FA6] hover:text-[#2251A3] inline-flex">
+                                          <Send size={12} />
+                                        </a>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                              <div className="px-4 py-2.5 border-t border-[#D2DCE8] flex items-center gap-4">
+                                <span className="font-dm text-xs text-[#7A8FA6]">{regs.length} registration{regs.length !== 1 ? "s" : ""}</span>
+                                <span className="font-dm text-xs text-green-700">{regs.filter(r => r.status === "confirmed").length} confirmed</span>
+                                <span className="font-dm text-xs text-yellow-700">{regs.filter(r => r.status === "pending").length} pending</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )
       )}
 
       {/* ── REGISTRATIONS TAB ───────────────────────────────────────────────── */}
       {tab === "registrations" && (
         <div>
-          {/* Filters */}
-          <div className="flex items-center gap-2 mb-4 flex-wrap">
+          {/* Filters + search */}
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
             {["all", "pending", "confirmed", "cancelled", "waitlisted"].map(f => (
               <button key={f} onClick={() => setRegFilter(f)}
                 className={`px-3 py-1.5 rounded-full text-xs font-dm font-medium transition-colors capitalize ${
@@ -543,6 +666,40 @@ export default function AdminEventsPage() {
             </div>
           </div>
 
+          {/* Search bar */}
+          <div className="relative mb-3">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7A8FA6]" />
+            <input
+              type="text" value={regSearch} onChange={e => setRegSearch(e.target.value)}
+              placeholder="Search by name, email, WhatsApp, or event…"
+              className="w-full pl-9 pr-3 py-2 text-sm font-dm border border-[#D2DCE8] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3]"
+            />
+          </div>
+
+          {/* Bulk actions bar */}
+          {selectedRegIds.size > 0 && (
+            <div className="flex items-center gap-3 mb-3 bg-[#EBF0FA] border border-[#2251A3]/20 rounded-xl px-4 py-2.5">
+              <span className="font-dm text-sm font-semibold text-[#2251A3]">{selectedRegIds.size} selected</span>
+              <div className="flex items-center gap-2 ml-2">
+                <button onClick={() => bulkUpdateRegs("confirmed")} disabled={bulkUpdating}
+                  className="inline-flex items-center gap-1.5 text-xs font-dm font-semibold px-3 py-1.5 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 transition-colors disabled:opacity-50">
+                  {bulkUpdating ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />} Confirm All
+                </button>
+                <button onClick={() => bulkUpdateRegs("cancelled")} disabled={bulkUpdating}
+                  className="inline-flex items-center gap-1.5 text-xs font-dm font-semibold px-3 py-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors disabled:opacity-50">
+                  <X size={11} /> Cancel All
+                </button>
+                <button onClick={() => bulkUpdateRegs("waitlisted")} disabled={bulkUpdating}
+                  className="inline-flex items-center gap-1.5 text-xs font-dm font-semibold px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors disabled:opacity-50">
+                  Waitlist All
+                </button>
+              </div>
+              <button onClick={() => setSelectedRegIds(new Set())} className="ml-auto text-xs font-dm text-[#7A8FA6] hover:text-[#3A4A5C]">
+                Clear selection
+              </button>
+            </div>
+          )}
+
           {regsLoading ? (
             <div className="flex justify-center py-20"><Loader2 size={24} className="animate-spin text-[#2251A3]" /></div>
           ) : filteredRegs.length === 0 ? (
@@ -556,6 +713,13 @@ export default function AdminEventsPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-[#D2DCE8] bg-[#F4F7FB]">
+                      <th className="px-4 py-3 w-8">
+                        <input type="checkbox"
+                          checked={selectedRegIds.size === filteredRegs.length && filteredRegs.length > 0}
+                          onChange={e => setSelectedRegIds(e.target.checked ? new Set(filteredRegs.map(r => r.id)) : new Set())}
+                          className="rounded border-[#D2DCE8]"
+                        />
+                      </th>
                       {["Name", "Contact", "Event", "Payment", "Status", "Date", ""].map(h => (
                         <th key={h} className="text-left font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider px-4 py-3">{h}</th>
                       ))}
@@ -563,7 +727,19 @@ export default function AdminEventsPage() {
                   </thead>
                   <tbody className="divide-y divide-[#D2DCE8]">
                     {filteredRegs.map(r => (
-                      <tr key={r.id} className="hover:bg-[#F4F7FB] transition-colors cursor-pointer" onClick={() => { setSelectedReg(r); setRegNotes(r.notes ?? ""); }}>
+                      <tr key={r.id}
+                        className={`hover:bg-[#F4F7FB] transition-colors cursor-pointer ${selectedRegIds.has(r.id) ? "bg-[#EBF0FA]" : ""}`}
+                        onClick={() => { setSelectedReg(r); setRegNotes(r.notes ?? ""); }}>
+                        <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                          <input type="checkbox" checked={selectedRegIds.has(r.id)}
+                            onChange={e => {
+                              const next = new Set(selectedRegIds);
+                              e.target.checked ? next.add(r.id) : next.delete(r.id);
+                              setSelectedRegIds(next);
+                            }}
+                            className="rounded border-[#D2DCE8]"
+                          />
+                        </td>
                         <td className="px-4 py-3">
                           <p className="font-dm text-sm font-semibold text-[#0D1B2A]">{r.firstName} {r.lastName}</p>
                           {r.role && <p className="font-dm text-xs text-[#7A8FA6] mt-0.5">{r.role}</p>}
@@ -598,6 +774,10 @@ export default function AdminEventsPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+              <div className="px-4 py-2.5 border-t border-[#D2DCE8] flex items-center gap-3">
+                <span className="font-dm text-xs text-[#7A8FA6]">{filteredRegs.length} result{filteredRegs.length !== 1 ? "s" : ""}</span>
+                {regSearch && <span className="font-dm text-xs text-[#2251A3]">filtered by "{regSearch}"</span>}
               </div>
             </div>
           )}
@@ -639,7 +819,6 @@ export default function AdminEventsPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Registration link */}
                   <div className="bg-[#F4F7FB] rounded-xl p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-dm font-semibold text-xs text-[#0D1B2A]">Registration Link</span>
@@ -647,8 +826,6 @@ export default function AdminEventsPage() {
                     </div>
                     <p className="font-dm text-xs text-[#2251A3] break-all">{url}</p>
                   </div>
-
-                  {/* Social caption */}
                   <div className="bg-[#F4F7FB] rounded-xl p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-dm font-semibold text-xs text-[#0D1B2A]">Social Media Caption</span>
@@ -656,8 +833,6 @@ export default function AdminEventsPage() {
                     </div>
                     <p className="font-dm text-xs text-[#7A8FA6] whitespace-pre-line line-clamp-4">{socialCaption}</p>
                   </div>
-
-                  {/* WhatsApp message */}
                   <div className="bg-[#F4F7FB] rounded-xl p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-dm font-semibold text-xs text-[#0D1B2A]">WhatsApp Message</span>
@@ -665,8 +840,6 @@ export default function AdminEventsPage() {
                     </div>
                     <p className="font-dm text-xs text-[#7A8FA6] whitespace-pre-line line-clamp-4">{whatsappMsg}</p>
                   </div>
-
-                  {/* Email blurb */}
                   <div className="bg-[#F4F7FB] rounded-xl p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-dm font-semibold text-xs text-[#0D1B2A]">Email Blurb</span>
@@ -676,14 +849,13 @@ export default function AdminEventsPage() {
                   </div>
                 </div>
 
-                {/* Quick stats */}
-                {eventRegs[event.id] && (
+                {(() => { const c = getEventCounts(event.slug); return c.total > 0 ? (
                   <div className="mt-4 flex gap-4 pt-4 border-t border-[#D2DCE8]">
-                    <span className="font-dm text-xs text-[#7A8FA6]">{eventRegs[event.id].length} total registrations</span>
-                    <span className="font-dm text-xs text-green-700">{eventRegs[event.id].filter(r => r.status === "confirmed").length} confirmed</span>
-                    <span className="font-dm text-xs text-yellow-700">{eventRegs[event.id].filter(r => r.status === "pending").length} pending</span>
+                    <span className="font-dm text-xs text-[#7A8FA6]">{c.total} total registrations</span>
+                    <span className="font-dm text-xs text-green-700">{c.confirmed} confirmed</span>
+                    <span className="font-dm text-xs text-yellow-700">{c.pending} pending</span>
                   </div>
-                )}
+                ) : null; })()}
               </div>
             );
           })}
@@ -699,12 +871,15 @@ export default function AdminEventsPage() {
               <button onClick={() => setShowModal(false)} className="p-2 rounded-xl text-[#7A8FA6] hover:bg-[#F4F7FB] transition-colors"><X size={18} /></button>
             </div>
             <div className="p-6 flex flex-col gap-5">
+              {/* Title */}
               <div>
                 <label className="block font-dm font-semibold text-sm text-[#0D1B2A] mb-1.5">Title *</label>
                 <input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                   placeholder="e.g. AI Practical Training — Cohort 2"
                   className="w-full border border-[#D2DCE8] rounded-xl px-3 py-2.5 font-dm text-sm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3]" />
               </div>
+
+              {/* Type */}
               <div>
                 <label className="block font-dm font-semibold text-sm text-[#0D1B2A] mb-1.5">Type</label>
                 <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
@@ -715,12 +890,16 @@ export default function AdminEventsPage() {
                   <option value="WEBINAR">Webinar</option>
                 </select>
               </div>
+
+              {/* Description */}
               <div>
                 <label className="block font-dm font-semibold text-sm text-[#0D1B2A] mb-1.5">Description</label>
                 <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   placeholder="Short description shown on listing..." rows={3}
                   className="w-full border border-[#D2DCE8] rounded-xl px-3 py-2.5 font-dm text-sm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3] resize-none" />
               </div>
+
+              {/* Dates */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block font-dm font-semibold text-sm text-[#0D1B2A] mb-1.5">Start Date</label>
@@ -728,18 +907,29 @@ export default function AdminEventsPage() {
                     className="w-full border border-[#D2DCE8] rounded-xl px-3 py-2.5 font-dm text-sm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3]" />
                 </div>
                 <div>
+                  <label className="block font-dm font-semibold text-sm text-[#0D1B2A] mb-1.5">End Date</label>
+                  <input type="datetime-local" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))}
+                    className="w-full border border-[#D2DCE8] rounded-xl px-3 py-2.5 font-dm text-sm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3]" />
+                </div>
+              </div>
+
+              {/* Time slot + Location */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
                   <label className="block font-dm font-semibold text-sm text-[#0D1B2A] mb-1.5">Time Slot</label>
                   <input type="text" value={form.timeSlot} onChange={e => setForm(f => ({ ...f, timeSlot: e.target.value }))}
                     placeholder="9:30AM – 1PM ET (Saturdays)"
                     className="w-full border border-[#D2DCE8] rounded-xl px-3 py-2.5 font-dm text-sm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3]" />
                 </div>
+                <div>
+                  <label className="block font-dm font-semibold text-sm text-[#0D1B2A] mb-1.5">Location</label>
+                  <input type="text" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
+                    placeholder="Live on Zoom / City, State"
+                    className="w-full border border-[#D2DCE8] rounded-xl px-3 py-2.5 font-dm text-sm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3]" />
+                </div>
               </div>
-              <div>
-                <label className="block font-dm font-semibold text-sm text-[#0D1B2A] mb-1.5">Location</label>
-                <input type="text" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
-                  placeholder="Live on Zoom / City, State"
-                  className="w-full border border-[#D2DCE8] rounded-xl px-3 py-2.5 font-dm text-sm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3]" />
-              </div>
+
+              {/* Price + Capacity + Spots */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block font-dm font-semibold text-sm text-[#0D1B2A] mb-1.5">Price (cents)</label>
@@ -761,18 +951,34 @@ export default function AdminEventsPage() {
                     className="w-full border border-[#D2DCE8] rounded-xl px-3 py-2.5 font-dm text-sm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3]" />
                 </div>
               </div>
+
+              {/* Tags */}
+              <div>
+                <label className="block font-dm font-semibold text-sm text-[#0D1B2A] mb-1.5">
+                  <Tag size={13} className="inline mr-1" />Tags <span className="text-[#7A8FA6] font-normal">(comma-separated)</span>
+                </label>
+                <input type="text" value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
+                  placeholder="ai, training, cohort, zoom, live"
+                  className="w-full border border-[#D2DCE8] rounded-xl px-3 py-2.5 font-dm text-sm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3]" />
+              </div>
+
+              {/* Cover Image */}
               <div>
                 <label className="block font-dm font-semibold text-sm text-[#0D1B2A] mb-1.5">Cover Image URL <span className="text-[#7A8FA6] font-normal">(optional)</span></label>
                 <input type="url" value={form.coverImage} onChange={e => setForm(f => ({ ...f, coverImage: e.target.value }))}
                   placeholder="https://images.unsplash.com/..."
                   className="w-full border border-[#D2DCE8] rounded-xl px-3 py-2.5 font-dm text-sm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3]" />
               </div>
+
+              {/* Payment Link */}
               <div>
                 <label className="block font-dm font-semibold text-sm text-[#0D1B2A] mb-1.5">Payment Link <span className="text-[#7A8FA6] font-normal">(Stripe, PayPal, etc.)</span></label>
                 <input type="url" value={form.stripePaymentLink} onChange={e => setForm(f => ({ ...f, stripePaymentLink: e.target.value }))}
                   placeholder="https://buy.stripe.com/..."
                   className="w-full border border-[#D2DCE8] rounded-xl px-3 py-2.5 font-dm text-sm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3]" />
               </div>
+
+              {/* Checkboxes */}
               <div className="flex flex-wrap gap-6 pt-1">
                 {([
                   { key: "registrationOpen", label: "Registration Open" },
@@ -803,11 +1009,10 @@ export default function AdminEventsPage() {
         </div>
       )}
 
-      {/* ── REGISTRATION DETAIL MODAL ───────────────────────────────────────── */}
+      {/* ── REGISTRATION DETAIL PANEL ────────────────────────────────────────── */}
       {selectedReg && (
         <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/40 backdrop-blur-sm" onClick={() => setSelectedReg(null)}>
           <div className="bg-white h-full w-full max-w-md shadow-2xl overflow-y-auto flex flex-col" onClick={e => e.stopPropagation()}>
-            {/* Header */}
             <div className="flex items-start justify-between p-6 border-b border-[#D2DCE8] sticky top-0 bg-white z-10">
               <div>
                 <h2 className="font-syne font-bold text-lg text-[#0D1B2A]">{selectedReg.firstName} {selectedReg.lastName}</h2>
@@ -910,8 +1115,7 @@ export default function AdminEventsPage() {
                   <StickyNote size={11} className="inline mr-1.5" />Internal Notes
                 </label>
                 <textarea
-                  value={regNotes}
-                  onChange={e => setRegNotes(e.target.value)}
+                  value={regNotes} onChange={e => setRegNotes(e.target.value)}
                   placeholder="Add internal notes (payment confirmed, follow-up needed, etc.)..."
                   rows={4}
                   className="w-full border border-[#D2DCE8] rounded-xl px-3 py-2.5 font-dm text-sm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3] resize-none"
@@ -971,10 +1175,9 @@ export default function AdminEventsPage() {
               </div>
             ) : (
               <div className="p-6 flex flex-col gap-4">
-                {/* Recipients */}
                 <div>
                   <label className="block font-dm font-semibold text-sm text-[#0D1B2A] mb-2">Send to</label>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     {[
                       { id: "all", label: "All registrants" },
                       { id: "confirmed", label: "Confirmed only" },
@@ -989,16 +1192,12 @@ export default function AdminEventsPage() {
                     ))}
                   </div>
                 </div>
-
-                {/* Subject */}
                 <div>
                   <label className="block font-dm font-semibold text-sm text-[#0D1B2A] mb-1.5">Subject *</label>
                   <input type="text" value={msgForm.subject} onChange={e => setMsgForm(f => ({ ...f, subject: e.target.value }))}
                     placeholder="e.g. Session 1 details — Saturday June 20"
                     className="w-full border border-[#D2DCE8] rounded-xl px-3 py-2.5 font-dm text-sm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3]" />
                 </div>
-
-                {/* Body */}
                 <div>
                   <label className="block font-dm font-semibold text-sm text-[#0D1B2A] mb-1.5">Message *</label>
                   <textarea value={msgForm.body} onChange={e => setMsgForm(f => ({ ...f, body: e.target.value }))}
@@ -1007,7 +1206,6 @@ export default function AdminEventsPage() {
                     className="w-full border border-[#D2DCE8] rounded-xl px-3 py-2.5 font-dm text-sm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3] resize-none" />
                   <p className="font-dm text-xs text-[#7A8FA6] mt-1">Use <code className="bg-[#F4F7FB] px-1 rounded">{"{{firstName}}"}</code> to personalise each message.</p>
                 </div>
-
                 <div className="flex items-center justify-end gap-3 pt-2">
                   <button onClick={() => setMsgModal(null)}
                     className="font-dm text-sm text-[#7A8FA6] hover:text-[#3A4A5C] px-4 py-2 rounded-xl hover:bg-[#F4F7FB] transition-colors">
