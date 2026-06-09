@@ -1,9 +1,60 @@
 import { notFound } from "next/navigation";
+import { Metadata } from "next";
 import prisma from "@/lib/prisma";
 import type { Event } from "@prisma/client";
 import TrainingLandingPage from "./TrainingLandingPage";
 
+export const revalidate = 1800;
+
 interface Props { params: Promise<{ slug: string }> }
+
+const SITE_URL = (process.env.NEXTAUTH_URL ?? "https://tiblogics.com").replace(/\/$/, "");
+
+export async function generateStaticParams() {
+  try {
+    const events = await prisma.event.findMany({
+      where: { published: true },
+      select: { slug: true },
+    });
+    return events.map((e) => ({ slug: e.slug }));
+  } catch {
+    return [{ slug: "ai-practical-training-cohort-1" }];
+  }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  try {
+    const event = await prisma.event.findUnique({ where: { slug } });
+    if (!event || !event.published) return {};
+
+    const title = `${event.title} | TIBLOGICS Events`;
+    const description = event.description.slice(0, 160);
+    const image = event.coverImage ?? `${SITE_URL}/og-image.png`;
+    const url = `${SITE_URL}/events/${slug}`;
+
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        url,
+        type: "website",
+        images: [{ url: image, width: 1200, height: 630, alt: event.title }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: [image],
+      },
+      alternates: { canonical: url },
+    };
+  } catch {
+    return {};
+  }
+}
 
 const TRAINING_EVENT_SEED = {
   slug: "ai-practical-training-cohort-1",
@@ -48,20 +99,60 @@ export default async function EventPage({ params }: Props) {
 
   if (!event) return notFound();
 
-  // All events use the full landing page template — only details vary per event
+  const eventUrl = `${SITE_URL}/events/${event.slug}`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": event.type === "TRAINING" ? "EducationEvent" : "Event",
+    name: event.title,
+    description: event.description,
+    url: eventUrl,
+    startDate: event.date?.toISOString(),
+    endDate: event.endDate?.toISOString(),
+    location: {
+      "@type": event.location?.toLowerCase().includes("zoom") || event.location?.toLowerCase() === "online"
+        ? "VirtualLocation"
+        : "Place",
+      name: event.location,
+      url: event.location?.toLowerCase().includes("zoom") ? "https://zoom.us" : undefined,
+    },
+    organizer: {
+      "@type": "Organization",
+      name: "TIBLOGICS",
+      url: SITE_URL,
+    },
+    offers: {
+      "@type": "Offer",
+      price: (event.price / 100).toFixed(2),
+      priceCurrency: event.currency ?? "USD",
+      availability: event.registrationOpen
+        ? "https://schema.org/InStock"
+        : "https://schema.org/SoldOut",
+      url: eventUrl,
+    },
+    image: event.coverImage ?? `${SITE_URL}/og-image.png`,
+    ...(event.capacity != null && { maximumAttendeeCapacity: event.capacity }),
+    ...(event.spots != null && { remainingAttendeeCapacity: event.spots }),
+  };
+
   return (
-    <TrainingLandingPage
-      eventSlug={event.slug}
-      eventTitle={event.title}
-      eventDescription={event.description}
-      startDate={event.date ? event.date.toISOString() : new Date().toISOString()}
-      spots={event.spots ?? 30}
-      price={event.price}
-      currency={event.currency}
-      location={event.location}
-      timeSlot={event.timeSlot ?? ""}
-      stripeLink={event.stripePaymentLink ?? null}
-      registrationOpen={event.registrationOpen}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <TrainingLandingPage
+        eventSlug={event.slug}
+        eventTitle={event.title}
+        eventDescription={event.description}
+        startDate={event.date ? event.date.toISOString() : new Date().toISOString()}
+        spots={event.spots ?? 30}
+        price={event.price}
+        currency={event.currency}
+        location={event.location}
+        timeSlot={event.timeSlot ?? ""}
+        stripeLink={event.stripePaymentLink ?? null}
+        registrationOpen={event.registrationOpen}
+      />
+    </>
   );
 }

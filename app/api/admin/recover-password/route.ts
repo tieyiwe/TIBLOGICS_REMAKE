@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     // ADMIN_PASSWORD env var is required — without it this endpoint is disabled
     if (!process.env.ADMIN_PASSWORD) {
       return NextResponse.json(
-        { error: "Recovery is disabled: ADMIN_PASSWORD env var is not set. Set it in Replit Secrets to enable this." },
+        { error: "Recovery is disabled: ADMIN_PASSWORD environment variable is not set." },
         { status: 503 }
       );
     }

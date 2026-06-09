@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Calendar, MapPin, DollarSign, Users, Clock, ArrowRight, Bell, X, ExternalLink } from "lucide-react";
 
 interface EventItem {
@@ -335,11 +336,15 @@ function EventCard({ event }: { event: EventItem }) {
         href={eventHref}
         className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col group"
       >
-        <img
-          src={event.coverImage || TYPE_FALLBACK_IMAGE[event.type] || TYPE_FALLBACK_IMAGE.EVENT}
-          alt={event.title}
-          className="w-full h-48 object-cover group-hover:scale-[1.02] transition-transform duration-500"
-        />
+        <div className="relative w-full h-48 overflow-hidden flex-shrink-0">
+          <Image
+            src={event.coverImage || TYPE_FALLBACK_IMAGE[event.type] || TYPE_FALLBACK_IMAGE.EVENT}
+            alt={event.title}
+            fill
+            unoptimized
+            className="object-cover group-hover:scale-[1.02] transition-transform duration-500"
+          />
+        </div>
 
         <div className="p-6 flex flex-col flex-1 gap-3">
           <div className="flex items-center gap-2 flex-wrap">
@@ -425,10 +430,11 @@ function TechEventCard({ ev }: { ev: TechEvent }) {
       className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col group"
     >
       <div className="relative w-full h-40 overflow-hidden">
-        <img
+        <Image
           src={ev.coverImage}
           alt={ev.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          fill
+          className="object-cover group-hover:scale-105 transition-transform duration-500"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
         <span className="absolute bottom-3 left-3 text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">

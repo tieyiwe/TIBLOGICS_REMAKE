@@ -560,19 +560,19 @@ export default function AdminEventsPage() {
                           </button>
 
                           {/* Clone */}
-                          <button onClick={() => cloneEvent(event)} title="Duplicate event"
+                          <button onClick={() => cloneEvent(event)} aria-label="Duplicate event" title="Duplicate event"
                             className="p-1.5 rounded-lg text-[#7A8FA6] hover:text-[#F47C20] hover:bg-[#FEF0E3] transition-colors">
                             <Layers size={14} />
                           </button>
 
                           {/* Edit */}
-                          <button onClick={() => openEdit(event)}
+                          <button onClick={() => openEdit(event)} aria-label="Edit event"
                             className="p-1.5 rounded-lg text-[#7A8FA6] hover:text-[#2251A3] hover:bg-[#EBF0FA] transition-colors">
                             <Pencil size={14} />
                           </button>
 
                           {/* Delete */}
-                          <button onClick={() => handleDelete(event.id)} disabled={deletingId === event.id}
+                          <button onClick={() => handleDelete(event.id)} disabled={deletingId === event.id} aria-label="Delete event"
                             className="p-1.5 rounded-lg text-[#7A8FA6] hover:text-red-600 hover:bg-red-50 transition-colors">
                             {deletingId === event.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                           </button>
@@ -868,7 +868,7 @@ export default function AdminEventsPage() {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-[#D2DCE8]">
               <h2 className="font-syne font-bold text-lg text-[#0D1B2A]">{editId ? "Edit Event" : "New Event"}</h2>
-              <button onClick={() => setShowModal(false)} className="p-2 rounded-xl text-[#7A8FA6] hover:bg-[#F4F7FB] transition-colors"><X size={18} /></button>
+              <button onClick={() => setShowModal(false)} aria-label="Close" className="p-2 rounded-xl text-[#7A8FA6] hover:bg-[#F4F7FB] transition-colors"><X size={18} /></button>
             </div>
             <div className="p-6 flex flex-col gap-5">
               {/* Title */}
@@ -1018,7 +1018,7 @@ export default function AdminEventsPage() {
                 <h2 className="font-syne font-bold text-lg text-[#0D1B2A]">{selectedReg.firstName} {selectedReg.lastName}</h2>
                 <p className="font-dm text-xs text-[#7A8FA6] mt-0.5">Registered {fmtDateTime(selectedReg.createdAt)}</p>
               </div>
-              <button onClick={() => setSelectedReg(null)} className="p-2 rounded-xl text-[#7A8FA6] hover:bg-[#F4F7FB] transition-colors"><X size={18} /></button>
+              <button onClick={() => setSelectedReg(null)} aria-label="Close" className="p-2 rounded-xl text-[#7A8FA6] hover:bg-[#F4F7FB] transition-colors"><X size={18} /></button>
             </div>
 
             <div className="p-6 flex flex-col gap-6 flex-1">
@@ -1161,7 +1161,7 @@ export default function AdminEventsPage() {
                 <h2 className="font-syne font-bold text-lg text-[#0D1B2A]">Message Participants</h2>
                 <p className="font-dm text-xs text-[#7A8FA6] mt-0.5">{msgModal.title}</p>
               </div>
-              <button onClick={() => setMsgModal(null)} className="p-2 rounded-xl text-[#7A8FA6] hover:bg-[#F4F7FB]"><X size={18} /></button>
+              <button onClick={() => setMsgModal(null)} aria-label="Close" className="p-2 rounded-xl text-[#7A8FA6] hover:bg-[#F4F7FB]"><X size={18} /></button>
             </div>
 
             {msgStatus === "done" || msgStatus === "error" ? (

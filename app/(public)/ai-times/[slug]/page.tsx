@@ -5,6 +5,23 @@ import path from "path";
 import Anthropic from "@anthropic-ai/sdk";
 import BlogPostClient from "./BlogPostClient";
 
+export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  try {
+    const { prisma } = await import("@/lib/prisma");
+    const posts = await prisma.blogPost.findMany({
+      where: { published: true },
+      select: { slug: true },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+    return posts.map((p) => ({ slug: p.slug }));
+  } catch {
+    return [];
+  }
+}
+
 const SITE_URL = (process.env.NEXTAUTH_URL || "https://tiblogics.com").replace(/\/$/, "");
 const FALLBACK_IMAGE = `${SITE_URL}/og-image.png`;
 

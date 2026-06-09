@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { useState } from "react";
@@ -218,7 +219,7 @@ export default function AdminSidebar() {
       {/* Logo */}
       <div className="px-5 py-5 border-b border-white/10">
         <div className="flex items-center">
-          <img src="/footer-logo-transparent.png" alt="TIBLOGICS" className="h-28 w-auto max-w-[220px]" />
+          <Image src="/footer-logo-transparent.png" alt="TIBLOGICS" width={220} height={112} className="h-28 w-auto max-w-[220px]" />
         </div>
         {!isAdmin && session?.user && (
           <div className="mt-2 px-1">

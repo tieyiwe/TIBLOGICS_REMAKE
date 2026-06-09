@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { X, Send, ChevronLeft, Loader2 } from "lucide-react";
 
@@ -644,7 +645,7 @@ export default function EchelonFloat() {
           {isOpen ? (
             <X size={22} className="text-white" strokeWidth={2.5} />
           ) : (
-            <img src="/tibo-avatar.svg" alt="Tibo" className="w-full h-full rounded-full object-cover" />
+            <Image src="/tibo-avatar.svg" alt="Tibo" width={56} height={56} className="w-full h-full rounded-full object-cover" />
           )}
           {hasUnread && !isOpen && (
             <span className="absolute top-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white bg-[#F47C20]" />
