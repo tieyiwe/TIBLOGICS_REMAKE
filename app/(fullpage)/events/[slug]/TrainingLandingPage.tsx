@@ -820,7 +820,7 @@ export default function TrainingLandingPage({
                 )}
 
                 <div style={{ textAlign:"center", marginTop:"18px", color:S.muted, fontSize:".78rem" }}>
-                  🔒 Secure registration · Confirmation sent within 24hrs · arfa_edu@tiblogics.com
+                  🔒 Secure registration · Confirmation sent within a few minutes · arfa_edu@tiblogics.com
                 </div>
               </div>
             </form>
