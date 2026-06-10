@@ -497,9 +497,12 @@ export default function AdminEventsPage() {
                   return (
                     <div key={event.id} className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden">
                       <div className="flex items-center gap-3 px-4 py-3 flex-wrap">
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
+                        {/* Info — click anywhere here to open registrations + details */}
+                        <div className="flex-1 min-w-0 cursor-pointer group" onClick={() => toggleEventRegs(event)} title="Click to view registrations & details">
                           <div className="flex items-center gap-2 flex-wrap">
+                            {isExpanded
+                              ? <ChevronUp size={15} className="text-[#2251A3] shrink-0" />
+                              : <ChevronDown size={15} className="text-[#7A8FA6] shrink-0 group-hover:text-[#2251A3]" />}
                             <span className={`text-xs font-dm font-semibold px-2 py-0.5 rounded-full ${TYPE_COLORS[event.type] ?? "bg-gray-100 text-gray-700"}`}>
                               {event.type}
                             </span>
@@ -507,7 +510,7 @@ export default function AdminEventsPage() {
                             {isSoldOut && <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-600">Sold Out</span>}
                             {isPast && !isSoldOut && <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Past</span>}
                             {isUpcoming && <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Upcoming</span>}
-                            <p className="font-dm font-semibold text-sm text-[#0D1B2A] truncate">{event.title}</p>
+                            <p className="font-dm font-semibold text-sm text-[#0D1B2A] truncate group-hover:text-[#2251A3] transition-colors">{event.title}</p>
                           </div>
                           <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                             <p className="font-dm text-xs text-[#7A8FA6]">
@@ -593,9 +596,68 @@ export default function AdminEventsPage() {
                         </div>
                       </div>
 
-                      {/* Expanded registrations panel */}
+                      {/* Expanded panel — event details + registrations */}
                       {isExpanded && (
                         <div className="border-t border-[#D2DCE8] bg-[#F8FAFD]">
+                          {/* ── Event details ── */}
+                          <div className="px-4 py-4 border-b border-[#D2DCE8]">
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="font-syne font-bold text-sm text-[#0D1B2A]">Event Details</h4>
+                              <div className="flex items-center gap-2">
+                                <a href={`/events/${event.slug}`} target="_blank" rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-xs font-dm font-semibold text-[#2251A3] hover:text-[#1B3A6B] px-2 py-1 rounded-lg hover:bg-[#EBF0FA] transition-colors">
+                                  <ExternalLink size={11} /> Open Page
+                                </a>
+                                <button onClick={() => openEdit(event)}
+                                  className="inline-flex items-center gap-1 text-xs font-dm font-semibold text-[#3A4A5C] hover:text-[#2251A3] px-2 py-1 rounded-lg border border-[#D2DCE8] hover:border-[#2251A3] transition-colors">
+                                  <Pencil size={11} /> Edit Text
+                                </button>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-3">
+                              {[
+                                { icon: Calendar, label: "Start", value: event.date ? fmtDateTime(event.date) : "Not set" },
+                                { icon: Calendar, label: "End", value: event.endDate ? fmtDateTime(event.endDate) : "—" },
+                                { icon: Clock, label: "Time Slot", value: event.timeSlot || "—" },
+                                { icon: Calendar, label: "Location", value: event.location || "—" },
+                                { icon: Target, label: "Price", value: event.price > 0 ? `$${(event.price / 100).toFixed(0)} ${event.currency}` : "Free" },
+                                { icon: Users, label: "Capacity", value: event.capacity != null ? String(event.capacity) : "—" },
+                                { icon: UserCheck, label: "Spots Left", value: event.spots != null ? String(event.spots) : "—" },
+                                { icon: Tag, label: "Slug", value: event.slug },
+                              ].map((d, di) => (
+                                <div key={di} className="min-w-0">
+                                  <div className="flex items-center gap-1 text-[#7A8FA6] mb-0.5">
+                                    <d.icon size={11} />
+                                    <span className="font-dm text-[11px] uppercase tracking-wider">{d.label}</span>
+                                  </div>
+                                  <p className="font-dm text-xs font-medium text-[#0D1B2A] truncate" title={d.value}>{d.value}</p>
+                                </div>
+                              ))}
+                            </div>
+                            {event.description && (
+                              <div className="mt-3 pt-3 border-t border-[#E8EEF5]">
+                                <span className="font-dm text-[11px] uppercase tracking-wider text-[#7A8FA6]">Description</span>
+                                <p className="font-dm text-xs text-[#3A4A5C] mt-1 leading-relaxed line-clamp-3">{event.description}</p>
+                              </div>
+                            )}
+                            <div className="mt-3 flex items-center gap-3 text-xs font-dm">
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${event.published ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                                {event.published ? "Published" : "Draft"}
+                              </span>
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${event.registrationOpen ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-600"}`}>
+                                {event.registrationOpen ? "Registration Open" : "Registration Closed"}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* ── Registrations ── */}
+                          <div className="px-4 py-2.5 bg-white border-b border-[#D2DCE8] flex items-center justify-between">
+                            <h4 className="font-syne font-bold text-sm text-[#0D1B2A]">Registrations</h4>
+                            <button onClick={() => { setMsgModal(event); setMsgStatus("idle"); setMsgForm({ subject: "", body: "", recipients: "all" }); setMsgResult(""); }}
+                              className="inline-flex items-center gap-1.5 text-xs font-dm font-semibold text-[#F47C20] hover:text-[#e06a10] transition-colors">
+                              <Send size={11} /> Email Participants
+                            </button>
+                          </div>
                           {!eventRegs[event.id] ? (
                             <div className="flex items-center justify-center py-6"><Loader2 size={18} className="animate-spin text-[#2251A3]" /></div>
                           ) : regs.length === 0 ? (
