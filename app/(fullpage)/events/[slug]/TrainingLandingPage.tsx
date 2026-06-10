@@ -483,7 +483,7 @@ export default function TrainingLandingPage({
           </div>
           <div className="outcomes-grid reveal" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: "18px" }}>
             {[
-              { icon:"✍️", t:"AI writes it for you — instantly", d:"Anything you need written — done in seconds." },
+              { icon:"✍️", t:"Interact with AI like a pro", d:"Know exactly what to say to AI — and get results that actually work." },
               { icon:"🤖", t:"Your personal AI blueprint", d:"A powerful configuration that changes everything." },
               { icon:"💰", t:"Turn AI skills into income", d:"5 income models. Your offer written, priced, and ready to send." },
               { icon:"⚡", t:"AI agents that work while you sleep", d:"Set it up once. Runs on its own. No code." },
