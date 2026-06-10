@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import prisma from "@/lib/prisma";
-import { sendConfirmationEmail, sendTiweNotification } from "@/lib/resend";
+import { sendConfirmationEmail, sendTiweNotification, sendEventWelcomeEmail } from "@/lib/resend";
 import Stripe from "stripe";
 import { createMeeting } from "@/lib/meeting-providers";
 import stripe from "@/lib/stripe";
@@ -36,13 +36,21 @@ export async function POST(req: Request) {
 
       // ── Event registration payment ──────────────────────────────────────
       if (registrationId) {
-        await prisma.eventRegistration.update({
+        const reg = await prisma.eventRegistration.update({
           where: { id: registrationId },
           data: {
             status: "paid",
             stripeSessionId: session.id,
           },
         });
+
+        // Send the "You're in — let's build" welcome email now that payment
+        // succeeded. firstName is captured from the registration record.
+        await sendEventWelcomeEmail({
+          firstName: reg.firstName,
+          email: reg.email,
+          eventName: reg.eventName,
+        }).catch((err) => console.error("[sendEventWelcomeEmail]", err));
       }
 
       if (appointmentId) {
