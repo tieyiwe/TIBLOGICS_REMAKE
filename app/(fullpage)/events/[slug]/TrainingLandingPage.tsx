@@ -545,7 +545,7 @@ export default function TrainingLandingPage({
               </thead>
               <tbody>
                 {[
-                  ["Session 1","June 20, 2026","AI Foundations","First prompt · Comparison test · Use case finder · Comet intro"],
+                  ["Session 1","June 20, 2026","AI Foundations","First prompt · Comparison test · Use case finder · AI browsing intro"],
                   ["Session 2","June 27, 2026","AI in Your Daily Work","Writing sprint · AI blueprint · Time audit"],
                   ["Session 3","July 4, 2026","Build Income with AI","5 income models · Offer design · Marketing asset build"],
                   ["Session 4","July 11, 2026","AI Agents, Automation & Vibe Coding","AI agent build · Automation build · Intro to vibe coding"],
@@ -685,7 +685,7 @@ export default function TrainingLandingPage({
           <div className="reveal" style={{ marginBottom:"32px" }}>
             <div style={{ fontFamily:dm, fontSize:".75rem", color:S.muted, letterSpacing:".12em", textTransform:"uppercase", textAlign:"center", marginBottom:"16px" }}>Tools you'll use across the training</div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:"10px", justifyContent:"center" }}>
-              {["Claude","ChatGPT","Comet by Perplexity","Automation platform","Canva AI","Google Forms + Sheets","Notion AI","Bland AI (demo)","Gmail automation","Gumroad","Claude Code (vibe coding intro)"].map((t,i)=>(
+              {["Claude","ChatGPT","AI browsers & research","Automation platform","AI design tools","Forms & spreadsheets","AI workspace tools","AI voice agents (demo)","Email automation","Digital product platforms","AI coding tools (vibe coding intro)"].map((t,i)=>(
                 <span key={i} style={{ background:"rgba(255,255,255,.06)", border:`1px solid ${S.border}`, borderRadius:"30px", padding:"7px 16px", fontSize:".8rem", color:"#C8D8E0" }}>{t}</span>
               ))}
             </div>
@@ -856,7 +856,7 @@ export default function TrainingLandingPage({
               { q:"Is the $649 all-inclusive?",
                 a:"Yes. The $649 covers everything: all 4 live sessions, all handouts, the TIBLOGICS AI Playbook, session recordings, the cohort WhatsApp group, Wednesday mid-week check-ins, 30 days of post-training support, and your numbered certificate including the graduation ceremony." },
               { q:"What is vibe coding — do I need to know how to code?",
-                a:"No coding knowledge required. Vibe coding is a new way of building software where you describe what you want in plain English and AI writes the code for you. In Session 4, we'll introduce the concept using Claude Code and show you how to build a simple working tool using only natural language. We cover 8 layers of the approach: ideation (describe what you want), prompting (ask AI to build it), reviewing (read what it built), testing (try it yourself), iterating (improve it by asking), deploying (share or publish it), documenting (tell AI to explain it), and maintaining (ask AI to fix anything that breaks). You don't need to understand a single line of code." },
+                a:"No coding knowledge required. Vibe coding is a new way of building software where you describe what you want in plain English and AI writes the code for you. In Session 4, we'll introduce the concept and walk you through building a simple working tool using only natural language — covering the full flow from idea to a finished, working result, the way a software engineer would. You don't need to understand a single line of code; everything is taught live, step by step." },
               { q:"What happens after the 4 sessions?",
                 a:"After Session 4, you have 30 days of post-training support — ask questions in the WhatsApp group and get responses from the training team. The graduation and certificate ceremony is held separately (date announced after Session 4). Your session recordings are yours for lifetime access." },
               { q:"Can I get a refund?",
