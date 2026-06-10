@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const NEW_LOGO = "/logo.png";
 
 const navLinks = [
   { label: "Services", href: "/services" },
@@ -53,7 +54,7 @@ export default function Nav() {
         <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-10">
           <div className="flex items-center justify-between min-h-[7.5rem] sm:min-h-[10.5rem] py-0 sm:py-2">
             <Link href="/" className="flex items-center flex-shrink-0">
-              <Image src="/logo.png" alt="TIBLOGICS" width={200} height={168} className="h-[7.5rem] sm:h-[10.5rem] w-auto" priority />
+              <img src={NEW_LOGO} alt="TIBLOGICS" className="h-[7.5rem] sm:h-[10.5rem] w-auto" />
             </Link>
 
             {/* Desktop Nav */}
