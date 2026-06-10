@@ -472,7 +472,7 @@ export async function sendEventWelcomeEmail(reg: {
 
     <div class="rule-box"><div class="rule-icon">📌</div><div><div class="rule-title">The one rule for this training</div><div class="rule-text">No passive watching. Every session has hands-on labs — bring your laptop and be ready to participate. The participants who get the most out of this training are the ones who try things, share results, and ask questions. There are no wrong answers at this stage.</div></div></div>
 
-    <div class="cta-wrap"><a href="https://www.tiblogics.com" class="cta-btn">Visit www.tiblogics.com</a><div class="cta-sub">Questions? Reply to this email or message us at design@tiblogics.com</div></div>
+    <div class="cta-wrap"><a href="https://www.tiblogics.com" class="cta-btn">Visit www.tiblogics.com</a><div class="cta-sub">Questions? Reply to this email or message us at arfa_edu@tiblogics.com</div></div>
 
     <div class="closing-quote">"Success only comes before work in the dictionary. You showed up. That is already more than most people do. Now let's build something real."</div>
     <div class="closing-sign">See you on June 20 at 9:30AM 🚀<strong>The TIBLOGICS Team</strong></div>
@@ -481,7 +481,7 @@ export async function sendEventWelcomeEmail(reg: {
   <div class="footer">
     <div class="footer-logo">TIBLOGICS</div>
     <div class="footer-links">
-      <a href="mailto:design@tiblogics.com">design@tiblogics.com</a>
+      <a href="mailto:arfa_edu@tiblogics.com">arfa_edu@tiblogics.com</a>
       <a href="https://www.tiblogics.com">www.tiblogics.com</a>
     </div>
     <div class="footer-copy">© 2025 TIBLOGICS</div>
