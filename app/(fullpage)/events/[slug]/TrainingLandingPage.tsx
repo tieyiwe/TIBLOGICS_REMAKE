@@ -429,7 +429,18 @@ export default function TrainingLandingPage({
           </div>
 
           {/* Hero visual */}
-          <div className="hero-visual" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <div className="hero-visual" style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: "28px" }}>
+            {/* ARFA — AI Readiness For All banner */}
+            <img
+              src="/arfa-banner.png"
+              alt="ARFA — AI Readiness For All · A TIBLOGICS Educational Branch"
+              className="hero-1"
+              style={{
+                width: "100%", maxWidth: "440px", height: "auto",
+                borderRadius: "18px", border: `1px solid ${S.border}`,
+                boxShadow: "0 12px 40px rgba(0,0,0,0.35)",
+              }}
+            />
             <NeuralNet />
           </div>
         </div>

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 
 const projectCards = [
   { emoji: "🧠", title: "First Principles Problem Solving", subtitle: "Strip assumptions. Rebuild from truth.", badge: "Our Method", badgeClass: "bg-[#EBF0FA] text-[#2251A3]" },
@@ -74,24 +73,8 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* Right column — ARFA banner + project cards */}
+          {/* Right column — project cards */}
           <div className="flex flex-col gap-3">
-
-            {/* ARFA — AI Readiness For All */}
-            <Link
-              href="/arfa"
-              className="anim-fade-up block rounded-2xl overflow-hidden border border-[#D2DCE8] hover:shadow-[0_4px_24px_rgba(27,58,107,0.14)] hover:-translate-y-0.5 transition-all duration-200"
-              style={{ animationDelay: "0.05s" }}
-            >
-              <Image
-                src="/arfa-banner.png"
-                alt="ARFA — AI Readiness For All · A TIBLOGICS Educational Branch"
-                width={1316}
-                height={876}
-                className="w-full h-auto"
-                priority
-              />
-            </Link>
 
             {projectCards.map((card, i) => (
               <div
