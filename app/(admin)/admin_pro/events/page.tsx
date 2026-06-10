@@ -6,8 +6,10 @@ import {
   Users, ToggleLeft, ToggleRight, Send, Copy, Check, ExternalLink,
   MessageSquare, ChevronDown, ChevronUp, Megaphone, UserCheck,
   Phone, Briefcase, Target, Share2, StickyNote, Download,
-  Search, Layers, AlertCircle, Tag, Clock,
+  Search, Layers, AlertCircle, Tag, Clock, Type,
 } from "lucide-react";
+import ContentEditor from "./ContentEditor";
+import { DEFAULT_TRAINING_CONTENT, mergeContent, type TrainingContent } from "@/lib/training-content";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface EventItem {
@@ -125,6 +127,8 @@ export default function AdminEventsPage() {
   const [saving, setSaving] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>(EMPTY_FORM);
+  const [pageContent, setPageContent] = useState<TrainingContent>(DEFAULT_TRAINING_CONTENT);
+  const [showContentEditor, setShowContentEditor] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [regFilter, setRegFilter] = useState("all");
@@ -288,10 +292,16 @@ export default function AdminEventsPage() {
   }
 
   // ── Create / Edit / Clone ─────────────────────────────────────────────────
-  function openCreate() { setEditId(null); setForm(EMPTY_FORM); setShowModal(true); }
+  function openCreate() {
+    setEditId(null); setForm(EMPTY_FORM);
+    setPageContent(DEFAULT_TRAINING_CONTENT); setShowContentEditor(false);
+    setShowModal(true);
+  }
 
   function openEdit(e: EventItem) {
     setEditId(e.id);
+    setPageContent(mergeContent(e.content));
+    setShowContentEditor(false);
     setForm({
       title: e.title, type: e.type, description: e.description,
       content: e.content ?? "",
@@ -310,6 +320,8 @@ export default function AdminEventsPage() {
 
   function cloneEvent(e: EventItem) {
     setEditId(null);
+    setPageContent(mergeContent(e.content));
+    setShowContentEditor(false);
     setForm({
       title: `${e.title} (Copy)`, type: e.type, description: e.description,
       content: e.content ?? "",
@@ -331,7 +343,8 @@ export default function AdminEventsPage() {
     try {
       const payload = {
         title: form.title.trim(), type: form.type,
-        description: form.description.trim(), content: form.content.trim() || null,
+        description: form.description.trim(),
+        content: JSON.stringify(pageContent),
         date: form.date || null, endDate: form.endDate || null,
         timeSlot: form.timeSlot.trim() || null,
         location: form.location.trim() || "Online",
@@ -1005,6 +1018,33 @@ export default function AdminEventsPage() {
                     <span className="font-dm text-sm text-[#3A4A5C]">{label}</span>
                   </label>
                 ))}
+              </div>
+
+              {/* Page content (all landing-page text) */}
+              <div className="border-t border-[#E2E8F0] pt-5">
+                <button type="button" onClick={() => setShowContentEditor(s => !s)}
+                  className="w-full flex items-center justify-between gap-2 text-left">
+                  <span className="flex items-center gap-2">
+                    <Type size={15} className="text-[#2251A3]" />
+                    <span className="font-syne font-bold text-sm text-[#0D1B2A]">Page Content — edit any text</span>
+                  </span>
+                  {showContentEditor ? <ChevronUp size={16} className="text-[#7A8FA6]" /> : <ChevronDown size={16} className="text-[#7A8FA6]" />}
+                </button>
+                <p className="font-dm text-xs text-[#7A8FA6] mt-1">
+                  Every section of the live event page — hero, sessions, pricing, FAQs, footer. Layout & styling stay standard; only the words change.
+                </p>
+                {showContentEditor && (
+                  <div className="mt-4 bg-[#FBFCFE] border border-[#E2E8F0] rounded-xl p-3 max-h-[420px] overflow-y-auto">
+                    <ContentEditor
+                      value={pageContent as unknown as Record<string, never>}
+                      onChange={(v) => setPageContent(v as unknown as TrainingContent)}
+                    />
+                    <button type="button" onClick={() => setPageContent(DEFAULT_TRAINING_CONTENT)}
+                      className="mt-3 inline-flex items-center gap-1.5 text-xs font-dm font-semibold px-3 py-1.5 rounded-lg border border-[#D2DCE8] text-[#7A8FA6] hover:text-[#3A4A5C] hover:border-[#2251A3] transition-colors">
+                      Reset to default copy
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#D2DCE8]">

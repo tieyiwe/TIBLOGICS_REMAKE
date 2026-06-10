@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { applyPrice, type TrainingContent } from "@/lib/training-content";
 
 interface Props {
   eventSlug: string;
@@ -14,6 +15,7 @@ interface Props {
   timeSlot: string;
   stripeLink: string | null;
   registrationOpen: boolean;
+  content: TrainingContent;  // merged editable copy (defaults ⊕ admin overrides)
 }
 
 const STYLES = `
@@ -264,8 +266,9 @@ function CountdownTimer({ startDate }: { startDate: string }) {
 export default function TrainingLandingPage({
   eventSlug, eventTitle, eventDescription, startDate, spots,
   price, currency, location, timeSlot,
-  stripeLink, registrationOpen,
+  stripeLink, registrationOpen, content,
 }: Props) {
+  const C = content;
   const priceDisplay = price === 0 ? "Free" : `$${(price / 100).toFixed(0)} ${currency}`;
   const isFree = price === 0;
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
@@ -379,14 +382,14 @@ export default function TrainingLandingPage({
               <line x1="19" y1="25" x2="19" y2="27.5" stroke="rgba(244,124,76,0.5)" strokeWidth="1.5"/>
             </svg>
             <div>
-              <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.1rem", letterSpacing: ".06em" }}>TIBLOGICS</div>
-              <div className="nav-sub" style={{ fontSize: ".65rem", color: S.muted, letterSpacing: ".1em" }}>Education Center</div>
+              <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.1rem", letterSpacing: ".06em" }}>{C.nav.brand}</div>
+              <div className="nav-sub" style={{ fontSize: ".65rem", color: S.muted, letterSpacing: ".1em" }}>{C.nav.tagline}</div>
             </div>
           </div>
           <a href="#register" className="cta-primary" style={{
             padding: "9px 16px", borderRadius: "30px", fontFamily: syne,
             fontSize: ".8rem", textDecoration: "none", letterSpacing: ".02em", whiteSpace: "nowrap"
-          }}>Reserve My Spot</a>
+          }}>{C.nav.cta}</a>
         </div>
       </nav>
 
@@ -405,7 +408,7 @@ export default function TrainingLandingPage({
             {/* Eyebrow */}
             <div className="hero-1" style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(244,124,76,.1)", border: "1px solid rgba(244,124,76,.25)", borderRadius: "30px", padding: "8px 16px", marginBottom: "28px" }}>
               <span className="pulsing-dot"/>
-              <span style={{ fontFamily: dm, fontSize: ".82rem", color: "#F9A738", fontWeight: 500 }}>{location} · {timeSlot}</span>
+              <span style={{ fontFamily: dm, fontSize: ".82rem", color: "#F9A738", fontWeight: 500 }}>{C.hero.eyebrow || `${location} · ${timeSlot}`}</span>
             </div>
 
             {/* Headline */}
@@ -413,18 +416,18 @@ export default function TrainingLandingPage({
               fontFamily: syne, fontWeight: 800, lineHeight: 1.12,
               fontSize: "clamp(2.6rem,4.2vw,4.2rem)", marginBottom: "24px", color: "#fff"
             }}>
-              Stop watching AI<br />happen to others.<br />
-              <span className="gradient-text">Start building with it.</span>
+              {C.hero.headlineLine1}<br />{C.hero.headlineLine2}<br />
+              <span className="gradient-text">{C.hero.headlineHighlight}</span>
             </h1>
 
             {/* Sub */}
             <p className="hero-3" style={{ fontSize: "1.05rem", color: "#B0C4CC", lineHeight: 1.7, marginBottom: "32px", maxWidth: "520px" }}>
-              A hands-on 4-session live training where you go from curious to capable — writing with AI, building income, creating automations, and getting your first taste of vibe coding. Live on Zoom. Every Saturday 9:30AM–1PM.
+              {C.hero.subtitle}
             </p>
 
             {/* Pills */}
             <div className="hero-pills hero-4" style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "36px" }}>
-              {["📅 Starts June 20, 2026","💻 Live on Zoom","⏰ Saturdays 9:30AM–1PM","🏆 Certificate Included","🎯 100% Practical"].map((p,i) => (
+              {C.hero.pills.map((p,i) => (
                 <span key={i} style={{ background: "rgba(255,255,255,.06)", border: `1px solid ${S.border}`, borderRadius: "20px", padding: "6px 14px", fontSize: ".78rem", color: "#C8D8E0", fontWeight: 500 }}>{p}</span>
               ))}
             </div>
@@ -432,10 +435,10 @@ export default function TrainingLandingPage({
             {/* CTAs */}
             <div className="hero-5 hero-cta-wrap" style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
               <a href="#register" className="cta-primary" style={{ padding: "15px 30px", borderRadius: "50px", fontFamily: syne, fontSize: "1rem", textDecoration: "none", letterSpacing: ".02em" }}>
-                {isFree ? "Secure My Spot — Free" : `Secure My Spot — ${priceDisplay}`}
+                {isFree ? applyPrice(C.hero.ctaPrimaryFree, priceDisplay) : applyPrice(C.hero.ctaPrimaryPaid, priceDisplay)}
               </a>
               <a href="#curriculum" className="cta-outline" style={{ padding: "15px 26px", borderRadius: "50px", fontFamily: dm, fontSize: ".95rem", textDecoration: "none" }}>
-                See What&apos;s Inside
+                {C.hero.ctaSecondary}
               </a>
             </div>
           </div>
@@ -461,17 +464,13 @@ export default function TrainingLandingPage({
       {/* ── STATS ── */}
       <div className="reveal" style={{ background: "rgba(255,255,255,.025)", borderTop: `1px solid ${S.border}`, borderBottom: `1px solid ${S.border}`, padding: "28px 24px" }}>
         <div style={{ maxWidth: "1000px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-around", flexWrap: "wrap", gap: "20px" }} className="stat-wrap">
-          {[
-            { n:"4", l:"Weekend Sessions" }, { n:"12", l:"Hours of Training" },
-            { n:"Custom", l:"Powerful Prompts in Library" }, { n:"$649", l:"All Inclusive" },
-            { n:"🔥", l:"Limited Seats Per Cohort — First Come, First Served" },
-          ].map((s, i) => (
+          {C.stats.map((s, i) => (
             <div key={i} className="stagger-child stat-item" style={{
               textAlign: "center", padding: "0 20px",
-              borderRight: i < 4 ? `1px solid ${S.border}` : "none"
+              borderRight: i < C.stats.length - 1 ? `1px solid ${S.border}` : "none"
             }}>
-              <div className="gradient-text" style={{ fontFamily: syne, fontWeight: 800, fontSize: "2rem" }}>{s.n}</div>
-              <div style={{ fontSize: ".75rem", color: S.muted, marginTop: "4px", letterSpacing: ".04em" }}>{s.l}</div>
+              <div className="gradient-text" style={{ fontFamily: syne, fontWeight: 800, fontSize: "2rem" }}>{s.value}</div>
+              <div style={{ fontSize: ".75rem", color: S.muted, marginTop: "4px", letterSpacing: ".04em" }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -480,7 +479,7 @@ export default function TrainingLandingPage({
       {/* ── COUNTDOWN ── */}
       <section style={{ padding: "80px 24px", background: `linear-gradient(180deg, ${S.darker} 0%, ${S.dark} 100%)` }}>
         <div style={{ maxWidth: "700px", margin: "0 auto", textAlign: "center" }} className="reveal">
-          <div style={{ fontFamily: dm, fontSize: ".8rem", color: S.muted, letterSpacing: ".15em", textTransform: "uppercase", marginBottom: "12px" }}>Registration Closes — Training Starts June 20, 2026</div>
+          <div style={{ fontFamily: dm, fontSize: ".8rem", color: S.muted, letterSpacing: ".15em", textTransform: "uppercase", marginBottom: "12px" }}>{C.countdown.label}</div>
           <CountdownTimer startDate={startDate} />
         </div>
       </section>
@@ -489,26 +488,18 @@ export default function TrainingLandingPage({
       <section style={{ padding: "80px 24px" }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
           <div className="reveal" style={{ textAlign: "center", marginBottom: "56px" }}>
-            <div style={{ fontFamily: dm, fontSize: ".75rem", color: S.orange, letterSpacing: ".18em", textTransform: "uppercase", marginBottom: "12px" }}>What You Get</div>
-            <h2 style={{ fontFamily: syne, fontWeight: 800, fontSize: "clamp(1.8rem,3vw,2.6rem)", marginBottom: "14px" }}>What you walk away with.</h2>
-            <p style={{ color: S.muted, fontSize: ".95rem", maxWidth: "480px", margin: "0 auto", lineHeight: 1.7 }}>Every session builds a skill you can use the same day.</p>
+            <div style={{ fontFamily: dm, fontSize: ".75rem", color: S.orange, letterSpacing: ".18em", textTransform: "uppercase", marginBottom: "12px" }}>{C.outcomes.eyebrow}</div>
+            <h2 style={{ fontFamily: syne, fontWeight: 800, fontSize: "clamp(1.8rem,3vw,2.6rem)", marginBottom: "14px" }}>{C.outcomes.heading}</h2>
+            <p style={{ color: S.muted, fontSize: ".95rem", maxWidth: "480px", margin: "0 auto", lineHeight: 1.7 }}>{C.outcomes.subtitle}</p>
           </div>
           <div className="outcomes-grid reveal" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: "18px" }}>
-            {[
-              { icon:"✍️", t:"Interact with AI like a pro", d:"Know exactly what to say to AI — and get results that actually work." },
-              { icon:"🤖", t:"Your personal AI blueprint", d:"A powerful configuration that changes everything." },
-              { icon:"💰", t:"Turn AI skills into income", d:"5 income models. Your offer written, priced, and ready to send." },
-              { icon:"⚡", t:"AI agents that work while you sleep", d:"Set it up once. Runs on its own. No code." },
-              { icon:"🔍", t:"Your full AI power stack", d:"The tools that handle anything you throw at them." },
-              { icon:"💻", t:"Intro to vibe coding like a Software Engineer", d:"Describe it. AI builds it. like a pro." },
-              { icon:"🏅", t:"Official certificate of completion", d:"Numbered. LinkedIn-ready. Earned live on Zoom." },
-            ].map((o, i) => (
+            {C.outcomes.items.map((o, i) => (
               <div key={i} className="outcome-card stagger-child" style={{
                 background: S.card, borderRadius: "20px", padding: "28px 24px",
               }}>
                 <div className="card-icon" style={{ fontSize: "2rem", marginBottom: "14px" }}>{o.icon}</div>
-                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: "1rem", marginBottom: "8px" }}>{o.t}</div>
-                <div style={{ color: S.muted, fontSize: ".88rem", lineHeight: 1.65 }}>{o.d}</div>
+                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: "1rem", marginBottom: "8px" }}>{o.title}</div>
+                <div style={{ color: S.muted, fontSize: ".88rem", lineHeight: 1.65 }}>{o.desc}</div>
               </div>
             ))}
           </div>
@@ -519,19 +510,13 @@ export default function TrainingLandingPage({
       <section id="curriculum" style={{ padding: "80px 24px", background: S.dark }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
           <div className="reveal" style={{ textAlign: "center", marginBottom: "56px" }}>
-            <div style={{ fontFamily: dm, fontSize: ".75rem", color: S.orange, letterSpacing: ".18em", textTransform: "uppercase", marginBottom: "12px" }}>The Curriculum</div>
-            <h2 style={{ fontFamily: syne, fontWeight: 800, fontSize: "clamp(1.8rem,3vw,2.6rem)", marginBottom: "14px" }}>4 sessions. 4 weekends. One transformation.</h2>
-            <p style={{ color: S.muted, fontSize: ".95rem", maxWidth: "520px", margin: "0 auto" }}>Each session is 3 hours live on Zoom — every Saturday from 9:30AM to 1PM.</p>
+            <div style={{ fontFamily: dm, fontSize: ".75rem", color: S.orange, letterSpacing: ".18em", textTransform: "uppercase", marginBottom: "12px" }}>{C.curriculum.eyebrow}</div>
+            <h2 style={{ fontFamily: syne, fontWeight: 800, fontSize: "clamp(1.8rem,3vw,2.6rem)", marginBottom: "14px" }}>{C.curriculum.heading}</h2>
+            <p style={{ color: S.muted, fontSize: ".95rem", maxWidth: "520px", margin: "0 auto" }}>{C.curriculum.subtitle}</p>
           </div>
 
           <div className="sessions-grid reveal" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "18px", marginBottom: "56px" }}>
-            {[
-              { num:"S1", date:"June 20", title:"AI Foundations", desc:"Hands-on from minute one. You use AI before the session ends.", badge:"Beginner-friendly", color:"#2251A3" },
-              { num:"S2", date:"June 27", title:"AI in Your Work", desc:"Configure AI to empower your personal life and career.", badge:"Hands-on lab", color:"#F9A738" },
-              { num:"S3", date:"July 4", title:"Build Income with AI", desc:"Pick your income model, write your offer, build something you can send today.", badge:"Revenue focused", color:"#22A387" },
-              { num:"S4", date:"July 11", title:"Agents, Automation & Vibe Coding", desc:"Build AI agents, automate your workflow, and vibe code your first real tool — using only words.", badge:"Advanced build", color:"#8B5CF6" },
-              { num:"S5", date:"TBA", title:"Certificate Ceremony", desc:"Date announced after Session 4. Certificate presentation, wins spotlight & cohort graduation.", badge:"🎓 Bonus · TBA", color:"#1B3A6B" },
-            ].map((s, i) => (
+            {C.curriculum.sessions.map((s, i) => (
               <div key={i} className="session-card stagger-child" style={{
                 background: S.card, border: `1px solid ${S.border}`, borderRadius: "20px",
                 padding: "28px 22px", position: "relative", overflow: "hidden"
@@ -556,15 +541,9 @@ export default function TrainingLandingPage({
                 </tr>
               </thead>
               <tbody>
-                {[
-                  ["Session 1","June 20, 2026","AI Foundations","First prompt · Comparison test · Use case finder · AI browsing intro"],
-                  ["Session 2","June 27, 2026","AI in Your Daily Work","Writing sprint · AI blueprint · Time audit"],
-                  ["Session 3","July 4, 2026","Build Income with AI","5 income models · Offer design · Marketing asset build"],
-                  ["Session 4","July 11, 2026","AI Agents, Automation & Vibe Coding","AI agent build · Automation build · Intro to vibe coding"],
-                  ["Bonus","TBA","Certificate & Graduation Ceremony","Certificate presentation · Wins spotlight · Cohort photo"],
-                ].map((row,i)=>(
+                {C.curriculum.scheduleRows.map((row,i)=>(
                   <tr key={i} style={{ borderBottom:`1px solid ${S.border}` }}>
-                    {row.map((cell,j)=>(
+                    {[row.session, row.date, row.topic, row.labs].map((cell,j)=>(
                       <td key={j} style={{ padding:"14px 16px", color: j===2 ? "#C8D8E0" : j===3 ? S.muted : "#fff", lineHeight:1.55 }}>{cell}</td>
                     ))}
                   </tr>
@@ -575,7 +554,7 @@ export default function TrainingLandingPage({
 
           {/* Schedule pills */}
           <div className="reveal" style={{ marginTop: "28px", display: "flex", flexWrap: "wrap", gap: "10px" }}>
-            {["Every Saturday · 9:30AM–1PM · incl. breaks","Open to all timezones","Recordings shared within 24hrs","Mid-week check-ins"].map((p,i)=>(
+            {C.curriculum.schedulePills.map((p,i)=>(
               <span key={i} style={{ background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"20px", padding:"6px 14px", fontSize:".78rem", color:S.muted }}>{p}</span>
             ))}
           </div>
@@ -588,45 +567,33 @@ export default function TrainingLandingPage({
           {/* Card */}
           <div className="pricing-inner" style={{ background: S.dark, border: `1px solid ${S.border}`, borderRadius: "24px", padding: "40px 36px", textAlign: "center", position: "relative", overflow: "hidden" }}>
             <div className="orb" style={{ width:300, height:300, background:"rgba(244,124,76,.08)", top:"-50px", right:"-80px" }} />
-            <div style={{ fontFamily: dm, fontSize: ".78rem", color: S.muted, letterSpacing: ".1em", marginBottom: "20px" }}>Cohort 1 · June 20 – July 11, 2026 + Graduation TBA</div>
+            <div style={{ fontFamily: dm, fontSize: ".78rem", color: S.muted, letterSpacing: ".1em", marginBottom: "20px" }}>{C.pricing.eyebrow}</div>
             <div style={{ marginBottom: "12px" }}>
-              <span style={{ fontFamily: syne, fontWeight: 700, fontSize: "1.4rem", color: S.muted, textDecoration: "line-through", marginRight: "12px" }}>$1,600</span>
-              <span style={{ background: "#16a34a22", color: "#4ade80", border: "1px solid #16a34a44", borderRadius: "20px", padding: "4px 14px", fontSize: ".78rem", fontWeight: 600 }}>June Cohort Price</span>
+              <span style={{ fontFamily: syne, fontWeight: 700, fontSize: "1.4rem", color: S.muted, textDecoration: "line-through", marginRight: "12px" }}>{C.pricing.originalPrice}</span>
+              <span style={{ background: "#16a34a22", color: "#4ade80", border: "1px solid #16a34a44", borderRadius: "20px", padding: "4px 14px", fontSize: ".78rem", fontWeight: 600 }}>{C.pricing.badge}</span>
             </div>
             <div className="pricing-amount" style={{ fontFamily: syne, fontWeight: 800, fontSize: "5rem", lineHeight: 1, marginBottom: "8px" }}>{priceDisplay}</div>
-            <div style={{ color: S.orange, fontSize: ".88rem", fontWeight: 600, marginBottom: "6px" }}>🎁 You save $951 — Cohort 1 only</div>
-            <div style={{ color: S.muted, fontSize: ".85rem", marginBottom: "20px" }}>Full access · All 4 live sessions · Everything below</div>
+            <div style={{ color: S.orange, fontSize: ".88rem", fontWeight: 600, marginBottom: "6px" }}>{C.pricing.saveText}</div>
+            <div style={{ color: S.muted, fontSize: ".85rem", marginBottom: "20px" }}>{C.pricing.accessText}</div>
 
             {/* Weekly cost breakdown */}
             <div className="weekly-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "28px" }}>
               <div style={{ background: "rgba(255,255,255,.04)", border: `1px solid ${S.border}`, borderRadius: "14px", padding: "14px 16px", textAlign: "center" }}>
-                <div style={{ fontFamily: dm, fontSize: ".7rem", color: S.muted, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: "6px" }}>Standard Rate</div>
-                <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.5rem", color: S.muted, textDecoration: "line-through", marginBottom: "2px" }}>$1,600</div>
-                <div style={{ fontSize: ".75rem", color: S.muted }}>≈ <strong style={{ color: "#aaa" }}>$400/week</strong> for 4 weeks</div>
+                <div style={{ fontFamily: dm, fontSize: ".7rem", color: S.muted, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: "6px" }}>{C.pricing.standardLabel}</div>
+                <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.5rem", color: S.muted, textDecoration: "line-through", marginBottom: "2px" }}>{C.pricing.standardAmount}</div>
+                <div style={{ fontSize: ".75rem", color: S.muted }}>{C.pricing.standardSub}</div>
               </div>
               <div style={{ background: "rgba(244,124,76,.08)", border: "1px solid rgba(244,124,76,.3)", borderRadius: "14px", padding: "14px 16px", textAlign: "center" }}>
-                <div style={{ fontFamily: dm, fontSize: ".7rem", color: S.orange, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: "6px" }}>Your Cohort 1 Price</div>
-                <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.5rem", color: "#fff", marginBottom: "2px" }}>$649</div>
-                <div style={{ fontSize: ".75rem", color: S.muted }}>≈ <strong style={{ color: S.orange }}>$162/week</strong> for 4 weeks</div>
+                <div style={{ fontFamily: dm, fontSize: ".7rem", color: S.orange, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: "6px" }}>{C.pricing.cohortLabel}</div>
+                <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.5rem", color: "#fff", marginBottom: "2px" }}>{C.pricing.cohortAmount}</div>
+                <div style={{ fontSize: ".75rem", color: S.muted }}>{C.pricing.cohortSub}</div>
               </div>
             </div>
 
             {/* Includes list */}
             <div style={{ textAlign: "left", marginBottom: "32px" }}>
-              {[
-                "4 live Zoom sessions (3hrs each · Saturdays 9:30AM–1PM)",
-                "All session handouts & lab worksheets",
-                "TIBLOGICS AI Playbook (100+ ready-to-use AI scripts)",
-                "Your personal AI blueprint",
-                "Intro to vibe coding — build real tools with AI, no code needed",
-                "Session recordings (lifetime access)",
-                "Cohort WhatsApp community",
-                "Mid-week check-ins & tips",
-                "2-weeks post-training support",
-                "Numbered certificate + LinkedIn instructions",
-                "Certificate & graduation ceremony (date TBA)",
-              ].map((item, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "8px 0", borderBottom: i < 10 ? `1px solid ${S.border}` : "none" }}>
+              {C.pricing.includes.map((item, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "8px 0", borderBottom: i < C.pricing.includes.length - 1 ? `1px solid ${S.border}` : "none" }}>
                   <span className="include-check">✦</span>
                   <span style={{ fontSize: ".88rem", color: "#C8D8E0", lineHeight: 1.55 }}>{item}</span>
                 </div>
@@ -638,29 +605,24 @@ export default function TrainingLandingPage({
               display: "block", padding: "17px 32px", borderRadius: "50px",
               fontFamily: syne, fontSize: "1rem", textDecoration: "none",
               marginBottom: "16px", letterSpacing: ".02em"
-            }}>Register Now — Secure My Spot</a>
+            }}>{C.pricing.cta}</a>
 
             {/* Pulse warning */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
               <span className="pulsing-dot" />
-              <span style={{ fontSize: ".8rem", color: S.orange, fontWeight: 600 }}>Limited seats per cohort — first come, first served</span>
+              <span style={{ fontSize: ".8rem", color: S.orange, fontWeight: 600 }}>{C.pricing.warning}</span>
             </div>
           </div>
 
           {/* Requirements */}
           <div style={{ marginTop: "28px" }}>
-            <div style={{ fontFamily: dm, fontSize: ".78rem", color: S.muted, letterSpacing: ".1em", textTransform: "uppercase", textAlign: "center", marginBottom: "16px" }}>What you need</div>
+            <div style={{ fontFamily: dm, fontSize: ".78rem", color: S.muted, letterSpacing: ".1em", textTransform: "uppercase", textAlign: "center", marginBottom: "16px" }}>{C.pricing.requirementsHeading}</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-              {[
-                { icon:"🧠", t:"Claude preferred", s:"ChatGPT & others also welcome" },
-                { icon:"📹", t:"Zoom account", s:"Free tier sufficient" },
-                { icon:"⚙️", t:"Automation account", s:"Free tier covers labs · shared at training" },
-                { icon:"💻", t:"Laptop or tablet", s:"Recommended · stable internet" },
-              ].map((r,i)=>(
+              {C.pricing.requirements.map((r,i)=>(
                 <div key={i} style={{ background: S.card, border:`1px solid ${S.border}`, borderRadius:"14px", padding:"14px" }}>
                   <div style={{ fontSize:"1.3rem", marginBottom:"6px" }}>{r.icon}</div>
-                  <div style={{ fontSize:".83rem", fontWeight:600, marginBottom:"3px" }}>{r.t}</div>
-                  <div style={{ fontSize:".75rem", color:S.muted }}>{r.s}</div>
+                  <div style={{ fontSize:".83rem", fontWeight:600, marginBottom:"3px" }}>{r.title}</div>
+                  <div style={{ fontSize:".75rem", color:S.muted }}>{r.subtitle}</div>
                 </div>
               ))}
             </div>
@@ -672,32 +634,25 @@ export default function TrainingLandingPage({
       <section style={{ padding: "80px 24px", background: S.dark }}>
         <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
           <div className="reveal" style={{ textAlign:"center", marginBottom:"56px" }}>
-            <div style={{ fontFamily:dm, fontSize:".75rem", color:S.orange, letterSpacing:".18em", textTransform:"uppercase", marginBottom:"12px" }}>Everything Inside</div>
-            <h2 style={{ fontFamily:syne, fontWeight:800, fontSize:"clamp(1.8rem,3vw,2.6rem)", marginBottom:"14px" }}>Built to be your toolkit long after the training ends.</h2>
+            <div style={{ fontFamily:dm, fontSize:".75rem", color:S.orange, letterSpacing:".18em", textTransform:"uppercase", marginBottom:"12px" }}>{C.whatsIncluded.eyebrow}</div>
+            <h2 style={{ fontFamily:syne, fontWeight:800, fontSize:"clamp(1.8rem,3vw,2.6rem)", marginBottom:"14px" }}>{C.whatsIncluded.heading}</h2>
           </div>
 
           <div className="includes-grid reveal" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:"18px", marginBottom:"40px" }}>
-            {[
-              { t:"TIBLOGICS AI Playbook", s:"100+ Ready-to-Use AI Scripts", d:"Organised by use case — sales, writing, operations, marketing, and more. Ready on day one.", color:"#2251A3" },
-              { t:"Your AI Blueprint", s:"Personalised AI configuration", d:"Set it up in Session 2. Every AI response will feel made for you from that moment on.", color:"#22A387" },
-              { t:"4 Session Handouts + Labs", s:"Worksheets for every session", d:"Step-by-step lab sheets you work through live. Yours to keep and revisit anytime.", color:"#F9A738" },
-              { t:"2 Live-Built AI Automations", s:"Working automations from Session 4", d:"You'll build them yourself in the session. Not demos — actual automations you can use.", color:"#8B5CF6" },
-              { t:"Your First AI Income Offer", s:"Built and written in Session 3", d:"You'll leave Session 3 with an offer that's ready to send. Not theory. A real offer.", color:"#F47C4C" },
-              { t:"Official Numbered Certificate", s:"LinkedIn-ready on graduation day", d:"Issued at the certificate ceremony. Each certificate is numbered and unique to you.", color:"#1B3A6B" },
-            ].map((c,i)=>(
+            {C.whatsIncluded.cards.map((c,i)=>(
               <div key={i} className="include-card stagger-child" style={{ background:S.card, borderRadius:"20px", padding:"28px 24px", borderLeft:`3px solid ${c.color}` }}>
-                <div style={{ fontFamily:syne, fontWeight:700, fontSize:"1rem", marginBottom:"6px" }}>{c.t}</div>
-                <div style={{ color:c.color, fontSize:".8rem", fontWeight:600, marginBottom:"10px" }}>{c.s}</div>
-                <div style={{ color:S.muted, fontSize:".85rem", lineHeight:1.65 }}>{c.d}</div>
+                <div style={{ fontFamily:syne, fontWeight:700, fontSize:"1rem", marginBottom:"6px" }}>{c.title}</div>
+                <div style={{ color:c.color, fontSize:".8rem", fontWeight:600, marginBottom:"10px" }}>{c.subtitle}</div>
+                <div style={{ color:S.muted, fontSize:".85rem", lineHeight:1.65 }}>{c.desc}</div>
               </div>
             ))}
           </div>
 
           {/* Tools grid */}
           <div className="reveal" style={{ marginBottom:"32px" }}>
-            <div style={{ fontFamily:dm, fontSize:".75rem", color:S.muted, letterSpacing:".12em", textTransform:"uppercase", textAlign:"center", marginBottom:"16px" }}>Tools you'll use across the training</div>
+            <div style={{ fontFamily:dm, fontSize:".75rem", color:S.muted, letterSpacing:".12em", textTransform:"uppercase", textAlign:"center", marginBottom:"16px" }}>{C.whatsIncluded.toolsHeading}</div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:"10px", justifyContent:"center" }}>
-              {["Claude","ChatGPT","AI browsers & research","Automation platform","AI design tools","Forms & spreadsheets","AI workspace tools","AI voice agents (demo)","Email automation","Digital product platforms","AI coding tools (vibe coding intro)"].map((t,i)=>(
+              {C.whatsIncluded.tools.map((t,i)=>(
                 <span key={i} style={{ background:"rgba(255,255,255,.06)", border:`1px solid ${S.border}`, borderRadius:"30px", padding:"7px 16px", fontSize:".8rem", color:"#C8D8E0" }}>{t}</span>
               ))}
             </div>
@@ -705,14 +660,12 @@ export default function TrainingLandingPage({
 
           {/* Live Fix callout */}
           <div className="reveal callout-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"18px" }}>
-            <div style={{ background:"rgba(244,124,76,.07)", border:"1px solid rgba(244,124,76,.2)", borderRadius:"20px", padding:"24px" }}>
-              <div style={{ fontFamily:syne, fontWeight:700, fontSize:"1rem", color:S.orange, marginBottom:"8px" }}>🔥 Live Fix — every session</div>
-              <div style={{ color:S.muted, fontSize:".88rem", lineHeight:1.65 }}>One volunteer. Real problem. Fixed live with AI. Unscripted. Every session ends with a live demonstration on a real challenge from inside the room.</div>
-            </div>
-            <div style={{ background:"rgba(34,81,163,.1)", border:"1px solid rgba(34,81,163,.25)", borderRadius:"20px", padding:"24px" }}>
-              <div style={{ fontFamily:syne, fontWeight:700, fontSize:"1rem", color:"#60A5FA", marginBottom:"8px" }}>💬 Mid-Week Check-In</div>
-              <div style={{ color:S.muted, fontSize:".88rem", lineHeight:1.65 }}>A prompt, tip, or challenge dropped in the cohort group between sessions to keep your momentum alive between weekends.</div>
-            </div>
+            {C.whatsIncluded.callouts.map((c,i)=>(
+              <div key={i} style={{ background:`${c.color}14`, border:`1px solid ${c.color}40`, borderRadius:"20px", padding:"24px" }}>
+                <div style={{ fontFamily:syne, fontWeight:700, fontSize:"1rem", color:c.color, marginBottom:"8px" }}>{c.title}</div>
+                <div style={{ color:S.muted, fontSize:".88rem", lineHeight:1.65 }}>{c.body}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -721,16 +674,16 @@ export default function TrainingLandingPage({
       <section id="register" style={{ padding: "80px 24px" }}>
         <div style={{ maxWidth: "660px", margin: "0 auto" }} className="reveal">
           <div style={{ textAlign:"center", marginBottom:"40px" }}>
-            <div style={{ fontFamily:dm, fontSize:".75rem", color:S.orange, letterSpacing:".18em", textTransform:"uppercase", marginBottom:"12px" }}>Registration</div>
-            <h2 style={{ fontFamily:syne, fontWeight:800, fontSize:"clamp(1.8rem,3vw,2.4rem)", marginBottom:"14px" }}>Reserve your spot.</h2>
-            <p style={{ color:S.muted, fontSize:".9rem", lineHeight:1.7, maxWidth:"480px", margin:"0 auto" }}>Training starts June 20, 2026. Fill in your details — confirmation and all session details sent within 24hrs. Limited seats per cohort — first come, first served.</p>
+            <div style={{ fontFamily:dm, fontSize:".75rem", color:S.orange, letterSpacing:".18em", textTransform:"uppercase", marginBottom:"12px" }}>{C.registration.eyebrow}</div>
+            <h2 style={{ fontFamily:syne, fontWeight:800, fontSize:"clamp(1.8rem,3vw,2.4rem)", marginBottom:"14px" }}>{C.registration.heading}</h2>
+            <p style={{ color:S.muted, fontSize:".9rem", lineHeight:1.7, maxWidth:"480px", margin:"0 auto" }}>{C.registration.subtitle}</p>
           </div>
 
           {formStatus === "success" ? (
             <div style={{ background:"rgba(74,222,128,.08)", border:"1px solid rgba(74,222,128,.25)", borderRadius:"20px", padding:"48px 32px", textAlign:"center" }}>
               <div style={{ fontSize:"3rem", marginBottom:"16px" }}>🎉</div>
-              <div style={{ fontFamily:syne, fontWeight:800, fontSize:"1.5rem", marginBottom:"12px" }}>You&apos;re registered!</div>
-              <div style={{ color:S.muted, fontSize:".92rem", lineHeight:1.7, marginBottom:"20px" }}>Check your email within 24hrs for confirmation and all session information. Welcome to Cohort 1.</div>
+              <div style={{ fontFamily:syne, fontWeight:800, fontSize:"1.5rem", marginBottom:"12px" }}>{C.registration.successHeading}</div>
+              <div style={{ color:S.muted, fontSize:".92rem", lineHeight:1.7, marginBottom:"20px" }}>{C.registration.successBody}</div>
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
@@ -763,14 +716,8 @@ export default function TrainingLandingPage({
                 <select value={formData.goal} onChange={e=>field("goal",e.target.value)}
                   style={{ width:"100%", background:S.dark, border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color: formData.goal ? "#fff" : S.muted, fontSize:".9rem", marginBottom:"16px" }}
                 >
-                  <option value="" disabled>What do you most want to achieve with AI?</option>
-                  <option>Save time and automate repetitive tasks</option>
-                  <option>Create a new income stream using AI</option>
-                  <option>Improve my business operations</option>
-                  <option>Level up my skills for my career</option>
-                  <option>Build my first AI-powered product</option>
-                  <option>Stay current with AI trends and tools</option>
-                  <option>Other</option>
+                  <option value="" disabled>{C.registration.goalPlaceholder}</option>
+                  {C.registration.goalOptions.map((g,i)=>(<option key={i}>{g}</option>))}
                 </select>
 
                 {/* Referral */}
@@ -812,7 +759,7 @@ export default function TrainingLandingPage({
                       <span style={{ width:"18px", height:"18px", border:"2.5px solid rgba(0,0,0,.3)", borderTopColor:"#131A1B", borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite" }}/>
                       Processing…
                     </span>
-                  ) : `Complete Registration${isFree ? "" : ` — ${priceDisplay}`}`}
+                  ) : applyPrice(isFree ? C.registration.submitFree : C.registration.submitPaid, priceDisplay)}
                 </button>
 
                 {formStatus==="error" && (
@@ -820,7 +767,7 @@ export default function TrainingLandingPage({
                 )}
 
                 <div style={{ textAlign:"center", marginTop:"18px", color:S.muted, fontSize:".78rem" }}>
-                  🔒 Secure registration · Confirmation sent within a few minutes · arfa_edu@tiblogics.com
+                  {C.registration.secureNote}
                 </div>
               </div>
             </form>
@@ -832,26 +779,11 @@ export default function TrainingLandingPage({
       <section style={{ padding: "80px 24px", background: S.dark }}>
         <div style={{ maxWidth: "700px", margin: "0 auto" }}>
           <div className="reveal" style={{ textAlign:"center", marginBottom:"48px" }}>
-            <div style={{ fontFamily:dm, fontSize:".75rem", color:S.orange, letterSpacing:".18em", textTransform:"uppercase", marginBottom:"12px" }}>FAQ</div>
-            <h2 style={{ fontFamily:syne, fontWeight:800, fontSize:"clamp(1.6rem,3vw,2.2rem)" }}>Common questions.</h2>
+            <div style={{ fontFamily:dm, fontSize:".75rem", color:S.orange, letterSpacing:".18em", textTransform:"uppercase", marginBottom:"12px" }}>{C.faq.eyebrow}</div>
+            <h2 style={{ fontFamily:syne, fontWeight:800, fontSize:"clamp(1.6rem,3vw,2.2rem)" }}>{C.faq.heading}</h2>
           </div>
           <div className="reveal">
-            {[
-              { q:"Do I need any prior AI or tech experience?",
-                a:"No. This training is designed for people who are curious about AI but haven't yet used it consistently or confidently. You don't need to know how to code, understand machine learning, or have used any AI tool before. We start from the very beginning in Session 1." },
-              { q:"What do I need to prepare before Session 1?",
-                a:"Create a free Claude account at claude.ai (paid plan recommended — ChatGPT and other AI tools are also welcome). Have Zoom installed. That's it. We'll set up everything else together in the sessions. A laptop or tablet is recommended — phones can work for some activities but aren't ideal for the labs." },
-              { q:"What if I miss a session?",
-                a:"All sessions are recorded and the recordings are shared within 24 hours of each session. You won't fall behind. That said, the live sessions are where the real value is — the Live Fix demos, the hands-on labs, and the real-time Q&A are things the recording can't fully replicate." },
-              { q:"Is the $649 all-inclusive?",
-                a:"Yes. The $649 covers everything: all 4 live sessions, all handouts, the TIBLOGICS AI Playbook, session recordings, the cohort WhatsApp group, mid-week check-ins, 2 weeks of post-training support, and your numbered certificate including the graduation ceremony." },
-              { q:"What is vibe coding — do I need to know how to code?",
-                a:"No coding knowledge required. Vibe coding is a new way of building software where you describe what you want in plain English and AI writes the code for you. In Session 4, we'll introduce the concept and walk you through building a simple working tool using only natural language — covering the full flow from idea to a finished, working result, the way a software engineer would. You don't need to understand a single line of code; everything is taught live, step by step." },
-              { q:"What happens after the 4 sessions?",
-                a:"After Session 4, you have 2 weeks of post-training support — ask questions in the WhatsApp group and get responses from the training team. The graduation and certificate ceremony is held separately (date announced after Session 4). Your session recordings are yours for lifetime access." },
-              { q:"Can I get a refund?",
-                a:"Refund requests made more than 72 hours before the first session (June 20, 2026) will be honored in full. Requests made within 72 hours of the start date are not eligible for a refund but can be transferred to a future cohort. No refunds after Session 1." },
-            ].map((f,i)=>(
+            {C.faq.items.map((f,i)=>(
               <div key={i} className={`faq-item${faqOpen===i?" open":""}`} onClick={()=>setFaqOpen(faqOpen===i?null:i)}>
                 <div className="faq-q">
                   <span style={{ fontFamily:syne, fontWeight:600, fontSize:".95rem", color:"#E8F0F4", lineHeight:1.5 }}>{f.q}</span>
@@ -873,18 +805,18 @@ export default function TrainingLandingPage({
         <div style={{ maxWidth:"1000px", margin:"0 auto" }}>
           <div className="footer-inner" style={{ display:"flex", flexWrap:"wrap", alignItems:"center", justifyContent:"space-between", gap:"24px", marginBottom:"32px" }}>
             <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
-              <div style={{ fontFamily:syne, fontWeight:800, fontSize:"1.2rem", letterSpacing:".06em" }}>TIBLOGICS</div>
-              <div style={{ fontSize:".75rem", color:S.muted }}>Education Center</div>
+              <div style={{ fontFamily:syne, fontWeight:800, fontSize:"1.2rem", letterSpacing:".06em" }}>{C.footer.brand}</div>
+              <div style={{ fontSize:".75rem", color:S.muted }}>{C.footer.tagline}</div>
             </div>
             <div className="footer-links" style={{ display:"flex", flexWrap:"wrap", gap:"24px" }}>
-              <a href="mailto:arfa_edu@tiblogics.com" style={{ color:S.muted, fontSize:".85rem", textDecoration:"none" }}>arfa_edu@tiblogics.com</a>
-              <a href="https://www.tiblogics.com" target="_blank" rel="noopener noreferrer" style={{ color:S.muted, fontSize:".85rem", textDecoration:"none" }}>tiblogics.com</a>
+              <a href={`mailto:${C.footer.email}`} style={{ color:S.muted, fontSize:".85rem", textDecoration:"none" }}>{C.footer.email}</a>
+              <a href={`https://www.${C.footer.website.replace(/^https?:\/\/(www\.)?/, "")}`} target="_blank" rel="noopener noreferrer" style={{ color:S.muted, fontSize:".85rem", textDecoration:"none" }}>{C.footer.website}</a>
               <a href="#register" style={{ color:S.orange, fontSize:".85rem", textDecoration:"none", fontWeight:600 }}>Register</a>
               <a href="#curriculum" style={{ color:S.muted, fontSize:".85rem", textDecoration:"none" }}>Curriculum</a>
             </div>
           </div>
           <div style={{ borderTop:`1px solid ${S.border}`, paddingTop:"24px", textAlign:"center", color:S.muted, fontSize:".78rem" }}>
-            © 2026 TIBLOGICS · TILO GROUP, LLC · Maryland, USA · All rights reserved
+            {C.footer.copyright}
           </div>
         </div>
       </footer>
