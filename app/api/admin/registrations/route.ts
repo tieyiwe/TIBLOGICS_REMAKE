@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
       currency: true,
       status: true,
       notes: true,
+      confirmationNumber: true,
     },
   });
 

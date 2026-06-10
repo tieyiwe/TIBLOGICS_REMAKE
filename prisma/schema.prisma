@@ -512,22 +512,23 @@ model Event {
 }
 
 model EventRegistration {
-  id            String   @id @default(cuid())
-  createdAt     DateTime @default(now())
-  eventSlug     String
-  eventName     String
-  firstName     String
-  lastName      String
-  email         String
-  whatsapp      String?
-  role          String?
-  goal          String?
-  referral      String?
-  paymentMethod String
-  price         Int      @default(0)
-  currency      String   @default("USD")
-  status        String   @default("pending")
-  notes         String?
+  id                 String   @id @default(cuid())
+  createdAt          DateTime @default(now())
+  eventSlug          String
+  eventName          String
+  firstName          String
+  lastName           String
+  email              String
+  whatsapp           String?
+  role               String?
+  goal               String?
+  referral           String?
+  paymentMethod      String
+  price              Int      @default(0)
+  currency           String   @default("USD")
+  status             String   @default("pending")
+  notes              String?
+  confirmationNumber String?  @unique
 
   @@index([eventSlug])
   @@index([email])

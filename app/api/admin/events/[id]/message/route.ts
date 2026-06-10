@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { default as mailer } from "@/lib/resend";
+import { arfaMailer as mailer } from "@/lib/resend";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         ${body.replace(/\n/g, "<br/>")}
         <p style="color:#7A8FA6;font-size:13px;margin-top:32px;border-top:1px solid #eee;padding-top:16px;">
           This message was sent to ${event.title} participants by TIBLOGICS.<br/>
-          Questions? Reply to this email or write to design@tiblogics.com
+          Questions? Reply to this email or write to arfa_edu@tiblogics.com
         </p>
       </div>
     </div>`;

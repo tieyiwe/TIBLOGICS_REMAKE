@@ -815,11 +815,11 @@ export default function TrainingLandingPage({
                 </button>
 
                 {formStatus==="error" && (
-                  <p style={{ color:"#F87171", fontSize:".83rem", textAlign:"center", marginTop:"12px" }}>Something went wrong. Please try again or email design@tiblogics.com</p>
+                  <p style={{ color:"#F87171", fontSize:".83rem", textAlign:"center", marginTop:"12px" }}>Something went wrong. Please try again or email arfa_edu@tiblogics.com</p>
                 )}
 
                 <div style={{ textAlign:"center", marginTop:"18px", color:S.muted, fontSize:".78rem" }}>
-                  🔒 Secure registration · Confirmation sent within 24hrs · design@tiblogics.com
+                  🔒 Secure registration · Confirmation sent within 24hrs · arfa_edu@tiblogics.com
                 </div>
               </div>
             </form>
@@ -876,7 +876,7 @@ export default function TrainingLandingPage({
               <div style={{ fontSize:".75rem", color:S.muted }}>Education Center</div>
             </div>
             <div className="footer-links" style={{ display:"flex", flexWrap:"wrap", gap:"24px" }}>
-              <a href="mailto:design@tiblogics.com" style={{ color:S.muted, fontSize:".85rem", textDecoration:"none" }}>design@tiblogics.com</a>
+              <a href="mailto:arfa_edu@tiblogics.com" style={{ color:S.muted, fontSize:".85rem", textDecoration:"none" }}>arfa_edu@tiblogics.com</a>
               <a href="https://www.tiblogics.com" target="_blank" rel="noopener noreferrer" style={{ color:S.muted, fontSize:".85rem", textDecoration:"none" }}>tiblogics.com</a>
               <a href="#register" style={{ color:S.orange, fontSize:".85rem", textDecoration:"none", fontWeight:600 }}>Register</a>
               <a href="#curriculum" style={{ color:S.muted, fontSize:".85rem", textDecoration:"none" }}>Curriculum</a>

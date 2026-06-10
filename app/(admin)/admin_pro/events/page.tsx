@@ -27,6 +27,7 @@ interface Registration {
   referral?: string | null; paymentMethod: string; price: number;
   currency: string; status: string; notes?: string | null;
   createdAt: string; eventName: string; eventSlug: string;
+  confirmationNumber?: string | null;
 }
 
 interface RegCountItem { eventSlug: string; status: string; _count: { id: number } }
@@ -593,7 +594,7 @@ export default function AdminEventsPage() {
                               <table className="w-full text-sm">
                                 <thead>
                                   <tr className="border-b border-[#D2DCE8]">
-                                    {["Name", "Email", "WhatsApp", "Payment", "Status", "Date", ""].map(h => (
+                                    {["Name", "Confirm #", "Email", "WhatsApp", "Payment", "Status", "Date", ""].map(h => (
                                       <th key={h} className="text-left font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider px-4 py-2">{h}</th>
                                     ))}
                                   </tr>
@@ -602,6 +603,11 @@ export default function AdminEventsPage() {
                                   {regs.map(r => (
                                     <tr key={r.id} className="hover:bg-white transition-colors">
                                       <td className="px-4 py-2.5 font-dm text-sm font-medium text-[#0D1B2A]">{r.firstName} {r.lastName}</td>
+                                      <td className="px-4 py-2.5">
+                                        {r.confirmationNumber ? (
+                                          <span className="font-mono text-xs font-semibold text-[#2251A3] bg-[#EBF0FA] px-2 py-0.5 rounded-full whitespace-nowrap">{r.confirmationNumber}</span>
+                                        ) : <span className="text-[#D2DCE8] text-xs">—</span>}
+                                      </td>
                                       <td className="px-4 py-2.5">
                                         <a href={`mailto:${r.email}`} className="font-dm text-xs text-[#2251A3] hover:underline flex items-center gap-1">
                                           <Mail size={11} />{r.email}
@@ -720,7 +726,7 @@ export default function AdminEventsPage() {
                           className="rounded border-[#D2DCE8]"
                         />
                       </th>
-                      {["Name", "Contact", "Event", "Payment", "Status", "Date", ""].map(h => (
+                      {["Name", "Confirmation #", "Contact", "Event", "Payment", "Status", "Date", ""].map(h => (
                         <th key={h} className="text-left font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider px-4 py-3">{h}</th>
                       ))}
                     </tr>
@@ -743,6 +749,13 @@ export default function AdminEventsPage() {
                         <td className="px-4 py-3">
                           <p className="font-dm text-sm font-semibold text-[#0D1B2A]">{r.firstName} {r.lastName}</p>
                           {r.role && <p className="font-dm text-xs text-[#7A8FA6] mt-0.5">{r.role}</p>}
+                        </td>
+                        <td className="px-4 py-3">
+                          {r.confirmationNumber ? (
+                            <span className="font-mono text-xs font-semibold text-[#2251A3] bg-[#EBF0FA] px-2 py-0.5 rounded-full whitespace-nowrap">{r.confirmationNumber}</span>
+                          ) : (
+                            <span className="font-dm text-xs text-[#D2DCE8]">—</span>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <a href={`mailto:${r.email}`} onClick={e => e.stopPropagation()} className="font-dm text-xs text-[#2251A3] hover:underline flex items-center gap-1 mb-0.5">
@@ -1088,6 +1101,12 @@ export default function AdminEventsPage() {
               <div>
                 <h3 className="font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider mb-3">Registration Details</h3>
                 <div className="bg-[#F4F7FB] rounded-xl p-4 flex flex-col gap-2.5">
+                  {selectedReg.confirmationNumber && (
+                    <div className="flex justify-between items-center gap-2 pb-2 border-b border-[#D2DCE8]">
+                      <span className="font-dm text-xs text-[#7A8FA6]">Confirmation #</span>
+                      <span className="font-mono text-xs font-bold text-[#2251A3] bg-[#EBF0FA] px-2.5 py-1 rounded-full">{selectedReg.confirmationNumber}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-start gap-2">
                     <span className="font-dm text-xs text-[#7A8FA6]">Event</span>
                     <span className="font-dm text-xs font-semibold text-[#0D1B2A] text-right max-w-[60%]">{selectedReg.eventName}</span>
