@@ -27,6 +27,7 @@ import {
   Mail,
   Briefcase,
   Sparkles,
+  ExternalLink,
 } from "lucide-react";
 
 interface NavSubItem {
@@ -218,9 +219,14 @@ export default function AdminSidebar() {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-white/10">
-        <div className="flex items-center">
+        <Link
+          href="/"
+          onClick={() => setMobileOpen(false)}
+          className="flex items-center transition-opacity hover:opacity-80"
+          aria-label="Go to TIBLOGICS home"
+        >
           <Image src="/footer-logo-transparent.png" alt="TIBLOGICS" width={220} height={112} className="h-28 w-auto max-w-[220px]" />
-        </div>
+        </Link>
         {!isAdmin && session?.user && (
           <div className="mt-2 px-1">
             <p className="text-white/60 text-xs font-dm truncate">{session.user.name}</p>
@@ -254,13 +260,14 @@ export default function AdminSidebar() {
       </nav>
 
       {/* Bottom */}
-      <div className="border-t border-white/10 p-3 space-y-1">
+      <div className="border-t border-white/10 p-3 space-y-2">
         <Link
           href="/"
-          target="_blank"
-          className="flex items-center gap-2 px-3 py-2 text-sm text-white/50 hover:text-white transition-colors rounded-lg hover:bg-white/10"
+          onClick={() => setMobileOpen(false)}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-dm font-semibold text-white bg-[#F47C20] hover:bg-[#e06d15] transition-colors rounded-lg cursor-pointer"
         >
-          ← Back to Site
+          <ExternalLink size={16} />
+          View Website
         </Link>
         <button
           onClick={() => signOut({ callbackUrl: "/admin_pro/login" })}
