@@ -487,7 +487,7 @@ export default function TrainingLandingPage({
               { icon:"🤖", t:"Your personal AI blueprint", d:"A powerful configuration that changes everything." },
               { icon:"💰", t:"Turn AI skills into income", d:"5 income models. Your offer written, priced, and ready to send." },
               { icon:"⚡", t:"AI agents that work while you sleep", d:"Set it up once. Runs on its own. No code." },
-              { icon:"🔍", t:"Your full AI power stack", d:"The two tools that handle anything you throw at them." },
+              { icon:"🔍", t:"Your full AI power stack", d:"The tools that handle anything you throw at them." },
               { icon:"💻", t:"Intro to vibe coding", d:"Describe it. AI builds it. No code required." },
               { icon:"🏅", t:"Official certificate of completion", d:"Numbered. LinkedIn-ready. Earned live on Zoom." },
             ].map((o, i) => (
