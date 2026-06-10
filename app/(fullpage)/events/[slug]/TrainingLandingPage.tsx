@@ -548,7 +548,7 @@ export default function TrainingLandingPage({
                   ["Session 1","June 20, 2026","AI Foundations","First prompt · Comparison test · Use case finder · Comet intro"],
                   ["Session 2","June 27, 2026","AI in Your Daily Work","Writing sprint · AI blueprint · Time audit"],
                   ["Session 3","July 4, 2026","Build Income with AI","5 income models · Offer design · Marketing asset build"],
-                  ["Session 4","July 11, 2026","AI Agents, Automation & Vibe Coding","Make.com AI agent · Automation build · Intro to vibe coding"],
+                  ["Session 4","July 11, 2026","AI Agents, Automation & Vibe Coding","AI agent build · Automation build · Intro to vibe coding"],
                   ["Bonus","TBA","Certificate & Graduation Ceremony","Certificate presentation · Wins spotlight · Cohort photo"],
                 ].map((row,i)=>(
                   <tr key={i} style={{ borderBottom:`1px solid ${S.border}` }}>
@@ -642,7 +642,7 @@ export default function TrainingLandingPage({
               {[
                 { icon:"🧠", t:"Claude preferred", s:"1 month ~$20 recommended" },
                 { icon:"📹", t:"Zoom account", s:"Free tier sufficient" },
-                { icon:"⚙️", t:"Make.com account", s:"Free tier covers labs" },
+                { icon:"⚙️", t:"Automation account", s:"Free tier covers labs · shared at training" },
                 { icon:"💻", t:"Laptop or tablet", s:"Recommended" },
               ].map((r,i)=>(
                 <div key={i} style={{ background: S.card, border:`1px solid ${S.border}`, borderRadius:"14px", padding:"14px" }}>
@@ -685,7 +685,7 @@ export default function TrainingLandingPage({
           <div className="reveal" style={{ marginBottom:"32px" }}>
             <div style={{ fontFamily:dm, fontSize:".75rem", color:S.muted, letterSpacing:".12em", textTransform:"uppercase", textAlign:"center", marginBottom:"16px" }}>Tools you'll use across the training</div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:"10px", justifyContent:"center" }}>
-              {["Claude","ChatGPT","Comet by Perplexity","Make.com","Canva AI","Google Forms + Sheets","Notion AI","Bland AI (demo)","Gmail automation","Gumroad","Claude Code (vibe coding intro)"].map((t,i)=>(
+              {["Claude","ChatGPT","Comet by Perplexity","Automation platform","Canva AI","Google Forms + Sheets","Notion AI","Bland AI (demo)","Gmail automation","Gumroad","Claude Code (vibe coding intro)"].map((t,i)=>(
                 <span key={i} style={{ background:"rgba(255,255,255,.06)", border:`1px solid ${S.border}`, borderRadius:"30px", padding:"7px 16px", fontSize:".8rem", color:"#C8D8E0" }}>{t}</span>
               ))}
             </div>
