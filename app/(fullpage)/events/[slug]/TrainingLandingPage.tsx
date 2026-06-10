@@ -515,7 +515,7 @@ export default function TrainingLandingPage({
           <div className="sessions-grid reveal" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "18px", marginBottom: "56px" }}>
             {[
               { num:"S1", date:"June 20", title:"AI Foundations", desc:"Hands-on from minute one. You use AI before the session ends.", badge:"Beginner-friendly", color:"#2251A3" },
-              { num:"S2", date:"June 27", title:"AI in Your Work", desc:"Configure AI to know you completely. Save hours every week.", badge:"Hands-on lab", color:"#F9A738" },
+              { num:"S2", date:"June 27", title:"AI in Your Work", desc:"Configure AI to empower your personal life and career.", badge:"Hands-on lab", color:"#F9A738" },
               { num:"S3", date:"July 4", title:"Build Income with AI", desc:"Pick your income model, write your offer, build something you can send today.", badge:"Revenue focused", color:"#22A387" },
               { num:"S4", date:"July 11", title:"Agents, Automation & Vibe Coding", desc:"Build AI agents, automate your workflow, and vibe code your first real tool — using only words.", badge:"Advanced build", color:"#8B5CF6" },
               { num:"S5", date:"TBA", title:"Certificate Ceremony", desc:"Date announced after Session 4. Certificate presentation, wins spotlight & cohort graduation.", badge:"🎓 Bonus · TBA", color:"#1B3A6B" },
