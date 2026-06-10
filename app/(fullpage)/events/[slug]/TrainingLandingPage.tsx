@@ -850,7 +850,7 @@ export default function TrainingLandingPage({
               { q:"Do I need any prior AI or tech experience?",
                 a:"No. This training is designed for people who are curious about AI but haven't yet used it consistently or confidently. You don't need to know how to code, understand machine learning, or have used any AI tool before. We start from the very beginning in Session 1." },
               { q:"What do I need to prepare before Session 1?",
-                a:"Create a free Claude account at claude.ai (upgrading to the paid plan for ~$20/month is recommended but not mandatory). Have Zoom installed. That's it. We'll set up everything else together in the sessions. A laptop or tablet is recommended — phones can work for some activities but aren't ideal for the labs." },
+                a:"Create a free Claude account at claude.ai (paid plan recommended — ChatGPT and other AI tools are also welcome). Have Zoom installed. That's it. We'll set up everything else together in the sessions. A laptop or tablet is recommended — phones can work for some activities but aren't ideal for the labs." },
               { q:"What if I miss a session?",
                 a:"All sessions are recorded and the recordings are shared within 24 hours of each session. You won't fall behind. That said, the live sessions are where the real value is — the Live Fix demos, the hands-on labs, and the real-time Q&A are things the recording can't fully replicate." },
               { q:"Is the $649 all-inclusive?",
