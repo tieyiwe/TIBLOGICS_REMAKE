@@ -640,10 +640,10 @@ export default function TrainingLandingPage({
             <div style={{ fontFamily: dm, fontSize: ".78rem", color: S.muted, letterSpacing: ".1em", textTransform: "uppercase", textAlign: "center", marginBottom: "16px" }}>What you need</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
               {[
-                { icon:"🧠", t:"Claude preferred", s:"1 month ~$20 recommended" },
+                { icon:"🧠", t:"Claude preferred", s:"ChatGPT & others also welcome" },
                 { icon:"📹", t:"Zoom account", s:"Free tier sufficient" },
                 { icon:"⚙️", t:"Automation account", s:"Free tier covers labs · shared at training" },
-                { icon:"💻", t:"Laptop or tablet", s:"Recommended" },
+                { icon:"💻", t:"Laptop or tablet", s:"Recommended · stable internet" },
               ].map((r,i)=>(
                 <div key={i} style={{ background: S.card, border:`1px solid ${S.border}`, borderRadius:"14px", padding:"14px" }}>
                   <div style={{ fontSize:"1.3rem", marginBottom:"6px" }}>{r.icon}</div>
