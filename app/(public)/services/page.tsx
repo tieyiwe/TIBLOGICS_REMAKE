@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { Bot, Zap, Brain, Globe, Shield, BarChart3, Smartphone, GraduationCap, Cpu, ArrowRight } from "lucide-react";
 import SmartRecommendations from "@/components/public/SmartRecommendations";
+import VideoEmbed from "@/components/video/VideoEmbed";
 import { trackPageVisit } from "@/lib/recommendations";
 
 const services = [
@@ -42,6 +43,15 @@ export default function ServicesPage() {
             </Link>
           </div>
         </div>
+      </div>
+
+      {/* Video Showcase */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center mb-6">
+          <span className="section-tag">See It in Action</span>
+          <h2 className="font-syne font-bold text-xl text-[#0D1B2A] mt-2">What We Do</h2>
+        </div>
+        <VideoEmbed />
       </div>
 
       {/* Services grid */}
