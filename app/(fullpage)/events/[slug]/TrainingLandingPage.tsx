@@ -563,7 +563,7 @@ export default function TrainingLandingPage({
 
           {/* Schedule pills */}
           <div className="reveal" style={{ marginTop: "28px", display: "flex", flexWrap: "wrap", gap: "10px" }}>
-            {["Every Saturday · 9:30AM–1PM · incl. breaks","Open to all timezones","Recordings shared within 24hrs","Mid-week check-ins every Wednesday"].map((p,i)=>(
+            {["Every Saturday · 9:30AM–1PM · incl. breaks","Open to all timezones","Recordings shared within 24hrs","Mid-week check-ins"].map((p,i)=>(
               <span key={i} style={{ background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"20px", padding:"6px 14px", fontSize:".78rem", color:S.muted }}>{p}</span>
             ))}
           </div>
@@ -605,12 +605,12 @@ export default function TrainingLandingPage({
                 "4 live Zoom sessions (3hrs each · Saturdays 9:30AM–1PM)",
                 "All session handouts & lab worksheets",
                 "TIBLOGICS AI Playbook (100+ ready-to-use AI scripts)",
-                "Your personal AI identity blueprint",
+                "Your personal AI blueprint",
                 "Intro to vibe coding — build real tools with AI, no code needed",
                 "Session recordings (lifetime access)",
                 "Cohort WhatsApp community",
-                "Mid-week check-ins & tips every Wednesday",
-                "30-day post-training support",
+                "Mid-week check-ins & tips",
+                "2-week post-training support",
                 "Numbered certificate + LinkedIn instructions",
                 "Certificate & graduation ceremony (date TBA)",
               ].map((item, i) => (
@@ -667,7 +667,7 @@ export default function TrainingLandingPage({
           <div className="includes-grid reveal" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:"18px", marginBottom:"40px" }}>
             {[
               { t:"TIBLOGICS AI Playbook", s:"100+ Ready-to-Use AI Scripts", d:"Organised by use case — sales, writing, operations, marketing, and more. Ready on day one.", color:"#2251A3" },
-              { t:"Your AI Identity Blueprint", s:"Personalised AI configuration", d:"Set it up in Session 2. Every AI response will feel made for you from that moment on.", color:"#22A387" },
+              { t:"Your AI Blueprint", s:"Personalised AI configuration", d:"Set it up in Session 2. Every AI response will feel made for you from that moment on.", color:"#22A387" },
               { t:"4 Session Handouts + Labs", s:"Worksheets for every session", d:"Step-by-step lab sheets you work through live. Yours to keep and revisit anytime.", color:"#F9A738" },
               { t:"2 Live-Built AI Automations", s:"Working automations from Session 4", d:"You'll build them yourself in the session. Not demos — actual automations you can use.", color:"#8B5CF6" },
               { t:"Your First AI Income Offer", s:"Built and written in Session 3", d:"You'll leave Session 3 with an offer that's ready to send. Not theory. A real offer.", color:"#F47C4C" },
@@ -698,8 +698,8 @@ export default function TrainingLandingPage({
               <div style={{ color:S.muted, fontSize:".88rem", lineHeight:1.65 }}>One volunteer. Real problem. Fixed live with AI. Unscripted. Every session ends with a live demonstration on a real challenge from inside the room.</div>
             </div>
             <div style={{ background:"rgba(34,81,163,.1)", border:"1px solid rgba(34,81,163,.25)", borderRadius:"20px", padding:"24px" }}>
-              <div style={{ fontFamily:syne, fontWeight:700, fontSize:"1rem", color:"#60A5FA", marginBottom:"8px" }}>💬 Mid-Week Check-In — every Wednesday</div>
-              <div style={{ color:S.muted, fontSize:".88rem", lineHeight:1.65 }}>A prompt, tip, or challenge dropped in the cohort group every Wednesday between sessions to keep your momentum alive between weekends.</div>
+              <div style={{ fontFamily:syne, fontWeight:700, fontSize:"1rem", color:"#60A5FA", marginBottom:"8px" }}>💬 Mid-Week Check-In</div>
+              <div style={{ color:S.muted, fontSize:".88rem", lineHeight:1.65 }}>A prompt, tip, or challenge dropped in the cohort group between sessions to keep your momentum alive between weekends.</div>
             </div>
           </div>
         </div>
@@ -854,11 +854,11 @@ export default function TrainingLandingPage({
               { q:"What if I miss a session?",
                 a:"All sessions are recorded and the recordings are shared within 24 hours of each session. You won't fall behind. That said, the live sessions are where the real value is — the Live Fix demos, the hands-on labs, and the real-time Q&A are things the recording can't fully replicate." },
               { q:"Is the $649 all-inclusive?",
-                a:"Yes. The $649 covers everything: all 4 live sessions, all handouts, the TIBLOGICS AI Playbook, session recordings, the cohort WhatsApp group, Wednesday mid-week check-ins, 30 days of post-training support, and your numbered certificate including the graduation ceremony." },
+                a:"Yes. The $649 covers everything: all 4 live sessions, all handouts, the TIBLOGICS AI Playbook, session recordings, the cohort WhatsApp group, mid-week check-ins, 2 weeks of post-training support, and your numbered certificate including the graduation ceremony." },
               { q:"What is vibe coding — do I need to know how to code?",
                 a:"No coding knowledge required. Vibe coding is a new way of building software where you describe what you want in plain English and AI writes the code for you. In Session 4, we'll introduce the concept and walk you through building a simple working tool using only natural language — covering the full flow from idea to a finished, working result, the way a software engineer would. You don't need to understand a single line of code; everything is taught live, step by step." },
               { q:"What happens after the 4 sessions?",
-                a:"After Session 4, you have 30 days of post-training support — ask questions in the WhatsApp group and get responses from the training team. The graduation and certificate ceremony is held separately (date announced after Session 4). Your session recordings are yours for lifetime access." },
+                a:"After Session 4, you have 2 weeks of post-training support — ask questions in the WhatsApp group and get responses from the training team. The graduation and certificate ceremony is held separately (date announced after Session 4). Your session recordings are yours for lifetime access." },
               { q:"Can I get a refund?",
                 a:"Refund requests made more than 72 hours before the first session (June 20, 2026) will be honored in full. Requests made within 72 hours of the start date are not eligible for a refund but can be transferred to a future cohort. No refunds after Session 1." },
             ].map((f,i)=>(
