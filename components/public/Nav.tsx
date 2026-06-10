@@ -53,7 +53,7 @@ export default function Nav() {
         <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-10">
           <div className="flex items-center justify-between min-h-[7.5rem] sm:min-h-[10.5rem] py-0 sm:py-2">
             <Link href="/" className="flex items-center flex-shrink-0">
-              <Image src="/logo.svg" alt="TIBLOGICS" width={200} height={168} className="h-[7.5rem] sm:h-[10.5rem] w-auto" priority />
+              <Image src="/logo.png" alt="TIBLOGICS" width={200} height={168} className="h-[7.5rem] sm:h-[10.5rem] w-auto" priority />
             </Link>
 
             {/* Desktop Nav */}
