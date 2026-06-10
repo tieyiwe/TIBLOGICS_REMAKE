@@ -24,15 +24,19 @@ export async function GET() {
     console.error("[admin/events] ensure training event", err);
   }
 
-  const [events, regCounts] = await Promise.all([
-    prisma.event.findMany({ orderBy: { createdAt: "desc" } }),
-    prisma.eventRegistration.groupBy({
-      by: ["eventSlug", "status"],
-      _count: { id: true },
-    }),
-  ]);
-
-  return NextResponse.json({ events, regCounts });
+  try {
+    const [events, regCounts] = await Promise.all([
+      prisma.event.findMany({ orderBy: { createdAt: "desc" } }),
+      prisma.eventRegistration.groupBy({
+        by: ["eventSlug", "status"],
+        _count: { id: true },
+      }),
+    ]);
+    return NextResponse.json({ events, regCounts });
+  } catch (err) {
+    console.error("[admin/events GET]", err);
+    return NextResponse.json({ error: "Database error — run: npx prisma db push", events: [], regCounts: [] }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {
