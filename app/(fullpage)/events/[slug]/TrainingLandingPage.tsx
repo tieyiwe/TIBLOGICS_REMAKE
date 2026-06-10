@@ -610,7 +610,7 @@ export default function TrainingLandingPage({
                 "Session recordings (lifetime access)",
                 "Cohort WhatsApp community",
                 "Mid-week check-ins & tips",
-                "2-week post-training support",
+                "2-weeks post-training support",
                 "Numbered certificate + LinkedIn instructions",
                 "Certificate & graduation ceremony (date TBA)",
               ].map((item, i) => (
