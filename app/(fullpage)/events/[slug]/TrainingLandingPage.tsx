@@ -272,10 +272,11 @@ export default function TrainingLandingPage({
   const priceDisplay = price === 0 ? "Free" : `$${(price / 100).toFixed(0)} ${currency}`;
   const isFree = price === 0;
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
-  const [activePayment, setActivePayment] = useState("paypal");
+  const [activePayment, setActivePayment] = useState("card");
+  const [formStep, setFormStep] = useState<1 | 2>(1);
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", email: "", whatsapp: "",
-    role: "", goal: "", referral: "",
+    role: "", goal: "",
   });
   const [formStatus, setFormStatus] = useState<"idle"|"loading"|"success"|"error">("idle");
   const [toastMsg, setToastMsg] = useState("");
@@ -299,6 +300,13 @@ export default function TrainingLandingPage({
   const field = (k: keyof typeof formData, v: string) =>
     setFormData(f => ({ ...f, [k]: v }));
 
+  function handleStep1(e: React.FormEvent) {
+    e.preventDefault();
+    setFormStep(2);
+    // Scroll to form so the payment step is visible
+    setTimeout(() => document.getElementById("register")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormStatus("loading");
@@ -311,30 +319,24 @@ export default function TrainingLandingPage({
           paymentMethod: activePayment,
           event: eventTitle,
           eventSlug,
-          price: price / 100,   // prop is cents; API expects dollars then multiplies ×100
+          price: price / 100,
           currency,
         }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        // Redirect to Stripe Checkout for card/paypal
-        if (activePayment === "paypal" || activePayment === "card") {
-          const checkoutRes = await fetch("/api/events/checkout", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ registrationId: data.id }),
-          });
-          if (checkoutRes.ok) {
-            const { checkoutUrl } = await checkoutRes.json();
-            if (checkoutUrl) {
-              window.location.href = checkoutUrl;
-              return;
-            }
-          }
-        }
-        setFormStatus("success");
-        setToastMsg("🎉 Registration received! Check your email within 24hrs.");
-        setTimeout(() => setToastMsg(""), 5000);
+      if (!res.ok) { setFormStatus("error"); return; }
+
+      const data = await res.json();
+
+      const checkoutRes = await fetch("/api/events/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ registrationId: data.id }),
+      });
+      if (!checkoutRes.ok) { setFormStatus("error"); return; }
+
+      const { checkoutUrl } = await checkoutRes.json();
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
       } else {
         setFormStatus("error");
       }
@@ -686,91 +688,132 @@ export default function TrainingLandingPage({
               <div style={{ color:S.muted, fontSize:".92rem", lineHeight:1.7, marginBottom:"20px" }}>{C.registration.successBody}</div>
             </div>
           ) : (
-            <form onSubmit={handleSubmit}>
-              <div className="form-inner" style={{ background:S.dark, border:`1px solid ${S.border}`, borderRadius:"24px", padding:"36px 32px" }}>
-                {/* Name row */}
-                <div className="form-row" style={{ display:"flex", gap:"14px", marginBottom:"16px" }}>
-                  {(["firstName","lastName"] as const).map((k,i)=>(
-                    <input key={k} type="text" placeholder={i===0?"First Name":"Last Name"} value={formData[k]} onChange={e=>field(k,e.target.value)} required
-                      style={{ flex:1, background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color:"#fff", fontSize:".9rem" }}
-                    />
-                  ))}
-                </div>
+            <div className="form-inner" style={{ background:S.dark, border:`1px solid ${S.border}`, borderRadius:"24px", padding:"36px 32px" }}>
 
-                {/* Email */}
-                <input type="email" placeholder="Email Address" value={formData.email} onChange={e=>field("email",e.target.value)} required
-                  style={{ width:"100%", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color:"#fff", fontSize:".9rem", marginBottom:"16px" }}
-                />
+              {/* Step indicator */}
+              <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"28px" }}>
+                {[1,2].map(n => (
+                  <div key={n} style={{ display:"flex", alignItems:"center", gap:"8px", flex: n===1 ? "none" : 1 }}>
+                    <div style={{
+                      width:"28px", height:"28px", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
+                      fontSize:".78rem", fontWeight:700, fontFamily:syne,
+                      background: formStep >= n ? "linear-gradient(135deg,#F47C4C,#F9A738)" : "rgba(255,255,255,.06)",
+                      color: formStep >= n ? "#131A1B" : S.muted,
+                      border: formStep >= n ? "none" : `1px solid ${S.border}`,
+                      flexShrink: 0,
+                    }}>{n}</div>
+                    <span style={{ fontSize:".78rem", color: formStep >= n ? "#fff" : S.muted, fontWeight: formStep===n ? 600 : 400, whiteSpace:"nowrap" }}>
+                      {n===1 ? "Your Info" : "Payment"}
+                    </span>
+                    {n===1 && <div style={{ flex:1, height:"1px", background: formStep===2 ? S.orange : S.border, marginLeft:"4px" }} />}
+                  </div>
+                ))}
+              </div>
 
-                {/* WhatsApp */}
-                <input type="tel" placeholder="WhatsApp Number (with country code)" value={formData.whatsapp} onChange={e=>field("whatsapp",e.target.value)}
-                  style={{ width:"100%", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color:"#fff", fontSize:".9rem", marginBottom:"16px" }}
-                />
-
-                {/* Role */}
-                <input type="text" placeholder="What do you do? (e.g. freelancer, business owner, student)" value={formData.role} onChange={e=>field("role",e.target.value)}
-                  style={{ width:"100%", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color:"#fff", fontSize:".9rem", marginBottom:"16px" }}
-                />
-
-                {/* Goal */}
-                <select value={formData.goal} onChange={e=>field("goal",e.target.value)}
-                  style={{ width:"100%", background:S.dark, border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color: formData.goal ? "#fff" : S.muted, fontSize:".9rem", marginBottom:"16px" }}
-                >
-                  <option value="" disabled>{C.registration.goalPlaceholder}</option>
-                  {C.registration.goalOptions.map((g,i)=>(<option key={i}>{g}</option>))}
-                </select>
-
-                {/* Referral */}
-                <input type="text" placeholder="How did you hear about this training?" value={formData.referral} onChange={e=>field("referral",e.target.value)}
-                  style={{ width:"100%", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color:"#fff", fontSize:".9rem", marginBottom:"28px" }}
-                />
-
-                {/* Payment selector */}
-                <div style={{ marginBottom:"28px" }}>
-                  <div style={{ fontFamily:dm, fontSize:".8rem", color:S.muted, marginBottom:"12px", letterSpacing:".06em" }}>SELECT PAYMENT METHOD</div>
-                  <div className="pay-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
-                    {[
-                      { id:"paypal", icon:"🅿️", label:"PayPal", sub:"Instant · Secure" },
-                      { id:"card", icon:"💳", label:"Credit / Debit", sub:"Visa · Mastercard" },
-                    ].map(p=>(
-                      <div key={p.id} className={`payment-opt${activePayment===p.id?" selected":""}`}
-                        onClick={()=>setActivePayment(p.id)}
-                        style={{ background:"rgba(255,255,255,.04)", border:`1.5px solid ${activePayment===p.id?S.orange:S.border}`, borderRadius:"12px", padding:"14px 16px", display:"flex", alignItems:"center", gap:"10px" }}
-                      >
-                        <span style={{ fontSize:"1.4rem" }}>{p.icon}</span>
-                        <div>
-                          <div style={{ fontWeight:600, fontSize:".88rem" }}>{p.label}</div>
-                          <div style={{ fontSize:".72rem", color:S.muted }}>{p.sub}</div>
-                        </div>
-                      </div>
+              {/* ── STEP 1: Contact info ── */}
+              {formStep === 1 && (
+                <form onSubmit={handleStep1}>
+                  <div className="form-row" style={{ display:"flex", gap:"14px", marginBottom:"16px" }}>
+                    {(["firstName","lastName"] as const).map((k,i)=>(
+                      <input key={k} type="text" placeholder={i===0?"First Name":"Last Name"} value={formData[k]} onChange={e=>field(k,e.target.value)} required
+                        style={{ flex:1, background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color:"#fff", fontSize:".9rem" }}
+                      />
                     ))}
                   </div>
+                  <input type="email" placeholder="Email Address" value={formData.email} onChange={e=>field("email",e.target.value)} required
+                    style={{ width:"100%", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color:"#fff", fontSize:".9rem", marginBottom:"16px" }}
+                  />
+                  <input type="tel" placeholder="WhatsApp Number (with country code)" value={formData.whatsapp} onChange={e=>field("whatsapp",e.target.value)}
+                    style={{ width:"100%", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color:"#fff", fontSize:".9rem", marginBottom:"16px" }}
+                  />
+                  <input type="text" placeholder="What do you do? (e.g. freelancer, business owner, student)" value={formData.role} onChange={e=>field("role",e.target.value)}
+                    style={{ width:"100%", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color:"#fff", fontSize:".9rem", marginBottom:"16px" }}
+                  />
+                  <select value={formData.goal} onChange={e=>field("goal",e.target.value)}
+                    style={{ width:"100%", background:S.dark, border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color: formData.goal ? "#fff" : S.muted, fontSize:".9rem", marginBottom:"28px" }}
+                  >
+                    <option value="" disabled>{C.registration.goalPlaceholder}</option>
+                    {C.registration.goalOptions.map((g,i)=>(<option key={i}>{g}</option>))}
+                  </select>
+                  <button type="submit" className="cta-primary" style={{
+                    width:"100%", padding:"17px 32px", borderRadius:"50px",
+                    fontFamily:syne, fontSize:"1.05rem", letterSpacing:".02em"
+                  }}>
+                    Continue to Payment →
+                  </button>
+                </form>
+              )}
 
-                </div>
+              {/* ── STEP 2: Payment ── */}
+              {formStep === 2 && (
+                <form onSubmit={handleSubmit}>
+                  {/* Summary of step 1 */}
+                  <div style={{ background:"rgba(255,255,255,.04)", border:`1px solid ${S.border}`, borderRadius:"14px", padding:"14px 18px", marginBottom:"24px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px", flexWrap:"wrap" }}>
+                    <div>
+                      <div style={{ fontWeight:600, fontSize:".9rem" }}>{formData.firstName} {formData.lastName}</div>
+                      <div style={{ color:S.muted, fontSize:".8rem" }}>{formData.email}</div>
+                    </div>
+                    <button type="button" onClick={()=>setFormStep(1)}
+                      style={{ background:"none", border:"none", color:S.orange, cursor:"pointer", fontSize:".8rem", fontWeight:600, padding:0 }}>
+                      Edit
+                    </button>
+                  </div>
 
-                {/* Submit */}
-                <button type="submit" disabled={formStatus==="loading"} className="cta-primary" style={{
-                  width:"100%", padding:"17px 32px", borderRadius:"50px",
-                  fontFamily:syne, fontSize:"1.05rem", letterSpacing:".02em",
-                  opacity: formStatus==="loading" ? .7 : 1
-                }}>
-                  {formStatus==="loading" ? (
-                    <span style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"10px" }}>
-                      <span style={{ width:"18px", height:"18px", border:"2.5px solid rgba(0,0,0,.3)", borderTopColor:"#131A1B", borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite" }}/>
-                      Processing…
-                    </span>
-                  ) : applyPrice(isFree ? C.registration.submitFree : C.registration.submitPaid, priceDisplay)}
-                </button>
+                  {/* Order summary */}
+                  <div style={{ background:"rgba(244,124,76,.06)", border:"1px solid rgba(244,124,76,.2)", borderRadius:"14px", padding:"18px 20px", marginBottom:"24px" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"4px" }}>
+                      <span style={{ fontFamily:syne, fontWeight:700, fontSize:".95rem" }}>{eventTitle}</span>
+                      <span style={{ fontFamily:syne, fontWeight:800, fontSize:"1.1rem", color:S.orange }}>{priceDisplay}</span>
+                    </div>
+                    <div style={{ color:S.muted, fontSize:".78rem" }}>6-week live training · Cohort 1 · {location}</div>
+                  </div>
 
-                {formStatus==="error" && (
-                  <p style={{ color:"#F87171", fontSize:".83rem", textAlign:"center", marginTop:"12px" }}>Something went wrong. Please try again or email arfa_edu@tiblogics.com</p>
-                )}
+                  {/* Payment method */}
+                  <div style={{ marginBottom:"24px" }}>
+                    <div style={{ fontFamily:dm, fontSize:".78rem", color:S.muted, marginBottom:"12px", letterSpacing:".06em", textTransform:"uppercase" }}>Select Payment Method</div>
+                    <div className="pay-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
+                      {[
+                        { id:"card", icon:"💳", label:"Credit / Debit", sub:"Visa · Mastercard · Amex" },
+                        { id:"paypal", icon:"🅿️", label:"PayPal", sub:"Pay via PayPal balance" },
+                      ].map(p=>(
+                        <div key={p.id} className={`payment-opt${activePayment===p.id?" selected":""}`}
+                          onClick={()=>setActivePayment(p.id)}
+                          style={{ background:"rgba(255,255,255,.04)", border:`1.5px solid ${activePayment===p.id?S.orange:S.border}`, borderRadius:"12px", padding:"14px 16px", display:"flex", alignItems:"center", gap:"10px" }}
+                        >
+                          <span style={{ fontSize:"1.4rem" }}>{p.icon}</span>
+                          <div>
+                            <div style={{ fontWeight:600, fontSize:".88rem" }}>{p.label}</div>
+                            <div style={{ fontSize:".72rem", color:S.muted }}>{p.sub}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-                <div style={{ textAlign:"center", marginTop:"18px", color:S.muted, fontSize:".78rem" }}>
-                  {C.registration.secureNote}
-                </div>
-              </div>
-            </form>
+                  <button type="submit" disabled={formStatus==="loading"} className="cta-primary" style={{
+                    width:"100%", padding:"17px 32px", borderRadius:"50px",
+                    fontFamily:syne, fontSize:"1.05rem", letterSpacing:".02em",
+                    opacity: formStatus==="loading" ? .7 : 1
+                  }}>
+                    {formStatus==="loading" ? (
+                      <span style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"10px" }}>
+                        <span style={{ width:"18px", height:"18px", border:"2.5px solid rgba(0,0,0,.3)", borderTopColor:"#131A1B", borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite" }}/>
+                        Redirecting to payment…
+                      </span>
+                    ) : `Pay ${priceDisplay} Securely →`}
+                  </button>
+
+                  {formStatus==="error" && (
+                    <p style={{ color:"#F87171", fontSize:".83rem", textAlign:"center", marginTop:"12px" }}>Something went wrong. Please try again or email arfa_edu@tiblogics.com</p>
+                  )}
+
+                  <div style={{ textAlign:"center", marginTop:"18px", color:S.muted, fontSize:".78rem" }}>
+                    {C.registration.secureNote}
+                  </div>
+                </form>
+              )}
+
+            </div>
           )}
         </div>
       </section>

@@ -20,13 +20,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Registration not found" }, { status: 404 });
     }
 
+    const baseUrl = (
+      process.env.NEXT_PUBLIC_APP_URL ??
+      process.env.NEXTAUTH_URL ??
+      "https://tiblogics.com"
+    ).replace(/\/$/, "");
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "payment",
       customer_email: reg.email,
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/events/${reg.eventSlug}?payment=success&conf=${reg.confirmationNumber}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/events/${reg.eventSlug}?payment=cancelled`,
+      success_url: `${baseUrl}/events/${reg.eventSlug}?payment=success&conf=${reg.confirmationNumber}`,
+      cancel_url: `${baseUrl}/events/${reg.eventSlug}?payment=cancelled`,
       metadata: {
         registrationId: reg.id,
         confirmationNumber: reg.confirmationNumber ?? "",
