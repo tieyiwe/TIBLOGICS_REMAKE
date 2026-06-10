@@ -451,7 +451,7 @@ export default function TrainingLandingPage({
         <div style={{ maxWidth: "1000px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-around", flexWrap: "wrap", gap: "20px" }} className="stat-wrap">
           {[
             { n:"4", l:"Weekend Sessions" }, { n:"12", l:"Hours of Training" },
-            { n:"100+", l:"Prompts in Library" }, { n:"$649", l:"All Inclusive" },
+            { n:"Custom", l:"Powerful Prompts in Library" }, { n:"$649", l:"All Inclusive" },
             { n:"🔥", l:"Limited Seats Per Cohort — First Come, First Served" },
           ].map((s, i) => (
             <div key={i} className="stagger-child stat-item" style={{
