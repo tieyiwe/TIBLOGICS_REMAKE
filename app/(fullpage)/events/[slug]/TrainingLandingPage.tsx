@@ -313,13 +313,25 @@ export default function TrainingLandingPage({
         }),
       });
       if (res.ok) {
+        const data = await res.json();
+        // Redirect to Stripe Checkout for card/paypal
+        if (activePayment === "paypal" || activePayment === "card") {
+          const checkoutRes = await fetch("/api/events/checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ registrationId: data.id }),
+          });
+          if (checkoutRes.ok) {
+            const { checkoutUrl } = await checkoutRes.json();
+            if (checkoutUrl) {
+              window.location.href = checkoutUrl;
+              return;
+            }
+          }
+        }
         setFormStatus("success");
         setToastMsg("🎉 Registration received! Check your email within 24hrs.");
         setTimeout(() => setToastMsg(""), 5000);
-        // Redirect to payment if card/paypal
-        if ((activePayment === "paypal" || activePayment === "card") && stripeLink) {
-          setTimeout(() => window.open(stripeLink, "_blank"), 1500);
-        }
       } else {
         setFormStatus("error");
       }
@@ -718,12 +730,7 @@ export default function TrainingLandingPage({
             <div style={{ background:"rgba(74,222,128,.08)", border:"1px solid rgba(74,222,128,.25)", borderRadius:"20px", padding:"48px 32px", textAlign:"center" }}>
               <div style={{ fontSize:"3rem", marginBottom:"16px" }}>🎉</div>
               <div style={{ fontFamily:syne, fontWeight:800, fontSize:"1.5rem", marginBottom:"12px" }}>You&apos;re registered!</div>
-              <div style={{ color:S.muted, fontSize:".92rem", lineHeight:1.7, marginBottom:"20px" }}>Check your email within 24hrs for confirmation, payment details, and all session information. Welcome to Cohort 1.</div>
-              {(activePayment==="paypal"||activePayment==="card") && stripeLink && (
-                <a href={stripeLink} target="_blank" rel="noopener noreferrer" className="cta-primary" style={{ display:"inline-block", padding:"14px 28px", borderRadius:"50px", fontFamily:syne, fontSize:".95rem", textDecoration:"none" }}>
-                  Complete Payment →
-                </a>
-              )}
+              <div style={{ color:S.muted, fontSize:".92rem", lineHeight:1.7, marginBottom:"20px" }}>Check your email within 24hrs for confirmation and all session information. Welcome to Cohort 1.</div>
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
@@ -778,7 +785,6 @@ export default function TrainingLandingPage({
                     {[
                       { id:"paypal", icon:"🅿️", label:"PayPal", sub:"Instant · Secure" },
                       { id:"card", icon:"💳", label:"Credit / Debit", sub:"Visa · Mastercard" },
-                      { id:"zelle", icon:"💜", label:"Zelle", sub:"Make a transfer" },
                     ].map(p=>(
                       <div key={p.id} className={`payment-opt${activePayment===p.id?" selected":""}`}
                         onClick={()=>setActivePayment(p.id)}
@@ -793,22 +799,6 @@ export default function TrainingLandingPage({
                     ))}
                   </div>
 
-                  {/* Zelle QR placeholder — shown when Zelle is selected */}
-                  {activePayment === "zelle" && (
-                    <div style={{ marginTop:"16px", background:"rgba(139,92,246,.07)", border:"1px solid rgba(139,92,246,.25)", borderRadius:"16px", padding:"24px", textAlign:"center" }}>
-                      <div style={{ fontFamily:syne, fontWeight:700, fontSize:".9rem", color:"#a78bfa", marginBottom:"14px" }}>Scan to pay via Zelle</div>
-                      {/* ── REPLACE THIS BLOCK WITH YOUR ZELLE QR CODE IMAGE ── */}
-                      <div style={{ width:"160px", height:"160px", margin:"0 auto 14px", background:"rgba(255,255,255,.06)", border:`2px dashed rgba(139,92,246,.4)`, borderRadius:"12px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"8px" }}>
-                        <span style={{ fontSize:"2rem" }}>📷</span>
-                        <span style={{ fontSize:".72rem", color:S.muted, lineHeight:1.4 }}>QR Code<br/>Coming Soon</span>
-                      </div>
-                      {/* ──────────────────────────────────────────────────────── */}
-                      <div style={{ fontSize:".8rem", color:S.muted, lineHeight:1.65 }}>
-                        Send <strong style={{ color:"#fff" }}>$649</strong> via Zelle, then submit the form.<br/>
-                        Confirmation sent within 24hrs once payment is verified.
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Submit */}

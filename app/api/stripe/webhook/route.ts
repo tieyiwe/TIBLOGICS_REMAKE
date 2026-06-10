@@ -32,6 +32,18 @@ export async function POST(req: Request) {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
       const appointmentId = session.metadata?.appointmentId;
+      const registrationId = session.metadata?.registrationId;
+
+      // ── Event registration payment ──────────────────────────────────────
+      if (registrationId) {
+        await prisma.eventRegistration.update({
+          where: { id: registrationId },
+          data: {
+            status: "paid",
+            stripeSessionId: session.id,
+          },
+        });
+      }
 
       if (appointmentId) {
         // Auto-create meeting link on payment confirmation

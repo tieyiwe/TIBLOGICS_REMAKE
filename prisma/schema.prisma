@@ -529,6 +529,7 @@ model EventRegistration {
   status             String   @default("pending")
   notes              String?
   confirmationNumber String?  @unique
+  stripeSessionId    String?
 
   @@index([eventSlug])
   @@index([email])

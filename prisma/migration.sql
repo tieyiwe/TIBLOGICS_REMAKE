@@ -118,3 +118,6 @@ CREATE INDEX IF NOT EXISTS "EventRegistration_createdAt_idx" ON "EventRegistrati
 -- Add confirmationNumber to existing EventRegistration tables (safe ALTER)
 ALTER TABLE "EventRegistration" ADD COLUMN IF NOT EXISTS "confirmationNumber" TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS "EventRegistration_confirmationNumber_key" ON "EventRegistration"("confirmationNumber");
+
+-- Add stripeSessionId to EventRegistration
+ALTER TABLE "EventRegistration" ADD COLUMN IF NOT EXISTS "stripeSessionId" TEXT;
