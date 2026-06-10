@@ -135,6 +135,8 @@ export default function AdminEventsPage() {
   const [regSearch, setRegSearch] = useState("");
   const [eventSearch, setEventSearch] = useState("");
   const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncLog, setSyncLog] = useState<string[]>([]);
   const [eventRegs, setEventRegs] = useState<Record<string, Registration[]>>({});
   const [msgModal, setMsgModal] = useState<EventItem | null>(null);
   const [msgForm, setMsgForm] = useState({ subject: "", body: "", recipients: "all" });
@@ -177,6 +179,17 @@ export default function AdminEventsPage() {
 
   useEffect(() => { loadEvents(); }, [loadEvents]);
   useEffect(() => { if (tab === "registrations") loadAllRegs(); }, [tab, loadAllRegs]);
+
+  async function syncDatabase() {
+    setSyncing(true); setSyncLog([]);
+    try {
+      const res = await fetch("/api/admin/events/sync-db", { method: "POST" });
+      const data = await res.json();
+      setSyncLog(data.log ?? []);
+      if (data.ok) await loadEvents();
+    } catch { setSyncLog(["❌ Network error — check console"]); }
+    finally { setSyncing(false); }
+  }
 
   // ── Computed ──────────────────────────────────────────────────────────────────
   const filteredEvents = useMemo(() =>
@@ -476,13 +489,30 @@ export default function AdminEventsPage() {
             </div>
 
             {events.length === 0 ? (
-              <div className="bg-white border border-[#D2DCE8] rounded-2xl p-16 text-center">
+              <div className="bg-white border border-[#D2DCE8] rounded-2xl p-12 text-center">
                 <Calendar size={40} className="text-[#D2DCE8] mx-auto mb-4" />
-                <h3 className="font-syne font-bold text-lg text-[#0D1B2A] mb-2">No events yet</h3>
-                <button onClick={openCreate}
-                  className="inline-flex items-center gap-2 bg-[#F47C20] hover:bg-[#e06a10] text-white font-dm font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors mt-4">
-                  <Plus size={16} /> Create First Event
-                </button>
+                <h3 className="font-syne font-bold text-lg text-[#0D1B2A] mb-2">No events showing</h3>
+                <p className="font-dm text-sm text-[#7A8FA6] mb-6 max-w-sm mx-auto">
+                  Click <strong>Sync Database</strong> to load the current event and sync the database schema. Only needed once.
+                </p>
+                <div className="flex items-center justify-center gap-3 flex-wrap">
+                  <button onClick={syncDatabase} disabled={syncing}
+                    className="inline-flex items-center gap-2 bg-[#1B3A6B] hover:bg-[#162f5a] text-white font-dm font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors disabled:opacity-60">
+                    {syncing ? <Loader2 size={16} className="animate-spin" /> : <AlertCircle size={16} />}
+                    {syncing ? "Syncing…" : "Sync Database"}
+                  </button>
+                  <button onClick={openCreate}
+                    className="inline-flex items-center gap-2 bg-[#F47C20] hover:bg-[#e06a10] text-white font-dm font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors">
+                    <Plus size={16} /> Create New Event
+                  </button>
+                </div>
+                {syncLog.length > 0 && (
+                  <div className="mt-6 text-left bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl p-4 max-w-lg mx-auto">
+                    {syncLog.map((l, i) => (
+                      <p key={i} className="font-mono text-xs text-[#3A4A5C] leading-relaxed">{l}</p>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex flex-col gap-3">
