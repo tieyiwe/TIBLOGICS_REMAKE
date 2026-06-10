@@ -282,25 +282,9 @@ export async function sendEventRegistrationConfirmation(reg: {
   });
 }
 
-// Titan-hosted design@tiblogics.com mailbox — used as the sender for the
-// post-payment welcome email. Authenticates with its own Titan credentials.
-const DESIGN_USER = process.env.DESIGN_SMTP_USER ?? "design@tiblogics.com";
-const DESIGN_FROM = `TIBLOGICS <${DESIGN_USER}>`;
-
-function getDesignTransport() {
-  return nodemailer.createTransport({
-    host: process.env.TITAN_SMTP_HOST ?? "smtp.titan.email",
-    port: Number(process.env.TITAN_SMTP_PORT ?? 465),
-    secure: Number(process.env.TITAN_SMTP_PORT ?? 465) === 465,
-    auth: {
-      user: DESIGN_USER,
-      pass: process.env.DESIGN_SMTP_PASS ?? process.env.TITAN_SMTP_PASS,
-    },
-  });
-}
-
 // "You're in — let's build" welcome email, sent AFTER payment is successful.
 // firstName is captured from the registration and injected into the greeting.
+// Sent from the Titan-hosted arfa_edu@tiblogics.com mailbox.
 export async function sendEventWelcomeEmail(reg: {
   firstName: string;
   email: string;
@@ -308,8 +292,8 @@ export async function sendEventWelcomeEmail(reg: {
 }) {
   const firstName = (reg.firstName || "there").trim();
 
-  await getDesignTransport().sendMail({
-    from: DESIGN_FROM,
+  await getArfaTransport().sendMail({
+    from: ARFA_FROM,
     to: reg.email,
     subject: `You're in! 🎉 Welcome to the TIBLOGICS AI Practical Training — Cohort 1`,
     html: `<!DOCTYPE html>
