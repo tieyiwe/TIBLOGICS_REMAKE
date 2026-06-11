@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     }
 
     const slugMap: Record<string, string> = {
-      "AI Practical Training — Cohort 1": "ai-practical-training-cohort-1",
+      "AI Practical Training — June Cohort": "ai-practical-training-cohort-1",
     };
     const eventSlug = bodySlug ?? slugMap[eventName] ?? eventName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 

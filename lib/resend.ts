@@ -295,7 +295,7 @@ export async function sendEventWelcomeEmail(reg: {
   await getArfaTransport().sendMail({
     from: ARFA_FROM,
     to: reg.email,
-    subject: `You're in! 🎉 Welcome to the TIBLOGICS AI Practical Training — Cohort 1`,
+    subject: `You're in! 🎉 Welcome to the TIBLOGICS AI Practical Training — June Cohort`,
     html: `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -409,14 +409,14 @@ export async function sendEventWelcomeEmail(reg: {
     </div>
     <div class="confetti-badge"><span class="confetti-dot"></span> Registration Confirmed</div>
     <div class="header-title">You're in. <span class="accent">Let's build.</span></div>
-    <div class="header-sub">Welcome to the TIBLOGICS AI Practical Training — Cohort 1.<br>Your spot is secured. We are excited to have you.</div>
+    <div class="header-sub">Welcome to the TIBLOGICS AI Practical Training — June Cohort.<br>Your spot is secured. We are excited to have you.</div>
   </div>
 
   <div class="body">
     <div class="greeting">Hi ${firstName}, 👋</div>
     <p class="para">
       Your registration for the <strong>TIBLOGICS AI Practical Training</strong> is confirmed and your payment has been received.
-      You are part of Cohort 1 — the founding group. That means founding cohort pricing, direct access to our team,
+      You are part of the June Cohort — the founding group. That means founding cohort pricing, direct access to our team,
       and being among the first to go through this training before anyone else.
     </p>
     <p class="para">
@@ -430,7 +430,7 @@ export async function sendEventWelcomeEmail(reg: {
       <div class="detail-row"><div class="detail-icon">⏰</div><div><div class="detail-label">Time (every Saturday)</div><div class="detail-value">9:30 AM – 1:00 PM · includes breaks</div></div></div>
       <div class="detail-row"><div class="detail-icon">💻</div><div><div class="detail-label">Format</div><div class="detail-value">Live on Zoom · Link sent 48hrs before Session 1</div></div></div>
       <div class="detail-row"><div class="detail-icon">💬</div><div><div class="detail-label">Community</div><div class="detail-value">WhatsApp cohort group · Invite sent separately</div></div></div>
-      <div class="detail-row"><div class="detail-icon">💳</div><div><div class="detail-label">Investment</div><div class="detail-value">$649 · Cohort 1 founding price</div></div></div>
+      <div class="detail-row"><div class="detail-icon">💳</div><div><div class="detail-label">Investment</div><div class="detail-value">$649 · June Cohort founding price</div></div></div>
     </div>
 
     <div class="divider"><div class="divider-line"></div><div class="divider-text">Your 4-session journey</div><div class="divider-line"></div></div>

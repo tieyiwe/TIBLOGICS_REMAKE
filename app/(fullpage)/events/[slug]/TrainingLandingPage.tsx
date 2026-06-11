@@ -779,7 +779,7 @@ export default function TrainingLandingPage({
                       <span style={{ fontFamily:syne, fontWeight:700, fontSize:".95rem" }}>{eventTitle}</span>
                       <span style={{ fontFamily:syne, fontWeight:800, fontSize:"1.1rem", color:S.orange }}>{priceDisplay}</span>
                     </div>
-                    <div style={{ color:S.muted, fontSize:".78rem" }}>6-week live training · Cohort 1 · {location}</div>
+                    <div style={{ color:S.muted, fontSize:".78rem" }}>6-week live training · June Cohort · {location}</div>
                   </div>
 
                   {/* Payment method */}

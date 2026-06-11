@@ -8,7 +8,7 @@ export const TRAINING_EVENT_SLUG = "ai-practical-training-cohort-1";
 
 export const TRAINING_EVENT_SEED: Prisma.EventCreateInput = {
   slug: TRAINING_EVENT_SLUG,
-  title: "AI Practical Training — Cohort 1",
+  title: "AI Practical Training — June Cohort",
   description:
     "A hands-on 4-session live training where you go from curious to capable — writing with AI, building income, creating automations, and getting your first taste of vibe coding. Live on Zoom. Every Saturday 9:30AM–1PM.",
   type: "TRAINING",
