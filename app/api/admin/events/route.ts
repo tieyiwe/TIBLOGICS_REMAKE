@@ -24,19 +24,28 @@ export async function GET() {
     console.error("[admin/events] ensure training event", err);
   }
 
+  // Load events and registration counts independently so a problem with one
+  // table (e.g. EventRegistration not yet created) never blanks out the other.
+  let events: Awaited<ReturnType<typeof prisma.event.findMany>> = [];
   try {
-    const [events, regCounts] = await Promise.all([
-      prisma.event.findMany({ orderBy: { createdAt: "desc" } }),
-      prisma.eventRegistration.groupBy({
-        by: ["eventSlug", "status"],
-        _count: { id: true },
-      }),
-    ]);
-    return NextResponse.json({ events, regCounts });
+    events = await prisma.event.findMany({ orderBy: { createdAt: "desc" } });
   } catch (err) {
-    console.error("[admin/events GET]", err);
-    return NextResponse.json({ error: "Database error — run: npx prisma db push", events: [], regCounts: [] }, { status: 500 });
+    console.error("[admin/events GET] events", err);
+    return NextResponse.json({ error: "Database error — click Sync Database", events: [], regCounts: [] }, { status: 500 });
   }
+
+  let regCounts: { eventSlug: string; status: string; _count: { id: number } }[] = [];
+  try {
+    regCounts = await prisma.eventRegistration.groupBy({
+      by: ["eventSlug", "status"],
+      _count: { id: true },
+    });
+  } catch (err) {
+    console.error("[admin/events GET] regCounts", err);
+    // Non-fatal — events still render with zero counts
+  }
+
+  return NextResponse.json({ events, regCounts });
 }
 
 export async function POST(req: NextRequest) {
