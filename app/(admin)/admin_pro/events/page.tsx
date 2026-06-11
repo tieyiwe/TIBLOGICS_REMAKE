@@ -475,7 +475,7 @@ export default function AdminEventsPage() {
           </div>
         ) : (
           <>
-            {/* Event search */}
+            {/* Event search + Sync DB */}
             <div className="flex items-center gap-3 mb-4">
               <div className="relative flex-1 max-w-sm">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7A8FA6]" />
@@ -486,7 +486,19 @@ export default function AdminEventsPage() {
                 />
               </div>
               <span className="font-dm text-xs text-[#7A8FA6]">{filteredEvents.length} of {events.length}</span>
+              <button onClick={syncDatabase} disabled={syncing}
+                className="inline-flex items-center gap-1.5 text-xs font-dm font-semibold px-3 py-2 rounded-xl border border-[#D2DCE8] hover:bg-[#F4F7FB] text-[#1B3A6B] transition-colors disabled:opacity-60 whitespace-nowrap">
+                {syncing ? <Loader2 size={13} className="animate-spin" /> : <AlertCircle size={13} />}
+                {syncing ? "Syncing…" : "Sync DB"}
+              </button>
             </div>
+            {syncLog.length > 0 && (
+              <div className="mb-4 bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl p-3 max-h-40 overflow-y-auto">
+                {syncLog.map((l, i) => (
+                  <p key={i} className="font-mono text-xs text-[#3A4A5C] leading-relaxed">{l}</p>
+                ))}
+              </div>
+            )}
 
             {events.length === 0 ? (
               <div className="bg-white border border-[#D2DCE8] rounded-2xl p-12 text-center">
