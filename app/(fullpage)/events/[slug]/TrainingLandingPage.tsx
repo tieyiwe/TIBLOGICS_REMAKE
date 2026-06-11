@@ -310,6 +310,7 @@ export default function TrainingLandingPage({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormStatus("loading");
+    setToastMsg("");
     try {
       const res = await fetch("/api/events/register", {
         method: "POST",
@@ -321,9 +322,15 @@ export default function TrainingLandingPage({
           eventSlug,
           price: price / 100,
           currency,
+          location,
         }),
       });
-      if (!res.ok) { setFormStatus("error"); return; }
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        setToastMsg(errData.error || `Registration error (${res.status})`);
+        setFormStatus("error");
+        return;
+      }
 
       const data = await res.json();
 
@@ -332,15 +339,22 @@ export default function TrainingLandingPage({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ registrationId: data.id }),
       });
-      if (!checkoutRes.ok) { setFormStatus("error"); return; }
+      if (!checkoutRes.ok) {
+        const errData = await checkoutRes.json().catch(() => ({}));
+        setToastMsg(errData.error || `Checkout error (${checkoutRes.status})`);
+        setFormStatus("error");
+        return;
+      }
 
       const { checkoutUrl } = await checkoutRes.json();
       if (checkoutUrl) {
         window.location.href = checkoutUrl;
       } else {
+        setToastMsg("No checkout URL returned. Please try again.");
         setFormStatus("error");
       }
-    } catch {
+    } catch (err) {
+      setToastMsg(err instanceof Error ? err.message : "Network error. Please try again.");
       setFormStatus("error");
     }
   }
@@ -804,7 +818,9 @@ export default function TrainingLandingPage({
                   </button>
 
                   {formStatus==="error" && (
-                    <p style={{ color:"#F87171", fontSize:".83rem", textAlign:"center", marginTop:"12px" }}>Something went wrong. Please try again or email arfa_edu@tiblogics.com</p>
+                    <p style={{ color:"#F87171", fontSize:".83rem", textAlign:"center", marginTop:"12px" }}>
+                      {toastMsg || "Something went wrong. Please try again or email arfa_edu@tiblogics.com"}
+                    </p>
                   )}
 
                   <div style={{ textAlign:"center", marginTop:"18px", color:S.muted, fontSize:".78rem" }}>
