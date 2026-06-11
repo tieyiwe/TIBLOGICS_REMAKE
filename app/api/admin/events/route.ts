@@ -34,7 +34,7 @@ export async function GET() {
     return NextResponse.json({ error: "Database error — click Sync Database", events: [], regCounts: [] }, { status: 500 });
   }
 
-  let regCounts: { eventSlug: string; status: string; _count: { id: number } }[] = [];
+  let regCounts: Awaited<ReturnType<typeof prisma.eventRegistration.groupBy>> = [];
   try {
     regCounts = await prisma.eventRegistration.groupBy({
       by: ["eventSlug", "status"],
