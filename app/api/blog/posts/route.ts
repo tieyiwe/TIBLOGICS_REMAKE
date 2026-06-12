@@ -39,11 +39,17 @@ export async function GET(req: NextRequest) {
     if (category && category !== "all") where.category = category;
     if (featured === "true") where.featured = true;
     if (search) {
-      where.OR = [
-        { title: { contains: search, mode: "insensitive" } },
-        { excerpt: { contains: search, mode: "insensitive" } },
-        { tags: { has: search.toLowerCase() } },
-      ];
+      const terms = search.trim().split(/\s+/).filter(Boolean);
+      // Every term must appear somewhere in the post (AND across terms, OR across fields)
+      where.AND = terms.map(term => ({
+        OR: [
+          { title:   { contains: term, mode: "insensitive" } },
+          { excerpt: { contains: term, mode: "insensitive" } },
+          { content: { contains: term, mode: "insensitive" } },
+          { author:  { contains: term, mode: "insensitive" } },
+          { tags:    { has: term.toLowerCase() } },
+        ],
+      }));
     }
 
     const [posts, total] = await Promise.all([
