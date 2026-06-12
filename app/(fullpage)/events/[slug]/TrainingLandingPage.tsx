@@ -296,6 +296,7 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
   });
   const [formStatus, setFormStatus] = useState<"idle"|"loading"|"success"|"error">("idle");
   const [toastMsg, setToastMsg] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const field = (k: keyof typeof formData, v: string) =>
     setFormData(f => ({ ...f, [k]: v }));
@@ -470,10 +471,34 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
               ))}
             </div>
           </div>
-          <button type="submit" disabled={formStatus==="loading"} className="cta-primary" style={{
+          {/* Terms & Conditions checkbox */}
+          <div style={{ display:"flex", alignItems:"flex-start", gap:"10px", marginBottom:"20px", padding:"14px 16px", background:"rgba(255,255,255,.03)", border:`1px solid ${S.border}`, borderRadius:"12px" }}>
+            <input
+              type="checkbox"
+              id="terms-accept"
+              checked={termsAccepted}
+              onChange={e => setTermsAccepted(e.target.checked)}
+              style={{ marginTop:"2px", accentColor:S.orange, width:"16px", height:"16px", flexShrink:0, cursor:"pointer" }}
+            />
+            <label htmlFor="terms-accept" style={{ fontFamily:dm, fontSize:".83rem", color:"rgba(255,255,255,.6)", lineHeight:1.55, cursor:"pointer" }}>
+              I have read and agree to the{" "}
+              <a
+                href="/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color:S.orange, fontWeight:600, textDecoration:"none" }}
+              >
+                Terms &amp; Conditions
+              </a>
+              , including the refund policy.
+            </label>
+          </div>
+
+          <button type="submit" disabled={formStatus==="loading" || !termsAccepted} className="cta-primary" style={{
             width:"100%", padding:"17px 32px", borderRadius:"50px",
             fontFamily:syne, fontSize:"1.05rem", letterSpacing:".02em",
-            opacity: formStatus==="loading" ? .7 : 1
+            opacity: (formStatus==="loading" || !termsAccepted) ? .45 : 1,
+            cursor: !termsAccepted ? "not-allowed" : "pointer",
           }}>
             {formStatus==="loading" ? (
               <span style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"10px" }}>
