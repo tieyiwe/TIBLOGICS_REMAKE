@@ -70,7 +70,7 @@ async function runWithConcurrency<T>(
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const secret = searchParams.get("secret");
-  if (secret !== (process.env.CRON_SECRET ?? "fill")) {
+  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
