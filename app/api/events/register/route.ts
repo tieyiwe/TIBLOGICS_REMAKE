@@ -138,20 +138,35 @@ export async function POST(req: NextRequest) {
           process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
         ).replace(/\/$/, "");
 
-        const additionalSeatAmount = Math.round(priceInt * 0.75);
-        const lineItems = seats === 1
-          ? [{ price: priceId, quantity: 1 }]
-          : [
-              { price: priceId, quantity: 1 }, // seat 1 — full price via fixed Price ID
-              {
-                price_data: {
-                  currency: (currency ?? "usd").toLowerCase(),
-                  product_data: { name: `${eventName} — Additional Seat (25% off)` },
-                  unit_amount: additionalSeatAmount,
-                },
-                quantity: seats - 1,
-              },
-            ];
+        // Tiered seat pricing: seat 1 full, seat 2 −17%, seat 3 −23%, seat 4 −25%, seat 5+ full
+        const curr = (currency ?? "usd").toLowerCase();
+        const lineItems: object[] = [{ price: priceId, quantity: 1 }]; // seat 1 full price
+        const discounts: Array<{ label: string; rate: number }> = [
+          { label: "17% group discount", rate: 0.83 },
+          { label: "23% group discount", rate: 0.77 },
+          { label: "25% group discount", rate: 0.75 },
+        ];
+        for (let i = 1; i < Math.min(seats, 4); i++) {
+          lineItems.push({
+            price_data: {
+              currency: curr,
+              product_data: { name: `${eventName} — Seat ${i + 1} (${discounts[i - 1].label})` },
+              unit_amount: Math.round(priceInt * discounts[i - 1].rate),
+            },
+            quantity: 1,
+          });
+        }
+        // Seats 5+ at full price
+        if (seats > 4) {
+          lineItems.push({
+            price_data: {
+              currency: curr,
+              product_data: { name: `${eventName} — Additional Seats (standard rate)` },
+              unit_amount: priceInt,
+            },
+            quantity: seats - 4,
+          });
+        }
 
         const session = await stripe.checkout.sessions.create({
           line_items: lineItems,

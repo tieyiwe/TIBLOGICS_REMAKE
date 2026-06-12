@@ -360,6 +360,26 @@ function PromoBanner({ compact = false }: { compact?: boolean }) {
   );
 }
 
+// ─── Seat pricing helpers ─────────────────────────────────────────────────────
+// Seat 1 = full, seat 2 = 17% off, seat 3 = 23% off, seat 4 = 25% off, seat 5+ = full
+function seatUnitPrice(index: number, base: number): number {
+  if (index === 1) return Math.round(base * 0.83);
+  if (index === 2) return Math.round(base * 0.77);
+  if (index === 3) return Math.round(base * 0.75);
+  return base;
+}
+function calcGroupTotal(n: number, base: number): number {
+  let t = 0;
+  for (let i = 0; i < n; i++) t += seatUnitPrice(i, base);
+  return t;
+}
+function nextSeatDiscount(nextIndex: number): string | null {
+  if (nextIndex === 1) return "17%";
+  if (nextIndex === 2) return "23%";
+  if (nextIndex === 3) return "25%";
+  return null;
+}
+
 // ─── Registration Form (isolated so typing doesn't re-render the whole page) ──
 interface FormProps {
   eventSlug: string; eventTitle: string; price: number;
@@ -398,12 +418,10 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
   const [toastMsg, setToastMsg] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
 
-  // Seat 1 = full price. Every additional seat = 25% off (75% of price).
-  const additionalSeatPrice = Math.round(price * 0.75);
-  const totalPrice = numSeats <= 1 ? price : price + (numSeats - 1) * additionalSeatPrice;
-  const savings = numSeats > 1 ? (numSeats - 1) * (price - additionalSeatPrice) : 0;
+  const totalPrice = calcGroupTotal(numSeats, price);
+  const savings = price * numSeats - totalPrice;
   const totalDisplay = price === 0 ? "Free" : `$${(totalPrice / 100).toFixed(0)} ${currency}`;
-  const additionalSeatDisplay = price === 0 ? "Free" : `$${(additionalSeatPrice / 100).toFixed(0)}`;
+  const nextDiscount = nextSeatDiscount(numSeats); // discount for adding one more seat
 
   const field = (k: keyof typeof formData, v: string) =>
     setFormData(f => ({ ...f, [k]: v }));
@@ -578,14 +596,15 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
           <div style={{ marginBottom:"28px" }}>
             <div style={{ fontFamily:dm, fontSize:".78rem", color:S.muted, marginBottom:"12px", letterSpacing:".06em", textTransform:"uppercase" }}>Number of Seats</div>
 
-            {/* Discount nudge — show before they add a seat */}
-            {numSeats === 1 && (
+            {/* Discount nudge */}
+            {nextDiscount && (
               <div style={{ background:"rgba(249,167,56,.08)", border:"1px solid rgba(249,167,56,.25)", borderRadius:"12px", padding:"10px 14px", marginBottom:"12px", display:"flex", alignItems:"center", gap:"10px" }}>
-                <span style={{ fontSize:"1.1rem", flexShrink:0 }}>💡</span>
+                <span style={{ fontSize:"1.1rem", flexShrink:0 }}>{numSeats === 1 ? "💡" : "🎉"}</span>
                 <span style={{ fontFamily:dm, fontSize:".82rem", color:"rgba(255,255,255,.75)", lineHeight:1.5 }}>
-                  Bring a colleague! Every extra seat is{" "}
-                  <strong style={{ color:S.amber ?? "#F9A738" }}>25% off</strong>
-                  {" "}— only {additionalSeatDisplay} instead of {priceDisplay}.
+                  {numSeats === 1
+                    ? <>Bring a colleague! <strong style={{ color:"#F9A738" }}>Seat 2: 17% off · Seat 3: 23% off · Seat 4: 25% off</strong></>
+                    : <>Add seat {numSeats + 1} and save <strong style={{ color:"#F9A738" }}>{nextDiscount}</strong> on that seat — <strong style={{ color:"#F9A738" }}>${(seatUnitPrice(numSeats, price) / 100).toFixed(0)}</strong> instead of {priceDisplay}</>
+                  }
                 </span>
               </div>
             )}
@@ -611,16 +630,24 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
                       <span style={{ fontFamily:syne, fontWeight:700, fontSize:".92rem", color:"#fff" }}>{numSeats} seats</span>
                       <span style={{ fontFamily:dm, fontSize:".82rem", color:S.orange, marginLeft:"8px" }}>= {totalDisplay}</span>
                     </div>
-                    <div style={{ fontFamily:dm, fontSize:".75rem", color:"#4ade80", marginTop:"2px" }}>
-                      🎉 You're saving ${(savings / 100).toFixed(0)}!
-                    </div>
+                    {savings > 0 && (
+                      <div style={{ fontFamily:dm, fontSize:".75rem", color:"#4ade80", marginTop:"2px" }}>
+                        🎉 You're saving ${(savings / 100).toFixed(0)}!
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             </div>
             {numSeats > 1 && (
               <p style={{ fontFamily:dm, fontSize:".75rem", color:S.muted, marginTop:"8px", lineHeight:1.5 }}>
-                Seats 2+ are 25% off ({additionalSeatDisplay} each). You'll add participant info in the next step.
+                {[
+                  numSeats >= 2 && "Seat 2: 17% off",
+                  numSeats >= 3 && "Seat 3: 23% off",
+                  numSeats >= 4 && "Seat 4: 25% off",
+                  numSeats >= 5 && `Seat${numSeats > 5 ? "s" : ""} 5${numSeats > 5 ? `–${numSeats}` : ""}: standard rate`,
+                ].filter(Boolean).join(" · ")}
+                {" · "}Participant info added in next step.
               </p>
             )}
           </div>
@@ -701,18 +728,21 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
             </div>
             {numSeats > 1 ? (
               <div style={{ marginTop:"8px", display:"flex", flexDirection:"column", gap:"3px" }}>
-                <div style={{ display:"flex", justifyContent:"space-between", fontFamily:dm, fontSize:".78rem", color:"rgba(255,255,255,.55)" }}>
-                  <span>Seat 1 (full price)</span><span>{priceDisplay}</span>
-                </div>
-                {numSeats > 1 && (
-                  <div style={{ display:"flex", justifyContent:"space-between", fontFamily:dm, fontSize:".78rem", color:"rgba(255,255,255,.55)" }}>
-                    <span>{numSeats - 1} additional seat{numSeats > 2 ? "s" : ""} <span style={{ color:"#4ade80" }}>−25%</span></span>
-                    <span>{additionalSeatDisplay} × {numSeats - 1}</span>
+                {Array.from({ length: numSeats }, (_, i) => {
+                  const unitCents = seatUnitPrice(i, price);
+                  const disc = i === 1 ? "−17%" : i === 2 ? "−23%" : i === 3 ? "−25%" : null;
+                  return (
+                    <div key={i} style={{ display:"flex", justifyContent:"space-between", fontFamily:dm, fontSize:".76rem", color:"rgba(255,255,255,.55)" }}>
+                      <span>Seat {i + 1}{disc ? <span style={{ color:"#4ade80", marginLeft:"6px" }}>{disc}</span> : ""}</span>
+                      <span>${(unitCents / 100).toFixed(0)}</span>
+                    </div>
+                  );
+                })}
+                {savings > 0 && (
+                  <div style={{ display:"flex", justifyContent:"space-between", fontFamily:dm, fontSize:".76rem", color:"#4ade80", marginTop:"4px", paddingTop:"4px", borderTop:"1px solid rgba(255,255,255,.07)" }}>
+                    <span>You save</span><span>${(savings / 100).toFixed(0)}</span>
                   </div>
                 )}
-                <div style={{ display:"flex", justifyContent:"space-between", fontFamily:dm, fontSize:".78rem", color:"#4ade80", marginTop:"4px", paddingTop:"4px", borderTop:"1px solid rgba(255,255,255,.07)" }}>
-                  <span>You save</span><span>${(savings / 100).toFixed(0)}</span>
-                </div>
               </div>
             ) : (
               <div style={{ color:S.muted, fontSize:".78rem" }}>6-week live training · June Cohort · {location}</div>
