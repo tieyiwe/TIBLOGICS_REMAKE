@@ -92,7 +92,7 @@ input:focus,select:focus,textarea:focus{outline:none}
   .pay-grid{grid-template-columns:1fr!important}
   .stat-wrap{flex-wrap:wrap;gap:12px!important}
   .stat-item{border-right:none!important;padding:8px 16px!important}
-  .nav-sub{display:none}
+  .nav-sub{display:block!important}
   .hero-pills{flex-wrap:wrap!important}
   .countdown-wrap{gap:8px!important}
   .countdown-unit{min-width:52px!important}
@@ -584,7 +584,7 @@ export default function TrainingLandingPage({
             </svg>
             <div>
               <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.1rem", letterSpacing: ".06em" }}>{C.nav.brand}</div>
-              <div className="nav-sub" style={{ fontSize: ".65rem", color: S.muted, letterSpacing: ".1em" }}>{C.nav.tagline}</div>
+              <div className="nav-sub" style={{ fontSize: ".78rem", color: S.muted, letterSpacing: ".1em" }}>{C.nav.tagline}</div>
             </div>
           </div>
           <a href="#register" className="cta-primary" style={{
