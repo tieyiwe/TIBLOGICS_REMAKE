@@ -155,6 +155,7 @@ export default function AdminEventsPage() {
   const [reminderSending, setReminderSending] = useState(false);
   const [reminderResult, setReminderResult] = useState("");
   const [collapsedEventGroups, setCollapsedEventGroups] = useState<Set<string>>(new Set());
+  const [eventSubTab, setEventSubTab] = useState<Record<string, string>>({});
   type WaitlistEntry = { id: string; email: string; firstName: string | null; whatsapp: string | null; subscribedAt: string };
   const [eventWaitlists, setEventWaitlists] = useState<Record<string, WaitlistEntry[]>>({});
   const [waitlistLoading, setWaitlistLoading] = useState<Record<string, boolean>>({});
@@ -738,195 +739,268 @@ export default function AdminEventsPage() {
                         </div>
                       </div>
 
-                      {/* Expanded panel — event details + registrations */}
-                      {isExpanded && (
-                        <div className="border-t border-[#D2DCE8] bg-[#F8FAFD]">
-                          {/* ── Event details ── */}
-                          <div className="px-4 py-4 border-b border-[#D2DCE8]">
-                            <div className="flex items-center justify-between mb-3">
-                              <h4 className="font-syne font-bold text-sm text-[#0D1B2A]">Event Details</h4>
-                              <div className="flex items-center gap-2">
-                                <a href={`/events/${event.slug}`} target="_blank" rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 text-xs font-dm font-semibold text-[#2251A3] hover:text-[#1B3A6B] px-2 py-1 rounded-lg hover:bg-[#EBF0FA] transition-colors">
-                                  <ExternalLink size={11} /> Open Page
-                                </a>
-                                <button onClick={() => openEdit(event)}
-                                  className="inline-flex items-center gap-1 text-xs font-dm font-semibold text-[#3A4A5C] hover:text-[#2251A3] px-2 py-1 rounded-lg border border-[#D2DCE8] hover:border-[#2251A3] transition-colors">
-                                  <Pencil size={11} /> Edit Text
-                                </button>
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-3">
+                      {/* Expanded panel — sub-tabs */}
+                      {isExpanded && (() => {
+                        const subTab = eventSubTab[event.id] ?? "registrations";
+                        const setSubTab = (t: string) => setEventSubTab(prev => ({ ...prev, [event.id]: t }));
+                        const waitlistCount = eventWaitlists[event.id]?.length ?? 0;
+                        const origin = typeof window !== "undefined" ? window.location.origin : "https://tiblogics.com";
+                        const url = `${origin}/events/${event.slug}`;
+                        const socialCaption = `🚀 ${event.title}\n\n${event.description.slice(0, 180)}${event.description.length > 180 ? "…" : ""}\n\n📅 ${event.date ? fmtDate(event.date) : "Coming Soon"} · ${event.location}\n${event.price > 0 ? `💰 $${(event.price / 100).toFixed(0)}` : "🎉 Free"}\n\n🔗 Register: ${url}`;
+                        const whatsappMsg = `*${event.title}*\n\n${event.description.slice(0, 200)}\n\n📅 ${event.date ? fmtDate(event.date) : "Coming Soon"}\n📍 ${event.location}\n${event.price > 0 ? `💰 $${(event.price / 100).toFixed(0)}` : "🎉 Free"}\n\n👉 Register here: ${url}`;
+                        const emailBlurb = `Hi {{First Name}},\n\nWe have an upcoming ${event.type.toLowerCase()} you won't want to miss:\n\n${event.title}\n\n${event.description}\n\n📅 Date: ${event.date ? fmtDate(event.date) : "TBD"}\n📍 Location: ${event.location}\n${event.price > 0 ? `💰 Price: $${(event.price / 100).toFixed(0)}` : "🎉 Free"}\n\nSpots are limited — register now:\n${url}\n\nBest,\nTIBLOGICS Team`;
+
+                        return (
+                          <div className="border-t border-[#D2DCE8]">
+                            {/* Sub-tab bar */}
+                            <div className="flex items-center gap-0 border-b border-[#D2DCE8] bg-white px-2 overflow-x-auto">
                               {[
-                                { icon: Calendar, label: "Start", value: event.date ? fmtDateTime(event.date) : "Not set" },
-                                { icon: Calendar, label: "End", value: event.endDate ? fmtDateTime(event.endDate) : "—" },
-                                { icon: Clock, label: "Time Slot", value: event.timeSlot || "—" },
-                                { icon: Calendar, label: "Location", value: event.location || "—" },
-                                { icon: Target, label: "Price", value: event.price > 0 ? `$${(event.price / 100).toFixed(0)} ${event.currency}` : "Free" },
-                                { icon: Users, label: "Capacity", value: event.capacity != null ? String(event.capacity) : "—" },
-                                { icon: UserCheck, label: "Spots Left", value: event.spots != null ? String(event.spots) : "—" },
-                                { icon: Tag, label: "Slug", value: event.slug },
-                                { icon: ExternalLink, label: "Zoom Link", value: event.zoomLink || "Not set" },
-                              ].map((d, di) => (
-                                <div key={di} className="min-w-0">
-                                  <div className="flex items-center gap-1 text-[#7A8FA6] mb-0.5">
-                                    <d.icon size={11} />
-                                    <span className="font-dm text-[11px] uppercase tracking-wider">{d.label}</span>
-                                  </div>
-                                  <p className="font-dm text-xs font-medium text-[#0D1B2A] truncate" title={d.value}>{d.value}</p>
-                                </div>
-                              ))}
-                            </div>
-                            {event.description && (
-                              <div className="mt-3 pt-3 border-t border-[#E8EEF5]">
-                                <span className="font-dm text-[11px] uppercase tracking-wider text-[#7A8FA6]">Description</span>
-                                <p className="font-dm text-xs text-[#3A4A5C] mt-1 leading-relaxed line-clamp-3">{event.description}</p>
-                              </div>
-                            )}
-                            <div className="mt-3 flex items-center gap-3 text-xs font-dm">
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${event.published ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                                {event.published ? "Published" : "Draft"}
-                              </span>
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${event.registrationOpen ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-600"}`}>
-                                {event.registrationOpen ? "Registration Open" : "Registration Closed"}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* ── Registrations ── */}
-                          <div className="px-4 py-2.5 bg-white border-b border-[#D2DCE8] flex items-center justify-between gap-2 flex-wrap">
-                            <h4 className="font-syne font-bold text-sm text-[#0D1B2A]">Registrations</h4>
-                            <div className="flex items-center gap-2">
-                              <button onClick={() => { setReminderModal(event); setReminderSession(1); setReminderResult(""); }}
-                                className="inline-flex items-center gap-1.5 text-xs font-dm font-semibold text-[#2251A3] hover:text-[#1B3A6B] px-2.5 py-1.5 rounded-lg border border-[#D2DCE8] hover:border-[#2251A3] transition-colors">
-                                <Mail size={11} /> Send Reminder
-                              </button>
-                              <button onClick={() => { setMsgModal(event); setMsgStatus("idle"); setMsgForm({ subject: "", body: "", recipients: "all" }); setMsgResult(""); }}
-                                className="inline-flex items-center gap-1.5 text-xs font-dm font-semibold text-[#F47C20] hover:text-[#e06a10] transition-colors">
-                                <Send size={11} /> Email Participants
-                              </button>
-                            </div>
-                          </div>
-                          {!eventRegs[event.id] ? (
-                            <div className="flex items-center justify-center py-6"><Loader2 size={18} className="animate-spin text-[#2251A3]" /></div>
-                          ) : regs.length === 0 ? (
-                            <div className="py-6 text-center">
-                              <p className="font-dm text-sm text-[#7A8FA6]">No registrations yet for this event.</p>
-                            </div>
-                          ) : (
-                            <div className="overflow-x-auto">
-                              <table className="w-full text-sm">
-                                <thead>
-                                  <tr className="border-b border-[#D2DCE8]">
-                                    {["Name", "Confirm #", "Email", "WhatsApp", "Payment", "Status", "Date", ""].map(h => (
-                                      <th key={h} className="text-left font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider px-4 py-2">{h}</th>
-                                    ))}
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-[#E8EEF5]">
-                                  {regs.map(r => (
-                                    <tr key={r.id} className="hover:bg-white transition-colors">
-                                      <td className="px-4 py-2.5 font-dm text-sm font-medium text-[#0D1B2A]">{r.firstName} {r.lastName}</td>
-                                      <td className="px-4 py-2.5">
-                                        {r.confirmationNumber ? (
-                                          <span className="font-mono text-xs font-semibold text-[#2251A3] bg-[#EBF0FA] px-2 py-0.5 rounded-full whitespace-nowrap">{r.confirmationNumber}</span>
-                                        ) : <span className="text-[#D2DCE8] text-xs">—</span>}
-                                      </td>
-                                      <td className="px-4 py-2.5">
-                                        <a href={`mailto:${r.email}`} className="font-dm text-xs text-[#2251A3] hover:underline flex items-center gap-1">
-                                          <Mail size={11} />{r.email}
-                                        </a>
-                                      </td>
-                                      <td className="px-4 py-2.5 font-dm text-xs text-[#3A4A5C]">{r.whatsapp || "—"}</td>
-                                      <td className="px-4 py-2.5">
-                                        <span className="font-dm text-xs text-[#3A4A5C] capitalize">{r.paymentMethod}</span>
-                                      </td>
-                                      <td className="px-4 py-2.5">
-                                        <StatusBadge status={r.status} onChange={s => updateRegStatus(event.id, r.id, s)} />
-                                      </td>
-                                      <td className="px-4 py-2.5 font-dm text-xs text-[#7A8FA6]">{fmtDateTime(r.createdAt)}</td>
-                                      <td className="px-4 py-2.5">
-                                        <a href={`mailto:${r.email}`} className="p-1 rounded text-[#7A8FA6] hover:text-[#2251A3] inline-flex">
-                                          <Send size={12} />
-                                        </a>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                              <div className="px-4 py-2.5 border-t border-[#D2DCE8] flex items-center gap-4">
-                                <span className="font-dm text-xs text-[#7A8FA6]">{regs.length} registration{regs.length !== 1 ? "s" : ""}</span>
-                                <span className="font-dm text-xs text-green-700">{regs.filter(r => r.status === "confirmed").length} confirmed</span>
-                                <span className="font-dm text-xs text-yellow-700">{regs.filter(r => r.status === "pending").length} pending</span>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* ── Waitlist (coming-soon events only) ── */}
-                          {!event.registrationOpen && (
-                            <div>
-                              <div className="px-4 py-2.5 bg-white border-b border-[#D2DCE8] flex items-center justify-between gap-2">
-                                <h4 className="font-syne font-bold text-sm text-[#0D1B2A]">
-                                  Waitlist
-                                  {eventWaitlists[event.id] && (
-                                    <span className="ml-2 font-dm text-xs font-normal text-[#F47C20]">
-                                      ({eventWaitlists[event.id].length} {eventWaitlists[event.id].length === 1 ? "person" : "people"})
+                                { id: "registrations", label: "Registrations", badge: counts.total || null },
+                                { id: "waitlist",      label: "Waitlist",       badge: waitlistCount || null },
+                                { id: "details",       label: "Details",        badge: null },
+                                { id: "promote",       label: "Promote & Message", badge: null },
+                              ].map(t => (
+                                <button key={t.id}
+                                  onClick={() => {
+                                    setSubTab(t.id);
+                                    if (t.id === "waitlist" && !eventWaitlists[event.id]) loadWaitlist(event.id, event.slug);
+                                    if (t.id === "registrations" && !eventRegs[event.id]) toggleEventRegs(event);
+                                  }}
+                                  className={`inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-dm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
+                                    subTab === t.id
+                                      ? "border-[#F47C20] text-[#F47C20]"
+                                      : "border-transparent text-[#7A8FA6] hover:text-[#3A4A5C]"
+                                  }`}>
+                                  {t.label}
+                                  {t.badge != null && t.badge > 0 && (
+                                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${subTab === t.id ? "bg-[#F47C20]/10 text-[#F47C20]" : "bg-[#F4F7FB] text-[#3A4A5C]"}`}>
+                                      {t.badge}
                                     </span>
                                   )}
-                                </h4>
-                                <button
-                                  onClick={() => loadWaitlist(event.id, event.slug)}
-                                  disabled={waitlistLoading[event.id]}
-                                  className="p-1.5 rounded-lg text-[#7A8FA6] hover:text-[#2251A3] hover:bg-[#EBF0FA] transition-colors"
-                                  title="Refresh waitlist"
-                                >
-                                  <Loader2 size={13} className={waitlistLoading[event.id] ? "animate-spin" : ""} />
                                 </button>
-                              </div>
-                              {waitlistLoading[event.id] ? (
-                                <div className="flex items-center justify-center py-6">
-                                  <Loader2 size={18} className="animate-spin text-[#F47C20]" />
-                                </div>
-                              ) : !eventWaitlists[event.id] || eventWaitlists[event.id].length === 0 ? (
-                                <div className="py-6 text-center">
-                                  <p className="font-dm text-sm text-[#7A8FA6]">No waitlist entries yet.</p>
-                                </div>
-                              ) : (
-                                <div className="overflow-x-auto">
-                                  <table className="w-full text-sm">
-                                    <thead>
-                                      <tr className="border-b border-[#D2DCE8]">
-                                        {["Name", "Email", "WhatsApp", "Date"].map(h => (
-                                          <th key={h} className="text-left font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider px-4 py-2">{h}</th>
-                                        ))}
-                                      </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-[#E8EEF5]">
-                                      {eventWaitlists[event.id].map(w => (
-                                        <tr key={w.id} className="hover:bg-white transition-colors">
-                                          <td className="px-4 py-2.5 font-dm text-sm font-medium text-[#0D1B2A]">{w.firstName || "—"}</td>
-                                          <td className="px-4 py-2.5">
-                                            <a href={`mailto:${w.email}`} className="font-dm text-xs text-[#2251A3] hover:underline flex items-center gap-1">
-                                              <Mail size={11} />{w.email}
-                                            </a>
-                                          </td>
-                                          <td className="px-4 py-2.5 font-dm text-xs text-[#3A4A5C]">{w.whatsapp || "—"}</td>
-                                          <td className="px-4 py-2.5 font-dm text-xs text-[#7A8FA6]">{fmtDateTime(w.subscribedAt)}</td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                  <div className="px-4 py-2.5 border-t border-[#D2DCE8]">
-                                    <span className="font-dm text-xs text-[#7A8FA6]">
-                                      {eventWaitlists[event.id].length} interested {eventWaitlists[event.id].length === 1 ? "person" : "people"}
-                                    </span>
+                              ))}
+                            </div>
+
+                            {/* ── Registrations tab ── */}
+                            {subTab === "registrations" && (
+                              <div className="bg-[#F8FAFD]">
+                                <div className="px-4 py-2.5 bg-white border-b border-[#D2DCE8] flex items-center justify-between gap-2 flex-wrap">
+                                  <span className="font-dm text-xs text-[#7A8FA6]">{counts.total} total · {counts.confirmed} confirmed · {counts.pending} pending</span>
+                                  <div className="flex items-center gap-2">
+                                    <button onClick={() => { setReminderModal(event); setReminderSession(1); setReminderResult(""); }}
+                                      className="inline-flex items-center gap-1.5 text-xs font-dm font-semibold text-[#2251A3] hover:text-[#1B3A6B] px-2.5 py-1.5 rounded-lg border border-[#D2DCE8] hover:border-[#2251A3] transition-colors">
+                                      <Mail size={11} /> Send Reminder
+                                    </button>
+                                    <button onClick={() => { setMsgModal(event); setMsgStatus("idle"); setMsgForm({ subject: "", body: "", recipients: "all" }); setMsgResult(""); }}
+                                      className="inline-flex items-center gap-1.5 text-xs font-dm font-semibold text-[#F47C20] hover:text-[#e06a10] transition-colors">
+                                      <Send size={11} /> Email All
+                                    </button>
                                   </div>
                                 </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
+                                {!eventRegs[event.id] ? (
+                                  <div className="flex items-center justify-center py-8"><Loader2 size={18} className="animate-spin text-[#2251A3]" /></div>
+                                ) : regs.length === 0 ? (
+                                  <div className="py-10 text-center">
+                                    <Users size={28} className="text-[#D2DCE8] mx-auto mb-2" />
+                                    <p className="font-dm text-sm text-[#7A8FA6]">No registrations yet.</p>
+                                  </div>
+                                ) : (
+                                  <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                      <thead>
+                                        <tr className="border-b border-[#D2DCE8] bg-white">
+                                          {["Name", "Confirm #", "Email", "WhatsApp", "Payment", "Amount", "Status", "Date"].map(h => (
+                                            <th key={h} className="text-left font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider px-4 py-2.5">{h}</th>
+                                          ))}
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-[#E8EEF5]">
+                                        {regs.map(r => (
+                                          <tr key={r.id} className="hover:bg-white transition-colors">
+                                            <td className="px-4 py-2.5 font-dm text-sm font-medium text-[#0D1B2A] whitespace-nowrap">{r.firstName} {r.lastName}</td>
+                                            <td className="px-4 py-2.5">
+                                              {r.confirmationNumber
+                                                ? <span className="font-mono text-xs font-semibold text-[#2251A3] bg-[#EBF0FA] px-2 py-0.5 rounded-full whitespace-nowrap">{r.confirmationNumber}</span>
+                                                : <span className="text-[#D2DCE8] text-xs">—</span>}
+                                            </td>
+                                            <td className="px-4 py-2.5">
+                                              <a href={`mailto:${r.email}`} className="font-dm text-xs text-[#2251A3] hover:underline flex items-center gap-1">{r.email}</a>
+                                            </td>
+                                            <td className="px-4 py-2.5 font-dm text-xs text-[#3A4A5C]">{r.whatsapp || "—"}</td>
+                                            <td className="px-4 py-2.5 font-dm text-xs text-[#3A4A5C] capitalize">{r.paymentMethod}</td>
+                                            <td className="px-4 py-2.5 font-dm text-xs text-[#3A4A5C]">{r.price > 0 ? `$${(r.price / 100).toFixed(0)}` : "Free"}</td>
+                                            <td className="px-4 py-2.5">
+                                              <StatusBadge status={r.status} onChange={s => updateRegStatus(event.id, r.id, s)} />
+                                            </td>
+                                            <td className="px-4 py-2.5 font-dm text-xs text-[#7A8FA6] whitespace-nowrap">{fmtDateTime(r.createdAt)}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                    <div className="px-4 py-2.5 border-t border-[#D2DCE8] flex items-center gap-4 bg-white">
+                                      <span className="font-dm text-xs text-[#7A8FA6]">{regs.length} registration{regs.length !== 1 ? "s" : ""}</span>
+                                      {regs.filter(r => r.status === "paid").length > 0 && <span className="font-dm text-xs font-semibold text-emerald-700">{regs.filter(r => r.status === "paid").length} paid ✓</span>}
+                                      {counts.confirmed > 0 && <span className="font-dm text-xs text-green-700">{counts.confirmed} confirmed</span>}
+                                      {counts.pending > 0 && <span className="font-dm text-xs text-yellow-700">{counts.pending} pending</span>}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* ── Waitlist tab ── */}
+                            {subTab === "waitlist" && (
+                              <div className="bg-[#F8FAFD]">
+                                <div className="px-4 py-2.5 bg-white border-b border-[#D2DCE8] flex items-center justify-between gap-2">
+                                  <span className="font-dm text-xs text-[#7A8FA6]">People who asked to be notified when registration opens</span>
+                                  <button onClick={() => loadWaitlist(event.id, event.slug)} disabled={waitlistLoading[event.id]}
+                                    className="inline-flex items-center gap-1 text-xs font-dm text-[#2251A3] hover:text-[#1B3A6B] px-2 py-1.5 rounded-lg border border-[#D2DCE8] hover:border-[#2251A3] transition-colors">
+                                    <Loader2 size={11} className={waitlistLoading[event.id] ? "animate-spin" : ""} /> Refresh
+                                  </button>
+                                </div>
+                                {waitlistLoading[event.id] ? (
+                                  <div className="flex items-center justify-center py-8"><Loader2 size={18} className="animate-spin text-[#F47C20]" /></div>
+                                ) : !eventWaitlists[event.id] || eventWaitlists[event.id].length === 0 ? (
+                                  <div className="py-10 text-center">
+                                    <Users size={28} className="text-[#D2DCE8] mx-auto mb-2" />
+                                    <p className="font-dm text-sm text-[#7A8FA6]">No waitlist entries yet.</p>
+                                  </div>
+                                ) : (
+                                  <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                      <thead>
+                                        <tr className="border-b border-[#D2DCE8] bg-white">
+                                          {["Name", "Email", "WhatsApp", "Signed up"].map(h => (
+                                            <th key={h} className="text-left font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider px-4 py-2.5">{h}</th>
+                                          ))}
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-[#E8EEF5]">
+                                        {eventWaitlists[event.id].map(w => (
+                                          <tr key={w.id} className="hover:bg-white transition-colors">
+                                            <td className="px-4 py-2.5 font-dm text-sm font-medium text-[#0D1B2A]">{w.firstName || "—"}</td>
+                                            <td className="px-4 py-2.5">
+                                              <a href={`mailto:${w.email}`} className="font-dm text-xs text-[#2251A3] hover:underline flex items-center gap-1"><Mail size={11} />{w.email}</a>
+                                            </td>
+                                            <td className="px-4 py-2.5 font-dm text-xs text-[#3A4A5C]">{w.whatsapp || "—"}</td>
+                                            <td className="px-4 py-2.5 font-dm text-xs text-[#7A8FA6]">{fmtDateTime(w.subscribedAt)}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                    <div className="px-4 py-2.5 border-t border-[#D2DCE8] bg-white">
+                                      <span className="font-dm text-xs text-[#7A8FA6]">{eventWaitlists[event.id].length} {eventWaitlists[event.id].length === 1 ? "person" : "people"} on waitlist</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* ── Details tab ── */}
+                            {subTab === "details" && (
+                              <div className="px-5 py-4 bg-[#F8FAFD]">
+                                <div className="flex items-center justify-between mb-4">
+                                  <h4 className="font-syne font-bold text-sm text-[#0D1B2A]">Event Details</h4>
+                                  <div className="flex items-center gap-2">
+                                    <a href={`/events/${event.slug}`} target="_blank" rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 text-xs font-dm font-semibold text-[#2251A3] hover:text-[#1B3A6B] px-2.5 py-1.5 rounded-lg border border-[#D2DCE8] hover:border-[#2251A3] transition-colors">
+                                      <ExternalLink size={11} /> Open Page
+                                    </a>
+                                    <button onClick={() => openEdit(event)}
+                                      className="inline-flex items-center gap-1.5 text-xs font-dm font-semibold text-white bg-[#2251A3] hover:bg-[#1B3A6B] px-2.5 py-1.5 rounded-lg transition-colors">
+                                      <Pencil size={11} /> Edit Event
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 bg-white border border-[#D2DCE8] rounded-xl p-4">
+                                  {[
+                                    { icon: Calendar, label: "Start",       value: event.date ? fmtDateTime(event.date) : "Not set" },
+                                    { icon: Calendar, label: "End",         value: event.endDate ? fmtDateTime(event.endDate) : "—" },
+                                    { icon: Clock,    label: "Time Slot",   value: event.timeSlot || "—" },
+                                    { icon: Calendar, label: "Location",    value: event.location || "—" },
+                                    { icon: Target,   label: "Price",       value: event.price > 0 ? `$${(event.price / 100).toFixed(0)} ${event.currency}` : "Free" },
+                                    { icon: Users,    label: "Capacity",    value: event.capacity != null ? String(event.capacity) : "—" },
+                                    { icon: UserCheck,label: "Spots Left",  value: event.spots != null ? String(event.spots) : "—" },
+                                    { icon: Tag,      label: "Slug",        value: event.slug },
+                                    { icon: ExternalLink, label: "Zoom",    value: event.zoomLink || "Not set" },
+                                  ].map((d, di) => (
+                                    <div key={di} className="min-w-0">
+                                      <div className="flex items-center gap-1 text-[#7A8FA6] mb-0.5">
+                                        <d.icon size={11} />
+                                        <span className="font-dm text-[11px] uppercase tracking-wider">{d.label}</span>
+                                      </div>
+                                      <p className="font-dm text-xs font-medium text-[#0D1B2A] truncate" title={d.value}>{d.value}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                                {event.description && (
+                                  <div className="mt-3 bg-white border border-[#D2DCE8] rounded-xl p-4">
+                                    <span className="font-dm text-[11px] uppercase tracking-wider text-[#7A8FA6]">Description</span>
+                                    <p className="font-dm text-xs text-[#3A4A5C] mt-1 leading-relaxed">{event.description}</p>
+                                  </div>
+                                )}
+                                <div className="mt-3 flex items-center gap-3 text-xs font-dm">
+                                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-medium ${event.published ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                                    {event.published ? "Published" : "Draft"}
+                                  </span>
+                                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-medium ${event.registrationOpen ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-600"}`}>
+                                    {event.registrationOpen ? "Registration Open" : "Registration Closed"}
+                                  </span>
+                                  {Array.isArray(event.tags) && event.tags.length > 0 && (
+                                    <span className="font-dm text-xs text-[#7A8FA6]">{event.tags.join(", ")}</span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* ── Promote & Message tab ── */}
+                            {subTab === "promote" && (
+                              <div className="p-5 bg-[#F8FAFD]">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                  <div className="bg-white border border-[#D2DCE8] rounded-xl p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="font-dm font-semibold text-xs text-[#0D1B2A]">Registration Link</span>
+                                      <CopyBtn text={url} />
+                                    </div>
+                                    <p className="font-dm text-xs text-[#2251A3] break-all">{url}</p>
+                                  </div>
+                                  <div className="bg-white border border-[#D2DCE8] rounded-xl p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="font-dm font-semibold text-xs text-[#0D1B2A]">Social Caption</span>
+                                      <CopyBtn text={socialCaption} label="Copy" />
+                                    </div>
+                                    <p className="font-dm text-xs text-[#7A8FA6] whitespace-pre-line line-clamp-4">{socialCaption}</p>
+                                  </div>
+                                  <div className="bg-white border border-[#D2DCE8] rounded-xl p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="font-dm font-semibold text-xs text-[#0D1B2A]">WhatsApp Message</span>
+                                      <CopyBtn text={whatsappMsg} label="Copy" />
+                                    </div>
+                                    <p className="font-dm text-xs text-[#7A8FA6] whitespace-pre-line line-clamp-4">{whatsappMsg}</p>
+                                  </div>
+                                  <div className="bg-white border border-[#D2DCE8] rounded-xl p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="font-dm font-semibold text-xs text-[#0D1B2A]">Email Blurb</span>
+                                      <CopyBtn text={emailBlurb} label="Copy" />
+                                    </div>
+                                    <p className="font-dm text-xs text-[#7A8FA6] whitespace-pre-line line-clamp-4">{emailBlurb}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <button onClick={() => { setReminderModal(event); setReminderSession(1); setReminderResult(""); }}
+                                    className="inline-flex items-center gap-1.5 text-xs font-dm font-semibold text-[#2251A3] hover:text-[#1B3A6B] px-3 py-2 rounded-xl border border-[#D2DCE8] hover:border-[#2251A3] bg-white transition-colors">
+                                    <Mail size={12} /> Send Session Reminder
+                                  </button>
+                                  <button onClick={() => { setMsgModal(event); setMsgStatus("idle"); setMsgForm({ subject: `Update: ${event.title}`, body: "", recipients: "all" }); setMsgResult(""); }}
+                                    className="inline-flex items-center gap-1.5 text-xs font-dm font-semibold text-white bg-[#F47C20] hover:bg-[#e06a10] px-3 py-2 rounded-xl transition-colors">
+                                    <Send size={12} /> Email All Participants
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   );
                 })}
