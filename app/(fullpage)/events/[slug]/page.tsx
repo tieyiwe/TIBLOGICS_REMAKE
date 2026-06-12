@@ -8,7 +8,10 @@ import { mergeContent } from "@/lib/training-content";
 
 export const revalidate = 60; // edits made in admin appear within ~1 min
 
-interface Props { params: Promise<{ slug: string }> }
+interface Props {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ payment?: string; conf?: string }>;
+}
 
 const SITE_URL = (process.env.NEXTAUTH_URL ?? "https://tiblogics.com").replace(/\/$/, "");
 
@@ -58,8 +61,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function EventPage({ params }: Props) {
+export default async function EventPage({ params, searchParams }: Props) {
   const { slug } = await params;
+  const { payment, conf } = await searchParams;
 
   let event: Event | null = null;
 
@@ -134,6 +138,8 @@ export default async function EventPage({ params }: Props) {
         stripeLink={event.stripePaymentLink ?? null}
         registrationOpen={event.registrationOpen}
         content={mergeContent(event.content)}
+        paymentResult={payment === "success" ? "success" : payment === "cancelled" ? "cancelled" : null}
+        confirmationNumber={conf ?? null}
       />
     </>
   );

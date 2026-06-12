@@ -16,6 +16,8 @@ interface Props {
   stripeLink: string | null;
   registrationOpen: boolean;
   content: TrainingContent;  // merged editable copy (defaults ⊕ admin overrides)
+  paymentResult: "success" | "cancelled" | null;
+  confirmationNumber: string | null;
 }
 
 const STYLES = `
@@ -499,6 +501,7 @@ export default function TrainingLandingPage({
   eventSlug, eventTitle, eventDescription, startDate, spots,
   price, currency, location, timeSlot,
   stripeLink, registrationOpen, content,
+  paymentResult, confirmationNumber,
 }: Props) {
   const C = content;
   const priceDisplay = price === 0 ? "Free" : `$${(price / 100).toFixed(0)} ${currency}`;
@@ -525,6 +528,40 @@ export default function TrainingLandingPage({
   return (
     <div style={{ fontFamily: dm, background: S.darker, color: "#fff", overflowX: "hidden", position: "relative" }}>
       <style dangerouslySetInnerHTML={{ __html: STYLES }} />
+
+      {/* ── PAYMENT RESULT BANNER ── */}
+      {paymentResult === "success" && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100%", zIndex: 2000,
+          background: "linear-gradient(135deg,#16a34a,#15803d)",
+          padding: "18px 24px", textAlign: "center",
+          boxShadow: "0 4px 24px rgba(0,0,0,.3)",
+          animation: "fadeUp .5s ease",
+        }}>
+          <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+            <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.05rem", color: "#fff", marginBottom: "4px" }}>
+              🎉 Payment confirmed — You&apos;re in!
+            </div>
+            <div style={{ fontFamily: dm, fontSize: ".85rem", color: "rgba(255,255,255,.85)" }}>
+              {confirmationNumber && <>Confirmation <strong>{confirmationNumber}</strong> · </>}
+              Check your inbox — a welcome email is on its way from arfa_edu@tiblogics.com
+            </div>
+          </div>
+        </div>
+      )}
+      {paymentResult === "cancelled" && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100%", zIndex: 2000,
+          background: "#1C2526", borderBottom: "1px solid rgba(244,124,76,.3)",
+          padding: "14px 24px", textAlign: "center",
+          animation: "fadeUp .5s ease",
+        }}>
+          <div style={{ fontFamily: dm, fontSize: ".9rem", color: "rgba(255,255,255,.7)" }}>
+            Payment cancelled — your spot is not yet reserved.{" "}
+            <a href="#register" style={{ color: S.orange, fontWeight: 600, textDecoration: "none" }}>Try again →</a>
+          </div>
+        </div>
+      )}
 
       {/* ── NAV ── */}
       <nav className="landing-nav" style={{
