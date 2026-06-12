@@ -33,6 +33,12 @@ body{overflow-x:hidden}
 @keyframes particleFloat{0%{transform:translateY(0) translateX(0);opacity:0}10%{opacity:.8}90%{opacity:.3}100%{transform:translateY(-140px) translateX(var(--drift,0px));opacity:0}}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(244,124,76,.4)}70%{box-shadow:0 0 0 10px rgba(244,124,76,0)}}
 @keyframes countFlip{from{transform:translateY(-10px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+@keyframes promoGlow{0%,100%{box-shadow:0 0 0 0 rgba(249,167,56,0),0 0 16px rgba(244,124,76,.2)}50%{box-shadow:0 0 0 6px rgba(249,167,56,0),0 0 32px rgba(244,124,76,.55)}}
+@keyframes tagFlash{0%,100%{opacity:1}50%{opacity:.45}}
+.promo-banner{animation:promoGlow 2.2s ease infinite}
+.promo-code{background:linear-gradient(90deg,#F47C4C,#F9A738,#fff,#F9A738,#F47C4C);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 2.8s linear infinite}
+.promo-tag{animation:tagFlash 1.4s ease infinite}
 .reveal{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
 .reveal.visible{opacity:1;transform:translateY(0)}
 .stagger-child{opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease}
@@ -264,6 +270,96 @@ function CountdownTimer({ startDate }: { startDate: string }) {
   );
 }
 
+// ─── Promo Banner ─────────────────────────────────────────────────────────────
+const PROMO_CODE = "TIBAIREADY2026";
+const PROMO_EXPIRES = new Date("2026-06-19T23:59:59-04:00"); // midnight ET June 19
+
+function PromoBanner({ compact = false }: { compact?: boolean }) {
+  const [copied, setCopied] = useState(false);
+  const [timeLeft, setTimeLeft] = useState({ h: 0, m: 0, s: 0, expired: false });
+
+  useEffect(() => {
+    const tick = () => {
+      const diff = PROMO_EXPIRES.getTime() - Date.now();
+      if (diff <= 0) { setTimeLeft({ h: 0, m: 0, s: 0, expired: true }); return; }
+      setTimeLeft({
+        h: Math.floor(diff / 3600000),
+        m: Math.floor((diff % 3600000) / 60000),
+        s: Math.floor((diff % 60000) / 1000),
+        expired: false,
+      });
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  function copyCode() {
+    navigator.clipboard.writeText(PROMO_CODE).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    });
+  }
+
+  if (timeLeft.expired) return null;
+
+  const timer = `${pad(timeLeft.h)}h ${pad(timeLeft.m)}m ${pad(timeLeft.s)}s`;
+
+  return (
+    <div className="promo-banner" onClick={copyCode} style={{
+      background: "linear-gradient(135deg, rgba(249,167,56,.12), rgba(244,124,76,.08))",
+      border: "1px solid rgba(249,167,56,.4)",
+      borderRadius: compact ? "14px" : "18px",
+      padding: compact ? "14px 18px" : "20px 24px",
+      cursor: "pointer",
+      userSelect: "none",
+      position: "relative",
+      overflow: "hidden",
+      marginBottom: compact ? "20px" : "0",
+    }}>
+      {/* Decorative shimmer strip */}
+      <div style={{ position:"absolute", top:0, left:0, right:0, height:"2px", background:"linear-gradient(90deg,transparent,#F9A738,transparent)", animation:"shimmer 2.8s linear infinite", backgroundSize:"200% auto" }} />
+
+      <div style={{ display:"flex", alignItems:"center", gap:"10px", flexWrap:"wrap" }}>
+        {/* Flashing tag */}
+        <span className="promo-tag" style={{
+          background:"linear-gradient(135deg,#F47C4C,#F9A738)", color:"#131A1B",
+          fontFamily:syne, fontWeight:800, fontSize:".68rem", letterSpacing:".08em",
+          padding:"3px 10px", borderRadius:"20px", whiteSpace:"nowrap", flexShrink:0,
+        }}>🎉 15% OFF</span>
+
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:"8px", flexWrap:"wrap" }}>
+            <span style={{ fontFamily:dm, fontSize: compact ? ".82rem" : ".88rem", color:"rgba(255,255,255,.75)" }}>
+              Use code
+            </span>
+            <span className="promo-code" style={{
+              fontFamily:syne, fontWeight:800, fontSize: compact ? "1rem" : "1.15rem",
+              letterSpacing:".08em",
+            }}>{PROMO_CODE}</span>
+            <span style={{ fontFamily:dm, fontSize:".78rem", color:"rgba(255,255,255,.5)" }}>at checkout</span>
+          </div>
+          <div style={{ fontFamily:dm, fontSize:".73rem", color:"rgba(255,255,255,.45)", marginTop:"3px" }}>
+            Expires June 19 · {timer} remaining
+          </div>
+        </div>
+
+        {/* Copy button */}
+        <div style={{
+          background: copied ? "rgba(74,222,128,.15)" : "rgba(255,255,255,.06)",
+          border: `1px solid ${copied ? "rgba(74,222,128,.4)" : "rgba(255,255,255,.12)"}`,
+          borderRadius:"10px", padding:"6px 12px", flexShrink:0,
+          fontFamily:dm, fontSize:".75rem", fontWeight:600,
+          color: copied ? "#4ade80" : "rgba(255,255,255,.6)",
+          transition:"all .25s ease", whiteSpace:"nowrap",
+        }}>
+          {copied ? "✓ Copied!" : "Copy"}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Registration Form (isolated so typing doesn't re-render the whole page) ──
 interface FormProps {
   eventSlug: string; eventTitle: string; price: number;
@@ -459,6 +555,7 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
             </div>
             <div style={{ color:S.muted, fontSize:".78rem" }}>6-week live training · June Cohort · {location}</div>
           </div>
+          <PromoBanner compact />
           <div style={{ marginBottom:"24px" }}>
             <div style={{ fontFamily:dm, fontSize:".78rem", color:S.muted, marginBottom:"12px", letterSpacing:".06em", textTransform:"uppercase" }}>Select Payment Method</div>
             <div className="pay-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
@@ -806,8 +903,15 @@ export default function TrainingLandingPage({
         </div>
       </section>
 
+      {/* ── PROMO BANNER ── */}
+      <section style={{ padding: "0 24px 48px" }}>
+        <div style={{ maxWidth: "520px", margin: "0 auto" }}>
+          <PromoBanner />
+        </div>
+      </section>
+
       {/* ── PRICING ── */}
-      <section style={{ padding: "80px 24px" }}>
+      <section style={{ padding: "0 24px 80px" }}>
         <div style={{ maxWidth: "520px", margin: "0 auto" }} className="reveal">
           {/* Card */}
           <div className="pricing-inner" style={{ background: S.dark, border: `1px solid ${S.border}`, borderRadius: "24px", padding: "40px 36px", textAlign: "center", position: "relative", overflow: "hidden" }}>
