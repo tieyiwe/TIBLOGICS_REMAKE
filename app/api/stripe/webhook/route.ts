@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import prisma from "@/lib/prisma";
-import { sendConfirmationEmail, sendTiweNotification, sendEventWelcomeEmail } from "@/lib/resend";
+import { sendConfirmationEmail, sendTiweNotification, sendEventWelcomeEmail, sendAdminNewRegistrationAlert } from "@/lib/resend";
 import Stripe from "stripe";
 import { createMeeting } from "@/lib/meeting-providers";
 import stripe from "@/lib/stripe";
@@ -42,6 +42,20 @@ export async function POST(req: Request) {
             status: "paid",
             stripeSessionId: session.id,
           },
+        });
+
+        // Notify admin of confirmed sale
+        sendAdminNewRegistrationAlert({
+          firstName: reg.firstName,
+          lastName: reg.lastName,
+          email: reg.email,
+          eventName: reg.eventName,
+          confirmationNumber: reg.confirmationNumber ?? undefined,
+          whatsapp: reg.whatsapp,
+        }).then(() => {
+          console.log(`[stripe/webhook] ✓ Admin alert sent for ${reg.confirmationNumber}`);
+        }).catch((err) => {
+          console.error(`[stripe/webhook] ✗ Admin alert FAILED:`, err instanceof Error ? err.message : err);
         });
 
         // Send the "You're in — let's build" welcome email now that payment
