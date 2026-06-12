@@ -13,7 +13,7 @@ const navLinks = [
   { label: "Startups & Products", href: "/products" },
   { label: "Try Smart Tools", href: "/tools" },
   { label: "AI TIMES", href: "/ai-times" },
-  { label: "Events", href: "/events" },
+  { label: "Events & Training", href: "/events" },
   { label: "About", href: "/about" },
 ];
 
