@@ -338,7 +338,7 @@ export async function sendEventWelcomeEmail(reg: {
   .details-title { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #F47C4C; margin-bottom: 16px; }
   .detail-row { display: flex; gap: 14px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
   .detail-row:last-child { border-bottom: none; }
-  .detail-icon { font-size: 16px; flex-shrink: 0; width: 22px; text-align: center; margin-top: 1px; }
+  .detail-icon { font-size: 16px; flex-shrink: 0; width: 22px; text-align: center; margin-top: 1px; margin-right: 14px; }
   .detail-label { font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2px; }
   .detail-value { font-size: 14px; color: #E8EDEE; font-weight: 500; }
   .divider { display: flex; align-items: center; gap: 12px; margin: 28px 0 20px; }
@@ -352,7 +352,7 @@ export async function sendEventWelcomeEmail(reg: {
   .label-tech      { background: rgba(6,95,70,0.15); color: #6EE7B7; }
   .label-mindset   { background: rgba(244,124,76,0.12); color: #F47C4C; }
   .check-item { display: flex; gap: 12px; align-items: flex-start; padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 7px; }
-  .check-box { width: 18px; height: 18px; border: 1.5px solid rgba(244,124,76,0.4); border-radius: 5px; flex-shrink: 0; margin-top: 1px; }
+  .check-box { width: 18px; height: 18px; border: 1.5px solid rgba(244,124,76,0.4); border-radius: 5px; flex-shrink: 0; margin-top: 1px; margin-right: 12px; }
   .check-main { font-size: 13.5px; color: #E8EDEE; font-weight: 500; margin-bottom: 2px; }
   .check-note { font-size: 12px; color: rgba(255,255,255,0.4); line-height: 1.5; }
   .check-link { color: #F47C4C; text-decoration: none; }
@@ -363,7 +363,7 @@ export async function sendEventWelcomeEmail(reg: {
   .timeline { margin: 20px 0; }
   .tl-row { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 6px; }
   .tl-left { display: flex; flex-direction: column; align-items: center; }
-  .tl-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; font-family: 'Syne', sans-serif; }
+  .tl-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; font-family: 'Syne', sans-serif; margin-right: 14px; }
   .tl-line { width: 1px; background: rgba(255,255,255,0.08); flex: 1; min-height: 8px; margin: 2px 0; }
   .tl-content { flex: 1; padding-bottom: 6px; }
   .tl-date { font-size: 11px; color: rgba(255,255,255,0.35); letter-spacing: 0.06em; margin-bottom: 2px; }
