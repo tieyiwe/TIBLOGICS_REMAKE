@@ -1306,7 +1306,14 @@ export default function TrainingLandingPage({
                   </svg>
                 </div>
                 <div className="faq-a">
-                  <div style={{ color:S.muted, fontSize:".88rem", lineHeight:1.75, paddingBottom:"20px" }}>{f.a}</div>
+                  <div style={{ color:S.muted, fontSize:".88rem", lineHeight:1.75, paddingBottom: f.link ? "12px" : "20px" }}>{f.a}</div>
+                  {f.link && (
+                    <div style={{ paddingBottom:"20px" }}>
+                      <a href={f.link.href} style={{ color:S.orange, fontSize:".82rem", fontWeight:600, textDecoration:"none", borderBottom:`1px solid rgba(244,124,76,.35)`, paddingBottom:"1px" }}>
+                        {f.link.text}
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

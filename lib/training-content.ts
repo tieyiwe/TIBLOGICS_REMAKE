@@ -16,7 +16,7 @@ export interface ScheduleRow { session: string; date: string; topic: string; lab
 export interface IncludeCard { title: string; subtitle: string; desc: string; color: string }
 export interface Requirement { icon: string; title: string; subtitle: string }
 export interface Callout { title: string; body: string; color: string }
-export interface Faq { q: string; a: string }
+export interface Faq { q: string; a: string; link?: { href: string; text: string } }
 
 export interface TrainingContent {
   nav: { brand: string; tagline: string; cta: string };
@@ -228,7 +228,7 @@ export const DEFAULT_TRAINING_CONTENT: TrainingContent = {
       { q: "Is the $849 all-inclusive?", a: "Yes. The $849 covers everything: all 4 live sessions, all handouts, the TIBLOGICS AI Playbook, session recordings, the cohort WhatsApp group, mid-week check-ins, 2 weeks of post-training support, and your numbered certificate including the graduation ceremony." },
       { q: "What is vibe coding — do I need to know how to code?", a: "No coding knowledge required. Vibe coding is a new way of building software where you describe what you want in plain English and AI writes the code for you. In Session 4, we'll introduce the concept and walk you through building a simple working tool using only natural language — covering the full flow from idea to a finished, working result, the way a software engineer would. You don't need to understand a single line of code; everything is taught live, step by step." },
       { q: "What happens after the 4 sessions?", a: "After Session 4, you have 2 weeks of post-training support — ask questions in the WhatsApp group and get responses from the training team. The graduation and certificate ceremony is held separately (date announced after Session 4). Your session recordings are yours for lifetime access." },
-      { q: "Can I get a refund?", a: "Refund requests made more than 72 hours before the first session (June 27, 2026) will be honored in full. Requests made within 72 hours of the start date are not eligible for a refund but can be transferred to a future cohort. No refunds after Session 1." },
+      { q: "Can I get a refund?", a: "Full refund ($849) if you cancel 5+ days before Session 1 — by June 22, 2026. A 50% refund ($424.50) applies for cancellations 3–4 days before Session 1 (June 23–24). No refunds within 48 hours of Session 1 or after it has begun. No-shows without prior written notice are not eligible for a refund. If TIBLOGICS cancels the program, all participants receive a full refund within 10 business days. To cancel, email arfa_edu@tiblogics.com.", link: { href: "/training-terms", text: "View full Terms & Conditions →" } },
     ],
   },
   footer: {
