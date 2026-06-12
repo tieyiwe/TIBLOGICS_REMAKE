@@ -393,16 +393,16 @@ export async function sendEventWelcomeEmail(reg: {
   <div class="header">
     <div class="logo-row">
       <div class="logo-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
-          <circle cx="5" cy="12" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="19" cy="19" r="2"/>
-          <circle cx="12" cy="8" r="2"/><circle cx="12" cy="17" r="2"/>
-          <line x1="7" y1="12" x2="10" y2="9"/><line x1="14" y1="8" x2="17" y2="6"/>
-          <line x1="14" y1="16" x2="17" y2="18"/><line x1="12" y1="10" x2="12" y2="15"/>
-          <line x1="7" y1="12" x2="10" y2="16"/>
+        <svg viewBox="0 0 38 38" fill="none" width="22" height="22">
+          <circle cx="8" cy="19" r="4.5" fill="rgba(255,255,255,0.85)"/>
+          <circle cx="19" cy="7" r="3.5" fill="rgba(255,255,255,0.65)"/>
+          <circle cx="30" cy="19" r="4.5" fill="rgba(255,255,255,0.85)"/>
+          <circle cx="19" cy="31" r="3.5" fill="rgba(255,255,255,0.65)"/>
+          <circle cx="19" cy="19" r="6" fill="white"/>
         </svg>
       </div>
       <div>
-        <div class="logo-name">TIBLOGICS</div>
+        <div class="logo-name">ARFA &nbsp;<span style="color:rgba(255,255,255,0.35);font-weight:400">|</span>&nbsp; TIBLOGICS</div>
         <div class="logo-sub">AI Implementation &amp; Digital Solutions</div>
       </div>
     </div>
