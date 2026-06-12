@@ -437,9 +437,16 @@ function EventCard({ event }: { event: EventItem }) {
               </span>
             </div>
           )}
-          {!isOpen && event.spots != null && (
-            <div className="flex items-center gap-2 text-xs font-dm font-semibold text-[#F47C20]">
-              <Users size={13} /><span>{event.spots} seats available</span>
+          {!isOpen && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 text-xs font-dm font-semibold px-2.5 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20]">
+                <Calendar size={12} /><span>This June</span>
+              </div>
+              {event.spots != null && (
+                <div className="flex items-center gap-1.5 text-xs font-dm font-semibold text-[#F47C20]">
+                  <Users size={13} /><span>{event.spots} seats available</span>
+                </div>
+              )}
             </div>
           )}
         </div>
