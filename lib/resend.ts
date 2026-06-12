@@ -426,7 +426,7 @@ export async function sendEventWelcomeEmail(reg: {
     <div class="details-card">
       <div class="details-title">Your Training Details</div>
       ${reg.confirmationNumber ? `<div class="detail-row"><div class="detail-icon">🎫</div><div><div class="detail-label">Confirmation #</div><div class="detail-value" style="font-weight:700;color:#F47C4C;letter-spacing:.04em">${reg.confirmationNumber}</div></div></div>` : ""}
-      <div class="detail-row"><div class="detail-icon">📅</div><div><div class="detail-label">Start Date</div><div class="detail-value">Saturday, June 20, 2025</div></div></div>
+      <div class="detail-row"><div class="detail-icon">📅</div><div><div class="detail-label">Start Date</div><div class="detail-value">Saturday, June 27, 2026</div></div></div>
       <div class="detail-row"><div class="detail-icon">⏰</div><div><div class="detail-label">Time (every Saturday)</div><div class="detail-value">9:30 AM – 1:00 PM · includes breaks</div></div></div>
       <div class="detail-row"><div class="detail-icon">💻</div><div><div class="detail-label">Format</div><div class="detail-value">Live on Zoom · Link sent 48hrs before Session 1</div></div></div>
       <div class="detail-row"><div class="detail-icon">💬</div><div><div class="detail-label">Community</div><div class="detail-value">WhatsApp cohort group · Invite sent separately</div></div></div>
@@ -435,14 +435,14 @@ export async function sendEventWelcomeEmail(reg: {
 
     <div class="divider"><div class="divider-line"></div><div class="divider-text">Your 4-session journey</div><div class="divider-line"></div></div>
     <div class="timeline">
-      <div class="tl-row"><div class="tl-left"><div class="tl-dot" style="background:rgba(30,64,175,0.2);color:#93C5FD">1</div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-date">June 20, 2025</div><div class="tl-title">AI Foundations — See the World Differently <span class="tl-badge" style="background:rgba(30,64,175,0.15);color:#93C5FD">Beginner-friendly</span></div></div></div>
-      <div class="tl-row"><div class="tl-left"><div class="tl-dot" style="background:rgba(146,64,14,0.2);color:#FCD34D">2</div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-date">June 27, 2025</div><div class="tl-title">AI in Your Work — Save 10 Hours a Week <span class="tl-badge" style="background:rgba(146,64,14,0.15);color:#FCD34D">Hands-on lab</span></div></div></div>
-      <div class="tl-row"><div class="tl-left"><div class="tl-dot" style="background:rgba(6,95,70,0.2);color:#6EE7B7">3</div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-date">July 4, 2025</div><div class="tl-title">Build Income with AI — Design Your Offer <span class="tl-badge" style="background:rgba(6,95,70,0.15);color:#6EE7B7">Revenue focused</span></div></div></div>
-      <div class="tl-row"><div class="tl-left"><div class="tl-dot" style="background:rgba(76,29,149,0.2);color:#C4B5FD">4</div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-date">July 11, 2025</div><div class="tl-title">AI Agents, Automation &amp; Vibe Coding <span class="tl-badge" style="background:rgba(76,29,149,0.15);color:#C4B5FD">Advanced build</span></div></div></div>
+      <div class="tl-row"><div class="tl-left"><div class="tl-dot" style="background:rgba(30,64,175,0.2);color:#93C5FD">1</div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-date">June 27, 2026</div><div class="tl-title">AI Foundations — See the World Differently <span class="tl-badge" style="background:rgba(30,64,175,0.15);color:#93C5FD">Beginner-friendly</span></div></div></div>
+      <div class="tl-row"><div class="tl-left"><div class="tl-dot" style="background:rgba(146,64,14,0.2);color:#FCD34D">2</div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-date">July 4, 2026</div><div class="tl-title">AI in Your Work — Save 10 Hours a Week <span class="tl-badge" style="background:rgba(146,64,14,0.15);color:#FCD34D">Hands-on lab</span></div></div></div>
+      <div class="tl-row"><div class="tl-left"><div class="tl-dot" style="background:rgba(6,95,70,0.2);color:#6EE7B7">3</div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-date">July 11, 2026</div><div class="tl-title">Build Income with AI — Design Your Offer <span class="tl-badge" style="background:rgba(6,95,70,0.15);color:#6EE7B7">Revenue focused</span></div></div></div>
+      <div class="tl-row"><div class="tl-left"><div class="tl-dot" style="background:rgba(76,29,149,0.2);color:#C4B5FD">4</div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-date">July 18, 2026</div><div class="tl-title">AI Agents, Automation &amp; Vibe Coding <span class="tl-badge" style="background:rgba(76,29,149,0.15);color:#C4B5FD">Advanced build</span></div></div></div>
       <div class="tl-row"><div class="tl-left"><div class="tl-dot" style="background:rgba(30,58,95,0.2);color:#BAE6FD">🎓</div></div><div class="tl-content"><div class="tl-date">Date — TBA</div><div class="tl-title">Certificate &amp; Graduation Ceremony <span class="tl-badge" style="background:rgba(30,58,95,0.15);color:#BAE6FD">Bonus session</span></div></div></div>
     </div>
 
-    <div class="divider"><div class="divider-line"></div><div class="divider-text">Get ready before June 20</div><div class="divider-line"></div></div>
+    <div class="divider"><div class="divider-line"></div><div class="divider-text">Get ready before June 27</div><div class="divider-line"></div></div>
     <div class="checklist-title">Your Pre-Training Checklist</div>
     <p class="checklist-sub">Complete these before Session 1. Everything takes about 20 minutes total — arriving prepared means you get more out of every minute in the room.</p>
 
@@ -457,7 +457,7 @@ export async function sendEventWelcomeEmail(reg: {
 
     <div class="check-group">
       <div class="check-group-label label-tech">2 — Technical Setup</div>
-      <div class="check-item"><div class="check-box"></div><div class="check-content"><div class="check-main">Download the Zoom app</div><div class="check-note">Download at <a href="https://zoom.us/download" class="check-link">zoom.us/download</a>. The app is more stable than the browser version. Test your audio and video before June 20.</div></div></div>
+      <div class="check-item"><div class="check-box"></div><div class="check-content"><div class="check-main">Download the Zoom app</div><div class="check-note">Download at <a href="https://zoom.us/download" class="check-link">zoom.us/download</a>. The app is more stable than the browser version. Test your audio and video before June 27.</div></div></div>
       <div class="check-item"><div class="check-box"></div><div class="check-content"><div class="check-main">Prepare your workspace</div><div class="check-note">Find a quiet spot with good lighting and a stable internet connection (at least 5 Mbps). Have your laptop charged. A second screen is helpful but not required.</div></div></div>
       <div class="check-item"><div class="check-box"></div><div class="check-content"><div class="check-main">Use a laptop or tablet — not a phone</div><div class="check-note">Sessions are hands-on. You will have multiple tabs open, building and testing in real time. A phone will limit what you can do. Come with a laptop or tablet.</div></div></div>
       <div class="check-item"><div class="check-box"></div><div class="check-content"><div class="check-main">Keep your camera on</div><div class="check-note">This is a community experience, not a webinar. Camera on makes a real difference for the energy of the room — especially during the hands-on labs and live hot-seats.</div></div></div>
@@ -475,7 +475,7 @@ export async function sendEventWelcomeEmail(reg: {
     <div class="cta-wrap"><a href="https://www.tiblogics.com" class="cta-btn">Visit www.tiblogics.com</a><div class="cta-sub">Questions? Reply to this email or message us at arfa_edu@tiblogics.com</div></div>
 
     <div class="closing-quote">"Success only comes before work in the dictionary. You showed up. That is already more than most people do. Now let's build something real."</div>
-    <div class="closing-sign">See you on June 20 at 9:30AM 🚀<strong>The TIBLOGICS Team</strong></div>
+    <div class="closing-sign">See you on June 27 at 9:30AM 🚀<strong>The TIBLOGICS Team</strong></div>
   </div>
 
   <div class="footer">

@@ -83,7 +83,7 @@ export const DEFAULT_TRAINING_CONTENT: TrainingContent = {
     subtitle:
       "A hands-on 4-session live training where you go from curious to capable — writing with AI, building income, creating automations, and getting your first taste of vibe coding. Live on Zoom. Every Saturday 9:30AM–1PM.",
     pills: [
-      "📅 Starts June 20, 2026",
+      "📅 Starts June 27, 2026",
       "💻 Live on Zoom",
       "⏰ Saturdays 9:30AM–1PM",
       "🏆 Certificate Included",
@@ -100,7 +100,7 @@ export const DEFAULT_TRAINING_CONTENT: TrainingContent = {
     { value: "$649", label: "All Inclusive" },
     { value: "🔥", label: "Limited Seats Per Cohort — First Come, First Served" },
   ],
-  countdown: { label: "Registration Closes — Training Starts June 20, 2026" },
+  countdown: { label: "Registration Closes — Training Starts June 27, 2026" },
   outcomes: {
     eyebrow: "What You Get",
     heading: "What you walk away with.",
@@ -120,17 +120,17 @@ export const DEFAULT_TRAINING_CONTENT: TrainingContent = {
     heading: "4 sessions. 4 weekends. One transformation.",
     subtitle: "Each session is 3 hours live on Zoom — every Saturday from 9:30AM to 1PM.",
     sessions: [
-      { num: "S1", date: "June 20", title: "AI Foundations", desc: "Hands-on from minute one. You use AI before the session ends.", badge: "Beginner-friendly", color: "#2251A3" },
-      { num: "S2", date: "June 27", title: "AI in Your Work", desc: "Configure AI to empower your personal life and career.", badge: "Hands-on lab", color: "#F9A738" },
-      { num: "S3", date: "July 4", title: "Build Income with AI", desc: "Pick your income model, write your offer, build something you can send today.", badge: "Revenue focused", color: "#22A387" },
-      { num: "S4", date: "July 11", title: "Agents, Automation & Vibe Coding", desc: "Build AI agents, automate your workflow, and vibe code your first real tool — using only words.", badge: "Advanced build", color: "#8B5CF6" },
+      { num: "S1", date: "June 27", title: "AI Foundations", desc: "Hands-on from minute one. You use AI before the session ends.", badge: "Beginner-friendly", color: "#2251A3" },
+      { num: "S2", date: "July 4", title: "AI in Your Work", desc: "Configure AI to empower your personal life and career.", badge: "Hands-on lab", color: "#F9A738" },
+      { num: "S3", date: "July 11", title: "Build Income with AI", desc: "Pick your income model, write your offer, build something you can send today.", badge: "Revenue focused", color: "#22A387" },
+      { num: "S4", date: "July 18", title: "Agents, Automation & Vibe Coding", desc: "Build AI agents, automate your workflow, and vibe code your first real tool — using only words.", badge: "Advanced build", color: "#8B5CF6" },
       { num: "S5", date: "TBA", title: "Certificate Ceremony", desc: "Date announced after Session 4. Certificate presentation, wins spotlight & cohort graduation.", badge: "🎓 Bonus · TBA", color: "#1B3A6B" },
     ],
     scheduleRows: [
-      { session: "Session 1", date: "June 20, 2026", topic: "AI Foundations", labs: "First prompt · Comparison test · Use case finder · AI browsing intro" },
-      { session: "Session 2", date: "June 27, 2026", topic: "AI in Your Daily Work", labs: "Writing sprint · AI blueprint · Time audit" },
-      { session: "Session 3", date: "July 4, 2026", topic: "Build Income with AI", labs: "5 income models · Offer design · Marketing asset build" },
-      { session: "Session 4", date: "July 11, 2026", topic: "AI Agents, Automation & Vibe Coding", labs: "AI agent build · Automation build · Intro to vibe coding" },
+      { session: "Session 1", date: "June 27, 2026", topic: "AI Foundations", labs: "First prompt · Comparison test · Use case finder · AI browsing intro" },
+      { session: "Session 2", date: "July 4, 2026", topic: "AI in Your Daily Work", labs: "Writing sprint · AI blueprint · Time audit" },
+      { session: "Session 3", date: "July 11, 2026", topic: "Build Income with AI", labs: "5 income models · Offer design · Marketing asset build" },
+      { session: "Session 4", date: "July 18, 2026", topic: "AI Agents, Automation & Vibe Coding", labs: "AI agent build · Automation build · Intro to vibe coding" },
       { session: "Bonus", date: "TBA", topic: "Certificate & Graduation Ceremony", labs: "Certificate presentation · Wins spotlight · Cohort photo" },
     ],
     schedulePills: [
@@ -141,7 +141,7 @@ export const DEFAULT_TRAINING_CONTENT: TrainingContent = {
     ],
   },
   pricing: {
-    eyebrow: "June Cohort · June 20 – July 11, 2026 + Graduation TBA",
+    eyebrow: "June Cohort · June 27 – July 18, 2026 + Graduation TBA",
     originalPrice: "$1,600",
     badge: "June Cohort Price",
     saveText: "🎁 You save $951 — June Cohort only",
@@ -201,7 +201,7 @@ export const DEFAULT_TRAINING_CONTENT: TrainingContent = {
   registration: {
     eyebrow: "Registration",
     heading: "Reserve your spot.",
-    subtitle: "Training starts June 20, 2026. Fill in your details — confirmation and all session details sent within a few minutes. Limited seats per cohort — first come, first served.",
+    subtitle: "Training starts June 27, 2026. Fill in your details — confirmation and all session details sent within a few minutes. Limited seats per cohort — first come, first served.",
     successHeading: "You're registered!",
     successBody: "Check your email within a few minutes for confirmation and all session information. Welcome to the June Cohort.",
     submitFree: "Complete Registration",
@@ -228,7 +228,7 @@ export const DEFAULT_TRAINING_CONTENT: TrainingContent = {
       { q: "Is the $649 all-inclusive?", a: "Yes. The $649 covers everything: all 4 live sessions, all handouts, the TIBLOGICS AI Playbook, session recordings, the cohort WhatsApp group, mid-week check-ins, 2 weeks of post-training support, and your numbered certificate including the graduation ceremony." },
       { q: "What is vibe coding — do I need to know how to code?", a: "No coding knowledge required. Vibe coding is a new way of building software where you describe what you want in plain English and AI writes the code for you. In Session 4, we'll introduce the concept and walk you through building a simple working tool using only natural language — covering the full flow from idea to a finished, working result, the way a software engineer would. You don't need to understand a single line of code; everything is taught live, step by step." },
       { q: "What happens after the 4 sessions?", a: "After Session 4, you have 2 weeks of post-training support — ask questions in the WhatsApp group and get responses from the training team. The graduation and certificate ceremony is held separately (date announced after Session 4). Your session recordings are yours for lifetime access." },
-      { q: "Can I get a refund?", a: "Refund requests made more than 72 hours before the first session (June 20, 2026) will be honored in full. Requests made within 72 hours of the start date are not eligible for a refund but can be transferred to a future cohort. No refunds after Session 1." },
+      { q: "Can I get a refund?", a: "Refund requests made more than 72 hours before the first session (June 27, 2026) will be honored in full. Requests made within 72 hours of the start date are not eligible for a refund but can be transferred to a future cohort. No refunds after Session 1." },
     ],
   },
   footer: {

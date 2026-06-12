@@ -17,8 +17,8 @@ export const TRAINING_EVENT_SEED: Prisma.EventCreateInput = {
   capacity: 30,
   spots: 30,
   location: "Live on Zoom",
-  date: new Date("2026-06-20T09:30:00"),
-  endDate: new Date("2026-07-11T13:00:00"),
+  date: new Date("2026-06-27T09:30:00"),
+  endDate: new Date("2026-07-18T13:00:00"),
   timeSlot: "9:30AM – 1:00PM ET (Saturdays)",
   timezone: "America/New_York",
   coverImage:
