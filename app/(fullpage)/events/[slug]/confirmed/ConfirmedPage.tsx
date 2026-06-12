@@ -338,7 +338,7 @@ export default function ConfirmedPage({
             ← Back to event page
           </a>
           <div style={{ marginTop: "32px", color: "rgba(255,255,255,.18)", fontSize: ".72rem" }}>
-            © 2025 TIBLOGICS · arfa_edu@tiblogics.com
+            © 2026 TIBLOGICS · arfa_edu@tiblogics.com
           </div>
         </div>
 
