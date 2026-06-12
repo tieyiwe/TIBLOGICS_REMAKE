@@ -541,7 +541,7 @@ export async function sendAdminNewRegistrationAlert(reg: {
     ${reg.whatsapp ? `<div class="row"><span class="label">WhatsApp</span><span class="value">${reg.whatsapp}</span></div>` : ""}
     ${reg.eventName ? `<div class="row"><span class="label">Event</span><span class="value">${reg.eventName}</span></div>` : ""}
     ${reg.confirmationNumber ? `<div class="row"><span class="label">Conf #</span><span class="value conf">${reg.confirmationNumber}</span></div>` : ""}
-    <a class="cta" href="https://www.tiblogics.com/admin_pro/events">View in Admin →</a>
+    <a class="cta" href="https://tiblogics.com/admin_pro">View in Admin →</a>
   </div>
   <div class="footer">Payment is pending until Stripe checkout is completed.</div>
 </div>
