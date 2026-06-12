@@ -15,6 +15,7 @@ interface EventItem {
   currency: string;
   capacity?: number | null;
   spots?: number | null;
+  spotsLeft?: number | null;
   location: string;
   date?: string | null;
   endDate?: string | null;
@@ -417,7 +418,19 @@ function EventCard({ event }: { event: EventItem }) {
           <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
             <MapPin size={13} /><span>{event.location}</span>
           </div>
-          {event.spots != null && (
+          {isOpen && event.spotsLeft != null && (
+            <div className={`flex items-center gap-2 text-xs font-dm font-semibold ${event.spotsLeft <= 5 ? "text-red-500" : "text-[#F47C20]"}`}>
+              <Users size={13} />
+              <span>
+                {event.spotsLeft === 0
+                  ? "Sold out"
+                  : event.spotsLeft <= 5
+                  ? `Only ${event.spotsLeft} seat${event.spotsLeft === 1 ? "" : "s"} left!`
+                  : `${event.spotsLeft} seats left`}
+              </span>
+            </div>
+          )}
+          {!isOpen && event.spots != null && (
             <div className="flex items-center gap-2 text-xs font-dm font-semibold text-[#F47C20]">
               <Users size={13} /><span>{event.spots} seats available</span>
             </div>

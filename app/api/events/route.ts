@@ -29,9 +29,19 @@ export async function GET(req: NextRequest) {
       orderBy: [{ featured: "desc" }, { date: "asc" }],
     });
 
+    // Count paid registrations per event to compute live spotsLeft
+    const paidCounts = await prisma.eventRegistration.groupBy({
+      by: ["eventSlug"],
+      where: { status: "paid", eventSlug: { in: events.map(e => e.slug) } },
+      _count: { id: true },
+    }).catch(() => [] as { eventSlug: string; _count: { id: number } }[]);
+
+    const paidBySlug = Object.fromEntries(paidCounts.map(r => [r.eventSlug, r._count.id]));
+
     const withCovers = events.map((e) => ({
       ...e,
       coverImage: e.coverImage || TYPE_COVER[e.type] || TYPE_COVER.EVENT,
+      spotsLeft: e.spots != null ? Math.max(0, e.spots - (paidBySlug[e.slug] ?? 0)) : null,
     }));
 
     return NextResponse.json({ events: withCovers });

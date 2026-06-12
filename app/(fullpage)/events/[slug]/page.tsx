@@ -84,6 +84,13 @@ export default async function EventPage({ params, searchParams }: Props) {
 
   if (!event) return notFound();
 
+  // Live seat count: total spots minus paid registrations
+  const paidCount = await prisma.eventRegistration.count({
+    where: { eventSlug: event.slug, status: "paid" },
+  }).catch(() => 0);
+  const totalSpots = event.spots ?? 30;
+  const spotsLeft = Math.max(0, totalSpots - paidCount);
+
   const eventUrl = `${SITE_URL}/events/${event.slug}`;
   const jsonLd = {
     "@context": "https://schema.org",
@@ -130,7 +137,7 @@ export default async function EventPage({ params, searchParams }: Props) {
         eventTitle={event.title}
         eventDescription={event.description}
         startDate={event.date ? event.date.toISOString() : new Date().toISOString()}
-        spots={event.spots ?? 30}
+        spots={spotsLeft}
         price={event.price}
         currency={event.currency}
         location={event.location}

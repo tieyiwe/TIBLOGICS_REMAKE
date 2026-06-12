@@ -8,7 +8,7 @@ interface Props {
   eventTitle: string;
   eventDescription: string;
   startDate: string;
-  spots: number;
+  spots: number;   // live spotsLeft = totalSpots - paidCount
   price: number;       // in cents, e.g. 64900 = $649
   currency: string;
   location: string;
@@ -914,6 +914,45 @@ export default function TrainingLandingPage({
             <div style={{ fontFamily:dm, fontSize:".75rem", color:S.orange, letterSpacing:".18em", textTransform:"uppercase", marginBottom:"12px" }}>{C.registration.eyebrow}</div>
             <h2 style={{ fontFamily:syne, fontWeight:800, fontSize:"clamp(1.8rem,3vw,2.4rem)", marginBottom:"14px" }}>{C.registration.heading}</h2>
             <p style={{ color:S.muted, fontSize:".9rem", lineHeight:1.7, maxWidth:"480px", margin:"0 auto" }}>{C.registration.subtitle}</p>
+
+            {/* ── Seat counter ── */}
+            {spots > 0 ? (
+              <div style={{ marginTop:"24px", display:"inline-flex", flexDirection:"column", alignItems:"center", gap:"10px" }}>
+                <div style={{
+                  display:"inline-flex", alignItems:"center", gap:"10px",
+                  background: spots <= 5 ? "rgba(239,68,68,.1)" : "rgba(244,124,76,.1)",
+                  border: `1.5px solid ${spots <= 5 ? "rgba(239,68,68,.4)" : "rgba(244,124,76,.35)"}`,
+                  borderRadius:"50px", padding:"8px 20px",
+                }}>
+                  <span style={{ width:"8px", height:"8px", borderRadius:"50%", background: spots <= 5 ? "#EF4444" : S.orange, display:"inline-block", animation:"pulse 1.5s infinite" }} />
+                  <span style={{ fontFamily:syne, fontWeight:700, fontSize:".95rem", color: spots <= 5 ? "#EF4444" : S.orange }}>
+                    {spots <= 5 ? `Only ${spots} seat${spots === 1 ? "" : "s"} left!` : `${spots} seats left`}
+                  </span>
+                </div>
+                {/* Progress bar */}
+                <div style={{ width:"220px", height:"5px", background:"rgba(255,255,255,.08)", borderRadius:"10px", overflow:"hidden" }}>
+                  <div style={{
+                    height:"100%", borderRadius:"10px",
+                    background: spots <= 5 ? "linear-gradient(90deg,#EF4444,#F87171)" : "linear-gradient(90deg,#F47C4C,#F9A738)",
+                    width:`${Math.max(4, Math.round((spots / 30) * 100))}%`,
+                    transition:"width .6s ease",
+                  }} />
+                </div>
+                <span style={{ fontFamily:dm, fontSize:".75rem", color:S.muted }}>
+                  {spots <= 5 ? "Reserve your seat before it's gone." : "Cohort closes when full — no exceptions."}
+                </span>
+              </div>
+            ) : (
+              <div style={{
+                marginTop:"24px", display:"inline-flex", alignItems:"center", gap:"10px",
+                background:"rgba(239,68,68,.08)", border:"1.5px solid rgba(239,68,68,.3)",
+                borderRadius:"50px", padding:"10px 24px",
+              }}>
+                <span style={{ fontFamily:syne, fontWeight:700, fontSize:"1rem", color:"#EF4444" }}>
+                  🔒 This cohort is full
+                </span>
+              </div>
+            )}
           </div>
           <RegistrationForm
             eventSlug={eventSlug}
