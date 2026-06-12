@@ -24,17 +24,17 @@ export async function GET(req: NextRequest) {
     if (type && type !== "all") where.type = type.toUpperCase();
     if (featured === "true") where.featured = true;
 
-    const events = await prisma.event.findMany({
-      where,
-      orderBy: [{ featured: "desc" }, { date: "asc" }],
-    });
-
-    // Count paid registrations per event to compute live spotsLeft
-    const paidCounts = await prisma.eventRegistration.groupBy({
-      by: ["eventSlug"],
-      where: { status: "paid", eventSlug: { in: events.map(e => e.slug) } },
-      _count: { id: true },
-    }).catch(() => [] as { eventSlug: string; _count: { id: number } }[]);
+    const [events, paidCounts] = await Promise.all([
+      prisma.event.findMany({
+        where,
+        orderBy: [{ featured: "desc" }, { date: "asc" }],
+      }),
+      prisma.eventRegistration.groupBy({
+        by: ["eventSlug"],
+        where: { status: "paid" },
+        _count: { id: true },
+      }).catch(() => [] as { eventSlug: string; _count: { id: number } }[]),
+    ]);
 
     const paidBySlug = Object.fromEntries(paidCounts.map(r => [r.eventSlug, r._count.id]));
 

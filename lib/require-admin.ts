@@ -3,6 +3,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+
+/** Returns true (allowed) or false (blocked). key = `${route}:${ip}` */
+export function rateLimit(key: string, max = 10, windowMs = 60_000): boolean {
+  const now = Date.now();
+  const entry = rateLimitStore.get(key);
+  if (!entry || now > entry.resetAt) {
+    rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (entry.count >= max) return false;
+  entry.count++;
+  return true;
+}
+
 /** Returns null if authenticated (admin or collaborator), or a 401 response */
 export async function requireAdmin(): Promise<NextResponse | null> {
   const session = await getServerSession(authOptions);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { isValidEmail, requireAdmin } from "@/lib/require-admin";
+import { isValidEmail, requireAdmin, rateLimit } from "@/lib/require-admin";
 
 export async function GET(req: NextRequest) {
   const authErr = await requireAdmin();
@@ -27,6 +27,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  if (!rateLimit(`events-notify:${ip}`, 5, 60_000)) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
   try {
     const { name, email, whatsapp, event, slug } = await req.json();
 

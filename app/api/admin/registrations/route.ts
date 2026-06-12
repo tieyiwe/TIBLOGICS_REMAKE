@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/require-admin";
 import prisma from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authErr = await requireAdmin();
+  if (authErr) return authErr;
 
   const { searchParams } = new URL(req.url);
   const slug = searchParams.get("slug");
@@ -49,8 +48,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authErr = await requireAdmin();
+  if (authErr) return authErr;
 
   const { id, status, notes } = await req.json();
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });

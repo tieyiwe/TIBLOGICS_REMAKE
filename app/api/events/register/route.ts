@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import stripe from "@/lib/stripe";
+import { requireAdmin } from "@/lib/require-admin";
 
 
 function generateConfirmationNumber(): string {
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
     }
 
-    const seats = typeof numSeats === "number" && numSeats >= 1 ? Math.min(numSeats, 10) : 1;
+    const seats = Math.max(1, Math.min(Math.floor(typeof numSeats === "number" ? numSeats : 1), 10));
 
     const slugMap: Record<string, string> = {
       "AI Practical Training — June Cohort": "ai-practical-training-cohort-1",
@@ -82,8 +83,9 @@ export async function POST(req: NextRequest) {
     });
 
     // Create registrations for additional participants (non-blocking, fire-and-forget)
+    const rawExtras = Array.isArray(additionalParticipants) ? additionalParticipants : [];
     const extras: Array<{ firstName: string; lastName: string; email: string }> =
-      Array.isArray(additionalParticipants) ? additionalParticipants : [];
+      rawExtras.slice(0, seats - 1); // never more than seats - 1 extra participants
     if (extras.length > 0) {
       Promise.all(extras.map(async (p, i) => {
         try {
@@ -189,6 +191,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const authErr = await requireAdmin();
+  if (authErr) return authErr;
+
   try {
     const { searchParams } = new URL(req.url);
     const slug = searchParams.get("slug");
