@@ -46,11 +46,16 @@ export async function POST(req: Request) {
 
         // Send the "You're in — let's build" welcome email now that payment
         // succeeded. firstName is captured from the registration record.
+        console.log(`[stripe/webhook] Sending welcome email to ${reg.email} (reg: ${registrationId})`);
         await sendEventWelcomeEmail({
           firstName: reg.firstName,
           email: reg.email,
           eventName: reg.eventName,
-        }).catch((err) => console.error("[sendEventWelcomeEmail]", err));
+        }).then(() => {
+          console.log(`[stripe/webhook] ✓ Welcome email sent to ${reg.email}`);
+        }).catch((err) => {
+          console.error(`[stripe/webhook] ✗ Welcome email FAILED for ${reg.email}:`, err instanceof Error ? err.message : err);
+        });
       }
 
       if (appointmentId) {

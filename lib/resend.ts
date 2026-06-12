@@ -187,15 +187,12 @@ export async function sendRescheduleEmail(data: {
 const ARFA_FROM = `ARFA by TIBLOGICS <${process.env.ARFA_SMTP_USER ?? "arfa_edu@tiblogics.com"}>`;
 
 function getArfaTransport() {
-  return nodemailer.createTransport({
-    host: process.env.TITAN_SMTP_HOST ?? "smtp.titan.email",
-    port: Number(process.env.TITAN_SMTP_PORT ?? 465),
-    secure: Number(process.env.TITAN_SMTP_PORT ?? 465) === 465,
-    auth: {
-      user: process.env.ARFA_SMTP_USER ?? process.env.TITAN_SMTP_USER ?? "arfa_edu@tiblogics.com",
-      pass: process.env.ARFA_SMTP_PASS ?? process.env.TITAN_SMTP_PASS,
-    },
-  });
+  const user = process.env.ARFA_SMTP_USER ?? process.env.TITAN_SMTP_USER ?? "arfa_edu@tiblogics.com";
+  const pass = process.env.ARFA_SMTP_PASS ?? process.env.TITAN_SMTP_PASS;
+  const host = process.env.TITAN_SMTP_HOST ?? "smtp.titan.email";
+  const port = Number(process.env.TITAN_SMTP_PORT ?? 465);
+  console.log(`[ARFA-SMTP] host=${host} port=${port} user=${user} pass=${pass ? "SET(" + pass.length + "chars)" : "MISSING"}`);
+  return nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
 }
 
 export async function sendEventRegistrationConfirmation(reg: {

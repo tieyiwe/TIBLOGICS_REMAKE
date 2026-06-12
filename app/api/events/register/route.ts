@@ -85,7 +85,11 @@ export async function POST(req: NextRequest) {
       price: priceInt,
       currency: currency ?? "USD",
       location: location ?? null,
-    }).catch(e => console.error("[event-reg/confirm-email]", e));
+    }).then(() => {
+      console.log(`[event-reg/confirm-email] ✓ Sent to ${email} (conf: ${confirmationNumber})`);
+    }).catch(e => {
+      console.error(`[event-reg/confirm-email] ✗ FAILED for ${email}:`, e instanceof Error ? e.message : e);
+    });
 
     // Also store in newsletter for email follow-up
     try {
