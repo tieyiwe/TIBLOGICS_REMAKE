@@ -417,6 +417,11 @@ function EventCard({ event }: { event: EventItem }) {
           <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
             <MapPin size={13} /><span>{event.location}</span>
           </div>
+          {event.spots != null && (
+            <div className="flex items-center gap-2 text-xs font-dm font-semibold text-[#F47C20]">
+              <Users size={13} /><span>{event.spots} seats available</span>
+            </div>
+          )}
         </div>
 
         <div className="pt-3 border-t border-[#D2DCE8]">

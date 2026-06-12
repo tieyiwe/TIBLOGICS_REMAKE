@@ -48,6 +48,8 @@ export const PARENTS_EVENT_SEED: Prisma.EventCreateInput = {
   coverImage:
     "https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=1200&q=80",
   tags: ["module:AI for Kids' Academics", "module:AI Safety for Parents", "ai", "parents", "kids", "education", "safety", "training"],
+  capacity: 50,
+  spots: 50,
   featured: false,
   published: true,
   registrationOpen: false,
