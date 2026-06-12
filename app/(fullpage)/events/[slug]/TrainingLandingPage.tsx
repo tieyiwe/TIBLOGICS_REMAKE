@@ -483,7 +483,7 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
             <label htmlFor="terms-accept" style={{ fontFamily:dm, fontSize:".83rem", color:"rgba(255,255,255,.6)", lineHeight:1.55, cursor:"pointer" }}>
               I have read and agree to the{" "}
               <a
-                href="/terms"
+                href="/training-terms"
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ color:S.orange, fontWeight:600, textDecoration:"none" }}
