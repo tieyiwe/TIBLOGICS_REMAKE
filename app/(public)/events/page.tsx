@@ -525,7 +525,7 @@ export default function EventsPage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/events");
+        const res = await fetch("/api/events", { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setEvents(data.events ?? []);
@@ -537,6 +537,9 @@ export default function EventsPage() {
       }
     }
     load();
+    // Re-fetch every 60 s so spotsLeft stays current as people register
+    const interval = setInterval(load, 60_000);
+    return () => clearInterval(interval);
   }, []);
 
   const filtered = events.filter((e) => {
