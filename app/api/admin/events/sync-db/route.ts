@@ -71,6 +71,7 @@ export async function POST() {
     `ALTER TABLE "Event" ADD COLUMN IF NOT EXISTS "timeSlot"  TEXT`,
     `ALTER TABLE "Event" ADD COLUMN IF NOT EXISTS "endDate"   TIMESTAMP(3)`,
     `ALTER TABLE "Event" ADD COLUMN IF NOT EXISTS "capacity"  INTEGER`,
+    `ALTER TABLE "Event" ADD COLUMN IF NOT EXISTS "zoomLink"  TEXT`,
   ];
 
   // 2. Add any missing columns to EventRegistration table

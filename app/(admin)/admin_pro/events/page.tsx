@@ -19,6 +19,7 @@ interface EventItem {
   description: string; content?: string | null;
   capacity?: number | null; spots?: number | null;
   coverImage?: string | null; stripePaymentLink?: string | null;
+  zoomLink?: string | null;
   registrationOpen: boolean; featured: boolean; published: boolean;
   tags: string[]; createdAt: string;
 }
@@ -38,7 +39,7 @@ type FormData = {
   title: string; type: string; description: string; content: string;
   date: string; endDate: string; timeSlot: string; location: string;
   price: string; capacity: string; spots: string; coverImage: string;
-  stripePaymentLink: string; tags: string;
+  stripePaymentLink: string; zoomLink: string; tags: string;
   registrationOpen: boolean; featured: boolean; published: boolean;
 };
 
@@ -48,7 +49,7 @@ type Tab = "events" | "registrations" | "promote";
 const EMPTY_FORM: FormData = {
   title: "", type: "TRAINING", description: "", content: "",
   date: "", endDate: "", timeSlot: "", location: "Online", price: "0",
-  capacity: "", spots: "", coverImage: "", stripePaymentLink: "", tags: "",
+  capacity: "", spots: "", coverImage: "", stripePaymentLink: "", zoomLink: "", tags: "",
   registrationOpen: true, featured: false, published: false,
 };
 
@@ -148,6 +149,10 @@ export default function AdminEventsPage() {
   const [selectedRegIds, setSelectedRegIds] = useState<Set<string>>(new Set());
   const [bulkUpdating, setBulkUpdating] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [reminderModal, setReminderModal] = useState<EventItem | null>(null);
+  const [reminderSession, setReminderSession] = useState(1);
+  const [reminderSending, setReminderSending] = useState(false);
+  const [reminderResult, setReminderResult] = useState("");
 
   const EXPORT_COLUMNS = [
     { key: "name",    label: "Full Name" },
@@ -288,6 +293,21 @@ export default function AdminEventsPage() {
     } finally { setBulkUpdating(false); }
   }
 
+  // ── Session reminder ──────────────────────────────────────────────────────
+  async function sendReminder() {
+    if (!reminderModal) return;
+    setReminderSending(true); setReminderResult("");
+    try {
+      const res = await fetch(`/api/admin/events/${reminderModal.id}/reminder`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionNumber: reminderSession }),
+      });
+      const data = await res.json();
+      setReminderResult(res.ok ? `✅ Sent to ${data.sent} participant${data.sent !== 1 ? "s" : ""}.` : `❌ ${data.error ?? "Failed"}`);
+    } catch { setReminderResult("❌ Network error."); }
+    finally { setReminderSending(false); }
+  }
+
   // ── Export CSV ────────────────────────────────────────────────────────────
   function exportCSV() {
     const colMap: Record<ExportKey, { header: string; value: (r: Registration) => string }> = {
@@ -359,6 +379,7 @@ export default function AdminEventsPage() {
       spots: e.spots != null ? String(e.spots) : "",
       coverImage: e.coverImage ?? "",
       stripePaymentLink: e.stripePaymentLink ?? "",
+      zoomLink: e.zoomLink ?? "",
       tags: Array.isArray(e.tags) ? e.tags.join(", ") : "",
       registrationOpen: e.registrationOpen, featured: e.featured, published: e.published,
     });
@@ -378,6 +399,7 @@ export default function AdminEventsPage() {
       spots: e.spots != null ? String(e.spots) : "",
       coverImage: e.coverImage ?? "",
       stripePaymentLink: e.stripePaymentLink ?? "",
+      zoomLink: e.zoomLink ?? "",
       tags: Array.isArray(e.tags) ? e.tags.join(", ") : "",
       registrationOpen: false, featured: false, published: false,
     });
@@ -400,6 +422,7 @@ export default function AdminEventsPage() {
         spots: form.spots ? parseInt(form.spots) : null,
         coverImage: form.coverImage.trim() || null,
         stripePaymentLink: form.stripePaymentLink.trim() || null,
+        zoomLink: form.zoomLink.trim() || null,
         tags: form.tags ? form.tags.split(",").map(t => t.trim()).filter(Boolean) : [],
         registrationOpen: form.registrationOpen, featured: form.featured,
         published: form.published,
@@ -700,6 +723,7 @@ export default function AdminEventsPage() {
                                 { icon: Users, label: "Capacity", value: event.capacity != null ? String(event.capacity) : "—" },
                                 { icon: UserCheck, label: "Spots Left", value: event.spots != null ? String(event.spots) : "—" },
                                 { icon: Tag, label: "Slug", value: event.slug },
+                                { icon: ExternalLink, label: "Zoom Link", value: event.zoomLink || "Not set" },
                               ].map((d, di) => (
                                 <div key={di} className="min-w-0">
                                   <div className="flex items-center gap-1 text-[#7A8FA6] mb-0.5">
@@ -727,12 +751,18 @@ export default function AdminEventsPage() {
                           </div>
 
                           {/* ── Registrations ── */}
-                          <div className="px-4 py-2.5 bg-white border-b border-[#D2DCE8] flex items-center justify-between">
+                          <div className="px-4 py-2.5 bg-white border-b border-[#D2DCE8] flex items-center justify-between gap-2 flex-wrap">
                             <h4 className="font-syne font-bold text-sm text-[#0D1B2A]">Registrations</h4>
-                            <button onClick={() => { setMsgModal(event); setMsgStatus("idle"); setMsgForm({ subject: "", body: "", recipients: "all" }); setMsgResult(""); }}
-                              className="inline-flex items-center gap-1.5 text-xs font-dm font-semibold text-[#F47C20] hover:text-[#e06a10] transition-colors">
-                              <Send size={11} /> Email Participants
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button onClick={() => { setReminderModal(event); setReminderSession(1); setReminderResult(""); }}
+                                className="inline-flex items-center gap-1.5 text-xs font-dm font-semibold text-[#2251A3] hover:text-[#1B3A6B] px-2.5 py-1.5 rounded-lg border border-[#D2DCE8] hover:border-[#2251A3] transition-colors">
+                                <Mail size={11} /> Send Reminder
+                              </button>
+                              <button onClick={() => { setMsgModal(event); setMsgStatus("idle"); setMsgForm({ subject: "", body: "", recipients: "all" }); setMsgResult(""); }}
+                                className="inline-flex items-center gap-1.5 text-xs font-dm font-semibold text-[#F47C20] hover:text-[#e06a10] transition-colors">
+                                <Send size={11} /> Email Participants
+                              </button>
+                            </div>
                           </div>
                           {!eventRegs[event.id] ? (
                             <div className="flex items-center justify-center py-6"><Loader2 size={18} className="animate-spin text-[#2251A3]" /></div>
@@ -1145,6 +1175,14 @@ export default function AdminEventsPage() {
                   className="w-full border border-[#D2DCE8] rounded-xl px-3 py-2.5 font-dm text-sm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3]" />
               </div>
 
+              {/* Zoom Link */}
+              <div>
+                <label className="block font-dm font-semibold text-sm text-[#0D1B2A] mb-1.5">Zoom Link <span className="text-[#7A8FA6] font-normal">(used in session reminder emails)</span></label>
+                <input type="url" value={form.zoomLink} onChange={e => setForm(f => ({ ...f, zoomLink: e.target.value }))}
+                  placeholder="https://us05web.zoom.us/j/..."
+                  className="w-full border border-[#D2DCE8] rounded-xl px-3 py-2.5 font-dm text-sm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3]" />
+              </div>
+
               {/* Checkboxes */}
               <div className="flex flex-wrap gap-6 pt-1">
                 {([
@@ -1419,6 +1457,61 @@ export default function AdminEventsPage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── SESSION REMINDER MODAL ────────────────────────────────────────── */}
+      {reminderModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#D2DCE8]">
+              <div>
+                <h2 className="font-syne font-bold text-base text-[#0D1B2A]">Send Session Reminder</h2>
+                <p className="font-dm text-xs text-[#7A8FA6] mt-0.5">{reminderModal.title}</p>
+              </div>
+              <button onClick={() => { setReminderModal(null); setReminderResult(""); }} className="p-1.5 rounded-xl text-[#7A8FA6] hover:bg-[#F4F7FB]"><X size={16} /></button>
+            </div>
+            <div className="px-5 py-5 flex flex-col gap-4">
+              {!reminderModal.zoomLink && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 text-xs font-dm text-yellow-700">
+                  ⚠️ No Zoom link saved for this event. Edit the event to add one — it will be included in the email.
+                </div>
+              )}
+              <div>
+                <label className="block font-dm font-semibold text-sm text-[#0D1B2A] mb-2">Which session?</label>
+                <div className="flex flex-col gap-2">
+                  {[
+                    { n: 1, date: "June 27", topic: "AI Foundations" },
+                    { n: 2, date: "July 4",  topic: "AI in Your Work" },
+                    { n: 3, date: "July 11", topic: "Build Income with AI" },
+                    { n: 4, date: "July 18", topic: "AI Agents & Vibe Coding" },
+                  ].map(s => (
+                    <label key={s.n} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition-colors ${reminderSession === s.n ? "border-[#2251A3] bg-[#EBF0FA]" : "border-[#D2DCE8] hover:bg-[#F4F7FB]"}`}>
+                      <input type="radio" name="session" value={s.n} checked={reminderSession === s.n} onChange={() => setReminderSession(s.n)} className="text-[#2251A3]" />
+                      <div>
+                        <span className="font-dm text-sm font-semibold text-[#0D1B2A]">Session {s.n} · {s.date}</span>
+                        <span className="font-dm text-xs text-[#7A8FA6] ml-2">{s.topic}</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              {reminderResult && (
+                <p className="font-dm text-sm text-center py-1">{reminderResult}</p>
+              )}
+              <div className="flex gap-3">
+                <button onClick={sendReminder} disabled={reminderSending}
+                  className="flex-1 inline-flex items-center justify-center gap-2 bg-[#2251A3] hover:bg-[#1B3A6B] text-white font-dm font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors disabled:opacity-50">
+                  {reminderSending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                  {reminderSending ? "Sending…" : "Send Reminder"}
+                </button>
+                <button onClick={() => { setReminderModal(null); setReminderResult(""); }}
+                  className="px-4 py-2.5 rounded-xl border border-[#D2DCE8] font-dm text-sm text-[#3A4A5C] hover:bg-[#F4F7FB] transition-colors">
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

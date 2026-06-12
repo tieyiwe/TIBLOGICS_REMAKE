@@ -493,6 +493,187 @@ export async function sendEventWelcomeEmail(reg: {
   });
 }
 
+// ─── Session reminder email ───────────────────────────────────────────────────
+
+const SESSION_INFO = [
+  {
+    n: 1,
+    date: "Saturday, June 27, 2026",
+    time: "9:30 AM – 1:00 PM ET",
+    title: "AI Foundations — See the World Differently",
+    badge: "Beginner-friendly",
+    badgeColor: "#93C5FD",
+    badgeBg: "rgba(30,64,175,0.15)",
+    prep: "Just bring yourself, your laptop, and your curiosity. No prior experience needed.",
+  },
+  {
+    n: 2,
+    date: "Saturday, July 4, 2026",
+    time: "9:30 AM – 1:00 PM ET",
+    title: "AI in Your Work — Save 10 Hours a Week",
+    badge: "Hands-on lab",
+    badgeColor: "#FCD34D",
+    badgeBg: "rgba(146,64,14,0.15)",
+    prep: "Have your AI account open (Claude or ChatGPT) and your list of tasks that take too long. We'll automate them live.",
+  },
+  {
+    n: 3,
+    date: "Saturday, July 11, 2026",
+    time: "9:30 AM – 1:00 PM ET",
+    title: "Build Income with AI — Design Your Offer",
+    badge: "Revenue focused",
+    badgeColor: "#6EE7B7",
+    badgeBg: "rgba(6,95,70,0.15)",
+    prep: "Log into your Canva account and have one service idea in mind. We'll build your first AI-powered offer together.",
+  },
+  {
+    n: 4,
+    date: "Saturday, July 18, 2026",
+    time: "9:30 AM – 1:00 PM ET",
+    title: "AI Agents, Automation & Vibe Coding",
+    badge: "Advanced build",
+    badgeColor: "#C4B5FD",
+    badgeBg: "rgba(76,29,149,0.15)",
+    prep: "Come with your laptop fully charged. This is the most hands-on session. We'll build live automations and simple AI agents together.",
+  },
+];
+
+export async function sendSessionReminder(reg: {
+  firstName: string;
+  email: string;
+  sessionNumber: 1 | 2 | 3 | 4;
+  zoomLink?: string;
+  eventName?: string;
+}) {
+  const s = SESSION_INFO[reg.sessionNumber - 1];
+  const zoomSection = reg.zoomLink
+    ? `<div class="detail-row"><div class="detail-icon">🔗</div><div><div class="detail-label">Zoom Link</div><div class="detail-value"><a href="${reg.zoomLink}" style="color:#F47C4C;text-decoration:none;">${reg.zoomLink}</a></div></div></div>`
+    : `<div class="detail-row"><div class="detail-icon">🔗</div><div><div class="detail-label">Zoom Link</div><div class="detail-value" style="color:rgba(255,255,255,0.4)">Will be sent shortly — check your email</div></div></div>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session ${s.n} Reminder — TIBLOGICS AI Practical Training</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif; background: #0F1617; color: #E8EDEE; padding: 40px 16px 60px; line-height: 1.6; }
+  .email-wrap { max-width: 620px; margin: 0 auto; }
+  .header { background: linear-gradient(135deg, #1C2526 0%, #2D3E40 100%); border-radius: 20px 20px 0 0; padding: 40px 40px 32px; border: 1px solid rgba(244,124,76,0.2); border-bottom: none; }
+  .logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+  .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, #F47C4C, #F9A738); border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+  .logo-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; color: #fff; letter-spacing: 0.04em; }
+  .logo-sub { font-size: 10px; color: rgba(255,255,255,0.45); letter-spacing: 0.08em; }
+  .badge { display: inline-flex; align-items: center; gap: 7px; background: rgba(244,124,76,0.12); border: 1px solid rgba(244,124,76,0.35); color: #F47C4C; font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 14px; border-radius: 50px; margin-bottom: 16px; }
+  .badge-dot { width: 6px; height: 6px; background: #F47C4C; border-radius: 50%; display:inline-block; }
+  .header-title { font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 800; line-height: 1.15; color: #fff; margin-bottom: 10px; }
+  .header-title .accent { background: linear-gradient(135deg, #F47C4C, #F9A738); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color:#F47C4C; }
+  .header-sub { font-size: 14px; color: rgba(255,255,255,0.55); line-height: 1.65; }
+  .body { background: #1A2324; border: 1px solid rgba(255,255,255,0.06); border-top: none; border-bottom: none; padding: 36px 40px; }
+  .greeting { font-size: 16px; color: #E8EDEE; margin-bottom: 14px; font-weight: 500; }
+  .para { font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.75; margin-bottom: 14px; }
+  .para strong { color: #E8EDEE; }
+  .details-card { background: rgba(244,124,76,0.06); border: 1px solid rgba(244,124,76,0.2); border-radius: 14px; padding: 22px 24px; margin: 24px 0; }
+  .details-title { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #F47C4C; margin-bottom: 16px; }
+  .detail-row { display: flex; gap: 14px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-icon { font-size: 16px; flex-shrink: 0; width: 22px; text-align: center; margin-top: 1px; margin-right: 14px; }
+  .detail-label { font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2px; }
+  .detail-value { font-size: 14px; color: #E8EDEE; font-weight: 500; }
+  .session-card { border-radius: 14px; padding: 20px 22px; margin: 20px 0; border: 1px solid ${s.badgeBg}; }
+  .prep-box { background: rgba(255,255,255,0.03); border-left: 3px solid #F47C4C; border-radius: 0 10px 10px 0; padding: 14px 18px; margin: 20px 0; font-size: 14px; color: rgba(255,255,255,0.6); line-height: 1.7; }
+  .prep-box strong { color: #E8EDEE; display: block; margin-bottom: 6px; }
+  .cta-wrap { text-align: center; margin: 28px 0 8px; }
+  .cta-btn { display: inline-block; background: linear-gradient(135deg, #F47C4C, #F9A738); color: #fff; text-decoration: none; padding: 15px 38px; border-radius: 50px; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.04em; }
+  .closing-sign { font-size: 14px; color: rgba(255,255,255,0.55); margin-top: 18px; }
+  .closing-sign strong { color: #E8EDEE; display: block; margin-top: 4px; font-size: 15px; }
+  .footer { background: #131A1B; border-radius: 0 0 20px 20px; padding: 24px 40px; border: 1px solid rgba(255,255,255,0.06); border-top: 1px solid rgba(244,124,76,0.15); text-align: center; }
+  .footer-logo { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.7); letter-spacing: 0.08em; margin-bottom: 6px; }
+  .footer-links { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+  .footer-links a { font-size: 12px; color: rgba(255,255,255,0.3); text-decoration: none; }
+  .footer-copy { font-size: 11px; color: rgba(255,255,255,0.2); }
+  @media (max-width: 520px) {
+    .header, .body, .footer { padding-left: 22px; padding-right: 22px; }
+    .header-title { font-size: 24px; }
+  }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="email-wrap">
+  <div class="header">
+    <div class="logo-row">
+      <div class="logo-icon">
+        <svg viewBox="0 0 38 38" fill="none" width="22" height="22">
+          <circle cx="8" cy="19" r="4.5" fill="rgba(255,255,255,0.85)"/>
+          <circle cx="19" cy="7" r="3.5" fill="rgba(255,255,255,0.65)"/>
+          <circle cx="30" cy="19" r="4.5" fill="rgba(255,255,255,0.85)"/>
+          <circle cx="19" cy="31" r="3.5" fill="rgba(255,255,255,0.65)"/>
+          <circle cx="19" cy="19" r="6" fill="white"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-name">ARFA &nbsp;<span style="color:rgba(255,255,255,0.35);font-weight:400">|</span>&nbsp; TIBLOGICS</div>
+        <div class="logo-sub">AI Implementation &amp; Digital Solutions</div>
+      </div>
+    </div>
+    <div class="badge"><span class="badge-dot"></span> Session ${s.n} of 4 &nbsp;·&nbsp; Reminder</div>
+    <div class="header-title">See you <span class="accent">tomorrow</span> — Session ${s.n}</div>
+    <div class="header-sub">${s.title}<br>${s.date} · ${s.time}</div>
+  </div>
+
+  <div class="body">
+    <div class="greeting">Hi ${reg.firstName}, 👋</div>
+    <p class="para">
+      Your next session is <strong>tomorrow</strong>. Here is everything you need to join and make the most of it.
+    </p>
+
+    <div class="details-card">
+      <div class="details-title">Session ${s.n} Details</div>
+      <div class="detail-row"><div class="detail-icon">📅</div><div><div class="detail-label">Date</div><div class="detail-value">${s.date}</div></div></div>
+      <div class="detail-row"><div class="detail-icon">⏰</div><div><div class="detail-label">Time</div><div class="detail-value">${s.time} · includes breaks</div></div></div>
+      <div class="detail-row"><div class="detail-icon">📚</div><div><div class="detail-label">Topic</div><div class="detail-value">${s.title}</div></div></div>
+      ${zoomSection}
+    </div>
+
+    <div class="prep-box">
+      <strong>📋 How to prepare for Session ${s.n}:</strong>
+      ${s.prep}
+    </div>
+
+    <p class="para">
+      Log in <strong>5 minutes early</strong> to get settled before we start. If you have any issues joining, reply to this email right away and we'll help you get in.
+    </p>
+
+    <div class="cta-wrap">
+      ${reg.zoomLink ? `<a href="${reg.zoomLink}" class="cta-btn">Join Session ${s.n} on Zoom</a>` : `<a href="https://www.tiblogics.com" class="cta-btn">Visit www.tiblogics.com</a>`}
+    </div>
+
+    <div class="closing-sign">See you tomorrow at 9:30 AM 🚀<strong>The TIBLOGICS Team</strong></div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-logo">TIBLOGICS</div>
+    <div class="footer-links">
+      <a href="mailto:arfa_edu@tiblogics.com">arfa_edu@tiblogics.com</a>
+      <span style="color:rgba(255,255,255,0.2);font-size:12px;margin:0 8px;">|</span>
+      <a href="https://www.tiblogics.com">www.tiblogics.com</a>
+    </div>
+    <div class="footer-copy">© 2025 TIBLOGICS</div>
+  </div>
+</div>
+</body>
+</html>`;
+
+  await getArfaTransport().sendMail({
+    from: ARFA_FROM,
+    to: reg.email,
+    subject: `🔔 Session ${s.n} is tomorrow — ${s.date} at 9:30 AM`,
+    html,
+  });
+}
+
 // Drop-in replacement for `resend.emails.send({from, to, subject, html})`
 const resendCompat = {
   emails: {

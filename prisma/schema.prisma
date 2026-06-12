@@ -506,6 +506,7 @@ model Event {
   registrationOpen Boolean  @default(true)
   stripePaymentLink String?
   spots            Int?
+  zoomLink         String?
 
   @@index([published])
   @@index([date])
