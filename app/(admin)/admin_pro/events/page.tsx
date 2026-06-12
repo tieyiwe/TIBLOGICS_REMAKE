@@ -153,6 +153,22 @@ export default function AdminEventsPage() {
   const [reminderSession, setReminderSession] = useState(1);
   const [reminderSending, setReminderSending] = useState(false);
   const [reminderResult, setReminderResult] = useState("");
+  type WaitlistEntry = { id: string; email: string; firstName: string | null; whatsapp: string | null; subscribedAt: string };
+  const [eventWaitlists, setEventWaitlists] = useState<Record<string, WaitlistEntry[]>>({});
+  const [waitlistLoading, setWaitlistLoading] = useState<Record<string, boolean>>({});
+
+  async function loadWaitlist(eventId: string, slug: string) {
+    setWaitlistLoading(w => ({ ...w, [eventId]: true }));
+    try {
+      const res = await fetch(`/api/events/notify?slug=${encodeURIComponent(slug)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setEventWaitlists(w => ({ ...w, [eventId]: data.subscribers ?? [] }));
+      }
+    } finally {
+      setWaitlistLoading(w => ({ ...w, [eventId]: false }));
+    }
+  }
 
   const EXPORT_COLUMNS = [
     { key: "name",    label: "Full Name" },
@@ -250,6 +266,10 @@ export default function AdminEventsPage() {
         const data = await res.json();
         setEventRegs(r => ({ ...r, [event.id]: data.registrations ?? [] }));
       }
+    }
+    // For coming-soon events, also load the waitlist
+    if (!event.registrationOpen && !eventWaitlists[event.id]) {
+      loadWaitlist(event.id, event.slug);
     }
   }
 
@@ -816,6 +836,70 @@ export default function AdminEventsPage() {
                                 <span className="font-dm text-xs text-green-700">{regs.filter(r => r.status === "confirmed").length} confirmed</span>
                                 <span className="font-dm text-xs text-yellow-700">{regs.filter(r => r.status === "pending").length} pending</span>
                               </div>
+                            </div>
+                          )}
+
+                          {/* ── Waitlist (coming-soon events only) ── */}
+                          {!event.registrationOpen && (
+                            <div>
+                              <div className="px-4 py-2.5 bg-white border-b border-[#D2DCE8] flex items-center justify-between gap-2">
+                                <h4 className="font-syne font-bold text-sm text-[#0D1B2A]">
+                                  Waitlist
+                                  {eventWaitlists[event.id] && (
+                                    <span className="ml-2 font-dm text-xs font-normal text-[#F47C20]">
+                                      ({eventWaitlists[event.id].length} {eventWaitlists[event.id].length === 1 ? "person" : "people"})
+                                    </span>
+                                  )}
+                                </h4>
+                                <button
+                                  onClick={() => loadWaitlist(event.id, event.slug)}
+                                  disabled={waitlistLoading[event.id]}
+                                  className="p-1.5 rounded-lg text-[#7A8FA6] hover:text-[#2251A3] hover:bg-[#EBF0FA] transition-colors"
+                                  title="Refresh waitlist"
+                                >
+                                  <Loader2 size={13} className={waitlistLoading[event.id] ? "animate-spin" : ""} />
+                                </button>
+                              </div>
+                              {waitlistLoading[event.id] ? (
+                                <div className="flex items-center justify-center py-6">
+                                  <Loader2 size={18} className="animate-spin text-[#F47C20]" />
+                                </div>
+                              ) : !eventWaitlists[event.id] || eventWaitlists[event.id].length === 0 ? (
+                                <div className="py-6 text-center">
+                                  <p className="font-dm text-sm text-[#7A8FA6]">No waitlist entries yet.</p>
+                                </div>
+                              ) : (
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-sm">
+                                    <thead>
+                                      <tr className="border-b border-[#D2DCE8]">
+                                        {["Name", "Email", "WhatsApp", "Date"].map(h => (
+                                          <th key={h} className="text-left font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider px-4 py-2">{h}</th>
+                                        ))}
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-[#E8EEF5]">
+                                      {eventWaitlists[event.id].map(w => (
+                                        <tr key={w.id} className="hover:bg-white transition-colors">
+                                          <td className="px-4 py-2.5 font-dm text-sm font-medium text-[#0D1B2A]">{w.firstName || "—"}</td>
+                                          <td className="px-4 py-2.5">
+                                            <a href={`mailto:${w.email}`} className="font-dm text-xs text-[#2251A3] hover:underline flex items-center gap-1">
+                                              <Mail size={11} />{w.email}
+                                            </a>
+                                          </td>
+                                          <td className="px-4 py-2.5 font-dm text-xs text-[#3A4A5C]">{w.whatsapp || "—"}</td>
+                                          <td className="px-4 py-2.5 font-dm text-xs text-[#7A8FA6]">{fmtDateTime(w.subscribedAt)}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                  <div className="px-4 py-2.5 border-t border-[#D2DCE8]">
+                                    <span className="font-dm text-xs text-[#7A8FA6]">
+                                      {eventWaitlists[event.id].length} interested {eventWaitlists[event.id].length === 1 ? "person" : "people"}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>

@@ -110,6 +110,15 @@ export async function POST() {
     log.push(`⚠️  confirmationNumber index: ${msg.slice(0, 80)}`);
   }
 
+  // 3b. Add whatsapp column to NewsletterSubscriber
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "NewsletterSubscriber" ADD COLUMN IF NOT EXISTS "whatsapp" TEXT`);
+    log.push("✅ NewsletterSubscriber.whatsapp column");
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    log.push(`⚠️  NewsletterSubscriber.whatsapp: ${msg.slice(0, 80)}`);
+  }
+
   // 4. Upsert the training event
   try {
     await prisma.event.upsert({

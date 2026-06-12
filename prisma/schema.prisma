@@ -205,6 +205,7 @@ model NewsletterSubscriber {
   id             String    @id @default(cuid())
   email          String    @unique
   firstName      String?
+  whatsapp       String?
   source         String    @default("blog")
   active         Boolean   @default(true)
   subscribedAt   DateTime  @default(now())

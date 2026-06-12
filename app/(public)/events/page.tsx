@@ -230,8 +230,8 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
 }
 
-function NotifyModal({ eventName, onClose }: { eventName: string; onClose: () => void }) {
-  const [form, setForm] = useState({ name: "", email: "" });
+function NotifyModal({ eventName, eventSlug, onClose }: { eventName: string; eventSlug: string; onClose: () => void }) {
+  const [form, setForm] = useState({ name: "", email: "", whatsapp: "" });
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -242,7 +242,7 @@ function NotifyModal({ eventName, onClose }: { eventName: string; onClose: () =>
       const res = await fetch("/api/events/notify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: form.name.trim(), email: form.email.trim(), event: eventName }),
+        body: JSON.stringify({ name: form.name.trim(), email: form.email.trim(), whatsapp: form.whatsapp.trim() || null, event: eventName, slug: eventSlug }),
       });
       if (res.ok) setStatus("done");
       else setStatus("error");
@@ -298,6 +298,13 @@ function NotifyModal({ eventName, onClose }: { eventName: string; onClose: () =>
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                 className="w-full bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl px-4 py-2.5 text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:border-[#2251A3] focus:ring-1 focus:ring-[#2251A3]/20"
                 required
+              />
+              <input
+                type="tel"
+                placeholder="WhatsApp number (optional)"
+                value={form.whatsapp}
+                onChange={(e) => setForm((f) => ({ ...f, whatsapp: e.target.value }))}
+                className="w-full bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl px-4 py-2.5 text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:border-[#2251A3] focus:ring-1 focus:ring-[#2251A3]/20"
               />
               {status === "error" && (
                 <p className="text-xs text-red-500 font-dm">Something went wrong. Please try again.</p>
@@ -457,7 +464,7 @@ function EventCard({ event }: { event: EventItem }) {
 
   return (
     <>
-      {notifyOpen && <NotifyModal eventName={event.title} onClose={() => setNotifyOpen(false)} />}
+      {notifyOpen && <NotifyModal eventName={event.title} eventSlug={event.slug} onClose={() => setNotifyOpen(false)} />}
       <div style={{ padding: "2px", borderRadius: "18px", background: gradientBorder }} className="hover:-translate-y-0.5 transition-transform duration-300">
         {isOpen ? (
           <Link href={`/events/${event.slug}`} className="h-full flex flex-col" style={{ borderRadius: "16px" }}>
