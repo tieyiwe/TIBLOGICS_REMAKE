@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import stripe from "@/lib/stripe";
-import { sendEventRegistrationConfirmation } from "@/lib/resend";
+
 
 function generateConfirmationNumber(): string {
   const d = new Date();
@@ -111,18 +111,9 @@ export async function POST(req: NextRequest) {
       })).catch(() => {});
     }
 
-    // Non-blocking side effects (email + newsletter)
+    // Non-blocking side effects — newsletter only. Confirmation email fires
+    // from the Stripe webhook after payment is confirmed, not here.
     const cleanEmail = email.toLowerCase().trim();
-    sendEventRegistrationConfirmation({
-      firstName, lastName, email: cleanEmail, eventName, eventSlug,
-      confirmationNumber, paymentMethod, price: priceInt,
-      currency: currency ?? "USD", location: location ?? null,
-    }).then(() => {
-      console.log(`[event-reg/confirm-email] ✓ Sent to ${cleanEmail} (conf: ${confirmationNumber})`);
-    }).catch(e => {
-      console.error(`[event-reg/confirm-email] ✗ FAILED for ${cleanEmail}:`, e instanceof Error ? e.message : e);
-    });
-
     prisma.newsletterSubscriber.upsert({
       where: { email: cleanEmail },
       create: { email: cleanEmail, firstName, source: `event-register:${eventSlug}`, active: true },
