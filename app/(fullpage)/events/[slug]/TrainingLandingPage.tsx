@@ -571,7 +571,7 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
           <input type="email" placeholder="Email Address" value={formData.email} onChange={e=>field("email",e.target.value)} required
             style={{ width:"100%", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color:"#fff", fontSize:".9rem", marginBottom:"16px" }}
           />
-          <input type="tel" placeholder="WhatsApp Number (with country code)" value={formData.whatsapp} onChange={e=>field("whatsapp",e.target.value)} required
+          <input type="tel" inputMode="numeric" placeholder="WhatsApp Number (with country code)" value={formData.whatsapp} onChange={e=>field("whatsapp", e.target.value.replace(/[^\d+\s\-()]/g, ""))} required
             style={{ width:"100%", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color:"#fff", fontSize:".9rem", marginBottom:"16px" }}
           />
           <select value={formData.role} onChange={e=>field("role",e.target.value)} required
