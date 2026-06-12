@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "payment",
       customer_email: reg.email,
-      success_url: `${baseUrl}/events/${reg.eventSlug}?payment=success&conf=${reg.confirmationNumber}`,
+      success_url: `${baseUrl}/events/${reg.eventSlug}/confirmed?conf=${reg.confirmationNumber}`,
       cancel_url: `${baseUrl}/events/${reg.eventSlug}?payment=cancelled`,
       metadata: {
         registrationId: reg.id,
