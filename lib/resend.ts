@@ -493,6 +493,62 @@ export async function sendEventWelcomeEmail(reg: {
   });
 }
 
+// ─── Admin new-registration alert ────────────────────────────────────────────
+
+export async function sendAdminNewRegistrationAlert(reg: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  eventName?: string;
+  confirmationNumber?: string;
+  whatsapp?: string | null;
+}) {
+  const adminEmail = process.env.ARFA_SMTP_USER ?? "arfa_edu@tiblogics.com";
+  await getArfaTransport().sendMail({
+    from: ARFA_FROM,
+    to: adminEmail,
+    subject: `🎉 New registration — ${reg.firstName} ${reg.lastName}`,
+    html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'DM Sans', sans-serif; background: #0F1617; color: #E8EDEE; padding: 40px 16px; margin: 0; }
+  .wrap { max-width: 520px; margin: 0 auto; background: #1A2324; border: 1px solid rgba(255,255,255,.08); border-radius: 16px; overflow: hidden; }
+  .header { background: linear-gradient(135deg,#1C2526,#2D3E40); padding: 28px 32px 22px; border-bottom: 1px solid rgba(244,124,76,.2); }
+  .header-emoji { font-size: 2.2rem; margin-bottom: 8px; }
+  .header-title { font-size: 1.2rem; font-weight: 700; color: #fff; margin: 0; }
+  .body { padding: 26px 32px; }
+  .row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.05); font-size: .88rem; }
+  .row:last-child { border-bottom: none; }
+  .label { color: rgba(255,255,255,.4); flex-shrink: 0; }
+  .value { color: #E8EDEE; font-weight: 500; text-align: right; word-break: break-all; }
+  .conf { color: #F47C4C; font-weight: 700; letter-spacing: .04em; }
+  .cta { display: block; margin: 24px auto 0; background: linear-gradient(135deg,#F47C4C,#F9A738); color: #fff; text-decoration: none; padding: 13px 28px; border-radius: 50px; font-weight: 700; font-size: .9rem; text-align: center; width: fit-content; }
+  .footer { text-align: center; font-size: .75rem; color: rgba(255,255,255,.2); padding: 18px 32px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="header-emoji">🎉</div>
+    <p class="header-title">New registration just came in!</p>
+  </div>
+  <div class="body">
+    <div class="row"><span class="label">Name</span><span class="value">${reg.firstName} ${reg.lastName}</span></div>
+    <div class="row"><span class="label">Email</span><span class="value">${reg.email}</span></div>
+    ${reg.whatsapp ? `<div class="row"><span class="label">WhatsApp</span><span class="value">${reg.whatsapp}</span></div>` : ""}
+    ${reg.eventName ? `<div class="row"><span class="label">Event</span><span class="value">${reg.eventName}</span></div>` : ""}
+    ${reg.confirmationNumber ? `<div class="row"><span class="label">Conf #</span><span class="value conf">${reg.confirmationNumber}</span></div>` : ""}
+    <a class="cta" href="https://www.tiblogics.com/admin_pro/events">View in Admin →</a>
+  </div>
+  <div class="footer">Payment is pending until Stripe checkout is completed.</div>
+</div>
+</body>
+</html>`,
+  });
+}
+
 // ─── Session reminder email ───────────────────────────────────────────────────
 
 const SESSION_INFO = [

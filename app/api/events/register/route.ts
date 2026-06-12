@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { sendEventRegistrationConfirmation } from "@/lib/resend";
+import { sendEventRegistrationConfirmation, sendAdminNewRegistrationAlert } from "@/lib/resend";
 
 function generateConfirmationNumber(): string {
   const d = new Date();
@@ -89,6 +89,20 @@ export async function POST(req: NextRequest) {
       console.log(`[event-reg/confirm-email] ✓ Sent to ${email} (conf: ${confirmationNumber})`);
     }).catch(e => {
       console.error(`[event-reg/confirm-email] ✗ FAILED for ${email}:`, e instanceof Error ? e.message : e);
+    });
+
+    // Notify admin
+    sendAdminNewRegistrationAlert({
+      firstName,
+      lastName,
+      email: email.toLowerCase().trim(),
+      eventName,
+      confirmationNumber,
+      whatsapp: whatsapp ?? null,
+    }).then(() => {
+      console.log(`[event-reg/admin-alert] ✓ Sent for ${confirmationNumber}`);
+    }).catch(e => {
+      console.error(`[event-reg/admin-alert] ✗ FAILED:`, e instanceof Error ? e.message : e);
     });
 
     // Also store in newsletter for email follow-up
