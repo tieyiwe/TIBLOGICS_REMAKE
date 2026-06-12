@@ -129,15 +129,32 @@ export async function POST(req: NextRequest) {
       update: { source: `event-register:${eventSlug}` },
     }).catch(() => { /* non-critical */ });
 
-    // Create Stripe checkout session — quantity = seats so price multiplies automatically
+    // Create Stripe checkout session
+    // Seat 1 = full price. Seats 2+ = 25% off (75% of unit price).
     const priceId = process.env.STRIPE_EVENT_PRICE_ID;
     if (priceId) {
       try {
         const baseUrl = (
           process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
         ).replace(/\/$/, "");
+
+        const additionalSeatAmount = Math.round(priceInt * 0.75);
+        const lineItems = seats === 1
+          ? [{ price: priceId, quantity: 1 }]
+          : [
+              { price: priceId, quantity: 1 }, // seat 1 — full price via fixed Price ID
+              {
+                price_data: {
+                  currency: (currency ?? "usd").toLowerCase(),
+                  product_data: { name: `${eventName} — Additional Seat (25% off)` },
+                  unit_amount: additionalSeatAmount,
+                },
+                quantity: seats - 1,
+              },
+            ];
+
         const session = await stripe.checkout.sessions.create({
-          line_items: [{ price: priceId, quantity: seats }],
+          line_items: lineItems,
           mode: "payment",
           allow_promotion_codes: true,
           customer_email: cleanEmail,

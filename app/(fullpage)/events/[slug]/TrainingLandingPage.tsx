@@ -398,8 +398,12 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
   const [toastMsg, setToastMsg] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
 
-  const totalPrice = price * numSeats;
+  // Seat 1 = full price. Every additional seat = 25% off (75% of price).
+  const additionalSeatPrice = Math.round(price * 0.75);
+  const totalPrice = numSeats <= 1 ? price : price + (numSeats - 1) * additionalSeatPrice;
+  const savings = numSeats > 1 ? (numSeats - 1) * (price - additionalSeatPrice) : 0;
   const totalDisplay = price === 0 ? "Free" : `$${(totalPrice / 100).toFixed(0)} ${currency}`;
+  const additionalSeatDisplay = price === 0 ? "Free" : `$${(additionalSeatPrice / 100).toFixed(0)}`;
 
   const field = (k: keyof typeof formData, v: string) =>
     setFormData(f => ({ ...f, [k]: v }));
@@ -573,6 +577,19 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
           {/* ── Seat selector ── */}
           <div style={{ marginBottom:"28px" }}>
             <div style={{ fontFamily:dm, fontSize:".78rem", color:S.muted, marginBottom:"12px", letterSpacing:".06em", textTransform:"uppercase" }}>Number of Seats</div>
+
+            {/* Discount nudge — show before they add a seat */}
+            {numSeats === 1 && (
+              <div style={{ background:"rgba(249,167,56,.08)", border:"1px solid rgba(249,167,56,.25)", borderRadius:"12px", padding:"10px 14px", marginBottom:"12px", display:"flex", alignItems:"center", gap:"10px" }}>
+                <span style={{ fontSize:"1.1rem", flexShrink:0 }}>💡</span>
+                <span style={{ fontFamily:dm, fontSize:".82rem", color:"rgba(255,255,255,.75)", lineHeight:1.5 }}>
+                  Bring a colleague! Every extra seat is{" "}
+                  <strong style={{ color:S.amber ?? "#F9A738" }}>25% off</strong>
+                  {" "}— only {additionalSeatDisplay} instead of {priceDisplay}.
+                </span>
+              </div>
+            )}
+
             <div style={{ display:"flex", alignItems:"center", gap:"16px" }}>
               <div style={{ display:"flex", alignItems:"center", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"14px", overflow:"hidden", flexShrink:0 }}>
                 <button type="button" onClick={() => handleSeatChange(numSeats - 1)} disabled={numSeats <= 1}
@@ -587,18 +604,23 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
               </div>
               <div>
                 {numSeats === 1 ? (
-                  <span style={{ fontFamily:dm, fontSize:".85rem", color:S.muted }}>Just you</span>
+                  <span style={{ fontFamily:dm, fontSize:".85rem", color:S.muted }}>Just you · {priceDisplay}</span>
                 ) : (
-                  <>
-                    <span style={{ fontFamily:syne, fontWeight:700, fontSize:".92rem", color:"#fff" }}>{numSeats} seats</span>
-                    <span style={{ fontFamily:dm, fontSize:".82rem", color:S.orange, marginLeft:"8px" }}>= {totalDisplay} total</span>
-                  </>
+                  <div>
+                    <div>
+                      <span style={{ fontFamily:syne, fontWeight:700, fontSize:".92rem", color:"#fff" }}>{numSeats} seats</span>
+                      <span style={{ fontFamily:dm, fontSize:".82rem", color:S.orange, marginLeft:"8px" }}>= {totalDisplay}</span>
+                    </div>
+                    <div style={{ fontFamily:dm, fontSize:".75rem", color:"#4ade80", marginTop:"2px" }}>
+                      🎉 You're saving ${(savings / 100).toFixed(0)}!
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
             {numSeats > 1 && (
               <p style={{ fontFamily:dm, fontSize:".75rem", color:S.muted, marginTop:"8px", lineHeight:1.5 }}>
-                You'll add info for the other {numSeats - 1} participant{numSeats > 2 ? "s" : ""} in the next step.
+                Seats 2+ are 25% off ({additionalSeatDisplay} each). You'll add participant info in the next step.
               </p>
             )}
           </div>
@@ -677,9 +699,24 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
               <span style={{ fontFamily:syne, fontWeight:700, fontSize:".95rem" }}>{eventTitle}</span>
               <span style={{ fontFamily:syne, fontWeight:800, fontSize:"1.1rem", color:S.orange }}>{numSeats > 1 ? totalDisplay : priceDisplay}</span>
             </div>
-            <div style={{ color:S.muted, fontSize:".78rem" }}>
-              {numSeats > 1 ? `${numSeats} seats × ${priceDisplay}` : "6-week live training"} · June Cohort · {location}
-            </div>
+            {numSeats > 1 ? (
+              <div style={{ marginTop:"8px", display:"flex", flexDirection:"column", gap:"3px" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", fontFamily:dm, fontSize:".78rem", color:"rgba(255,255,255,.55)" }}>
+                  <span>Seat 1 (full price)</span><span>{priceDisplay}</span>
+                </div>
+                {numSeats > 1 && (
+                  <div style={{ display:"flex", justifyContent:"space-between", fontFamily:dm, fontSize:".78rem", color:"rgba(255,255,255,.55)" }}>
+                    <span>{numSeats - 1} additional seat{numSeats > 2 ? "s" : ""} <span style={{ color:"#4ade80" }}>−25%</span></span>
+                    <span>{additionalSeatDisplay} × {numSeats - 1}</span>
+                  </div>
+                )}
+                <div style={{ display:"flex", justifyContent:"space-between", fontFamily:dm, fontSize:".78rem", color:"#4ade80", marginTop:"4px", paddingTop:"4px", borderTop:"1px solid rgba(255,255,255,.07)" }}>
+                  <span>You save</span><span>${(savings / 100).toFixed(0)}</span>
+                </div>
+              </div>
+            ) : (
+              <div style={{ color:S.muted, fontSize:".78rem" }}>6-week live training · June Cohort · {location}</div>
+            )}
             {numSeats > 1 && (
               <div style={{ marginTop:"10px", paddingTop:"10px", borderTop:`1px solid rgba(255,255,255,.07)` }}>
                 {[{ firstName: formData.firstName, lastName: formData.lastName }, ...additionalParticipants].map((p, i) => (
