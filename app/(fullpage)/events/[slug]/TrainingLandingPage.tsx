@@ -763,7 +763,7 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
             <div className="pay-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
               {[
                 { id:"card", icon:"💳", label:"Credit / Debit", sub:"Visa · Mastercard · Amex" },
-                { id:"paypal", icon:"🅿️", label:"PayPal", sub:"Pay via PayPal balance" },
+                { id:"googlepay", icon:"G", label:"Google Pay", sub:"Pay with Google Pay" },
               ].map(p=>(
                 <div key={p.id} className={`payment-opt${activePayment===p.id?" selected":""}`}
                   onClick={()=>setActivePayment(p.id)}
