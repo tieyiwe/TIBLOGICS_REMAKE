@@ -326,116 +326,130 @@ function EventCard({ event }: { event: EventItem }) {
   const [notifyOpen, setNotifyOpen] = useState(false);
   const isFree = event.price === 0;
   const typeColor = TYPE_COLORS[event.type] ?? "bg-gray-100 text-gray-700";
-  const eventHref = `/events/${event.slug}`;
+  const isOpen = event.registrationOpen;
 
-  // Green gradient border = registration open (active)
-  // Orange gradient border = coming soon
-  const gradientBorder = event.registrationOpen
+  const gradientBorder = isOpen
     ? "linear-gradient(135deg, #22c55e, #16a34a)"
     : "linear-gradient(135deg, #F47C20, #f9a738)";
+
+  // Tags prefixed with "module:" render as module pills on the card
+  const modules = event.tags.filter(t => t.startsWith("module:")).map(t => t.slice(7));
+
+  const inner = (
+    <div className={`bg-white flex flex-col h-full${isOpen ? " group" : ""}`} style={{ borderRadius: "16px", overflow: "hidden" }}>
+      <div className="relative w-full h-48 overflow-hidden flex-shrink-0">
+        <Image
+          src={event.coverImage || TYPE_FALLBACK_IMAGE[event.type] || TYPE_FALLBACK_IMAGE.EVENT}
+          alt={event.title}
+          fill
+          unoptimized
+          className={`object-cover transition-transform duration-500${isOpen ? " group-hover:scale-[1.02]" : ""}`}
+        />
+        {isOpen ? (
+          <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-green-500 text-white text-xs font-dm font-semibold px-3 py-1 rounded-full shadow">
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse inline-block" />
+            Open Now
+          </div>
+        ) : (
+          <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-[#F47C20] text-white text-xs font-dm font-semibold px-3 py-1 rounded-full shadow">
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse inline-block" />
+            Coming Soon
+          </div>
+        )}
+      </div>
+
+      <div className="p-6 flex flex-col flex-1 gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`text-xs font-dm font-semibold px-2 py-0.5 rounded-full ${typeColor}`}>
+            {event.type}
+          </span>
+          {event.featured && (
+            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20]">
+              Featured
+            </span>
+          )}
+          {!isOpen && (
+            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20] ml-auto">
+              Price TBA
+            </span>
+          )}
+          {isOpen && (isFree ? (
+            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 ml-auto">Free</span>
+          ) : (
+            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20] ml-auto">
+              ${(event.price / 100).toFixed(0)}
+            </span>
+          ))}
+        </div>
+
+        <h3 className={`font-syne font-bold text-lg text-[#0D1B2A] leading-snug transition-colors${isOpen ? " group-hover:text-[#F47C20]" : ""}`}>
+          {event.title}
+        </h3>
+
+        <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed line-clamp-2">
+          {event.description}
+        </p>
+
+        {/* Module pills */}
+        {modules.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            <p className="font-dm text-[10px] font-semibold text-[#7A8FA6] uppercase tracking-widest">Modules</p>
+            {modules.map((m, i) => (
+              <div key={m} className="flex items-start gap-2">
+                <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-[#F47C20]/10 text-[#F47C20] font-syne font-bold text-[10px] flex items-center justify-center">{i + 1}</span>
+                <span className="font-dm text-xs text-[#0D1B2A] font-medium leading-snug">{m}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-1.5 mt-auto">
+          {event.date && (
+            <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
+              <Calendar size={13} /><span>{formatDate(event.date)}</span>
+            </div>
+          )}
+          {event.timeSlot && (
+            <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
+              <Clock size={13} /><span>{event.timeSlot}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
+            <MapPin size={13} /><span>{event.location}</span>
+          </div>
+        </div>
+
+        <div className="pt-3 border-t border-[#D2DCE8]">
+          {isOpen ? (
+            <div className="w-full text-center font-dm font-semibold text-sm text-white bg-[#F47C20] group-hover:bg-[#e06a10] transition-colors py-2 rounded-xl">
+              {isFree ? "Join Free →" : "Register Now →"}
+            </div>
+          ) : (
+            <div
+              onClick={e => { e.stopPropagation(); setNotifyOpen(true); }}
+              className="w-full flex items-center justify-center gap-1.5 font-dm font-semibold text-sm text-white bg-[#1B3A6B] hover:bg-[#2251A3] transition-colors py-2 rounded-xl cursor-pointer"
+            >
+              <Bell size={13} /> Join Waitlist
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <>
       {notifyOpen && <NotifyModal eventName={event.title} onClose={() => setNotifyOpen(false)} />}
-      {/* Gradient border wrapper */}
       <div style={{ padding: "2px", borderRadius: "18px", background: gradientBorder }} className="hover:-translate-y-0.5 transition-transform duration-300">
-      <Link
-        href={eventHref}
-        className="bg-white rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col group h-full"
-        style={{ borderRadius: "16px" }}
-      >
-        <div className="relative w-full h-48 overflow-hidden flex-shrink-0">
-          <Image
-            src={event.coverImage || TYPE_FALLBACK_IMAGE[event.type] || TYPE_FALLBACK_IMAGE.EVENT}
-            alt={event.title}
-            fill
-            unoptimized
-            className="object-cover group-hover:scale-[1.02] transition-transform duration-500"
-          />
-          {!event.registrationOpen && (
-            <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-[#F47C20] text-white text-xs font-dm font-semibold px-3 py-1 rounded-full shadow">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse inline-block" />
-              Coming Soon
-            </div>
-          )}
-          {event.registrationOpen && (
-            <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-green-500 text-white text-xs font-dm font-semibold px-3 py-1 rounded-full shadow">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse inline-block" />
-              Open Now
-            </div>
-          )}
-        </div>
-
-        <div className="p-6 flex flex-col flex-1 gap-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={`text-xs font-dm font-semibold px-2 py-0.5 rounded-full ${typeColor}`}>
-              {event.type}
-            </span>
-            {event.featured && (
-              <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20]">
-                Featured
-              </span>
-            )}
-            {isFree ? (
-              <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 ml-auto">
-                Free
-              </span>
-            ) : (
-              <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20] ml-auto">
-                ${(event.price / 100).toFixed(0)}
-              </span>
-            )}
+        {isOpen ? (
+          <Link href={`/events/${event.slug}`} className="h-full flex flex-col" style={{ borderRadius: "16px" }}>
+            {inner}
+          </Link>
+        ) : (
+          <div className="h-full flex flex-col cursor-default" style={{ borderRadius: "16px" }}>
+            {inner}
           </div>
-
-          <h3 className="font-syne font-bold text-lg text-[#0D1B2A] leading-snug group-hover:text-[#F47C20] transition-colors">
-            {event.title}
-          </h3>
-
-          <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed line-clamp-2 flex-1">
-            {event.description}
-          </p>
-
-          <div className="flex flex-col gap-1.5 mt-1">
-            {event.date && (
-              <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-                <Calendar size={13} />
-                <span>{formatDate(event.date)}</span>
-              </div>
-            )}
-            {event.timeSlot && (
-              <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-                <Clock size={13} />
-                <span>{event.timeSlot}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-              <MapPin size={13} />
-              <span>{event.location}</span>
-            </div>
-            {event.spots != null && (
-              <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-                <Users size={13} />
-                <span>{event.spots} spots available</span>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-2 pt-3 border-t border-[#D2DCE8]">
-            {event.registrationOpen ? (
-              <div className="w-full text-center font-dm font-semibold text-sm text-white bg-[#F47C20] group-hover:bg-[#e06a10] transition-colors py-2 rounded-xl">
-                {isFree ? "Join Free →" : "Register Now →"}
-              </div>
-            ) : (
-              <div
-                onClick={e => { e.preventDefault(); setNotifyOpen(true); }}
-                className="w-full flex items-center justify-center gap-1.5 font-dm font-semibold text-sm text-white bg-[#1B3A6B] hover:bg-[#2251A3] transition-colors py-2 rounded-xl cursor-pointer"
-              >
-                <Bell size={13} /> Join Waitlist
-              </div>
-            )}
-          </div>
-        </div>
-      </Link>
+        )}
       </div>
     </>
   );

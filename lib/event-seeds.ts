@@ -47,7 +47,7 @@ export const PARENTS_EVENT_SEED: Prisma.EventCreateInput = {
   timezone: "America/New_York",
   coverImage:
     "https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=1200&q=80",
-  tags: ["ai", "parents", "kids", "education", "safety", "training"],
+  tags: ["module:AI for Kids' Academics", "module:AI Safety for Parents", "ai", "parents", "kids", "education", "safety", "training"],
   featured: false,
   published: true,
   registrationOpen: false,
