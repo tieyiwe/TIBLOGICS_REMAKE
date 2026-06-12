@@ -51,6 +51,7 @@ export async function POST(req: Request) {
           firstName: reg.firstName,
           email: reg.email,
           eventName: reg.eventName,
+          confirmationNumber: reg.confirmationNumber,
         }).then(() => {
           console.log(`[stripe/webhook] ✓ Welcome email sent to ${reg.email}`);
         }).catch((err) => {

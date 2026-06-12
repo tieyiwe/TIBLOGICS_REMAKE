@@ -228,13 +228,13 @@ export default function ConfirmedPage({
               Your Confirmation Number
             </div>
             <div style={{
-              fontFamily: syne, fontWeight: 800, fontSize: "1.8rem", letterSpacing: ".06em",
+              fontFamily: syne, fontWeight: 800, fontSize: "clamp(1.3rem,4vw,1.8rem)", letterSpacing: ".06em",
               background: "linear-gradient(135deg,#F47C4C,#F9A738)",
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+              whiteSpace: "nowrap",
             }}>
               {confirmationNumber}
             </div>
-            <div style={{ color: S.muted, fontSize: ".75rem", marginTop: "6px" }}>Save this — you'll need it for check-in</div>
           </div>
         )}
 

@@ -286,6 +286,7 @@ export async function sendEventWelcomeEmail(reg: {
   firstName: string;
   email: string;
   eventName?: string;
+  confirmationNumber?: string | null;
 }) {
   const firstName = (reg.firstName || "there").trim();
 
@@ -423,6 +424,7 @@ export async function sendEventWelcomeEmail(reg: {
 
     <div class="details-card">
       <div class="details-title">Your Training Details</div>
+      ${reg.confirmationNumber ? `<div class="detail-row"><div class="detail-icon">🎫</div><div><div class="detail-label">Confirmation #</div><div class="detail-value" style="font-weight:700;color:#F47C4C;letter-spacing:.04em">${reg.confirmationNumber}</div></div></div>` : ""}
       <div class="detail-row"><div class="detail-icon">📅</div><div><div class="detail-label">Start Date</div><div class="detail-value">Saturday, June 20, 2025</div></div></div>
       <div class="detail-row"><div class="detail-icon">⏰</div><div><div class="detail-label">Time (every Saturday)</div><div class="detail-value">9:30 AM – 1:00 PM · includes breaks</div></div></div>
       <div class="detail-row"><div class="detail-icon">💻</div><div><div class="detail-label">Format</div><div class="detail-value">Live on Zoom · Link sent 48hrs before Session 1</div></div></div>
