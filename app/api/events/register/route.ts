@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import stripe from "@/lib/stripe";
 import { sendEventRegistrationConfirmation } from "@/lib/resend";
 
 function generateConfirmationNumber(): string {
@@ -73,37 +74,50 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Send confirmation email (non-blocking — don't fail registration if email fails)
+    // Non-blocking side effects (email + newsletter) — don't delay the response
+    const cleanEmail = email.toLowerCase().trim();
     sendEventRegistrationConfirmation({
-      firstName,
-      lastName,
-      email: email.toLowerCase().trim(),
-      eventName,
-      eventSlug,
-      confirmationNumber,
-      paymentMethod,
-      price: priceInt,
-      currency: currency ?? "USD",
-      location: location ?? null,
+      firstName, lastName, email: cleanEmail, eventName, eventSlug,
+      confirmationNumber, paymentMethod, price: priceInt,
+      currency: currency ?? "USD", location: location ?? null,
     }).then(() => {
-      console.log(`[event-reg/confirm-email] ✓ Sent to ${email} (conf: ${confirmationNumber})`);
+      console.log(`[event-reg/confirm-email] ✓ Sent to ${cleanEmail} (conf: ${confirmationNumber})`);
     }).catch(e => {
-      console.error(`[event-reg/confirm-email] ✗ FAILED for ${email}:`, e instanceof Error ? e.message : e);
+      console.error(`[event-reg/confirm-email] ✗ FAILED for ${cleanEmail}:`, e instanceof Error ? e.message : e);
     });
 
-    // Also store in newsletter for email follow-up
-    try {
-      await prisma.newsletterSubscriber.upsert({
-        where: { email: email.toLowerCase().trim() },
-        create: {
-          email: email.toLowerCase().trim(),
-          firstName,
-          source: `event-register:${eventSlug}`,
-          active: true,
-        },
-        update: { source: `event-register:${eventSlug}` },
-      });
-    } catch { /* non-critical */ }
+    prisma.newsletterSubscriber.upsert({
+      where: { email: cleanEmail },
+      create: { email: cleanEmail, firstName, source: `event-register:${eventSlug}`, active: true },
+      update: { source: `event-register:${eventSlug}` },
+    }).catch(() => { /* non-critical */ });
+
+    // Create Stripe checkout session in the same request to eliminate a round-trip
+    const priceId = process.env.STRIPE_EVENT_PRICE_ID;
+    if (priceId) {
+      try {
+        const baseUrl = (
+          process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
+        ).replace(/\/$/, "");
+        const session = await stripe.checkout.sessions.create({
+          line_items: [{ price: priceId, quantity: 1 }],
+          mode: "payment",
+          customer_email: cleanEmail,
+          success_url: `${baseUrl}/events/${eventSlug}/confirmed?conf=${confirmationNumber}`,
+          cancel_url: `${baseUrl}/events/${eventSlug}?payment=cancelled&conf=${confirmationNumber}`,
+          metadata: {
+            registrationId: registration.id,
+            confirmationNumber,
+            eventSlug,
+          },
+        });
+        return NextResponse.json({ ok: true, id: registration.id, confirmationNumber, checkoutUrl: session.url });
+      } catch (stripeErr) {
+        // Stripe failed — return id so client can fall back to /api/events/checkout
+        console.error("[event-reg/stripe]", stripeErr instanceof Error ? stripeErr.message : stripeErr);
+        return NextResponse.json({ ok: true, id: registration.id, confirmationNumber });
+      }
+    }
 
     return NextResponse.json({ ok: true, id: registration.id, confirmationNumber });
   } catch (err) {

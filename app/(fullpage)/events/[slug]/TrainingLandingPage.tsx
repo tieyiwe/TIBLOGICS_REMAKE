@@ -333,18 +333,26 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
         return;
       }
       const data = await res.json();
-      const checkoutRes = await fetch("/api/events/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ registrationId: data.id }),
-      });
-      if (!checkoutRes.ok) {
-        const errData = await checkoutRes.json().catch(() => ({}));
-        setToastMsg(errData.error || `Checkout error (${checkoutRes.status})`);
-        setFormStatus("error");
-        return;
+
+      // Fast path: register route already created the Stripe session in the same request
+      let checkoutUrl: string | null = data.checkoutUrl ?? null;
+
+      // Fallback: separate checkout call (if Stripe env var was missing server-side)
+      if (!checkoutUrl && data.id) {
+        const checkoutRes = await fetch("/api/events/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ registrationId: data.id }),
+        });
+        if (!checkoutRes.ok) {
+          const errData = await checkoutRes.json().catch(() => ({}));
+          setToastMsg(errData.error || `Checkout error (${checkoutRes.status})`);
+          setFormStatus("error");
+          return;
+        }
+        checkoutUrl = (await checkoutRes.json()).checkoutUrl ?? null;
       }
-      const { checkoutUrl } = await checkoutRes.json();
+
       if (checkoutUrl) {
         window.location.href = checkoutUrl;
       } else {
