@@ -415,8 +415,8 @@ export async function sendEventWelcomeEmail(reg: {
     <div class="greeting">Hi ${firstName}, 👋</div>
     <p class="para">
       Your registration for the <strong>TIBLOGICS AI Practical Training</strong> is confirmed and your payment has been received.
-      You are part of the June Cohort — the founding group. That means founding cohort pricing, direct access to our team,
-      and being among the first to go through this training before anyone else.
+      You are part of the June Cohort — an exclusive early group with direct access to our team,
+      and among the first to go through this training before anyone else.
     </p>
     <p class="para">
       All session details — your Zoom link, password, and WhatsApp group invite — will be sent to you
@@ -485,7 +485,7 @@ export async function sendEventWelcomeEmail(reg: {
       <span style="color:rgba(255,255,255,0.2);font-size:12px;margin:0 8px;">|</span>
       <a href="https://www.tiblogics.com">www.tiblogics.com</a>
     </div>
-    <div class="footer-copy">© 2025 TIBLOGICS</div>
+    <div class="footer-copy">© 2026 TIBLOGICS</div>
   </div>
 </div>
 </body>
@@ -543,7 +543,7 @@ export async function sendAdminNewRegistrationAlert(reg: {
     ${reg.confirmationNumber ? `<div class="row"><span class="label">Conf #</span><span class="value conf">${reg.confirmationNumber}</span></div>` : ""}
     <a class="cta" href="https://tiblogics.com/admin_pro">View in Admin →</a>
   </div>
-  <div class="footer">Payment is pending until Stripe checkout is completed.</div>
+  <div class="footer">Payment confirmed ✓ via Stripe.</div>
 </div>
 </body>
 </html>`,
@@ -717,7 +717,7 @@ export async function sendSessionReminder(reg: {
       <span style="color:rgba(255,255,255,0.2);font-size:12px;margin:0 8px;">|</span>
       <a href="https://www.tiblogics.com">www.tiblogics.com</a>
     </div>
-    <div class="footer-copy">© 2025 TIBLOGICS</div>
+    <div class="footer-copy">© 2026 TIBLOGICS</div>
   </div>
 </div>
 </body>
