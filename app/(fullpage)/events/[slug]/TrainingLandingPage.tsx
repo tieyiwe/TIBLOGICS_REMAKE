@@ -385,7 +385,11 @@ const ROLE_OPTIONS = [
 function RegistrationForm({ eventSlug, eventTitle, price, currency, location, priceDisplay, content }: FormProps) {
   const C = content;
   const [activePayment, setActivePayment] = useState("card");
-  const [formStep, setFormStep] = useState<1 | 2>(1);
+  const [formStep, setFormStep] = useState<1 | 2 | 3>(1);
+  const [numSeats, setNumSeats] = useState(1);
+  const [additionalParticipants, setAdditionalParticipants] = useState<
+    Array<{ firstName: string; lastName: string; email: string }>
+  >([]);
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", email: "", whatsapp: "",
     role: "", roleOther: "", goal: "",
@@ -394,12 +398,37 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
   const [toastMsg, setToastMsg] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
 
+  const totalPrice = price * numSeats;
+  const totalDisplay = price === 0 ? "Free" : `$${(totalPrice / 100).toFixed(0)} ${currency}`;
+
   const field = (k: keyof typeof formData, v: string) =>
     setFormData(f => ({ ...f, [k]: v }));
 
+  function updateAdditional(index: number, key: "firstName" | "lastName" | "email", val: string) {
+    setAdditionalParticipants(prev => prev.map((p, i) => i === index ? { ...p, [key]: val } : p));
+  }
+
+  function handleSeatChange(n: number) {
+    const clamped = Math.max(1, Math.min(10, n));
+    setNumSeats(clamped);
+    const needed = clamped - 1;
+    setAdditionalParticipants(prev => {
+      if (prev.length === needed) return prev;
+      if (prev.length < needed)
+        return [...prev, ...Array.from({ length: needed - prev.length }, () => ({ firstName: "", lastName: "", email: "" }))];
+      return prev.slice(0, needed);
+    });
+  }
+
   function handleStep1(e: React.FormEvent) {
     e.preventDefault();
-    setFormStep(2);
+    setFormStep(numSeats > 1 ? 2 : 3);
+    setTimeout(() => document.getElementById("register")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+  }
+
+  function handleStep2(e: React.FormEvent) {
+    e.preventDefault();
+    setFormStep(3);
     setTimeout(() => document.getElementById("register")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
   }
 
@@ -420,6 +449,8 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
           price: price / 100,
           currency,
           location,
+          numSeats,
+          additionalParticipants,
         }),
       });
       if (!res.ok) {
@@ -474,24 +505,36 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
   return (
     <div className="form-inner" style={{ background:S.dark, border:`1px solid ${S.border}`, borderRadius:"24px", padding:"36px 32px" }}>
       {/* Step indicator */}
-      <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"28px" }}>
-        {[1,2].map(n => (
-          <div key={n} style={{ display:"flex", alignItems:"center", gap:"8px", flex: n===1 ? "none" : 1 }}>
-            <div style={{
-              width:"28px", height:"28px", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
-              fontSize:".78rem", fontWeight:700, fontFamily:syne,
-              background: formStep >= n ? "linear-gradient(135deg,#F47C4C,#F9A738)" : "rgba(255,255,255,.06)",
-              color: formStep >= n ? "#131A1B" : S.muted,
-              border: formStep >= n ? "none" : `1px solid ${S.border}`,
-              flexShrink: 0,
-            }}>{n}</div>
-            <span style={{ fontSize:".78rem", color: formStep >= n ? "#fff" : S.muted, fontWeight: formStep===n ? 600 : 400, whiteSpace:"nowrap" }}>
-              {n===1 ? "Your Info" : "Payment"}
-            </span>
-            {n===1 && <div style={{ flex:1, height:"1px", background: formStep===2 ? S.orange : S.border, marginLeft:"4px" }} />}
+      {(() => {
+        const steps = numSeats > 1
+          ? [{ v: 1, label: "Your Info" }, { v: 2, label: "Group" }, { v: 3, label: "Payment" }]
+          : [{ v: 1, label: "Your Info" }, { v: 3, label: "Payment" }];
+        return (
+          <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"28px" }}>
+            {steps.map((step, idx) => {
+              const active = formStep >= step.v;
+              const current = formStep === step.v;
+              const isLast = idx === steps.length - 1;
+              const lineActive = !isLast && formStep > step.v;
+              return (
+                <div key={step.v} style={{ display:"flex", alignItems:"center", gap:"8px", flex: isLast ? "none" : 1 }}>
+                  <div style={{
+                    width:"28px", height:"28px", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
+                    fontSize:".78rem", fontWeight:700, fontFamily:syne, flexShrink:0,
+                    background: active ? "linear-gradient(135deg,#F47C4C,#F9A738)" : "rgba(255,255,255,.06)",
+                    color: active ? "#131A1B" : S.muted,
+                    border: active ? "none" : `1px solid ${S.border}`,
+                  }}>{idx + 1}</div>
+                  <span style={{ fontSize:".78rem", color: active ? "#fff" : S.muted, fontWeight: current ? 600 : 400, whiteSpace:"nowrap" }}>
+                    {step.label}
+                  </span>
+                  {!isLast && <div style={{ flex:1, height:"1px", background: lineActive ? S.orange : S.border, marginLeft:"4px" }} />}
+                </div>
+              );
+            })}
           </div>
-        ))}
-      </div>
+        );
+      })()}
 
       {/* ── STEP 1: Contact info ── */}
       {formStep === 1 && (
@@ -521,29 +564,110 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
             />
           )}
           <select value={formData.goal} onChange={e=>field("goal",e.target.value)}
-            style={{ width:"100%", background:S.dark, border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color: formData.goal ? "#fff" : S.muted, fontSize:".9rem", marginBottom:"28px" }}
+            style={{ width:"100%", background:S.dark, border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color: formData.goal ? "#fff" : S.muted, fontSize:".9rem", marginBottom:"16px" }}
           >
             <option value="" disabled>{C.registration.goalPlaceholder}</option>
             {C.registration.goalOptions.map((g,i)=>(<option key={i}>{g}</option>))}
           </select>
+
+          {/* ── Seat selector ── */}
+          <div style={{ marginBottom:"28px" }}>
+            <div style={{ fontFamily:dm, fontSize:".78rem", color:S.muted, marginBottom:"12px", letterSpacing:".06em", textTransform:"uppercase" }}>Number of Seats</div>
+            <div style={{ display:"flex", alignItems:"center", gap:"16px" }}>
+              <div style={{ display:"flex", alignItems:"center", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"14px", overflow:"hidden", flexShrink:0 }}>
+                <button type="button" onClick={() => handleSeatChange(numSeats - 1)} disabled={numSeats <= 1}
+                  style={{ width:"44px", height:"44px", display:"flex", alignItems:"center", justifyContent:"center", background:"none", border:"none", color: numSeats <= 1 ? S.muted : "#fff", fontSize:"1.4rem", cursor: numSeats <= 1 ? "not-allowed" : "pointer", fontWeight:700 }}>
+                  −
+                </button>
+                <span style={{ fontFamily:syne, fontWeight:800, fontSize:"1.15rem", minWidth:"36px", textAlign:"center", color:"#fff" }}>{numSeats}</span>
+                <button type="button" onClick={() => handleSeatChange(numSeats + 1)} disabled={numSeats >= 10}
+                  style={{ width:"44px", height:"44px", display:"flex", alignItems:"center", justifyContent:"center", background:"none", border:"none", color: numSeats >= 10 ? S.muted : S.orange, fontSize:"1.4rem", cursor: numSeats >= 10 ? "not-allowed" : "pointer", fontWeight:700 }}>
+                  +
+                </button>
+              </div>
+              <div>
+                {numSeats === 1 ? (
+                  <span style={{ fontFamily:dm, fontSize:".85rem", color:S.muted }}>Just you</span>
+                ) : (
+                  <>
+                    <span style={{ fontFamily:syne, fontWeight:700, fontSize:".92rem", color:"#fff" }}>{numSeats} seats</span>
+                    <span style={{ fontFamily:dm, fontSize:".82rem", color:S.orange, marginLeft:"8px" }}>= {totalDisplay} total</span>
+                  </>
+                )}
+              </div>
+            </div>
+            {numSeats > 1 && (
+              <p style={{ fontFamily:dm, fontSize:".75rem", color:S.muted, marginTop:"8px", lineHeight:1.5 }}>
+                You'll add info for the other {numSeats - 1} participant{numSeats > 2 ? "s" : ""} in the next step.
+              </p>
+            )}
+          </div>
+
           <button type="submit" className="cta-primary" style={{
             width:"100%", padding:"17px 32px", borderRadius:"50px",
             fontFamily:syne, fontSize:"1.05rem", letterSpacing:".02em"
           }}>
-            Continue to Payment →
+            {numSeats > 1 ? `Continue → Add ${numSeats - 1} More Participant${numSeats > 2 ? "s" : ""}` : "Continue to Payment →"}
           </button>
         </form>
       )}
 
-      {/* ── STEP 2: Payment ── */}
+      {/* ── STEP 2: Additional participants ── */}
       {formStep === 2 && (
+        <form onSubmit={handleStep2}>
+          <div style={{ marginBottom:"20px" }}>
+            <div style={{ fontFamily:syne, fontWeight:700, fontSize:".95rem", marginBottom:"4px" }}>
+              Group Registration — {numSeats} Seats
+            </div>
+            <div style={{ fontFamily:dm, fontSize:".82rem", color:S.muted, lineHeight:1.55 }}>
+              Seat 1 is registered for <strong style={{ color:"#fff" }}>{formData.firstName} {formData.lastName}</strong>.
+              Fill in the info for the remaining {numSeats - 1} participant{numSeats > 2 ? "s" : ""} below.
+            </div>
+          </div>
+
+          {additionalParticipants.map((p, idx) => (
+            <div key={idx} style={{ background:"rgba(255,255,255,.04)", border:`1px solid ${S.border}`, borderRadius:"16px", padding:"18px", marginBottom:"12px" }}>
+              <div style={{ fontFamily:dm, fontSize:".72rem", color:S.orange, fontWeight:700, letterSpacing:".08em", textTransform:"uppercase", marginBottom:"12px" }}>
+                Seat {idx + 2} of {numSeats}
+              </div>
+              <div className="form-row" style={{ display:"flex", gap:"12px", marginBottom:"12px" }}>
+                <input type="text" placeholder="First Name" required value={p.firstName}
+                  onChange={e => updateAdditional(idx, "firstName", e.target.value)}
+                  style={{ flex:1, background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"10px", padding:"11px 14px", color:"#fff", fontSize:".88rem" }}
+                />
+                <input type="text" placeholder="Last Name" required value={p.lastName}
+                  onChange={e => updateAdditional(idx, "lastName", e.target.value)}
+                  style={{ flex:1, background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"10px", padding:"11px 14px", color:"#fff", fontSize:".88rem" }}
+                />
+              </div>
+              <input type="email" placeholder="Email Address" required value={p.email}
+                onChange={e => updateAdditional(idx, "email", e.target.value)}
+                style={{ width:"100%", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"10px", padding:"11px 14px", color:"#fff", fontSize:".88rem" }}
+              />
+            </div>
+          ))}
+
+          <div style={{ display:"flex", gap:"12px", marginTop:"8px" }}>
+            <button type="button" onClick={() => setFormStep(1)}
+              style={{ flexShrink:0, padding:"14px 20px", borderRadius:"50px", fontFamily:dm, fontSize:".9rem", fontWeight:600, background:"none", border:`1px solid ${S.border}`, color:S.muted, cursor:"pointer" }}>
+              ← Back
+            </button>
+            <button type="submit" className="cta-primary" style={{ flex:1, padding:"17px 32px", borderRadius:"50px", fontFamily:syne, fontSize:"1rem", letterSpacing:".02em" }}>
+              Continue to Payment →
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* ── STEP 3: Payment ── */}
+      {formStep === 3 && (
         <form onSubmit={handleSubmit}>
           <div style={{ background:"rgba(255,255,255,.04)", border:`1px solid ${S.border}`, borderRadius:"14px", padding:"14px 18px", marginBottom:"24px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px", flexWrap:"wrap" }}>
             <div>
-              <div style={{ fontWeight:600, fontSize:".9rem" }}>{formData.firstName} {formData.lastName}</div>
+              <div style={{ fontWeight:600, fontSize:".9rem" }}>{formData.firstName} {formData.lastName}{numSeats > 1 ? ` + ${numSeats - 1} more` : ""}</div>
               <div style={{ color:S.muted, fontSize:".8rem" }}>{formData.email}</div>
             </div>
-            <button type="button" onClick={()=>setFormStep(1)}
+            <button type="button" onClick={() => setFormStep(numSeats > 1 ? 2 : 1)}
               style={{ background:"none", border:"none", color:S.orange, cursor:"pointer", fontSize:".8rem", fontWeight:600, padding:0 }}>
               Edit
             </button>
@@ -551,9 +675,20 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
           <div style={{ background:"rgba(244,124,76,.06)", border:"1px solid rgba(244,124,76,.2)", borderRadius:"14px", padding:"18px 20px", marginBottom:"24px" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"4px" }}>
               <span style={{ fontFamily:syne, fontWeight:700, fontSize:".95rem" }}>{eventTitle}</span>
-              <span style={{ fontFamily:syne, fontWeight:800, fontSize:"1.1rem", color:S.orange }}>{priceDisplay}</span>
+              <span style={{ fontFamily:syne, fontWeight:800, fontSize:"1.1rem", color:S.orange }}>{numSeats > 1 ? totalDisplay : priceDisplay}</span>
             </div>
-            <div style={{ color:S.muted, fontSize:".78rem" }}>6-week live training · June Cohort · {location}</div>
+            <div style={{ color:S.muted, fontSize:".78rem" }}>
+              {numSeats > 1 ? `${numSeats} seats × ${priceDisplay}` : "6-week live training"} · June Cohort · {location}
+            </div>
+            {numSeats > 1 && (
+              <div style={{ marginTop:"10px", paddingTop:"10px", borderTop:`1px solid rgba(255,255,255,.07)` }}>
+                {[{ firstName: formData.firstName, lastName: formData.lastName }, ...additionalParticipants].map((p, i) => (
+                  <div key={i} style={{ fontFamily:dm, fontSize:".75rem", color:"rgba(255,255,255,.45)", lineHeight:1.8 }}>
+                    {i + 1}. {p.firstName} {p.lastName}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <PromoBanner compact />
           <div style={{ marginBottom:"24px" }}>
@@ -610,7 +745,7 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
                 <span style={{ width:"18px", height:"18px", border:"2.5px solid rgba(0,0,0,.3)", borderTopColor:"#131A1B", borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite" }}/>
                 Redirecting to payment…
               </span>
-            ) : `Pay ${priceDisplay} Securely →`}
+            ) : `Pay ${numSeats > 1 ? totalDisplay : priceDisplay} Securely →`}
           </button>
           {formStatus==="error" && (
             <p style={{ color:"#F87171", fontSize:".83rem", textAlign:"center", marginTop:"12px" }}>

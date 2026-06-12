@@ -34,7 +34,11 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const { firstName, lastName, email, whatsapp, role, goal, referral, paymentMethod, event: eventName, eventSlug: bodySlug, price, currency, location } = body;
+    const {
+      firstName, lastName, email, whatsapp, role, goal, referral,
+      paymentMethod, event: eventName, eventSlug: bodySlug, price, currency, location,
+      numSeats, additionalParticipants,
+    } = body;
 
     if (!firstName || !lastName || !email || !paymentMethod || !eventName) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -42,6 +46,8 @@ export async function POST(req: NextRequest) {
     if (!email.includes("@")) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
     }
+
+    const seats = typeof numSeats === "number" && numSeats >= 1 ? Math.min(numSeats, 10) : 1;
 
     const slugMap: Record<string, string> = {
       "AI Practical Training — June Cohort": "ai-practical-training-cohort-1",
@@ -55,6 +61,7 @@ export async function POST(req: NextRequest) {
 
     const priceInt = typeof price === "number" ? Math.round(price * 100) : 0;
 
+    // Create primary registration
     const registration = await prisma.eventRegistration.create({
       data: {
         eventSlug,
@@ -74,7 +81,37 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Non-blocking side effects (email + newsletter) — don't delay the response
+    // Create registrations for additional participants (non-blocking, fire-and-forget)
+    const extras: Array<{ firstName: string; lastName: string; email: string }> =
+      Array.isArray(additionalParticipants) ? additionalParticipants : [];
+    if (extras.length > 0) {
+      Promise.all(extras.map(async (p, i) => {
+        try {
+          let cn = generateConfirmationNumber();
+          const dup = await prisma.eventRegistration.findUnique({ where: { confirmationNumber: cn } });
+          if (dup) cn = generateConfirmationNumber();
+          await prisma.eventRegistration.create({
+            data: {
+              eventSlug,
+              eventName: eventName.slice(0, 200),
+              firstName: String(p.firstName ?? "").slice(0, 100),
+              lastName: String(p.lastName ?? "").slice(0, 100),
+              email: String(p.email ?? "").toLowerCase().trim().slice(0, 200),
+              paymentMethod: paymentMethod.slice(0, 50),
+              price: priceInt,
+              currency: currency ?? "USD",
+              status: "pending",
+              confirmationNumber: cn,
+              notes: `Group booking with ${confirmationNumber} (seat ${i + 2} of ${seats})`,
+            },
+          });
+        } catch (e) {
+          console.error(`[event-reg/additional-${i}]`, e instanceof Error ? e.message : e);
+        }
+      })).catch(() => {});
+    }
+
+    // Non-blocking side effects (email + newsletter)
     const cleanEmail = email.toLowerCase().trim();
     sendEventRegistrationConfirmation({
       firstName, lastName, email: cleanEmail, eventName, eventSlug,
@@ -92,7 +129,7 @@ export async function POST(req: NextRequest) {
       update: { source: `event-register:${eventSlug}` },
     }).catch(() => { /* non-critical */ });
 
-    // Create Stripe checkout session in the same request to eliminate a round-trip
+    // Create Stripe checkout session — quantity = seats so price multiplies automatically
     const priceId = process.env.STRIPE_EVENT_PRICE_ID;
     if (priceId) {
       try {
@@ -100,7 +137,7 @@ export async function POST(req: NextRequest) {
           process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
         ).replace(/\/$/, "");
         const session = await stripe.checkout.sessions.create({
-          line_items: [{ price: priceId, quantity: 1 }],
+          line_items: [{ price: priceId, quantity: seats }],
           mode: "payment",
           allow_promotion_codes: true,
           customer_email: cleanEmail,
@@ -110,11 +147,11 @@ export async function POST(req: NextRequest) {
             registrationId: registration.id,
             confirmationNumber,
             eventSlug,
+            seats: String(seats),
           },
         });
         return NextResponse.json({ ok: true, id: registration.id, confirmationNumber, checkoutUrl: session.url });
       } catch (stripeErr) {
-        // Stripe failed — return id so client can fall back to /api/events/checkout
         console.error("[event-reg/stripe]", stripeErr instanceof Error ? stripeErr.message : stripeErr);
         return NextResponse.json({ ok: true, id: registration.id, confirmationNumber });
       }
