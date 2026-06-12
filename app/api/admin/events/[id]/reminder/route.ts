@@ -4,16 +4,17 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendSessionReminder } from "@/lib/resend";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { id } = await params;
   const { sessionNumber } = await req.json();
   if (![1, 2, 3, 4].includes(sessionNumber)) {
     return NextResponse.json({ error: "sessionNumber must be 1–4" }, { status: 400 });
   }
 
-  const event = await prisma.event.findUnique({ where: { id: params.id } });
+  const event = await prisma.event.findUnique({ where: { id } });
   if (!event) return NextResponse.json({ error: "Event not found" }, { status: 404 });
 
   const registrations = await prisma.eventRegistration.findMany({
