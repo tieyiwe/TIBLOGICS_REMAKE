@@ -310,7 +310,7 @@ export async function sendEventWelcomeEmail(reg: {
     padding: 40px 16px 60px;
     line-height: 1.6;
   }
-  .email-wrap { max-width: 620px; margin: 0 auto; }
+  .email-wrap { max-width: 620px; width: 100%; margin: 0 auto; }
   .header {
     background: linear-gradient(135deg, #1C2526 0%, #2D3E40 100%);
     border-radius: 20px 20px 0 0;
@@ -321,7 +321,7 @@ export async function sendEventWelcomeEmail(reg: {
     border-bottom: none;
   }
   .logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; position: relative; z-index: 1; }
-  .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, #F47C4C, #F9A738); border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+  .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, #F47C4C, #F9A738); border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .logo-icon svg { width: 20px; height: 20px; }
   .logo-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; color: #fff; letter-spacing: 0.04em; }
   .logo-sub  { font-size: 10px; color: rgba(255,255,255,0.45); letter-spacing: 0.08em; }
@@ -340,7 +340,7 @@ export async function sendEventWelcomeEmail(reg: {
   .detail-row:last-child { border-bottom: none; }
   .detail-icon { font-size: 16px; flex-shrink: 0; width: 22px; text-align: center; margin-top: 1px; margin-right: 14px; }
   .detail-label { font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2px; }
-  .detail-value { font-size: 14px; color: #E8EDEE; font-weight: 500; }
+  .detail-value { font-size: 14px; color: #E8EDEE; font-weight: 500; word-break: break-all; overflow-wrap: break-word; }
   .divider { display: flex; align-items: center; gap: 12px; margin: 28px 0 20px; }
   .divider-line { flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
   .divider-text { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.3); white-space: nowrap; }
@@ -365,7 +365,7 @@ export async function sendEventWelcomeEmail(reg: {
   .tl-left { display: flex; flex-direction: column; align-items: center; }
   .tl-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; font-family: 'Syne', sans-serif; margin-right: 14px; }
   .tl-line { width: 1px; background: rgba(255,255,255,0.08); flex: 1; min-height: 8px; margin: 2px 0; }
-  .tl-content { flex: 1; padding-bottom: 6px; }
+  .tl-content { flex: 1; padding-bottom: 6px; min-width: 0; }
   .tl-date { font-size: 11px; color: rgba(255,255,255,0.35); letter-spacing: 0.06em; margin-bottom: 2px; }
   .tl-title { font-size: 13.5px; color: #E8EDEE; font-weight: 500; }
   .tl-badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 20px; margin-left: 7px; font-weight: 500; vertical-align: middle; }
@@ -381,9 +381,24 @@ export async function sendEventWelcomeEmail(reg: {
   .footer-links a { font-size: 12px; color: rgba(255,255,255,0.3); text-decoration: none; }
   .footer-copy { font-size: 11px; color: rgba(255,255,255,0.2); }
   @media (max-width: 520px) {
-    .header, .body, .footer { padding-left: 22px; padding-right: 22px; }
-    .header-title { font-size: 24px; }
-    .footer-links { gap: 10px; }
+    body { padding: 20px 8px 40px; }
+    .header, .body, .footer { padding-left: 18px; padding-right: 18px; }
+    .header { padding-top: 28px; padding-bottom: 22px; border-radius: 14px 14px 0 0; }
+    .header-title { font-size: 22px; }
+    .header-sub { font-size: 13px; }
+    .body { padding-top: 24px; padding-bottom: 24px; }
+    .details-card { padding: 16px 14px; }
+    .detail-value { font-size: 13px; letter-spacing: 0.01em; }
+    .check-item { padding: 8px 10px; }
+    .check-main { font-size: 13px; }
+    .check-note { font-size: 11.5px; }
+    .tl-title { font-size: 12.5px; }
+    .tl-badge { display: none; }
+    .rule-box { padding: 14px 16px; }
+    .cta-btn { padding: 13px 28px; font-size: 13px; }
+    .footer { padding-left: 18px; padding-right: 18px; border-radius: 0 0 14px 14px; }
+    .footer-links { gap: 10px; flex-direction: column; align-items: center; }
+    .closing-quote { font-size: 13px; }
   }
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
