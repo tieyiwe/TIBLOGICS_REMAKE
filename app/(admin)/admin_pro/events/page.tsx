@@ -147,6 +147,26 @@ export default function AdminEventsPage() {
   const [savingNotes, setSavingNotes] = useState(false);
   const [selectedRegIds, setSelectedRegIds] = useState<Set<string>>(new Set());
   const [bulkUpdating, setBulkUpdating] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+
+  const EXPORT_COLUMNS = [
+    { key: "name",    label: "Full Name" },
+    { key: "email",   label: "Email" },
+    { key: "whatsapp",label: "WhatsApp" },
+    { key: "role",    label: "Role / Job" },
+    { key: "goal",    label: "Goal" },
+    { key: "referral",label: "Referral" },
+    { key: "event",   label: "Event" },
+    { key: "payment", label: "Payment Method" },
+    { key: "amount",  label: "Amount" },
+    { key: "status",  label: "Status" },
+    { key: "conf",    label: "Confirmation #" },
+    { key: "date",    label: "Date" },
+  ] as const;
+  type ExportKey = typeof EXPORT_COLUMNS[number]["key"];
+  const [exportCols, setExportCols] = useState<Set<ExportKey>>(
+    new Set(["name","email","whatsapp","event","payment","amount","status","conf","date"])
+  );
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
   function getEventCounts(slug: string) {
@@ -270,18 +290,29 @@ export default function AdminEventsPage() {
 
   // ── Export CSV ────────────────────────────────────────────────────────────
   function exportCSV() {
-    const headers = ["Name", "Email", "WhatsApp", "Role", "Goal", "Referral", "Event", "Payment", "Amount", "Currency", "Status", "Notes", "Date"];
-    const rows = filteredRegs.map(r => [
-      `${r.firstName} ${r.lastName}`, r.email, r.whatsapp ?? "", r.role ?? "", r.goal ?? "",
-      r.referral ?? "", r.eventName, r.paymentMethod,
-      r.price > 0 ? (r.price / 100).toFixed(0) : "0", r.currency, r.status,
-      (r.notes ?? "").replace(/"/g, '""'), fmtDateTime(r.createdAt),
-    ]);
-    const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+    const colMap: Record<ExportKey, { header: string; value: (r: Registration) => string }> = {
+      name:     { header: "Full Name",         value: r => `${r.firstName} ${r.lastName}` },
+      email:    { header: "Email",             value: r => r.email },
+      whatsapp: { header: "WhatsApp",          value: r => r.whatsapp ?? "" },
+      role:     { header: "Role",              value: r => r.role ?? "" },
+      goal:     { header: "Goal",              value: r => r.goal ?? "" },
+      referral: { header: "Referral",          value: r => r.referral ?? "" },
+      event:    { header: "Event",             value: r => r.eventName },
+      payment:  { header: "Payment Method",    value: r => r.paymentMethod },
+      amount:   { header: "Amount",            value: r => r.price > 0 ? `$${(r.price / 100).toFixed(0)}` : "0" },
+      status:   { header: "Status",            value: r => r.status },
+      conf:     { header: "Confirmation #",    value: r => r.confirmationNumber ?? "" },
+      date:     { header: "Date",              value: r => fmtDateTime(r.createdAt) },
+    };
+    const cols = EXPORT_COLUMNS.filter(c => exportCols.has(c.key));
+    const headers = cols.map(c => colMap[c.key].header);
+    const rows = filteredRegs.map(r => cols.map(c => colMap[c.key].value(r).replace(/"/g, '""')));
+    const csv = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = "registrations.csv"; a.click();
     URL.revokeObjectURL(url);
+    setShowExportModal(false);
   }
 
   // ── Quick toggles ─────────────────────────────────────────────────────────
@@ -785,7 +816,7 @@ export default function AdminEventsPage() {
               </button>
             ))}
             <div className="ml-auto flex items-center gap-2">
-              <button onClick={exportCSV} title="Export CSV"
+              <button onClick={() => setShowExportModal(true)} title="Export CSV"
                 className="inline-flex items-center gap-1.5 text-xs font-dm font-semibold px-3 py-1.5 rounded-lg border border-[#D2DCE8] text-[#3A4A5C] hover:border-[#2251A3] hover:text-[#2251A3] transition-colors">
                 <Download size={12} /> Export CSV
               </button>
@@ -1388,6 +1419,63 @@ export default function AdminEventsPage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── EXPORT MODAL ──────────────────────────────────────────────────── */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#D2DCE8]">
+              <h2 className="font-syne font-bold text-base text-[#0D1B2A]">Export CSV</h2>
+              <button onClick={() => setShowExportModal(false)} className="p-1.5 rounded-xl text-[#7A8FA6] hover:bg-[#F4F7FB]"><X size={16} /></button>
+            </div>
+
+            {/* Quick presets */}
+            <div className="px-5 pt-4 pb-2">
+              <p className="font-dm text-xs text-[#7A8FA6] mb-2 uppercase tracking-wider font-semibold">Quick presets</p>
+              <div className="flex gap-2 flex-wrap mb-4">
+                {[
+                  { label: "📱 WhatsApp numbers", cols: ["name","whatsapp"] as ExportKey[] },
+                  { label: "📧 Email list",        cols: ["name","email"] as ExportKey[] },
+                  { label: "📋 Full export",       cols: EXPORT_COLUMNS.map(c => c.key) as ExportKey[] },
+                ].map(preset => (
+                  <button key={preset.label} onClick={() => setExportCols(new Set(preset.cols))}
+                    className="px-3 py-1.5 text-xs font-dm font-semibold rounded-full border border-[#D2DCE8] text-[#3A4A5C] hover:border-[#2251A3] hover:text-[#2251A3] transition-colors whitespace-nowrap">
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+
+              <p className="font-dm text-xs text-[#7A8FA6] mb-2 uppercase tracking-wider font-semibold">Select columns</p>
+              <div className="grid grid-cols-2 gap-1.5 mb-5">
+                {EXPORT_COLUMNS.map(col => (
+                  <label key={col.key} className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[#D2DCE8] cursor-pointer hover:bg-[#F4F7FB] transition-colors">
+                    <input type="checkbox" checked={exportCols.has(col.key)}
+                      onChange={e => {
+                        const next = new Set(exportCols);
+                        e.target.checked ? next.add(col.key) : next.delete(col.key);
+                        setExportCols(next);
+                      }}
+                      className="rounded border-[#D2DCE8] text-[#2251A3]"
+                    />
+                    <span className="font-dm text-xs text-[#0D1B2A]">{col.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="px-5 pb-5 flex items-center gap-3">
+              <button onClick={exportCSV} disabled={exportCols.size === 0}
+                className="flex-1 inline-flex items-center justify-center gap-2 bg-[#1B3A6B] hover:bg-[#162f5a] text-white font-dm font-semibold text-sm px-4 py-2.5 rounded-xl transition-colors disabled:opacity-50">
+                <Download size={14} /> Export {filteredRegs.length} rows
+              </button>
+              <button onClick={() => setShowExportModal(false)}
+                className="px-4 py-2.5 rounded-xl border border-[#D2DCE8] font-dm text-sm text-[#3A4A5C] hover:bg-[#F4F7FB] transition-colors">
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
