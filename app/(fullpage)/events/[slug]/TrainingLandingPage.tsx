@@ -508,6 +508,17 @@ export default function TrainingLandingPage({
   const isFree = price === 0;
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
 
+  // Auto-cancel registration when Stripe checkout is abandoned
+  useEffect(() => {
+    if (paymentResult === "cancelled" && confirmationNumber) {
+      fetch("/api/events/cancel-registration", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmationNumber }),
+      }).catch(() => {}); // fire-and-forget, non-blocking
+    }
+  }, [paymentResult, confirmationNumber]);
+
   // Scroll reveal
   useEffect(() => {
     const obs = new IntersectionObserver((entries) => {

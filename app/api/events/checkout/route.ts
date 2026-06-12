@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       mode: "payment",
       customer_email: reg.email,
       success_url: `${baseUrl}/events/${reg.eventSlug}/confirmed?conf=${reg.confirmationNumber}`,
-      cancel_url: `${baseUrl}/events/${reg.eventSlug}?payment=cancelled`,
+      cancel_url: `${baseUrl}/events/${reg.eventSlug}?payment=cancelled&conf=${reg.confirmationNumber}`,
       metadata: {
         registrationId: reg.id,
         confirmationNumber: reg.confirmationNumber ?? "",

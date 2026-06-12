@@ -199,7 +199,10 @@ export default function AdminEventsPage() {
     [events, eventSearch]);
 
   const filteredRegs = useMemo(() => {
-    let regs = regFilter === "all" ? registrations : registrations.filter(r => r.status === regFilter);
+    // "all" tab shows active registrations only — cancelled live under their own tab
+    let regs = regFilter === "all"
+      ? registrations.filter(r => r.status !== "cancelled")
+      : registrations.filter(r => r.status === regFilter);
     if (regSearch.trim()) {
       const q = regSearch.toLowerCase();
       regs = regs.filter(r =>
@@ -775,7 +778,10 @@ export default function AdminEventsPage() {
                 className={`px-3 py-1.5 rounded-full text-xs font-dm font-medium transition-colors capitalize ${
                   regFilter === f ? "bg-[#1B3A6B] text-white" : "bg-white border border-[#D2DCE8] text-[#3A4A5C] hover:border-[#2251A3]"
                 }`}>
-                {f === "all" ? `All (${registrations.length})` : `${f} (${registrations.filter(r => r.status === f).length})`}
+                {f === "all"
+                ? `Active (${registrations.filter(r => r.status !== "cancelled").length})`
+                : `${f.charAt(0).toUpperCase() + f.slice(1)} (${registrations.filter(r => r.status === f).length})`
+              }
               </button>
             ))}
             <div className="ml-auto flex items-center gap-2">
