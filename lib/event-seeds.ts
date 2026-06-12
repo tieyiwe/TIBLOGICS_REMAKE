@@ -28,3 +28,27 @@ export const TRAINING_EVENT_SEED: Prisma.EventCreateInput = {
   published: true,
   registrationOpen: true,
 };
+
+// ── Parents AI Training — coming soon ────────────────────────────────────────
+
+export const PARENTS_EVENT_SLUG = "ai-training-for-parents";
+
+export const PARENTS_EVENT_SEED: Prisma.EventCreateInput = {
+  slug: PARENTS_EVENT_SLUG,
+  title: "AI for Parents — Empower Your Kids & Protect Your Family",
+  description:
+    "A practical AI training designed specifically for parents. Two powerful modules: using AI to supercharge your children's academic performance, and urgent AI safety every parent needs to know right now. Details coming soon — join the waitlist to be first.",
+  type: "TRAINING",
+  price: 0,
+  currency: "USD",
+  location: "Live on Zoom",
+  date: null,
+  timeSlot: "Date & Time — TBA",
+  timezone: "America/New_York",
+  coverImage:
+    "https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=1200&q=80",
+  tags: ["ai", "parents", "kids", "education", "safety", "training"],
+  featured: false,
+  published: true,
+  registrationOpen: false,
+};

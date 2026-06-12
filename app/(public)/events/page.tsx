@@ -326,15 +326,23 @@ function EventCard({ event }: { event: EventItem }) {
   const [notifyOpen, setNotifyOpen] = useState(false);
   const isFree = event.price === 0;
   const typeColor = TYPE_COLORS[event.type] ?? "bg-gray-100 text-gray-700";
-  // All events go to their landing page; the landing page handles payment
   const eventHref = `/events/${event.slug}`;
+
+  // Green gradient border = registration open (active)
+  // Orange gradient border = coming soon
+  const gradientBorder = event.registrationOpen
+    ? "linear-gradient(135deg, #22c55e, #16a34a)"
+    : "linear-gradient(135deg, #F47C20, #f9a738)";
 
   return (
     <>
       {notifyOpen && <NotifyModal eventName={event.title} onClose={() => setNotifyOpen(false)} />}
+      {/* Gradient border wrapper */}
+      <div style={{ padding: "2px", borderRadius: "18px", background: gradientBorder }} className="hover:-translate-y-0.5 transition-transform duration-300">
       <Link
         href={eventHref}
-        className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col group"
+        className="bg-white rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col group h-full"
+        style={{ borderRadius: "16px" }}
       >
         <div className="relative w-full h-48 overflow-hidden flex-shrink-0">
           <Image
@@ -344,6 +352,18 @@ function EventCard({ event }: { event: EventItem }) {
             unoptimized
             className="object-cover group-hover:scale-[1.02] transition-transform duration-500"
           />
+          {!event.registrationOpen && (
+            <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-[#F47C20] text-white text-xs font-dm font-semibold px-3 py-1 rounded-full shadow">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse inline-block" />
+              Coming Soon
+            </div>
+          )}
+          {event.registrationOpen && (
+            <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-green-500 text-white text-xs font-dm font-semibold px-3 py-1 rounded-full shadow">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse inline-block" />
+              Open Now
+            </div>
+          )}
         </div>
 
         <div className="p-6 flex flex-col flex-1 gap-3">
@@ -416,6 +436,7 @@ function EventCard({ event }: { event: EventItem }) {
           </div>
         </div>
       </Link>
+      </div>
     </>
   );
 }
