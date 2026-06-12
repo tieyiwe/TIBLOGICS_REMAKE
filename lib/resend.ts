@@ -482,6 +482,7 @@ export async function sendEventWelcomeEmail(reg: {
     <div class="footer-logo">TIBLOGICS</div>
     <div class="footer-links">
       <a href="mailto:arfa_edu@tiblogics.com">arfa_edu@tiblogics.com</a>
+      <span style="color:rgba(255,255,255,0.2);font-size:12px;margin:0 8px;">|</span>
       <a href="https://www.tiblogics.com">www.tiblogics.com</a>
     </div>
     <div class="footer-copy">© 2025 TIBLOGICS</div>
