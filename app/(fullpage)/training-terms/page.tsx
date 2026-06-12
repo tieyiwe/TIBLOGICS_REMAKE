@@ -104,7 +104,7 @@ export default function TrainingTermsPage() {
 
         <div className="section">
           <div className="section-head"><span className="section-num">2</span><span className="section-title">Payment &amp; Registration</span></div>
-          <p><strong>2.1</strong> The full program fee for the June Cohort is <strong>$649 USD</strong> (Founding Cohort pricing). This is a one-time, all-inclusive payment.</p>
+          <p><strong>2.1</strong> The full program fee for the June Cohort is <strong>$849 USD</strong> (June Cohort pricing). This is a one-time, all-inclusive payment.</p>
           <p><strong>2.2</strong> Registration is confirmed only upon receipt of full payment. Partial payments do not constitute a confirmed spot.</p>
           <p><strong>2.3</strong> Spots are limited and allocated strictly on a first-come, first-served basis. Payment secures your seat.</p>
           <p><strong>2.4</strong> All prices are listed in US Dollars (USD). Participants are responsible for any currency conversion fees or bank charges imposed by their financial institution.</p>
@@ -113,7 +113,7 @@ export default function TrainingTermsPage() {
 
         <div className="section">
           <div className="section-head"><span className="section-num">3</span><span className="section-title">What Is Included</span></div>
-          <p>Your $649 registration includes:</p>
+          <p>Your $849 registration includes:</p>
           <ul>
             <li>4 live Zoom sessions (approximately 3 hours each, Saturdays 9:30 AM – 1:00 PM)</li>
             <li>All session handouts and lab worksheets</li>
@@ -138,7 +138,7 @@ export default function TrainingTermsPage() {
               <tr><th>Cancellation Timing</th><th>Refund</th></tr>
             </thead>
             <tbody>
-              <tr><td>5+ days before Session 1 (by June 22, 2026)</td><td><span className="badge-yes">Full refund — $649</span></td></tr>
+              <tr><td>5+ days before Session 1 (by June 22, 2026)</td><td><span className="badge-yes">Full refund — $849</span></td></tr>
               <tr><td>3–4 days before Session 1 (June 23–24, 2026)</td><td><span className="badge-warn">50% refund — $324.50</span></td></tr>
               <tr><td>Less than 48 hrs before or after Session 1 begins</td><td><span className="badge-no">No refund</span></td></tr>
               <tr><td>No-show without prior written notice</td><td><span className="badge-no">No refund</span></td></tr>
@@ -193,7 +193,7 @@ export default function TrainingTermsPage() {
           <div className="section-head"><span className="section-num">9</span><span className="section-title">Limitation of Liability</span></div>
           <p><strong>9.1</strong> TIBLOGICS provides training for educational purposes only. Results vary based on individual effort and application. No guarantee of specific financial, business, or career outcomes is made.</p>
           <p><strong>9.2</strong> TIBLOGICS is not responsible for technical difficulties caused by participant equipment, internet connection, or third-party platforms.</p>
-          <p><strong>9.3</strong> TIBLOGICS&apos; total liability to any participant shall not exceed the amount paid for the Training ($649).</p>
+          <p><strong>9.3</strong> TIBLOGICS&apos; total liability to any participant shall not exceed the amount paid for the Training ($849).</p>
           <p><strong>9.4</strong> TIBLOGICS shall not be liable for indirect, incidental, special, consequential, or punitive damages.</p>
         </div>
 

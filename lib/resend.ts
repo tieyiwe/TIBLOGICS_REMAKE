@@ -430,7 +430,7 @@ export async function sendEventWelcomeEmail(reg: {
       <div class="detail-row"><div class="detail-icon">⏰</div><div><div class="detail-label">Time (every Saturday)</div><div class="detail-value">9:30 AM – 1:00 PM · includes breaks</div></div></div>
       <div class="detail-row"><div class="detail-icon">💻</div><div><div class="detail-label">Format</div><div class="detail-value">Live on Zoom · Link sent 48hrs before Session 1</div></div></div>
       <div class="detail-row"><div class="detail-icon">💬</div><div><div class="detail-label">Community</div><div class="detail-value">WhatsApp cohort group · Invite sent separately</div></div></div>
-      <div class="detail-row"><div class="detail-icon">💳</div><div><div class="detail-label">Investment</div><div class="detail-value">$649 · June Cohort founding price</div></div></div>
+      <div class="detail-row"><div class="detail-icon">💳</div><div><div class="detail-label">Investment</div><div class="detail-value">$849 · June Cohort price</div></div></div>
     </div>
 
     <div class="divider"><div class="divider-line"></div><div class="divider-text">Your 4-session journey</div><div class="divider-line"></div></div>

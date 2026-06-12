@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       eventSlug: "ai-practical-training-cohort-1",
       confirmationNumber: "ARFA-TEST-000000",
       paymentMethod: "stripe",
-      price: 64900,
+      price: 84900,
       currency: "USD",
       location: "Zoom (Online)",
     });

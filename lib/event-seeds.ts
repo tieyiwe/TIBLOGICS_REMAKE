@@ -12,7 +12,7 @@ export const TRAINING_EVENT_SEED: Prisma.EventCreateInput = {
   description:
     "A hands-on 4-session live training where you go from curious to capable — writing with AI, building income, creating automations, and getting your first taste of vibe coding. Live on Zoom. Every Saturday 9:30AM–1PM.",
   type: "TRAINING",
-  price: 64900,
+  price: 84900,
   currency: "USD",
   capacity: 30,
   spots: 30,

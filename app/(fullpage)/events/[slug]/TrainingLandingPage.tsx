@@ -9,7 +9,7 @@ interface Props {
   eventDescription: string;
   startDate: string;
   spots: number;   // live spotsLeft = totalSpots - paidCount
-  price: number;       // in cents, e.g. 64900 = $649
+  price: number;       // in cents, e.g. 84900 = $849
   currency: string;
   location: string;
   timeSlot: string;

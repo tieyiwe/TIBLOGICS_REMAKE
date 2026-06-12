@@ -1215,7 +1215,7 @@ export default function AdminEventsPage() {
                 <div>
                   <label className="block font-dm font-semibold text-sm text-[#0D1B2A] mb-1.5">Price (cents)</label>
                   <input type="number" min="0" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
-                    placeholder="64900 = $649"
+                    placeholder="84900 = $849"
                     className="w-full border border-[#D2DCE8] rounded-xl px-3 py-2.5 font-dm text-sm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3]" />
                   <p className="text-xs font-dm text-[#7A8FA6] mt-0.5">0 = free</p>
                 </div>
