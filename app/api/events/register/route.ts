@@ -166,6 +166,7 @@ export async function POST(req: NextRequest) {
           mode: "payment",
           allow_promotion_codes: true,
           customer_email: cleanEmail,
+          ...(paymentMethod === "paypal" && { payment_method_types: ["paypal"] }),
           success_url: `${baseUrl}/events/${eventSlug}/confirmed?conf=${confirmationNumber}`,
           cancel_url: `${baseUrl}/events/${eventSlug}?payment=cancelled&conf=${confirmationNumber}`,
           metadata: {
