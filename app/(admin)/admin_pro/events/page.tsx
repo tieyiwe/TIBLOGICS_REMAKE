@@ -62,6 +62,7 @@ const TYPE_COLORS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, string> = {
   pending:    "bg-yellow-100 text-yellow-700",
+  paid:       "bg-emerald-100 text-emerald-800",
   confirmed:  "bg-green-100 text-green-700",
   cancelled:  "bg-red-100 text-red-700",
   waitlisted: "bg-blue-100 text-blue-700",
@@ -104,7 +105,7 @@ function StatusBadge({ status, onChange }: { status: string; onChange: (s: strin
       </button>
       {open && (
         <div className="absolute left-0 top-7 z-20 bg-white border border-[#D2DCE8] rounded-xl shadow-lg overflow-hidden min-w-[120px]">
-          {["pending", "confirmed", "cancelled", "waitlisted"].map(s => (
+          {["pending", "paid", "confirmed", "cancelled", "waitlisted"].map(s => (
             <button key={s} onClick={() => { onChange(s); setOpen(false); }}
               className={`w-full text-left px-3 py-2 text-xs font-dm hover:bg-[#F4F7FB] ${s === status ? "font-semibold text-[#2251A3]" : "text-[#3A4A5C]"}`}>
               {s}
@@ -153,6 +154,7 @@ export default function AdminEventsPage() {
   const [reminderSession, setReminderSession] = useState(1);
   const [reminderSending, setReminderSending] = useState(false);
   const [reminderResult, setReminderResult] = useState("");
+  const [collapsedEventGroups, setCollapsedEventGroups] = useState<Set<string>>(new Set());
   type WaitlistEntry = { id: string; email: string; firstName: string | null; whatsapp: string | null; subscribedAt: string };
   const [eventWaitlists, setEventWaitlists] = useState<Record<string, WaitlistEntry[]>>({});
   const [waitlistLoading, setWaitlistLoading] = useState<Record<string, boolean>>({});
@@ -168,6 +170,14 @@ export default function AdminEventsPage() {
     } finally {
       setWaitlistLoading(w => ({ ...w, [eventId]: false }));
     }
+  }
+
+  function toggleGroupCollapse(slug: string) {
+    setCollapsedEventGroups(prev => {
+      const next = new Set(prev);
+      next.has(slug) ? next.delete(slug) : next.add(slug);
+      return next;
+    });
   }
 
   const EXPORT_COLUMNS = [
@@ -255,6 +265,19 @@ export default function AdminEventsPage() {
     }
     return regs;
   }, [registrations, regFilter, regSearch]);
+
+  const regsByEvent = useMemo(() => {
+    const groups: Record<string, { name: string; slug: string; regs: Registration[] }> = {};
+    for (const r of filteredRegs) {
+      if (!groups[r.eventSlug]) groups[r.eventSlug] = { name: r.eventName, slug: r.eventSlug, regs: [] };
+      groups[r.eventSlug].regs.push(r);
+    }
+    return Object.values(groups).sort((a, b) => {
+      const aLatest = Math.max(...a.regs.map(r => new Date(r.createdAt).getTime()));
+      const bLatest = Math.max(...b.regs.map(r => new Date(r.createdAt).getTime()));
+      return bLatest - aLatest;
+    });
+  }, [filteredRegs]);
 
   // ── Event registrations expand ────────────────────────────────────────────
   async function toggleEventRegs(event: EventItem) {
@@ -918,7 +941,7 @@ export default function AdminEventsPage() {
         <div>
           {/* Filters + search */}
           <div className="flex items-center gap-2 mb-3 flex-wrap">
-            {["all", "pending", "confirmed", "cancelled", "waitlisted"].map(f => (
+            {["all", "paid", "pending", "confirmed", "cancelled", "waitlisted"].map(f => (
               <button key={f} onClick={() => setRegFilter(f)}
                 className={`px-3 py-1.5 rounded-full text-xs font-dm font-medium transition-colors capitalize ${
                   regFilter === f ? "bg-[#1B3A6B] text-white" : "bg-white border border-[#D2DCE8] text-[#3A4A5C] hover:border-[#2251A3]"
@@ -976,89 +999,136 @@ export default function AdminEventsPage() {
 
           {regsLoading ? (
             <div className="flex justify-center py-20"><Loader2 size={24} className="animate-spin text-[#2251A3]" /></div>
-          ) : filteredRegs.length === 0 ? (
+          ) : regsByEvent.length === 0 ? (
             <div className="bg-white border border-[#D2DCE8] rounded-2xl p-12 text-center">
               <Users size={36} className="text-[#D2DCE8] mx-auto mb-3" />
               <p className="font-dm text-[#7A8FA6]">No registrations found.</p>
             </div>
           ) : (
-            <div className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-[#D2DCE8] bg-[#F4F7FB]">
-                      <th className="px-4 py-3 w-8">
-                        <input type="checkbox"
-                          checked={selectedRegIds.size === filteredRegs.length && filteredRegs.length > 0}
-                          onChange={e => setSelectedRegIds(e.target.checked ? new Set(filteredRegs.map(r => r.id)) : new Set())}
-                          className="rounded border-[#D2DCE8]"
-                        />
-                      </th>
-                      {["Name", "Confirmation #", "Contact", "Event", "Payment", "Status", "Date", ""].map(h => (
-                        <th key={h} className="text-left font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider px-4 py-3">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#D2DCE8]">
-                    {filteredRegs.map(r => (
-                      <tr key={r.id}
-                        className={`hover:bg-[#F4F7FB] transition-colors cursor-pointer ${selectedRegIds.has(r.id) ? "bg-[#EBF0FA]" : ""}`}
-                        onClick={() => { setSelectedReg(r); setRegNotes(r.notes ?? ""); }}>
-                        <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                          <input type="checkbox" checked={selectedRegIds.has(r.id)}
-                            onChange={e => {
-                              const next = new Set(selectedRegIds);
-                              e.target.checked ? next.add(r.id) : next.delete(r.id);
-                              setSelectedRegIds(next);
-                            }}
-                            className="rounded border-[#D2DCE8]"
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <p className="font-dm text-sm font-semibold text-[#0D1B2A]">{r.firstName} {r.lastName}</p>
-                          {r.role && <p className="font-dm text-xs text-[#7A8FA6] mt-0.5">{r.role}</p>}
-                        </td>
-                        <td className="px-4 py-3">
-                          {r.confirmationNumber ? (
-                            <span className="font-mono text-xs font-semibold text-[#2251A3] bg-[#EBF0FA] px-2 py-0.5 rounded-full whitespace-nowrap">{r.confirmationNumber}</span>
-                          ) : (
-                            <span className="font-dm text-xs text-[#D2DCE8]">—</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <a href={`mailto:${r.email}`} onClick={e => e.stopPropagation()} className="font-dm text-xs text-[#2251A3] hover:underline flex items-center gap-1 mb-0.5">
-                            <Mail size={10} />{r.email}
-                          </a>
-                          {r.whatsapp && (
-                            <p className="font-dm text-xs text-[#7A8FA6] flex items-center gap-1">
-                              <Phone size={10} />{r.whatsapp}
-                            </p>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <p className="font-dm text-xs text-[#3A4A5C] max-w-[140px] truncate">{r.eventName}</p>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="font-dm text-xs capitalize text-[#3A4A5C] block">{r.paymentMethod}</span>
-                          <span className="font-dm text-xs text-[#7A8FA6]">{r.price > 0 ? `$${(r.price / 100).toFixed(0)}` : "Free"}</span>
-                        </td>
-                        <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                          <StatusBadge status={r.status} onChange={s => updateRegGlobal(r.id, { status: s })} />
-                        </td>
-                        <td className="px-4 py-3 font-dm text-xs text-[#7A8FA6] whitespace-nowrap">{fmtDate(r.createdAt)}</td>
-                        <td className="px-4 py-3">
-                          <button className="p-1.5 rounded-lg text-[#7A8FA6] hover:text-[#2251A3] hover:bg-[#EBF0FA] transition-colors">
-                            <Eye size={13} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="px-4 py-2.5 border-t border-[#D2DCE8] flex items-center gap-3">
-                <span className="font-dm text-xs text-[#7A8FA6]">{filteredRegs.length} result{filteredRegs.length !== 1 ? "s" : ""}</span>
-                {regSearch && <span className="font-dm text-xs text-[#2251A3]">filtered by "{regSearch}"</span>}
+            <div className="flex flex-col gap-4">
+              {regsByEvent.map(group => {
+                const gPaid      = group.regs.filter(r => r.status === "paid").length;
+                const gConfirmed = group.regs.filter(r => r.status === "confirmed").length;
+                const gPending   = group.regs.filter(r => r.status === "pending").length;
+                const gTotal     = group.regs.length;
+                const isOpen     = !collapsedEventGroups.has(group.slug);
+                const allSelected = gTotal > 0 && group.regs.every(r => selectedRegIds.has(r.id));
+
+                return (
+                  <div key={group.slug} className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden">
+                    {/* Event group header */}
+                    <div
+                      className="flex items-center gap-3 px-5 py-3.5 bg-[#F4F7FB] border-b border-[#D2DCE8] cursor-pointer hover:bg-[#EBF0FA] transition-colors"
+                      onClick={() => toggleGroupCollapse(group.slug)}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {isOpen ? <ChevronUp size={13} className="text-[#2251A3] shrink-0" /> : <ChevronDown size={13} className="text-[#7A8FA6] shrink-0" />}
+                          <p className="font-syne font-bold text-sm text-[#0D1B2A] truncate">{group.name}</p>
+                        </div>
+                        <div className="flex items-center gap-3 mt-0.5 pl-5 flex-wrap">
+                          <span className="font-dm text-xs font-semibold text-[#3A4A5C]">{gTotal} registration{gTotal !== 1 ? "s" : ""}</span>
+                          {gPaid > 0 && <span className="font-dm text-xs font-semibold text-emerald-700">{gPaid} paid ✓</span>}
+                          {gConfirmed > 0 && <span className="font-dm text-xs text-blue-700">{gConfirmed} confirmed</span>}
+                          {gPending > 0 && <span className="font-dm text-xs text-yellow-700">{gPending} pending</span>}
+                        </div>
+                      </div>
+                      <a href={`/events/${group.slug}`} target="_blank" rel="noopener noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        className="inline-flex items-center gap-1 text-xs font-dm text-[#2251A3] hover:underline px-2 py-1 rounded-lg hover:bg-white transition-colors shrink-0">
+                        <ExternalLink size={11} /> View Page
+                      </a>
+                    </div>
+
+                    {/* Registration rows — collapsible */}
+                    {isOpen && (
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b border-[#D2DCE8] bg-[#FAFBFD]">
+                              <th className="px-4 py-2.5 w-8">
+                                <input type="checkbox"
+                                  checked={allSelected}
+                                  onChange={e => {
+                                    const next = new Set(selectedRegIds);
+                                    group.regs.forEach(r => e.target.checked ? next.add(r.id) : next.delete(r.id));
+                                    setSelectedRegIds(next);
+                                  }}
+                                  className="rounded border-[#D2DCE8]"
+                                />
+                              </th>
+                              {["Name", "Confirmation #", "Contact", "Payment", "Status", "Date", ""].map(h => (
+                                <th key={h} className="text-left font-dm font-semibold text-xs text-[#7A8FA6] uppercase tracking-wider px-4 py-2.5">{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#E8EEF5]">
+                            {group.regs.map(r => (
+                              <tr key={r.id}
+                                className={`hover:bg-[#F4F7FB] transition-colors cursor-pointer ${selectedRegIds.has(r.id) ? "bg-[#EBF0FA]" : ""}`}
+                                onClick={() => { setSelectedReg(r); setRegNotes(r.notes ?? ""); }}>
+                                <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                                  <input type="checkbox" checked={selectedRegIds.has(r.id)}
+                                    onChange={e => {
+                                      const next = new Set(selectedRegIds);
+                                      e.target.checked ? next.add(r.id) : next.delete(r.id);
+                                      setSelectedRegIds(next);
+                                    }}
+                                    className="rounded border-[#D2DCE8]"
+                                  />
+                                </td>
+                                <td className="px-4 py-3">
+                                  <p className="font-dm text-sm font-semibold text-[#0D1B2A]">{r.firstName} {r.lastName}</p>
+                                  {r.role && <p className="font-dm text-xs text-[#7A8FA6] mt-0.5">{r.role}</p>}
+                                </td>
+                                <td className="px-4 py-3">
+                                  {r.confirmationNumber ? (
+                                    <span className="font-mono text-xs font-semibold text-[#2251A3] bg-[#EBF0FA] px-2 py-0.5 rounded-full whitespace-nowrap">{r.confirmationNumber}</span>
+                                  ) : (
+                                    <span className="font-dm text-xs text-[#D2DCE8]">—</span>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <a href={`mailto:${r.email}`} onClick={e => e.stopPropagation()} className="font-dm text-xs text-[#2251A3] hover:underline flex items-center gap-1 mb-0.5">
+                                    <Mail size={10} />{r.email}
+                                  </a>
+                                  {r.whatsapp && (
+                                    <p className="font-dm text-xs text-[#7A8FA6] flex items-center gap-1">
+                                      <Phone size={10} />{r.whatsapp}
+                                    </p>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className="font-dm text-xs capitalize text-[#3A4A5C] block">{r.paymentMethod}</span>
+                                  <span className="font-dm text-xs text-[#7A8FA6]">{r.price > 0 ? `$${(r.price / 100).toFixed(0)}` : "Free"}</span>
+                                </td>
+                                <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                                  <StatusBadge status={r.status} onChange={s => updateRegGlobal(r.id, { status: s })} />
+                                </td>
+                                <td className="px-4 py-3 font-dm text-xs text-[#7A8FA6] whitespace-nowrap">{fmtDate(r.createdAt)}</td>
+                                <td className="px-4 py-3">
+                                  <button className="p-1.5 rounded-lg text-[#7A8FA6] hover:text-[#2251A3] hover:bg-[#EBF0FA] transition-colors">
+                                    <Eye size={13} />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        <div className="px-5 py-2.5 border-t border-[#D2DCE8] flex items-center gap-4 bg-[#FAFBFD]">
+                          <span className="font-dm text-xs text-[#7A8FA6]">{gTotal} registration{gTotal !== 1 ? "s" : ""}</span>
+                          {gPaid > 0 && <span className="font-dm text-xs font-semibold text-emerald-700">{gPaid} paid ✓</span>}
+                          {gConfirmed > 0 && <span className="font-dm text-xs text-blue-700">{gConfirmed} confirmed</span>}
+                          {gPending > 0 && <span className="font-dm text-xs text-yellow-700">{gPending} pending</span>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <div className="flex items-center gap-2 text-xs font-dm text-[#7A8FA6] px-1">
+                <span>{filteredRegs.length} total registration{filteredRegs.length !== 1 ? "s" : ""} across {regsByEvent.length} event{regsByEvent.length !== 1 ? "s" : ""}</span>
+                {regSearch && <span className="text-[#2251A3]">· filtered by &quot;{regSearch}&quot;</span>}
               </div>
             </div>
           )}
