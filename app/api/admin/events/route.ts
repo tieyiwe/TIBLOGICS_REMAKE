@@ -18,7 +18,7 @@ export async function GET() {
     await prisma.event.upsert({
       where: { slug: TRAINING_EVENT_SLUG },
       create: TRAINING_EVENT_SEED,
-      update: {},
+      update: { title: TRAINING_EVENT_SEED.title },
     });
   } catch (err) {
     console.error("[admin/events] ensure training event", err);
