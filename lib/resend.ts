@@ -507,7 +507,7 @@ export async function sendAdminNewRegistrationAlert(reg: {
   await getArfaTransport().sendMail({
     from: ARFA_FROM,
     to: adminEmail,
-    subject: `🎉 New registration — ${reg.firstName} ${reg.lastName}`,
+    subject: `💰 You have a sale! — ${reg.firstName} ${reg.lastName} just registered`,
     html: `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -531,8 +531,9 @@ export async function sendAdminNewRegistrationAlert(reg: {
 <body>
 <div class="wrap">
   <div class="header">
-    <div class="header-emoji">🎉</div>
-    <p class="header-title">New registration just came in!</p>
+    <div class="header-emoji">💰🎉</div>
+    <p class="header-title">You have a sale!</p>
+    <p style="margin:6px 0 0;font-size:.88rem;color:rgba(255,255,255,.55);">${reg.firstName} just registered for the training. Go get it! 🚀</p>
   </div>
   <div class="body">
     <div class="row"><span class="label">Name</span><span class="value">${reg.firstName} ${reg.lastName}</span></div>
