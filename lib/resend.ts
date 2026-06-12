@@ -272,8 +272,8 @@ export async function sendEventRegistrationConfirmation(reg: {
           <p style="color:#7A8FA6;font-size:12px;margin:0;border-top:1px solid #E2E8F0;padding-top:20px;">
             Questions? Reply to this email or write to
             <a href="mailto:arfa_edu@tiblogics.com" style="color:#2251A3;">arfa_edu@tiblogics.com</a>
-            &nbsp;&middot;&nbsp;
-            <a href="https://tiblogics.com" style="color:#2251A3;">tiblogics.com</a>
+            <br style="line-height:1.8">
+            <a href="https://tiblogics.com" style="color:#2251A3;">www.tiblogics.com</a>
           </p>
         </div>
       </div>`,
