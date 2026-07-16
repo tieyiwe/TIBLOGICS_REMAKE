@@ -938,7 +938,10 @@ export default function TrainingLandingPage({
   paymentResult, confirmationNumber,
 }: Props) {
   const C = content;
-  const priceDisplay = comingSoon ? "Announced Soon" : price === 0 ? "Free" : `$${(price / 100).toFixed(0)} ${currency}`;
+  const fmtPrice = (cents: number) => `$${cents % 100 === 0 ? (cents / 100).toFixed(0) : (cents / 100).toFixed(2)} ${currency}`;
+  const priceDisplay = comingSoon
+    ? (price > 0 ? fmtPrice(price) : "Announced Soon")
+    : price === 0 ? "Free" : fmtPrice(price);
   const isFree = price === 0;
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
 
@@ -1241,7 +1244,7 @@ export default function TrainingLandingPage({
             <div style={{ color: S.muted, fontSize: ".85rem", marginBottom: "20px" }}>{C.pricing.accessText}</div>
 
             {/* Weekly cost breakdown */}
-            <div className="weekly-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "28px" }}>
+            <div className="weekly-grid" style={{ display: comingSoon ? "none" : "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "28px" }}>
               <div style={{ background: "rgba(255,255,255,.04)", border: `1px solid ${S.border}`, borderRadius: "14px", padding: "14px 16px", textAlign: "center" }}>
                 <div style={{ fontFamily: dm, fontSize: ".7rem", color: S.muted, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: "6px" }}>{C.pricing.standardLabel}</div>
                 <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.5rem", color: S.muted, textDecoration: "line-through", marginBottom: "2px" }}>{C.pricing.standardAmount}</div>

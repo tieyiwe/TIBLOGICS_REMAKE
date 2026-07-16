@@ -378,7 +378,9 @@ function EventCard({ event }: { event: EventItem }) {
           )}
           {!isOpen && (
             <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20] ml-auto">
-              Price TBA
+              {event.price > 0
+                ? `$${event.price % 100 === 0 ? (event.price / 100).toFixed(0) : (event.price / 100).toFixed(2)}`
+                : "Price TBA"}
             </span>
           )}
           {isOpen && (isFree ? (
@@ -458,7 +460,7 @@ function EventCard({ event }: { event: EventItem }) {
             </div>
           ) : (
             <div
-              onClick={e => { e.stopPropagation(); setNotifyOpen(true); }}
+              onClick={e => { e.preventDefault(); e.stopPropagation(); setNotifyOpen(true); }}
               className="w-full flex items-center justify-center gap-1.5 font-dm font-semibold text-sm text-white bg-[#1B3A6B] hover:bg-[#2251A3] transition-colors py-2 rounded-xl cursor-pointer"
             >
               <Bell size={13} /> Join Waitlist
@@ -473,15 +475,9 @@ function EventCard({ event }: { event: EventItem }) {
     <>
       {notifyOpen && <NotifyModal eventName={event.title} eventSlug={event.slug} onClose={() => setNotifyOpen(false)} />}
       <div style={{ padding: "2px", borderRadius: "18px", background: gradientBorder }} className="hover:-translate-y-0.5 transition-transform duration-300">
-        {isOpen ? (
-          <Link href={`/events/${event.slug}`} className="h-full flex flex-col" style={{ borderRadius: "16px" }}>
-            {inner}
-          </Link>
-        ) : (
-          <div className="h-full flex flex-col cursor-default" style={{ borderRadius: "16px" }}>
-            {inner}
-          </div>
-        )}
+        <Link href={`/events/${event.slug}`} className="h-full flex flex-col" style={{ borderRadius: "16px" }}>
+          {inner}
+        </Link>
       </div>
     </>
   );

@@ -29,7 +29,7 @@ export async function GET() {
     await prisma.event.upsert({
       where: { slug: PARENTS_EVENT_SLUG },
       create: PARENTS_EVENT_SEED,
-      update: { spots: 50, capacity: 50 },
+      update: { spots: 50, capacity: 50, price: PARENTS_EVENT_SEED.price },
     });
   } catch (err) {
     console.error("[admin/events] ensure parents event", err);

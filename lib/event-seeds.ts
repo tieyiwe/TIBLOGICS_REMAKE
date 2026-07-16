@@ -39,7 +39,7 @@ export const PARENTS_EVENT_SEED: Prisma.EventCreateInput = {
   description:
     "A practical AI training designed specifically for parents. Two powerful modules: using AI to supercharge your children's academic performance, and urgent AI safety every parent needs to know right now. Details coming soon — join the waitlist to be first.",
   type: "TRAINING",
-  price: 0,
+  price: 26999,
   currency: "USD",
   location: "Live on Zoom",
   date: null,
