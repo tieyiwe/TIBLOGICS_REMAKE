@@ -16,6 +16,7 @@ interface Props {
   stripeLink: string | null;
   registrationOpen: boolean;
   content: TrainingContent;  // merged editable copy (defaults ⊕ admin overrides)
+  comingSoon?: boolean;      // waitlist mode — no date/price yet
   paymentResult: "success" | "cancelled" | null;
   confirmationNumber: string | null;
 }
@@ -401,6 +402,98 @@ const ROLE_OPTIONS = [
   "Government / Public Sector",
   "Other",
 ];
+
+// ─── Waitlist Form (coming-soon mode — collects interest, no payment) ─────────
+function WaitlistForm({ eventSlug, eventTitle, content }: { eventSlug: string; eventTitle: string; content: TrainingContent }) {
+  const C = content;
+  const [form, setForm] = useState({ firstName: "", email: "", whatsapp: "", goal: "" });
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [msg, setMsg] = useState("");
+
+  const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus("loading");
+    setMsg("");
+    try {
+      const res = await fetch("/api/events/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.firstName,
+          email: form.email,
+          whatsapp: form.whatsapp,
+          event: eventTitle,
+          slug: eventSlug,
+        }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setMsg(d.error || `Something went wrong (${res.status})`);
+        setStatus("error");
+        return;
+      }
+      setStatus("success");
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : "Network error. Please try again.");
+      setStatus("error");
+    }
+  }
+
+  if (status === "success") {
+    return (
+      <div style={{ background:"rgba(74,222,128,.08)", border:"1px solid rgba(74,222,128,.25)", borderRadius:"20px", padding:"48px 32px", textAlign:"center" }}>
+        <div style={{ fontSize:"3rem", marginBottom:"16px" }}>🎉</div>
+        <div style={{ fontFamily:syne, fontWeight:800, fontSize:"1.5rem", marginBottom:"12px" }}>{C.registration.successHeading}</div>
+        <div style={{ color:S.muted, fontSize:".92rem", lineHeight:1.7 }}>{C.registration.successBody}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="form-inner" style={{ background:S.dark, border:`1px solid ${S.border}`, borderRadius:"24px", padding:"36px 32px" }}>
+      <form onSubmit={submit}>
+        <input type="text" placeholder="First Name" value={form.firstName} onChange={e=>set("firstName", e.target.value)} required
+          style={{ width:"100%", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color:"#fff", fontSize:".9rem", marginBottom:"16px" }}
+        />
+        <input type="email" placeholder="Email Address" value={form.email} onChange={e=>set("email", e.target.value)} required
+          style={{ width:"100%", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color:"#fff", fontSize:".9rem", marginBottom:"16px" }}
+        />
+        <input type="tel" inputMode="numeric" placeholder="WhatsApp Number (optional)" value={form.whatsapp} onChange={e=>set("whatsapp", e.target.value.replace(/[^\d+\s\-()]/g, ""))}
+          style={{ width:"100%", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color:"#fff", fontSize:".9rem", marginBottom:"16px" }}
+        />
+        <select value={form.goal} onChange={e=>set("goal", e.target.value)}
+          style={{ width:"100%", background:S.dark, border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color: form.goal ? "#fff" : S.muted, fontSize:".9rem", marginBottom:"24px" }}
+        >
+          <option value="" disabled>{C.registration.goalPlaceholder}</option>
+          {C.registration.goalOptions.map((g,i)=>(<option key={i}>{g}</option>))}
+        </select>
+
+        <button type="submit" disabled={status==="loading"} className="cta-primary" style={{
+          width:"100%", padding:"17px 32px", borderRadius:"50px",
+          fontFamily:syne, fontSize:"1.05rem", letterSpacing:".02em",
+          opacity: status==="loading" ? .45 : 1,
+        }}>
+          {status==="loading" ? (
+            <span style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"10px" }}>
+              <span style={{ width:"18px", height:"18px", border:"2.5px solid rgba(0,0,0,.3)", borderTopColor:"#131A1B", borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite" }}/>
+              Adding you…
+            </span>
+          ) : C.registration.submitFree}
+        </button>
+        {status==="error" && (
+          <p style={{ color:"#F87171", fontSize:".83rem", textAlign:"center", marginTop:"12px" }}>
+            {msg || "Something went wrong. Please try again or email arfa_edu@tiblogics.com"}
+          </p>
+        )}
+        <div style={{ textAlign:"center", marginTop:"18px", color:S.muted, fontSize:".78rem" }}>
+          {C.registration.secureNote}
+        </div>
+      </form>
+    </div>
+  );
+}
 
 function RegistrationForm({ eventSlug, eventTitle, price, currency, location, priceDisplay, content }: FormProps) {
   const C = content;
@@ -841,11 +934,11 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
 export default function TrainingLandingPage({
   eventSlug, eventTitle, eventDescription, startDate, spots,
   price, currency, location, timeSlot,
-  stripeLink, registrationOpen, content,
+  stripeLink, registrationOpen, content, comingSoon = false,
   paymentResult, confirmationNumber,
 }: Props) {
   const C = content;
-  const priceDisplay = price === 0 ? "Free" : `$${(price / 100).toFixed(0)} ${currency}`;
+  const priceDisplay = comingSoon ? "Announced Soon" : price === 0 ? "Free" : `$${(price / 100).toFixed(0)} ${currency}`;
   const isFree = price === 0;
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
 
@@ -1033,7 +1126,14 @@ export default function TrainingLandingPage({
       <section style={{ padding: "80px 24px", background: `linear-gradient(180deg, ${S.darker} 0%, ${S.dark} 100%)` }}>
         <div style={{ maxWidth: "700px", margin: "0 auto", textAlign: "center" }} className="reveal">
           <div style={{ fontFamily: dm, fontSize: ".8rem", color: S.muted, letterSpacing: ".15em", textTransform: "uppercase", marginBottom: "12px" }}>{C.countdown.label}</div>
-          <CountdownTimer startDate={startDate} />
+          {comingSoon ? (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "12px", background: "rgba(244,124,76,.1)", border: "1px solid rgba(244,124,76,.3)", borderRadius: "50px", padding: "16px 32px" }}>
+              <span className="pulsing-dot" />
+              <span style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.4rem", color: "#fff" }}>Coming Soon</span>
+            </div>
+          ) : (
+            <CountdownTimer startDate={startDate} />
+          )}
         </div>
       </section>
 
@@ -1115,11 +1215,13 @@ export default function TrainingLandingPage({
       </section>
 
       {/* ── PROMO BANNER ── */}
-      <section style={{ padding: "0 24px 48px" }}>
-        <div style={{ maxWidth: "520px", margin: "0 auto" }}>
-          <PromoBanner />
-        </div>
-      </section>
+      {!comingSoon && (
+        <section style={{ padding: "0 24px 48px" }}>
+          <div style={{ maxWidth: "520px", margin: "0 auto" }}>
+            <PromoBanner />
+          </div>
+        </section>
+      )}
 
       {/* ── PRICING ── */}
       <section style={{ padding: "0 24px 80px" }}>
@@ -1129,10 +1231,12 @@ export default function TrainingLandingPage({
             <div className="orb" style={{ width:300, height:300, background:"rgba(244,124,76,.08)", top:"-50px", right:"-80px" }} />
             <div style={{ fontFamily: dm, fontSize: ".78rem", color: S.muted, letterSpacing: ".1em", marginBottom: "20px" }}>{C.pricing.eyebrow}</div>
             <div style={{ marginBottom: "12px" }}>
-              <span style={{ fontFamily: syne, fontWeight: 700, fontSize: "1.4rem", color: S.muted, textDecoration: "line-through", marginRight: "12px" }}>{C.pricing.originalPrice}</span>
+              {C.pricing.originalPrice && (
+                <span style={{ fontFamily: syne, fontWeight: 700, fontSize: "1.4rem", color: S.muted, textDecoration: "line-through", marginRight: "12px" }}>{C.pricing.originalPrice}</span>
+              )}
               <span style={{ background: "#16a34a22", color: "#4ade80", border: "1px solid #16a34a44", borderRadius: "20px", padding: "4px 14px", fontSize: ".78rem", fontWeight: 600 }}>{C.pricing.badge}</span>
             </div>
-            <div className="pricing-amount" style={{ fontFamily: syne, fontWeight: 800, fontSize: "5rem", lineHeight: 1, marginBottom: "8px" }}>{priceDisplay}</div>
+            <div className="pricing-amount" style={{ fontFamily: syne, fontWeight: 800, fontSize: comingSoon ? "2.6rem" : "5rem", lineHeight: 1.05, marginBottom: "8px" }}>{priceDisplay}</div>
             <div style={{ color: S.orange, fontSize: ".88rem", fontWeight: 600, marginBottom: "6px" }}>{C.pricing.saveText}</div>
             <div style={{ color: S.muted, fontSize: ".85rem", marginBottom: "20px" }}>{C.pricing.accessText}</div>
 
@@ -1239,7 +1343,18 @@ export default function TrainingLandingPage({
             <p style={{ color:S.muted, fontSize:".9rem", lineHeight:1.7, maxWidth:"480px", margin:"0 auto" }}>{C.registration.subtitle}</p>
 
             {/* ── Seat counter ── */}
-            {spots > 0 ? (
+            {comingSoon ? (
+              <div style={{
+                marginTop:"24px", display:"inline-flex", alignItems:"center", gap:"10px",
+                background:"rgba(244,124,76,.1)", border:"1.5px solid rgba(244,124,76,.35)",
+                borderRadius:"50px", padding:"10px 24px",
+              }}>
+                <span style={{ width:"8px", height:"8px", borderRadius:"50%", background:S.orange, display:"inline-block", animation:"pulse 1.5s infinite" }} />
+                <span style={{ fontFamily:syne, fontWeight:700, fontSize:"1rem", color:S.orange }}>
+                  🔔 Waitlist open — limited early-bird spots
+                </span>
+              </div>
+            ) : spots > 0 ? (
               <div style={{ marginTop:"24px", display:"inline-flex", flexDirection:"column", alignItems:"center", gap:"10px" }}>
                 <div style={{
                   display:"inline-flex", alignItems:"center", gap:"10px",
@@ -1277,15 +1392,19 @@ export default function TrainingLandingPage({
               </div>
             )}
           </div>
-          <RegistrationForm
-            eventSlug={eventSlug}
-            eventTitle={eventTitle}
-            price={price}
-            currency={currency}
-            location={location}
-            priceDisplay={priceDisplay}
-            content={content}
-          />
+          {comingSoon ? (
+            <WaitlistForm eventSlug={eventSlug} eventTitle={eventTitle} content={content} />
+          ) : (
+            <RegistrationForm
+              eventSlug={eventSlug}
+              eventTitle={eventTitle}
+              price={price}
+              currency={currency}
+              location={location}
+              priceDisplay={priceDisplay}
+              content={content}
+            />
+          )}
         </div>
       </section>
 

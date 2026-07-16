@@ -240,6 +240,177 @@ export const DEFAULT_TRAINING_CONTENT: TrainingContent = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// AI for Parents — "coming soon" training. Same page structure/design as the
+// flagship training, but parent-focused copy across two modules:
+//   1. AI for Kids' Academics — supercharge your children's learning
+//   2. AI Safety for Parents  — protect your family in the AI age
+// Rendered in "coming soon" mode (waitlist instead of paid checkout).
+// ─────────────────────────────────────────────────────────────────────────────
+export const PARENTS_TRAINING_CONTENT: TrainingContent = {
+  nav: { brand: "TIBLOGICS", tagline: "Education Center", cta: "Join the Waitlist" },
+  hero: {
+    eyebrow: "",
+    headlineLine1: "AI is already in",
+    headlineLine2: "your kids' world.",
+    headlineHighlight: "Make it work for your family.",
+    subtitle:
+      "A practical live training built for parents — no tech background needed. Learn to use AI to supercharge your children's academics, and master the urgent AI-safety every parent needs to protect their family right now. Live on Zoom. Dates announced soon.",
+    pills: [
+      "🗓️ Dates — Announced Soon",
+      "💻 Live on Zoom",
+      "👨‍👩‍👧‍👦 Built for Parents",
+      "📚 2 Powerful Modules",
+      "🎯 100% Practical",
+    ],
+    ctaPrimaryFree: "Join the Waitlist — Free",
+    ctaPrimaryPaid: "Join the Waitlist — Free",
+    ctaSecondary: "See What's Inside",
+  },
+  stats: [
+    { value: "2", label: "Focused Modules" },
+    { value: "Live", label: "Interactive on Zoom" },
+    { value: "0", label: "Tech Background Needed" },
+    { value: "All", label: "Ages & Grade Levels" },
+    { value: "🔔", label: "Waitlist Open — Be First to Know" },
+  ],
+  countdown: { label: "Dates announced soon — join the waitlist to be first" },
+  outcomes: {
+    eyebrow: "What You Get",
+    heading: "Walk away confident — not worried.",
+    subtitle: "Every part of this training gives you something you can use with your kids the same day.",
+    items: [
+      { icon: "📚", title: "Turn AI into a study partner", desc: "Help your child learn faster, understand deeper, and study smarter — without doing the work for them." },
+      { icon: "✍️", title: "Homework help that teaches", desc: "Use AI to explain, quiz, and coach your child through tough topics the right way." },
+      { icon: "🛡️", title: "Spot the real dangers early", desc: "Understand deepfakes, AI scams, chatbots and the risks kids face online today." },
+      { icon: "🔒", title: "Set up family AI guardrails", desc: "Practical settings, boundaries, and habits that keep your household safe." },
+      { icon: "🧠", title: "Raise AI-smart kids", desc: "Teach your children to use AI honestly, safely, and to their advantage." },
+      { icon: "💬", title: "Have the right conversations", desc: "Know exactly what to say to your kids about AI at every age." },
+      { icon: "🏅", title: "Certificate of completion", desc: "A TIBLOGICS parent certificate — earned live on Zoom." },
+    ],
+  },
+  curriculum: {
+    eyebrow: "The Curriculum",
+    heading: "Two modules. One confident, protected family.",
+    subtitle: "A focused live training — the exact dates and schedule will be announced soon.",
+    sessions: [
+      { num: "M1", date: "Module 1", title: "AI for Kids' Academics", desc: "Use AI to boost grades, build study skills, and make learning stick — the safe, honest way.", badge: "Academics", color: "#2251A3" },
+      { num: "M2", date: "Module 2", title: "AI Safety for Parents", desc: "The urgent risks every parent must know — scams, deepfakes, chatbots — and how to protect your family.", badge: "Family Safety", color: "#F47C4C" },
+      { num: "L1", date: "Live Labs", title: "Hands-On With Your Kids", desc: "Build real study aids and safety settings live in the session — nothing theoretical.", badge: "Hands-on lab", color: "#22A387" },
+      { num: "Q&A", date: "Live Q&A", title: "Ask Anything", desc: "Bring your specific worries and questions. Get real answers from the training team, live.", badge: "Parent Q&A", color: "#8B5CF6" },
+      { num: "🎓", date: "TBA", title: "Certificate & Recap", desc: "Certificate presentation plus a take-home parent action plan. Date announced with the schedule.", badge: "🎓 Bonus · TBA", color: "#1B3A6B" },
+    ],
+    scheduleRows: [
+      { session: "Module 1", date: "TBA", topic: "AI for Kids' Academics", labs: "Study partner setup · Homework coaching · Quiz & practice builder · Honest-use rules" },
+      { session: "Module 2", date: "TBA", topic: "AI Safety for Parents", labs: "Scam & deepfake spotting · Chatbot risks · Family guardrails · Privacy settings" },
+      { session: "Live Labs", date: "TBA", topic: "Hands-On Practice", labs: "Build a study aid · Set up safety controls · Age-by-age game plan" },
+      { session: "Q&A", date: "TBA", topic: "Parent Q&A", labs: "Your questions · Real scenarios · Household action plan" },
+      { session: "Bonus", date: "TBA", topic: "Certificate & Recap", labs: "Certificate presentation · Take-home action plan" },
+    ],
+    schedulePills: [
+      "Live on Zoom · dates announced soon",
+      "Open to all timezones",
+      "Recordings shared after each session",
+      "Built for busy parents",
+    ],
+  },
+  pricing: {
+    eyebrow: "Coming Soon · Join the waitlist for early-bird pricing",
+    originalPrice: "",
+    badge: "Waitlist Open",
+    saveText: "🔔 Waitlist members get first access + early-bird pricing",
+    accessText: "Both modules · Live labs · Parent Q&A · Certificate",
+    standardLabel: "Standard Rate",
+    standardAmount: "TBA",
+    standardSub: "Announced with the schedule",
+    cohortLabel: "Waitlist Perk",
+    cohortAmount: "Early-Bird",
+    cohortSub: "Best price · first to know",
+    includes: [
+      "Module 1 — AI for Kids' Academics (live)",
+      "Module 2 — AI Safety for Parents (live)",
+      "Hands-on live labs you complete with your family",
+      "Age-by-age AI game plan for your kids",
+      "Family AI-safety checklist & guardrail settings",
+      "Session recordings after each session",
+      "Live parent Q&A",
+      "Parent certificate of completion",
+      "First access & early-bird pricing for waitlist members",
+    ],
+    cta: "Join the Waitlist — Free",
+    warning: "Waitlist members are notified first when dates open",
+    requirementsHeading: "What you'll need",
+    requirements: [
+      { icon: "📹", title: "Zoom account", subtitle: "Free tier is fine" },
+      { icon: "💻", title: "Laptop or tablet", subtitle: "Recommended for labs" },
+      { icon: "🧠", title: "Curiosity", subtitle: "No tech background needed" },
+      { icon: "👨‍👩‍👧", title: "Your questions", subtitle: "Bring them to the live Q&A" },
+    ],
+  },
+  whatsIncluded: {
+    eyebrow: "Everything Inside",
+    heading: "Practical tools you'll keep using long after the session.",
+    cards: [
+      { title: "Kids' Study Partner Playbook", subtitle: "AI prompts for learning", desc: "Ready-to-use prompts that turn AI into a patient tutor for any subject or grade level.", color: "#2251A3" },
+      { title: "Family AI-Safety Checklist", subtitle: "Protect your household", desc: "A step-by-step checklist to lock down devices, accounts, and habits against AI-era risks.", color: "#F47C4C" },
+      { title: "Age-by-Age Game Plan", subtitle: "Right guidance for every age", desc: "What to allow, teach, and watch for — tailored from young kids to teens.", color: "#22A387" },
+      { title: "Scam & Deepfake Field Guide", subtitle: "Know the red flags", desc: "Real examples of AI scams and deepfakes so you and your kids can spot them instantly.", color: "#8B5CF6" },
+      { title: "Homework-Help Boundaries", subtitle: "Honest AI use", desc: "Simple household rules so AI helps your child learn instead of doing it for them.", color: "#F9A738" },
+      { title: "Parent Certificate", subtitle: "Earned live on Zoom", desc: "A TIBLOGICS certificate recognising you as an AI-ready parent.", color: "#1B3A6B" },
+    ],
+    toolsHeading: "Tools & topics we'll cover",
+    tools: [
+      "AI tutors & study aids", "Homework coaching", "Deepfake detection",
+      "AI scam awareness", "Chatbot safety", "Parental controls",
+      "Privacy & data basics", "Screen-time & AI habits", "Honest-use rules",
+      "Age-appropriate AI",
+    ],
+    callouts: [
+      { title: "🛡️ Real-Family Scenarios", body: "We walk through real situations parents face today — from AI homework shortcuts to suspicious messages — and exactly how to handle each one.", color: "#F47C4C" },
+      { title: "💬 Live Parent Q&A", body: "Bring your specific worries. Every session includes time to ask the training team anything about your kids and AI.", color: "#60A5FA" },
+    ],
+  },
+  registration: {
+    eyebrow: "Waitlist",
+    heading: "Be first when doors open.",
+    subtitle: "Dates and pricing are announced soon. Join the waitlist and you'll be the first to know — plus early-bird pricing reserved for waitlist members.",
+    successHeading: "You're on the list! 🎉",
+    successBody: "We'll email you the moment dates and pricing are announced — with your early-bird access. Watch your inbox from arfa_edu@tiblogics.com.",
+    submitFree: "Join the Waitlist",
+    submitPaid: "Join the Waitlist",
+    secureNote: "🔒 No spam · We only email you about this training · arfa_edu@tiblogics.com",
+    goalPlaceholder: "What matters most to you as a parent?",
+    goalOptions: [
+      "Help my child do better in school with AI",
+      "Keep my kids safe from AI risks online",
+      "Understand what AI even is",
+      "Set healthy AI rules at home",
+      "Talk to my kids about AI the right way",
+      "All of the above",
+      "Other",
+    ],
+  },
+  faq: {
+    eyebrow: "FAQ",
+    heading: "Common questions.",
+    items: [
+      { q: "When does this training start?", a: "Dates are being finalised and will be announced soon. Join the waitlist and you'll be the first to know the schedule — plus you'll get early-bird pricing reserved for waitlist members." },
+      { q: "Do I need any tech or AI experience?", a: "None at all. This training is built specifically for parents who feel behind on AI. We start from the very basics and everything is hands-on and jargon-free." },
+      { q: "Is this for my kids or for me?", a: "It's for you, the parent. You'll learn how to guide your children's learning with AI and how to protect your family online. You can absolutely involve your kids in the hands-on parts if you'd like." },
+      { q: "What ages does this cover?", a: "All of them. The Age-by-Age Game Plan gives you specific guidance from young children through teenagers, so it's useful whatever stage your kids are at." },
+      { q: "How much will it cost?", a: "Pricing will be announced with the dates. Waitlist members get early-bird pricing and first access before public registration opens." },
+      { q: "What if I can't attend live?", a: "Session recordings are shared after each session so you can catch up anytime. The live sessions are where the Q&A and hands-on help happen, so we recommend attending when you can." },
+    ],
+  },
+  footer: {
+    brand: "TIBLOGICS",
+    tagline: "Education Center",
+    email: "arfa_edu@tiblogics.com",
+    website: "tiblogics.com",
+    copyright: "© 2026 TIBLOGICS · All rights reserved",
+  },
+};
+
 // Deep-merge a (possibly partial / stringified) override onto the defaults.
 // Arrays are replaced wholesale when present in the override; objects merge key
 // by key; anything missing or invalid falls back to the default.
@@ -263,15 +434,18 @@ function deepMerge<T>(base: T, override: unknown): T {
   return (typeof override === typeof base ? override : base) as T;
 }
 
-export function mergeContent(raw: string | null | undefined): TrainingContent {
-  if (!raw) return DEFAULT_TRAINING_CONTENT;
+export function mergeContent(
+  raw: string | null | undefined,
+  base: TrainingContent = DEFAULT_TRAINING_CONTENT,
+): TrainingContent {
+  if (!raw) return base;
   let parsed: unknown;
   try {
     parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
   } catch {
-    return DEFAULT_TRAINING_CONTENT;
+    return base;
   }
-  return deepMerge(DEFAULT_TRAINING_CONTENT, parsed);
+  return deepMerge(base, parsed);
 }
 
 export function applyPrice(text: string, priceDisplay: string): string {

@@ -3,8 +3,8 @@ import { Metadata } from "next";
 import prisma from "@/lib/prisma";
 import type { Event } from "@prisma/client";
 import TrainingLandingPage from "./TrainingLandingPage";
-import { TRAINING_EVENT_SEED, TRAINING_EVENT_SLUG } from "@/lib/event-seeds";
-import { mergeContent } from "@/lib/training-content";
+import { TRAINING_EVENT_SEED, TRAINING_EVENT_SLUG, PARENTS_EVENT_SEED, PARENTS_EVENT_SLUG } from "@/lib/event-seeds";
+import { mergeContent, DEFAULT_TRAINING_CONTENT, PARENTS_TRAINING_CONTENT } from "@/lib/training-content";
 
 export const revalidate = 60; // edits made in admin appear within ~1 min
 
@@ -74,6 +74,10 @@ export default async function EventPage({ params, searchParams }: Props) {
       raw = await prisma.event.create({ data: TRAINING_EVENT_SEED });
     }
 
+    if (!raw && slug === PARENTS_EVENT_SLUG) {
+      raw = await prisma.event.create({ data: PARENTS_EVENT_SEED });
+    }
+
     if (!raw) return notFound();
     if (!raw.published) return notFound();
 
@@ -90,6 +94,12 @@ export default async function EventPage({ params, searchParams }: Props) {
   }).catch(() => 0);
   const totalSpots = event.spots ?? 30;
   const spotsLeft = Math.max(0, totalSpots - paidCount);
+
+  // "Coming soon" events (e.g. AI for Parents) have no set date and closed
+  // registration — render the landing page in waitlist mode instead of paid checkout.
+  const isParents = event.slug === PARENTS_EVENT_SLUG;
+  const comingSoon = isParents || (!event.registrationOpen && event.date == null);
+  const contentBase = isParents ? PARENTS_TRAINING_CONTENT : DEFAULT_TRAINING_CONTENT;
 
   const eventUrl = `${SITE_URL}/events/${event.slug}`;
   const jsonLd = {
@@ -144,7 +154,8 @@ export default async function EventPage({ params, searchParams }: Props) {
         timeSlot={event.timeSlot ?? ""}
         stripeLink={event.stripePaymentLink ?? null}
         registrationOpen={event.registrationOpen}
-        content={mergeContent(event.content)}
+        content={mergeContent(event.content, contentBase)}
+        comingSoon={comingSoon}
         paymentResult={payment === "success" ? "success" : payment === "cancelled" ? "cancelled" : null}
         confirmationNumber={conf ?? null}
       />
