@@ -3,6 +3,10 @@
     {
       "path": "/api/blog/auto-refresh",
       "schedule": "0 8 */2 * *"
+    },
+    {
+      "path": "/api/cron/cart-reminders",
+      "schedule": "0 * * * *"
     }
   ]
 }

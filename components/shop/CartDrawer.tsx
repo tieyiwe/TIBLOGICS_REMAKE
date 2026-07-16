@@ -1,14 +1,48 @@
 "use client";
 
-import { useState } from "react";
-import { ShoppingBag, X, Plus, Minus, Trash2, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ShoppingBag, X, Plus, Minus, Trash2, Loader2, Check } from "lucide-react";
 import { useCart } from "./CartContext";
 import { formatMoney } from "./types";
+
+const EMAIL_KEY = "tiblogics_cart_email";
+const isEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
 export default function CartDrawer() {
   const { lines, count, subtotal, open, setOpen, setQty, remove } = useCart();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [email, setEmail] = useState("");
+  const [savedEmail, setSavedEmail] = useState(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Remember the shopper's email across visits
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(EMAIL_KEY);
+      if (v) setEmail(v);
+    } catch { /* ignore */ }
+  }, []);
+
+  // Auto-save the cart (debounced) once we have an email — powers reminders
+  useEffect(() => {
+    if (!isEmail(email) || lines.length === 0) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      try { localStorage.setItem(EMAIL_KEY, email); } catch { /* ignore */ }
+      fetch("/api/shop/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          subtotal,
+          currency: "USD",
+          items: lines.map((l) => ({ id: l.id, slug: l.slug, name: l.name, price: l.price, image: l.image, quantity: l.quantity })),
+        }),
+      }).then((r) => { if (r.ok) setSavedEmail(true); }).catch(() => {});
+    }, 900);
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+  }, [email, lines, subtotal]);
 
   async function checkout() {
     if (lines.length === 0) return;
@@ -155,10 +189,28 @@ export default function CartDrawer() {
 
         {lines.length > 0 && (
           <div style={{ borderTop: "1px solid rgba(255,255,255,.08)", padding: "20px 22px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "14px" }}>
               <span style={{ color: "#8A9BA0" }}>Subtotal</span>
               <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "1.2rem" }}>{formatMoney(subtotal, "USD")}</span>
             </div>
+
+            {/* Save cart / reminder opt-in */}
+            <div style={{ position: "relative", marginBottom: "14px" }}>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setSavedEmail(false); }}
+                placeholder="Email me a reminder (optional)"
+                style={{ width: "100%", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: "12px", padding: "11px 40px 11px 14px", color: "#fff", fontSize: ".85rem", fontFamily: "'DM Sans',sans-serif", outline: "none" }}
+              />
+              {savedEmail && isEmail(email) && (
+                <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "#22A387", display: "flex" }}><Check size={16} /></span>
+              )}
+              <p style={{ color: "#8A9BA0", fontSize: ".7rem", marginTop: "6px", lineHeight: 1.4 }}>
+                We&apos;ll save your cart and remind you if you don&apos;t check out.
+              </p>
+            </div>
+
             {error && <p style={{ color: "#F87171", fontSize: ".82rem", marginBottom: "12px", textAlign: "center" }}>{error}</p>}
             <button
               onClick={checkout}

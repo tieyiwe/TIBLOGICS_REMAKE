@@ -496,6 +496,7 @@ model Product {
   currency       String   @default("USD")
   images         String[]               // image URLs (first = primary)
   category       String   @default("General")
+  collections    String[]               // slugs of collections this product belongs to
   tags           String[]
   stock          Int?                   // null = not tracked / unlimited
   digital        Boolean  @default(true)  // digital => no shipping address collected
@@ -509,6 +510,38 @@ model Product {
   @@index([category])
   @@index([featured])
   @@index([createdAt])
+}
+
+model Collection {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  slug        String   @unique
+  name        String
+  description String   @default("")
+  image       String?
+  featured    Boolean  @default(false)
+  published   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+
+  @@index([published])
+  @@index([featured])
+}
+
+model AbandonedCart {
+  id           String    @id @default(cuid())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  email        String    @unique
+  items        Json                       // [{ id, slug, name, price, image, quantity }]
+  subtotal     Int       @default(0)
+  currency     String    @default("USD")
+  reminderCount Int      @default(0)
+  lastReminderAt DateTime?
+  recoveredAt  DateTime?
+
+  @@index([recoveredAt])
+  @@index([updatedAt])
 }
 
 model Order {

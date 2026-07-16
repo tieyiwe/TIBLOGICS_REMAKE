@@ -9,12 +9,21 @@ export interface ShopProduct {
   currency: string;
   images: string[];
   category: string;
+  collections: string[];
   tags: string[];
   stock: number | null;
   digital: boolean;
   featured: boolean;
   onSale: boolean;
   soldCount: number;
+}
+
+export interface ShopCollection {
+  slug: string;
+  name: string;
+  description: string;
+  image: string | null;
+  featured: boolean;
 }
 
 export interface CartLine {

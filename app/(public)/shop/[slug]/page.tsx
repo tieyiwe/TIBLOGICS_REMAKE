@@ -13,13 +13,13 @@ interface Props {
 function toShopProduct(p: {
   id: string; slug: string; name: string; tagline: string | null; description: string;
   price: number; compareAtPrice: number | null; currency: string; images: string[];
-  category: string; tags: string[]; stock: number | null; digital: boolean;
+  category: string; collections: string[]; tags: string[]; stock: number | null; digital: boolean;
   featured: boolean; onSale: boolean; soldCount: number;
 }): ShopProduct {
   return {
     id: p.id, slug: p.slug, name: p.name, tagline: p.tagline, description: p.description,
     price: p.price, compareAtPrice: p.compareAtPrice, currency: p.currency, images: p.images,
-    category: p.category, tags: p.tags, stock: p.stock, digital: p.digital,
+    category: p.category, collections: p.collections, tags: p.tags, stock: p.stock, digital: p.digital,
     featured: p.featured, onSale: p.onSale, soldCount: p.soldCount,
   };
 }

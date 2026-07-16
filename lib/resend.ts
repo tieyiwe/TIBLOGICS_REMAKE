@@ -871,4 +871,69 @@ export async function sendAdminOrderAlert(order: {
   });
 }
 
+// Abandoned-cart reminder — nudges a shopper back to items left in their cart
+export async function sendCartReminderEmail(cart: {
+  email: string;
+  items: Array<{ name?: string; price?: number; quantity?: number; image?: string | null }>;
+  subtotal: number;
+  currency?: string;
+  reminderNumber: number;
+}) {
+  const currency = cart.currency ?? "USD";
+  const site = (process.env.NEXT_PUBLIC_APP_URL ?? "https://tiblogics.com").replace(/\/$/, "");
+
+  const rows = cart.items
+    .map((it) => `
+      <tr>
+        <td style="padding:12px 0;border-bottom:1px solid #eef1f4;width:56px;">
+          ${it.image ? `<img src="${it.image}" width="48" height="48" style="border-radius:10px;object-fit:cover;display:block;" alt="" />` : ""}
+        </td>
+        <td style="padding:12px 12px;border-bottom:1px solid #eef1f4;color:#131A1B;font-size:14px;">
+          ${it.name ?? "Item"} ${it.quantity && it.quantity > 1 ? `<span style="color:#8A9BA0;">× ${it.quantity}</span>` : ""}
+        </td>
+        <td style="padding:12px 0;border-bottom:1px solid #eef1f4;color:#131A1B;font-size:14px;text-align:right;white-space:nowrap;">
+          ${money((it.price ?? 0) * (it.quantity ?? 1), currency)}
+        </td>
+      </tr>`)
+    .join("");
+
+  const headline = cart.reminderNumber >= 2 ? "Last chance — your cart is waiting" : "You left something behind 🛒";
+
+  const html = `
+  <div style="background:#F4F7FB;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
+    <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e6ebf1;">
+      <div style="background:linear-gradient(135deg,#131A1B,#1C2526);padding:28px 32px;">
+        <div style="font-size:20px;font-weight:800;color:#fff;letter-spacing:.04em;">TIB<span style="color:#F47C20;">LOGICS</span> · Shop</div>
+      </div>
+      <div style="padding:32px;">
+        <h1 style="font-size:22px;color:#131A1B;margin:0 0 8px;">${headline}</h1>
+        <p style="font-size:14px;color:#5b6b72;line-height:1.6;margin:0 0 24px;">
+          Your cart is still saved. Pick up right where you left off — before these sell out.
+        </p>
+        <table style="width:100%;border-collapse:collapse;">${rows}
+          <tr>
+            <td colspan="2" style="padding:16px 0 0;font-size:15px;font-weight:800;color:#131A1B;">Subtotal</td>
+            <td style="padding:16px 0 0;font-size:15px;font-weight:800;color:#131A1B;text-align:right;">${money(cart.subtotal, currency)}</td>
+          </tr>
+        </table>
+        <div style="text-align:center;margin:28px 0 8px;">
+          <a href="${site}/shop" style="display:inline-block;background:linear-gradient(135deg,#F47C4C,#F9A738);color:#131A1B;font-weight:800;font-size:15px;text-decoration:none;padding:14px 34px;border-radius:50px;">
+            Return to My Cart →
+          </a>
+        </div>
+      </div>
+      <div style="background:#F4F7FB;padding:18px 32px;text-align:center;color:#8A9BA0;font-size:12px;">
+        © ${new Date().getFullYear()} TIBLOGICS · You received this because you saved a cart at tiblogics.com
+      </div>
+    </div>
+  </div>`;
+
+  await getTransport().sendMail({
+    from: FROM,
+    to: cart.email,
+    subject: cart.reminderNumber >= 2 ? "Your TIBLOGICS cart is about to expire" : "You left items in your cart 🛒",
+    html,
+  });
+}
+
 export default resendCompat;

@@ -68,6 +68,11 @@ export async function POST(req: Request) {
         }
 
         if (email) {
+          // Mark any saved cart for this shopper as recovered (stops reminders)
+          prisma.abandonedCart
+            .updateMany({ where: { email: email.toLowerCase(), recoveredAt: null }, data: { recoveredAt: new Date() } })
+            .catch((err) => console.error("[stripe/webhook] cart recover", err));
+
           sendOrderConfirmationEmail({
             email,
             customerName: name,

@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
         currency: body.currency || "USD",
         images: Array.isArray(body.images) ? body.images.filter(Boolean).slice(0, 8) : [],
         category: body.category || "General",
+        collections: Array.isArray(body.collections) ? body.collections.filter(Boolean).slice(0, 20) : [],
         tags: Array.isArray(body.tags) ? body.tags.filter(Boolean).slice(0, 12) : [],
         stock: body.stock === "" || body.stock == null ? null : Math.max(0, Math.round(Number(body.stock))),
         digital: body.digital !== false,

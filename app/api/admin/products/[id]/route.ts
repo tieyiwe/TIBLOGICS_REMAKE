@@ -22,6 +22,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (body.currency != null) data.currency = String(body.currency);
     if (body.images != null) data.images = Array.isArray(body.images) ? body.images.filter(Boolean).slice(0, 8) : [];
     if (body.category != null) data.category = String(body.category);
+    if (body.collections != null) data.collections = Array.isArray(body.collections) ? body.collections.filter(Boolean).slice(0, 20) : [];
     if (body.tags != null) data.tags = Array.isArray(body.tags) ? body.tags.filter(Boolean).slice(0, 12) : [];
     if (body.stock !== undefined)
       data.stock = body.stock === "" || body.stock == null ? null : Math.max(0, Math.round(Number(body.stock)));

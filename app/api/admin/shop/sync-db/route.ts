@@ -61,6 +61,39 @@ export async function POST() {
     `ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "soldCount" INTEGER NOT NULL DEFAULT 0`,
     `ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "onSale" BOOLEAN NOT NULL DEFAULT false`,
     `ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "compareAtPrice" INTEGER`,
+    `ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "collections" TEXT[] DEFAULT ARRAY[]::TEXT[]`,
+
+    // Collections
+    `CREATE TABLE IF NOT EXISTS "Collection" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "slug" TEXT NOT NULL,
+      "name" TEXT NOT NULL,
+      "description" TEXT NOT NULL DEFAULT '',
+      "image" TEXT,
+      "featured" BOOLEAN NOT NULL DEFAULT false,
+      "published" BOOLEAN NOT NULL DEFAULT true,
+      "sortOrder" INTEGER NOT NULL DEFAULT 0
+    )`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "Collection_slug_key" ON "Collection"("slug")`,
+    `CREATE INDEX IF NOT EXISTS "Collection_published_idx" ON "Collection"("published")`,
+
+    // Abandoned carts (for reminder emails)
+    `CREATE TABLE IF NOT EXISTS "AbandonedCart" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "email" TEXT NOT NULL,
+      "items" JSONB NOT NULL DEFAULT '[]'::jsonb,
+      "subtotal" INTEGER NOT NULL DEFAULT 0,
+      "currency" TEXT NOT NULL DEFAULT 'USD',
+      "reminderCount" INTEGER NOT NULL DEFAULT 0,
+      "lastReminderAt" TIMESTAMP(3),
+      "recoveredAt" TIMESTAMP(3)
+    )`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "AbandonedCart_email_key" ON "AbandonedCart"("email")`,
+    `CREATE INDEX IF NOT EXISTS "AbandonedCart_updatedAt_idx" ON "AbandonedCart"("updatedAt")`,
   ];
 
   for (const sql of statements) {
