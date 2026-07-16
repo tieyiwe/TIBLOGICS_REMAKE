@@ -483,6 +483,56 @@ model WaitlistEntry {
   @@index([createdAt])
 }
 
+model Product {
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  slug           String   @unique
+  name           String
+  tagline        String?
+  description    String   @db.Text
+  price          Int      @default(0)   // current price in cents
+  compareAtPrice Int?                   // original price (strike-through when on sale)
+  currency       String   @default("USD")
+  images         String[]               // image URLs (first = primary)
+  category       String   @default("General")
+  tags           String[]
+  stock          Int?                   // null = not tracked / unlimited
+  digital        Boolean  @default(true)  // digital => no shipping address collected
+  featured       Boolean  @default(false)
+  published      Boolean  @default(false)
+  onSale         Boolean  @default(false)
+  sku            String?
+  soldCount      Int      @default(0)
+
+  @@index([published])
+  @@index([category])
+  @@index([featured])
+  @@index([createdAt])
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  orderNumber     String   @unique
+  email           String
+  customerName    String?
+  phone           String?
+  items           Json                    // [{ productId, slug, name, price, quantity, image }]
+  subtotal        Int      @default(0)
+  total           Int      @default(0)
+  currency        String   @default("USD")
+  status          String   @default("pending") // pending | paid | fulfilled | cancelled | refunded
+  stripeSessionId String?
+  shippingAddress Json?
+  notes           String?
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
+
 model Event {
   id               String   @id @default(cuid())
   createdAt        DateTime @default(now())

@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import prisma from "@/lib/prisma";
-import { sendConfirmationEmail, sendTiweNotification, sendEventWelcomeEmail, sendAdminNewRegistrationAlert } from "@/lib/resend";
+import { sendConfirmationEmail, sendTiweNotification, sendEventWelcomeEmail, sendAdminNewRegistrationAlert, sendOrderConfirmationEmail, sendAdminOrderAlert } from "@/lib/resend";
 import Stripe from "stripe";
 import { createMeeting } from "@/lib/meeting-providers";
 import stripe from "@/lib/stripe";
@@ -33,6 +33,59 @@ export async function POST(req: Request) {
       const session = event.data.object as Stripe.Checkout.Session;
       const appointmentId = session.metadata?.appointmentId;
       const registrationId = session.metadata?.registrationId;
+      const orderId = session.metadata?.orderId;
+
+      // ── Shop order payment ──────────────────────────────────────────────
+      if (orderId) {
+        const email = session.customer_details?.email ?? session.customer_email ?? "";
+        const name = session.customer_details?.name ?? null;
+        const phone = session.customer_details?.phone ?? null;
+        const shipping = (session as unknown as { shipping_details?: unknown }).shipping_details ?? null;
+
+        const order = await prisma.order.update({
+          where: { id: orderId },
+          data: {
+            status: "paid",
+            stripeSessionId: session.id,
+            email,
+            customerName: name,
+            phone,
+            ...(shipping ? { shippingAddress: JSON.parse(JSON.stringify(shipping)) } : {}),
+          },
+        });
+
+        // Update inventory / sold counts (best-effort)
+        const items = Array.isArray(order.items) ? (order.items as unknown as Array<{ productId: string; quantity: number }>) : [];
+        for (const it of items) {
+          const prod = await prisma.product.findUnique({ where: { id: it.productId }, select: { stock: true } }).catch(() => null);
+          await prisma.product.update({
+            where: { id: it.productId },
+            data: {
+              soldCount: { increment: it.quantity },
+              ...(prod?.stock != null ? { stock: { decrement: Math.min(prod.stock, it.quantity) } } : {}),
+            },
+          }).catch((err) => console.error("[stripe/webhook] product update", err));
+        }
+
+        if (email) {
+          sendOrderConfirmationEmail({
+            email,
+            customerName: name,
+            orderNumber: order.orderNumber,
+            items,
+            total: order.total,
+            currency: order.currency,
+          }).catch((err) => console.error("[stripe/webhook] order email FAILED:", err instanceof Error ? err.message : err));
+        }
+        sendAdminOrderAlert({
+          orderNumber: order.orderNumber,
+          email,
+          customerName: name,
+          total: order.total,
+          currency: order.currency,
+          itemCount: items.reduce((n, i) => n + (i.quantity || 0), 0),
+        }).catch((err) => console.error("[stripe/webhook] admin order alert FAILED:", err instanceof Error ? err.message : err));
+      }
 
       // ── Event registration payment ──────────────────────────────────────
       if (registrationId) {

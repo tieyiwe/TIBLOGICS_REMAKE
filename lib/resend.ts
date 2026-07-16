@@ -774,4 +774,101 @@ export const arfaMailer = {
   },
 };
 
+// ─── SHOP / STORE emails ─────────────────────────────────────────────────────
+type OrderItem = { name?: string; price?: number; quantity?: number };
+
+function money(cents: number, currency = "USD") {
+  return `${currency === "USD" ? "$" : currency + " "}${(cents / 100).toFixed(2)}`;
+}
+
+// Customer order confirmation — sent from info@tiblogics.com after payment
+export async function sendOrderConfirmationEmail(order: {
+  email: string;
+  customerName?: string | null;
+  orderNumber: string;
+  items: OrderItem[];
+  total: number;
+  currency?: string;
+}) {
+  const currency = order.currency ?? "USD";
+  const rows = order.items
+    .map(
+      (it) => `
+      <tr>
+        <td style="padding:12px 0;border-bottom:1px solid #eef1f4;color:#131A1B;font-size:14px;">
+          ${it.name ?? "Item"} ${it.quantity && it.quantity > 1 ? `<span style="color:#8A9BA0;">× ${it.quantity}</span>` : ""}
+        </td>
+        <td style="padding:12px 0;border-bottom:1px solid #eef1f4;color:#131A1B;font-size:14px;text-align:right;white-space:nowrap;">
+          ${money((it.price ?? 0) * (it.quantity ?? 1), currency)}
+        </td>
+      </tr>`
+    )
+    .join("");
+
+  const html = `
+  <div style="background:#F4F7FB;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
+    <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e6ebf1;">
+      <div style="background:linear-gradient(135deg,#131A1B,#1C2526);padding:28px 32px;">
+        <div style="font-size:20px;font-weight:800;color:#fff;letter-spacing:.04em;">TIB<span style="color:#F47C20;">LOGICS</span> · Shop</div>
+      </div>
+      <div style="padding:32px;">
+        <h1 style="font-size:22px;color:#131A1B;margin:0 0 8px;">Thank you${order.customerName ? `, ${order.customerName.split(" ")[0]}` : ""}! 🎉</h1>
+        <p style="font-size:14px;color:#5b6b72;line-height:1.6;margin:0 0 24px;">
+          Your order is confirmed and paid. Order number
+          <strong style="color:#131A1B;">${order.orderNumber}</strong>.
+        </p>
+        <table style="width:100%;border-collapse:collapse;">${rows}
+          <tr>
+            <td style="padding:16px 0 0;font-size:16px;font-weight:800;color:#131A1B;">Total</td>
+            <td style="padding:16px 0 0;font-size:16px;font-weight:800;color:#131A1B;text-align:right;">${money(order.total, currency)}</td>
+          </tr>
+        </table>
+        <p style="font-size:13px;color:#8A9BA0;line-height:1.6;margin:28px 0 0;">
+          We'll email you with any delivery or access details. Questions? Just reply to this email.
+        </p>
+      </div>
+      <div style="background:#F4F7FB;padding:18px 32px;text-align:center;color:#8A9BA0;font-size:12px;">
+        © ${new Date().getFullYear()} TIBLOGICS · All rights reserved
+      </div>
+    </div>
+  </div>`;
+
+  await getTransport().sendMail({
+    from: FROM,
+    to: order.email,
+    subject: `Your TIBLOGICS order ${order.orderNumber} is confirmed ✓`,
+    html,
+  });
+}
+
+// Internal alert to the business when a new order is paid
+export async function sendAdminOrderAlert(order: {
+  orderNumber: string;
+  email: string;
+  customerName?: string | null;
+  total: number;
+  currency?: string;
+  itemCount: number;
+}) {
+  const adminEmail = process.env.TIWE_EMAIL || process.env.TITAN_SMTP_USER || "info@tiblogics.com";
+  const html = `
+  <div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;padding:24px;">
+    <h2 style="color:#131A1B;font-size:18px;margin:0 0 12px;">🛒 New shop order — payment confirmed</h2>
+    <table style="width:100%;font-size:14px;color:#131A1B;border-collapse:collapse;">
+      <tr><td style="padding:6px 0;color:#8A9BA0;">Order</td><td style="padding:6px 0;text-align:right;font-weight:700;">${order.orderNumber}</td></tr>
+      <tr><td style="padding:6px 0;color:#8A9BA0;">Customer</td><td style="padding:6px 0;text-align:right;">${order.customerName ?? "—"}</td></tr>
+      <tr><td style="padding:6px 0;color:#8A9BA0;">Email</td><td style="padding:6px 0;text-align:right;">${order.email}</td></tr>
+      <tr><td style="padding:6px 0;color:#8A9BA0;">Items</td><td style="padding:6px 0;text-align:right;">${order.itemCount}</td></tr>
+      <tr><td style="padding:6px 0;color:#8A9BA0;">Total</td><td style="padding:6px 0;text-align:right;font-weight:800;">${money(order.total, order.currency ?? "USD")}</td></tr>
+    </table>
+  </div>`;
+
+  await getTransport().sendMail({
+    from: FROM,
+    to: adminEmail,
+    subject: `🛒 New order ${order.orderNumber} — ${money(order.total, order.currency ?? "USD")}`,
+    html,
+  });
+}
+
 export default resendCompat;
