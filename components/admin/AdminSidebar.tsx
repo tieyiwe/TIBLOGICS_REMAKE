@@ -29,6 +29,7 @@ import {
   Sparkles,
   ExternalLink,
   ShoppingBag,
+  GraduationCap,
 } from "lucide-react";
 
 interface NavSubItem {
@@ -91,6 +92,7 @@ const navItems: NavItem[] = [
     ],
   },
   { label: "Events & Training", href: "/admin_pro/events", icon: Calendar },
+  { label: "Learn (Courses)", href: "/admin_pro/learn", icon: GraduationCap },
   { label: "Shop", href: "/admin_pro/shop", icon: ShoppingBag },
   { label: "Service Requests", href: "/admin_pro/service-requests", icon: Briefcase },
   { label: "Partnerships", href: "/admin_pro/partnerships", icon: Briefcase },
@@ -190,6 +192,7 @@ const NAV_PERMISSION_MAP: Record<string, string> = {
   "/admin_pro/partnerships":     "service_requests",
   "/admin_pro/waitlist":         "service_requests",
   "/admin_pro/shop":           "shop",
+  "/admin_pro/learn":          "events",
   "/admin_pro/analytics":      "analytics",
   "/admin_pro/agents":         "agents",
   "/admin_pro/settings":       "__admin_only__",
