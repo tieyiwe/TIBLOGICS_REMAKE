@@ -483,6 +483,363 @@ model WaitlistEntry {
   @@index([createdAt])
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// TIBLOGICS LEARN — course platform
+// Status-like columns are String (validated in lib/learn/types.ts) rather than
+// Postgres enums, so the raw-SQL sync-db path stays idempotent and simple.
+// ═══════════════════════════════════════════════════════════════════════════
+
+model Student {
+  id                String    @id @default(cuid())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  email             String    @unique
+  passwordHash      String
+  name              String
+  emailVerified     DateTime?
+  verifyToken       String?   @unique
+  resetToken        String?   @unique
+  resetTokenExpires DateTime?
+  accessibilityMode Boolean   @default(false)
+  locale            String    @default("en")
+  leaderboardOptIn  Boolean   @default(false)
+  lastLoginAt       DateTime?
+
+  subscription  LearnSubscription?
+  progress      LessonProgress[]
+  microAttempts MicroCheckAttempt[]
+  quizAttempts  QuizAttempt[]
+  examSessions  FinalExamSession[]
+  capstones     CapstoneSubmission[]
+  points        PointsLedger[]
+  certificates  LearnCertificate[]
+
+  @@index([email])
+}
+
+model LearnTrack {
+  id                   String  @id @default(cuid())
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  slug                 String  @unique
+  title                String
+  titleFr              String?
+  tagline              String?
+  description          String  @db.Text
+  descriptionFr        String? @db.Text
+  level                String  @default("beginner")   // starter|beginner|intermediate|advanced
+  levelEnd             String?                         // set when the track spans levels
+  status               String  @default("draft")       // draft|coming_soon|live
+  sortOrder            Int     @default(0)
+  accentColor          String  @default("#F47C4C")
+  heroImage            String?
+  outcomes             Json    @default("[]")
+  audience             String?
+  certificateName      String
+  estimatedHours       Float   @default(0)
+  estimatedWeeksAt3Hrs Int?
+
+  modules      LearnModule[]
+  finalExam    FinalExam?
+  capstone     Capstone?
+  certificates LearnCertificate[]
+
+  @@index([status])
+  @@index([sortOrder])
+}
+
+model LearnModule {
+  id               String @id @default(cuid())
+  trackId          String
+  track            LearnTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  title            String
+  summary          String?
+  sortOrder        Int
+  estimatedMinutes Int    @default(0)
+
+  lessons    Lesson[]
+  quiz       Quiz?
+  examQs     FinalExamQuestion[]
+
+  @@index([trackId])
+}
+
+model Lesson {
+  id              String  @id @default(cuid())
+  moduleId        String
+  module          LearnModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title           String
+  sortOrder       Int
+  contentType     String  @default("mixed")  // video|article|mixed
+  videoUrl        String?
+  bodyMd          String  @db.Text
+  durationMinutes Int     @default(0)
+  objective       String?
+  isPreview       Boolean @default(false)
+  hasPractice     Boolean @default(false)
+
+  resources  LessonResource[]
+  microCheck MicroCheck?
+  progress   LessonProgress[]
+
+  @@index([moduleId])
+}
+
+model LessonResource {
+  id           String  @id @default(cuid())
+  lessonId     String
+  lesson       Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  title        String
+  url          String
+  resourceType String  @default("tool")  // tool|article|video|dataset|template|account_signup
+  isFree       Boolean @default(true)
+  isRequired   Boolean @default(false)
+  notes        String?
+  sortOrder    Int     @default(0)
+  lastCheckedStatus Int?                 // admin link checker result
+
+  @@index([lessonId])
+}
+
+// ── Tier 1: micro-checks (after every lesson) ──────────────────────────────
+model MicroCheck {
+  id             String @id @default(cuid())
+  lessonId       String @unique
+  lesson         Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  passScore      Int    @default(67)
+  questionsServed Int   @default(3)
+
+  questions MicroCheckQuestion[]
+  attempts  MicroCheckAttempt[]
+}
+
+model MicroCheckQuestion {
+  id           String @id @default(cuid())
+  microCheckId String
+  microCheck   MicroCheck @relation(fields: [microCheckId], references: [id], onDelete: Cascade)
+  question     String @db.Text
+  options      Json
+  correctIndex Int
+  explanation  String @db.Text
+
+  @@index([microCheckId])
+}
+
+model MicroCheckAttempt {
+  id           String   @id @default(cuid())
+  studentId    String
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  microCheckId String
+  microCheck   MicroCheck @relation(fields: [microCheckId], references: [id], onDelete: Cascade)
+  score        Int
+  passed       Boolean
+  answers      Json
+  createdAt    DateTime @default(now())
+
+  @@index([studentId])
+  @@index([microCheckId])
+}
+
+// ── Tier 2: module quizzes ─────────────────────────────────────────────────
+model Quiz {
+  id              String @id @default(cuid())
+  moduleId        String @unique
+  module          LearnModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  passScore       Int    @default(80)
+  questionsServed Int    @default(8)
+
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+}
+
+model QuizQuestion {
+  id           String @id @default(cuid())
+  quizId       String
+  quiz         Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  question     String @db.Text
+  options      Json
+  correctIndex Int
+  explanation  String @db.Text
+
+  @@index([quizId])
+}
+
+model QuizAttempt {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  quizId    String
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  score     Int
+  passed    Boolean
+  answers   Json
+  createdAt DateTime @default(now())
+
+  @@index([studentId])
+  @@index([quizId])
+}
+
+// ── Tier 3: timed final exam ───────────────────────────────────────────────
+model FinalExam {
+  id                String @id @default(cuid())
+  trackId           String @unique
+  track             LearnTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  title             String
+  timeLimitMinutes  Int
+  questionsServed   Int
+  passScore         Int    @default(75)
+  distinctionScore  Int    @default(90)
+  maxAttempts       Int    @default(3)
+  cooldownHours     Int    @default(24)
+  instructionsMd    String @db.Text
+
+  questions FinalExamQuestion[]
+  sessions  FinalExamSession[]
+}
+
+model FinalExamQuestion {
+  id           String  @id @default(cuid())
+  finalExamId  String
+  finalExam    FinalExam @relation(fields: [finalExamId], references: [id], onDelete: Cascade)
+  moduleId     String?
+  module       LearnModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  question     String  @db.Text
+  options      Json
+  correctIndex Int
+  explanation  String  @db.Text
+  difficulty   Int     @default(2)   // 1=recall 2=application 3=analysis
+
+  @@index([finalExamId])
+  @@index([moduleId])
+}
+
+model FinalExamSession {
+  id              String    @id @default(cuid())
+  studentId       String
+  student         Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  finalExamId     String
+  finalExam       FinalExam @relation(fields: [finalExamId], references: [id], onDelete: Cascade)
+  status          String    @default("in_progress")  // in_progress|submitted|expired
+  questionIds     Json
+  startedAt       DateTime  @default(now())
+  expiresAt       DateTime
+  submittedAt     DateTime?
+  score           Int?
+  passed          Boolean?
+  answers         Json      @default("{}")
+  perModuleScores Json?
+  attemptNumber   Int       @default(1)
+
+  @@index([studentId])
+  @@index([finalExamId])
+  @@index([status])
+}
+
+// ── Capstone ───────────────────────────────────────────────────────────────
+model Capstone {
+  id            String @id @default(cuid())
+  trackId       String @unique
+  track         LearnTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  briefMd       String @db.Text
+  rubric        Json
+  passThreshold Int    @default(70)
+
+  submissions CapstoneSubmission[]
+}
+
+model CapstoneSubmission {
+  id            String    @id @default(cuid())
+  studentId     String
+  student       Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  capstoneId    String
+  capstone      Capstone  @relation(fields: [capstoneId], references: [id], onDelete: Cascade)
+  status        String    @default("submitted")  // submitted|in_review|revisions_requested|passed|failed
+  submissionUrl String?
+  submissionMd  String?   @db.Text
+  reviewerNotes String?   @db.Text
+  aiPrereviewMd String?   @db.Text
+  score         Int?
+  reviewedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([studentId])
+  @@index([capstoneId])
+  @@index([status])
+}
+
+// ── Learner state ──────────────────────────────────────────────────────────
+model LearnSubscription {
+  id                   String    @id @default(cuid())
+  studentId            String    @unique
+  student              Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?   @unique
+  status               String    @default("trialing")  // trialing|active|past_due|canceled
+  plan                 String    @default("monthly")   // monthly|annual
+  currentPeriodEnd     DateTime?
+  graceUntil           DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([status])
+}
+
+model LessonProgress {
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lessonId    String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completedAt DateTime @default(now())
+
+  @@id([studentId, lessonId])
+  @@index([studentId])
+  @@index([completedAt])
+}
+
+model PointsLedger {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  source    String   // lesson_complete|micro_check_pass|quiz_pass|quiz_perfect|final_exam_pass|final_exam_distinction|capstone_pass|streak_bonus|track_complete
+  refId     String?
+  points    Int
+  createdAt DateTime @default(now())
+
+  @@unique([studentId, source, refId])
+  @@index([studentId])
+}
+
+model LearnCertificate {
+  id             String   @id @default(cuid())
+  studentId      String
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  trackId        String
+  track          LearnTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  verificationId String   @unique @default(uuid())
+  recipientName  String
+  certificateName String
+  distinction    Boolean  @default(false)
+  examScore      Int?
+  issuedAt       DateTime @default(now())
+  pdfUrl         String?
+  revoked        Boolean  @default(false)
+
+  @@unique([studentId, trackId])
+  @@index([verificationId])
+}
+
+model LearnWaitlist {
+  id        String   @id @default(cuid())
+  email     String
+  trackSlug String
+  createdAt DateTime @default(now())
+
+  @@unique([email, trackSlug])
+  @@index([trackSlug])
+}
+
 model Product {
   id             String   @id @default(cuid())
   createdAt      DateTime @default(now())

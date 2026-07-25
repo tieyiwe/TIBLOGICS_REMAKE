@@ -29,11 +29,55 @@ export async function POST(req: Request) {
 
   // Always return 200 after signature check — Stripe will retry on 5xx
   try {
+    // ── TIBLOGICS Learn subscription lifecycle ────────────────────────────
+    if (
+      event.type === "customer.subscription.updated" ||
+      event.type === "customer.subscription.deleted" ||
+      event.type === "customer.subscription.created"
+    ) {
+      const sub = event.data.object as Stripe.Subscription;
+      if (sub.metadata?.product === "learn" && sub.metadata?.studentId) {
+        await upsertLearnSubscription(sub);
+      }
+    }
+
+    if (event.type === "invoice.payment_failed") {
+      const invoice = event.data.object as Stripe.Invoice;
+      const subId = (invoice as unknown as { subscription?: string }).subscription;
+      if (subId) {
+        const existing = await prisma.learnSubscription
+          .findUnique({ where: { stripeSubscriptionId: subId } })
+          .catch(() => null);
+        if (existing) {
+          // 7-day read-only grace window (Part E1)
+          await prisma.learnSubscription.update({
+            where: { id: existing.id },
+            data: {
+              status: "past_due",
+              graceUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            },
+          });
+          console.log(`[stripe/webhook] Learn sub ${subId} → past_due (7-day grace)`);
+        }
+      }
+    }
+
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
       const appointmentId = session.metadata?.appointmentId;
       const registrationId = session.metadata?.registrationId;
       const orderId = session.metadata?.orderId;
+
+      // ── Learn subscription checkout ─────────────────────────────────────
+      if (session.metadata?.product === "learn" && session.mode === "subscription") {
+        const studentId = session.metadata.studentId || session.client_reference_id;
+        const subId = typeof session.subscription === "string" ? session.subscription : null;
+        if (studentId && subId) {
+          const full = await stripe.subscriptions.retrieve(subId);
+          await upsertLearnSubscription(full, studentId);
+          console.log(`[stripe/webhook] ✓ Learn subscription active for student ${studentId}`);
+        }
+      }
 
       // ── Shop order payment ──────────────────────────────────────────────
       if (orderId) {
@@ -196,4 +240,47 @@ export async function POST(req: Request) {
   }
 
   return new Response("ok", { status: 200 });
+}
+
+// ── TIBLOGICS Learn subscription sync ───────────────────────────────────────
+// Mirrors Stripe's subscription state into LearnSubscription. Grace is cleared
+// whenever the subscription returns to a healthy state.
+async function upsertLearnSubscription(sub: Stripe.Subscription, studentIdArg?: string) {
+  const studentId = studentIdArg ?? sub.metadata?.studentId;
+  if (!studentId) return;
+
+  const raw = sub.status; // trialing|active|past_due|canceled|incomplete|unpaid|...
+  const status =
+    raw === "active" || raw === "trialing" || raw === "past_due"
+      ? raw
+      : raw === "canceled" || raw === "incomplete_expired" || raw === "unpaid"
+      ? "canceled"
+      : "past_due";
+
+  const periodEndUnix = (sub as unknown as { current_period_end?: number }).current_period_end;
+  const currentPeriodEnd = periodEndUnix ? new Date(periodEndUnix * 1000) : null;
+  const plan = sub.metadata?.plan === "annual" ? "annual" : "monthly";
+  const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id ?? null;
+
+  // Entering past_due starts a 7-day grace; returning to healthy clears it.
+  const graceUntil =
+    status === "past_due" ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : null;
+
+  const data = {
+    stripeCustomerId: customerId,
+    stripeSubscriptionId: sub.id,
+    status,
+    plan,
+    currentPeriodEnd,
+    graceUntil,
+    cancelAtPeriodEnd: !!sub.cancel_at_period_end,
+  };
+
+  await prisma.learnSubscription
+    .upsert({
+      where: { studentId },
+      create: { studentId, ...data },
+      update: data,
+    })
+    .catch((err) => console.error("[stripe/webhook] learn sub upsert", err));
 }
