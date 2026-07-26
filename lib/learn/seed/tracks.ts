@@ -1,6 +1,7 @@
 import type { SeedTrack } from "./types";
 import { TRACK_1 } from "./track-1";
 import { TRACK_1_CAPSTONE, TRACK_1_FINAL_EXAM, TRACK_1_MODULES_3_TO_7 } from "./track-1-part2";
+import { TRACK_1_LABS } from "./labs-track-1";
 
 // Track 1 is assembled from its two content files.
 const AI_FOUNDATIONS: SeedTrack = {
@@ -8,6 +9,7 @@ const AI_FOUNDATIONS: SeedTrack = {
   modules: [...TRACK_1.modules, ...TRACK_1_MODULES_3_TO_7],
   finalExam: TRACK_1_FINAL_EXAM,
   capstone: TRACK_1_CAPSTONE,
+  labs: TRACK_1_LABS,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════

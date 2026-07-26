@@ -14,6 +14,8 @@ export const POINT_VALUES: Record<PointSource, number> = {
   capstone_pass: 300,
   track_complete: 500,
   streak_bonus: 25,
+  // Labs carry a per-lab value, passed to awardPoints as an override.
+  lab_pass: 40,
 };
 
 export const LEVELS = [

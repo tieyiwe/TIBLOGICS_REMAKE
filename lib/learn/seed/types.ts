@@ -60,6 +60,23 @@ export interface SeedFinalExam {
   questions: SeedQuestion[];
 }
 
+export interface SeedLab {
+  slug: string;
+  title: string;
+  labType: "prompt" | "critique" | "build";
+  /** 1-based module this lab belongs to. */
+  moduleNumber?: number;
+  briefMd: string;
+  scenarioMd?: string;
+  objectives: Array<{ id: string; label: string; weight: number; guidance?: string }>;
+  /** Type-specific config — see lib/learn/labs/types.ts */
+  config: Record<string, unknown> & { kind: "prompt" | "critique" | "build" };
+  passScore?: number;
+  points?: number;
+  estimatedMinutes?: number;
+  isPublished?: boolean;
+}
+
 export interface SeedTrack {
   slug: string;
   title: string;
@@ -79,6 +96,7 @@ export interface SeedTrack {
   modules: SeedModule[];
   finalExam?: SeedFinalExam;
   capstone?: SeedCapstone;
+  labs?: SeedLab[];
 }
 
 /** Sum of every lesson duration in the track, in minutes. */

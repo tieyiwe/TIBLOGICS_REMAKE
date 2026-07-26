@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { getStudent } from "@/lib/learn/session";
 import { getTrackProgress, getTrackGates } from "@/lib/learn/progress";
 import { formatMinutes } from "@/lib/learn/types";
+import { LAB_TYPE_META, type LabType } from "@/lib/learn/labs/types";
 import ProgressRing from "@/components/learn/ProgressRing";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +27,14 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
         },
         finalExam: { select: { id: true, title: true, timeLimitMinutes: true, questionsServed: true, passScore: true } },
         capstone: { select: { id: true } },
+        labs: {
+          where: { isPublished: true },
+          orderBy: { sortOrder: "asc" },
+          select: {
+            id: true, slug: true, title: true, labType: true,
+            estimatedMinutes: true, points: true, moduleId: true,
+          },
+        },
       },
     })
     .catch(() => null);
@@ -49,6 +58,15 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
       select: { verificationId: true, distinction: true },
     }),
   ]);
+
+  const labPasses = await prisma.labAttempt
+    .findMany({
+      where: { studentId: student.id, passed: true, lab: { trackId: track.id } },
+      select: { labId: true },
+      distinct: ["labId"],
+    })
+    .catch(() => []);
+  const passedLabIds = new Set(labPasses.map((l) => l.labId));
 
   const doneIds = new Set(done.map((d) => d.lessonId));
   const passedQuizIds = new Set(quizPasses.map((q) => q.quizId));
@@ -190,6 +208,45 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
           })}
         </div>
       </section>
+
+      {/* Labs */}
+      {track.labs.length > 0 && (
+        <section>
+          <h2 className="text-base font-bold text-[var(--ink)]">Labs</h2>
+          <p className="mt-1 text-sm text-[var(--ink3)]">
+            Hands-on practice. Optional, but this is where the reading turns into skill.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {track.labs.map((lab) => {
+              const passed = passedLabIds.has(lab.id);
+              const meta = LAB_TYPE_META[lab.labType as LabType] ?? LAB_TYPE_META.prompt;
+              return (
+                <Link
+                  key={lab.id}
+                  href={`/learn/lab/${lab.slug}`}
+                  className="learn-lift rounded-2xl border border-[var(--border)] bg-white p-5"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold"
+                      style={{ background: `${track.accentColor}18`, color: track.accentColor }}
+                    >
+                      <span aria-hidden="true">{meta.icon}</span> {meta.label}
+                    </span>
+                    {passed && (
+                      <span className="shrink-0 text-xs font-bold text-green-700">✓ Passed</span>
+                    )}
+                  </div>
+                  <h3 className="mt-2.5 text-sm font-bold text-[var(--ink)]">{lab.title}</h3>
+                  <p className="mt-1 text-xs text-[var(--ink3)]">
+                    ~{lab.estimatedMinutes} min · {lab.points} pts
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Final exam + capstone */}
       <section className="grid gap-4 sm:grid-cols-2">

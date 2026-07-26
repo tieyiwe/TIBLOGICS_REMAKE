@@ -20,6 +20,7 @@ export interface SeedReport {
   microQuestions: number;
   quizQuestions: number;
   examQuestions: number;
+  labs: number;
   minutes: number;
   warnings: string[];
 }
@@ -235,6 +236,39 @@ export async function seedTrack(track: SeedTrack): Promise<SeedReport> {
     examQuestions = fe.questions.length;
   }
 
+  // ── Labs ────────────────────────────────────────────────────────────────
+  // Keyed on slug, so re-seeding updates a lab in place and learner attempts
+  // (which reference the Lab id) survive.
+  let labCount = 0;
+  for (const [li, lab] of (track.labs ?? []).entries()) {
+    if (lab.objectives.length === 0) {
+      warnings.push(`${track.slug}: lab "${lab.slug}" has no objectives — nothing to score against.`);
+    }
+
+    const labData = {
+      trackId: row.id,
+      moduleId: lab.moduleNumber != null ? moduleIds[lab.moduleNumber - 1] ?? null : null,
+      title: lab.title,
+      labType: lab.labType,
+      briefMd: lab.briefMd,
+      scenarioMd: lab.scenarioMd ?? null,
+      objectives: lab.objectives as unknown as Prisma.InputJsonValue,
+      config: lab.config as unknown as Prisma.InputJsonValue,
+      passScore: lab.passScore ?? 70,
+      points: lab.points ?? 40,
+      estimatedMinutes: lab.estimatedMinutes ?? 20,
+      sortOrder: li,
+      isPublished: lab.isPublished !== false,
+    };
+
+    await prisma.lab.upsert({
+      where: { slug: lab.slug },
+      create: { slug: lab.slug, ...labData },
+      update: labData,
+    });
+    labCount++;
+  }
+
   // ── Capstone ────────────────────────────────────────────────────────────
   if (track.capstone) {
     const capData = {
@@ -262,6 +296,7 @@ export async function seedTrack(track: SeedTrack): Promise<SeedReport> {
     microQuestions,
     quizQuestions,
     examQuestions,
+    labs: labCount,
     minutes,
     warnings,
   };

@@ -32,6 +32,7 @@ export const POINT_SOURCES = [
   "capstone_pass",
   "streak_bonus",
   "track_complete",
+  "lab_pass",
 ] as const;
 export type PointSource = (typeof POINT_SOURCES)[number];
 

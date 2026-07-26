@@ -513,6 +513,7 @@ model Student {
   capstones     CapstoneSubmission[]
   points        PointsLedger[]
   certificates  LearnCertificate[]
+  labAttempts   LabAttempt[]
 
   @@index([email])
 }
@@ -543,6 +544,7 @@ model LearnTrack {
   finalExam    FinalExam?
   capstone     Capstone?
   certificates LearnCertificate[]
+  labs         Lab[]
 
   @@index([status])
   @@index([sortOrder])
@@ -560,6 +562,7 @@ model LearnModule {
   lessons    Lesson[]
   quiz       Quiz?
   examQs     FinalExamQuestion[]
+  labs       Lab[]
 
   @@index([trackId])
 }
@@ -581,6 +584,7 @@ model Lesson {
   resources  LessonResource[]
   microCheck MicroCheck?
   progress   LessonProgress[]
+  labs       Lab[]
 
   @@index([moduleId])
 }
@@ -732,6 +736,69 @@ model FinalExamSession {
 
   @@index([studentId])
   @@index([finalExamId])
+  @@index([status])
+}
+
+// ── Labs ───────────────────────────────────────────────────────────────────
+// Hands-on practice. Three kinds, all sharing one attempt model:
+//   prompt   — write a prompt, run it against a real model in a sandbox,
+//              get coached on the PROMPT rather than the output
+//   critique — spot the planted flaws in a supplied AI answer
+//   build    — do a real task, tick the steps, submit an artefact
+model Lab {
+  id               String  @id @default(cuid())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  trackId          String
+  track            LearnTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  moduleId         String?
+  module           LearnModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  lessonId         String?
+  lesson           Lesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+
+  slug             String  @unique
+  title            String
+  labType          String  @default("prompt")   // prompt|critique|build
+  briefMd          String  @db.Text
+  scenarioMd       String? @db.Text
+  /** Criteria the attempt is scored against. Shown to the learner up front. */
+  objectives       Json    @default("[]")
+  /** Type-specific settings (planted flaws, checklist steps, sandbox system prompt). */
+  config           Json    @default("{}")
+  passScore        Int     @default(70)
+  points           Int     @default(40)
+  estimatedMinutes Int     @default(20)
+  sortOrder        Int     @default(0)
+  isPublished      Boolean @default(true)
+
+  attempts LabAttempt[]
+
+  @@index([trackId])
+  @@index([lessonId])
+}
+
+model LabAttempt {
+  id          String   @id @default(cuid())
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  labId       String
+  lab         Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
+  status      String   @default("in_progress")  // in_progress|submitted
+  /** Learner's work: prompt text, selections, checklist state, artefact URL. */
+  submission  Json     @default("{}")
+  /** Sandbox conversation, for prompt labs. */
+  transcript  Json     @default("[]")
+  score       Int?
+  passed      Boolean  @default(false)
+  feedbackMd  String?  @db.Text
+  /** Per-objective outcome, so feedback can be shown against each criterion. */
+  breakdown   Json?
+  runCount    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([studentId])
+  @@index([labId])
   @@index([status])
 }
 
