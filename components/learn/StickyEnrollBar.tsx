@@ -60,11 +60,11 @@ export default function StickyEnrollBar({
           </div>
         ) : (
           <Link
-            href="/learn/signup"
+            href={`/learn/signup?track=${trackSlug}`}
             className="shrink-0 rounded-full px-6 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
             style={{ background: accentColor }}
           >
-            Start this track →
+            Create account & start →
           </Link>
         )}
       </div>

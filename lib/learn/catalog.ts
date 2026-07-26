@@ -19,6 +19,10 @@ export interface CatalogTrack {
   outcomes: string[];
   moduleCount: number;
   lessonCount: number;
+  labCount: number;
+  quizCount: number;
+  hasExam: boolean;
+  hasCapstone: boolean;
 }
 
 function normalise(t: {
@@ -26,7 +30,10 @@ function normalise(t: {
   level: string; levelEnd: string | null; status: string; accentColor: string;
   certificateName: string; estimatedHours: number; estimatedWeeksAt3Hrs: number | null;
   audience: string | null; outcomes: unknown;
-  modules: Array<{ _count: { lessons: number } }>;
+  modules: Array<{ _count: { lessons: number; labs?: number }; quiz: { id: string } | null }>;
+  _count: { labs: number };
+  finalExam: { id: string } | null;
+  capstone: { id: string } | null;
 }): CatalogTrack {
   return {
     id: t.id,
@@ -45,6 +52,10 @@ function normalise(t: {
     outcomes: Array.isArray(t.outcomes) ? (t.outcomes as string[]) : [],
     moduleCount: t.modules.length,
     lessonCount: t.modules.reduce((n, m) => n + m._count.lessons, 0),
+    labCount: t._count.labs,
+    quizCount: t.modules.filter((m) => m.quiz).length,
+    hasExam: !!t.finalExam,
+    hasCapstone: !!t.capstone,
   };
 }
 
@@ -54,7 +65,14 @@ export async function getCatalog(): Promise<CatalogTrack[]> {
     .findMany({
       where: { status: { in: ["live", "coming_soon"] } },
       orderBy: { sortOrder: "asc" },
-      include: { modules: { select: { _count: { select: { lessons: true } } } } },
+      include: {
+        modules: {
+          select: { _count: { select: { lessons: true } }, quiz: { select: { id: true } } },
+        },
+        _count: { select: { labs: true } },
+        finalExam: { select: { id: true } },
+        capstone: { select: { id: true } },
+      },
     })
     .catch(() => []);
   return tracks.map(normalise);

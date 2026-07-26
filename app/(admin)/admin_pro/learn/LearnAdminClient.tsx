@@ -15,6 +15,11 @@ interface QueueRow {
   studentName: string; studentEmail: string; trackTitle: string; passThreshold: number;
 }
 
+interface CertRow {
+  id: string; verificationId: string; recipientName: string; certificateName: string;
+  studentEmail: string; trackTitle: string; distinction: boolean; revoked: boolean; issuedAt: string;
+}
+
 export default function LearnAdminClient({
   tablesReady,
   tracks,
@@ -23,6 +28,7 @@ export default function LearnAdminClient({
   certificateCount,
   waitlist,
   queue,
+  recentCertificates,
 }: {
   tablesReady: boolean;
   tracks: TrackRow[];
@@ -31,6 +37,7 @@ export default function LearnAdminClient({
   certificateCount: number;
   waitlist: Array<{ trackSlug: string; count: number }>;
   queue: QueueRow[];
+  recentCertificates: CertRow[];
 }) {
   const router = useRouter();
   const [log, setLog] = useState<string[]>([]);
@@ -163,6 +170,9 @@ export default function LearnAdminClient({
           </ul>
         )}
       </section>
+
+      {/* Certificates — manual issue/revoke override for support cases */}
+      <CertificatesPanel tracks={tracks} recentCertificates={recentCertificates} />
 
       {/* Tracks */}
       <section className="rounded-xl border border-[var(--border)] bg-white p-5">
@@ -396,5 +406,168 @@ function ReviewPanel({ submission, onDone }: { submission: QueueRow; onDone: () 
         )}
       </div>
     </div>
+  );
+}
+
+// ── Certificates: support override + revoke ─────────────────────────────────
+function CertificatesPanel({
+  tracks,
+  recentCertificates,
+}: {
+  tracks: TrackRow[];
+  recentCertificates: CertRow[];
+}) {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [trackSlug, setTrackSlug] = useState(tracks[0]?.slug ?? "");
+  const [force, setForce] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
+
+  async function issue() {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/admin/learn/certificate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ studentEmail: email, trackSlug, force }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const gateText = data.gates
+          ? ` Missing: ${Object.entries(data.gates).filter(([, v]) => !v).map(([k]) => k).join(", ")}.`
+          : "";
+        throw new Error((data.error ?? "Could not issue certificate") + gateText);
+      }
+      setMessage({
+        text: data.created ? `Issued — verification ID ${data.verificationId}` : "Already had a certificate for this track.",
+        ok: true,
+      });
+      setEmail("");
+      router.refresh();
+    } catch (err) {
+      setMessage({ text: err instanceof Error ? err.message : "Failed", ok: false });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggleRevoke(id: string, revoked: boolean) {
+    await fetch(`/api/admin/learn/certificate/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ revoked }),
+    });
+    router.refresh();
+  }
+
+  return (
+    <section className="rounded-xl border border-[var(--border)] bg-white p-5">
+      <h2 className="text-sm font-bold text-[var(--ink)]">Certificates</h2>
+      <p className="mt-1 text-xs text-[var(--ink3)]">
+        Certificates normally issue automatically once all four gates are met. Use this only for
+        support cases — a data issue that blocked automatic issuance, or correcting a mistake.
+      </p>
+
+      {/* Manual issue */}
+      <div className="mt-4 flex flex-wrap items-end gap-3 rounded-lg bg-[var(--s2)] p-4">
+        <div>
+          <label className="block text-xs font-semibold text-[var(--ink)]">Student email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="learner@example.com"
+            className="mt-1 w-56 rounded-lg border border-[var(--border)] px-3 py-2 text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-[var(--ink)]">Track</label>
+          <select
+            value={trackSlug}
+            onChange={(e) => setTrackSlug(e.target.value)}
+            className="mt-1 rounded-lg border border-[var(--border)] px-3 py-2 text-sm"
+          >
+            {tracks.map((t) => (
+              <option key={t.slug} value={t.slug}>{t.title}</option>
+            ))}
+          </select>
+        </div>
+        <label className="flex items-center gap-2 pb-2 text-xs text-[var(--ink2)]">
+          <input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} />
+          Force (bypass the four gates — use with care)
+        </label>
+        <button
+          onClick={issue}
+          disabled={busy || !email.trim() || !trackSlug}
+          className="rounded-lg bg-[var(--ink)] px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+        >
+          {busy ? "Issuing…" : "Issue certificate"}
+        </button>
+      </div>
+      {message && (
+        <p className={`mt-2 text-xs ${message.ok ? "text-green-700" : "text-red-600"}`}>{message.text}</p>
+      )}
+
+      {/* Recent certificates */}
+      {recentCertificates.length > 0 && (
+        <div className="mt-5 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[var(--border)] text-left text-xs uppercase tracking-wide text-[var(--ink3)]">
+                <th className="pb-2">Recipient</th>
+                <th className="pb-2">Track</th>
+                <th className="pb-2">Issued</th>
+                <th className="pb-2">Status</th>
+                <th className="pb-2" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--border)]">
+              {recentCertificates.map((c) => (
+                <tr key={c.id}>
+                  <td className="py-2 pr-4">
+                    <span className="font-medium text-[var(--ink)]">{c.recipientName}</span>
+                    <span className="block text-xs text-[var(--ink3)]">{c.studentEmail}</span>
+                  </td>
+                  <td className="py-2 pr-4 text-[var(--ink2)]">{c.trackTitle}</td>
+                  <td className="py-2 pr-4 text-[var(--ink2)]">
+                    {new Date(c.issuedAt).toLocaleDateString()}
+                  </td>
+                  <td className="py-2 pr-4">
+                    {c.revoked ? (
+                      <span className="rounded bg-red-50 px-2 py-0.5 text-xs font-bold text-red-700">Revoked</span>
+                    ) : c.distinction ? (
+                      <span className="rounded bg-[var(--orange-light)] px-2 py-0.5 text-xs font-bold text-[var(--orange2)]">
+                        Distinction
+                      </span>
+                    ) : (
+                      <span className="rounded bg-green-50 px-2 py-0.5 text-xs font-bold text-green-700">Active</span>
+                    )}
+                  </td>
+                  <td className="py-2 text-right">
+                    <div className="flex justify-end gap-2">
+                      <Link
+                        href={`/certificates/${c.verificationId}`}
+                        target="_blank"
+                        className="text-xs font-semibold text-[var(--blue2)] underline"
+                      >
+                        View
+                      </Link>
+                      <button
+                        onClick={() => toggleRevoke(c.id, !c.revoked)}
+                        className="text-xs font-semibold text-red-600 underline"
+                      >
+                        {c.revoked ? "Restore" : "Revoke"}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }

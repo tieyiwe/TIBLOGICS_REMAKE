@@ -39,15 +39,19 @@ function renderInline(text: string, keyPrefix: string): Inline[] {
       const link = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(token);
       if (link) {
         const [, label, href] = link;
-        // Only http(s), mailto and same-site paths — blocks javascript: URLs
-        const safe = /^(https?:\/\/|mailto:|\/)/i.test(href.trim());
+        // Only http(s), mailto and same-site paths — blocks javascript: and
+        // data: URLs. Protocol-relative "//evil.com" is rejected too: it
+        // starts with "/" but navigates off-site.
+        const h = href.trim();
+        const safe =
+          /^(https?:\/\/|mailto:)/i.test(h) || (h.startsWith("/") && !h.startsWith("//"));
         nodes.push(
           safe ? (
             <a
               key={key}
-              href={href.trim()}
-              target={href.startsWith("/") ? undefined : "_blank"}
-              rel={href.startsWith("/") ? undefined : "noopener noreferrer"}
+              href={h}
+              target={h.startsWith("/") ? undefined : "_blank"}
+              rel={h.startsWith("/") ? undefined : "noopener noreferrer"}
               className="font-medium text-[var(--blue2)] underline underline-offset-2"
             >
               {label}

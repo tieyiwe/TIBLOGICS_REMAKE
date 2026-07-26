@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export default async function LearnAdminPage() {
   // Every query is guarded — before Sync Database runs, none of these tables
   // exist and the page must still render with its setup instructions.
-  const [tracks, students, subs, submissions, certificates, waitlist] = await Promise.all([
+  const [tracks, students, subs, submissions, certificates, waitlist, recentCerts] = await Promise.all([
     prisma.learnTrack
       .findMany({
         orderBy: { sortOrder: "asc" },
@@ -38,6 +38,18 @@ export default async function LearnAdminPage() {
     prisma.learnWaitlist
       .groupBy({ by: ["trackSlug"], _count: { _all: true } })
       .catch(() => null),
+    prisma.learnCertificate
+      .findMany({
+        orderBy: { issuedAt: "desc" },
+        take: 25,
+        select: {
+          id: true, verificationId: true, recipientName: true, certificateName: true,
+          distinction: true, revoked: true, issuedAt: true,
+          student: { select: { email: true } },
+          track: { select: { title: true } },
+        },
+      })
+      .catch(() => []),
   ]);
 
   const tablesReady = tracks !== null;
@@ -75,6 +87,17 @@ export default async function LearnAdminPage() {
         studentEmail: s.student.email,
         trackTitle: s.capstone.track.title,
         passThreshold: s.capstone.passThreshold,
+      }))}
+      recentCertificates={(recentCerts ?? []).map((c) => ({
+        id: c.id,
+        verificationId: c.verificationId,
+        recipientName: c.recipientName,
+        certificateName: c.certificateName,
+        studentEmail: c.student.email,
+        trackTitle: c.track.title,
+        distinction: c.distinction,
+        revoked: c.revoked,
+        issuedAt: c.issuedAt.toISOString(),
       }))}
     />
   );

@@ -2,7 +2,13 @@
 // (education-branded) mailer so they match the training emails.
 import { arfaMailer } from "@/lib/resend";
 
-const SITE = (process.env.NEXT_PUBLIC_APP_URL ?? "https://tiblogics.com").replace(/\/$/, "");
+// Mirrors the fallback chain used by checkout/billing-portal. Without the
+// NEXTAUTH_URL step, a deployment that sets only NEXTAUTH_URL sends links to
+// the hardcoded production domain — which 404s if that domain is running an
+// older build than the one that sent the email.
+const SITE = (
+  process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
+).replace(/\/$/, "");
 
 function shell(title: string, bodyHtml: string, cta?: { href: string; label: string }) {
   return `

@@ -5,10 +5,22 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+/**
+ * Only same-site paths are allowed as a post-login destination. A bare
+ * "/foo" is fine; "//evil.com" (protocol-relative) and "https://evil.com"
+ * are not — without this check, ?next= is an open-redirect phishing vector.
+ */
+function safeNext(raw: string | null): string {
+  if (!raw) return "/learn";
+  if (!raw.startsWith("/")) return "/learn";
+  if (raw.startsWith("//") || raw.startsWith("/\\")) return "/learn";
+  return raw;
+}
+
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") || "/learn";
+  const next = safeNext(params.get("next"));
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

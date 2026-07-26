@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { formatPlanPrice, FOUNDING_PRICING, type PlanDefinition } from "@/lib/payments/provider";
 
-export default function PlanPicker({ plans }: { plans: PlanDefinition[] }) {
+export default function PlanPicker({
+  plans,
+  track,
+}: {
+  plans: PlanDefinition[];
+  track?: string;
+}) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
 
@@ -14,7 +20,7 @@ export default function PlanPicker({ plans }: { plans: PlanDefinition[] }) {
       const res = await fetch("/api/learn/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, track }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.url) throw new Error(data.error ?? "Could not start checkout");

@@ -8,7 +8,12 @@ export const dynamic = "force-dynamic";
 
 // Sits OUTSIDE the (member) group so a learner without a subscription can
 // reach it — the member layout would bounce them straight back here.
-export default async function SubscribePage() {
+export default async function SubscribePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ track?: string }>;
+}) {
+  const { track } = await searchParams;
   const { student, entitlement } = await getLearnContext();
   if (!student) redirect("/learn/login");
   if (entitlement.entitled) redirect("/learn");
@@ -35,7 +40,7 @@ export default async function SubscribePage() {
         </div>
 
         <div className="mt-10">
-          <PlanPicker plans={[PLANS.monthly, PLANS.annual]} />
+          <PlanPicker plans={[PLANS.monthly, PLANS.annual]} track={track} />
         </div>
 
         <div className="mx-auto mt-10 max-w-lg rounded-2xl border border-[var(--border)] bg-white p-6">

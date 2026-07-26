@@ -1,13 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PLANS, formatPlanPrice, FOUNDING_PRICING } from "@/lib/payments/provider";
 
-export default function StudentSignupPage() {
+function SignupForm() {
   const router = useRouter();
+  const params = useSearchParams();
+  // Carried from the track landing page so the learner lands back on the
+  // track they chose, rather than a generic dashboard.
+  const track = params.get("track");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,7 +38,7 @@ export default function StudentSignupPage() {
         router.push("/learn/login");
         return;
       }
-      router.push("/learn/subscribe");
+      router.push(track ? `/learn/subscribe?track=${encodeURIComponent(track)}` : "/learn/subscribe");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -58,6 +62,14 @@ export default function StudentSignupPage() {
             )}
             {formatPlanPrice(PLANS.monthly)}/month for every track. Cancel anytime.
           </p>
+
+          {track && (
+            <p className="mt-4 rounded-lg bg-[var(--blue-light)] px-3 py-2.5 text-sm text-[var(--blue)]">
+              You're signing up to start{" "}
+              <strong>{track.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</strong>.
+              We'll take you straight there once you're set up.
+            </p>
+          )}
 
           <form onSubmit={submit} className="mt-6 space-y-4">
             <div>
@@ -129,5 +141,20 @@ export default function StudentSignupPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function StudentSignupPage() {
+  // useSearchParams needs a Suspense boundary in the app router
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[var(--s2)]">
+          <p className="text-sm text-[var(--ink3)]">Loading…</p>
+        </div>
+      }
+    >
+      <SignupForm />
+    </Suspense>
   );
 }

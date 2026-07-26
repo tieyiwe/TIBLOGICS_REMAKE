@@ -4,7 +4,17 @@ import payments from "@/lib/payments";
 import { requireStudent } from "@/lib/learn/session";
 import { rateLimit } from "@/lib/require-admin";
 
-const Body = z.object({ plan: z.enum(["monthly", "annual"]) });
+const Body = z.object({
+  plan: z.enum(["monthly", "annual"]),
+  // Slug of the track the learner picked, so checkout returns them to it.
+  // Constrained to a slug shape — it becomes part of a redirect URL, and an
+  // unvalidated value here would be an open-redirect vector.
+  track: z
+    .string()
+    .trim()
+    .regex(/^[a-z0-9-]{1,64}$/, "Invalid track")
+    .optional(),
+});
 
 const SITE = (
   process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
@@ -31,7 +41,9 @@ export async function POST(req: NextRequest) {
       plan: parsed.data.plan,
       studentId: student.id,
       email: student.email,
-      successUrl: `${SITE}/learn?welcome=1`,
+      successUrl: parsed.data.track
+        ? `${SITE}/learn/track/${parsed.data.track}?welcome=1`
+        : `${SITE}/learn?welcome=1`,
       cancelUrl: `${SITE}/courses?checkout=cancelled`,
     });
     return NextResponse.json({ url });
