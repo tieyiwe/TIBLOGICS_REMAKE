@@ -84,9 +84,18 @@ export default function CatalogBrowser({ tracks }: { tracks: CatalogTrack[] }) {
           No tracks at this level yet — try another filter.
         </p>
       ) : (
-        <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {ordered.map((t) => (
-            <div key={t.id} className={recommended === t.slug ? "ring-2 ring-[var(--orange)] rounded-2xl" : ""}>
+        /* Keyed on the active filter so the entrance stagger replays
+           when the grid contents change. */
+        <div
+          key={active}
+          className="learn-stagger mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          {ordered.map((t, i) => (
+            <div
+              key={t.id}
+              style={{ "--stagger-index": i } as React.CSSProperties}
+              className={recommended === t.slug ? "rounded-2xl ring-2 ring-[var(--orange)]" : ""}
+            >
               {recommended === t.slug && (
                 <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[var(--orange2)]">
                   ★ Recommended for you

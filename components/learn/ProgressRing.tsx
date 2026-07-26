@@ -39,6 +39,8 @@ export default function ProgressRing({
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
+          className="learn-ring-progress"
+          style={{ "--ring-circumference": circumference } as React.CSSProperties}
         />
       </svg>
       <span

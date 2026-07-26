@@ -9,7 +9,7 @@ export default function TrackCard({ track }: { track: CatalogTrack }) {
 
   return (
     <article
-      className="group relative flex flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-white transition-shadow hover:shadow-lg"
+      className="learn-lift group relative flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-white"
       style={{ borderTopWidth: 4, borderTopColor: track.accentColor }}
     >
       <div className="flex flex-1 flex-col p-6">
@@ -65,7 +65,7 @@ export default function TrackCard({ track }: { track: CatalogTrack }) {
               style={{ color: track.accentColor }}
             >
               View track
-              <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5">
+              <span aria-hidden="true" className="learn-rotate group-hover:translate-x-1">
                 →
               </span>
             </span>

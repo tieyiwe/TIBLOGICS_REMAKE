@@ -281,7 +281,7 @@ export default function ExamRunner({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <span
               className={`font-mono text-xl font-black tabular-nums ${
-                urgent ? "text-red-600" : "text-[var(--ink)]"
+                urgent ? "learn-urgent text-red-600" : "text-[var(--ink)]"
               }`}
               role="timer"
               aria-live={urgent ? "assertive" : "off"}

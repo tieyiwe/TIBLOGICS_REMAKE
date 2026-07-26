@@ -75,7 +75,7 @@ export default function ModuleAccordion({
                 </span>
                 <span
                   aria-hidden="true"
-                  className={`shrink-0 text-lg text-[var(--ink3)] transition-transform ${isOpen ? "rotate-45" : ""}`}
+                  className={`learn-rotate shrink-0 text-lg text-[var(--ink3)] ${isOpen ? "rotate-45" : ""}`}
                 >
                   +
                 </span>
@@ -83,7 +83,7 @@ export default function ModuleAccordion({
             </h3>
 
             {isOpen && (
-              <div id={`mod-${m.id}`} className="px-5 pb-5 pl-[4.5rem]">
+              <div id={`mod-${m.id}`} className="learn-accordion-panel px-5 pb-5 pl-[4.5rem]">
                 {m.summary && (
                   <p className="mb-4 text-sm leading-relaxed text-[var(--ink2)]">{m.summary}</p>
                 )}

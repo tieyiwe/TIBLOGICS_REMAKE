@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import LevelBadge from "@/components/learn/LevelBadge";
+import Reveal from "@/components/learn/Reveal";
 import ModuleAccordion from "@/components/learn/ModuleAccordion";
 import StickyEnrollBar from "@/components/learn/StickyEnrollBar";
 import { getTrackBySlug } from "@/lib/learn/catalog";
@@ -76,7 +77,7 @@ export default async function TrackLandingPage({
         className="px-4 py-14 text-white sm:py-20"
         style={{ background: `linear-gradient(135deg, var(--ink) 0%, ${track.accentColor}22 100%), var(--ink)` }}
       >
-        <div className="mx-auto max-w-5xl">
+        <div className="learn-hero mx-auto max-w-5xl">
           <Link href="/courses" className="text-sm text-white/50 hover:text-white/80">
             ← All tracks
           </Link>
@@ -119,7 +120,7 @@ export default async function TrackLandingPage({
       <div className="mx-auto max-w-5xl px-4">
         {/* Outcomes */}
         {outcomes.length > 0 && (
-          <section className="-mt-8 rounded-2xl border border-[var(--border)] bg-white p-7 shadow-sm">
+          <Reveal as="section" className="-mt-8 rounded-2xl border border-[var(--border)] bg-white p-7 shadow-sm">
             <h2 className="text-xl font-bold text-[var(--ink)]">What you'll be able to do</h2>
             <ul className="mt-5 grid gap-3 sm:grid-cols-2">
               {outcomes.map((o) => (
@@ -131,12 +132,12 @@ export default async function TrackLandingPage({
                 </li>
               ))}
             </ul>
-          </section>
+          </Reveal>
         )}
 
         {/* Description */}
         {track.description && (
-          <section className="mt-8 rounded-2xl border border-[var(--border)] bg-white p-7">
+          <Reveal as="section" className="mt-8 rounded-2xl border border-[var(--border)] bg-white p-7">
             <h2 className="text-xl font-bold text-[var(--ink)]">About this track</h2>
             <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-[var(--ink2)]">
               {track.description}
@@ -147,11 +148,11 @@ export default async function TrackLandingPage({
                 {track.audience}
               </p>
             )}
-          </section>
+          </Reveal>
         )}
 
         {/* Curriculum */}
-        <section className="mt-8">
+        <Reveal as="section" className="mt-8">
           <h2 className="text-xl font-bold text-[var(--ink)]">Curriculum</h2>
           <p className="mt-1 text-sm text-[var(--ink3)]">
             {track.modules.length} modules · {lessonCount} lessons ·{" "}
@@ -177,10 +178,10 @@ export default async function TrackLandingPage({
               accentColor={track.accentColor}
             />
           </div>
-        </section>
+        </Reveal>
 
         {/* How you're assessed */}
-        <section className="mt-8 rounded-2xl border border-[var(--border)] bg-white p-7">
+        <Reveal as="section" className="mt-8 rounded-2xl border border-[var(--border)] bg-white p-7">
           <h2 className="text-xl font-bold text-[var(--ink)]">How you're assessed</h2>
           <p className="mt-2 text-sm text-[var(--ink2)]">
             Four gates stand between you and the certificate. All four must be cleared.
@@ -226,17 +227,17 @@ export default async function TrackLandingPage({
               </li>
             ))}
           </ol>
-        </section>
+        </Reveal>
 
         {/* FAQ */}
-        <section className="mt-8 rounded-2xl border border-[var(--border)] bg-white p-7">
+        <Reveal as="section" className="mt-8 rounded-2xl border border-[var(--border)] bg-white p-7">
           <h2 className="text-xl font-bold text-[var(--ink)]">Questions</h2>
           <div className="mt-5 divide-y divide-[var(--border)]">
             {faqs.map((f) => (
               <details key={f.q} className="group py-4">
                 <summary className="flex cursor-pointer items-center justify-between gap-4 text-sm font-semibold text-[var(--ink)] marker:content-['']">
                   {f.q}
-                  <span aria-hidden="true" className="shrink-0 text-[var(--ink3)] transition-transform group-open:rotate-45">
+                  <span aria-hidden="true" className="learn-rotate shrink-0 text-[var(--ink3)] group-open:rotate-45">
                     +
                   </span>
                 </summary>
@@ -244,7 +245,7 @@ export default async function TrackLandingPage({
               </details>
             ))}
           </div>
-        </section>
+        </Reveal>
       </div>
 
       <StickyEnrollBar

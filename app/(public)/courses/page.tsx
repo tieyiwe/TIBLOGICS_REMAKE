@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import CatalogBrowser from "@/components/learn/CatalogBrowser";
+import Reveal from "@/components/learn/Reveal";
 import { getCatalog } from "@/lib/learn/catalog";
 import { PLANS, formatPlanPrice, FOUNDING_PRICING } from "@/lib/payments/provider";
 
@@ -20,19 +21,31 @@ export default async function CoursesPage() {
     <div className="bg-[var(--s2)]">
       {/* Hero */}
       <section className="bg-[var(--ink)] px-4 py-16 text-white sm:py-20">
-        <div className="mx-auto max-w-6xl">
-          <p className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--orange)]">
+        <div className="learn-hero mx-auto max-w-6xl">
+          <p
+            className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--orange)]"
+            style={{ "--stagger-index": 0 } as React.CSSProperties}
+          >
             TIBLOGICS Learn
           </p>
-          <h1 className="mt-3 max-w-3xl text-3xl font-black leading-tight sm:text-5xl">
+          <h1
+            className="mt-3 max-w-3xl text-3xl font-black leading-tight sm:text-5xl"
+            style={{ "--stagger-index": 1 } as React.CSSProperties}
+          >
             Learn AI properly — and prove it.
           </h1>
-          <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg">
+          <p
+            className="mt-5 max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg"
+            style={{ "--stagger-index": 2 } as React.CSSProperties}
+          >
             Every track ends in a certificate you can actually defend: a quick check after each
             lesson, a quiz per module, a timed final exam, and a capstone project reviewed by a
             human being. No participation trophies.
           </p>
-          <div className="mt-8 flex flex-wrap items-center gap-4">
+          <div
+            className="mt-8 flex flex-wrap items-center gap-4"
+            style={{ "--stagger-index": 3 } as React.CSSProperties}
+          >
             <Link
               href="/learn/signup"
               className="rounded-full bg-gradient-to-r from-[var(--orange)] to-[#F9A738] px-7 py-3.5 text-sm font-bold text-[var(--ink)] transition-opacity hover:opacity-90"
@@ -96,12 +109,14 @@ export default async function CoursesPage() {
                 t: "Reviewed capstone",
                 d: "A practical project scored against a published rubric by a human reviewer. This is what makes the certificate mean something.",
               },
-            ].map((x) => (
-              <div key={x.n} className="rounded-2xl border border-[var(--border)] p-6">
-                <span className="text-xs font-black text-[var(--orange)]">{x.n}</span>
-                <h3 className="mt-2 text-base font-bold text-[var(--ink)]">{x.t}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-[var(--ink2)]">{x.d}</p>
-              </div>
+            ].map((x, i) => (
+              <Reveal key={x.n} delay={i * 80}>
+                <div className="learn-lift h-full rounded-2xl border border-[var(--border)] p-6">
+                  <span className="text-xs font-black text-[var(--orange)]">{x.n}</span>
+                  <h3 className="mt-2 text-base font-bold text-[var(--ink)]">{x.t}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[var(--ink2)]">{x.d}</p>
+                </div>
+              </Reveal>
             ))}
           </div>
         </div>
