@@ -4,7 +4,8 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { requireEntitledStudent } from "@/lib/learn/session";
 import { scoreAnswers } from "@/lib/learn/assessments";
-import { awardPoints } from "@/lib/learn/points";
+import { awardPoints, getTotalPoints } from "@/lib/learn/points";
+import { checkLevelUp, notifyMilestone } from "@/lib/learn/milestones";
 
 // Scores micro-checks (mode: "micro") and module quizzes (mode: "quiz").
 // Correct answers are read here and NOWHERE else — the client never receives
@@ -97,10 +98,23 @@ export async function POST(req: NextRequest) {
     // Only the FIRST pass awards points. Perfect first attempt → +75 instead of +50.
     let pointsAwarded = 0;
     if (passed && !alreadyPassed) {
+      const totalBefore = await getTotalPoints(student.id);
       const perfectFirstTry = score === 100 && priorAttempts === 0;
       pointsAwarded = perfectFirstTry
         ? await awardPoints(student.id, "quiz_perfect", id)
         : await awardPoints(student.id, "quiz_pass", id);
+
+      // First pass on this module is a genuine milestone worth an email
+      const mod = await prisma.quiz
+        .findUnique({ where: { id }, select: { module: { select: { trackId: true } } } })
+        .catch(() => null);
+      notifyMilestone({
+        studentId: student.id,
+        kind: "module_quiz_passed",
+        trackId: mod?.module.trackId,
+        points: pointsAwarded,
+      });
+      checkLevelUp(student.id, totalBefore, totalBefore + pointsAwarded);
     }
 
     return NextResponse.json({ score, passed, passScore: quiz.passScore, graded, pointsAwarded });

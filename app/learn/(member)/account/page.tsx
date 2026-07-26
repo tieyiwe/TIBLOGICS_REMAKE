@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { getLearnContext } from "@/lib/learn/session";
 import AccountSettings from "@/components/learn/AccountSettings";
 import BillingPortalButton from "@/components/learn/BillingPortalButton";
+import { localeCoverage } from "@/lib/learn/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export default async function AccountPage() {
   const profile = await prisma.student
     .findUnique({
       where: { id: student.id },
-      select: { accessibilityMode: true, leaderboardOptIn: true, createdAt: true },
+      select: { accessibilityMode: true, leaderboardOptIn: true, locale: true, createdAt: true },
     })
     .catch(() => null);
 
@@ -50,6 +51,8 @@ export default async function AccountPage() {
       <AccountSettings
         accessibilityMode={profile?.accessibilityMode ?? false}
         leaderboardOptIn={profile?.leaderboardOptIn ?? false}
+        locale={profile?.locale ?? "en"}
+        frCoverage={localeCoverage("fr").percent}
       />
 
       <section className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6">

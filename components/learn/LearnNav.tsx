@@ -5,25 +5,30 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useState } from "react";
 import { POINTS_PER_LEVEL } from "@/lib/learn/points";
+import { translator } from "@/lib/learn/i18n";
 
-const LINKS = [
-  { href: "/learn", label: "Dashboard" },
-  { href: "/learn/tracks", label: "My tracks" },
-  { href: "/learn/certificates", label: "Certificates" },
-  { href: "/learn/account", label: "Account" },
+const LINK_KEYS = [
+  { href: "/learn", key: "nav.dashboard" },
+  { href: "/learn/tracks", key: "nav.myTracks" },
+  { href: "/learn/certificates", key: "nav.certificates" },
+  { href: "/learn/account", key: "nav.account" },
 ];
 
 export default function LearnNav({
   studentName,
   points,
   level,
+  locale,
 }: {
   studentName: string;
   points: number;
   level: { name: string; progress: number; pointsToNext: number; next: number | null };
+  locale?: string;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const t = translator(locale);
+  const LINKS = LINK_KEYS.map((l) => ({ href: l.href, label: t(l.key) }));
 
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-white/95 backdrop-blur">
@@ -103,7 +108,7 @@ export default function LearnNav({
       {open && (
         <div className="absolute right-4 top-full mt-1 hidden w-52 rounded-xl border border-[var(--border)] bg-white p-2 shadow-lg sm:block">
           <p className="px-3 py-2 text-xs text-[var(--ink3)]">
-            Signed in as
+            {t("nav.signedInAs")}
             <br />
             <strong className="text-[var(--ink)]">{studentName}</strong>
           </p>
@@ -116,7 +121,7 @@ export default function LearnNav({
             onClick={() => signOut({ callbackUrl: "/" })}
             className="mt-1 w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-50"
           >
-            Sign out
+            {t("nav.signOut")}
           </button>
         </div>
       )}

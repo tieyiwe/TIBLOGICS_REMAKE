@@ -10,6 +10,7 @@ export interface StudentSession {
   email: string;
   name: string;
   accessibilityMode: boolean;
+  locale: string;
 }
 
 /** The signed-in student, or null. Admins are NOT students. */
@@ -21,7 +22,7 @@ export async function getStudent(): Promise<StudentSession | null> {
   const student = await prisma.student
     .findUnique({
       where: { id: studentId },
-      select: { id: true, email: true, name: true, accessibilityMode: true },
+      select: { id: true, email: true, name: true, accessibilityMode: true, locale: true },
     })
     .catch(() => null);
   return student;

@@ -217,3 +217,80 @@ html {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TIBLOGICS Learn — accessibility mode
+   Opt-in per student (Account → Preferences). The server stores the
+   preference; the member layout stamps data-a11y="true" on its wrapper.
+   Scoped to that wrapper so it never affects the marketing site or admin.
+   The matching +50% exam time is applied server-side at session creation.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+[data-a11y="true"] {
+  /* ~25% larger text throughout, via a root-scoped scale */
+  font-size: 1.25em;
+  line-height: 1.75;
+}
+
+/* Higher contrast: darken body text and borders against white surfaces */
+[data-a11y="true"] {
+  --ink2: #1F2D3D;
+  --ink3: #43566B;
+  --border: #9AAABC;
+}
+
+/* Minimum 48px touch targets on anything interactive */
+[data-a11y="true"] button,
+[data-a11y="true"] a[role="button"],
+[data-a11y="true"] select,
+[data-a11y="true"] summary,
+[data-a11y="true"] input[type="radio"],
+[data-a11y="true"] input[type="checkbox"] {
+  min-height: 48px;
+}
+
+[data-a11y="true"] button,
+[data-a11y="true"] a[role="button"],
+[data-a11y="true"] select {
+  min-width: 48px;
+}
+
+/* Radio and checkbox controls themselves, not just their rows */
+[data-a11y="true"] input[type="radio"],
+[data-a11y="true"] input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+}
+
+/* Answer options are the most-clicked targets in the product */
+[data-a11y="true"] label:has(input[type="radio"]),
+[data-a11y="true"] label:has(input[type="checkbox"]) {
+  min-height: 48px;
+  align-items: center;
+}
+
+/* Visible focus ring — never rely on colour alone */
+[data-a11y="true"] :focus-visible {
+  outline: 3px solid #1B3A6B;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Underline links in body copy so they are not distinguished by colour only */
+[data-a11y="true"] p a,
+[data-a11y="true"] li a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Reduced motion, unconditionally — this is a stated promise of the mode,
+   not a request the OS setting should have to make on the learner's behalf */
+[data-a11y="true"] *,
+[data-a11y="true"] *::before,
+[data-a11y="true"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}

@@ -3,7 +3,8 @@
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { perModuleBreakdown, scoreAnswers } from "./assessments";
-import { awardPoints } from "./points";
+import { awardPoints, getTotalPoints } from "./points";
+import { checkLevelUp, notifyMilestone } from "./milestones";
 
 export async function finaliseExamSession(sessionId: string, lateSubmission = false) {
   const session = await prisma.finalExamSession.findUnique({
@@ -41,9 +42,22 @@ export async function finaliseExamSession(sessionId: string, lateSubmission = fa
   // Points on first pass only (ledger keeps this idempotent)
   let pointsAwarded = 0;
   if (passed) {
+    const totalBefore = await getTotalPoints(session.studentId);
     pointsAwarded = distinction
       ? await awardPoints(session.studentId, "final_exam_distinction", exam.id)
       : await awardPoints(session.studentId, "final_exam_pass", exam.id);
+
+    // awardPoints returns 0 when already granted, so a non-zero award is
+    // exactly the first pass — the right moment to notify.
+    if (pointsAwarded > 0) {
+      notifyMilestone({
+        studentId: session.studentId,
+        kind: "exam_passed",
+        trackId: exam.trackId,
+        points: pointsAwarded,
+      });
+      checkLevelUp(session.studentId, totalBefore, totalBefore + pointsAwarded);
+    }
   }
 
   return Object.assign(updated, {
