@@ -1539,6 +1539,13 @@ async function patchTieyiweCover() {
 // Enforce correct covers for specific AI-generated articles where auto-pick produced a bad image
 const ARTICLE_COVER_OVERRIDES: Array<{ titleFragment: string; coverImage: string }> = [
   {
+    // Was shipping with a generic "breaking news" stock photo. Use a real
+    // photo of Musk instead — NASA/Bill Ingalls, public domain, Musk
+    // gesturing/pointing while explaining SpaceX hardware to Obama in 2010.
+    titleFragment: "Elon Musk vs. OpenAI",
+    coverImage: "https://commons.wikimedia.org/wiki/Special:FilePath/Elon%20Musk%20gives%20tour%20for%20President%20Barack%20Obama.jpg?width=1200",
+  },
+  {
     titleFragment: "Codex",
     coverImage: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=800&q=80",
   },
@@ -2615,6 +2622,34 @@ const EDITORIAL_SPOTLIGHTS = [
 <h2>How to Start</h2>
 <p>Pick one of the five. The meeting notes automation has the fastest time-to-value and lowest setup complexity — start there if you're uncertain. Set aside a half day this week. Use n8n (self-hosted or cloud) or Make.com as your automation platform. Budget $50–$100/month in API costs. The time recaptured in the first month will exceed that cost by a factor of 10 or more for most businesses.</p>
 <p><strong>Practical takeaway:</strong> Open Make.com or n8n right now. Identify the workflow from this list that solves your most painful time sink. You have everything you need to deploy it this week.</p>`,
+  },
+  {
+    title: "Elon Musk's Neuralink Wants to Merge Humans With AI — What Brain-Computer Interfaces Actually Mean for Business",
+    excerpt: "Neuralink has moved from pitch deck to implanted reality in a growing number of patients. Here's what the technology actually does today, what's still just a research bet, and why the underlying signal-processing techniques matter well beyond neuroscience.",
+    category: "industry",
+    tags: ["elon musk", "neuralink", "brain-computer interface", "ai", "biotech", "future of work"],
+    coverEmoji: "🧠",
+    coverGradient: "from-slate-600 to-gray-500",
+    coverImage: "https://commons.wikimedia.org/wiki/Special:FilePath/Elon%20Musk%20gives%20tour%20for%20President%20Barack%20Obama.jpg?width=1200",
+    author: "TIBLOGICS Editorial",
+    featured: false,
+    content: `<p>Elon Musk's Neuralink has spent the past two years moving from speculative pitch deck to implanted reality. The company has now placed its brain-computer interface (BCI) in a growing number of human patients, and the pace of that rollout — alongside Musk's own framing of Neuralink as an eventual "AI merge" for humanity — has pushed a once-fringe idea into mainstream business and policy conversations. Whatever you think of the long-term vision, the underlying technology is advancing fast enough that it's worth understanding on its own terms.</p>
+
+<h2>What Neuralink Actually Does Today</h2>
+<p>Neuralink's implant, called the N1, is a coin-sized device surgically placed in the skull with hair-thin electrode threads reading electrical activity directly from the brain's motor cortex. A surgical robot performs the implantation, avoiding blood vessels with a precision no human surgeon can match. The first human recipients — patients with severe paralysis from spinal cord injury or ALS — have used the implant to control a computer cursor, play games, and browse the web using thought alone, translating neural signals into digital commands in real time.</p>
+<p>That's the near-term, medically grounded use case: restoring digital access and communication to people who have lost the physical ability to type, click, or speak. It's genuinely significant assistive technology, and it's the part of Neuralink's roadmap furthest along and easiest to evaluate on results rather than promises.</p>
+
+<h2>The Bigger, Riskier Pitch: Merging With AI</h2>
+<p>Musk has repeatedly framed Neuralink's longer horizon differently: not just restoring lost function, but giving healthy humans a direct high-bandwidth interface to AI systems, positioned as a hedge against a future where AI vastly outpaces unaugmented human cognition. That's a much bigger claim than "cursor control for paralysis patients," and it sits far outside what any BCI has demonstrated. It requires solving problems — electrode longevity over decades, safely scaling channel count, and genuinely two-way (not just read-only) neural communication — that remain unsolved research problems, not engineering backlog.</p>
+<p>This is the gap worth watching closely: Neuralink's demonstrated capability is real and medically valuable; its "merge with AI" narrative is a research bet, not a shipping product. Treat the two claims separately when evaluating news coverage.</p>
+
+<h2>Why This Matters Beyond Neuroscience</h2>
+<p>Neuralink's progress is accelerating investment and attention across the wider brain-computer interface field — competitors like Synchron and Precision Neuroscience are pursuing less-invasive approaches with their own human trial data. Regulators (the FDA granted Neuralink "breakthrough device" designation) are actively building a framework for a device category that barely existed a decade ago. And the underlying signal-processing techniques — decoding intent from noisy neural data in real time — draw directly on the same machine learning advances powering today's AI boom.</p>
+
+<h2>What This Means for Small Businesses</h2>
+<p>Direct commercial applications of implanted BCIs are years away for anyone outside medical device and health-tech niches. But the adjacent trend is already commercially relevant: the same real-time signal-decoding and edge-AI techniques Neuralink relies on are showing up in less invasive forms — wearable EEG devices, attention and fatigue monitoring, and assistive tech for accessibility. Businesses in health tech, insurance, workplace safety, and assistive/accessibility software should treat neural-interface research as an early signal for where sensor-plus-AI products are headed, the same way early cloud APIs signaled where SaaS was headed a decade before it was obvious.</p>
+
+<p><strong>Practical takeaway:</strong> If your business touches health tech, accessibility, or wearable hardware, add "brain-computer interface" and "neural signal processing" to your competitive-landscape watchlist now — not because you need a BCI product, but because the AI techniques being proven there (real-time intent decoding from noisy biological signals) tend to migrate into adjacent, more accessible product categories within a few years.</p>`,
   },
 ];
 

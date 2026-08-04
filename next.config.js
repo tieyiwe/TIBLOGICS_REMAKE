@@ -33,6 +33,9 @@ const nextConfig = {
       { protocol: "https", hostname: "source.unsplash.com" },
       { protocol: "https", hostname: "fonts.gstatic.com" },
       { protocol: "https", hostname: "image.thum.io" },
+      { protocol: "https", hostname: "commons.wikimedia.org" },
+      { protocol: "https", hostname: "upload.wikimedia.org" },
+      { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
     ],
   },
   experimental: {
