@@ -2,6 +2,7 @@ export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
+import { resolveCoverImage } from "@/lib/blog-images";
 
 const CATEGORY_MAP: Record<string, { emoji: string; gradient: string }> = {
   "breaking":    { emoji: "⚡", gradient: "from-red-600 to-orange-500" },
@@ -85,23 +86,16 @@ category must be one of: breaking, ai-business, tips, tools, case-studies, indus
 
     const meta = CATEGORY_MAP[generated.category] ?? CATEGORY_MAP["industry"];
 
-    // Fetch a stable cover image URL via Unsplash source (follows redirect → final images.unsplash.com URL)
-    let coverImage: string | null = null;
-    const query = encodeURIComponent(generated.imageQuery ?? `${generated.category} technology business`);
-    try {
-      const imgRes = await fetch(`https://source.unsplash.com/1200x630/?${query}`, {
-        redirect: "follow",
-        signal: AbortSignal.timeout(5000),
-      });
-      if (imgRes.ok && imgRes.url.includes("unsplash.com/photo")) {
-        coverImage = imgRes.url.split("?")[0] + "?w=1200&q=80&fit=crop&crop=center";
-      }
-    } catch { /* fall back to gradient */ }
-
-    // Final fallback: picsum with slug as seed (consistent, beautiful, no API key needed)
-    if (!coverImage) {
-      coverImage = null; // let gradient show — picsum images aren't always appropriate for business content
-    }
+    // Real, topic-relevant cover image — a specific entity photo when the
+    // title names one (e.g. "Elon Musk", "Neuralink", "OpenAI"), otherwise a
+    // category-relevant stock photo. Never null: source.unsplash.com (the
+    // previous approach) was shut down years ago and always failed, which is
+    // why generated posts were shipping with no cover/preview image at all.
+    const coverImage = resolveCoverImage(
+      title,
+      generated.category,
+      Array.isArray(generated.tags) ? generated.tags : []
+    );
 
     const baseSlug = title
       .toLowerCase()

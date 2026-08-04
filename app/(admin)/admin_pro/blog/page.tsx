@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   RefreshCw, Plus, Trash2, Eye, EyeOff, Star, Loader2,
-  Zap, Bot, BarChart2, FileText, ImageIcon,
+  Zap, Bot, BarChart2, FileText, ImageIcon, Upload, X, ExternalLink,
 } from "lucide-react";
 
 interface Post {
@@ -149,19 +149,49 @@ export default function BlogAdminPage() {
     setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, featured: true } : p)));
   }
 
-  async function updateCoverImage(id: string, currentCover: string | null) {
-    const isBroken = !currentCover || currentCover.startsWith("/");
-    const msg = isBroken
-      ? "Enter a new cover image URL (Unsplash recommended):\n⚠️ Current cover is a local file that won't load in production."
-      : "Enter a new cover image URL:";
-    const newUrl = window.prompt(msg, currentCover ?? "");
-    if (!newUrl || newUrl === currentCover) return;
+  const [coverModalPost, setCoverModalPost] = useState<Post | null>(null);
+  const [coverUrlInput, setCoverUrlInput] = useState("");
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [coverError, setCoverError] = useState<string | null>(null);
+  const coverFileInputRef = useRef<HTMLInputElement>(null);
+
+  function openCoverModal(post: Post) {
+    setCoverModalPost(post);
+    setCoverUrlInput(post.coverImage ?? "");
+    setCoverError(null);
+  }
+
+  async function saveCoverImage(url: string) {
+    if (!coverModalPost || !url.trim()) return;
+    const id = coverModalPost.id;
     await fetch(`/api/blog/posts/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ coverImage: newUrl }),
+      body: JSON.stringify({ coverImage: url.trim() }),
     });
-    setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, coverImage: newUrl } : p)));
+    setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, coverImage: url.trim() } : p)));
+    setCoverModalPost(null);
+  }
+
+  async function uploadCoverFile(file: File) {
+    setCoverUploading(true);
+    setCoverError(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/blog/upload-image", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok) {
+        setCoverError(data.error ?? "Upload failed");
+        return;
+      }
+      setCoverUrlInput(data.url);
+      await saveCoverImage(data.url);
+    } catch {
+      setCoverError("Upload failed — check your connection and try again.");
+    } finally {
+      setCoverUploading(false);
+    }
   }
 
   async function deletePost(id: string) {
@@ -400,7 +430,7 @@ export default function BlogAdminPage() {
                           <Eye size={14} />
                         </Link>
                         <button
-                          onClick={() => updateCoverImage(p.id, p.coverImage)}
+                          onClick={() => openCoverModal(p)}
                           className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
                             !p.coverImage || p.coverImage.startsWith("/")
                               ? "text-red-400 hover:bg-red-50 hover:text-red-600"
@@ -409,7 +439,7 @@ export default function BlogAdminPage() {
                           title={
                             !p.coverImage || p.coverImage.startsWith("/")
                               ? "⚠️ Local cover — won't load in production. Click to fix."
-                              : "Edit cover image URL"
+                              : "Upload or edit cover image"
                           }
                         >
                           <ImageIcon size={14} />
@@ -453,6 +483,94 @@ export default function BlogAdminPage() {
           )}
         </div>
       </div>
+
+      {/* Cover image upload / edit / view modal */}
+      {coverModalPost && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          onClick={() => !coverUploading && setCoverModalPost(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-md p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-syne font-bold text-base text-[#0D1B2A] line-clamp-1">
+                Cover image — {coverModalPost.title}
+              </h3>
+              <button
+                onClick={() => !coverUploading && setCoverModalPost(null)}
+                className="text-[#7A8FA6] hover:text-[#0D1B2A]"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="rounded-xl overflow-hidden bg-[#F4F7FB] h-40 mb-4 flex items-center justify-center">
+              {coverUrlInput ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={coverUrlInput} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-4xl">{coverModalPost.coverEmoji}</span>
+              )}
+            </div>
+
+            {coverError && (
+              <p className="text-xs text-red-600 font-dm mb-3">{coverError}</p>
+            )}
+
+            <input
+              ref={coverFileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) uploadCoverFile(file);
+                e.target.value = "";
+              }}
+            />
+            <button
+              onClick={() => coverFileInputRef.current?.click()}
+              disabled={coverUploading}
+              className="w-full flex items-center justify-center gap-2 bg-[#1B3A6B] hover:bg-[#2251A3] text-white rounded-xl px-4 py-2.5 text-sm font-dm font-semibold transition-colors disabled:opacity-50 mb-3"
+            >
+              {coverUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+              {coverUploading ? "Uploading…" : "Upload a photo from your device"}
+            </button>
+
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-px flex-1 bg-[#E8EFF8]" />
+              <span className="text-xs text-[#7A8FA6] font-dm">or paste a URL</span>
+              <div className="h-px flex-1 bg-[#E8EFF8]" />
+            </div>
+
+            <div className="flex gap-2 mb-4">
+              <input
+                value={coverUrlInput}
+                onChange={(e) => setCoverUrlInput(e.target.value)}
+                placeholder="https://…"
+                className="flex-1 bg-white border border-[#D2DCE8] rounded-xl px-3 py-2 text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3]"
+              />
+              <button
+                onClick={() => saveCoverImage(coverUrlInput)}
+                disabled={coverUploading || !coverUrlInput.trim()}
+                className="bg-white border border-[#D2DCE8] rounded-xl px-4 py-2 text-sm font-dm text-[#0D1B2A] hover:bg-[#F4F7FB] disabled:opacity-50 transition-colors"
+              >
+                Save
+              </button>
+            </div>
+
+            <Link
+              href={`/ai-times/${coverModalPost.slug}`}
+              target="_blank"
+              className="flex items-center justify-center gap-1.5 text-sm font-dm text-[#2251A3] hover:underline"
+            >
+              <ExternalLink size={13} /> View this article in the blog
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
