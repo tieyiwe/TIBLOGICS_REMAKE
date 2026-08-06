@@ -72,9 +72,17 @@ const nextConfig = {
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' https: data: blob:",
               "connect-src 'self' https://api.anthropic.com https://api.resend.com https://api.stripe.com",
-              "frame-src https://js.stripe.com https://hooks.stripe.com",
+              // Lesson videos embed YouTube/Vimeo (see components/learn/LessonVideo.tsx).
+              // Without these the iframes are silently blocked in production.
+              "frame-src https://js.stripe.com https://hooks.stripe.com https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com",
+              // Self-hosted lesson videos served as <video> files
+              "media-src 'self' https: blob:",
               "object-src 'none'",
               "base-uri 'self'",
+              // Defence-in-depth against forms being repointed off-site
+              "form-action 'self'",
+              // Stronger than X-Frame-Options, and honoured by modern browsers
+              "frame-ancestors 'self'",
             ].join("; "),
           },
         ],

@@ -25,6 +25,15 @@ export async function proxy(req: NextRequest) {
       url.searchParams.set("callbackUrl", pathname + search);
       return NextResponse.redirect(url);
     }
+
+    // Students authenticate through the same NextAuth instance as staff, so
+    // "has a token" does not mean "is staff". Without this, a signed-in
+    // learner could open the admin dashboard. Send them to their own area
+    // rather than the admin login, which they could never satisfy anyway.
+    const isStaff = !!(token.isOwner || token.isAdmin || token.collaboratorId);
+    if (token.studentId || !isStaff) {
+      return NextResponse.redirect(new URL("/learn", req.url));
+    }
     return NextResponse.next();
   }
 

@@ -13,10 +13,24 @@ export interface StudentSession {
   locale: string;
 }
 
-/** The signed-in student, or null. Admins are NOT students. */
+/**
+ * The signed-in student, or null. Admins are NOT students.
+ *
+ * getServerSession throws if NEXTAUTH_SECRET is missing or a cookie is
+ * malformed. Unguarded, that surfaced as a 500 on every authenticated API
+ * instead of a 401 — leaking a server error where a clean "not signed in"
+ * belongs. Failing closed (null => unauthenticated) is both correct and safe:
+ * it can only ever deny access, never grant it.
+ */
 export async function getStudent(): Promise<StudentSession | null> {
-  const session = await getServerSession(authOptions);
-  const studentId = session?.user?.studentId;
+  let studentId: string | undefined;
+  try {
+    const session = await getServerSession(authOptions);
+    studentId = session?.user?.studentId;
+  } catch (err) {
+    console.error("[learn/session] session resolution failed", err);
+    return null;
+  }
   if (!studentId) return null;
 
   const student = await prisma.student
