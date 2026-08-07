@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
 import resend from "@/lib/resend";
+import { assignCoverImage } from "@/lib/blog-cover";
 
 const anthropic = new Anthropic();
 
@@ -2790,11 +2791,14 @@ export async function GET(req: NextRequest) {
         if (titleExists(sp.title)) continue;
         const base = sp.title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-").slice(0, 70);
         const slug = freshSlug(base);
+        // Unique cover per article — the SEED_POSTS array reuses several of
+        // the same photo URLs, so assign from the pool instead.
+        const seedCover = await assignCoverImage(slug);
         await prisma.blogPost.create({
           data: {
             slug, title: sp.title, excerpt: sp.excerpt, content: sp.content,
             category: sp.category, tags: sp.tags, coverEmoji: sp.coverEmoji,
-            coverGradient: sp.coverGradient, coverImage: sp.coverImage,
+            coverGradient: sp.coverGradient, coverImage: seedCover.url,
             author: (sp as { author?: string }).author ?? "TIBLOGICS Editorial",
             readingTime: Math.ceil(sp.content.replace(/<[^>]*>/g, "").split(" ").length / 200),
             featured: sp.featured, published: true, aiGenerated: false,
@@ -2834,8 +2838,12 @@ export async function GET(req: NextRequest) {
         const existing = allExisting.find((p) => p.title.toLowerCase().trim().includes(sp.title.toLowerCase().slice(0, 50)));
         if (existing) {
           const needsPatch = !existing.coverImage || existing.coverImage.startsWith("/");
-          if (needsPatch && sp.coverImage && !sp.coverImage.startsWith("/")) {
-            await prisma.blogPost.update({ where: { id: existing.id }, data: { coverImage: sp.coverImage } });
+          if (needsPatch) {
+            // Draw from the shared pool rather than the seed's hardcoded URL —
+            // several seeds reuse the same photo, which is how duplicate covers
+            // spread across the library in the first place.
+            const cover = await assignCoverImage(existing.id, existing.id);
+            await prisma.blogPost.update({ where: { id: existing.id }, data: { coverImage: cover.url } });
           }
           continue;
         }

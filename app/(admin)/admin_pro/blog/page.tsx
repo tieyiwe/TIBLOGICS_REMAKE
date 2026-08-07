@@ -49,6 +49,8 @@ export default function BlogAdminPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [repairing, setRepairing] = useState(false);
+  const [fixingImages, setFixingImages] = useState(false);
+  const [imageResult, setImageResult] = useState<string | null>(null);
   const [repairResult, setRepairResult] = useState<string | null>(null);
   const [featuredError, setFeaturedError] = useState<string | null>(null);
   const [stats, setStats] = useState({ total: 0, published: 0, aiGenerated: 0, totalViews: 0 });
@@ -89,6 +91,29 @@ export default function BlogAdminPage() {
     } catch { /* ignore network errors */ }
     await loadData();
     setRefreshing(false);
+  }
+
+  async function fixCoverImages() {
+    setFixingImages(true);
+    setImageResult(null);
+    try {
+      const res = await fetch("/api/admin/blog/backfill-images", { method: "POST" });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error ?? "Failed");
+      const parts: string[] = [];
+      if (d.missingFixed) parts.push(`${d.missingFixed} missing cover${d.missingFixed === 1 ? "" : "s"} added`);
+      if (d.duplicatesFixed) parts.push(`${d.duplicatesFixed} duplicate${d.duplicatesFixed === 1 ? "" : "s"} replaced`);
+      let msg = parts.length ? parts.join(" · ") : "All articles already have a unique cover";
+      if (d.poolExhausted) {
+        msg += ` — WARNING: more articles (${d.totalPosts}) than images (${d.poolSize}), some had to repeat. Add more IDs to lib/blog-images.ts.`;
+      }
+      setImageResult(msg);
+      await loadData();
+    } catch (e) {
+      setImageResult(e instanceof Error ? e.message : "Failed — check logs");
+    } finally {
+      setFixingImages(false);
+    }
   }
 
   async function repairThinPosts() {
@@ -210,8 +235,18 @@ export default function BlogAdminPage() {
             {repairing ? "Repairing…" : "Fix Incomplete"}
           </button>
           <button
+            onClick={fixCoverImages}
+            disabled={fixingImages || repairing || refreshing}
+            className="flex items-center gap-2 border border-[#2251A3] bg-white rounded-xl px-4 py-2 text-sm font-dm text-[#2251A3] hover:bg-blue-50 disabled:opacity-50 transition-colors"
+            title="Give every article a cover image, and make sure no two articles share one"
+          >
+            <Loader2 size={14} className={fixingImages ? "animate-spin" : "hidden"} />
+            <ImageIcon size={14} className={fixingImages ? "hidden" : ""} />
+            {fixingImages ? "Fixing…" : "Fix Cover Images"}
+          </button>
+          <button
             onClick={triggerRefresh}
-            disabled={refreshing || repairing}
+            disabled={refreshing || repairing || fixingImages}
             className="flex items-center gap-2 border border-[#D2DCE8] bg-white rounded-xl px-4 py-2 text-sm font-dm text-[#0D1B2A] hover:bg-[#F4F7FB] disabled:opacity-50 transition-colors"
           >
             <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
@@ -219,6 +254,13 @@ export default function BlogAdminPage() {
           </button>
         </div>
       </div>
+
+      {imageResult && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-900 rounded-xl px-4 py-3 text-sm font-dm flex items-center justify-between">
+          <span>🖼 {imageResult}</span>
+          <button onClick={() => setImageResult(null)} className="text-blue-600 hover:text-blue-800 ml-4">✕</button>
+        </div>
+      )}
 
       {repairResult && (
         <div className="bg-green-50 border border-green-200 text-green-800 rounded-xl px-4 py-3 text-sm font-dm flex items-center justify-between">
