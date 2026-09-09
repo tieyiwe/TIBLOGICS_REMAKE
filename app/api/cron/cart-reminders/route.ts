@@ -72,5 +72,36 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, checked: candidates.length, sent, results });
+  // ── Analytics retention ───────────────────────────────────────────────
+  // PageView and ActiveSession had no expiry, so both grew without limit and
+  // were only ever emptied by the manual "clear dev data" wipe. Storage is
+  // billed, and nothing in the product reads page views older than the
+  // dashboard's reporting window. Piggy-backing on this hourly job avoids
+  // adding another scheduled invocation.
+  const pruned = await pruneAnalytics();
+
+  return NextResponse.json({ ok: true, checked: candidates.length, sent, results, pruned });
+}
+
+const PAGEVIEW_RETENTION_DAYS = 90;
+const ACTIVE_SESSION_STALE_MINUTES = 30;
+
+async function pruneAnalytics() {
+  const now = Date.now();
+  try {
+    const [pageViews, sessions] = await Promise.all([
+      prisma.pageView.deleteMany({
+        where: { createdAt: { lt: new Date(now - PAGEVIEW_RETENTION_DAYS * 86_400_000) } },
+      }),
+      // "Active" means seen recently; anything older is a dead row that also
+      // makes the live-visitor count wrong.
+      prisma.activeSession.deleteMany({
+        where: { lastSeen: { lt: new Date(now - ACTIVE_SESSION_STALE_MINUTES * 60_000) } },
+      }),
+    ]);
+    return { pageViews: pageViews.count, activeSessions: sessions.count };
+  } catch (err) {
+    console.error("[cron/cart-reminders] analytics prune failed", err);
+    return { pageViews: 0, activeSessions: 0, error: true };
+  }
 }

@@ -3,10 +3,14 @@ generator client {
   binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x", "linux-musl", "linux-musl-openssl-3.0.x"]
 }
 
+// Host-neutral. Supabase was only ever a Postgres host for this project —
+// no Supabase Auth, Storage, Realtime or RLS is used — so moving providers
+// is a connection-string change. lib/prisma.ts still accepts the old
+// SUPABASE_URL as an alias so the app keeps running mid-migration.
 datasource db {
   provider  = "postgresql"
-  url       = env("SUPABASE_URL")
-  directUrl = env("SUPABASE_URL")
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL")
 }
 
 model Appointment {

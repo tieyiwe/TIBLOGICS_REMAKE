@@ -107,10 +107,25 @@ export default function AnalyticsPage() {
     }
   }, []);
 
+  // Each poll runs four queries. Left open all day at 60s that was ~5,700
+  // queries a day per open tab, most of them while nobody was looking at the
+  // screen. Poll less often, and not at all while the tab is hidden — with a
+  // refresh on return so the numbers are still current when you look back.
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 60_000);
-    return () => clearInterval(interval);
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      fetchData();
+    }, 120_000);
+
+    const onVisible = () => {
+      if (!document.hidden) fetchData();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [fetchData]);
 
   if (loading) {
