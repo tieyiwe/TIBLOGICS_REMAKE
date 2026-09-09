@@ -1,9 +1,10 @@
-modules = ["nodejs-20"]
+modules = ["nodejs-20", "python-3.11"]
 [agent]
 expertMode = true
 
 [nix]
 channel = "stable-25_05"
+packages = ["psmisc"]
 
 [workflows]
 runButton = "Project"
@@ -26,7 +27,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "fuser -k 5000/tcp 2>/dev/null || true; npm run build && npm run start"
+args = "fuser -k 5000/tcp 2>/dev/null; sleep 1; npm run start"
 waitForPort = 5000
 
 [[ports]]
@@ -38,7 +39,7 @@ localPort = 5000
 externalPort = 80
 
 [deployment]
-deploymentTarget = "autoscale"
+deploymentTarget = "gce"
 run = ["sh", "-c", "npm run start"]
 build = ["sh", "-c", "npm run build"]
 

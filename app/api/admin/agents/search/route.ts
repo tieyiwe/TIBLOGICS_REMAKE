@@ -2,8 +2,12 @@ export const maxDuration = 60;
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
+import { requireAdmin } from "@/lib/require-admin";
 
 export async function POST(req: NextRequest) {
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   try {
     const { instructions, location, industry, count = 8 } = await req.json();
 
@@ -11,9 +15,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Location is required" }, { status: 400 });
     }
 
+    // Cap count to prevent DB bloat from large batch requests
+    const safeCount = Math.min(Math.max(1, Number(count) || 8), 20);
+
     const hasGoogleKey = !!process.env.GOOGLE_PLACES_API_KEY;
 
-    const prompt = `Generate ${count} realistic local business leads based on these search criteria:
+    const prompt = `Generate ${safeCount} realistic local business leads based on these search criteria:
 
 Location: ${location}
 Industry / Type: ${industry || "small and medium-sized businesses"}

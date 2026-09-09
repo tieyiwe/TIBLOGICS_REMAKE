@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { Clock, ArrowLeft, Share2, BookOpen, ExternalLink, Calendar, MessageCircle, X } from "lucide-react";
+import { useParams, useSearchParams } from "next/navigation";
+import { Clock, ArrowLeft, Share2, BookOpen, ExternalLink, Calendar, MessageCircle, X, TrendingUp, Flame } from "lucide-react";
 
 interface BlogPost {
   id: string;
@@ -29,11 +29,21 @@ interface RelatedPost {
   id: string;
   slug: string;
   title: string;
+  excerpt: string;
   coverEmoji: string;
   coverGradient: string;
   coverImage?: string;
   readingTime: number;
+  viewCount: number;
+  category: string;
   createdAt: string;
+}
+
+function trendingLabel(viewCount: number): { text: string; icon: "flame" | "trending" } | null {
+  if (viewCount >= 150) return { text: "🔥 Trending right now", icon: "flame" };
+  if (viewCount >= 75)  return { text: "📈 Popular this week",  icon: "trending" };
+  if (viewCount >= 30)  return { text: "👀 Being read by many", icon: "trending" };
+  return null;
 }
 
 const GRADIENT_MAP: Record<string, string> = {
@@ -92,25 +102,66 @@ function RelatedCard({ post: r }: { post: RelatedPost }) {
   );
 }
 
-export default function BlogPostPage() {
+type Translation = { title: string; excerpt: string; content: string };
+
+export default function BlogPostPage({
+  preloadedTranslations = {},
+}: {
+  preloadedTranslations?: Record<string, Translation>;
+}) {
   const params = useParams();
   const slug = params?.slug as string;
+  const searchParams = useSearchParams();
   const [post, setPost] = useState<BlogPost | null>(null);
   const [related, setRelated] = useState<RelatedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [widgetVisible, setWidgetVisible] = useState(false);
   const [widgetDismissed, setWidgetDismissed] = useState(false);
+  const [readProgress, setReadProgress] = useState(0);
+  const [nextPost, setNextPost] = useState<RelatedPost | null>(null);
+  const [nextImgFailed, setNextImgFailed] = useState(false);
+  const [nextUpVisible, setNextUpVisible] = useState(false);
+  const [nextUpDismissed, setNextUpDismissed] = useState(false);
+  const articleRef = useRef<HTMLElement>(null);
   const [heroImgFailed, setHeroImgFailed] = useState(false);
   const [heroCoverFailed, setHeroCoverFailed] = useState(false);
-  const [language, setLanguage] = useState<"en" | "fr" | "sw">("en");
-  const [translating, setTranslating] = useState(false);
-  const [translations, setTranslations] = useState<Record<string, { title: string; excerpt: string; content: string }>>({});
+  const initialLang = (searchParams?.get("lang") ?? "en") as "en" | "fr" | "sw";
+  const [language, setLanguage] = useState<"en" | "fr" | "sw">(["en","fr","sw"].includes(initialLang) ? initialLang : "en");
+  const [translating, setTranslating] = useState<boolean>(initialLang !== "en" && !preloadedTranslations[initialLang]);
+  const [translations, setTranslations] = useState<Record<string, { title: string; excerpt: string; content: string }>>(preloadedTranslations);
 
-  // Pre-fetch both translations silently after the article loads
+  // Scroll to top on every article open — client-side navigation retains previous scroll position
+  useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: "instant" }); }, []);
+
+  // Also scroll to top once the post data arrives (content expansion can shift position)
+  useEffect(() => {
+    if (post) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [post?.id]);
+
+  // Load translations from localStorage cache on mount (instant for returning visitors)
+  useEffect(() => {
+    if (!slug) return;
+    const cached: Record<string, { title: string; excerpt: string; content: string }> = {};
+    const ttl = 24 * 60 * 60 * 1000; // 24h
+    for (const lang of ["fr", "sw"] as const) {
+      try {
+        const raw = localStorage.getItem(`tx:${slug}:${lang}`);
+        if (raw) {
+          const { data, ts } = JSON.parse(raw);
+          if (Date.now() - ts < ttl) cached[lang] = data;
+          else localStorage.removeItem(`tx:${slug}:${lang}`);
+        }
+      } catch { /* ignore */ }
+    }
+    if (Object.keys(cached).length > 0) setTranslations(prev => ({ ...prev, ...cached }));
+  }, [slug]);
+
+  // Background pre-fetch: starts quickly, saves result to localStorage for next visit
   useEffect(() => {
     if (!post || !slug) return;
     const prefetch = async (lang: "fr" | "sw") => {
+      if (preloadedTranslations[lang]) return; // already loaded server-side, no round-trip needed
       try {
         const res = await fetch("/api/blog/translate", {
           method: "POST",
@@ -120,12 +171,12 @@ export default function BlogPostPage() {
         if (res.ok) {
           const data = await res.json();
           setTranslations(prev => ({ ...prev, [lang]: data }));
+          try { localStorage.setItem(`tx:${slug}:${lang}`, JSON.stringify({ data, ts: Date.now() })); } catch { /* quota */ }
         }
       } catch { /* silent */ }
     };
-    // Small delay so it doesn't compete with the initial page render
-    const t = setTimeout(() => { prefetch("fr"); prefetch("sw"); }, 1500);
-    return () => clearTimeout(t);
+    prefetch("fr");
+    prefetch("sw");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [post?.id]);
 
@@ -136,24 +187,56 @@ export default function BlogPostPage() {
 
   function handleTranslate(lang: "en" | "fr" | "sw") {
     setLanguage(lang);
-    // Show spinner only if background fetch hasn't finished yet
     if (lang !== "en" && !translations[lang]) setTranslating(true);
     else setTranslating(false);
+    // Sync URL so shared links land on the chosen language
+    const url = new URL(window.location.href);
+    if (lang === "en") {
+      url.searchParams.delete("lang");
+    } else {
+      url.searchParams.set("lang", lang);
+    }
+    window.history.replaceState(null, "", url.toString());
   }
 
   const display = language !== "en" && translations[language]
     ? translations[language]
     : post ? { title: post.title, excerpt: post.excerpt, content: post.content } : null;
 
+  // Reading progress — measured against the article element so the bar reflects
+  // how far through the actual content the reader is, not the whole page.
   useEffect(() => {
     function onScroll() {
-      if (!widgetDismissed && window.scrollY > 400) setWidgetVisible(true);
+      const el = articleRef.current;
+      if (!el) return;
+      const { top, height } = el.getBoundingClientRect();
+      const scrolledThrough = window.innerHeight - top;
+      const pct = Math.min(100, Math.max(0, (scrolledThrough / height) * 100));
+      setReadProgress(pct);
+
+      // Show "Next Up" card when 65 % through — more compelling than showing it at the end
+      if (pct >= 65 && !nextUpDismissed) {
+        setNextUpVisible(true);
+        // Next article is the highest-retention action at this point; retire the booking widget
+        setWidgetVisible(false);
+        setWidgetDismissed(true);
+      }
+
+      // Booking widget — only while Next Up card is not yet visible
+      if (!widgetDismissed && window.scrollY > 400 && pct < 65) setWidgetVisible(true);
     }
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [widgetDismissed]);
+  }, [widgetDismissed, nextUpDismissed]);
 
-  // Dismiss CTA when Tibo chat opens or Tibo idle greeting appears
+  // Seed nextPost from the first related article that differs from the current one
+  useEffect(() => {
+    if (related.length > 0 && !nextPost) {
+      setNextPost(related.find((r) => r.slug !== slug) ?? related[0]);
+    }
+  }, [related, slug]);
+
+  // Dismiss booking CTA when Tibo chat opens or Tibo idle greeting appears
   useEffect(() => {
     const dismiss = () => {
       setWidgetVisible(false);
@@ -235,6 +318,13 @@ export default function BlogPostPage() {
     <div className="pt-32 sm:pt-44 pb-36 sm:pb-20 min-h-screen bg-[#F4F7FB]">
       {/* Sticky back bar — always visible while reading */}
       <div className="sticky top-20 sm:top-44 z-30 bg-white/95 backdrop-blur-sm border-b border-[#D2DCE8] shadow-sm">
+        {/* Reading progress bar */}
+        <div className="h-[3px] bg-[#E8EFF8] w-full">
+          <div
+            className="h-full bg-[#F47C20] transition-[width] duration-150 ease-out"
+            style={{ width: `${readProgress}%` }}
+          />
+        </div>
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
           <Link
             href="/ai-times"
@@ -242,9 +332,16 @@ export default function BlogPostPage() {
           >
             <ArrowLeft size={15} /> Back to AI TIMES
           </Link>
-          <span className="hidden sm:block font-syne font-bold text-xs text-[#F47C20] tracking-wide uppercase">
-            The #1 AI Digestable Knowledge
-          </span>
+          {readProgress > 5 && post ? (
+            <span className="hidden sm:flex items-center gap-1 text-xs font-dm text-[#7A8FA6]">
+              <Clock size={11} />
+              {Math.max(1, Math.ceil(((100 - readProgress) / 100) * post.readingTime))} min left
+            </span>
+          ) : (
+            <span className="hidden sm:block font-syne font-bold text-xs text-[#F47C20] tracking-wide uppercase">
+              The #1 AI Digestable Knowledge
+            </span>
+          )}
           <button
             onClick={handleShare}
             className="inline-flex items-center gap-1.5 text-xs font-dm text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors"
@@ -256,7 +353,7 @@ export default function BlogPostPage() {
 
       {/* Hero cover + Article card */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 mt-6 relative z-10">
-        <article className="bg-white border border-[#D2DCE8] rounded-3xl overflow-hidden shadow-sm">
+        <article ref={articleRef} className="bg-white border border-[#D2DCE8] rounded-3xl overflow-hidden shadow-sm">
 
           {/* Cover image — constrained to card width */}
           {post.coverImage && !heroCoverFailed ? (
@@ -267,6 +364,8 @@ export default function BlogPostPage() {
                 className="w-full h-full object-cover object-top"
                 loading="eager"
                 fetchPriority="high"
+                decoding="sync"
+                sizes="(max-width:768px) 100vw, 768px"
                 onError={() => heroImgFailed ? setHeroCoverFailed(true) : setHeroImgFailed(true)}
               />
             </div>
@@ -324,7 +423,23 @@ export default function BlogPostPage() {
             <div className="flex items-center gap-2 mb-5 flex-wrap">
               <span className="text-xs text-[#7A8FA6] font-medium">Translate:</span>
               {([["en","🇬🇧 English"],["fr","🇫🇷 Français"],["sw","🇰🇪 Swahili"]] as const).map(([lang, label]) => (
-                <button key={lang} onClick={() => handleTranslate(lang)} disabled={translating}
+                <button key={lang}
+                  onClick={() => handleTranslate(lang)}
+                  onMouseEnter={() => {
+                    if (lang !== "en" && !translations[lang] && post) {
+                      fetch("/api/blog/translate", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ slug, language: lang }),
+                      }).then(r => r.ok ? r.json() : null).then(data => {
+                        if (data) {
+                          setTranslations(prev => ({ ...prev, [lang]: data }));
+                          try { localStorage.setItem(`tx:${slug}:${lang}`, JSON.stringify({ data, ts: Date.now() })); } catch { /* quota */ }
+                        }
+                      }).catch(() => {/* silent */});
+                    }
+                  }}
+                  disabled={translating}
                   className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-all ${
                     language === lang ? "bg-[#2251A3] text-white border-[#2251A3]" : "bg-white text-[#3A4A5C] border-[#D2DCE8] hover:border-[#2251A3] hover:text-[#2251A3]"
                   } ${translating && lang !== language ? "opacity-50 cursor-not-allowed" : ""}`}>
@@ -401,6 +516,9 @@ export default function BlogPostPage() {
           </div>
         </article>
 
+        {/* Newsletter signup */}
+        <ArticleNewsletterSignup slug={slug} />
+
         {/* Related posts */}
         {related.length > 0 && (
           <div className="mt-10">
@@ -414,7 +532,79 @@ export default function BlogPostPage() {
         )}
       </div>
 
-      {/* Floating CTA widget */}
+      {/* ── Next Up card — slides in when reader is 65 % through the article ── */}
+      {nextUpVisible && !nextUpDismissed && nextPost && (
+        <div className="fixed bottom-24 sm:bottom-6 right-4 sm:right-6 z-40 w-72 animate-fade-in">
+          <div className="bg-white border border-[#D2DCE8] rounded-2xl shadow-2xl overflow-hidden">
+            {/* Header row */}
+            <div className="flex items-center justify-between px-4 pt-3 pb-1.5 border-b border-[#F4F7FB]">
+              <span className="text-[0.65rem] font-dm font-bold tracking-widest text-[#7A8FA6] uppercase">
+                Up Next
+              </span>
+              <button
+                onClick={() => { setNextUpVisible(false); setNextUpDismissed(true); }}
+                className="text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors"
+                aria-label="Dismiss"
+              >
+                <X size={13} />
+              </button>
+            </div>
+
+            {/* Social proof badge */}
+            {trendingLabel(nextPost.viewCount) && (
+              <div className="px-4 pt-2 pb-0 flex items-center gap-1.5">
+                {nextPost.viewCount >= 150
+                  ? <Flame size={12} className="text-[#F47C20]" />
+                  : <TrendingUp size={12} className="text-[#2251A3]" />}
+                <span className={`text-[0.7rem] font-dm font-semibold ${nextPost.viewCount >= 150 ? "text-[#F47C20]" : "text-[#2251A3]"}`}>
+                  {trendingLabel(nextPost.viewCount)!.text}
+                </span>
+              </div>
+            )}
+
+            {/* Article preview */}
+            <Link
+              href={`/ai-times/${nextPost.slug}`}
+              className="block px-4 pt-3 pb-4 group"
+              onClick={() => { setNextUpVisible(false); setNextUpDismissed(true); }}
+            >
+              <div className="flex gap-3 items-start mb-3">
+                {/* Thumbnail */}
+                <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
+                  {nextPost.coverImage && !nextImgFailed ? (
+                    <img
+                      src={nextPost.coverImage}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={() => setNextImgFailed(true)}
+                    />
+                  ) : (
+                    <div className={`${gradientClass(nextPost.coverGradient)} w-full h-full flex items-center justify-center`}>
+                      <span className="text-2xl">{nextPost.coverEmoji}</span>
+                    </div>
+                  )}
+                </div>
+                {/* Text */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-syne font-bold text-sm text-[#0D1B2A] group-hover:text-[#2251A3] line-clamp-3 leading-snug transition-colors">
+                    {nextPost.title}
+                  </p>
+                  <p className="text-[0.7rem] text-[#7A8FA6] mt-1.5 flex items-center gap-1 font-dm">
+                    <Clock size={9} /> {nextPost.readingTime} min read
+                  </p>
+                </div>
+              </div>
+              {/* CTA button */}
+              <div className="w-full bg-[#1B3A6B] group-hover:bg-[#2251A3] text-white text-xs font-dm font-semibold text-center py-2 rounded-xl transition-colors">
+                Read Next →
+              </div>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Floating booking CTA widget */}
       {widgetVisible && !widgetDismissed && (
         <div className="fixed bottom-24 sm:bottom-6 right-4 sm:right-6 z-40 max-w-xs w-[calc(100vw-2rem)] sm:w-full animate-fade-in">
           <div className="bg-[#1B3A6B] text-white rounded-2xl shadow-2xl overflow-hidden">
@@ -495,6 +685,53 @@ export default function BlogPostPage() {
           margin: 1.5rem 0;
         }
         .prose-blog img { max-width: 100%; height: auto; }
+        .prose-blog .tips-section {
+          background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 50%, #f8fafc 100%);
+          border-radius: 1rem;
+          overflow: hidden;
+          margin: 2rem 0;
+        }
+        .prose-blog .tips-header {
+          font-family: var(--font-syne), sans-serif;
+          font-size: 0.7rem;
+          font-weight: 700;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: #0D1B2A;
+          padding: 0.875rem 1.25rem;
+          border-bottom: 1px solid rgba(148,163,184,0.4);
+        }
+        .prose-blog .tips-list {
+          list-style: none;
+          padding: 1rem 1.25rem;
+          margin: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+        .prose-blog .tips-list li {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.75rem;
+          color: #3A4A5C;
+          font-size: 0.875rem;
+          line-height: 1.6;
+          margin: 0;
+        }
+        .prose-blog .tip-num {
+          flex-shrink: 0;
+          width: 1.25rem;
+          height: 1.25rem;
+          border-radius: 50%;
+          background: #2251A3;
+          color: #fff;
+          font-size: 0.625rem;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-top: 0.125rem;
+        }
         @media (max-width: 640px) {
           .prose-blog div[style*="display:grid"],
           .prose-blog div[style*="display: grid"] {
@@ -512,6 +749,87 @@ export default function BlogPostPage() {
           .prose-blog p { font-size: 0.9375rem; }
         }
       `}</style>
+    </div>
+  );
+}
+
+function ArticleNewsletterSignup({ slug }: { slug: string }) {
+  const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [msg, setMsg] = useState("");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email) return;
+    setStatus("loading");
+    try {
+      const res = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, firstName: firstName || undefined, source: `article:${slug}` }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setStatus("success");
+        setMsg(data.message ?? "You're subscribed!");
+      } else {
+        setStatus("error");
+        setMsg(data.error ?? "Something went wrong.");
+      }
+    } catch {
+      setStatus("error");
+      setMsg("Network error. Please try again.");
+    }
+  }
+
+  return (
+    <div className="mt-10 rounded-2xl overflow-hidden border border-[#D2DCE8]">
+      <div className="bg-gradient-to-br from-[#1B3A6B] to-[#2251A3] px-6 py-6 sm:px-8">
+        <p className="font-syne font-extrabold text-white text-xl sm:text-2xl leading-tight mb-1">
+          Stay ahead in AI — without the noise.
+        </p>
+        <p className="font-dm text-white/75 text-sm leading-relaxed">
+          Get the most digestible AI insights, tools, and developments straight to your inbox. In plain English. Free.
+        </p>
+      </div>
+      <div className="bg-white px-6 py-5 sm:px-8">
+        {status === "success" ? (
+          <div className="flex items-center gap-2 text-green-700 font-dm text-sm font-medium py-2">
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+            {msg}
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              placeholder="First name (optional)"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              className="flex-1 min-w-0 px-4 py-2.5 border border-[#D2DCE8] rounded-xl text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3]"
+            />
+            <input
+              type="email"
+              placeholder="Your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="flex-[2] min-w-0 px-4 py-2.5 border border-[#D2DCE8] rounded-xl text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3]"
+            />
+            <button
+              type="submit"
+              disabled={status === "loading"}
+              className="flex-shrink-0 bg-[#F47C20] hover:bg-[#d96b18] text-white font-dm font-semibold px-5 py-2.5 rounded-xl text-sm transition-colors disabled:opacity-60"
+            >
+              {status === "loading" ? "…" : "Subscribe →"}
+            </button>
+          </form>
+        )}
+        {status === "error" && (
+          <p className="text-red-500 text-xs font-dm mt-2">{msg}</p>
+        )}
+        <p className="text-[#7A8FA6] text-xs font-dm mt-2">No spam. Unsubscribe anytime.</p>
+      </div>
     </div>
   );
 }

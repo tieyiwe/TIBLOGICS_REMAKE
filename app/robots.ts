@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin/", "/api/", "/admin/login"],
+        disallow: ["/admin_pro/", "/api/", "/admin_pro/login"],
       },
     ],
     sitemap: "https://tiblogics.com/sitemap.xml",

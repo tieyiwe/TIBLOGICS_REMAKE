@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 const OWNER_EMAIL = "tieyiwebass@gmail.com";
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -99,9 +100,56 @@ export const authOptions: NextAuthOptions = {
         }
       },
     }),
+    // ── TIBLOGICS Learn students ──────────────────────────────────────────
+    // Separate provider id so the student flow stays distinct from admin
+    // login while sharing one JWT session system.
+    CredentialsProvider({
+      id: "student",
+      name: "student",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) return null;
+
+        let prisma: Awaited<typeof import("@/lib/prisma")>["prisma"];
+        try {
+          ({ prisma } = await import("@/lib/prisma"));
+        } catch {
+          return null;
+        }
+
+        try {
+          const student = await prisma.student.findUnique({
+            where: { email: credentials.email.toLowerCase().trim() },
+          });
+          if (!student) return null;
+
+          const valid = await bcrypt.compare(credentials.password, student.passwordHash);
+          if (!valid) return null;
+
+          await prisma.student
+            .update({ where: { id: student.id }, data: { lastLoginAt: new Date() } })
+            .catch(() => {});
+
+          return {
+            id: student.id,
+            email: student.email,
+            name: student.name,
+            isAdmin: false,
+            isOwner: false,
+            studentId: student.id,
+            permissions: [],
+          };
+        } catch {
+          return null;
+        }
+      },
+    }),
   ],
   session: { strategy: "jwt" },
-  pages: { signIn: "/admin/login" },
+  pages: { signIn: "/admin_pro/login" },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -109,6 +157,7 @@ export const authOptions: NextAuthOptions = {
         token.isAdmin = user.isAdmin;
         token.isOwner = user.isOwner;
         token.collaboratorId = user.collaboratorId;
+        token.studentId = user.studentId;
         token.permissions = user.permissions;
       }
       return token;
@@ -119,6 +168,7 @@ export const authOptions: NextAuthOptions = {
         session.user.isAdmin = token.isAdmin;
         session.user.isOwner = token.isOwner;
         session.user.collaboratorId = token.collaboratorId;
+        session.user.studentId = token.studentId;
         session.user.permissions = token.permissions ?? [];
       }
       return session;

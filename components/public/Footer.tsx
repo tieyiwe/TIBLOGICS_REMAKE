@@ -1,5 +1,6 @@
 import { Mail } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 const services = [
   "AI Implementation",
   "Workflow Automation",
@@ -40,7 +41,7 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <div className="mb-3">
-              <img src="/footer-logo-transparent.png" alt="TIBLOGICS" className="h-24 w-auto" />
+              <Image src="/footer-logo-transparent.png" alt="TIBLOGICS" width={192} height={96} className="h-24 w-auto" />
             </div>
             <p className="text-[#7A9BBF] text-sm font-dm leading-relaxed mb-4">
               We create the right logics to fulfill your technical needs. AI-first.

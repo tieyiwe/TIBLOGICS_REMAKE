@@ -1,4 +1,4 @@
- "use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -13,7 +13,9 @@ const navLinks = [
   { label: "Startups & Products", href: "/products" },
   { label: "Try Smart Tools", href: "/tools" },
   { label: "AI TIMES", href: "/ai-times" },
-  { label: "Events", href: "/events" },
+  { label: "Events & Training", href: "/events" },
+  { label: "Courses", href: "/courses" },
+  { label: "Shop", href: "/shop" },
   { label: "About", href: "/about" },
 ];
 
@@ -52,9 +54,9 @@ export default function Nav() {
         )}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-10">
-          <div className="flex items-center justify-between min-h-[7.5rem] sm:min-h-[10.5rem] py-0 sm:py-2">
+          <div className="flex items-center justify-between min-h-[5.5rem] sm:min-h-[7.5rem] py-0 sm:py-2">
             <Link href="/" className="flex items-center flex-shrink-0">
-              <img src={NEW_LOGO} alt="TIBLOGICS" className="h-[7.5rem] sm:h-[10.5rem] w-auto" />
+              <img src={NEW_LOGO} alt="TIBLOGICS" className="h-[5.5rem] sm:h-[7.5rem] w-auto" />
             </Link>
 
             {/* Desktop Nav */}

@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 export const metadata = {
   title: "Privacy Policy | TIBLOGICS",
   description: "How TIBLOGICS collects, uses, and protects your personal information.",
@@ -11,7 +13,7 @@ export default function PrivacyPage() {
         {/* Header */}
         <div className="mb-10">
           <div className="flex items-center mb-4">
-            <img src="/logo.svg" alt="TIBLOGICS" className="h-9 w-auto" />
+            <Image src="/logo.svg" alt="TIBLOGICS" width={120} height={36} className="h-9 w-auto" />
           </div>
           <span className="section-tag">Legal</span>
           <h1 className="font-syne font-extrabold text-4xl text-[#0D1B2A] mt-3">Privacy Policy</h1>

@@ -1,0 +1,1471 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { applyPrice, type TrainingContent } from "@/lib/training-content";
+
+interface Props {
+  eventSlug: string;
+  eventTitle: string;
+  eventDescription: string;
+  startDate: string;
+  spots: number;   // live spotsLeft = totalSpots - paidCount
+  price: number;       // in cents, e.g. 84900 = $849
+  currency: string;
+  location: string;
+  timeSlot: string;
+  stripeLink: string | null;
+  registrationOpen: boolean;
+  content: TrainingContent;  // merged editable copy (defaults ⊕ admin overrides)
+  comingSoon?: boolean;      // waitlist mode — no date/price yet
+  paymentResult: "success" | "cancelled" | null;
+  confirmationNumber: string | null;
+}
+
+const STYLES = `
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{overflow-x:hidden}
+@keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes fadeUp{from{transform:translateY(32px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes orbFloat{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(40px,-30px) scale(1.08)}66%{transform:translate(-30px,20px) scale(0.94)}}
+@keyframes nodePulse{0%,100%{opacity:.5;r:5}50%{opacity:1;r:8}}
+@keyframes lineGlow{0%,100%{opacity:.08}50%{opacity:.55}}
+@keyframes particleFloat{0%{transform:translateY(0) translateX(0);opacity:0}10%{opacity:.8}90%{opacity:.3}100%{transform:translateY(-140px) translateX(var(--drift,0px));opacity:0}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(244,124,76,.4)}70%{box-shadow:0 0 0 10px rgba(244,124,76,0)}}
+@keyframes countFlip{from{transform:translateY(-10px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+@keyframes promoGlow{0%,100%{box-shadow:0 0 0 0 rgba(249,167,56,0),0 0 16px rgba(244,124,76,.2)}50%{box-shadow:0 0 0 6px rgba(249,167,56,0),0 0 32px rgba(244,124,76,.55)}}
+@keyframes tagFlash{0%,100%{opacity:1}50%{opacity:.45}}
+.promo-banner{animation:promoGlow 2.2s ease infinite}
+.promo-code{background:linear-gradient(90deg,#F47C4C,#F9A738,#fff,#F9A738,#F47C4C);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 2.8s linear infinite}
+.promo-tag{animation:tagFlash 1.4s ease infinite}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.stagger-child{opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease}
+.stagger-child.visible{opacity:1;transform:translateY(0)}
+.hero-1{animation:fadeUp .8s ease .1s both}
+.hero-2{animation:fadeUp .8s ease .3s both}
+.hero-3{animation:fadeUp .8s ease .5s both}
+.hero-4{animation:fadeUp .8s ease .7s both}
+.hero-5{animation:fadeUp .8s ease .9s both}
+.landing-nav{animation:slideDown .6s ease 0s both}
+.cta-primary{transition:transform .2s ease,box-shadow .2s ease;background:linear-gradient(135deg,#F47C4C,#F9A738);color:#131A1B;font-weight:700;border:none;cursor:pointer}
+.cta-primary:hover{transform:translateY(-2px);box-shadow:0 10px 32px rgba(244,124,76,.45)}
+.cta-outline{transition:all .2s ease;background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.25);cursor:pointer}
+.cta-outline:hover{border-color:rgba(244,124,76,.6);color:#F47C4C}
+.outcome-card{transition:transform .3s ease,border-color .3s ease;border:1px solid rgba(255,255,255,.07)}
+.outcome-card:hover{transform:translateY(-5px);border-color:rgba(244,124,76,.35)!important}
+.outcome-card:hover .card-icon{transform:scale(1.12)}
+.card-icon{transition:transform .3s ease;display:inline-block}
+.session-card{transition:transform .3s ease,box-shadow .3s ease}
+.session-card:hover{transform:translateY(-5px);box-shadow:0 24px 48px rgba(0,0,0,.35)!important}
+.include-card{transition:transform .3s ease,box-shadow .3s ease}
+.include-card:hover{transform:translateY(-3px)}
+.payment-opt{transition:all .2s ease;cursor:pointer}
+.payment-opt:hover{background:rgba(244,124,76,.07)!important;border-color:rgba(244,124,76,.4)!important}
+.payment-opt.selected{background:rgba(244,124,76,.12)!important;border-color:#F47C4C!important}
+.faq-item{border-bottom:1px solid rgba(255,255,255,.07)}
+.faq-q{cursor:pointer;display:flex;justify-content:space-between;align-items:flex-start;padding:20px 0;user-select:none;gap:16px}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .4s ease}
+.faq-item.open .faq-a{max-height:600px}
+.faq-chevron{transition:transform .3s ease;flex-shrink:0;margin-top:3px}
+.faq-item.open .faq-chevron{transform:rotate(180deg)}
+.gradient-text{background:linear-gradient(135deg,#F47C4C,#F9A738);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.pulsing-dot{width:9px;height:9px;border-radius:50%;background:#F47C4C;animation:pulse 2s ease infinite;display:inline-block;flex-shrink:0}
+.orb{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none}
+.count-num{animation:countFlip .3s ease both}
+input,select,textarea{font-family:'DM Sans',sans-serif}
+input:focus,select:focus,textarea:focus{outline:none}
+@media(max-width:900px){
+  .hero-grid{grid-template-columns:1fr!important}
+  .hero-visual{display:none!important}
+  .sessions-grid{grid-template-columns:repeat(2,1fr)!important}
+  .outcomes-grid{grid-template-columns:repeat(2,1fr)!important}
+  .includes-grid{grid-template-columns:repeat(2,1fr)!important}
+  .callout-grid{grid-template-columns:1fr!important}
+}
+@media(max-width:600px){
+  .hero-headline{font-size:clamp(2rem,7vw,2.8rem)!important;line-height:1.15!important}
+  .hero-grid{grid-template-columns:1fr!important;gap:0!important}
+  .hero-visual{display:none!important}
+  .hero-cta-wrap{flex-direction:column!important;width:100%!important}
+  .hero-cta-wrap a{width:100%!important;text-align:center!important;box-sizing:border-box!important}
+  .hero-section{padding:100px 18px 60px!important}
+  .pricing-amount{font-size:3.2rem!important}
+  .pricing-inner{padding:28px 20px!important}
+  .form-inner{padding:24px 18px!important}
+  .form-row{flex-direction:column!important}
+  .pay-grid{grid-template-columns:1fr!important}
+  .stat-wrap{flex-wrap:wrap;gap:12px!important}
+  .stat-item{border-right:none!important;padding:8px 16px!important}
+  .nav-sub{display:block!important}
+  .hero-pills{flex-wrap:wrap!important}
+  .countdown-wrap{gap:8px!important}
+  .countdown-unit{min-width:52px!important}
+  .countdown-num{font-size:1.7rem!important}
+  .countdown-sep{font-size:1.7rem!important;margin-bottom:24px!important}
+  .callout-grid{grid-template-columns:1fr!important}
+  .weekly-grid{grid-template-columns:1fr!important}
+  .sessions-grid{grid-template-columns:1fr!important}
+  .section-inner{padding:56px 18px!important}
+  .req-grid{grid-template-columns:1fr 1fr!important;gap:8px!important}
+  .footer-inner{flex-direction:column!important;align-items:flex-start!important;gap:16px!important}
+  .footer-links{flex-direction:column!important;gap:12px!important}
+}
+`;
+
+const S = {
+  darker: "#131A1B",
+  dark: "#1C2526",
+  orange: "#F47C4C",
+  amber: "#F9A738",
+  muted: "#8A9BA0",
+  border: "rgba(255,255,255,0.07)",
+  card: "rgba(255,255,255,0.04)",
+};
+
+const syne = "'Syne', sans-serif";
+const dm = "'DM Sans', sans-serif";
+
+function pad(n: number) { return String(n).padStart(2, "0"); }
+function gradText(text: string) {
+  return <span className="gradient-text">{text}</span>;
+}
+
+// ─── Neural Network SVG ────────────────────────────────────────────────────────
+function NeuralNet() {
+  return (
+    <svg viewBox="0 0 480 380" style={{ width: "100%", maxWidth: "540px", overflow: "visible" }} aria-hidden>
+      <defs>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+      </defs>
+      {/* Connections */}
+      {[
+        [80,190, 180,90],[80,190, 180,190],[80,190, 180,290],
+        [180,90, 300,140],[180,90, 300,240],[180,190, 300,140],
+        [180,190, 300,240],[180,290, 300,240],[180,290, 300,340],
+        [300,140, 400,190],[300,240, 400,190],[300,340, 400,290],
+        [400,190, 400,290],
+      ].map(([x1,y1,x2,y2],i)=>(
+        <line key={i} x1={x1} y1={y1} x2={x2} y2={y2}
+          stroke="url(#lineGrad)" strokeWidth="1.5"
+          style={{ animation: `lineGlow ${2+i*.3}s ease-in-out ${i*.2}s infinite` }}
+        />
+      ))}
+      <defs>
+        <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#F47C4C" stopOpacity="0.6"/>
+          <stop offset="100%" stopColor="#F9A738" stopOpacity="0.3"/>
+        </linearGradient>
+        <radialGradient id="nodeGrad">
+          <stop offset="0%" stopColor="#F9A738"/>
+          <stop offset="100%" stopColor="#F47C4C"/>
+        </radialGradient>
+      </defs>
+      {/* Input nodes */}
+      {[90,190,290].map((y,i)=>(
+        <g key={i} filter="url(#glow)">
+          <circle cx="80" cy={y} r="10" fill="url(#nodeGrad)" opacity="0.85"
+            style={{ animation: `nodePulse ${2.5+i*.4}s ease-in-out ${i*.5}s infinite` }}
+          />
+          <circle cx="80" cy={y} r="5" fill="#fff" opacity="0.9"/>
+        </g>
+      ))}
+      {/* Hidden layer */}
+      {[90,190,290].map((y,i)=>(
+        <g key={i} filter="url(#glow)">
+          <circle cx="180" cy={y} r="12" fill="url(#nodeGrad)" opacity="0.8"
+            style={{ animation: `nodePulse ${2+i*.35}s ease-in-out ${.3+i*.4}s infinite` }}
+          />
+          <circle cx="180" cy={y} r="6" fill="#fff" opacity="0.9"/>
+        </g>
+      ))}
+      {/* Middle layer */}
+      {[140,240,340].map((y,i)=>(
+        <g key={i} filter="url(#glow)">
+          <circle cx="300" cy={y} r="14" fill="url(#nodeGrad)" opacity="0.9"
+            style={{ animation: `nodePulse ${1.8+i*.3}s ease-in-out ${.6+i*.3}s infinite` }}
+          />
+          <circle cx="300" cy={y} r="7" fill="#fff"/>
+        </g>
+      ))}
+      {/* Output nodes */}
+      {[190,290].map((y,i)=>(
+        <g key={i} filter="url(#glow)">
+          <circle cx="400" cy={y} r="11" fill="url(#nodeGrad)" opacity="0.85"
+            style={{ animation: `nodePulse ${2.2+i*.4}s ease-in-out ${.9+i*.5}s infinite` }}
+          />
+          <circle cx="400" cy={y} r="5.5" fill="#fff" opacity="0.9"/>
+        </g>
+      ))}
+      {/* Floating particles */}
+      {[
+        {cx:120,cy:180,r:2.5,dur:4,drift:"-15px",delay:0},
+        {cx:240,cy:120,r:2,dur:5,drift:"10px",delay:1},
+        {cx:350,cy:260,r:3,dur:3.5,drift:"-20px",delay:.5},
+        {cx:160,cy:300,r:2,dur:4.5,drift:"12px",delay:1.5},
+        {cx:280,cy:70,r:2.5,dur:3.8,drift:"-8px",delay:.8},
+        {cx:420,cy:150,r:2,dur:4.2,drift:"18px",delay:1.2},
+      ].map((p,i)=>(
+        <circle key={i} cx={p.cx} cy={p.cy} r={p.r} fill="#F9A738"
+          style={{ animation: `particleFloat ${p.dur}s ease-in-out ${p.delay}s infinite`, "--drift": p.drift } as React.CSSProperties}
+        />
+      ))}
+    </svg>
+  );
+}
+
+// ─── Countdown ────────────────────────────────────────────────────────────────
+function CountdownUnit({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="countdown-unit" style={{ textAlign: "center", minWidth: "70px", flex: "0 0 auto" }}>
+      <div style={{
+        background: "rgba(255,255,255,0.06)", border: `1px solid ${S.border}`,
+        borderRadius: "14px", padding: "16px 20px", marginBottom: "8px"
+      }}>
+        <span className="count-num countdown-num" key={value} style={{
+          display: "block", fontFamily: syne, fontWeight: 800,
+          fontSize: "2.4rem", lineHeight: 1, color: "#fff"
+        }}>{value}</span>
+      </div>
+      <span style={{ fontFamily: dm, fontSize: ".7rem", color: S.muted, textTransform: "uppercase", letterSpacing: ".1em" }}>{label}</span>
+    </div>
+  );
+}
+
+// Isolated so its 1-second setInterval re-render doesn't bubble up to the parent
+function CountdownTimer({ startDate }: { startDate: string }) {
+  const TARGET = new Date(startDate);
+  const [cd, setCd] = useState({ d: 0, h: 0, m: 0, s: 0 });
+
+  useEffect(() => {
+    const tick = () => {
+      const diff = TARGET.getTime() - Date.now();
+      if (diff <= 0) { setCd({ d: 0, h: 0, m: 0, s: 0 }); return; }
+      setCd({
+        d: Math.floor(diff / 86400000),
+        h: Math.floor((diff % 86400000) / 3600000),
+        m: Math.floor((diff % 3600000) / 60000),
+        s: Math.floor((diff % 60000) / 1000),
+      });
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []); // eslint-disable-line
+
+  return (
+    <div className="countdown-wrap" style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap" }}>
+      <CountdownUnit value={pad(cd.d)} label="Days" />
+      <span className="countdown-sep" style={{ fontFamily: syne, fontWeight: 800, fontSize: "2.4rem", alignSelf: "center", color: "rgba(255,255,255,.2)", marginBottom: "28px" }}>:</span>
+      <CountdownUnit value={pad(cd.h)} label="Hours" />
+      <span className="countdown-sep" style={{ fontFamily: syne, fontWeight: 800, fontSize: "2.4rem", alignSelf: "center", color: "rgba(255,255,255,.2)", marginBottom: "28px" }}>:</span>
+      <CountdownUnit value={pad(cd.m)} label="Minutes" />
+      <span className="countdown-sep" style={{ fontFamily: syne, fontWeight: 800, fontSize: "2.4rem", alignSelf: "center", color: "rgba(255,255,255,.2)", marginBottom: "28px" }}>:</span>
+      <CountdownUnit value={pad(cd.s)} label="Seconds" />
+    </div>
+  );
+}
+
+// ─── Promo Banner ─────────────────────────────────────────────────────────────
+const PROMO_CODE = "TIBAIREADY2026";
+const PROMO_EXPIRES = new Date("2026-06-19T23:59:59-04:00"); // midnight ET June 19
+
+function PromoBanner({ compact = false }: { compact?: boolean }) {
+  const [copied, setCopied] = useState(false);
+  const [timeLeft, setTimeLeft] = useState({ h: 0, m: 0, s: 0, expired: false });
+
+  useEffect(() => {
+    const tick = () => {
+      const diff = PROMO_EXPIRES.getTime() - Date.now();
+      if (diff <= 0) { setTimeLeft({ h: 0, m: 0, s: 0, expired: true }); return; }
+      setTimeLeft({
+        h: Math.floor(diff / 3600000),
+        m: Math.floor((diff % 3600000) / 60000),
+        s: Math.floor((diff % 60000) / 1000),
+        expired: false,
+      });
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  function copyCode() {
+    navigator.clipboard.writeText(PROMO_CODE).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    });
+  }
+
+  if (timeLeft.expired) return null;
+
+  const timer = `${pad(timeLeft.h)}h ${pad(timeLeft.m)}m ${pad(timeLeft.s)}s`;
+
+  return (
+    <div className="promo-banner" onClick={copyCode} style={{
+      background: "linear-gradient(135deg, rgba(249,167,56,.12), rgba(244,124,76,.08))",
+      border: "1px solid rgba(249,167,56,.4)",
+      borderRadius: compact ? "14px" : "18px",
+      padding: compact ? "14px 18px" : "20px 24px",
+      cursor: "pointer",
+      userSelect: "none",
+      position: "relative",
+      overflow: "hidden",
+      marginBottom: compact ? "20px" : "0",
+    }}>
+      {/* Decorative shimmer strip */}
+      <div style={{ position:"absolute", top:0, left:0, right:0, height:"2px", background:"linear-gradient(90deg,transparent,#F9A738,transparent)", animation:"shimmer 2.8s linear infinite", backgroundSize:"200% auto" }} />
+
+      <div style={{ display:"flex", alignItems:"center", gap:"10px", flexWrap:"wrap" }}>
+        {/* Flashing tag */}
+        <span className="promo-tag" style={{
+          background:"linear-gradient(135deg,#F47C4C,#F9A738)", color:"#131A1B",
+          fontFamily:syne, fontWeight:800, fontSize:".68rem", letterSpacing:".08em",
+          padding:"3px 10px", borderRadius:"20px", whiteSpace:"nowrap", flexShrink:0,
+        }}>🎉 15% OFF</span>
+
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:"8px", flexWrap:"wrap" }}>
+            <span style={{ fontFamily:dm, fontSize: compact ? ".82rem" : ".88rem", color:"rgba(255,255,255,.75)" }}>
+              Use code
+            </span>
+            <span className="promo-code" style={{
+              fontFamily:syne, fontWeight:800, fontSize: compact ? "1rem" : "1.15rem",
+              letterSpacing:".08em",
+            }}>{PROMO_CODE}</span>
+            <span style={{ fontFamily:dm, fontSize:".78rem", color:"rgba(255,255,255,.5)" }}>at checkout</span>
+          </div>
+          <div style={{ fontFamily:dm, fontSize:".73rem", color:"rgba(255,255,255,.45)", marginTop:"3px" }}>
+            Expires June 19 · {timer} remaining
+          </div>
+        </div>
+
+        {/* Copy button */}
+        <div style={{
+          background: copied ? "rgba(74,222,128,.15)" : "rgba(255,255,255,.06)",
+          border: `1px solid ${copied ? "rgba(74,222,128,.4)" : "rgba(255,255,255,.12)"}`,
+          borderRadius:"10px", padding:"6px 12px", flexShrink:0,
+          fontFamily:dm, fontSize:".75rem", fontWeight:600,
+          color: copied ? "#4ade80" : "rgba(255,255,255,.6)",
+          transition:"all .25s ease", whiteSpace:"nowrap",
+        }}>
+          {copied ? "✓ Copied!" : "Copy"}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Seat pricing helpers ─────────────────────────────────────────────────────
+// Seat 1 = full, seat 2 = 17% off, seat 3 = 23% off, seat 4 = 25% off, seat 5+ = full
+function seatUnitPrice(index: number, base: number): number {
+  if (index === 1) return Math.round(base * 0.83);
+  if (index === 2) return Math.round(base * 0.77);
+  if (index === 3) return Math.round(base * 0.75);
+  return base;
+}
+function calcGroupTotal(n: number, base: number): number {
+  let t = 0;
+  for (let i = 0; i < n; i++) t += seatUnitPrice(i, base);
+  return t;
+}
+function nextSeatDiscount(nextIndex: number): string | null {
+  if (nextIndex === 1) return "17%";
+  if (nextIndex === 2) return "23%";
+  if (nextIndex === 3) return "25%";
+  return null;
+}
+
+// ─── Registration Form (isolated so typing doesn't re-render the whole page) ──
+interface FormProps {
+  eventSlug: string; eventTitle: string; price: number;
+  currency: string; location: string; priceDisplay: string;
+  content: TrainingContent;
+}
+
+const ROLE_OPTIONS = [
+  "Business Owner / Entrepreneur",
+  "Freelancer / Consultant",
+  "Marketing / Communications Professional",
+  "Sales Professional",
+  "Teacher / Educator",
+  "Student",
+  "Job Seeker / Career Changer",
+  "Healthcare Professional",
+  "Finance / Accounting Professional",
+  "Non-profit / NGO Worker",
+  "Government / Public Sector",
+  "Other",
+];
+
+// ─── Waitlist Form (coming-soon mode — collects interest, no payment) ─────────
+function WaitlistForm({ eventSlug, eventTitle, content }: { eventSlug: string; eventTitle: string; content: TrainingContent }) {
+  const C = content;
+  const [form, setForm] = useState({ firstName: "", email: "", whatsapp: "", goal: "" });
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [msg, setMsg] = useState("");
+
+  const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus("loading");
+    setMsg("");
+    try {
+      const res = await fetch("/api/events/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.firstName,
+          email: form.email,
+          whatsapp: form.whatsapp,
+          event: eventTitle,
+          slug: eventSlug,
+        }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setMsg(d.error || `Something went wrong (${res.status})`);
+        setStatus("error");
+        return;
+      }
+      setStatus("success");
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : "Network error. Please try again.");
+      setStatus("error");
+    }
+  }
+
+  if (status === "success") {
+    return (
+      <div style={{ background:"rgba(74,222,128,.08)", border:"1px solid rgba(74,222,128,.25)", borderRadius:"20px", padding:"48px 32px", textAlign:"center" }}>
+        <div style={{ fontSize:"3rem", marginBottom:"16px" }}>🎉</div>
+        <div style={{ fontFamily:syne, fontWeight:800, fontSize:"1.5rem", marginBottom:"12px" }}>{C.registration.successHeading}</div>
+        <div style={{ color:S.muted, fontSize:".92rem", lineHeight:1.7 }}>{C.registration.successBody}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="form-inner" style={{ background:S.dark, border:`1px solid ${S.border}`, borderRadius:"24px", padding:"36px 32px" }}>
+      <form onSubmit={submit}>
+        <input type="text" placeholder="First Name" value={form.firstName} onChange={e=>set("firstName", e.target.value)} required
+          style={{ width:"100%", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color:"#fff", fontSize:".9rem", marginBottom:"16px" }}
+        />
+        <input type="email" placeholder="Email Address" value={form.email} onChange={e=>set("email", e.target.value)} required
+          style={{ width:"100%", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color:"#fff", fontSize:".9rem", marginBottom:"16px" }}
+        />
+        <input type="tel" inputMode="numeric" placeholder="WhatsApp Number (optional)" value={form.whatsapp} onChange={e=>set("whatsapp", e.target.value.replace(/[^\d+\s\-()]/g, ""))}
+          style={{ width:"100%", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color:"#fff", fontSize:".9rem", marginBottom:"16px" }}
+        />
+        <select value={form.goal} onChange={e=>set("goal", e.target.value)}
+          style={{ width:"100%", background:S.dark, border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color: form.goal ? "#fff" : S.muted, fontSize:".9rem", marginBottom:"24px" }}
+        >
+          <option value="" disabled>{C.registration.goalPlaceholder}</option>
+          {C.registration.goalOptions.map((g,i)=>(<option key={i}>{g}</option>))}
+        </select>
+
+        <button type="submit" disabled={status==="loading"} className="cta-primary" style={{
+          width:"100%", padding:"17px 32px", borderRadius:"50px",
+          fontFamily:syne, fontSize:"1.05rem", letterSpacing:".02em",
+          opacity: status==="loading" ? .45 : 1,
+        }}>
+          {status==="loading" ? (
+            <span style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"10px" }}>
+              <span style={{ width:"18px", height:"18px", border:"2.5px solid rgba(0,0,0,.3)", borderTopColor:"#131A1B", borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite" }}/>
+              Adding you…
+            </span>
+          ) : C.registration.submitFree}
+        </button>
+        {status==="error" && (
+          <p style={{ color:"#F87171", fontSize:".83rem", textAlign:"center", marginTop:"12px" }}>
+            {msg || "Something went wrong. Please try again or email arfa_edu@tiblogics.com"}
+          </p>
+        )}
+        <div style={{ textAlign:"center", marginTop:"18px", color:S.muted, fontSize:".78rem" }}>
+          {C.registration.secureNote}
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function RegistrationForm({ eventSlug, eventTitle, price, currency, location, priceDisplay, content }: FormProps) {
+  const C = content;
+  const [activePayment, setActivePayment] = useState("card");
+  const [formStep, setFormStep] = useState<1 | 2 | 3>(1);
+  const [numSeats, setNumSeats] = useState(1);
+  const [additionalParticipants, setAdditionalParticipants] = useState<
+    Array<{ firstName: string; lastName: string; email: string }>
+  >([]);
+  const [formData, setFormData] = useState({
+    firstName: "", lastName: "", email: "", whatsapp: "",
+    role: "", roleOther: "", goal: "",
+  });
+  const [formStatus, setFormStatus] = useState<"idle"|"loading"|"success"|"error">("idle");
+  const [toastMsg, setToastMsg] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+
+  const totalPrice = calcGroupTotal(numSeats, price);
+  const savings = price * numSeats - totalPrice;
+  const totalDisplay = price === 0 ? "Free" : `$${(totalPrice / 100).toFixed(0)} ${currency}`;
+  const nextDiscount = nextSeatDiscount(numSeats); // discount for adding one more seat
+
+  const field = (k: keyof typeof formData, v: string) =>
+    setFormData(f => ({ ...f, [k]: v }));
+
+  function updateAdditional(index: number, key: "firstName" | "lastName" | "email", val: string) {
+    setAdditionalParticipants(prev => prev.map((p, i) => i === index ? { ...p, [key]: val } : p));
+  }
+
+  function handleSeatChange(n: number) {
+    const clamped = Math.max(1, Math.min(10, n));
+    setNumSeats(clamped);
+    const needed = clamped - 1;
+    setAdditionalParticipants(prev => {
+      if (prev.length === needed) return prev;
+      if (prev.length < needed)
+        return [...prev, ...Array.from({ length: needed - prev.length }, () => ({ firstName: "", lastName: "", email: "" }))];
+      return prev.slice(0, needed);
+    });
+  }
+
+  function handleStep1(e: React.FormEvent) {
+    e.preventDefault();
+    setFormStep(numSeats > 1 ? 2 : 3);
+    setTimeout(() => document.getElementById("register")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+  }
+
+  function handleStep2(e: React.FormEvent) {
+    e.preventDefault();
+    setFormStep(3);
+    setTimeout(() => document.getElementById("register")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setFormStatus("loading");
+    setToastMsg("");
+    try {
+      const res = await fetch("/api/events/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          role: formData.role === "Other" ? (formData.roleOther || "Other") : formData.role,
+          paymentMethod: activePayment,
+          event: eventTitle,
+          eventSlug,
+          price: price / 100,
+          currency,
+          location,
+          numSeats,
+          additionalParticipants,
+        }),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        setToastMsg(errData.error || `Registration error (${res.status})`);
+        setFormStatus("error");
+        return;
+      }
+      const data = await res.json();
+
+      // Fast path: register route already created the Stripe session in the same request
+      let checkoutUrl: string | null = data.checkoutUrl ?? null;
+
+      // Fallback: separate checkout call (if Stripe env var was missing server-side)
+      if (!checkoutUrl && data.id) {
+        const checkoutRes = await fetch("/api/events/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ registrationId: data.id }),
+        });
+        if (!checkoutRes.ok) {
+          const errData = await checkoutRes.json().catch(() => ({}));
+          setToastMsg(errData.error || `Checkout error (${checkoutRes.status})`);
+          setFormStatus("error");
+          return;
+        }
+        checkoutUrl = (await checkoutRes.json()).checkoutUrl ?? null;
+      }
+
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+      } else {
+        setToastMsg("No checkout URL returned. Please try again.");
+        setFormStatus("error");
+      }
+    } catch (err) {
+      setToastMsg(err instanceof Error ? err.message : "Network error. Please try again.");
+      setFormStatus("error");
+    }
+  }
+
+  if (formStatus === "success") {
+    return (
+      <div style={{ background:"rgba(74,222,128,.08)", border:"1px solid rgba(74,222,128,.25)", borderRadius:"20px", padding:"48px 32px", textAlign:"center" }}>
+        <div style={{ fontSize:"3rem", marginBottom:"16px" }}>🎉</div>
+        <div style={{ fontFamily:syne, fontWeight:800, fontSize:"1.5rem", marginBottom:"12px" }}>{C.registration.successHeading}</div>
+        <div style={{ color:S.muted, fontSize:".92rem", lineHeight:1.7, marginBottom:"20px" }}>{C.registration.successBody}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="form-inner" style={{ background:S.dark, border:`1px solid ${S.border}`, borderRadius:"24px", padding:"36px 32px" }}>
+      {/* Step indicator */}
+      {(() => {
+        const steps = numSeats > 1
+          ? [{ v: 1, label: "Your Info" }, { v: 2, label: "Group" }, { v: 3, label: "Payment" }]
+          : [{ v: 1, label: "Your Info" }, { v: 3, label: "Payment" }];
+        return (
+          <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"28px" }}>
+            {steps.map((step, idx) => {
+              const active = formStep >= step.v;
+              const current = formStep === step.v;
+              const isLast = idx === steps.length - 1;
+              const lineActive = !isLast && formStep > step.v;
+              return (
+                <div key={step.v} style={{ display:"flex", alignItems:"center", gap:"8px", flex: isLast ? "none" : 1 }}>
+                  <div style={{
+                    width:"28px", height:"28px", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
+                    fontSize:".78rem", fontWeight:700, fontFamily:syne, flexShrink:0,
+                    background: active ? "linear-gradient(135deg,#F47C4C,#F9A738)" : "rgba(255,255,255,.06)",
+                    color: active ? "#131A1B" : S.muted,
+                    border: active ? "none" : `1px solid ${S.border}`,
+                  }}>{idx + 1}</div>
+                  <span style={{ fontSize:".78rem", color: active ? "#fff" : S.muted, fontWeight: current ? 600 : 400, whiteSpace:"nowrap" }}>
+                    {step.label}
+                  </span>
+                  {!isLast && <div style={{ flex:1, height:"1px", background: lineActive ? S.orange : S.border, marginLeft:"4px" }} />}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+
+      {/* ── STEP 1: Contact info ── */}
+      {formStep === 1 && (
+        <form onSubmit={handleStep1}>
+          <div className="form-row" style={{ display:"flex", gap:"14px", marginBottom:"16px" }}>
+            {(["firstName","lastName"] as const).map((k,i)=>(
+              <input key={k} type="text" placeholder={i===0?"First Name":"Last Name"} value={formData[k]} onChange={e=>field(k,e.target.value)} required
+                style={{ flex:1, background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color:"#fff", fontSize:".9rem" }}
+              />
+            ))}
+          </div>
+          <input type="email" placeholder="Email Address" value={formData.email} onChange={e=>field("email",e.target.value)} required
+            style={{ width:"100%", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color:"#fff", fontSize:".9rem", marginBottom:"16px" }}
+          />
+          <input type="tel" inputMode="numeric" placeholder="WhatsApp Number (with country code)" value={formData.whatsapp} onChange={e=>field("whatsapp", e.target.value.replace(/[^\d+\s\-()]/g, ""))} required
+            style={{ width:"100%", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color:"#fff", fontSize:".9rem", marginBottom:"16px" }}
+          />
+          <select value={formData.role} onChange={e=>field("role",e.target.value)} required
+            style={{ width:"100%", background:S.dark, border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color: formData.role ? "#fff" : S.muted, fontSize:".9rem", marginBottom: formData.role === "Other" ? "10px" : "16px" }}
+          >
+            <option value="" disabled>What do you do?</option>
+            {ROLE_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+          {formData.role === "Other" && (
+            <input type="text" placeholder="Please describe what you do" value={formData.roleOther} onChange={e=>field("roleOther",e.target.value)} required
+              style={{ width:"100%", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color:"#fff", fontSize:".9rem", marginBottom:"16px" }}
+            />
+          )}
+          <select value={formData.goal} onChange={e=>field("goal",e.target.value)}
+            style={{ width:"100%", background:S.dark, border:`1px solid ${S.border}`, borderRadius:"12px", padding:"13px 16px", color: formData.goal ? "#fff" : S.muted, fontSize:".9rem", marginBottom:"16px" }}
+          >
+            <option value="" disabled>{C.registration.goalPlaceholder}</option>
+            {C.registration.goalOptions.map((g,i)=>(<option key={i}>{g}</option>))}
+          </select>
+
+          {/* ── Seat selector ── */}
+          <div style={{ marginBottom:"28px" }}>
+            <div style={{ fontFamily:dm, fontSize:".78rem", color:S.muted, marginBottom:"12px", letterSpacing:".06em", textTransform:"uppercase" }}>Number of Seats</div>
+
+            {/* Discount nudge */}
+            {nextDiscount && (
+              <div style={{ background:"rgba(249,167,56,.08)", border:"1px solid rgba(249,167,56,.25)", borderRadius:"12px", padding:"10px 14px", marginBottom:"12px", display:"flex", alignItems:"center", gap:"10px" }}>
+                <span style={{ fontSize:"1.1rem", flexShrink:0 }}>{numSeats === 1 ? "💡" : "🎉"}</span>
+                <span style={{ fontFamily:dm, fontSize:".82rem", color:"rgba(255,255,255,.75)", lineHeight:1.5 }}>
+                  {numSeats === 1
+                    ? <>Bring a colleague! <strong style={{ color:"#F9A738" }}>Seat 2: 17% off · Seat 3: 23% off · Seat 4: 25% off</strong></>
+                    : <>Add seat {numSeats + 1} and save <strong style={{ color:"#F9A738" }}>{nextDiscount}</strong> on that seat — <strong style={{ color:"#F9A738" }}>${(seatUnitPrice(numSeats, price) / 100).toFixed(0)}</strong> instead of {priceDisplay}</>
+                  }
+                </span>
+              </div>
+            )}
+
+            <div style={{ display:"flex", alignItems:"center", gap:"16px" }}>
+              <div style={{ display:"flex", alignItems:"center", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"14px", overflow:"hidden", flexShrink:0 }}>
+                <button type="button" onClick={() => handleSeatChange(numSeats - 1)} disabled={numSeats <= 1}
+                  style={{ width:"44px", height:"44px", display:"flex", alignItems:"center", justifyContent:"center", background:"none", border:"none", color: numSeats <= 1 ? S.muted : "#fff", fontSize:"1.4rem", cursor: numSeats <= 1 ? "not-allowed" : "pointer", fontWeight:700 }}>
+                  −
+                </button>
+                <span style={{ fontFamily:syne, fontWeight:800, fontSize:"1.15rem", minWidth:"36px", textAlign:"center", color:"#fff" }}>{numSeats}</span>
+                <button type="button" onClick={() => handleSeatChange(numSeats + 1)} disabled={numSeats >= 10}
+                  style={{ width:"44px", height:"44px", display:"flex", alignItems:"center", justifyContent:"center", background:"none", border:"none", color: numSeats >= 10 ? S.muted : S.orange, fontSize:"1.4rem", cursor: numSeats >= 10 ? "not-allowed" : "pointer", fontWeight:700 }}>
+                  +
+                </button>
+              </div>
+              <div>
+                {numSeats === 1 ? (
+                  <span style={{ fontFamily:dm, fontSize:".85rem", color:S.muted }}>Just you · {priceDisplay}</span>
+                ) : (
+                  <div>
+                    <div>
+                      <span style={{ fontFamily:syne, fontWeight:700, fontSize:".92rem", color:"#fff" }}>{numSeats} seats</span>
+                      <span style={{ fontFamily:dm, fontSize:".82rem", color:S.orange, marginLeft:"8px" }}>= {totalDisplay}</span>
+                    </div>
+                    {savings > 0 && (
+                      <div style={{ fontFamily:dm, fontSize:".75rem", color:"#4ade80", marginTop:"2px" }}>
+                        🎉 You're saving ${(savings / 100).toFixed(0)}!
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            {numSeats > 1 && (
+              <p style={{ fontFamily:dm, fontSize:".75rem", color:S.muted, marginTop:"8px", lineHeight:1.5 }}>
+                {[
+                  numSeats >= 2 && "Seat 2: 17% off",
+                  numSeats >= 3 && "Seat 3: 23% off",
+                  numSeats >= 4 && "Seat 4: 25% off",
+                  numSeats >= 5 && `Seat${numSeats > 5 ? "s" : ""} 5${numSeats > 5 ? `–${numSeats}` : ""}: standard rate`,
+                ].filter(Boolean).join(" · ")}
+                {" · "}Participant info added in next step.
+              </p>
+            )}
+          </div>
+
+          <button type="submit" className="cta-primary" style={{
+            width:"100%", padding:"17px 32px", borderRadius:"50px",
+            fontFamily:syne, fontSize:"1.05rem", letterSpacing:".02em"
+          }}>
+            {numSeats > 1 ? `Continue → Add ${numSeats - 1} More Participant${numSeats > 2 ? "s" : ""}` : "Continue to Payment →"}
+          </button>
+        </form>
+      )}
+
+      {/* ── STEP 2: Additional participants ── */}
+      {formStep === 2 && (
+        <form onSubmit={handleStep2}>
+          <div style={{ marginBottom:"20px" }}>
+            <div style={{ fontFamily:syne, fontWeight:700, fontSize:".95rem", marginBottom:"4px" }}>
+              Group Registration — {numSeats} Seats
+            </div>
+            <div style={{ fontFamily:dm, fontSize:".82rem", color:S.muted, lineHeight:1.55 }}>
+              Seat 1 is registered for <strong style={{ color:"#fff" }}>{formData.firstName} {formData.lastName}</strong>.
+              Fill in the info for the remaining {numSeats - 1} participant{numSeats > 2 ? "s" : ""} below.
+            </div>
+          </div>
+
+          {additionalParticipants.map((p, idx) => (
+            <div key={idx} style={{ background:"rgba(255,255,255,.04)", border:`1px solid ${S.border}`, borderRadius:"16px", padding:"18px", marginBottom:"12px" }}>
+              <div style={{ fontFamily:dm, fontSize:".72rem", color:S.orange, fontWeight:700, letterSpacing:".08em", textTransform:"uppercase", marginBottom:"12px" }}>
+                Seat {idx + 2} of {numSeats}
+              </div>
+              <div className="form-row" style={{ display:"flex", gap:"12px", marginBottom:"12px" }}>
+                <input type="text" placeholder="First Name" required value={p.firstName}
+                  onChange={e => updateAdditional(idx, "firstName", e.target.value)}
+                  style={{ flex:1, background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"10px", padding:"11px 14px", color:"#fff", fontSize:".88rem" }}
+                />
+                <input type="text" placeholder="Last Name" required value={p.lastName}
+                  onChange={e => updateAdditional(idx, "lastName", e.target.value)}
+                  style={{ flex:1, background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"10px", padding:"11px 14px", color:"#fff", fontSize:".88rem" }}
+                />
+              </div>
+              <input type="email" placeholder="Email Address" required value={p.email}
+                onChange={e => updateAdditional(idx, "email", e.target.value)}
+                style={{ width:"100%", background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"10px", padding:"11px 14px", color:"#fff", fontSize:".88rem" }}
+              />
+            </div>
+          ))}
+
+          <div style={{ display:"flex", gap:"12px", marginTop:"8px" }}>
+            <button type="button" onClick={() => setFormStep(1)}
+              style={{ flexShrink:0, padding:"14px 20px", borderRadius:"50px", fontFamily:dm, fontSize:".9rem", fontWeight:600, background:"none", border:`1px solid ${S.border}`, color:S.muted, cursor:"pointer" }}>
+              ← Back
+            </button>
+            <button type="submit" className="cta-primary" style={{ flex:1, padding:"17px 32px", borderRadius:"50px", fontFamily:syne, fontSize:"1rem", letterSpacing:".02em" }}>
+              Continue to Payment →
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* ── STEP 3: Payment ── */}
+      {formStep === 3 && (
+        <form onSubmit={handleSubmit}>
+          <div style={{ background:"rgba(255,255,255,.04)", border:`1px solid ${S.border}`, borderRadius:"14px", padding:"14px 18px", marginBottom:"24px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px", flexWrap:"wrap" }}>
+            <div>
+              <div style={{ fontWeight:600, fontSize:".9rem" }}>{formData.firstName} {formData.lastName}{numSeats > 1 ? ` + ${numSeats - 1} more` : ""}</div>
+              <div style={{ color:S.muted, fontSize:".8rem" }}>{formData.email}</div>
+            </div>
+            <button type="button" onClick={() => setFormStep(numSeats > 1 ? 2 : 1)}
+              style={{ background:"none", border:"none", color:S.orange, cursor:"pointer", fontSize:".8rem", fontWeight:600, padding:0 }}>
+              Edit
+            </button>
+          </div>
+          <div style={{ background:"rgba(244,124,76,.06)", border:"1px solid rgba(244,124,76,.2)", borderRadius:"14px", padding:"18px 20px", marginBottom:"24px" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"4px" }}>
+              <span style={{ fontFamily:syne, fontWeight:700, fontSize:".95rem" }}>{eventTitle}</span>
+              <span style={{ fontFamily:syne, fontWeight:800, fontSize:"1.1rem", color:S.orange }}>{numSeats > 1 ? totalDisplay : priceDisplay}</span>
+            </div>
+            {numSeats > 1 ? (
+              <div style={{ marginTop:"8px", display:"flex", flexDirection:"column", gap:"3px" }}>
+                {Array.from({ length: numSeats }, (_, i) => {
+                  const unitCents = seatUnitPrice(i, price);
+                  const disc = i === 1 ? "−17%" : i === 2 ? "−23%" : i === 3 ? "−25%" : null;
+                  return (
+                    <div key={i} style={{ display:"flex", justifyContent:"space-between", fontFamily:dm, fontSize:".76rem", color:"rgba(255,255,255,.55)" }}>
+                      <span>Seat {i + 1}{disc ? <span style={{ color:"#4ade80", marginLeft:"6px" }}>{disc}</span> : ""}</span>
+                      <span>${(unitCents / 100).toFixed(0)}</span>
+                    </div>
+                  );
+                })}
+                {savings > 0 && (
+                  <div style={{ display:"flex", justifyContent:"space-between", fontFamily:dm, fontSize:".76rem", color:"#4ade80", marginTop:"4px", paddingTop:"4px", borderTop:"1px solid rgba(255,255,255,.07)" }}>
+                    <span>You save</span><span>${(savings / 100).toFixed(0)}</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ color:S.muted, fontSize:".78rem" }}>6-week live training · June Cohort · {location}</div>
+            )}
+            {numSeats > 1 && (
+              <div style={{ marginTop:"10px", paddingTop:"10px", borderTop:`1px solid rgba(255,255,255,.07)` }}>
+                {[{ firstName: formData.firstName, lastName: formData.lastName }, ...additionalParticipants].map((p, i) => (
+                  <div key={i} style={{ fontFamily:dm, fontSize:".75rem", color:"rgba(255,255,255,.45)", lineHeight:1.8 }}>
+                    {i + 1}. {p.firstName} {p.lastName}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <PromoBanner compact />
+          <div style={{ marginBottom:"24px" }}>
+            <div style={{ fontFamily:dm, fontSize:".78rem", color:S.muted, marginBottom:"12px", letterSpacing:".06em", textTransform:"uppercase" }}>Select Payment Method</div>
+            <div className="pay-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
+              {[
+                { id:"card",      icon:"💳", label:"Credit / Debit", sub:"Visa · Mastercard · Amex" },
+                { id:"googlepay", icon:"",   label:"Google Pay",     sub:"Pay with Google Pay" },
+              ].map(p=>(
+                <div key={p.id} className={`payment-opt${activePayment===p.id?" selected":""}`}
+                  onClick={()=>setActivePayment(p.id)}
+                  style={{ background:"rgba(255,255,255,.04)", border:`1.5px solid ${activePayment===p.id?S.orange:S.border}`, borderRadius:"12px", padding:"14px 16px", display:"flex", alignItems:"center", gap:"10px" }}
+                >
+                  <span style={{ fontSize:"1.4rem", lineHeight:1, display:"flex", alignItems:"center", justifyContent:"center", width:"24px" }}>
+                    {p.id === "googlepay" ? (
+                      <svg viewBox="0 0 24 24" width="22" height="22" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                      </svg>
+                    ) : p.icon}
+                  </span>
+                  <div>
+                    <div style={{ fontWeight:600, fontSize:".88rem" }}>{p.label}</div>
+                    <div style={{ fontSize:".72rem", color:S.muted }}>{p.sub}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Terms & Conditions checkbox */}
+          <div style={{ display:"flex", alignItems:"flex-start", gap:"10px", marginBottom:"20px", padding:"14px 16px", background:"rgba(255,255,255,.03)", border:`1px solid ${S.border}`, borderRadius:"12px" }}>
+            <input
+              type="checkbox"
+              id="terms-accept"
+              checked={termsAccepted}
+              onChange={e => setTermsAccepted(e.target.checked)}
+              style={{ marginTop:"2px", accentColor:S.orange, width:"16px", height:"16px", flexShrink:0, cursor:"pointer" }}
+            />
+            <label htmlFor="terms-accept" style={{ fontFamily:dm, fontSize:".83rem", color:"rgba(255,255,255,.6)", lineHeight:1.55, cursor:"pointer" }}>
+              I have read and agree to the{" "}
+              <a
+                href="/training-terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color:S.orange, fontWeight:600, textDecoration:"none" }}
+              >
+                Terms &amp; Conditions
+              </a>
+              , including the refund policy.
+            </label>
+          </div>
+
+          <button type="submit" disabled={formStatus==="loading" || !termsAccepted} className="cta-primary" style={{
+            width:"100%", padding:"17px 32px", borderRadius:"50px",
+            fontFamily:syne, fontSize:"1.05rem", letterSpacing:".02em",
+            opacity: (formStatus==="loading" || !termsAccepted) ? .45 : 1,
+            cursor: !termsAccepted ? "not-allowed" : "pointer",
+          }}>
+            {formStatus==="loading" ? (
+              <span style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"10px" }}>
+                <span style={{ width:"18px", height:"18px", border:"2.5px solid rgba(0,0,0,.3)", borderTopColor:"#131A1B", borderRadius:"50%", display:"inline-block", animation:"spin 0.8s linear infinite" }}/>
+                Redirecting to payment…
+              </span>
+            ) : `Pay ${numSeats > 1 ? totalDisplay : priceDisplay} Securely →`}
+          </button>
+          {formStatus==="error" && (
+            <p style={{ color:"#F87171", fontSize:".83rem", textAlign:"center", marginTop:"12px" }}>
+              {toastMsg || "Something went wrong. Please try again or email arfa_edu@tiblogics.com"}
+            </p>
+          )}
+          <div style={{ textAlign:"center", marginTop:"18px", color:S.muted, fontSize:".78rem" }}>
+            {C.registration.secureNote}
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+export default function TrainingLandingPage({
+  eventSlug, eventTitle, eventDescription, startDate, spots,
+  price, currency, location, timeSlot,
+  stripeLink, registrationOpen, content, comingSoon = false,
+  paymentResult, confirmationNumber,
+}: Props) {
+  const C = content;
+  const fmtPrice = (cents: number) => `$${cents % 100 === 0 ? (cents / 100).toFixed(0) : (cents / 100).toFixed(2)} ${currency}`;
+  const priceDisplay = comingSoon
+    ? (price > 0 ? fmtPrice(price) : "Announced Soon")
+    : price === 0 ? "Free" : fmtPrice(price);
+  const isFree = price === 0;
+  const [faqOpen, setFaqOpen] = useState<number | null>(null);
+
+  // Auto-cancel registration when Stripe checkout is abandoned
+  useEffect(() => {
+    if (paymentResult === "cancelled" && confirmationNumber) {
+      fetch("/api/events/cancel-registration", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmationNumber }),
+      }).catch(() => {}); // fire-and-forget, non-blocking
+    }
+  }, [paymentResult, confirmationNumber]);
+
+  // Scroll reveal
+  useEffect(() => {
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add("visible");
+          (e.target as Element).querySelectorAll(".stagger-child").forEach((c, i) => {
+            setTimeout(() => c.classList.add("visible"), i * 85);
+          });
+        }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll(".reveal").forEach(el => obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
+
+  // ── Layout ──────────────────────────────────────────────────────────────────
+  return (
+    <div style={{ fontFamily: dm, background: S.darker, color: "#fff", overflowX: "hidden", position: "relative" }}>
+      <style dangerouslySetInnerHTML={{ __html: STYLES }} />
+
+      {/* ── PAYMENT RESULT BANNER ── */}
+      {paymentResult === "success" && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100%", zIndex: 2000,
+          background: "linear-gradient(135deg,#16a34a,#15803d)",
+          padding: "18px 24px", textAlign: "center",
+          boxShadow: "0 4px 24px rgba(0,0,0,.3)",
+          animation: "fadeUp .5s ease",
+        }}>
+          <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+            <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.05rem", color: "#fff", marginBottom: "4px" }}>
+              🎉 Payment confirmed — You&apos;re in!
+            </div>
+            <div style={{ fontFamily: dm, fontSize: ".85rem", color: "rgba(255,255,255,.85)" }}>
+              {confirmationNumber && <>Confirmation <strong>{confirmationNumber}</strong> · </>}
+              Check your inbox — a welcome email is on its way from arfa_edu@tiblogics.com
+            </div>
+          </div>
+        </div>
+      )}
+      {paymentResult === "cancelled" && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100%", zIndex: 2000,
+          background: "#1C2526", borderBottom: "1px solid rgba(244,124,76,.3)",
+          padding: "14px 24px", textAlign: "center",
+          animation: "fadeUp .5s ease",
+        }}>
+          <div style={{ fontFamily: dm, fontSize: ".9rem", color: "rgba(255,255,255,.7)" }}>
+            Payment cancelled — your spot is not yet reserved.{" "}
+            <a href="#register" style={{ color: S.orange, fontWeight: 600, textDecoration: "none" }}>Try again →</a>
+          </div>
+        </div>
+      )}
+
+      {/* ── NAV ── */}
+      <nav className="landing-nav" style={{
+        position: "fixed", top: 0, left: 0, width: "100%", zIndex: 1000,
+        background: "rgba(19,26,27,0.88)", backdropFilter: "blur(20px)",
+        borderBottom: `1px solid ${S.border}`, padding: "12px 18px"
+      }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <svg width="38" height="38" viewBox="0 0 38 38" fill="none">
+              <circle cx="8" cy="19" r="4.5" fill="#F47C4C"/>
+              <circle cx="19" cy="7" r="3.5" fill="#F9A738"/>
+              <circle cx="30" cy="19" r="4.5" fill="#F47C4C"/>
+              <circle cx="19" cy="31" r="3.5" fill="#F9A738"/>
+              <circle cx="19" cy="19" r="6" fill="white"/>
+              <line x1="12.5" y1="19" x2="13" y2="19" stroke="rgba(244,124,76,0.5)" strokeWidth="1.5"/>
+              <line x1="25" y1="19" x2="25.5" y2="19" stroke="rgba(244,124,76,0.5)" strokeWidth="1.5"/>
+              <line x1="19" y1="10.5" x2="19" y2="13" stroke="rgba(244,124,76,0.5)" strokeWidth="1.5"/>
+              <line x1="19" y1="25" x2="19" y2="27.5" stroke="rgba(244,124,76,0.5)" strokeWidth="1.5"/>
+            </svg>
+            <div>
+              <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.1rem", letterSpacing: ".06em" }}>{C.nav.brand}</div>
+              <div className="nav-sub" style={{ fontSize: ".78rem", color: S.muted, letterSpacing: ".1em" }}>{C.nav.tagline}</div>
+            </div>
+          </div>
+          <a href="#register" className="cta-primary" style={{
+            padding: "9px 16px", borderRadius: "30px", fontFamily: syne,
+            fontSize: ".8rem", textDecoration: "none", letterSpacing: ".02em", whiteSpace: "nowrap"
+          }}>{C.nav.cta}</a>
+        </div>
+      </nav>
+
+      {/* ── HERO ── */}
+      <section className="hero-section" style={{
+        minHeight: "100vh", display: "flex", alignItems: "center",
+        padding: "120px 24px 80px", position: "relative", overflow: "hidden"
+      }}>
+        {/* Background orbs */}
+        <div className="orb" style={{ width:600, height:600, background:"rgba(244,124,76,.12)", top:"-100px", left:"-150px", "--duration":"14s" } as React.CSSProperties} />
+        <div className="orb" style={{ width:500, height:500, background:"rgba(249,167,56,.08)", bottom:"-80px", right:"-120px", "--duration":"18s" } as React.CSSProperties} />
+        <div className="orb" style={{ width:300, height:300, background:"rgba(34,81,163,.12)", top:"40%", left:"40%", "--duration":"11s" } as React.CSSProperties} />
+
+        <div className="hero-grid" style={{ maxWidth: "1200px", margin: "0 auto", width: "100%", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "60px", alignItems: "center" }}>
+          <div>
+            {/* Eyebrow */}
+            <div className="hero-1" style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(244,124,76,.1)", border: "1px solid rgba(244,124,76,.25)", borderRadius: "30px", padding: "8px 16px", marginBottom: "28px" }}>
+              <span className="pulsing-dot"/>
+              <span style={{ fontFamily: dm, fontSize: ".82rem", color: "#F9A738", fontWeight: 500 }}>{C.hero.eyebrow || `${location} · ${timeSlot}`}</span>
+            </div>
+
+            {/* Headline */}
+            <h1 className="hero-headline hero-2" style={{
+              fontFamily: syne, fontWeight: 800, lineHeight: 1.12,
+              fontSize: "clamp(2.6rem,4.2vw,4.2rem)", marginBottom: "24px", color: "#fff"
+            }}>
+              {C.hero.headlineLine1}<br />{C.hero.headlineLine2}<br />
+              <span className="gradient-text">{C.hero.headlineHighlight}</span>
+            </h1>
+
+            {/* Sub */}
+            <p className="hero-3" style={{ fontSize: "1.05rem", color: "#B0C4CC", lineHeight: 1.7, marginBottom: "32px", maxWidth: "520px" }}>
+              {C.hero.subtitle}
+            </p>
+
+            {/* Pills */}
+            <div className="hero-pills hero-4" style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "36px" }}>
+              {C.hero.pills.map((p,i) => (
+                <span key={i} style={{ background: "rgba(255,255,255,.06)", border: `1px solid ${S.border}`, borderRadius: "20px", padding: "6px 14px", fontSize: ".78rem", color: "#C8D8E0", fontWeight: 500 }}>{p}</span>
+              ))}
+            </div>
+
+            {/* CTAs */}
+            <div className="hero-5 hero-cta-wrap" style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
+              <a href="#register" className="cta-primary" style={{ padding: "15px 30px", borderRadius: "50px", fontFamily: syne, fontSize: "1rem", textDecoration: "none", letterSpacing: ".02em" }}>
+                {isFree ? applyPrice(C.hero.ctaPrimaryFree, priceDisplay) : applyPrice(C.hero.ctaPrimaryPaid, priceDisplay)}
+              </a>
+              <a href="#curriculum" className="cta-outline" style={{ padding: "15px 26px", borderRadius: "50px", fontFamily: dm, fontSize: ".95rem", textDecoration: "none" }}>
+                {C.hero.ctaSecondary}
+              </a>
+            </div>
+          </div>
+
+          {/* Hero visual */}
+          <div className="hero-visual" style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: "28px" }}>
+            {/* ARFA — AI Readiness For All banner */}
+            <img
+              src="/arfa-banner.png"
+              alt="ARFA — AI Readiness For All · A TIBLOGICS Educational Branch"
+              className="hero-1"
+              style={{
+                width: "100%", maxWidth: "440px", height: "auto",
+                borderRadius: "18px", border: `1px solid ${S.border}`,
+                boxShadow: "0 12px 40px rgba(0,0,0,0.35)",
+              }}
+            />
+            <NeuralNet />
+          </div>
+        </div>
+      </section>
+
+      {/* ── STATS ── */}
+      <div className="reveal" style={{ background: "rgba(255,255,255,.025)", borderTop: `1px solid ${S.border}`, borderBottom: `1px solid ${S.border}`, padding: "28px 24px" }}>
+        <div style={{ maxWidth: "1000px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-around", flexWrap: "wrap", gap: "20px" }} className="stat-wrap">
+          {C.stats.map((s, i) => (
+            <div key={i} className="stagger-child stat-item" style={{
+              textAlign: "center", padding: "0 20px",
+              borderRight: i < C.stats.length - 1 ? `1px solid ${S.border}` : "none"
+            }}>
+              <div className="gradient-text" style={{ fontFamily: syne, fontWeight: 800, fontSize: "2rem" }}>{s.value}</div>
+              <div style={{ fontSize: ".75rem", color: S.muted, marginTop: "4px", letterSpacing: ".04em" }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── COUNTDOWN ── */}
+      <section style={{ padding: "80px 24px", background: `linear-gradient(180deg, ${S.darker} 0%, ${S.dark} 100%)` }}>
+        <div style={{ maxWidth: "700px", margin: "0 auto", textAlign: "center" }} className="reveal">
+          <div style={{ fontFamily: dm, fontSize: ".8rem", color: S.muted, letterSpacing: ".15em", textTransform: "uppercase", marginBottom: "12px" }}>{C.countdown.label}</div>
+          {comingSoon ? (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "12px", background: "rgba(244,124,76,.1)", border: "1px solid rgba(244,124,76,.3)", borderRadius: "50px", padding: "16px 32px" }}>
+              <span className="pulsing-dot" />
+              <span style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.4rem", color: "#fff" }}>Coming Soon</span>
+            </div>
+          ) : (
+            <CountdownTimer startDate={startDate} />
+          )}
+        </div>
+      </section>
+
+      {/* ── OUTCOMES ── */}
+      <section style={{ padding: "80px 24px" }}>
+        <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+          <div className="reveal" style={{ textAlign: "center", marginBottom: "56px" }}>
+            <div style={{ fontFamily: dm, fontSize: ".75rem", color: S.orange, letterSpacing: ".18em", textTransform: "uppercase", marginBottom: "12px" }}>{C.outcomes.eyebrow}</div>
+            <h2 style={{ fontFamily: syne, fontWeight: 800, fontSize: "clamp(1.8rem,3vw,2.6rem)", marginBottom: "14px" }}>{C.outcomes.heading}</h2>
+            <p style={{ color: S.muted, fontSize: ".95rem", maxWidth: "480px", margin: "0 auto", lineHeight: 1.7 }}>{C.outcomes.subtitle}</p>
+          </div>
+          <div className="outcomes-grid reveal" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: "18px" }}>
+            {C.outcomes.items.map((o, i) => (
+              <div key={i} className="outcome-card stagger-child" style={{
+                background: S.card, borderRadius: "20px", padding: "28px 24px",
+              }}>
+                <div className="card-icon" style={{ fontSize: "2rem", marginBottom: "14px" }}>{o.icon}</div>
+                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: "1rem", marginBottom: "8px" }}>{o.title}</div>
+                <div style={{ color: S.muted, fontSize: ".88rem", lineHeight: 1.65 }}>{o.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CURRICULUM ── */}
+      <section id="curriculum" style={{ padding: "80px 24px", background: S.dark }}>
+        <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+          <div className="reveal" style={{ textAlign: "center", marginBottom: "56px" }}>
+            <div style={{ fontFamily: dm, fontSize: ".75rem", color: S.orange, letterSpacing: ".18em", textTransform: "uppercase", marginBottom: "12px" }}>{C.curriculum.eyebrow}</div>
+            <h2 style={{ fontFamily: syne, fontWeight: 800, fontSize: "clamp(1.8rem,3vw,2.6rem)", marginBottom: "14px" }}>{C.curriculum.heading}</h2>
+            <p style={{ color: S.muted, fontSize: ".95rem", maxWidth: "520px", margin: "0 auto" }}>{C.curriculum.subtitle}</p>
+          </div>
+
+          <div className="sessions-grid reveal" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "18px", marginBottom: "56px" }}>
+            {C.curriculum.sessions.map((s, i) => (
+              <div key={i} className="session-card stagger-child" style={{
+                background: S.card, border: `1px solid ${S.border}`, borderRadius: "20px",
+                padding: "28px 22px", position: "relative", overflow: "hidden"
+              }}>
+                <div style={{ position: "absolute", top: "14px", right: "16px", fontFamily: syne, fontWeight: 800, fontSize: "3.5rem", color: "rgba(255,255,255,.04)", lineHeight: 1 }}>{s.num}</div>
+                <div style={{ fontSize: ".75rem", color: s.color, fontWeight: 600, marginBottom: "10px", letterSpacing: ".06em" }}>{s.date}</div>
+                <div style={{ fontFamily: syne, fontWeight: 700, fontSize: "1rem", marginBottom: "10px", lineHeight: 1.3, paddingRight: "20px" }}>{s.title}</div>
+                <div style={{ color: S.muted, fontSize: ".83rem", lineHeight: 1.65, marginBottom: "16px" }}>{s.desc}</div>
+                <span style={{ display: "inline-block", background: `${s.color}22`, color: s.color, borderRadius: "20px", padding: "4px 12px", fontSize: ".73rem", fontWeight: 600 }}>{s.badge}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Schedule table */}
+          <div className="reveal" style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: ".88rem" }}>
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${S.border}` }}>
+                  {["Session","Date","Topic","Key Labs"].map(h=>(
+                    <th key={h} style={{ textAlign:"left", padding:"12px 16px", color: S.muted, fontWeight:600, fontFamily: dm, fontSize:".75rem", letterSpacing:".08em", textTransform:"uppercase" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {C.curriculum.scheduleRows.map((row,i)=>(
+                  <tr key={i} style={{ borderBottom:`1px solid ${S.border}` }}>
+                    {[row.session, row.date, row.topic, row.labs].map((cell,j)=>(
+                      <td key={j} style={{ padding:"14px 16px", color: j===2 ? "#C8D8E0" : j===3 ? S.muted : "#fff", lineHeight:1.55 }}>{cell}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Schedule pills */}
+          <div className="reveal" style={{ marginTop: "28px", display: "flex", flexWrap: "wrap", gap: "10px" }}>
+            {C.curriculum.schedulePills.map((p,i)=>(
+              <span key={i} style={{ background:"rgba(255,255,255,.05)", border:`1px solid ${S.border}`, borderRadius:"20px", padding:"6px 14px", fontSize:".78rem", color:S.muted }}>{p}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── PROMO BANNER ── */}
+      {!comingSoon && (
+        <section style={{ padding: "0 24px 48px" }}>
+          <div style={{ maxWidth: "520px", margin: "0 auto" }}>
+            <PromoBanner />
+          </div>
+        </section>
+      )}
+
+      {/* ── PRICING ── */}
+      <section style={{ padding: "0 24px 80px" }}>
+        <div style={{ maxWidth: "520px", margin: "0 auto" }} className="reveal">
+          {/* Card */}
+          <div className="pricing-inner" style={{ background: S.dark, border: `1px solid ${S.border}`, borderRadius: "24px", padding: "40px 36px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+            <div className="orb" style={{ width:300, height:300, background:"rgba(244,124,76,.08)", top:"-50px", right:"-80px" }} />
+            <div style={{ fontFamily: dm, fontSize: ".78rem", color: S.muted, letterSpacing: ".1em", marginBottom: "20px" }}>{C.pricing.eyebrow}</div>
+            <div style={{ marginBottom: "12px" }}>
+              {C.pricing.originalPrice && (
+                <span style={{ fontFamily: syne, fontWeight: 700, fontSize: "1.4rem", color: S.muted, textDecoration: "line-through", marginRight: "12px" }}>{C.pricing.originalPrice}</span>
+              )}
+              <span style={{ background: "#16a34a22", color: "#4ade80", border: "1px solid #16a34a44", borderRadius: "20px", padding: "4px 14px", fontSize: ".78rem", fontWeight: 600 }}>{C.pricing.badge}</span>
+            </div>
+            <div className="pricing-amount" style={{ fontFamily: syne, fontWeight: 800, fontSize: comingSoon ? "2.6rem" : "5rem", lineHeight: 1.05, marginBottom: "8px" }}>{priceDisplay}</div>
+            <div style={{ color: S.orange, fontSize: ".88rem", fontWeight: 600, marginBottom: "6px" }}>{C.pricing.saveText}</div>
+            <div style={{ color: S.muted, fontSize: ".85rem", marginBottom: "20px" }}>{C.pricing.accessText}</div>
+
+            {/* Weekly cost breakdown */}
+            <div className="weekly-grid" style={{ display: comingSoon ? "none" : "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "28px" }}>
+              <div style={{ background: "rgba(255,255,255,.04)", border: `1px solid ${S.border}`, borderRadius: "14px", padding: "14px 16px", textAlign: "center" }}>
+                <div style={{ fontFamily: dm, fontSize: ".7rem", color: S.muted, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: "6px" }}>{C.pricing.standardLabel}</div>
+                <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.5rem", color: S.muted, textDecoration: "line-through", marginBottom: "2px" }}>{C.pricing.standardAmount}</div>
+                <div style={{ fontSize: ".75rem", color: S.muted }}>{C.pricing.standardSub}</div>
+              </div>
+              <div style={{ background: "rgba(244,124,76,.08)", border: "1px solid rgba(244,124,76,.3)", borderRadius: "14px", padding: "14px 16px", textAlign: "center" }}>
+                <div style={{ fontFamily: dm, fontSize: ".7rem", color: S.orange, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: "6px" }}>{C.pricing.cohortLabel}</div>
+                <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.5rem", color: "#fff", marginBottom: "2px" }}>{C.pricing.cohortAmount}</div>
+                <div style={{ fontSize: ".75rem", color: S.muted }}>{C.pricing.cohortSub}</div>
+              </div>
+            </div>
+
+            {/* Includes list */}
+            <div style={{ textAlign: "left", marginBottom: "32px" }}>
+              {C.pricing.includes.map((item, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "10px", padding: "8px 0", borderBottom: i < C.pricing.includes.length - 1 ? `1px solid ${S.border}` : "none" }}>
+                  <span className="include-check">✦</span>
+                  <span style={{ fontSize: ".88rem", color: "#C8D8E0", lineHeight: 1.55 }}>{item}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* CTA */}
+            <a href="#register" className="cta-primary" style={{
+              display: "block", padding: "17px 32px", borderRadius: "50px",
+              fontFamily: syne, fontSize: "1rem", textDecoration: "none",
+              marginBottom: "16px", letterSpacing: ".02em"
+            }}>{C.pricing.cta}</a>
+
+            {/* Pulse warning */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+              <span className="pulsing-dot" />
+              <span style={{ fontSize: ".8rem", color: S.orange, fontWeight: 600 }}>{C.pricing.warning}</span>
+            </div>
+          </div>
+
+          {/* Requirements */}
+          <div style={{ marginTop: "28px" }}>
+            <div style={{ fontFamily: dm, fontSize: ".78rem", color: S.muted, letterSpacing: ".1em", textTransform: "uppercase", textAlign: "center", marginBottom: "16px" }}>{C.pricing.requirementsHeading}</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              {C.pricing.requirements.map((r,i)=>(
+                <div key={i} style={{ background: S.card, border:`1px solid ${S.border}`, borderRadius:"14px", padding:"14px" }}>
+                  <div style={{ fontSize:"1.3rem", marginBottom:"6px" }}>{r.icon}</div>
+                  <div style={{ fontSize:".83rem", fontWeight:600, marginBottom:"3px" }}>{r.title}</div>
+                  <div style={{ fontSize:".75rem", color:S.muted }}>{r.subtitle}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── WHAT'S INCLUDED ── */}
+      <section style={{ padding: "80px 24px", background: S.dark }}>
+        <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+          <div className="reveal" style={{ textAlign:"center", marginBottom:"56px" }}>
+            <div style={{ fontFamily:dm, fontSize:".75rem", color:S.orange, letterSpacing:".18em", textTransform:"uppercase", marginBottom:"12px" }}>{C.whatsIncluded.eyebrow}</div>
+            <h2 style={{ fontFamily:syne, fontWeight:800, fontSize:"clamp(1.8rem,3vw,2.6rem)", marginBottom:"14px" }}>{C.whatsIncluded.heading}</h2>
+          </div>
+
+          <div className="includes-grid reveal" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:"18px", marginBottom:"40px" }}>
+            {C.whatsIncluded.cards.map((c,i)=>(
+              <div key={i} className="include-card stagger-child" style={{ background:S.card, borderRadius:"20px", padding:"28px 24px", borderLeft:`3px solid ${c.color}` }}>
+                <div style={{ fontFamily:syne, fontWeight:700, fontSize:"1rem", marginBottom:"6px" }}>{c.title}</div>
+                <div style={{ color:c.color, fontSize:".8rem", fontWeight:600, marginBottom:"10px" }}>{c.subtitle}</div>
+                <div style={{ color:S.muted, fontSize:".85rem", lineHeight:1.65 }}>{c.desc}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tools grid */}
+          <div className="reveal" style={{ marginBottom:"32px" }}>
+            <div style={{ fontFamily:dm, fontSize:".75rem", color:S.muted, letterSpacing:".12em", textTransform:"uppercase", textAlign:"center", marginBottom:"16px" }}>{C.whatsIncluded.toolsHeading}</div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:"10px", justifyContent:"center" }}>
+              {C.whatsIncluded.tools.map((t,i)=>(
+                <span key={i} style={{ background:"rgba(255,255,255,.06)", border:`1px solid ${S.border}`, borderRadius:"30px", padding:"7px 16px", fontSize:".8rem", color:"#C8D8E0" }}>{t}</span>
+              ))}
+            </div>
+          </div>
+
+          {/* Live Fix callout */}
+          <div className="reveal callout-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"18px" }}>
+            {C.whatsIncluded.callouts.map((c,i)=>(
+              <div key={i} style={{ background:`${c.color}14`, border:`1px solid ${c.color}40`, borderRadius:"20px", padding:"24px" }}>
+                <div style={{ fontFamily:syne, fontWeight:700, fontSize:"1rem", color:c.color, marginBottom:"8px" }}>{c.title}</div>
+                <div style={{ color:S.muted, fontSize:".88rem", lineHeight:1.65 }}>{c.body}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── REGISTRATION FORM ── */}
+      <section id="register" style={{ padding: "80px 24px" }}>
+        <div style={{ maxWidth: "660px", margin: "0 auto" }} className="reveal">
+          <div style={{ textAlign:"center", marginBottom:"40px" }}>
+            <div style={{ fontFamily:dm, fontSize:".75rem", color:S.orange, letterSpacing:".18em", textTransform:"uppercase", marginBottom:"12px" }}>{C.registration.eyebrow}</div>
+            <h2 style={{ fontFamily:syne, fontWeight:800, fontSize:"clamp(1.8rem,3vw,2.4rem)", marginBottom:"14px" }}>{C.registration.heading}</h2>
+            <p style={{ color:S.muted, fontSize:".9rem", lineHeight:1.7, maxWidth:"480px", margin:"0 auto" }}>{C.registration.subtitle}</p>
+
+            {/* ── Seat counter ── */}
+            {comingSoon ? (
+              <div style={{
+                marginTop:"24px", display:"inline-flex", alignItems:"center", gap:"10px",
+                background:"rgba(244,124,76,.1)", border:"1.5px solid rgba(244,124,76,.35)",
+                borderRadius:"50px", padding:"10px 24px",
+              }}>
+                <span style={{ width:"8px", height:"8px", borderRadius:"50%", background:S.orange, display:"inline-block", animation:"pulse 1.5s infinite" }} />
+                <span style={{ fontFamily:syne, fontWeight:700, fontSize:"1rem", color:S.orange }}>
+                  🔔 Waitlist open — limited early-bird spots
+                </span>
+              </div>
+            ) : spots > 0 ? (
+              <div style={{ marginTop:"24px", display:"inline-flex", flexDirection:"column", alignItems:"center", gap:"10px" }}>
+                <div style={{
+                  display:"inline-flex", alignItems:"center", gap:"10px",
+                  background: spots <= 5 ? "rgba(239,68,68,.1)" : "rgba(244,124,76,.1)",
+                  border: `1.5px solid ${spots <= 5 ? "rgba(239,68,68,.4)" : "rgba(244,124,76,.35)"}`,
+                  borderRadius:"50px", padding:"8px 20px",
+                }}>
+                  <span style={{ width:"8px", height:"8px", borderRadius:"50%", background: spots <= 5 ? "#EF4444" : S.orange, display:"inline-block", animation:"pulse 1.5s infinite" }} />
+                  <span style={{ fontFamily:syne, fontWeight:700, fontSize:".95rem", color: spots <= 5 ? "#EF4444" : S.orange }}>
+                    {spots <= 5 ? `Only ${spots} seat${spots === 1 ? "" : "s"} left!` : `${spots} seats left`}
+                  </span>
+                </div>
+                {/* Progress bar */}
+                <div style={{ width:"220px", height:"5px", background:"rgba(255,255,255,.08)", borderRadius:"10px", overflow:"hidden" }}>
+                  <div style={{
+                    height:"100%", borderRadius:"10px",
+                    background: spots <= 5 ? "linear-gradient(90deg,#EF4444,#F87171)" : "linear-gradient(90deg,#F47C4C,#F9A738)",
+                    width:`${Math.max(4, Math.round((spots / 30) * 100))}%`,
+                    transition:"width .6s ease",
+                  }} />
+                </div>
+                <span style={{ fontFamily:dm, fontSize:".75rem", color:S.muted }}>
+                  {spots <= 5 ? "Reserve your seat before it's gone." : "Cohort closes when full — no exceptions."}
+                </span>
+              </div>
+            ) : (
+              <div style={{
+                marginTop:"24px", display:"inline-flex", alignItems:"center", gap:"10px",
+                background:"rgba(239,68,68,.08)", border:"1.5px solid rgba(239,68,68,.3)",
+                borderRadius:"50px", padding:"10px 24px",
+              }}>
+                <span style={{ fontFamily:syne, fontWeight:700, fontSize:"1rem", color:"#EF4444" }}>
+                  🔒 This cohort is full
+                </span>
+              </div>
+            )}
+          </div>
+          {comingSoon ? (
+            <WaitlistForm eventSlug={eventSlug} eventTitle={eventTitle} content={content} />
+          ) : (
+            <RegistrationForm
+              eventSlug={eventSlug}
+              eventTitle={eventTitle}
+              price={price}
+              currency={currency}
+              location={location}
+              priceDisplay={priceDisplay}
+              content={content}
+            />
+          )}
+        </div>
+      </section>
+
+      {/* ── FAQ ── */}
+      <section style={{ padding: "80px 24px", background: S.dark }}>
+        <div style={{ maxWidth: "700px", margin: "0 auto" }}>
+          <div className="reveal" style={{ textAlign:"center", marginBottom:"48px" }}>
+            <div style={{ fontFamily:dm, fontSize:".75rem", color:S.orange, letterSpacing:".18em", textTransform:"uppercase", marginBottom:"12px" }}>{C.faq.eyebrow}</div>
+            <h2 style={{ fontFamily:syne, fontWeight:800, fontSize:"clamp(1.6rem,3vw,2.2rem)" }}>{C.faq.heading}</h2>
+          </div>
+          <div className="reveal">
+            {C.faq.items.map((f,i)=>(
+              <div key={i} className={`faq-item${faqOpen===i?" open":""}`} onClick={()=>setFaqOpen(faqOpen===i?null:i)}>
+                <div className="faq-q">
+                  <span style={{ fontFamily:syne, fontWeight:600, fontSize:".95rem", color:"#E8F0F4", lineHeight:1.5 }}>{f.q}</span>
+                  <svg className="faq-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={S.muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </div>
+                <div className="faq-a">
+                  <div style={{ color:S.muted, fontSize:".88rem", lineHeight:1.75, paddingBottom: f.link ? "12px" : "20px" }}>{f.a}</div>
+                  {f.link && (
+                    <div style={{ paddingBottom:"20px" }}>
+                      <a href={f.link.href} style={{ color:S.orange, fontSize:".82rem", fontWeight:600, textDecoration:"none", borderBottom:`1px solid rgba(244,124,76,.35)`, paddingBottom:"1px" }}>
+                        {f.link.text}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer style={{ padding:"48px 24px 32px", background:S.darker, borderTop:`1px solid ${S.border}` }}>
+        <div style={{ maxWidth:"1000px", margin:"0 auto" }}>
+          <div className="footer-inner" style={{ display:"flex", flexWrap:"wrap", alignItems:"center", justifyContent:"space-between", gap:"24px", marginBottom:"32px" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
+              <div style={{ fontFamily:syne, fontWeight:800, fontSize:"1.2rem", letterSpacing:".06em" }}>{C.footer.brand}</div>
+              <div style={{ fontSize:".75rem", color:S.muted }}>{C.footer.tagline}</div>
+            </div>
+            <div className="footer-links" style={{ display:"flex", flexWrap:"wrap", gap:"24px" }}>
+              <a href={`mailto:${C.footer.email}`} style={{ color:S.muted, fontSize:".85rem", textDecoration:"none" }}>{C.footer.email}</a>
+              <a href={`https://www.${C.footer.website.replace(/^https?:\/\/(www\.)?/, "")}`} target="_blank" rel="noopener noreferrer" style={{ color:S.muted, fontSize:".85rem", textDecoration:"none" }}>{C.footer.website}</a>
+              <a href="#register" style={{ color:S.orange, fontSize:".85rem", textDecoration:"none", fontWeight:600 }}>Register</a>
+              <a href="#curriculum" style={{ color:S.muted, fontSize:".85rem", textDecoration:"none" }}>Curriculum</a>
+            </div>
+          </div>
+          <div style={{ borderTop:`1px solid ${S.border}`, paddingTop:"24px", textAlign:"center", color:S.muted, fontSize:".78rem" }}>
+            {C.footer.copyright}
+          </div>
+        </div>
+      </footer>
+
+      {/* Spin keyframe for loading button */}
+      <style dangerouslySetInnerHTML={{ __html: `@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}` }} />
+    </div>
+  );
+}

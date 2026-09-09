@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/require-admin";
 
 export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   const { id } = await params;
 
   const lead = await prisma.agentLead.findUnique({ where: { id } });

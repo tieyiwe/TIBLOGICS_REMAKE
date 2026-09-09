@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAdmin } from "@/lib/require-admin";
 
 function slugify(title: string): string {
   return title
@@ -38,17 +39,23 @@ export async function GET(req: NextRequest) {
     if (category && category !== "all") where.category = category;
     if (featured === "true") where.featured = true;
     if (search) {
-      where.OR = [
-        { title: { contains: search, mode: "insensitive" } },
-        { excerpt: { contains: search, mode: "insensitive" } },
-        { tags: { has: search.toLowerCase() } },
-      ];
+      const terms = search.trim().split(/\s+/).filter(Boolean);
+      // Every term must appear somewhere in the post (AND across terms, OR across fields)
+      where.AND = terms.map(term => ({
+        OR: [
+          { title:   { contains: term, mode: "insensitive" } },
+          { excerpt: { contains: term, mode: "insensitive" } },
+          { content: { contains: term, mode: "insensitive" } },
+          { author:  { contains: term, mode: "insensitive" } },
+          { tags:    { has: term.toLowerCase() } },
+        ],
+      }));
     }
 
     const [posts, total] = await Promise.all([
       prisma.blogPost.findMany({
         where,
-        orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
+        orderBy: { createdAt: "desc" },
         take: limit,
         skip: (page - 1) * limit,
       }),
@@ -62,6 +69,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   try {
     const body = await req.json();
     const baseSlug = slugify(body.title);

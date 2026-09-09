@@ -16,18 +16,27 @@ const STATIC_ROUTES: MetadataRoute.Sitemap = [
   { url: `${BASE}/contact`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
   { url: `${BASE}/book`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
   { url: `${BASE}/services/get-started`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
+  { url: `${BASE}/events`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.85 },
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let blogRoutes: MetadataRoute.Sitemap = [];
+  let eventRoutes: MetadataRoute.Sitemap = [];
 
   try {
-    const posts = await prisma.blogPost.findMany({
-      where: { published: true },
-      select: { slug: true, updatedAt: true, featured: true },
-      orderBy: { createdAt: "desc" },
-      take: 200,
-    });
+    const [posts, events] = await Promise.all([
+      prisma.blogPost.findMany({
+        where: { published: true },
+        select: { slug: true, updatedAt: true, featured: true },
+        orderBy: { createdAt: "desc" },
+        take: 200,
+      }),
+      prisma.event.findMany({
+        where: { published: true },
+        select: { slug: true, updatedAt: true, featured: true },
+        orderBy: { date: "asc" },
+      }),
+    ]);
 
     blogRoutes = posts.map((p: { slug: string; updatedAt: Date; featured: boolean }) => ({
       url: `${BASE}/ai-times/${p.slug}`,
@@ -35,9 +44,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: p.featured ? 0.9 : 0.8,
     }));
+
+    eventRoutes = events.map((e: { slug: string; updatedAt: Date; featured: boolean }) => ({
+      url: `${BASE}/events/${e.slug}`,
+      lastModified: e.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: e.featured ? 0.9 : 0.8,
+    }));
   } catch {
     // DB not available during build
   }
 
-  return [...STATIC_ROUTES, ...blogRoutes];
+  return [...STATIC_ROUTES, ...blogRoutes, ...eventRoutes];
 }

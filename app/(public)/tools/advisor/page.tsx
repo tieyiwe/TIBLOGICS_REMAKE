@@ -58,9 +58,13 @@ export default function AdvisorPage() {
   const router = useRouter();
 
   useEffect(() => {
+    if (process.env.NODE_ENV === "production") {
+      router.replace("/tools");
+      return;
+    }
     trackPageVisit("/tools/advisor");
     trackToolUse("advisor");
-  }, []);
+  }, [router]);
 
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState("");

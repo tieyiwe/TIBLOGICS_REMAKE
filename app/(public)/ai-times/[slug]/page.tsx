@@ -1,11 +1,98 @@
 import { Metadata } from "next";
+import { Suspense } from "react";
+import fs from "fs";
+import path from "path";
+import Anthropic from "@anthropic-ai/sdk";
 import BlogPostClient from "./BlogPostClient";
+
+export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  try {
+    const { prisma } = await import("@/lib/prisma");
+    const posts = await prisma.blogPost.findMany({
+      where: { published: true },
+      select: { slug: true },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+    return posts.map((p) => ({ slug: p.slug }));
+  } catch {
+    return [];
+  }
+}
 
 const SITE_URL = (process.env.NEXTAUTH_URL || "https://tiblogics.com").replace(/\/$/, "");
 const FALLBACK_IMAGE = `${SITE_URL}/og-image.png`;
 
-function toOgImage(coverImage: string | null): string {
-  if (!coverImage) return FALLBACK_IMAGE;
+const LOCALE_MAP: Record<string, string> = { en: "en_US", fr: "fr_FR", sw: "sw_KE" };
+const LANG_LABEL: Record<string, string> = { fr: "Français", sw: "Kiswahili" };
+const LANG_NAMES: Record<string, string> = { fr: "French", sw: "Swahili" };
+
+// Translate only title+excerpt for OG metadata. Uses a separate DB key (tx-meta:)
+// so it doesn't collide with the full article translation cache (tx:).
+async function translateMeta(
+  prisma: import("@prisma/client").PrismaClient,
+  slug: string,
+  lang: "fr" | "sw",
+  title: string,
+  excerpt: string
+): Promise<{ title: string; excerpt: string }> {
+  const metaKey = `tx-meta:${slug}:${lang}`;
+
+  // Check meta-only cache first
+  try {
+    const cached = await prisma.adminSettings.findUnique({ where: { key: metaKey } });
+    if (cached?.value) {
+      const parsed = JSON.parse(cached.value);
+      if (parsed.title && parsed.excerpt) return parsed;
+    }
+  } catch { /* cache miss */ }
+
+  const langName = LANG_NAMES[lang];
+  const prompt = `Translate the title and excerpt below into ${langName}.
+Return ONLY a raw JSON object with exactly two keys: "title" and "excerpt". No markdown, no explanation.
+
+TITLE: ${title}
+
+EXCERPT: ${excerpt.slice(0, 300)}`;
+
+  const haiku = new Anthropic().messages;
+  const response = await haiku.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 512,
+    messages: [{ role: "user", content: prompt }],
+  });
+
+  const raw = response.content[0].type === "text" ? response.content[0].text.trim() : "";
+  const jsonStr = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "");
+  const tx: { title?: string; excerpt?: string } = JSON.parse(jsonStr);
+
+  if (!tx.title || !tx.excerpt) throw new Error("incomplete translation");
+
+  // Cache so the next social crawl for this slug+lang is instant
+  prisma.adminSettings.upsert({
+    where: { key: metaKey },
+    create: { key: metaKey, value: JSON.stringify(tx) },
+    update: { value: JSON.stringify(tx) },
+  }).catch(() => {});
+
+  return { title: tx.title, excerpt: tx.excerpt };
+}
+
+const CATEGORY_OG_FALLBACK: Record<string, string> = {
+  "breaking":     "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&h=630&q=80",
+  "ai-business":  "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=1200&h=630&q=80",
+  "tips":         "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=1200&h=630&q=80",
+  "tools":        "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&h=630&q=80",
+  "case-studies": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&h=630&q=80",
+  "industry":     "https://images.unsplash.com/photo-1779509742657-97f3e5c76f4f?auto=format&fit=crop&w=1200&h=630&q=80",
+};
+
+function toOgImage(coverImage: string | null, category?: string | null): string {
+  const fallback = CATEGORY_OG_FALLBACK[category ?? ""] ?? FALLBACK_IMAGE;
+
+  if (!coverImage) return fallback;
   try {
     const url = new URL(coverImage);
     if (url.hostname === "images.unsplash.com") {
@@ -16,66 +103,110 @@ function toOgImage(coverImage: string | null): string {
       url.searchParams.set("q", "80");
       return url.toString();
     }
+    if (url.hostname === "source.unsplash.com") {
+      // source.unsplash.com/{id} or source.unsplash.com/{id}/{w}x{h}
+      const id = url.pathname.split("/").filter(Boolean)[0];
+      return `https://source.unsplash.com/${id}/1200x630`;
+    }
+    // Any other valid external URL — use as-is
     return coverImage;
   } catch {
-    return coverImage.startsWith("/") ? `${SITE_URL}${coverImage}` : FALLBACK_IMAGE;
+    if (coverImage.startsWith("/")) {
+      // Only serve local files actually deployed in /public
+      try {
+        const filePath = path.join(process.cwd(), "public", coverImage);
+        if (fs.existsSync(filePath)) return `${SITE_URL}${coverImage}`;
+      } catch { /* fall through */ }
+    }
+    return fallback;
   }
 }
 
 export async function generateMetadata(
-  { params }: { params: Promise<{ slug: string }> }
+  { params, searchParams }: {
+    params: Promise<{ slug: string }>;
+    searchParams: Promise<Record<string, string>>;
+  }
 ): Promise<Metadata> {
   try {
     const { slug } = await params;
+    const sp = await searchParams;
+    const lang = (["fr", "sw"].includes(sp?.lang) ? sp.lang : "en") as "en" | "fr" | "sw";
+
     const { prisma } = await import("@/lib/prisma");
-    const post = await prisma.blogPost.findUnique({
-      where: { slug },
-      select: {
-        title: true,
-        excerpt: true,
-        coverImage: true,
-        tags: true,
-        author: true,
-        category: true,
-        createdAt: true,
-      },
-    });
+    const [post, txCache] = await Promise.all([
+      prisma.blogPost.findUnique({
+        where: { slug },
+        select: { title: true, excerpt: true, coverImage: true, tags: true, author: true, category: true, createdAt: true },
+      }),
+      lang !== "en"
+        ? prisma.adminSettings.findUnique({ where: { key: `tx:${slug}:${lang}` } })
+        : Promise.resolve(null),
+    ]);
 
     if (!post) return { title: "Post Not Found | AI Times" };
 
-    const pageUrl = `${SITE_URL}/ai-times/${slug}`;
-    const ogImage = toOgImage(post.coverImage);
-    const description = post.excerpt.slice(0, 200);
+    // Use translated title/description if available and language is not English
+    let title = post.title;
+    let description = post.excerpt.slice(0, 200);
+    if (lang !== "en") {
+      if (txCache?.value) {
+        // Full article translation already cached — use it
+        try {
+          const tx = JSON.parse(txCache.value);
+          if (tx.title) title = tx.title;
+          if (tx.excerpt) description = tx.excerpt.slice(0, 200);
+        } catch { /* fall back to English */ }
+      } else {
+        // No cache yet — generate a quick title+excerpt translation so social previews
+        // show the correct language even before any human has visited the page.
+        try {
+          const meta = await translateMeta(prisma, slug, lang as "fr" | "sw", post.title, post.excerpt);
+          title = meta.title;
+          description = meta.excerpt.slice(0, 200);
+        } catch { /* fall back to English title/description */ }
+      }
+    }
+
+    const pageUrl = lang === "en"
+      ? `${SITE_URL}/ai-times/${slug}`
+      : `${SITE_URL}/ai-times/${slug}?lang=${lang}`;
+    const canonicalUrl = `${SITE_URL}/ai-times/${slug}`; // canonical always points to English
+    const ogImage = toOgImage(post.coverImage, post.category);
+    const locale = LOCALE_MAP[lang] ?? "en_US";
+    const siteName = lang !== "en"
+      ? `AI Times | TIBLOGICS (${LANG_LABEL[lang]})`
+      : "AI Times | TIBLOGICS";
 
     return {
-      title: `${post.title} | AI Times by TIBLOGICS`,
+      title: `${title} | AI Times by TIBLOGICS`,
       description,
       keywords: post.tags,
-      alternates: { canonical: pageUrl },
+      alternates: {
+        canonical: canonicalUrl,
+        languages: {
+          "en": `${SITE_URL}/ai-times/${slug}`,
+          "fr": `${SITE_URL}/ai-times/${slug}?lang=fr`,
+          "sw": `${SITE_URL}/ai-times/${slug}?lang=sw`,
+        },
+      },
       authors: [{ name: post.author }],
       openGraph: {
-        title: post.title,
+        title,
         description,
         type: "article",
         url: pageUrl,
-        siteName: "AI Times | TIBLOGICS",
+        siteName,
+        locale,
         publishedTime: post.createdAt.toISOString(),
         authors: [post.author],
         section: post.category,
         tags: post.tags,
-        images: [
-          {
-            url: ogImage,
-            width: 1200,
-            height: 630,
-            alt: post.title,
-            type: "image/jpeg",
-          },
-        ],
+        images: [{ url: ogImage, width: 1200, height: 630, alt: title, type: ogImage.toLowerCase().includes(".png") ? "image/png" : "image/jpeg" }],
       },
       twitter: {
         card: "summary_large_image",
-        title: post.title,
+        title,
         description,
         images: [ogImage],
         creator: "@tiblogics",
@@ -94,14 +225,23 @@ export default async function BlogPostPage(
   const SITE_URL_LOCAL = (process.env.NEXTAUTH_URL || "https://tiblogics.com").replace(/\/$/, "");
 
   let jsonLd: object | null = null;
+  let heroCoverUrl: string | null = null;
+  let preloadedTranslations: Record<string, { title: string; excerpt: string; content: string }> = {};
   try {
     const { prisma } = await import("@/lib/prisma");
-    const post = await prisma.blogPost.findUnique({
-      where: { slug },
-      select: { title: true, excerpt: true, coverImage: true, author: true, createdAt: true, updatedAt: true, tags: true },
-    });
+    const [post, frCache, swCache] = await Promise.all([
+      prisma.blogPost.findUnique({
+        where: { slug },
+        select: { title: true, excerpt: true, coverImage: true, category: true, author: true, createdAt: true, updatedAt: true, tags: true },
+      }),
+      prisma.adminSettings.findUnique({ where: { key: `tx:${slug}:fr` } }),
+      prisma.adminSettings.findUnique({ where: { key: `tx:${slug}:sw` } }),
+    ]);
+    if (frCache?.value) preloadedTranslations.fr = JSON.parse(frCache.value);
+    if (swCache?.value) preloadedTranslations.sw = JSON.parse(swCache.value);
     if (post) {
-      const ogImage = toOgImage(post.coverImage);
+      heroCoverUrl = post.coverImage ?? null;
+      const ogImage = toOgImage(post.coverImage, post.category);
       jsonLd = {
         "@context": "https://schema.org",
         "@type": "Article",
@@ -127,13 +267,25 @@ export default async function BlogPostPage(
 
   return (
     <>
+      {/* Preload the hero cover image so the browser fetches it before JS executes,
+          directly improving LCP on mobile. Next.js hoists <link> tags to <head>. */}
+      {heroCoverUrl && (
+        <link
+          rel="preload"
+          as="image"
+          href={heroCoverUrl}
+          fetchPriority="high"
+        />
+      )}
       {jsonLd && (
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       )}
-      <BlogPostClient />
+      <Suspense fallback={null}>
+        <BlogPostClient preloadedTranslations={preloadedTranslations} />
+      </Suspense>
     </>
   );
 }

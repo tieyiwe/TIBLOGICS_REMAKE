@@ -10,6 +10,7 @@ declare module "next-auth" {
       isAdmin: boolean;
       isOwner: boolean;
       collaboratorId?: string;
+      studentId?: string;
       permissions: string[];
     };
   }
@@ -20,6 +21,7 @@ declare module "next-auth" {
     isAdmin: boolean;
     isOwner: boolean;
     collaboratorId?: string;
+    studentId?: string;
     permissions: string[];
   }
 }
@@ -30,6 +32,7 @@ declare module "next-auth/jwt" {
     isAdmin: boolean;
     isOwner: boolean;
     collaboratorId?: string;
+    studentId?: string;
     permissions: string[];
   }
 }

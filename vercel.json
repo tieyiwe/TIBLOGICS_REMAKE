@@ -2,7 +2,15 @@
   "crons": [
     {
       "path": "/api/blog/auto-refresh",
-      "schedule": "0 6 */2 * *"
+      "schedule": "0 8 */2 * *"
+    },
+    {
+      "path": "/api/cron/cart-reminders",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/exam-sweep",
+      "schedule": "*/15 * * * *"
     }
   ]
 }

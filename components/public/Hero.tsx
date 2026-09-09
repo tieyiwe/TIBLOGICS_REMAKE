@@ -75,6 +75,7 @@ export default function Hero() {
 
           {/* Right column — project cards */}
           <div className="flex flex-col gap-3">
+
             {projectCards.map((card, i) => (
               <div
                 key={card.title}

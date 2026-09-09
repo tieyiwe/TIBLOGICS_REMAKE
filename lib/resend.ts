@@ -184,6 +184,568 @@ export async function sendRescheduleEmail(data: {
   });
 }
 
+const ARFA_FROM = `ARFA by TIBLOGICS <${process.env.ARFA_SMTP_USER ?? "arfa_edu@tiblogics.com"}>`;
+
+function getArfaTransport() {
+  // NEVER fall back to TITAN_SMTP_USER — that's info@tiblogics.com with a different password
+  const user = process.env.ARFA_SMTP_USER ?? "arfa_edu@tiblogics.com";
+  const pass = process.env.ARFA_SMTP_PASS;
+  const host = process.env.TITAN_SMTP_HOST ?? "smtp.titan.email";
+  const port = Number(process.env.TITAN_SMTP_PORT ?? 465);
+  console.log(`[ARFA-SMTP] host=${host} port=${port} user=${user} pass=${pass ? "SET(" + pass.length + "chars)" : "MISSING — set ARFA_SMTP_PASS"}`);
+  return nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
+}
+
+export async function sendEventRegistrationConfirmation(reg: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  eventName: string;
+  eventSlug: string;
+  confirmationNumber: string;
+  paymentMethod: string;
+  price: number;
+  currency: string;
+  location?: string | null;
+}) {
+  const priceStr = reg.price > 0
+    ? `$${(reg.price / 100).toFixed(0)} ${reg.currency}`
+    : "Free";
+
+  await getArfaTransport().sendMail({
+    from: ARFA_FROM,
+    to: reg.email,
+    subject: `You're registered! Confirmation #${reg.confirmationNumber} — ${reg.eventName}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#f8fafc;">
+        <div style="background:linear-gradient(135deg,#1B3A6B 0%,#2251A3 100%);padding:32px 24px;text-align:center;">
+          <h1 style="color:white;margin:0 0 6px;font-size:24px;font-weight:800;letter-spacing:-0.5px;">
+            TIB<span style="color:#F47C20;">LOGICS</span> &middot; ARFA
+          </h1>
+          <p style="color:rgba(255,255,255,0.75);margin:0;font-size:13px;letter-spacing:0.5px;text-transform:uppercase;">AI Readiness For All</p>
+        </div>
+
+        <div style="background:white;padding:36px 32px;">
+          <h2 style="color:#0D1B2A;font-size:22px;margin:0 0 8px;">You&rsquo;re registered! 🎉</h2>
+          <p style="color:#3A4A5C;font-size:15px;margin:0 0 24px;">
+            Hi ${reg.firstName}, your spot is reserved. Here are your registration details:
+          </p>
+
+          <div style="background:#F4F7FB;border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+            <table style="width:100%;border-collapse:collapse;font-size:14px;">
+              <tr>
+                <td style="padding:7px 0;color:#7A8FA6;width:45%;">Confirmation #</td>
+                <td style="padding:7px 0;color:#0D1B2A;font-weight:700;font-size:15px;">${reg.confirmationNumber}</td>
+              </tr>
+              <tr>
+                <td style="padding:7px 0;color:#7A8FA6;">Event</td>
+                <td style="padding:7px 0;color:#0D1B2A;font-weight:600;">${reg.eventName}</td>
+              </tr>
+              <tr>
+                <td style="padding:7px 0;color:#7A8FA6;">Name</td>
+                <td style="padding:7px 0;color:#0D1B2A;">${reg.firstName} ${reg.lastName}</td>
+              </tr>
+              <tr>
+                <td style="padding:7px 0;color:#7A8FA6;">Email</td>
+                <td style="padding:7px 0;color:#0D1B2A;">${reg.email}</td>
+              </tr>
+              ${reg.location ? `<tr>
+                <td style="padding:7px 0;color:#7A8FA6;">Location</td>
+                <td style="padding:7px 0;color:#0D1B2A;">${reg.location}</td>
+              </tr>` : ""}
+              <tr>
+                <td style="padding:7px 0;color:#7A8FA6;">Payment</td>
+                <td style="padding:7px 0;color:#0D1B2A;">${priceStr} via ${reg.paymentMethod}</td>
+              </tr>
+              <tr>
+                <td style="padding:7px 0;color:#7A8FA6;">Status</td>
+                <td style="padding:7px 0;"><span style="background:#FEF9C3;color:#854D0E;font-size:12px;font-weight:700;padding:2px 8px;border-radius:20px;">PENDING CONFIRMATION</span></td>
+              </tr>
+            </table>
+          </div>
+
+          <p style="color:#3A4A5C;font-size:14px;line-height:1.7;margin:0 0 24px;">
+            Keep your confirmation number safe — you&rsquo;ll need it for check-in.
+            A follow-up email with session details, payment instructions, and Zoom link will be sent shortly.
+          </p>
+
+          <p style="color:#7A8FA6;font-size:12px;margin:0;border-top:1px solid #E2E8F0;padding-top:20px;">
+            Questions? Reply to this email or write to
+            <a href="mailto:arfa_edu@tiblogics.com" style="color:#2251A3;">arfa_edu@tiblogics.com</a>
+            <br style="line-height:1.8">
+            <a href="https://tiblogics.com" style="color:#2251A3;">www.tiblogics.com</a>
+          </p>
+        </div>
+      </div>`,
+  });
+}
+
+// "You're in — let's build" welcome email, sent AFTER payment is successful.
+// firstName is captured from the registration and injected into the greeting.
+// Sent from the Titan-hosted arfa_edu@tiblogics.com mailbox.
+export async function sendEventWelcomeEmail(reg: {
+  firstName: string;
+  email: string;
+  eventName?: string;
+  confirmationNumber?: string | null;
+}) {
+  const firstName = (reg.firstName || "there").trim();
+
+  await getArfaTransport().sendMail({
+    from: ARFA_FROM,
+    to: reg.email,
+    subject: `You're in! 🎉 Welcome to the TIBLOGICS AI Practical Training — June Cohort`,
+    html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>You're In! — TIBLOGICS AI Practical Training</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #0F1617;
+    color: #E8EDEE;
+    padding: 40px 16px 60px;
+    line-height: 1.6;
+  }
+  .email-wrap { max-width: 620px; width: 100%; margin: 0 auto; }
+  .header {
+    background: linear-gradient(135deg, #1C2526 0%, #2D3E40 100%);
+    border-radius: 20px 20px 0 0;
+    padding: 40px 40px 32px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(244,124,76,0.2);
+    border-bottom: none;
+  }
+  .logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; position: relative; z-index: 1; }
+  .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, #F47C4C, #F9A738); border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .logo-icon svg { width: 20px; height: 20px; }
+  .logo-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; color: #fff; letter-spacing: 0.04em; }
+  .logo-sub  { font-size: 10px; color: rgba(255,255,255,0.45); letter-spacing: 0.08em; }
+  .confetti-badge { display: inline-flex; align-items: center; gap: 7px; background: rgba(244,124,76,0.12); border: 1px solid rgba(244,124,76,0.35); color: #F47C4C; font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 14px; border-radius: 50px; margin-bottom: 16px; position: relative; z-index: 1; }
+  .confetti-dot { width: 6px; height: 6px; background: #F47C4C; border-radius: 50%; display:inline-block; }
+  .header-title { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; line-height: 1.15; color: #fff; margin-bottom: 10px; position: relative; z-index: 1; }
+  .header-title .accent { background: linear-gradient(135deg, #F47C4C, #F9A738); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color:#F47C4C; }
+  .header-sub { font-size: 14px; color: rgba(255,255,255,0.55); position: relative; z-index: 1; line-height: 1.65; }
+  .body { background: #1A2324; border: 1px solid rgba(255,255,255,0.06); border-top: none; border-bottom: none; padding: 36px 40px; }
+  .greeting { font-size: 16px; color: #E8EDEE; margin-bottom: 14px; font-weight: 500; }
+  .para { font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.75; margin-bottom: 14px; }
+  .para strong { color: #E8EDEE; }
+  .details-card { background: rgba(244,124,76,0.06); border: 1px solid rgba(244,124,76,0.2); border-radius: 14px; padding: 22px 24px; margin: 24px 0; }
+  .details-title { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #F47C4C; margin-bottom: 16px; }
+  .detail-row { display: flex; gap: 14px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-icon { font-size: 16px; flex-shrink: 0; width: 22px; text-align: center; margin-top: 1px; margin-right: 14px; }
+  .detail-label { font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2px; }
+  .detail-value { font-size: 14px; color: #E8EDEE; font-weight: 500; word-break: break-all; overflow-wrap: break-word; }
+  .divider { display: flex; align-items: center; gap: 12px; margin: 28px 0 20px; }
+  .divider-line { flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
+  .divider-text { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.3); white-space: nowrap; }
+  .checklist-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .checklist-sub { font-size: 13px; color: rgba(255,255,255,0.45); margin-bottom: 18px; line-height: 1.6; }
+  .check-group { margin-bottom: 20px; }
+  .check-group-label { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; display: inline-block; margin-bottom: 10px; }
+  .label-accounts  { background: rgba(29,78,216,0.15); color: #93C5FD; }
+  .label-tech      { background: rgba(6,95,70,0.15); color: #6EE7B7; }
+  .label-mindset   { background: rgba(244,124,76,0.12); color: #F47C4C; }
+  .check-item { display: flex; gap: 12px; align-items: flex-start; padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 7px; }
+  .check-box { width: 18px; height: 18px; border: 1.5px solid rgba(244,124,76,0.4); border-radius: 5px; flex-shrink: 0; margin-top: 1px; margin-right: 12px; }
+  .check-main { font-size: 13.5px; color: #E8EDEE; font-weight: 500; margin-bottom: 2px; }
+  .check-note { font-size: 12px; color: rgba(255,255,255,0.4); line-height: 1.5; }
+  .check-link { color: #F47C4C; text-decoration: none; }
+  .rule-box { background: linear-gradient(135deg, rgba(244,124,76,0.08), rgba(249,167,56,0.05)); border: 1px solid rgba(244,124,76,0.25); border-radius: 14px; padding: 20px 22px; margin: 24px 0; display: flex; gap: 14px; align-items: flex-start; }
+  .rule-icon { font-size: 22px; flex-shrink: 0; }
+  .rule-title { font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+  .rule-text  { font-size: 12.5px; color: rgba(255,255,255,0.55); line-height: 1.65; }
+  .timeline { margin: 20px 0; }
+  .tl-row { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 6px; }
+  .tl-left { display: flex; flex-direction: column; align-items: center; }
+  .tl-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; font-family: 'Syne', sans-serif; margin-right: 14px; }
+  .tl-line { width: 1px; background: rgba(255,255,255,0.08); flex: 1; min-height: 8px; margin: 2px 0; }
+  .tl-content { flex: 1; padding-bottom: 6px; min-width: 0; }
+  .tl-date { font-size: 11px; color: rgba(255,255,255,0.35); letter-spacing: 0.06em; margin-bottom: 2px; }
+  .tl-title { font-size: 13.5px; color: #E8EDEE; font-weight: 500; }
+  .tl-badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 20px; margin-left: 7px; font-weight: 500; vertical-align: middle; }
+  .cta-wrap { text-align: center; margin: 28px 0 8px; }
+  .cta-btn { display: inline-block; background: linear-gradient(135deg, #F47C4C, #F9A738); color: #fff; text-decoration: none; padding: 15px 38px; border-radius: 50px; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.04em; }
+  .cta-sub { font-size: 12px; color: rgba(255,255,255,0.3); margin-top: 10px; }
+  .closing-quote { background: rgba(255,255,255,0.03); border-left: 3px solid #F47C4C; border-radius: 0 10px 10px 0; padding: 14px 18px; margin: 24px 0 8px; font-size: 14px; font-style: italic; color: rgba(255,255,255,0.5); line-height: 1.7; }
+  .closing-sign { font-size: 14px; color: rgba(255,255,255,0.55); margin-top: 18px; }
+  .closing-sign strong { color: #E8EDEE; display: block; margin-top: 4px; font-size: 15px; }
+  .footer { background: #131A1B; border-radius: 0 0 20px 20px; padding: 24px 40px; border: 1px solid rgba(255,255,255,0.06); border-top: 1px solid rgba(244,124,76,0.15); text-align: center; }
+  .footer-logo { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.7); letter-spacing: 0.08em; margin-bottom: 6px; }
+  .footer-links { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+  .footer-links a { font-size: 12px; color: rgba(255,255,255,0.3); text-decoration: none; }
+  .footer-copy { font-size: 11px; color: rgba(255,255,255,0.2); }
+  @media (max-width: 520px) {
+    body { padding: 20px 8px 40px; }
+    .header, .body, .footer { padding-left: 18px; padding-right: 18px; }
+    .header { padding-top: 28px; padding-bottom: 22px; border-radius: 14px 14px 0 0; }
+    .header-title { font-size: 22px; }
+    .header-sub { font-size: 13px; }
+    .body { padding-top: 24px; padding-bottom: 24px; }
+    .details-card { padding: 16px 14px; }
+    .detail-value { font-size: 13px; letter-spacing: 0.01em; }
+    .check-item { padding: 8px 10px; }
+    .check-main { font-size: 13px; }
+    .check-note { font-size: 11.5px; }
+    .tl-title { font-size: 12.5px; }
+    .tl-badge { display: none; }
+    .rule-box { padding: 14px 16px; }
+    .cta-btn { padding: 13px 28px; font-size: 13px; }
+    .footer { padding-left: 18px; padding-right: 18px; border-radius: 0 0 14px 14px; }
+    .footer-links { gap: 10px; flex-direction: column; align-items: center; }
+    .closing-quote { font-size: 13px; }
+  }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="email-wrap">
+  <div class="header">
+    <div class="logo-row">
+      <div class="logo-icon">
+        <svg viewBox="0 0 38 38" fill="none" width="22" height="22">
+          <circle cx="8" cy="19" r="4.5" fill="rgba(255,255,255,0.85)"/>
+          <circle cx="19" cy="7" r="3.5" fill="rgba(255,255,255,0.65)"/>
+          <circle cx="30" cy="19" r="4.5" fill="rgba(255,255,255,0.85)"/>
+          <circle cx="19" cy="31" r="3.5" fill="rgba(255,255,255,0.65)"/>
+          <circle cx="19" cy="19" r="6" fill="white"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-name">ARFA &nbsp;<span style="color:rgba(255,255,255,0.35);font-weight:400">|</span>&nbsp; TIBLOGICS</div>
+        <div class="logo-sub">AI Implementation &amp; Digital Solutions</div>
+      </div>
+    </div>
+    <div class="confetti-badge"><span class="confetti-dot"></span> Registration Confirmed</div>
+    <div class="header-title">You're in. <span class="accent">Let's build.</span></div>
+    <div class="header-sub">Welcome to the TIBLOGICS AI Practical Training — June Cohort.<br>Your spot is secured. We are excited to have you.</div>
+  </div>
+
+  <div class="body">
+    <div class="greeting">Hi ${firstName}, 👋</div>
+    <p class="para">
+      Your registration for the <strong>TIBLOGICS AI Practical Training</strong> is confirmed and your payment has been received.
+      You are part of the June Cohort — an exclusive early group with direct access to our team,
+      and among the first to go through this training before anyone else.
+    </p>
+    <p class="para">
+      All session details — your Zoom link, password, and WhatsApp group invite — will be sent to you
+      <strong>48 hours before Session 1 starts.</strong> For now, use this email to get ready.
+    </p>
+
+    <div class="details-card">
+      <div class="details-title">Your Training Details</div>
+      ${reg.confirmationNumber ? `<div class="detail-row"><div class="detail-icon">🎫</div><div><div class="detail-label">Confirmation #</div><div class="detail-value" style="font-weight:700;color:#F47C4C;letter-spacing:.04em">${reg.confirmationNumber}</div></div></div>` : ""}
+      <div class="detail-row"><div class="detail-icon">📅</div><div><div class="detail-label">Start Date</div><div class="detail-value">Saturday, June 27, 2026</div></div></div>
+      <div class="detail-row"><div class="detail-icon">⏰</div><div><div class="detail-label">Time (every Saturday)</div><div class="detail-value">9:30 AM – 1:00 PM · includes breaks</div></div></div>
+      <div class="detail-row"><div class="detail-icon">💻</div><div><div class="detail-label">Format</div><div class="detail-value">Live on Zoom · Link sent 48hrs before Session 1</div></div></div>
+      <div class="detail-row"><div class="detail-icon">💬</div><div><div class="detail-label">Community</div><div class="detail-value">WhatsApp cohort group · Invite sent separately</div></div></div>
+      <div class="detail-row"><div class="detail-icon">💳</div><div><div class="detail-label">Investment</div><div class="detail-value">$849 · June Cohort price</div></div></div>
+    </div>
+
+    <div class="divider"><div class="divider-line"></div><div class="divider-text">Your 4-session journey</div><div class="divider-line"></div></div>
+    <div class="timeline">
+      <div class="tl-row"><div class="tl-left"><div class="tl-dot" style="background:rgba(30,64,175,0.2);color:#93C5FD">1</div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-date">June 27, 2026</div><div class="tl-title">AI Foundations — See the World Differently <span class="tl-badge" style="background:rgba(30,64,175,0.15);color:#93C5FD">Beginner-friendly</span></div></div></div>
+      <div class="tl-row"><div class="tl-left"><div class="tl-dot" style="background:rgba(146,64,14,0.2);color:#FCD34D">2</div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-date">July 4, 2026</div><div class="tl-title">AI in Your Work — Save 10 Hours a Week <span class="tl-badge" style="background:rgba(146,64,14,0.15);color:#FCD34D">Hands-on lab</span></div></div></div>
+      <div class="tl-row"><div class="tl-left"><div class="tl-dot" style="background:rgba(6,95,70,0.2);color:#6EE7B7">3</div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-date">July 11, 2026</div><div class="tl-title">Build Income with AI — Design Your Offer <span class="tl-badge" style="background:rgba(6,95,70,0.15);color:#6EE7B7">Revenue focused</span></div></div></div>
+      <div class="tl-row"><div class="tl-left"><div class="tl-dot" style="background:rgba(76,29,149,0.2);color:#C4B5FD">4</div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-date">July 18, 2026</div><div class="tl-title">AI Agents, Automation &amp; Vibe Coding <span class="tl-badge" style="background:rgba(76,29,149,0.15);color:#C4B5FD">Advanced build</span></div></div></div>
+      <div class="tl-row"><div class="tl-left"><div class="tl-dot" style="background:rgba(30,58,95,0.2);color:#BAE6FD">🎓</div></div><div class="tl-content"><div class="tl-date">Date — TBA</div><div class="tl-title">Certificate &amp; Graduation Ceremony <span class="tl-badge" style="background:rgba(30,58,95,0.15);color:#BAE6FD">Bonus session</span></div></div></div>
+    </div>
+
+    <div class="divider"><div class="divider-line"></div><div class="divider-text">Get ready before June 27</div><div class="divider-line"></div></div>
+    <div class="checklist-title">Your Pre-Training Checklist</div>
+    <p class="checklist-sub">Complete these before Session 1. Everything takes about 20 minutes total — arriving prepared means you get more out of every minute in the room.</p>
+
+    <div class="check-group">
+      <div class="check-group-label label-accounts">1 — Accounts to Set Up</div>
+      <div class="check-item"><div class="check-box"></div><div class="check-content"><div class="check-main">Set up a Claude account (recommended)</div><div class="check-note">Go to <a href="https://claude.ai" class="check-link">claude.ai</a> — a free account works. A one-month Pro subscription (~$20) is preferable as it unlocks higher usage limits for the labs, but it is not mandatory.</div></div></div>
+      <div class="check-item"><div class="check-box"></div><div class="check-content"><div class="check-main">Alternatively: set up a ChatGPT account</div><div class="check-note">Go to <a href="https://chatgpt.com" class="check-link">chatgpt.com</a> — a free account works. A one-month Plus subscription (~$20) is preferable for the hands-on labs, but not mandatory. One account is enough — Claude or ChatGPT, not both.</div></div></div>
+      <div class="check-item"><div class="check-box"></div><div class="check-content"><div class="check-main">Create a Canva account</div><div class="check-note">Go to <a href="https://canva.com" class="check-link">canva.com</a> and sign up. Free tier is sufficient. Used in Session 3 for building your first marketing asset.</div></div></div>
+      <div class="check-item" style="opacity:0.5;border-color:rgba(255,255,255,0.03)"><div class="check-box" style="border-color:rgba(255,255,255,0.15)"></div><div class="check-content"><div class="check-main" style="color:rgba(255,255,255,0.4)">Other accounts <span style="font-size:10px;background:rgba(249,167,56,0.12);color:#F9A738;border:1px solid rgba(249,167,56,0.25);padding:2px 8px;border-radius:20px;margin-left:6px;font-weight:600;letter-spacing:0.06em">Done in class</span></div><div class="check-note">Any additional accounts or tools needed for the labs will be created together during class — no setup required beforehand.</div></div></div>
+      <div class="check-item"><div class="check-box"></div><div class="check-content"><div class="check-main">Create a Google account (if you don't have one)</div><div class="check-note">Needed for Google Forms, Google Sheets, and Google Drive — used throughout Sessions 2–4.</div></div></div>
+    </div>
+
+    <div class="check-group">
+      <div class="check-group-label label-tech">2 — Technical Setup</div>
+      <div class="check-item"><div class="check-box"></div><div class="check-content"><div class="check-main">Download the Zoom app</div><div class="check-note">Download at <a href="https://zoom.us/download" class="check-link">zoom.us/download</a>. The app is more stable than the browser version. Test your audio and video before June 27.</div></div></div>
+      <div class="check-item"><div class="check-box"></div><div class="check-content"><div class="check-main">Prepare your workspace</div><div class="check-note">Find a quiet spot with good lighting and a stable internet connection (at least 5 Mbps). Have your laptop charged. A second screen is helpful but not required.</div></div></div>
+      <div class="check-item"><div class="check-box"></div><div class="check-content"><div class="check-main">Use a laptop or tablet — not a phone</div><div class="check-note">Sessions are hands-on. You will have multiple tabs open, building and testing in real time. A phone will limit what you can do. Come with a laptop or tablet.</div></div></div>
+      <div class="check-item"><div class="check-box"></div><div class="check-content"><div class="check-main">Keep your camera on</div><div class="check-note">This is a community experience, not a webinar. Camera on makes a real difference for the energy of the room — especially during the hands-on labs and live hot-seats.</div></div></div>
+    </div>
+
+    <div class="check-group">
+      <div class="check-group-label label-mindset">3 — Mindset Prep</div>
+      <div class="check-item"><div class="check-box"></div><div class="check-content"><div class="check-main">Write down your #1 goal for this training</div><div class="check-note">What do you want to be able to DO differently after 5 weeks? Be specific. Write it down and keep it visible. You will revisit it at the graduation session.</div></div></div>
+      <div class="check-item"><div class="check-box"></div><div class="check-content"><div class="check-main">List 3 tasks you do every week that take too long</div><div class="check-note">We revisit these in Session 2. The more specific, the better. Think: writing, research, emails, social media, admin, customer responses.</div></div></div>
+      <div class="check-item"><div class="check-box"></div><div class="check-content"><div class="check-main">Tell one person you are doing this</div><div class="check-note">Accountability is powerful. Tell a friend, colleague, or family member. It makes you more likely to show up and do the homework — which is where the real transformation happens.</div></div></div>
+    </div>
+
+    <div class="rule-box"><div class="rule-icon">📌</div><div><div class="rule-title">The one rule for this training</div><div class="rule-text">No passive watching. Every session has hands-on labs — bring your laptop and be ready to participate. The participants who get the most out of this training are the ones who try things, share results, and ask questions. There are no wrong answers at this stage.</div></div></div>
+
+    <div class="cta-wrap"><a href="https://www.tiblogics.com" class="cta-btn">Visit www.tiblogics.com</a><div class="cta-sub">Questions? Reply to this email or message us at arfa_edu@tiblogics.com</div></div>
+
+    <div class="closing-quote">"Success only comes before work in the dictionary. You showed up. That is already more than most people do. Now let's build something real."</div>
+    <div class="closing-sign">See you on June 27 at 9:30AM 🚀<strong>The TIBLOGICS Team</strong></div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-logo">TIBLOGICS</div>
+    <div class="footer-links">
+      <a href="mailto:arfa_edu@tiblogics.com">arfa_edu@tiblogics.com</a>
+      <span style="color:rgba(255,255,255,0.2);font-size:12px;margin:0 8px;">|</span>
+      <a href="https://www.tiblogics.com">www.tiblogics.com</a>
+    </div>
+    <div class="footer-copy">© 2026 TIBLOGICS</div>
+  </div>
+</div>
+</body>
+</html>`,
+  });
+}
+
+// ─── Admin new-registration alert ────────────────────────────────────────────
+
+export async function sendAdminNewRegistrationAlert(reg: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  eventName?: string;
+  confirmationNumber?: string;
+  whatsapp?: string | null;
+}) {
+  const adminEmail = process.env.ARFA_SMTP_USER ?? "arfa_edu@tiblogics.com";
+  await getArfaTransport().sendMail({
+    from: ARFA_FROM,
+    to: adminEmail,
+    subject: `💰 You have a sale! — ${reg.firstName} ${reg.lastName} just registered`,
+    html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'DM Sans', sans-serif; background: #0F1617; color: #E8EDEE; padding: 40px 16px; margin: 0; }
+  .wrap { max-width: 520px; margin: 0 auto; background: #1A2324; border: 1px solid rgba(255,255,255,.08); border-radius: 16px; overflow: hidden; }
+  .header { background: linear-gradient(135deg,#1C2526,#2D3E40); padding: 28px 32px 22px; border-bottom: 1px solid rgba(244,124,76,.2); }
+  .header-emoji { font-size: 2.2rem; margin-bottom: 8px; }
+  .header-title { font-size: 1.2rem; font-weight: 700; color: #fff; margin: 0; }
+  .body { padding: 26px 32px; }
+  .row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.05); font-size: .88rem; }
+  .row:last-child { border-bottom: none; }
+  .label { color: rgba(255,255,255,.4); flex-shrink: 0; }
+  .value { color: #E8EDEE; font-weight: 500; text-align: right; word-break: break-all; }
+  .conf { color: #F47C4C; font-weight: 700; letter-spacing: .04em; }
+  .cta { display: block; margin: 24px auto 0; background: linear-gradient(135deg,#F47C4C,#F9A738); color: #fff; text-decoration: none; padding: 13px 28px; border-radius: 50px; font-weight: 700; font-size: .9rem; text-align: center; width: fit-content; }
+  .footer { text-align: center; font-size: .75rem; color: rgba(255,255,255,.2); padding: 18px 32px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="header-emoji">💰🎉</div>
+    <p class="header-title">You have a sale!</p>
+    <p style="margin:6px 0 0;font-size:.88rem;color:rgba(255,255,255,.55);">${reg.firstName} just registered for the training. Go get it! 🚀</p>
+  </div>
+  <div class="body">
+    <div class="row"><span class="label">Name</span><span class="value">${reg.firstName} ${reg.lastName}</span></div>
+    <div class="row"><span class="label">Email</span><span class="value">${reg.email}</span></div>
+    ${reg.whatsapp ? `<div class="row"><span class="label">WhatsApp</span><span class="value">${reg.whatsapp}</span></div>` : ""}
+    ${reg.eventName ? `<div class="row"><span class="label">Event</span><span class="value">${reg.eventName}</span></div>` : ""}
+    ${reg.confirmationNumber ? `<div class="row"><span class="label">Conf #</span><span class="value conf">${reg.confirmationNumber}</span></div>` : ""}
+    <a class="cta" href="https://tiblogics.com/admin_pro">View in Admin →</a>
+  </div>
+  <div class="footer">Payment confirmed ✓ via Stripe.</div>
+</div>
+</body>
+</html>`,
+  });
+}
+
+// ─── Session reminder email ───────────────────────────────────────────────────
+
+const SESSION_INFO = [
+  {
+    n: 1,
+    date: "Saturday, June 27, 2026",
+    time: "9:30 AM – 1:00 PM ET",
+    title: "AI Foundations — See the World Differently",
+    badge: "Beginner-friendly",
+    badgeColor: "#93C5FD",
+    badgeBg: "rgba(30,64,175,0.15)",
+    prep: "Just bring yourself, your laptop, and your curiosity. No prior experience needed.",
+  },
+  {
+    n: 2,
+    date: "Saturday, July 4, 2026",
+    time: "9:30 AM – 1:00 PM ET",
+    title: "AI in Your Work — Save 10 Hours a Week",
+    badge: "Hands-on lab",
+    badgeColor: "#FCD34D",
+    badgeBg: "rgba(146,64,14,0.15)",
+    prep: "Have your AI account open (Claude or ChatGPT) and your list of tasks that take too long. We'll automate them live.",
+  },
+  {
+    n: 3,
+    date: "Saturday, July 11, 2026",
+    time: "9:30 AM – 1:00 PM ET",
+    title: "Build Income with AI — Design Your Offer",
+    badge: "Revenue focused",
+    badgeColor: "#6EE7B7",
+    badgeBg: "rgba(6,95,70,0.15)",
+    prep: "Log into your Canva account and have one service idea in mind. We'll build your first AI-powered offer together.",
+  },
+  {
+    n: 4,
+    date: "Saturday, July 18, 2026",
+    time: "9:30 AM – 1:00 PM ET",
+    title: "AI Agents, Automation & Vibe Coding",
+    badge: "Advanced build",
+    badgeColor: "#C4B5FD",
+    badgeBg: "rgba(76,29,149,0.15)",
+    prep: "Come with your laptop fully charged. This is the most hands-on session. We'll build live automations and simple AI agents together.",
+  },
+];
+
+export async function sendSessionReminder(reg: {
+  firstName: string;
+  email: string;
+  sessionNumber: 1 | 2 | 3 | 4;
+  zoomLink?: string;
+  eventName?: string;
+}) {
+  const s = SESSION_INFO[reg.sessionNumber - 1];
+  const zoomSection = reg.zoomLink
+    ? `<div class="detail-row"><div class="detail-icon">🔗</div><div><div class="detail-label">Zoom Link</div><div class="detail-value"><a href="${reg.zoomLink}" style="color:#F47C4C;text-decoration:none;">${reg.zoomLink}</a></div></div></div>`
+    : `<div class="detail-row"><div class="detail-icon">🔗</div><div><div class="detail-label">Zoom Link</div><div class="detail-value" style="color:rgba(255,255,255,0.4)">Will be sent shortly — check your email</div></div></div>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session ${s.n} Reminder — TIBLOGICS AI Practical Training</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif; background: #0F1617; color: #E8EDEE; padding: 40px 16px 60px; line-height: 1.6; }
+  .email-wrap { max-width: 620px; margin: 0 auto; }
+  .header { background: linear-gradient(135deg, #1C2526 0%, #2D3E40 100%); border-radius: 20px 20px 0 0; padding: 40px 40px 32px; border: 1px solid rgba(244,124,76,0.2); border-bottom: none; }
+  .logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+  .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, #F47C4C, #F9A738); border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+  .logo-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; color: #fff; letter-spacing: 0.04em; }
+  .logo-sub { font-size: 10px; color: rgba(255,255,255,0.45); letter-spacing: 0.08em; }
+  .badge { display: inline-flex; align-items: center; gap: 7px; background: rgba(244,124,76,0.12); border: 1px solid rgba(244,124,76,0.35); color: #F47C4C; font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 14px; border-radius: 50px; margin-bottom: 16px; }
+  .badge-dot { width: 6px; height: 6px; background: #F47C4C; border-radius: 50%; display:inline-block; }
+  .header-title { font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 800; line-height: 1.15; color: #fff; margin-bottom: 10px; }
+  .header-title .accent { background: linear-gradient(135deg, #F47C4C, #F9A738); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color:#F47C4C; }
+  .header-sub { font-size: 14px; color: rgba(255,255,255,0.55); line-height: 1.65; }
+  .body { background: #1A2324; border: 1px solid rgba(255,255,255,0.06); border-top: none; border-bottom: none; padding: 36px 40px; }
+  .greeting { font-size: 16px; color: #E8EDEE; margin-bottom: 14px; font-weight: 500; }
+  .para { font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.75; margin-bottom: 14px; }
+  .para strong { color: #E8EDEE; }
+  .details-card { background: rgba(244,124,76,0.06); border: 1px solid rgba(244,124,76,0.2); border-radius: 14px; padding: 22px 24px; margin: 24px 0; }
+  .details-title { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #F47C4C; margin-bottom: 16px; }
+  .detail-row { display: flex; gap: 14px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-icon { font-size: 16px; flex-shrink: 0; width: 22px; text-align: center; margin-top: 1px; margin-right: 14px; }
+  .detail-label { font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2px; }
+  .detail-value { font-size: 14px; color: #E8EDEE; font-weight: 500; }
+  .session-card { border-radius: 14px; padding: 20px 22px; margin: 20px 0; border: 1px solid ${s.badgeBg}; }
+  .prep-box { background: rgba(255,255,255,0.03); border-left: 3px solid #F47C4C; border-radius: 0 10px 10px 0; padding: 14px 18px; margin: 20px 0; font-size: 14px; color: rgba(255,255,255,0.6); line-height: 1.7; }
+  .prep-box strong { color: #E8EDEE; display: block; margin-bottom: 6px; }
+  .cta-wrap { text-align: center; margin: 28px 0 8px; }
+  .cta-btn { display: inline-block; background: linear-gradient(135deg, #F47C4C, #F9A738); color: #fff; text-decoration: none; padding: 15px 38px; border-radius: 50px; font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.04em; }
+  .closing-sign { font-size: 14px; color: rgba(255,255,255,0.55); margin-top: 18px; }
+  .closing-sign strong { color: #E8EDEE; display: block; margin-top: 4px; font-size: 15px; }
+  .footer { background: #131A1B; border-radius: 0 0 20px 20px; padding: 24px 40px; border: 1px solid rgba(255,255,255,0.06); border-top: 1px solid rgba(244,124,76,0.15); text-align: center; }
+  .footer-logo { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.7); letter-spacing: 0.08em; margin-bottom: 6px; }
+  .footer-links { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+  .footer-links a { font-size: 12px; color: rgba(255,255,255,0.3); text-decoration: none; }
+  .footer-copy { font-size: 11px; color: rgba(255,255,255,0.2); }
+  @media (max-width: 520px) {
+    .header, .body, .footer { padding-left: 22px; padding-right: 22px; }
+    .header-title { font-size: 24px; }
+  }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="email-wrap">
+  <div class="header">
+    <div class="logo-row">
+      <div class="logo-icon">
+        <svg viewBox="0 0 38 38" fill="none" width="22" height="22">
+          <circle cx="8" cy="19" r="4.5" fill="rgba(255,255,255,0.85)"/>
+          <circle cx="19" cy="7" r="3.5" fill="rgba(255,255,255,0.65)"/>
+          <circle cx="30" cy="19" r="4.5" fill="rgba(255,255,255,0.85)"/>
+          <circle cx="19" cy="31" r="3.5" fill="rgba(255,255,255,0.65)"/>
+          <circle cx="19" cy="19" r="6" fill="white"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-name">ARFA &nbsp;<span style="color:rgba(255,255,255,0.35);font-weight:400">|</span>&nbsp; TIBLOGICS</div>
+        <div class="logo-sub">AI Implementation &amp; Digital Solutions</div>
+      </div>
+    </div>
+    <div class="badge"><span class="badge-dot"></span> Session ${s.n} of 4 &nbsp;·&nbsp; Reminder</div>
+    <div class="header-title">See you <span class="accent">tomorrow</span> — Session ${s.n}</div>
+    <div class="header-sub">${s.title}<br>${s.date} · ${s.time}</div>
+  </div>
+
+  <div class="body">
+    <div class="greeting">Hi ${reg.firstName}, 👋</div>
+    <p class="para">
+      Your next session is <strong>tomorrow</strong>. Here is everything you need to join and make the most of it.
+    </p>
+
+    <div class="details-card">
+      <div class="details-title">Session ${s.n} Details</div>
+      <div class="detail-row"><div class="detail-icon">📅</div><div><div class="detail-label">Date</div><div class="detail-value">${s.date}</div></div></div>
+      <div class="detail-row"><div class="detail-icon">⏰</div><div><div class="detail-label">Time</div><div class="detail-value">${s.time} · includes breaks</div></div></div>
+      <div class="detail-row"><div class="detail-icon">📚</div><div><div class="detail-label">Topic</div><div class="detail-value">${s.title}</div></div></div>
+      ${zoomSection}
+    </div>
+
+    <div class="prep-box">
+      <strong>📋 How to prepare for Session ${s.n}:</strong>
+      ${s.prep}
+    </div>
+
+    <p class="para">
+      Log in <strong>5 minutes early</strong> to get settled before we start. If you have any issues joining, reply to this email right away and we'll help you get in.
+    </p>
+
+    <div class="cta-wrap">
+      ${reg.zoomLink ? `<a href="${reg.zoomLink}" class="cta-btn">Join Session ${s.n} on Zoom</a>` : `<a href="https://www.tiblogics.com" class="cta-btn">Visit www.tiblogics.com</a>`}
+    </div>
+
+    <div class="closing-sign">See you tomorrow at 9:30 AM 🚀<strong>The TIBLOGICS Team</strong></div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-logo">TIBLOGICS</div>
+    <div class="footer-links">
+      <a href="mailto:arfa_edu@tiblogics.com">arfa_edu@tiblogics.com</a>
+      <span style="color:rgba(255,255,255,0.2);font-size:12px;margin:0 8px;">|</span>
+      <a href="https://www.tiblogics.com">www.tiblogics.com</a>
+    </div>
+    <div class="footer-copy">© 2026 TIBLOGICS</div>
+  </div>
+</div>
+</body>
+</html>`;
+
+  await getArfaTransport().sendMail({
+    from: ARFA_FROM,
+    to: reg.email,
+    subject: `🔔 Session ${s.n} is tomorrow — ${s.date} at 9:30 AM`,
+    html,
+  });
+}
+
 // Drop-in replacement for `resend.emails.send({from, to, subject, html})`
 const resendCompat = {
   emails: {
@@ -197,5 +759,181 @@ const resendCompat = {
     },
   },
 };
+
+// ARFA-branded mailer — sends from arfa_edu@tiblogics.com
+export const arfaMailer = {
+  emails: {
+    send(msg: { to: string | string[]; subject: string; html: string }) {
+      return getArfaTransport().sendMail({
+        from: ARFA_FROM,
+        to: Array.isArray(msg.to) ? msg.to.join(", ") : msg.to,
+        subject: msg.subject,
+        html: msg.html,
+      });
+    },
+  },
+};
+
+// ─── SHOP / STORE emails ─────────────────────────────────────────────────────
+type OrderItem = { name?: string; price?: number; quantity?: number };
+
+function money(cents: number, currency = "USD") {
+  return `${currency === "USD" ? "$" : currency + " "}${(cents / 100).toFixed(2)}`;
+}
+
+// Customer order confirmation — sent from info@tiblogics.com after payment
+export async function sendOrderConfirmationEmail(order: {
+  email: string;
+  customerName?: string | null;
+  orderNumber: string;
+  items: OrderItem[];
+  total: number;
+  currency?: string;
+}) {
+  const currency = order.currency ?? "USD";
+  const rows = order.items
+    .map(
+      (it) => `
+      <tr>
+        <td style="padding:12px 0;border-bottom:1px solid #eef1f4;color:#131A1B;font-size:14px;">
+          ${it.name ?? "Item"} ${it.quantity && it.quantity > 1 ? `<span style="color:#8A9BA0;">× ${it.quantity}</span>` : ""}
+        </td>
+        <td style="padding:12px 0;border-bottom:1px solid #eef1f4;color:#131A1B;font-size:14px;text-align:right;white-space:nowrap;">
+          ${money((it.price ?? 0) * (it.quantity ?? 1), currency)}
+        </td>
+      </tr>`
+    )
+    .join("");
+
+  const html = `
+  <div style="background:#F4F7FB;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
+    <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e6ebf1;">
+      <div style="background:linear-gradient(135deg,#131A1B,#1C2526);padding:28px 32px;">
+        <div style="font-size:20px;font-weight:800;color:#fff;letter-spacing:.04em;">TIB<span style="color:#F47C20;">LOGICS</span> · Shop</div>
+      </div>
+      <div style="padding:32px;">
+        <h1 style="font-size:22px;color:#131A1B;margin:0 0 8px;">Thank you${order.customerName ? `, ${order.customerName.split(" ")[0]}` : ""}! 🎉</h1>
+        <p style="font-size:14px;color:#5b6b72;line-height:1.6;margin:0 0 24px;">
+          Your order is confirmed and paid. Order number
+          <strong style="color:#131A1B;">${order.orderNumber}</strong>.
+        </p>
+        <table style="width:100%;border-collapse:collapse;">${rows}
+          <tr>
+            <td style="padding:16px 0 0;font-size:16px;font-weight:800;color:#131A1B;">Total</td>
+            <td style="padding:16px 0 0;font-size:16px;font-weight:800;color:#131A1B;text-align:right;">${money(order.total, currency)}</td>
+          </tr>
+        </table>
+        <p style="font-size:13px;color:#8A9BA0;line-height:1.6;margin:28px 0 0;">
+          We'll email you with any delivery or access details. Questions? Just reply to this email.
+        </p>
+      </div>
+      <div style="background:#F4F7FB;padding:18px 32px;text-align:center;color:#8A9BA0;font-size:12px;">
+        © ${new Date().getFullYear()} TIBLOGICS · All rights reserved
+      </div>
+    </div>
+  </div>`;
+
+  await getTransport().sendMail({
+    from: FROM,
+    to: order.email,
+    subject: `Your TIBLOGICS order ${order.orderNumber} is confirmed ✓`,
+    html,
+  });
+}
+
+// Internal alert to the business when a new order is paid
+export async function sendAdminOrderAlert(order: {
+  orderNumber: string;
+  email: string;
+  customerName?: string | null;
+  total: number;
+  currency?: string;
+  itemCount: number;
+}) {
+  const adminEmail = process.env.TIWE_EMAIL || process.env.TITAN_SMTP_USER || "info@tiblogics.com";
+  const html = `
+  <div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;padding:24px;">
+    <h2 style="color:#131A1B;font-size:18px;margin:0 0 12px;">🛒 New shop order — payment confirmed</h2>
+    <table style="width:100%;font-size:14px;color:#131A1B;border-collapse:collapse;">
+      <tr><td style="padding:6px 0;color:#8A9BA0;">Order</td><td style="padding:6px 0;text-align:right;font-weight:700;">${order.orderNumber}</td></tr>
+      <tr><td style="padding:6px 0;color:#8A9BA0;">Customer</td><td style="padding:6px 0;text-align:right;">${order.customerName ?? "—"}</td></tr>
+      <tr><td style="padding:6px 0;color:#8A9BA0;">Email</td><td style="padding:6px 0;text-align:right;">${order.email}</td></tr>
+      <tr><td style="padding:6px 0;color:#8A9BA0;">Items</td><td style="padding:6px 0;text-align:right;">${order.itemCount}</td></tr>
+      <tr><td style="padding:6px 0;color:#8A9BA0;">Total</td><td style="padding:6px 0;text-align:right;font-weight:800;">${money(order.total, order.currency ?? "USD")}</td></tr>
+    </table>
+  </div>`;
+
+  await getTransport().sendMail({
+    from: FROM,
+    to: adminEmail,
+    subject: `🛒 New order ${order.orderNumber} — ${money(order.total, order.currency ?? "USD")}`,
+    html,
+  });
+}
+
+// Abandoned-cart reminder — nudges a shopper back to items left in their cart
+export async function sendCartReminderEmail(cart: {
+  email: string;
+  items: Array<{ name?: string; price?: number; quantity?: number; image?: string | null }>;
+  subtotal: number;
+  currency?: string;
+  reminderNumber: number;
+}) {
+  const currency = cart.currency ?? "USD";
+  const site = (process.env.NEXT_PUBLIC_APP_URL ?? "https://tiblogics.com").replace(/\/$/, "");
+
+  const rows = cart.items
+    .map((it) => `
+      <tr>
+        <td style="padding:12px 0;border-bottom:1px solid #eef1f4;width:56px;">
+          ${it.image ? `<img src="${it.image}" width="48" height="48" style="border-radius:10px;object-fit:cover;display:block;" alt="" />` : ""}
+        </td>
+        <td style="padding:12px 12px;border-bottom:1px solid #eef1f4;color:#131A1B;font-size:14px;">
+          ${it.name ?? "Item"} ${it.quantity && it.quantity > 1 ? `<span style="color:#8A9BA0;">× ${it.quantity}</span>` : ""}
+        </td>
+        <td style="padding:12px 0;border-bottom:1px solid #eef1f4;color:#131A1B;font-size:14px;text-align:right;white-space:nowrap;">
+          ${money((it.price ?? 0) * (it.quantity ?? 1), currency)}
+        </td>
+      </tr>`)
+    .join("");
+
+  const headline = cart.reminderNumber >= 2 ? "Last chance — your cart is waiting" : "You left something behind 🛒";
+
+  const html = `
+  <div style="background:#F4F7FB;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
+    <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e6ebf1;">
+      <div style="background:linear-gradient(135deg,#131A1B,#1C2526);padding:28px 32px;">
+        <div style="font-size:20px;font-weight:800;color:#fff;letter-spacing:.04em;">TIB<span style="color:#F47C20;">LOGICS</span> · Shop</div>
+      </div>
+      <div style="padding:32px;">
+        <h1 style="font-size:22px;color:#131A1B;margin:0 0 8px;">${headline}</h1>
+        <p style="font-size:14px;color:#5b6b72;line-height:1.6;margin:0 0 24px;">
+          Your cart is still saved. Pick up right where you left off — before these sell out.
+        </p>
+        <table style="width:100%;border-collapse:collapse;">${rows}
+          <tr>
+            <td colspan="2" style="padding:16px 0 0;font-size:15px;font-weight:800;color:#131A1B;">Subtotal</td>
+            <td style="padding:16px 0 0;font-size:15px;font-weight:800;color:#131A1B;text-align:right;">${money(cart.subtotal, currency)}</td>
+          </tr>
+        </table>
+        <div style="text-align:center;margin:28px 0 8px;">
+          <a href="${site}/shop" style="display:inline-block;background:linear-gradient(135deg,#F47C4C,#F9A738);color:#131A1B;font-weight:800;font-size:15px;text-decoration:none;padding:14px 34px;border-radius:50px;">
+            Return to My Cart →
+          </a>
+        </div>
+      </div>
+      <div style="background:#F4F7FB;padding:18px 32px;text-align:center;color:#8A9BA0;font-size:12px;">
+        © ${new Date().getFullYear()} TIBLOGICS · You received this because you saved a cart at tiblogics.com
+      </div>
+    </div>
+  </div>`;
+
+  await getTransport().sendMail({
+    from: FROM,
+    to: cart.email,
+    subject: cart.reminderNumber >= 2 ? "Your TIBLOGICS cart is about to expire" : "You left items in your cart 🛒",
+    html,
+  });
+}
 
 export default resendCompat;

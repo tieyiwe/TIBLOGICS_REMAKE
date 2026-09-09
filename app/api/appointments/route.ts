@@ -70,6 +70,7 @@ export async function POST(req: Request) {
       addOnActionPlan,
       addOnSlackAccess,
       totalAmount,
+      sessionId,
     } = body;
 
     // Input validation
@@ -130,6 +131,15 @@ export async function POST(req: Request) {
           zoomLink: meetingLink,
         },
       });
+
+      // Link chat session to this appointment for expert intelligence
+      if (sessionId && typeof sessionId === "string") {
+        prisma.adminSettings.upsert({
+          where: { key: `appt:sid:${appointment.id}` },
+          update: { value: sessionId },
+          create: { key: `appt:sid:${appointment.id}`, value: sessionId },
+        }).catch(() => {});
+      }
 
       await Promise.allSettled([
         sendBookingConfirmation({ firstName, lastName, email, serviceType, serviceDuration, date, timeSlot, meetingLink }),
@@ -197,11 +207,20 @@ export async function POST(req: Request) {
       customer_email: body.email,
     });
 
-    // Store the session ID on the appointment
+    // Store the Stripe session ID on the appointment
     await prisma.appointment.update({
       where: { id: appointmentId },
       data: { stripeSessionId: session.id },
     });
+
+    // Link chat session to appointment for expert intelligence
+    if (sessionId && typeof sessionId === "string") {
+      prisma.adminSettings.upsert({
+        where: { key: `appt:sid:${appointmentId}` },
+        update: { value: sessionId },
+        create: { key: `appt:sid:${appointmentId}`, value: sessionId },
+      }).catch(() => {});
+    }
 
     return NextResponse.json(
       { appointmentId, checkoutUrl: session.url },
