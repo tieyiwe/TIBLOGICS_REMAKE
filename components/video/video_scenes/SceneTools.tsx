@@ -21,16 +21,16 @@ export function SceneTools() {
       exit={{ opacity: 0 }}
       transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
     >
-      <div className="text-center w-full max-w-[80vw]">
+      <div className="text-center w-full max-w-[80cqw]">
         <motion.div 
           className="relative inline-block mb-10"
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 1, ease: 'easeOut' }}
         >
-          <img src="/tibo-avatar.svg" alt="Tibo AI" className="w-[12vw] h-[12vw] rounded-full object-cover border-4 border-[#F47C20] bg-[#162B52]" />
+          <img src="/tibo-avatar.svg" alt="Tibo AI" className="w-[12cqw] h-[12cqw] rounded-full object-cover border-4 border-[#F47C20] bg-[#162B52]" />
           <motion.div 
-            className="absolute -bottom-4 -right-4 bg-[#F47C20] text-white px-4 py-1 text-[1vw] font-bold rounded-full"
+            className="absolute -bottom-4 -right-4 bg-[#F47C20] text-white px-4 py-1 text-[1cqw] font-bold rounded-full"
             initial={{ scale: 0 }}
             animate={phase >= 1 ? { scale: 1 } : { scale: 0 }}
             transition={{ type: 'spring', stiffness: 400, damping: 20 }}
@@ -40,7 +40,7 @@ export function SceneTools() {
         </motion.div>
 
         <motion.h2 
-          className="text-[4.5vw] font-syne font-bold leading-tight"
+          className="text-[4.5cqw] font-syne font-bold leading-tight"
           initial={{ y: 20, opacity: 0 }}
           animate={phase >= 1 ? { y: 0, opacity: 1 } : { y: 20, opacity: 0 }}
           transition={{ duration: 0.8 }}
@@ -54,7 +54,7 @@ export function SceneTools() {
           animate={phase >= 2 ? { y: 0, opacity: 1 } : { y: 20, opacity: 0 }}
           transition={{ duration: 0.8 }}
         >
-          <img src="/tb_cover.png" className="w-[30vw] rounded-xl shadow-2xl" />
+          <img src="/tb_cover.png" className="w-[30cqw] rounded-xl shadow-2xl" />
         </motion.div>
       </div>
     </motion.div>

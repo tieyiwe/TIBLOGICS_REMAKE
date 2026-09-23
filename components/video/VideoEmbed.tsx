@@ -30,8 +30,13 @@ export default function VideoEmbed() {
   const { currentScene } = useVideoPlayer({ durations: SCENE_DURATIONS });
 
   return (
+    // containerType makes the scenes' cqw units resolve against THIS box.
+    // They used vw before, which is the viewport — but this frame is only as
+    // wide as its column (~830px inside max-w-4xl), so on a wide screen the
+    // type came out roughly 50% too large: headings broke mid-word and cards
+    // ran off the right edge.
     <div className="relative w-full overflow-hidden rounded-2xl bg-[#0D1B2A] font-dm selection:bg-[#F47C20]/30"
-      style={{ aspectRatio: '16/9' }}>
+      style={{ aspectRatio: '16/9', containerType: 'inline-size' }}>
       {/* Persistent Background Layer */}
       <motion.div
         className="absolute inset-0 transition-colors duration-1000"
@@ -67,7 +72,11 @@ export default function VideoEmbed() {
         transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
       />
 
-      <AnimatePresence mode="popLayout">
+      {/* "wait", not "popLayout": popLayout mounts the incoming scene while the
+          outgoing one is still exiting, so at the loop point SceneClose and
+          SceneOpen both drew the logo at once — two offset wordmarks. Waiting
+          for the exit costs about a second of scene time and shows one at a time. */}
+      <AnimatePresence mode="wait">
         {currentScene === 0 && <SceneOpen key="open" />}
         {currentScene === 1 && <SceneServices key="services" />}
         {currentScene === 2 && <SceneBlog key="blog" />}

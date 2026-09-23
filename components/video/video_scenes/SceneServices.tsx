@@ -25,17 +25,17 @@ export function SceneServices() {
 
   return (
     <motion.div 
-      className="absolute inset-0 flex items-center px-[10vw]"
+      className="absolute inset-0 flex items-center px-[10cqw]"
       initial={{ opacity: 0, x: 100 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -100 }}
       transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
     >
       <div className="w-1/2 pr-10">
-        <motion.p className="text-[#F47C20] font-bold tracking-widest uppercase text-[1vw] mb-4">
+        <motion.p className="text-[#F47C20] font-bold tracking-widest uppercase text-[1cqw] mb-4">
           Core Capabilities
         </motion.p>
-        <motion.h2 className="text-[4vw] font-syne font-bold text-white leading-[1.1]">
+        <motion.h2 className="text-[4cqw] font-syne font-bold text-white leading-[1.1]">
           Intelligent Infrastructure.
         </motion.h2>
       </div>
@@ -50,7 +50,7 @@ export function SceneServices() {
             transition={{ duration: 0.5, ease: 'easeOut' }}
           >
             <div className="w-2 h-2 rounded-full bg-[#F47C20]" />
-            <h3 className="text-[2.5vw] font-dm text-white/90">{service}</h3>
+            <h3 className="text-[2.5cqw] font-dm text-white/90">{service}</h3>
           </motion.div>
         ))}
       </div>

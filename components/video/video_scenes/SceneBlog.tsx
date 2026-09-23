@@ -21,8 +21,8 @@ export function SceneBlog() {
       exit={{ opacity: 0, scale: 1.1 }}
       transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
     >
-      <div className="flex w-full px-[5vw] items-center h-full">
-        <div className="w-1/2 pr-[5vw] z-10 relative">
+      <div className="flex w-full px-[5cqw] items-center h-full">
+        <div className="w-1/2 pr-[5cqw] z-10 relative">
           <motion.img 
             src="/ai-times-og.png" 
             className="w-full rounded-xl shadow-2xl"
@@ -32,7 +32,7 @@ export function SceneBlog() {
           />
           <motion.img 
             src="/google_article_cover.jpg" 
-            className="w-3/4 rounded-xl shadow-2xl absolute bottom-[15vh] left-[15vw]"
+            className="w-3/4 rounded-xl shadow-2xl absolute bottom-[15vh] left-[15cqw]"
             initial={{ y: 60, opacity: 0, rotateY: 30 }}
             animate={phase >= 1 ? { y: 0, opacity: 1, rotateY: 0 } : { y: 60, opacity: 0, rotateY: 30 }}
             transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
@@ -40,7 +40,7 @@ export function SceneBlog() {
         </div>
         <div className="w-1/2">
           <motion.p 
-            className="text-[#F47C20] font-bold tracking-widest uppercase text-[1vw] mb-4"
+            className="text-[#F47C20] font-bold tracking-widest uppercase text-[1cqw] mb-4"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
@@ -48,7 +48,7 @@ export function SceneBlog() {
             Thought Leadership
           </motion.p>
           <motion.h2 
-            className="text-[5vw] font-syne font-bold leading-none mb-6"
+            className="text-[5cqw] font-syne font-bold leading-none mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
@@ -56,7 +56,7 @@ export function SceneBlog() {
             The AI Times
           </motion.h2>
           <motion.p 
-            className="text-[1.5vw] text-[#3A4A5C] max-w-lg"
+            className="text-[1.5cqw] text-[#3A4A5C] max-w-lg"
             initial={{ opacity: 0, y: 20 }}
             animate={phase >= 2 ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             transition={{ duration: 0.8 }}

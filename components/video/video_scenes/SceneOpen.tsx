@@ -28,12 +28,13 @@ export function SceneOpen() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
         >
-          <img src="/logo.svg" alt="TIBLOGICS" className="h-16 mx-auto mb-8 brightness-0 invert" />
+          {/* See SceneClose — logo.svg clips its wordmark without Helvetica Neue. */}
+          <img src="/logo-on-dark.png" alt="TIBLOGICS" className="h-[8cqw] mx-auto mb-8" />
         </motion.div>
         
         <div className="overflow-hidden">
           <motion.h1 
-            className="text-[5vw] font-syne font-bold text-white tracking-tight leading-none uppercase"
+            className="text-[5cqw] font-syne font-bold text-white tracking-tight leading-none uppercase"
             initial={{ y: '100%' }}
             animate={phase >= 1 ? { y: '0%' } : { y: '100%' }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
@@ -43,7 +44,7 @@ export function SceneOpen() {
         </div>
         <div className="overflow-hidden mt-2">
           <motion.h1 
-            className="text-[4vw] font-syne font-medium text-white/70 tracking-tight leading-none uppercase"
+            className="text-[4cqw] font-syne font-medium text-white/70 tracking-tight leading-none uppercase"
             initial={{ y: '100%' }}
             animate={phase >= 2 ? { y: '0%' } : { y: '100%' }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}

@@ -11,15 +11,20 @@ export function SceneClose() {
       transition={{ duration: 1 }}
     >
       <motion.img 
-        src="/logo.svg" 
-        alt="TIBLOGICS" 
-        className="h-20 mb-10 brightness-0 invert"
+        // Not logo.svg: it draws the wordmark with <text> in Helvetica Neue,
+        // so on machines without that font the fallback overruns the viewBox
+        // and the trailing S is clipped. This is the footer's transparent logo
+        // cropped to its content — the original is a square canvas only a
+        // quarter filled, which made a height-sized logo render tiny.
+        src="/logo-on-dark.png"
+        alt="TIBLOGICS"
+        className="h-[10cqw] mb-10"
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 1, delay: 0.2 }}
       />
       <motion.h2 
-        className="text-[3vw] font-syne font-medium text-white/80"
+        className="text-[3cqw] font-syne font-medium text-white/80"
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 1, delay: 0.4 }}
