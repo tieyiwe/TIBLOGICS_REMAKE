@@ -63,6 +63,32 @@ export async function POST() {
     `ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "compareAtPrice" INTEGER`,
     `ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "collections" TEXT[] DEFAULT ARRAY[]::TEXT[]`,
 
+    // ── Digital delivery ──────────────────────────────────────────────────
+    `ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "deliveryType" TEXT NOT NULL DEFAULT 'none'`,
+    `ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "fileKey" TEXT`,
+    `ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "fileName" TEXT`,
+    `ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "fileFormat" TEXT`,
+    `ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "fileSizeBytes" INTEGER`,
+    `ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "externalUrl" TEXT`,
+    `ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "downloadDays" INTEGER NOT NULL DEFAULT 365`,
+    `ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "maxDownloads" INTEGER NOT NULL DEFAULT 10`,
+
+    `CREATE TABLE IF NOT EXISTS "DownloadGrant" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "token" TEXT NOT NULL,
+      "orderId" TEXT NOT NULL REFERENCES "Order"("id") ON DELETE CASCADE,
+      "productId" TEXT NOT NULL REFERENCES "Product"("id") ON DELETE CASCADE,
+      "email" TEXT NOT NULL,
+      "downloadCount" INTEGER NOT NULL DEFAULT 0,
+      "maxDownloads" INTEGER NOT NULL DEFAULT 10,
+      "expiresAt" TIMESTAMP(3) NOT NULL,
+      "lastDownloadAt" TIMESTAMP(3)
+    )`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "DownloadGrant_token_key" ON "DownloadGrant"("token")`,
+    `CREATE INDEX IF NOT EXISTS "DownloadGrant_orderId_idx" ON "DownloadGrant"("orderId")`,
+    `CREATE INDEX IF NOT EXISTS "DownloadGrant_email_idx" ON "DownloadGrant"("email")`,
+
     // Collections
     `CREATE TABLE IF NOT EXISTS "Collection" (
       "id" TEXT NOT NULL PRIMARY KEY,

@@ -4,6 +4,11 @@ import { sendConfirmationEmail, sendTiweNotification, sendEventWelcomeEmail, sen
 import Stripe from "stripe";
 import { createMeeting } from "@/lib/meeting-providers";
 import stripe from "@/lib/stripe";
+import { grantDownloadsForOrder } from "@/lib/shop/delivery";
+
+const SITE_URL = (
+  process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
+).replace(/\/$/, "");
 
 export async function POST(req: Request) {
   if (!process.env.STRIPE_WEBHOOK_SECRET) {
@@ -117,6 +122,14 @@ export async function POST(req: Request) {
             .updateMany({ where: { email: email.toLowerCase(), recoveredAt: null }, data: { recoveredAt: new Date() } })
             .catch((err) => console.error("[stripe/webhook] cart recover", err));
 
+          // Digital delivery. Grants are minted here — after payment settles —
+          // so a grant existing is itself proof of purchase. Idempotent, so a
+          // Stripe retry does not issue a second set of tokens.
+          const grants = await grantDownloadsForOrder(order.id, email).catch((err) => {
+            console.error("[stripe/webhook] download grants FAILED:", err);
+            return [];
+          });
+
           sendOrderConfirmationEmail({
             email,
             customerName: name,
@@ -124,6 +137,12 @@ export async function POST(req: Request) {
             items,
             total: order.total,
             currency: order.currency,
+            downloads: grants.map((g) => ({
+              name: g.productName,
+              url: `${SITE_URL}/api/shop/download/${g.token}`,
+              format: g.fileFormat,
+              expiresAt: g.expiresAt,
+            })),
           }).catch((err) => console.error("[stripe/webhook] order email FAILED:", err instanceof Error ? err.message : err));
         }
         sendAdminOrderAlert({

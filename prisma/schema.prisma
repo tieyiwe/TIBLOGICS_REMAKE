@@ -934,6 +934,28 @@ model Product {
   sku            String?
   soldCount      Int      @default(0)
 
+  // ── Digital delivery ───────────────────────────────────────────────────
+  // deliveryType decides what a buyer receives:
+  //   download — a file served through /api/shop/download/[token]
+  //   external — a hosted resource (Notion, Sheets) opened via the same
+  //              token check, so the link is never exposed before purchase
+  //   none     — nothing to deliver (physical or service items)
+  deliveryType   String   @default("none")
+  /** Path under private/downloads/. Deliberately NOT in /public: anything
+      there is fetchable without paying. */
+  fileKey        String?
+  /** Filename the buyer sees when saving. */
+  fileName       String?
+  fileFormat     String?
+  fileSizeBytes  Int?
+  /** Destination for deliveryType = external. */
+  externalUrl    String?
+  /** How long a purchase stays downloadable, and how many times. */
+  downloadDays   Int      @default(365)
+  maxDownloads   Int      @default(10)
+
+  grants         DownloadGrant[]
+
   @@index([published])
   @@index([category])
   @@index([featured])
@@ -972,6 +994,30 @@ model AbandonedCart {
   @@index([updatedAt])
 }
 
+/// One buyer's right to download one product from one paid order.
+/// Created only by the Stripe webhook after payment, so a grant existing is
+/// itself proof of purchase.
+model DownloadGrant {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  /** Random, unguessable; this is the credential in the download URL. */
+  token         String   @unique
+  orderId       String
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /** Denormalised so a grant still works if the buyer's order email changes. */
+  email         String
+  downloadCount Int      @default(0)
+  maxDownloads  Int      @default(10)
+  expiresAt     DateTime
+  lastDownloadAt DateTime?
+
+  @@index([orderId])
+  @@index([email])
+  @@index([token])
+}
+
 model Order {
   id              String   @id @default(cuid())
   createdAt       DateTime @default(now())
@@ -988,6 +1034,8 @@ model Order {
   stripeSessionId String?
   shippingAddress Json?
   notes           String?
+
+  grants          DownloadGrant[]
 
   @@index([email])
   @@index([status])

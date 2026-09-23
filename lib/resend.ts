@@ -789,8 +789,32 @@ export async function sendOrderConfirmationEmail(order: {
   items: OrderItem[];
   total: number;
   currency?: string;
+  /** Download links for digital items. Empty for physical-only orders. */
+  downloads?: Array<{ name: string; url: string; format?: string | null; expiresAt?: Date }>;
 }) {
   const currency = order.currency ?? "USD";
+
+  // Digital items are delivered in this email — it is the only place the
+  // buyer receives their links, so they are given prominence above the
+  // receipt rather than buried under it.
+  const downloads = order.downloads ?? [];
+  const downloadsHtml = downloads.length === 0 ? "" : `
+    <div style="background:#F0F7FF;border:1px solid #CFE3FA;border-radius:12px;padding:20px;margin:0 0 24px;">
+      <p style="margin:0 0 4px;font-size:15px;font-weight:800;color:#131A1B;">Your download${downloads.length > 1 ? "s" : ""}</p>
+      <p style="margin:0 0 16px;font-size:13px;color:#5b6b72;line-height:1.6;">
+        Keep this email — these links are how you access your purchase.
+      </p>
+      ${downloads.map((d) => `
+        <div style="margin:0 0 12px;">
+          <a href="${d.url}" style="display:inline-block;background:#2251A3;color:#fff;font-weight:700;font-size:14px;text-decoration:none;padding:11px 22px;border-radius:8px;">
+            Download ${d.name}${d.format ? ` (${d.format})` : ""}
+          </a>
+          ${d.expiresAt ? `<div style="margin-top:6px;font-size:12px;color:#8A9BA0;">Available until ${d.expiresAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</div>` : ""}
+        </div>`).join("")}
+      <p style="margin:12px 0 0;font-size:12px;color:#8A9BA0;line-height:1.6;">
+        Links are tied to your order. If one stops working, reply to this email and we'll reissue it.
+      </p>
+    </div>`;
   const rows = order.items
     .map(
       (it) => `
@@ -817,6 +841,7 @@ export async function sendOrderConfirmationEmail(order: {
           Your order is confirmed and paid. Order number
           <strong style="color:#131A1B;">${order.orderNumber}</strong>.
         </p>
+        ${downloadsHtml}
         <table style="width:100%;border-collapse:collapse;">${rows}
           <tr>
             <td style="padding:16px 0 0;font-size:16px;font-weight:800;color:#131A1B;">Total</td>
@@ -824,7 +849,7 @@ export async function sendOrderConfirmationEmail(order: {
           </tr>
         </table>
         <p style="font-size:13px;color:#8A9BA0;line-height:1.6;margin:28px 0 0;">
-          We'll email you with any delivery or access details. Questions? Just reply to this email.
+          ${downloads.length > 0 ? "Your files are linked above." : "We'll email you with any delivery or access details."} Questions? Just reply to this email.
         </p>
       </div>
       <div style="background:#F4F7FB;padding:18px 32px;text-align:center;color:#8A9BA0;font-size:12px;">
