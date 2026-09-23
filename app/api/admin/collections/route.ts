@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
+import { revalidateShop } from "@/lib/shop/revalidate";
 
 function slugify(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9\s-]/g, "").trim().replace(/\s+/g, "-").slice(0, 80);
@@ -48,6 +49,7 @@ export async function POST(req: NextRequest) {
         sortOrder: Number.isFinite(Number(body.sortOrder)) ? Math.round(Number(body.sortOrder)) : 0,
       },
     });
+    revalidateShop();
     return NextResponse.json({ collection });
   } catch (err) {
     console.error("[admin/collections POST]", err);

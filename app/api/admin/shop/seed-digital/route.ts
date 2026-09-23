@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
 import { DIGITAL_PRODUCTS } from "@/lib/shop/digital-products";
 import { resolveDownloadPath } from "@/lib/shop/delivery";
+import { revalidateShop } from "@/lib/shop/revalidate";
 
 // Seeds the digital product catalogue. Idempotent — re-running updates copy
 // and delivery settings in place and never duplicates a product.
@@ -74,6 +75,8 @@ export async function POST() {
     const needPricing = await prisma.product.count({
       where: { deliveryType: "download", price: 0 },
     });
+
+    revalidateShop();
 
     return NextResponse.json({
       ok: true,

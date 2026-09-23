@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
+import { revalidateShop } from "@/lib/shop/revalidate";
 
 function slugify(name: string) {
   return name
@@ -72,6 +73,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    revalidateShop();
     return NextResponse.json({ product });
   } catch (err) {
     console.error("[admin/products POST]", err);

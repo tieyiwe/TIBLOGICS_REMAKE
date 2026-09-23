@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ShoppingBag } from "lucide-react";
 import ProductCard, { SHOP_CARD_STYLES } from "./ProductCard";
+import Spotlight, { SPOTLIGHT_STYLES } from "./Spotlight";
 import type { ShopProduct, ShopCollection } from "./types";
 
 const S = {
@@ -16,11 +17,30 @@ const S = {
 const syne = "'Syne', sans-serif";
 const dm = "'DM Sans', sans-serif";
 
-export default function StoreFront({ products, collections }: { products: ShopProduct[]; collections: ShopCollection[] }) {
+export default function StoreFront({
+  products,
+  collections,
+  spotlightSlug = null,
+  rotatesInDays = 0,
+  featuredCount = 0,
+}: {
+  products: ShopProduct[];
+  collections: ShopCollection[];
+  spotlightSlug?: string | null;
+  rotatesInDays?: number;
+  featuredCount?: number;
+}) {
   const categories = useMemo(() => ["All", ...Array.from(new Set(products.map((p) => p.category)))], [products]);
   const [cat, setCat] = useState("All");
   const [collection, setCollection] = useState<string | null>(null);
   const [q, setQ] = useState("");
+
+  // Only show the spotlight on the unfiltered storefront — once someone is
+  // browsing a collection or searching, a promo above the results is noise.
+  const spotlightProduct =
+    spotlightSlug && !collection && cat === "All" && !q
+      ? products.find((p) => p.slug === spotlightSlug) ?? null
+      : null;
 
   const featuredCollections = collections.filter((c) => c.featured);
   const activeCollection = collection ? collections.find((c) => c.slug === collection) ?? null : null;
@@ -34,7 +54,7 @@ export default function StoreFront({ products, collections }: { products: ShopPr
 
   return (
     <div style={{ background: S.darker, color: "#fff", fontFamily: dm, minHeight: "100vh" }}>
-      <style>{SHOP_CARD_STYLES + `
+      <style>{SHOP_CARD_STYLES + SPOTLIGHT_STYLES + `
         .col-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
         @media(max-width:560px){.col-strip{grid-template-columns:repeat(2,1fr);gap:12px}}
         .col-card{transition:transform .3s,border-color .3s}
@@ -57,6 +77,14 @@ export default function StoreFront({ products, collections }: { products: ShopPr
           </p>
         </div>
       </section>
+
+      {spotlightProduct && (
+        <Spotlight
+          product={spotlightProduct}
+          rotatesInDays={rotatesInDays}
+          featuredCount={featuredCount}
+        />
+      )}
 
       {/* Featured collections */}
       {featuredCollections.length > 0 && !collection && (

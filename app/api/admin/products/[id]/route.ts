@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
+import { revalidateShop } from "@/lib/shop/revalidate";
 
 // PATCH — update a product
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -33,6 +34,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (body.sku !== undefined) data.sku = body.sku ? String(body.sku).slice(0, 60) : null;
 
     const product = await prisma.product.update({ where: { id }, data });
+    revalidateShop(product.slug);
     return NextResponse.json({ product });
   } catch (err) {
     console.error("[admin/products PATCH]", err);
@@ -48,6 +50,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params;
   try {
     await prisma.product.delete({ where: { id } });
+    revalidateShop();
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[admin/products DELETE]", err);

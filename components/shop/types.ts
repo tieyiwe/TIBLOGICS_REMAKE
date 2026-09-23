@@ -16,6 +16,8 @@ export interface ShopProduct {
   featured: boolean;
   onSale: boolean;
   soldCount: number;
+  /** e.g. "PDF · 46 pages · 100 prompts" — rendered as spec chips. */
+  fileFormat?: string | null;
 }
 
 export interface ShopCollection {
