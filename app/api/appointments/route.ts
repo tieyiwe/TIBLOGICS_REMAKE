@@ -3,10 +3,27 @@ import prisma from "@/lib/prisma";
 import resend from "@/lib/resend";
 import { sendTiweNotification } from "@/lib/resend";
 import { createMeeting, calcEndTime } from "@/lib/meeting-providers";
-import { isValidEmail, escapeHtml } from "@/lib/require-admin";
+import { isValidEmail, escapeHtml, requireAdmin } from "@/lib/require-admin";
 import stripe from "@/lib/stripe";
 
+// Staff only. This returns every customer's name, email, phone, company and
+// private notes — it was reachable by anyone until now. POST below stays
+// public, because that is the booking form itself.
+/** How long the booking response will wait on confirmation emails. */
+const EMAIL_TIMEOUT_MS = 5000;
+
+/** Resolve when `p` settles or `ms` elapses, whichever comes first. */
+function withTimeout(p: Promise<unknown>, ms: number): Promise<unknown> {
+  return Promise.race([
+    p,
+    new Promise((resolve) => setTimeout(resolve, ms)),
+  ]);
+}
+
 export async function GET(req: Request) {
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   try {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status");
@@ -93,6 +110,37 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid date" }, { status: 400 });
     }
 
+    // The form hides slots that /api/appointments/available reports as booked,
+    // but nothing re-checked at write time — so a double-click, a retry after a
+    // slow response, or two people on the page at once all produced overlapping
+    // bookings for one slot. PENDING counts as taken, matching how `available`
+    // computes bookedSlots.
+    //
+    // This closes the realistic cases. Two genuinely simultaneous requests can
+    // still slip through; only a unique index would make that impossible.
+    if (timeSlot && typeof timeSlot === "string") {
+      const day = new Date(date);
+      const dayStart = new Date(day);
+      dayStart.setUTCHours(0, 0, 0, 0);
+      const dayEnd = new Date(day);
+      dayEnd.setUTCHours(23, 59, 59, 999);
+
+      const taken = await prisma.appointment.findFirst({
+        where: {
+          date: { gte: dayStart, lte: dayEnd },
+          timeSlot,
+          status: { not: "CANCELLED" },
+        },
+        select: { id: true },
+      });
+      if (taken) {
+        return NextResponse.json(
+          { error: "That time has just been booked. Please pick another slot." },
+          { status: 409 },
+        );
+      }
+    }
+
     if (totalAmount === 0) {
       const tz = timezone ?? "America/New_York";
 
@@ -141,16 +189,25 @@ export async function POST(req: Request) {
         }).catch(() => {});
       }
 
-      await Promise.allSettled([
-        sendBookingConfirmation({ firstName, lastName, email, serviceType, serviceDuration, date, timeSlot, meetingLink }),
-        sendTiweNotification({
-          firstName, lastName, email, company: company ?? null,
-          serviceType, date: new Date(date), timeSlot,
-          totalAmount: 0, paymentStatus: "free",
-          addOnRecording: false, addOnActionPlan: false, addOnSlackAccess: false,
-          goalNotes: goalNotes ?? null, meetingLink,
-        }),
-      ]);
+      // The appointment is already saved, so the emails are best-effort. Don't
+      // hold the response open on them: an unreachable or slow mail provider
+      // would leave the customer staring at a spinner on a booking that
+      // actually succeeded, and they would submit again and double-book.
+      // Sending continues in the background after the timeout — this runs on a
+      // long-lived server, not a function that gets frozen on response.
+      await withTimeout(
+        Promise.allSettled([
+          sendBookingConfirmation({ firstName, lastName, email, serviceType, serviceDuration, date, timeSlot, meetingLink }),
+          sendTiweNotification({
+            firstName, lastName, email, company: company ?? null,
+            serviceType, date: new Date(date), timeSlot,
+            totalAmount: 0, paymentStatus: "free",
+            addOnRecording: false, addOnActionPlan: false, addOnSlackAccess: false,
+            goalNotes: goalNotes ?? null, meetingLink,
+          }),
+        ]),
+        EMAIL_TIMEOUT_MS,
+      );
 
       return NextResponse.json(
         { appointmentId: appointment.id, checkoutUrl: null },
