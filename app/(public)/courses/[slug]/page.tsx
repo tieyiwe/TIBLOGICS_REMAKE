@@ -74,7 +74,9 @@ export default async function TrackLandingPage({
     <div className="bg-[var(--s2)] pb-28">
       {/* Hero */}
       <section
-        className="px-4 py-14 text-white sm:py-20"
+        // pt clears the fixed Nav (5.5rem tall, 7.5rem from sm up) — without it
+        // the white header sits on top of the "All tracks" link and title.
+        className="px-4 pb-14 pt-32 text-white sm:pb-20 sm:pt-44"
         style={{ background: `linear-gradient(135deg, var(--ink) 0%, ${track.accentColor}22 100%), var(--ink)` }}
       >
         <div className="learn-hero mx-auto max-w-5xl">

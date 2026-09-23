@@ -20,7 +20,9 @@ export default async function CoursesPage() {
   return (
     <div className="bg-[var(--s2)]">
       {/* Hero */}
-      <section className="bg-[var(--ink)] px-4 py-16 text-white sm:py-20">
+      {/* pt clears the fixed Nav (5.5rem tall, 7.5rem from sm up) — without it
+          the white header sits on top of the eyebrow and headline. */}
+      <section className="bg-[var(--ink)] px-4 pb-16 pt-32 text-white sm:pb-20 sm:pt-44">
         <div className="learn-hero mx-auto max-w-6xl">
           <p
             className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--orange)]"
