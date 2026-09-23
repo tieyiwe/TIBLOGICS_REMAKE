@@ -19,10 +19,6 @@ const navLinks = [
   { label: "About", href: "/about" },
 ];
 
-function openTibo() {
-  window.dispatchEvent(new CustomEvent("tibo:open"));
-}
-
 export default function Nav() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
@@ -98,12 +94,12 @@ export default function Nav() {
               })}
             </nav>
 
-            {/* Desktop CTAs */}
+            {/* Desktop CTA — single button so the nav links have room to
+                breathe. Tibo is still one click away from the floating
+                launcher on every page, and from the Tibo tab in the mobile
+                bottom bar. */}
             <div className="hidden lg:flex items-center gap-3">
-              <button onClick={openTibo} className="btn-primary text-sm py-2 px-4">
-                Talk to Tibo ↗
-              </button>
-              <Link href="/book" className="btn-secondary text-sm py-2 px-4">
+              <Link href="/book" className="btn-primary text-sm py-2 px-4">
                 Book a Free Consulting
               </Link>
             </div>
@@ -188,16 +184,13 @@ export default function Nav() {
           </nav>
 
           <div className="p-4 border-t border-[#D2DCE8] flex flex-col gap-3">
-            <button
-              onClick={() => { setMobileOpen(false); openTibo(); }}
-              className="btn-primary justify-center text-sm"
-            >
-              Talk to Tibo ↗
-            </button>
+            {/* Tibo is omitted here too: the mobile bottom bar already has a
+                dedicated Tibo tab, so repeating it in the drawer was
+                duplicate navigation. */}
             <Link
               href="/book"
               onClick={() => setMobileOpen(false)}
-              className="btn-secondary justify-center text-sm"
+              className="btn-primary justify-center text-sm"
             >
               Book a Meeting
             </Link>

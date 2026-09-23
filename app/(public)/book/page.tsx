@@ -3,25 +3,24 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Check, Clock, DollarSign } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Clock } from "lucide-react";
 
+// Consultations are free. This list is what the visitor wants to TALK ABOUT,
+// not something they buy — price stays 0 so no payment step is ever reached
+// The checkoutUrl branch in submit() is left in place as a safety net in
+// case a paid service is reintroduced later.
 const SERVICES = [
-  { id: "discovery", name: "Project Discovery Meeting", duration: "30 min", price: 0, badge: "Free", description: "Intro call to explore your project — zero commitment, zero cost.", color: "#F47C20" },
-  { id: "strategy", name: "AI Strategy Session", duration: "60 min", price: 49700, badge: "Popular", description: "Deep-dive into your AI opportunities and build a custom action plan.", color: "#2251A3" },
-  { id: "audit", name: "AI Readiness Audit", duration: "90 min + Deliverable", price: 89700, badge: null, description: "Full assessment of your tech stack and AI readiness with a written deliverable.", color: "#1B3A6B" },
-  { id: "website", name: "Website AI Transformation", duration: "45 min", price: 24900, badge: "New", description: "Review your current website and design an AI-powered upgrade plan.", color: "#0F6E56" },
-  { id: "cost", name: "AI Cost & Price Strategy for AI Product Builders", duration: "60 min", price: 29700, badge: null, description: "Calculate your AI costs and design a profitable pricing model.", color: "#7c3aed" },
-  { id: "tech", name: "Other Consulting (Apps, SaaS, Special Features…)", duration: "60 min", price: 24900, badge: null, description: "Expert guidance on app development, SaaS products, special features, or any technical challenge.", color: "#3A4A5C" },
+  { id: "discovery", name: "Project Discovery", duration: "30 min", price: 0, badge: "Start here", description: "Not sure where to begin? An intro call to explore your project — zero commitment.", color: "#F47C20" },
+  { id: "strategy", name: "AI Strategy", duration: "45 min", price: 0, badge: "Popular", description: "Talk through where AI could genuinely help your business, and where it wouldn't.", color: "#2251A3" },
+  { id: "audit", name: "AI Readiness", duration: "45 min", price: 0, badge: null, description: "Look at your current tech and processes, and what adopting AI would actually take.", color: "#1B3A6B" },
+  { id: "website", name: "Website & AI", duration: "45 min", price: 0, badge: null, description: "Review your current website and discuss an AI-powered upgrade.", color: "#0F6E56" },
+  { id: "cost", name: "AI Cost & Pricing", duration: "45 min", price: 0, badge: null, description: "For AI product builders: what your AI actually costs to run, and how to price it.", color: "#7c3aed" },
+  { id: "tech", name: "Something Else", duration: "45 min", price: 0, badge: null, description: "Apps, SaaS, a specific feature, or any other technical question.", color: "#3A4A5C" },
 ];
 
 const ADD_ONS: { id: string; label: string; price: number }[] = [];
 
 const TIME_SLOTS = ["9:00 AM", "10:00 AM", "11:00 AM", "1:00 PM", "2:00 PM", "3:00 PM"];
-
-function formatPrice(cents: number) {
-  if (cents === 0) return "Free";
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(cents / 100);
-}
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -68,7 +67,6 @@ export default function BookPage() {
 
   const bookingPanelRef = useRef<HTMLDivElement>(null);
 
-  const total = selectedService.price;
 
   async function handleDateSelect(date: Date) {
     setSelectedDate(date);
@@ -102,7 +100,7 @@ export default function BookPage() {
           addOnRecording: false,
           addOnActionPlan: false,
           addOnSlackAccess: false,
-          totalAmount: total,
+          totalAmount: 0,
         }),
       });
       if (!res.ok) {
@@ -153,13 +151,13 @@ export default function BookPage() {
         <div className="text-center mb-10">
           <span className="section-tag">Book a Consulting</span>
           <h1 className="font-syne font-extrabold text-4xl text-[#0D1B2A] mt-2">Book a Consulting</h1>
-          <p className="font-dm text-[#3A4A5C] mt-2">Choose your session and pick a time that works for you.</p>
+          <p className="font-dm text-[#3A4A5C] mt-2">Free, no obligation. Pick what you'd like to discuss and a time that suits you.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Left: Service Selector */}
           <div className="lg:col-span-2 flex flex-col gap-3">
-            <h2 className="font-syne font-bold text-base text-[#0D1B2A]">Choose Your Session</h2>
+            <h2 className="font-syne font-bold text-base text-[#0D1B2A]">What would you like to discuss?</h2>
             {SERVICES.map((svc) => {
               const isSelected = selectedService.id === svc.id;
               return (
@@ -208,7 +206,6 @@ export default function BookPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-3 mt-1">
-                      <span className="font-syne font-extrabold text-lg text-[#0D1B2A]">{formatPrice(svc.price)}</span>
                       <span className="font-dm text-xs text-[#7A8FA6] flex items-center gap-1"><Clock size={11} />{svc.duration}</span>
                     </div>
                     <p className="font-dm text-xs text-[#7A8FA6] mt-1 leading-relaxed">{svc.description}</p>
@@ -225,7 +222,7 @@ export default function BookPage() {
               <div className="font-syne font-bold text-white text-base">{selectedService.name}</div>
               <div className="flex items-center gap-4 mt-1">
                 <span className="text-white/60 text-sm font-dm flex items-center gap-1"><Clock size={13} />{selectedService.duration}</span>
-                <span className="text-[#F47C20] font-syne font-bold text-sm">{formatPrice(selectedService.price)}</span>
+                <span className="text-[#F47C20] font-syne font-bold text-sm">Free</span>
               </div>
             </div>
 
@@ -374,10 +371,6 @@ export default function BookPage() {
                       placeholder="Share your main goals or challenges for this session..." />
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-[#D2DCE8]">
-                    <span className="font-dm text-sm text-[#7A8FA6]">Total: <span className="font-syne font-bold text-[#0D1B2A]">{formatPrice(total)}</span></span>
-                  </div>
-
                   <div className="flex gap-3">
                     <button onClick={() => setStep(1)} className="btn-secondary flex-1 justify-center text-sm">← Back</button>
                     <button
@@ -419,9 +412,9 @@ export default function BookPage() {
                         <span className="font-medium text-[#0D1B2A]">{formData.phone}</span>
                       </div>
                     )}
-                    <div className="border-t border-[#D2DCE8] pt-2 flex justify-between">
-                      <span className="font-syne font-bold text-[#0D1B2A]">Total</span>
-                      <span className="font-syne font-extrabold text-2xl text-[#2251A3]">{formatPrice(total)}</span>
+                    <div className="border-t border-[#D2DCE8] pt-2 flex justify-between items-center">
+                      <span className="font-syne font-bold text-[#0D1B2A]">Cost</span>
+                      <span className="font-syne font-extrabold text-xl text-[#0F6E56]">Free</span>
                     </div>
                   </div>
 
@@ -432,7 +425,7 @@ export default function BookPage() {
                       onClick={handleSubmit}
                       className="btn-primary flex-1 justify-center text-sm disabled:opacity-60"
                     >
-                      {submitting ? "Processing..." : total > 0 ? "Pay & Confirm →" : "Confirm Booking →"}
+                      {submitting ? "Processing..." : "Confirm Booking →"}
                     </button>
                   </div>
 
@@ -440,11 +433,9 @@ export default function BookPage() {
                     <p className="text-center text-sm text-red-500 font-dm">{submitError}</p>
                   )}
 
-                  {total > 0 && (
-                    <p className="text-center text-xs text-[#7A8FA6] font-dm">
-                      Secure payment via Stripe. You'll be redirected to complete payment.
-                    </p>
-                  )}
+                  <p className="text-center text-xs text-[#7A8FA6] font-dm">
+                    No payment required — you'll get a confirmation email with the meeting link.
+                  </p>
                 </div>
               )}
             </div>
