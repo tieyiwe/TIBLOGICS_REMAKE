@@ -80,7 +80,7 @@ export default async function TrackLandingPage({
         style={{ background: `linear-gradient(135deg, var(--ink) 0%, ${track.accentColor}22 100%), var(--ink)` }}
       >
         <div className="learn-hero mx-auto max-w-5xl">
-          <Link href="/courses" className="text-sm text-white/50 hover:text-white/80">
+          <Link href="/learning-box" className="text-sm text-white/50 hover:text-white/80">
             ← All tracks
           </Link>
           <div className="mt-4 flex flex-wrap items-center gap-3">

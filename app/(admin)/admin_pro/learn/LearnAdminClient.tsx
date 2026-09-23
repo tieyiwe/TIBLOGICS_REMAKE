@@ -86,7 +86,7 @@ export default function LearnAdminClient({
         <div>
           <h1 className="text-2xl font-black text-[var(--ink)]">TIBLOGICS Learn</h1>
           <p className="mt-1 text-sm text-[var(--ink3)]">
-            Course platform — content, learners and capstone reviews.
+            Learning Box — content, learners and capstone reviews.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -102,7 +102,7 @@ export default function LearnAdminClient({
             disabled={busy !== null || !tablesReady}
             className="rounded-lg bg-[var(--ink)] px-4 py-2 text-sm font-bold text-white hover:opacity-90 disabled:opacity-50"
           >
-            {busy === "seed" ? "Seeding…" : "2 · Seed Course Content"}
+            {busy === "seed" ? "Seeding…" : "2 · Seed Learning Box Content"}
           </button>
         </div>
       </header>
@@ -112,7 +112,7 @@ export default function LearnAdminClient({
           <h2 className="text-sm font-bold text-amber-900">Setup required</h2>
           <p className="mt-1 text-sm text-amber-900">
             The Learn tables don't exist yet. Click <strong>Sync Database</strong>, then{" "}
-            <strong>Seed Course Content</strong>. Both are safe to re-run — seeding updates content
+            <strong>Seed Learning Box Content</strong>. Both are safe to re-run — seeding updates content
             in place and never touches learner progress.
           </p>
         </div>
@@ -179,7 +179,7 @@ export default function LearnAdminClient({
         <h2 className="text-sm font-bold text-[var(--ink)]">Tracks</h2>
         {tracks.length === 0 ? (
           <p className="mt-3 text-sm text-[var(--ink3)]">
-            No tracks yet — run Seed Course Content.
+            No tracks yet — run Seed Learning Box Content.
           </p>
         ) : (
           <div className="mt-4 overflow-x-auto">
@@ -218,7 +218,7 @@ export default function LearnAdminClient({
                     <td className="py-2.5 text-right text-[var(--ink2)]">{t.estimatedHours}</td>
                     <td className="py-2.5 pl-4 text-right">
                       <Link
-                        href={`/courses/${t.slug}`}
+                        href={`/learning-box/${t.slug}`}
                         target="_blank"
                         className="text-xs font-semibold text-[var(--blue2)] underline"
                       >

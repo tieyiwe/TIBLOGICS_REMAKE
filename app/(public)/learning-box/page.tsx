@@ -8,12 +8,12 @@ import { PLANS, formatPlanPrice, FOUNDING_PRICING } from "@/lib/payments/provide
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Course Catalog | TIBLOGICS Learn",
+  title: "Learning Box | TIBLOGICS Learn",
   description:
     "Practical AI and technology tracks that end in a verifiable certificate — quick checks after every lesson, a module quiz, a timed final exam, and a capstone reviewed by a human.",
 };
 
-export default async function CoursesPage() {
+export default async function LearningBoxPage() {
   const tracks = await getCatalog();
   const monthly = PLANS.monthly;
 

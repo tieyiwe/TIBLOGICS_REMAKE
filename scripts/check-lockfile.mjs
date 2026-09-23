@@ -14,7 +14,7 @@
 // `npm ci --dry-run` does NOT catch this — it resolves the tree without
 // downloading tarballs, so it never touches the unreachable host.
 
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 
@@ -35,14 +35,22 @@ const offenders = [...raw.matchAll(/"resolved":\s*"(http:\/\/package-firewall[^"
 
 if (offenders.length === 0) process.exit(0);
 
-console.error(
-  `\n✖ package-lock.json has ${offenders.length} dependency/dependencies resolving to ${INTERNAL_HOST}.` +
-    `\n  That host only exists inside the Replit workspace, so the deployment build will fail on \`npm ci\`.\n`,
+// Repair rather than fail. The rewrite is content-identical — the proxy serves
+// the registry's own tarballs, so every integrity hash still validates — and
+// failing here would break the very deploy this is meant to protect, if the
+// build environment installs through the proxy too.
+writeFileSync(
+  LOCKFILE,
+  raw.replaceAll(`http://${INTERNAL_HOST}/npm/`, "https://registry.npmjs.org/"),
 );
-for (const url of offenders) console.error("    " + url);
-console.error(
-  `\n  Fix it with:\n` +
-    `    sed -i 's|http://${INTERNAL_HOST}/npm/|https://registry.npmjs.org/|g' package-lock.json\n` +
-    `\n  Then commit package-lock.json. The tarballs are identical, so the integrity hashes still match.\n`,
+
+console.warn(
+  `\n⚠ package-lock.json had ${offenders.length} dependency/dependencies resolving to ${INTERNAL_HOST},` +
+    `\n  a host that exists only inside the Replit workspace. Left alone they break \`npm ci\` on the` +
+    `\n  deployment build machine. Rewritten to registry.npmjs.org:\n`,
 );
-process.exit(1);
+for (const url of offenders) console.warn("    " + url);
+console.warn(
+  `\n  Commit package-lock.json so this does not come back:\n` +
+    `    git add package-lock.json && git commit -m "Repoint lockfile at the public registry"\n`,
+);

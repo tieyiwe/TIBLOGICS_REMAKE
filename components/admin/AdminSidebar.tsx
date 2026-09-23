@@ -92,7 +92,7 @@ const navItems: NavItem[] = [
     ],
   },
   { label: "Events & Training", href: "/admin_pro/events", icon: Calendar },
-  { label: "Learn (Courses)", href: "/admin_pro/learn", icon: GraduationCap },
+  { label: "Learn (Learning Box)", href: "/admin_pro/learn", icon: GraduationCap },
   { label: "Shop", href: "/admin_pro/shop", icon: ShoppingBag },
   { label: "Service Requests", href: "/admin_pro/service-requests", icon: Briefcase },
   { label: "Partnerships", href: "/admin_pro/partnerships", icon: Briefcase },

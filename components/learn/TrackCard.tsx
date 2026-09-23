@@ -36,7 +36,7 @@ export default function TrackCard({ track }: { track: CatalogTrack }) {
           {comingSoon ? (
             track.title
           ) : (
-            <Link href={`/courses/${track.slug}`} className="after:absolute after:inset-0">
+            <Link href={`/learning-box/${track.slug}`} className="after:absolute after:inset-0">
               {track.title}
             </Link>
           )}

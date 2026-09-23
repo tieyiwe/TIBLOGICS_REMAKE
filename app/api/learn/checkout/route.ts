@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       successUrl: parsed.data.track
         ? `${SITE}/learn/track/${parsed.data.track}?welcome=1`
         : `${SITE}/learn?welcome=1`,
-      cancelUrl: `${SITE}/courses?checkout=cancelled`,
+      cancelUrl: `${SITE}/learning-box?checkout=cancelled`,
     });
     return NextResponse.json({ url });
   } catch (err) {

@@ -42,6 +42,10 @@ const nextConfig = {
     return [
       { source: "/blog", destination: "/ai-times", permanent: true },
       { source: "/blog/:slug", destination: "/ai-times/:slug", permanent: true },
+      // "Courses" became "Learning Box". Certificates issued before the rename
+      // link to /courses, so these have to keep working indefinitely.
+      { source: "/courses", destination: "/learning-box", permanent: true },
+      { source: "/courses/:slug", destination: "/learning-box/:slug", permanent: true },
     ];
   },
   async headers() {

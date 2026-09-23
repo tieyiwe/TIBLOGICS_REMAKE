@@ -45,7 +45,7 @@ export async function sendStudentWelcomeEmail(s: { email: string; name: string }
       `Welcome, ${s.name.split(" ")[0]}!`,
       p("Your TIBLOGICS Learn account is ready. Browse the catalog, start a track, and work through practical lessons that end in a real, verifiable certificate.") +
       p("Every track gives you quick checks after each lesson, a quiz per module, a final exam, and a capstone reviewed by a human — so your certificate actually means something."),
-      { href: `${SITE}/courses`, label: "Browse the catalog →" },
+      { href: `${SITE}/learning-box`, label: "Browse the catalog →" },
     ),
   });
 }

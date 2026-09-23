@@ -53,10 +53,10 @@ export default async function VerifyCertificatePage({
             try again — codes are case-sensitive.
           </p>
           <Link
-            href="/courses"
+            href="/learning-box"
             className="mt-6 inline-block rounded-full bg-[var(--ink)] px-6 py-2.5 text-sm font-bold text-white"
           >
-            Explore our courses →
+            Explore the Learning Box →
           </Link>
         </div>
       </div>
@@ -171,8 +171,8 @@ export default async function VerifyCertificatePage({
         </div>
 
         <p className="mt-8 text-center text-sm text-[var(--ink3)]">
-          <Link href="/courses" className="font-semibold text-[var(--blue2)] underline">
-            Explore TIBLOGICS courses →
+          <Link href="/learning-box" className="font-semibold text-[var(--blue2)] underline">
+            Explore the TIBLOGICS Learning Box →
           </Link>
         </p>
       </div>

@@ -65,7 +65,7 @@ export default async function SubscribePage({
 
         <p className="mt-8 text-center text-xs text-[var(--ink3)]">
           Not ready?{" "}
-          <Link href="/courses" className="underline">
+          <Link href="/learning-box" className="underline">
             Browse the catalog
           </Link>{" "}
           first.
