@@ -122,16 +122,22 @@ function toOgImage(coverImage: string | null, category?: string | null): string 
   }
 }
 
+// No searchParams here, deliberately.
+//
+// Reading them made this page dynamic at request time while it is declared
+// static (generateStaticParams + revalidate), and Next then refuses to render
+// any slug that did not exist at build time — a 500 on every article the news
+// agent publishes after a deploy, which is all of them.
+//
+// The cost is that ?lang=fr|sw social previews carry the English title. The
+// page body still translates, the canonical URL was already English-only, and
+// query-string languages were never going to be indexed separately anyway.
 export async function generateMetadata(
-  { params, searchParams }: {
-    params: Promise<{ slug: string }>;
-    searchParams: Promise<Record<string, string>>;
-  }
+  { params }: { params: Promise<{ slug: string }> }
 ): Promise<Metadata> {
   try {
     const { slug } = await params;
-    const sp = await searchParams;
-    const lang = (["fr", "sw"].includes(sp?.lang) ? sp.lang : "en") as "en" | "fr" | "sw";
+    const lang = "en" as const;
 
     const { prisma } = await import("@/lib/prisma");
     const [post, txCache] = await Promise.all([

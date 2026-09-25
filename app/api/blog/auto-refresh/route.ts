@@ -10,11 +10,50 @@ const anthropic = new Anthropic();
 
 const REFRESH_INTERVAL_MS = 48 * 60 * 60 * 1000; // 48 hours
 
-const AI_KEYWORDS = [
-  "ai", "llm", "gpt", "claude", "gemini", "machine learning", "openai",
-  "anthropic", "neural", "artificial intelligence", "chatgpt", "mistral",
-  "generative", "transformer", "langchain", "agent", "rag",
+// What counts as worth writing about.
+//
+// Matched on word boundaries. The previous list did a plain substring test, so
+// "ai" matched "email", "available", "training", "maintenance" and "said" —
+// while genuinely big stories with no AI vocabulary in the headline (a chip
+// launch, a Tesla production milestone) were filtered out entirely.
+const AI_TERMS = [
+  "ai", "a.i.", "llm", "llms", "gpt", "claude", "gemini", "openai", "anthropic",
+  "deepseek", "mistral", "llama", "grok", "copilot", "chatgpt", "neural",
+  "machine learning", "artificial intelligence", "generative", "transformer",
+  "langchain", "rag", "agents", "agentic", "inference", "fine-tuning",
+  "multimodal", "diffusion", "foundation model", "frontier model",
 ];
+
+// Major technology companies. On their own these are not enough — paired with
+// an event word below, they catch the "Tesla starts Semi production" class of
+// story that matters but never says "AI".
+const TECH_COMPANIES = [
+  // The AI labs belong here too: "OpenAI releases GPT-5" is a major story by
+  // any measure, and without them it would only ever be ordinary coverage.
+  "openai", "anthropic", "deepseek", "mistral", "hugging face", "cohere",
+  "tesla", "spacex", "nvidia", "apple", "google", "deepmind", "microsoft",
+  "meta", "amazon", "intel", "amd", "qualcomm", "tsmc", "samsung", "waymo",
+  "boston dynamics", "figure", "palantir", "ibm", "oracle", "broadcom", "arm",
+  "xai", "neuralink", "starlink",
+];
+
+// Something actually happened, as opposed to commentary about a company.
+const EVENT_TERMS = [
+  "launch", "launches", "launched", "unveil", "unveils", "unveiled",
+  "announce", "announces", "announced", "release", "releases", "released",
+  "breakthrough", "record", "first", "production", "ships", "shipping",
+  "debut", "debuts", "reveal", "reveals", "acquires", "acquisition",
+  "milestone", "begins", "starts", "rollout", "opens",
+];
+
+function compile(terms: string[]): RegExp {
+  const escaped = terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  return new RegExp(`\\b(?:${escaped.join("|")})\\b`, "i");
+}
+
+const AI_RE = compile(AI_TERMS);
+const COMPANY_RE = compile(TECH_COMPANIES);
+const EVENT_RE = compile(EVENT_TERMS);
 
 const CATEGORY_IMAGES: Record<string, string[]> = {
   "breaking": [
@@ -276,9 +315,16 @@ interface DevArticle {
   tag_list: string[];
 }
 
-function isAIRelated(title: string): boolean {
-  const lower = title.toLowerCase();
-  return AI_KEYWORDS.some((kw) => lower.includes(kw));
+function isNewsworthy(title: string): boolean {
+  return AI_RE.test(title) || (COMPANY_RE.test(title) && EVENT_RE.test(title));
+}
+
+/**
+ * A story big enough to publish ahead of the normal cadence — a frontier model
+ * or a named company shipping something. Ordinary AI commentary waits its turn.
+ */
+export function isMajorStory(title: string): boolean {
+  return COMPANY_RE.test(title) && EVENT_RE.test(title);
 }
 
 async function fetchHackerNews(): Promise<HNStory[]> {
@@ -300,7 +346,7 @@ async function fetchHackerNews(): Promise<HNStory[]> {
 
     const thirtyDaysAgo = Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60;
     return stories
-      .filter((s): s is HNStory => s && s.title && isAIRelated(s.title) && s.time > thirtyDaysAgo)
+      .filter((s): s is HNStory => s && s.title && isNewsworthy(s.title) && s.time > thirtyDaysAgo)
       .slice(0, 15);
   } catch {
     return [];
@@ -315,7 +361,7 @@ async function fetchDevTo(): Promise<DevArticle[]> {
     ).then((r) => r.json());
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     return articles
-      .filter((a) => isAIRelated(a.title) && a.published_at > thirtyDaysAgo)
+      .filter((a) => isNewsworthy(a.title) && a.published_at > thirtyDaysAgo)
       .slice(0, 10);
   } catch {
     return [];
@@ -328,21 +374,36 @@ async function generatePost(
   title: string,
   sourceUrl: string | undefined,
   sourceTitle: string
-): Promise<{ excerpt: string; content: string; category: string; tags: string[] } | null> {
-  const prompt = `Write an informative, engaging blog post for TIBLOGICS (an AI agency blog) based on this topic:
+): Promise<{ headline: string; excerpt: string; content: string; category: string; tags: string[] } | null> {
+  const prompt = `Write a blog post for TIBLOGICS (an AI agency blog) based on this story:
 
-Title: "${title}"
+Source headline: "${title}"
 Source: ${sourceTitle}
 Current date context: Mid-${CURRENT_YEAR}
 
+Write your OWN headline. Do not reuse the source headline — it was written for
+a different audience. The headline must:
+- Make a reader stop scrolling. Lead with the consequence, the number, or the
+  thing people have not realised yet.
+- Stay true. No clickbait that the article does not deliver on, no "you won't
+  believe", no fake urgency, no question you never answer.
+- Be under 75 characters where possible.
+
+The article itself must do two jobs:
+1. TEACH. Explain what actually happened and the mechanism behind it, in plain
+   language, assuming an intelligent reader who is not an AI specialist.
+2. SPELL OUT WHAT IT MEANS. Say the implication out loud rather than leaving
+   the reader to infer it — who this helps, who should be worried, what it
+   changes about a decision they are making now. Be specific and concrete.
+
 Requirements:
 - 450-600 words
-- Start with a compelling opening sentence (no "Introduction" heading)
-- Use 3-4 subheadings (## format)
-- Include a "What This Means for Small Businesses" section
-- End with a practical takeaway
-- Tone: expert but accessible, no jargon without explanation
-- Include HTML formatting: <h2>, <p>, <ul>, <li>, <strong>
+- Open with the single most striking fact — no "Introduction" heading
+- 3-4 <h2> subheadings
+- Include a "What This Means for You" section that names the consequence plainly
+- End with a practical takeaway the reader can act on this week
+- Tone: expert, direct, no hype, no jargon without explanation
+- HTML formatting: <h2>, <p>, <ul>, <li>, <strong>
 - IMPORTANT: The current year is ${CURRENT_YEAR}. Do NOT write "in 2025" or "in 2024" as if those are current or future. Any year-specific references must use ${CURRENT_YEAR} as the present, and treat 2024/2025 as past years only when historically relevant.
 
 Also determine:
@@ -352,6 +413,7 @@ Also determine:
 
 Return a JSON object:
 {
+  "headline": "...",
   "excerpt": "...",
   "content": "<h2>...</h2><p>...</p>...",
   "category": "...",
@@ -361,7 +423,7 @@ Return a JSON object:
   try {
     const raw = await streamChat(
       [{ role: "user", content: prompt }],
-      `You are a professional AI technology journalist writing for an AI agency blog. The current year is ${CURRENT_YEAR}. Write engaging, accurate, practical content that reflects the AI landscape as of mid-${CURRENT_YEAR}. Never describe 2025 or 2024 as "this year" or "the current year".`,
+      `You are a technology journalist writing for an AI agency blog. You explain what happened and then say plainly what it means — the part most coverage leaves implicit. Your headlines earn attention with the actual consequence, never with manufactured drama. The current year is ${CURRENT_YEAR}. Never describe 2025 or 2024 as "this year" or "the current year".`,
       2000
     );
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
@@ -2711,8 +2773,34 @@ export async function GET(req: NextRequest) {
     patchStaleArticles(),
   ]);
 
+  // The 48h cadence is a floor, not a ceiling. If something genuinely big has
+  // landed — a frontier model, or a named company shipping something — publish
+  // now rather than sitting on it for another day. This is why the endpoint is
+  // worth calling several times a day: most calls do nothing, and the one that
+  // matters does not wait.
+  let breakingOverride: string | null = null;
   if (!needsRefresh) {
-    return NextResponse.json({ message: "Content is up to date", postsAdded: 0 });
+    try {
+      const [hn, dev] = await Promise.all([fetchHackerNews(), fetchDevTo()]);
+      const candidates = [...hn.map((h) => h.title), ...dev.map((d) => d.title)];
+      const alreadyCovered = new Set(
+        (await prisma.blogPost.findMany({ select: { sourceTitle: true } }))
+          .map((p) => (p.sourceTitle ?? "").toLowerCase())
+          .filter(Boolean),
+      );
+      breakingOverride =
+        candidates.find((t) => isMajorStory(t) && !alreadyCovered.has(t.toLowerCase())) ?? null;
+      if (breakingOverride) needsRefresh = true;
+    } catch {
+      // Source lookup is best-effort — never let it turn a quiet call into a failure.
+    }
+  }
+
+  if (!needsRefresh) {
+    return NextResponse.json({
+      message: "Content is up to date, and nothing major is breaking",
+      postsAdded: 0,
+    });
   }
 
   let postsAdded = 0;
@@ -2947,18 +3035,25 @@ export async function GET(req: NextRequest) {
       try {
         const generated = await generatePost(item.title, item.url, item.sourceLabel);
         if (!generated) return;
+        // Externally sourced stories get the headline the model wrote; a raw
+        // Hacker News title was never written to be read on this site. Topic
+        // bank entries keep their curated titles.
+        const headline =
+          !item.category && typeof generated.headline === "string" && generated.headline.trim().length > 10
+            ? generated.headline.trim().slice(0, 160)
+            : item.title;
         // For topic-bank items, enforce the intended category regardless of Claude's pick
         const finalCategory = item.category || generated.category;
         const meta = CATEGORY_META[finalCategory] ?? CATEGORY_META["industry"];
-        const tipsHtml = await generateTips(item.title, generated.content);
+        const tipsHtml = await generateTips(headline, generated.content);
 
-        const baseSlug = item.title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-").slice(0, 70);
+        const baseSlug = headline.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-").slice(0, 70);
         let slug = baseSlug; let si = 1;
         while (await prisma.blogPost.findUnique({ where: { slug } })) slug = `${baseSlug}-${si++}`;
 
         await prisma.blogPost.create({
           data: {
-            slug, title: item.title, excerpt: generated.excerpt,
+            slug, title: headline, excerpt: generated.excerpt,
             content: generated.content + tipsHtml, category: finalCategory,
             tags: generated.tags, coverEmoji: meta.emoji, coverGradient: meta.gradient,
             coverImage: pickFreshImage(finalCategory, usedImages),
@@ -2970,7 +3065,7 @@ export async function GET(req: NextRequest) {
           },
         });
         postsAdded++;
-        const newPost = { title: item.title, excerpt: generated.excerpt, content: generated.content + tipsHtml };
+        const newPost = { title: headline, excerpt: generated.excerpt, content: generated.content + tipsHtml };
         for (const lang of ["fr", "sw"] as const) {
           translatePostContent(slug, newPost, lang).catch(() => {});
         }

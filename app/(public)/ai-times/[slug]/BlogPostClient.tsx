@@ -1,5 +1,6 @@
 "use client";
 
+import InArticlePromo, { splitForPromo } from "@/components/public/InArticlePromo";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
@@ -457,10 +458,28 @@ export default function BlogPostPage({
                 <div className="h-4 bg-[#D2DCE8] rounded w-1/2 mt-2" />
               </div>
             ) : (
-              <div
-                className="prose-blog font-dm text-[#0D1B2A] leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: display?.content ?? post.content }}
-              />
+              (() => {
+                // Promo sits mid-article, where readers still are. The
+                // end-of-article CTA below only reaches the ones who finish.
+                const [head, tail] = splitForPromo(display?.content ?? post.content);
+                return (
+                  <>
+                    <div
+                      className="prose-blog font-dm text-[#0D1B2A] leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: head }}
+                    />
+                    {tail && (
+                      <>
+                        <InArticlePromo category={post.category} tags={post.tags} />
+                        <div
+                          className="prose-blog font-dm text-[#0D1B2A] leading-relaxed"
+                          dangerouslySetInnerHTML={{ __html: tail }}
+                        />
+                      </>
+                    )}
+                  </>
+                );
+              })()
             )}
 
             {/* Tags */}
