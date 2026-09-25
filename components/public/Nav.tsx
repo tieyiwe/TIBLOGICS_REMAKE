@@ -15,7 +15,7 @@ const navLinks = [
   { label: "AI TIMES", href: "/ai-times" },
   { label: "Events & Training", href: "/events" },
   { label: "Learning Box", href: "/learning-box" },
-  { label: "Shop", href: "/shop" },
+  { label: "Store", href: "/store" },
   { label: "About", href: "/about" },
 ];
 

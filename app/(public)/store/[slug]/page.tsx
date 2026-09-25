@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const p = await prisma.product.findUnique({ where: { slug } }).catch(() => null);
   if (!p || !p.published) return {};
   return {
-    title: `${p.name} | TIBLOGICS Shop`,
+    title: `${p.name} | TIBLOGICS Store`,
     description: (p.tagline ?? p.description).slice(0, 160),
     openGraph: {
       title: p.name,

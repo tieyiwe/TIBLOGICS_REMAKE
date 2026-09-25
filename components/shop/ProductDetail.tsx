@@ -52,8 +52,8 @@ export default function ProductDetail({ product: p, related }: { product: ShopPr
       `}</style>
 
       <div style={{ maxWidth: "1080px", margin: "0 auto", padding: "120px 24px 100px" }}>
-        <Link href="/shop" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: S.muted, textDecoration: "none", fontSize: ".88rem", marginBottom: "32px" }}>
-          <ArrowLeft size={16} /> Back to shop
+        <Link href="/store" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: S.muted, textDecoration: "none", fontSize: ".88rem", marginBottom: "32px" }}>
+          <ArrowLeft size={16} /> Back to store
         </Link>
 
         <div className="pd-grid">
@@ -158,7 +158,7 @@ export default function ProductDetail({ product: p, related }: { product: ShopPr
               {related.map((r) => {
                 const rSale = r.onSale && r.compareAtPrice && r.compareAtPrice > r.price;
                 return (
-                  <Link key={r.id} href={`/shop/${r.slug}`} className="rel-card" style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: "16px", overflow: "hidden", textDecoration: "none", color: "#fff" }}>
+                  <Link key={r.id} href={`/store/${r.slug}`} className="rel-card" style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: "16px", overflow: "hidden", textDecoration: "none", color: "#fff" }}>
                     <div style={{ aspectRatio: "1/1", background: "linear-gradient(135deg,#1C2526,#0C1112)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {r.images[0] ? (
                         // eslint-disable-next-line @next/next/no-img-element

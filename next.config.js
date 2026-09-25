@@ -46,6 +46,13 @@ const nextConfig = {
       // link to /courses, so these have to keep working indefinitely.
       { source: "/courses", destination: "/learning-box", permanent: true },
       { source: "/courses/:slug", destination: "/learning-box/:slug", permanent: true },
+      // "Shop" became "Store". Order matters: the more specific paths first,
+      // so /shop/:slug does not swallow them. /shop/covers/* is a public asset
+      // directory, two segments deep, so /shop/:slug never matches it.
+      { source: "/shop", destination: "/store", permanent: true },
+      { source: "/shop/success", destination: "/store/success", permanent: true },
+      { source: "/shop/collections/:slug", destination: "/store/collections/:slug", permanent: true },
+      { source: "/shop/:slug", destination: "/store/:slug", permanent: true },
     ];
   },
   async headers() {

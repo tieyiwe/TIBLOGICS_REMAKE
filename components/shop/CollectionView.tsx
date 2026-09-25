@@ -16,7 +16,7 @@ export default function CollectionView({ collection, products }: { collection: S
 
       <section style={{ position: "relative", overflow: "hidden", padding: "132px 24px 40px", background: "radial-gradient(120% 80% at 50% -10%, rgba(244,124,76,.16), transparent 60%)" }}>
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-          <Link href="/shop" style={{ color: S.muted, textDecoration: "none", fontSize: ".88rem" }}>← Back to shop</Link>
+          <Link href="/store" style={{ color: S.muted, textDecoration: "none", fontSize: ".88rem" }}>← Back to store</Link>
           <h1 style={{ fontFamily: syne, fontWeight: 800, fontSize: "clamp(2rem,4vw,3.2rem)", lineHeight: 1.1, margin: "16px 0 10px" }}>{collection.name}</h1>
           {collection.description && <p style={{ color: "#B0C4CC", fontSize: "1.02rem", lineHeight: 1.6, maxWidth: "620px" }}>{collection.description}</p>}
         </div>

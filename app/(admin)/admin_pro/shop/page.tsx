@@ -44,6 +44,8 @@ export default function AdminShopPage() {
   const [editingCol, setEditingCol] = useState<Collection | "new" | null>(null);
   const [needsSync, setNeedsSync] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const [seedMsg, setSeedMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   async function load() {
     setLoading(true);
@@ -68,6 +70,38 @@ export default function AdminShopPage() {
     await fetch("/api/admin/shop/sync-db", { method: "POST" }).catch(() => {});
     setNeedsSync(false);
     setSyncing(false);
+    load();
+  }
+
+  // The four AI Toolkits are defined in lib/shop/prompt-packs.ts but only exist
+  // in the database once seeded. This puts that behind a button instead of a
+  // hand-rolled POST, and surfaces the endpoint's warnings — it refuses to
+  // publish a product whose PDF is missing, which is exactly what you want to
+  // know before it goes on sale.
+  const TOOLKIT_CATEGORY = "AI Prompt Packs";
+  const toolkitCount = products.filter((p) => p.category === TOOLKIT_CATEGORY).length;
+
+  async function seedToolkits() {
+    setSeeding(true);
+    setSeedMsg(null);
+    try {
+      const res = await fetch("/api/admin/shop/seed-prompt-packs", { method: "POST" });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setSeedMsg({ ok: false, text: data?.error ?? `Failed (HTTP ${res.status})` });
+      } else {
+        const warn = (data.warnings ?? []) as string[];
+        setSeedMsg({
+          ok: warn.length === 0,
+          text: warn.length
+            ? `${data.published} live. Needs attention: ${warn.join("; ")}`
+            : `${data.published} toolkits live at ${data.price} each.`,
+        });
+      }
+    } catch {
+      setSeedMsg({ ok: false, text: "Could not reach the server." });
+    }
+    setSeeding(false);
     load();
   }
 
@@ -124,11 +158,11 @@ export default function AdminShopPage() {
               <ShoppingBag size={13} className="text-[#F9A738]" />
               <span className="font-dm text-xs font-semibold text-[#F9A738]">Store Management</span>
             </div>
-            <h1 className="font-syne font-extrabold text-2xl md:text-3xl text-white">TIBLOGICS Shop</h1>
+            <h1 className="font-syne font-extrabold text-2xl md:text-3xl text-white">TIBLOGICS Store</h1>
             <p className="font-dm text-sm text-white/50 mt-1">Products, collections, sales & orders — everything in one place.</p>
           </div>
           <div className="flex items-center gap-2">
-            <a href="/shop" target="_blank" rel="noopener noreferrer"
+            <a href="/store" target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-dm font-semibold text-white/90 bg-white/10 hover:bg-white/15 transition-colors backdrop-blur">
               <ExternalLink size={15} /> View Store
             </a>
@@ -144,12 +178,34 @@ export default function AdminShopPage() {
       {needsSync && (
         <div className="mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <p className="font-syne font-bold text-[#0D1B2A]">Set up the shop database</p>
+            <p className="font-syne font-bold text-[#0D1B2A]">Set up the store database</p>
             <p className="font-dm text-sm text-[#7A8FA6]">Click Sync Database once to create the Product, Collection & Order tables.</p>
           </div>
           <button onClick={syncDatabase} disabled={syncing}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-dm font-semibold text-white bg-[#F47C20] hover:bg-[#e06d15] disabled:opacity-60">
             {syncing ? <><Loader2 size={16} className="animate-spin" /> Syncing…</> : "Sync Database"}
+          </button>
+        </div>
+      )}
+
+      {!needsSync && !loading && (toolkitCount < 4 || seedMsg) && (
+        <div className="mb-6 bg-[#F4F7FB] border border-[#D2DCE8] rounded-2xl p-4 flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p className="font-syne font-bold text-[#0D1B2A]">
+              {toolkitCount < 4 ? "Add the AI Toolkits to the store" : "AI Toolkits"}
+            </p>
+            <p className="font-dm text-sm text-[#7A8FA6]">
+              {seedMsg
+                ? seedMsg.text
+                : `The four AI Toolkit PDFs are ready to list at $79 each. ${toolkitCount} of 4 are in the store.`}
+            </p>
+          </div>
+          <button
+            onClick={seedToolkits}
+            disabled={seeding}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-dm font-semibold text-white bg-[#1B3A6B] hover:bg-[#2251A3] disabled:opacity-60"
+          >
+            {seeding ? <><Loader2 size={16} className="animate-spin" /> Adding…</> : toolkitCount < 4 ? "Add them" : "Refresh them"}
           </button>
         </div>
       )}

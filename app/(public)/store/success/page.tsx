@@ -45,7 +45,7 @@ export default async function OrderSuccessPage({ searchParams }: Props) {
           </div>
         )}
 
-        <Link href="/shop" style={{ display: "inline-block", padding: "14px 32px", borderRadius: "50px", background: "linear-gradient(135deg,#F47C4C,#F9A738)", color: "#131A1B", fontFamily: "'Syne',sans-serif", fontWeight: 700, textDecoration: "none" }}>
+        <Link href="/store" style={{ display: "inline-block", padding: "14px 32px", borderRadius: "50px", background: "linear-gradient(135deg,#F47C4C,#F9A738)", color: "#131A1B", fontFamily: "'Syne',sans-serif", fontWeight: 700, textDecoration: "none" }}>
           Continue Shopping →
         </Link>
       </div>

@@ -15,8 +15,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const c = await prisma.collection.findUnique({ where: { slug } }).catch(() => null);
   if (!c || !c.published) return {};
   return {
-    title: `${c.name} | TIBLOGICS Shop`,
-    description: (c.description || `Shop the ${c.name} collection`).slice(0, 160),
+    title: `${c.name} | TIBLOGICS Store`,
+    description: (c.description || `Browse the ${c.name} collection`).slice(0, 160),
     openGraph: { title: c.name, description: c.description.slice(0, 160), images: c.image ? [{ url: c.image }] : undefined },
   };
 }

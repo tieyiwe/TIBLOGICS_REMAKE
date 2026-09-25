@@ -60,7 +60,7 @@ export default function ProductCard({ p }: { p: ShopProduct }) {
 
   return (
     <Link
-      href={`/shop/${p.slug}`}
+      href={`/store/${p.slug}`}
       className="shop-card"
       style={{
         display: "flex",

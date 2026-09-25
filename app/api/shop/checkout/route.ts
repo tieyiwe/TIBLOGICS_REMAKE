@@ -111,8 +111,8 @@ export async function POST(req: NextRequest) {
       ...(anyPhysical
         ? { shipping_address_collection: { allowed_countries: ["US", "CA", "GB", "AU", "NG", "GH", "KE", "ZA"] } }
         : {}),
-      success_url: `${baseUrl}/shop/success?order=${order.orderNumber}`,
-      cancel_url: `${baseUrl}/shop?checkout=cancelled`,
+      success_url: `${baseUrl}/store/success?order=${order.orderNumber}`,
+      cancel_url: `${baseUrl}/store?checkout=cancelled`,
       metadata: { orderId: order.id, orderNumber: order.orderNumber },
     });
 

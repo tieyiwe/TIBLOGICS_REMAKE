@@ -2,7 +2,7 @@ import { CartProvider } from "@/components/shop/CartContext";
 import CartDrawer from "@/components/shop/CartDrawer";
 
 export const metadata = {
-  title: "Shop | TIBLOGICS",
+  title: "Store | TIBLOGICS",
   description: "Premium tools, templates, and resources from TIBLOGICS. Instant access, built to move you forward.",
 };
 

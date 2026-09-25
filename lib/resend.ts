@@ -942,7 +942,7 @@ export async function sendCartReminderEmail(cart: {
           </tr>
         </table>
         <div style="text-align:center;margin:28px 0 8px;">
-          <a href="${site}/shop" style="display:inline-block;background:linear-gradient(135deg,#F47C4C,#F9A738);color:#131A1B;font-weight:800;font-size:15px;text-decoration:none;padding:14px 34px;border-radius:50px;">
+          <a href="${site}/store" style="display:inline-block;background:linear-gradient(135deg,#F47C4C,#F9A738);color:#131A1B;font-weight:800;font-size:15px;text-decoration:none;padding:14px 34px;border-radius:50px;">
             Return to My Cart →
           </a>
         </div>

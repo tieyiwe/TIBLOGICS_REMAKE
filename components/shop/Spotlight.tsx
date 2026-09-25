@@ -89,7 +89,7 @@ export default function Spotlight({
 
         <div className="spot" style={{ position: "relative" }}>
           {/* Cover */}
-          <Link href={`/shop/${product.slug}`} className="spot-cover" style={{ display: "block" }}>
+          <Link href={`/store/${product.slug}`} className="spot-cover" style={{ display: "block" }}>
             {cover ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -192,7 +192,7 @@ export default function Spotlight({
 
             <div style={{ display: "flex", alignItems: "center", gap: "18px", flexWrap: "wrap" }}>
               <Link
-                href={`/shop/${product.slug}`}
+                href={`/store/${product.slug}`}
                 className="spot-cta"
                 style={{
                   display: "inline-flex",
