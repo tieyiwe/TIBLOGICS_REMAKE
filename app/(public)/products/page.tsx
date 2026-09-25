@@ -82,8 +82,16 @@ const HIGHLIGHTS: { name: string; note: string; blurb: string; href?: string; co
   },
   {
     name: "Blindwhisper",
+    // No status claimed — the site could not be reached from here, so whether
+    // it is live, in beta or a waitlist is unknown. Goal Tester's "Live" comes
+    // from prisma/seed.ts, which says so.
     note: "",
+    // Intentionally empty: no description of this product exists in the
+    // codebase and the site could not be read from here. The card renders
+    // without a blurb rather than with an invented one — fill it in when the
+    // real wording is to hand.
     blurb: "",
+    href: "https://blindwhisper.com",
     color: "#F47C20",
   },
 ];
