@@ -19,10 +19,10 @@ const DOMAINS = [
       "Learning software that adapts to the student, instead of asking the student to adapt to the software.",
   },
   {
-    name: "Health & Care",
+    name: "Healthcare & Medical",
     color: "#0F6E56",
     premise:
-      "The follow-up work that care teams know matters and never have the hours for — check-ins, reminders, the conversation after the appointment.",
+      "Clinical and care work has a long tail nobody has hours for — the follow-up, the check-in, the note written after the appointment. That tail is where we build.",
   },
   {
     name: "Logistics & Mobility",
@@ -35,6 +35,18 @@ const DOMAINS = [
     color: "#1B3A6B",
     premise:
       "Most companies already hold the data that answers their hardest question. The gap is turning it into a decision someone can act on this week.",
+  },
+  {
+    name: "Finance",
+    color: "#0E7490",
+    premise:
+      "The numbers already exist; the analysis is the bottleneck. Reporting, reconciliation, pricing — and working out what an AI feature actually costs to run before it ships.",
+  },
+  {
+    name: "Cybersecurity",
+    color: "#9F1239",
+    premise:
+      "Defending systems that now include models, and using models to catch what a human reviewer scrolling through logs would miss.",
   },
   {
     name: "AI Adoption",
@@ -148,7 +160,7 @@ export default function ProductsPage() {
           <div className="max-w-2xl mb-10">
             <span className="section-tag">Where we build</span>
             <h2 className="font-syne font-extrabold text-3xl text-[#0D1B2A] mt-2">
-              Seven domains, one way of working.
+              {DOMAINS.length} domains, one way of working.
             </h2>
             <p className="font-dm text-[#3A4A5C] mt-3 leading-relaxed">
               We go deep in a handful of sectors rather than shallow across all of them. Each
