@@ -55,7 +55,7 @@ fi
 DUMP_DIR="${DUMP_DIR:-./db-migration}"
 mkdir -p "$DUMP_DIR"
 STAMP="$(date +%Y%m%d-%H%M%S)"
-DUMP_FILE="$DUMP_DIR/backup-$STAMP.dump"
+DUMP_FILE="$DUMP_DIR/backup-$STAMP.sql"
 
 echo "==> 1/5  Checking both databases are reachable"
 psql "$OLD_DB_URL" -c "SELECT 1;" >/dev/null || { echo "Cannot reach OLD_DB_URL" >&2; exit 1; }
@@ -95,8 +95,15 @@ echo "==> 3/5  Dumping OLD database -> $DUMP_FILE"
 #
 # --schema=public because a Supabase source also carries auth, storage,
 # graphql, realtime and vault schemas that have no counterpart on the target.
+#
+# --format=plain, not custom: pg_dump 17 writes "SET transaction_timeout = 0"
+# into its output, a parameter that does not exist before Postgres 17, so the
+# 16 target rejects it. A custom-format archive is binary and cannot be edited;
+# plain SQL can have the offending line removed.
 pg_dump "$OLD_DB_URL" --no-owner --no-acl --data-only --schema=public \
-  --format=custom --file="$DUMP_FILE"
+  --format=plain --file="$DUMP_FILE"
+
+sed -i '/^SET transaction_timeout = /d' "$DUMP_FILE"
 echo "    dump size: $(du -h "$DUMP_FILE" | cut -f1)"
 
 echo "==> 4/5  Restoring into NEW database"
@@ -112,15 +119,24 @@ if [[ -n "$TABLES" ]]; then
   psql "$NEW_DB_URL" -q -c "TRUNCATE TABLE $TABLES RESTART IDENTITY CASCADE;"
 fi
 
-# --disable-triggers so foreign keys do not reject rows that arrive before the
-# rows they reference; --single-transaction so a failure leaves nothing behind.
-pg_restore \
-  --dbname="$NEW_DB_URL" \
-  --no-owner --no-acl \
-  --data-only --disable-triggers \
-  --single-transaction \
-  --exit-on-error \
-  "$DUMP_FILE"
+# Foreign keys would otherwise reject rows arriving before the rows they
+# reference. session_replication_role suspends those checks, but it needs
+# superuser — so only use it when we have it, rather than failing the restore
+# on a permission error.
+IS_SUPER="$(psql "$NEW_DB_URL" -At -c \
+  "SELECT usesuper FROM pg_user WHERE usename = current_user" 2>/dev/null || echo f)"
+if [[ "$IS_SUPER" == "t" ]]; then
+  echo "    foreign key checks suspended for the load"
+  PREAMBLE="SET session_replication_role = replica;"
+else
+  echo "    note: not superuser, relying on dump ordering for foreign keys"
+  PREAMBLE=""
+fi
+
+# --single-transaction with ON_ERROR_STOP: every row lands or none does, so a
+# failure never leaves the target half-populated.
+{ [[ -n "$PREAMBLE" ]] && echo "$PREAMBLE"; cat "$DUMP_FILE"; } \
+  | psql "$NEW_DB_URL" -q -v ON_ERROR_STOP=1 --single-transaction
 echo "    restore complete"
 
 echo "==> 5/5  Verifying row counts match"
