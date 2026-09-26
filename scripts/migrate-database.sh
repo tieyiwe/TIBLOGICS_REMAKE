@@ -22,6 +22,36 @@ if [[ -z "${OLD_DB_URL:-}" || -z "${NEW_DB_URL:-}" ]]; then
   exit 1
 fi
 
+# Prisma connection strings carry parameters libpq knows nothing about, and
+# psql refuses the whole URI over them ("invalid URI query parameter:
+# pgbouncer"). Strip the Prisma-only ones; keep sslmode and friends.
+sanitize_url() {
+  node -e '
+    const u = new URL(process.argv[1]);
+    for (const k of ["pgbouncer","connection_limit","pool_timeout",
+                     "statement_cache_size","prepared_statements","schema"]) {
+      u.searchParams.delete(k);
+    }
+    process.stdout.write(u.toString());
+  ' "$1"
+}
+
+OLD_DB_URL="$(sanitize_url "$OLD_DB_URL")"
+NEW_DB_URL="$(sanitize_url "$NEW_DB_URL")"
+
+# pg_dump needs a real session: it sets session state and uses a consistent
+# snapshot, neither of which survives transaction-mode pooling. Supabase serves
+# that pooler on 6543 — dumping through it fails or silently produces a partial
+# dump. The direct connection (port 5432) is the one to use.
+if [[ "$OLD_DB_URL" == *":6543/"* ]]; then
+  echo "ERROR: OLD_DB_URL points at the transaction pooler (port 6543)." >&2
+  echo "       pg_dump cannot run through it. Use the direct connection instead:" >&2
+  echo "       Supabase dashboard -> Project Settings -> Database ->" >&2
+  echo "       Connection string -> URI, with 'Use connection pooling' OFF." >&2
+  echo "       It looks like: postgresql://postgres:PASSWORD@db.<ref>.supabase.co:5432/postgres" >&2
+  exit 1
+fi
+
 DUMP_DIR="${DUMP_DIR:-./db-migration}"
 mkdir -p "$DUMP_DIR"
 STAMP="$(date +%Y%m%d-%H%M%S)"
