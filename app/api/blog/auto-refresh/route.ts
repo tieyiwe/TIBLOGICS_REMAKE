@@ -37,6 +37,35 @@ const TECH_COMPANIES = [
   "xai", "neuralink", "starlink",
 ];
 
+// Subjects that are consequential on their own, whoever is behind them.
+const FRONTIER_TERMS = [
+  "brain-computer interface", "brain computer interface", "neural implant",
+  "brain chip", "neurotech", "bci", "ai safety", "alignment", "agi",
+  "superintelligence", "existential risk", "model welfare", "interpretability",
+  "quantum", "quantum computing", "robotaxi", "humanoid", "humanoid robot",
+  "autonomous vehicle", "self-driving", "semiconductor", "chip", "chips",
+  "gpu", "data center", "datacentre", "nuclear", "fusion", "gene editing",
+  "crispr", "biotech", "synthetic biology", "space station", "satellite",
+  "rocket", "drone", "cyberattack", "zero-day", "encryption",
+];
+
+// Government and regulation. "America.gov launches an AI portal" is a major
+// story with no company in the headline at all.
+const GOV_TERMS = [
+  "government", "federal", "white house", "congress", "senate", "parliament",
+  "regulator", "regulation", "regulators", "executive order", "ai act",
+  "legislation", "bill", "policy", "agency", "pentagon", "darpa", "nist",
+  "ftc", "doj", "eu", "state department", "national", "public sector",
+];
+
+// Money moving is news in itself for a startup that would not otherwise be
+// named in this list.
+const FUNDING_TERMS = [
+  "raises", "raised", "funding", "seed round", "series a", "series b",
+  "series c", "series d", "valuation", "valued", "ipo", "acquired",
+  "acquisition", "merger", "billion", "million",
+];
+
 // Something actually happened, as opposed to commentary about a company.
 const EVENT_TERMS = [
   "launch", "launches", "launched", "unveil", "unveils", "unveiled",
@@ -44,6 +73,10 @@ const EVENT_TERMS = [
   "breakthrough", "record", "first", "production", "ships", "shipping",
   "debut", "debuts", "reveal", "reveals", "acquires", "acquisition",
   "milestone", "begins", "starts", "rollout", "opens",
+  // Things that happen to or around a company without being an announcement:
+  // "Neuralink implants device in second patient" is news by any standard.
+  "implants", "deploys", "expands", "trials", "tests", "hits", "reaches",
+  "wins", "sues", "bans", "halts", "recalls", "shuts", "blocks", "approves",
 ];
 
 function compile(terms: string[]): RegExp {
@@ -54,6 +87,9 @@ function compile(terms: string[]): RegExp {
 const AI_RE = compile(AI_TERMS);
 const COMPANY_RE = compile(TECH_COMPANIES);
 const EVENT_RE = compile(EVENT_TERMS);
+const FRONTIER_RE = compile(FRONTIER_TERMS);
+const GOV_RE = compile(GOV_TERMS);
+const FUNDING_RE = compile(FUNDING_TERMS);
 
 const CATEGORY_IMAGES: Record<string, string[]> = {
   "breaking": [
@@ -316,7 +352,12 @@ interface DevArticle {
 }
 
 function isNewsworthy(title: string): boolean {
-  return AI_RE.test(title) || (COMPANY_RE.test(title) && EVENT_RE.test(title));
+  return (
+    AI_RE.test(title) ||
+    FRONTIER_RE.test(title) ||
+    (COMPANY_RE.test(title) && EVENT_RE.test(title)) ||
+    (GOV_RE.test(title) && EVENT_RE.test(title))
+  );
 }
 
 /**
@@ -324,7 +365,13 @@ function isNewsworthy(title: string): boolean {
  * or a named company shipping something. Ordinary AI commentary waits its turn.
  */
 export function isMajorStory(title: string): boolean {
-  return COMPANY_RE.test(title) && EVENT_RE.test(title);
+  const event = EVENT_RE.test(title);
+  return (
+    (COMPANY_RE.test(title) && event) ||
+    (FRONTIER_RE.test(title) && event) ||
+    (GOV_RE.test(title) && event) ||
+    (FUNDING_RE.test(title) && (AI_RE.test(title) || FRONTIER_RE.test(title)))
+  );
 }
 
 async function fetchHackerNews(): Promise<HNStory[]> {
@@ -368,6 +415,48 @@ async function fetchDevTo(): Promise<DevArticle[]> {
   }
 }
 
+// The house format.
+//
+// Every piece does the same three jobs — announce it, teach the thing a reader
+// needs to understand it, and hand them the questions to ask — but the SHAPE
+// rotates so a reader who comes back twice a week is not reading the same
+// article with different nouns. The shape is chosen from the headline, so it
+// is stable for a given story and spread evenly across the feed.
+const ARTICLE_SHAPES = [
+  {
+    name: "The Breakdown",
+    angle:
+      "Take the thing apart. What was actually built or announced, how it works underneath, and what is genuinely new versus repackaged.",
+  },
+  {
+    name: "The Signal",
+    angle:
+      "Treat the news as evidence of something larger. What does this tell us about where the industry, the money or the regulation is heading that was not obvious last week?",
+  },
+  {
+    name: "The Reality Check",
+    angle:
+      "Separate the claim from the shipped product. What is demonstrated, what is a demo, what is a press release. Be fair but hold the line on evidence.",
+  },
+  {
+    name: "The Stakes",
+    angle:
+      "Follow the consequences outward — who gains, who is exposed, what breaks, who has not noticed yet. Name them specifically.",
+  },
+  {
+    name: "The Playbook",
+    angle:
+      "Assume the reader has to act. What would a sensible operator do about this in the next month, and what would be a mistake?",
+  },
+];
+
+/** Stable per headline, so re-runs do not reshape an existing story. */
+function pickShape(title: string) {
+  let h = 0;
+  for (let i = 0; i < title.length; i++) h = (h * 31 + title.charCodeAt(i)) >>> 0;
+  return ARTICLE_SHAPES[h % ARTICLE_SHAPES.length];
+}
+
 const CURRENT_YEAR = new Date().getFullYear(); // resolves at runtime on server
 
 async function generatePost(
@@ -375,36 +464,51 @@ async function generatePost(
   sourceUrl: string | undefined,
   sourceTitle: string
 ): Promise<{ headline: string; excerpt: string; content: string; category: string; tags: string[] } | null> {
-  const prompt = `Write a blog post for TIBLOGICS (an AI agency blog) based on this story:
+  const shape = pickShape(title);
+  const prompt = `Write a piece for AI TIMES, the TIBLOGICS technology publication.
 
 Source headline: "${title}"
 Source: ${sourceTitle}
 Current date context: Mid-${CURRENT_YEAR}
 
-Write your OWN headline. Do not reuse the source headline — it was written for
-a different audience. The headline must:
-- Make a reader stop scrolling. Lead with the consequence, the number, or the
-  thing people have not realised yet.
-- Stay true. No clickbait that the article does not deliver on, no "you won't
-  believe", no fake urgency, no question you never answer.
-- Be under 75 characters where possible.
+ANGLE FOR THIS PIECE — ${shape.name}
+${shape.angle}
 
-The article itself must do two jobs:
-1. TEACH. Explain what actually happened and the mechanism behind it, in plain
-   language, assuming an intelligent reader who is not an AI specialist.
-2. SPELL OUT WHAT IT MEANS. Say the implication out loud rather than leaving
-   the reader to infer it — who this helps, who should be worried, what it
-   changes about a decision they are making now. Be specific and concrete.
+WRITE YOUR OWN HEADLINE. Never reuse the source headline.
+- Lead with the consequence, the number, or the thing nobody has said out loud.
+- It must be surprising and still be true. No "you won't believe", no fake
+  urgency, no question the article never answers. If the honest version is not
+  striking, you have not found the real story yet — look again at what changes.
+- Under 75 characters where you can manage it.
+
+THE PIECE MUST DO THREE THINGS, IN THIS ORDER.
+
+1. ANNOUNCE — open with the single most striking verified fact. What happened,
+   who did it, when. No throat-clearing, no "Introduction" heading.
+
+2. TEACH — the reader should finish understanding the thing itself, not just
+   the headline. Explain the mechanism in plain language: how it works, why it
+   was hard, what the jargon actually means. Assume an intelligent reader who
+   does not work in AI. This is the part that earns their time.
+
+3. ARM THEM — a section headed exactly "Questions You Should Be Asking",
+   with 3 to 5 sharp questions as a <ul>. Not rhetorical. The questions a
+   careful person should put to a vendor, a regulator, their own team, or the
+   claim itself before acting on it. Each one should be uncomfortable for
+   someone to answer.
+
+Then close with "What To Watch Next" — one short paragraph naming the specific
+signal that will tell the reader which way this goes.
 
 Requirements:
-- 450-600 words
-- Open with the single most striking fact — no "Introduction" heading
-- 3-4 <h2> subheadings
-- Include a "What This Means for You" section that names the consequence plainly
-- End with a practical takeaway the reader can act on this week
-- Tone: expert, direct, no hype, no jargon without explanation
-- HTML formatting: <h2>, <p>, <ul>, <li>, <strong>
-- IMPORTANT: The current year is ${CURRENT_YEAR}. Do NOT write "in 2025" or "in 2024" as if those are current or future. Any year-specific references must use ${CURRENT_YEAR} as the present, and treat 2024/2025 as past years only when historically relevant.
+- 550-750 words
+- 4-5 <h2> subheadings, including the two named sections above
+- HTML: <h2>, <p>, <ul>, <li>, <strong>
+- Tone: direct, specific, no hype, no jargon left unexplained, no filler
+  sentences that restate the previous one
+- IMPORTANT: the current year is ${CURRENT_YEAR}. Do not write "in 2025" or
+  "in 2024" as if current or future; treat them as past years only where
+  historically relevant.
 
 Also determine:
 - category: one of [breaking, ai-business, tips, tools, case-studies, industry]
@@ -423,7 +527,7 @@ Return a JSON object:
   try {
     const raw = await streamChat(
       [{ role: "user", content: prompt }],
-      `You are a technology journalist writing for an AI agency blog. You explain what happened and then say plainly what it means — the part most coverage leaves implicit. Your headlines earn attention with the actual consequence, never with manufactured drama. The current year is ${CURRENT_YEAR}. Never describe 2025 or 2024 as "this year" or "the current year".`,
+      `You write for AI TIMES, a technology publication read by operators and founders. You announce what happened, teach the reader enough that they understand it themselves, and hand them the questions a careful person would ask before acting. Your headlines earn attention with the real consequence, never with manufactured drama, and you never write a sentence that only restates the one before it. The current year is ${CURRENT_YEAR}. Never describe 2025 or 2024 as "this year" or "the current year".`,
       2000
     );
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
