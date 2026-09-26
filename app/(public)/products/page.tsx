@@ -144,6 +144,41 @@ export default function ProductsPage() {
         </div>
       </div>
 
+      {/* Compact founder CTA, directly under the hero.
+          The full section lives at the bottom of the page, which a visitor only
+          reaches after the domains — this catches the ones who already know why
+          they came. Deliberately lighter than the one below so the two do not
+          compete for the same attention. */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-10">
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#F47C20]/25 bg-[#FEF0E3] px-6 py-5 shadow-[0_8px_30px_rgba(27,58,107,0.08)]">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F47C20]/15">
+              <Lightbulb size={17} className="text-[#F47C20]" />
+            </div>
+            <div>
+              <p className="font-syne font-bold text-[#0D1B2A]">Have a startup idea?</p>
+              <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">
+                We will tell you honestly whether it is worth building — and what it would take.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/book"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#F47C20] px-4 py-2.5 font-dm text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
+            >
+              Talk it through <ArrowRight size={14} />
+            </Link>
+            <Link
+              href="/services"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#D2DCE8] bg-white px-4 py-2.5 font-dm text-sm font-semibold text-[#1B3A6B] transition-colors hover:bg-[#F4F7FB]"
+            >
+              How we build
+            </Link>
+          </div>
+        </div>
+      </div>
+
       {/* How we build */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
