@@ -2,6 +2,8 @@ export const maxDuration = 300;
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
+import { pickCoverImage } from "@/lib/blog-images";
+import { getUsedCoverPhotoIds } from "@/lib/blog-cover";
 import { streamChat } from "@/lib/claude";
 import resend from "@/lib/resend";
 import { assignCoverImage } from "@/lib/blog-cover";
@@ -2805,6 +2807,9 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const checkOnly = searchParams.get("check") === "true";
   const force = searchParams.get("force") === "true";
+  // How many pieces this run should publish. News-led, so in practice this is
+  // a cap on how much of the wire gets turned into articles at once.
+  const WANT = Math.min(12, Math.max(1, Number(searchParams.get("count")) || 6));
 
   // Verify caller: Vercel cron sends Authorization: Bearer <CRON_SECRET>
   // External cron services (cron-job.org, Upstash, etc.) can use ?secret=<CRON_SECRET>
@@ -3089,24 +3094,26 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  // Evergreen topics are a fallback, not the main course.
+  //
+  // This used to run every time — six categories times three topics, eighteen
+  // evergreen articles per refresh against a maximum of three real news
+  // stories — and when a category's pool ran dry it deleted its own "used"
+  // record and published the same titles again. That is why the feed filled
+  // with familiar articles wearing new dates.
+  //
+  // Now: the pool is never reset, so nothing is ever republished, and these
+  // are only drawn on to top up a run that real news could not fill.
   for (const cat of CATEGORIES_LIST) {
     const pool = CATEGORY_TOPIC_BANK[cat] ?? [];
-    let unused = pool.filter(
-      (t) => !usedTopicsSet.has(t) && !topicIsDuplicate(t)
-    );
-    // Pool exhausted — reset used topics for this category and retry
-    if (unused.length < MIN_PER_CATEGORY) {
-      pool.forEach((t) => usedTopicsSet.delete(t));
-      unused = pool.filter((t) => !topicIsDuplicate(t));
-    }
-    // Shuffle for variety across refreshes
+    const unused = pool.filter((t) => !usedTopicsSet.has(t) && !topicIsDuplicate(t));
     const shuffled = [...unused].sort(() => Math.random() - 0.5);
     shuffled.slice(0, MIN_PER_CATEGORY).forEach((t) =>
       topicBankItems.push({ title: t, category: cat, sourceLabel: `TIBLOGICS ${cat}` })
     );
   }
 
-  // Also pull up to 3 real-world news stories as bonus breaking content
+  // Real news is the point of the publication, so it leads and fills the run.
   const [hnStories, devArticles] = await Promise.all([fetchHackerNews(), fetchDevTo()]);
   const externalSources: Array<{ title: string; url?: string; source: string }> = [
     ...hnStories.map((s) => ({ title: s.title, url: s.url, source: "Hacker News" })),
@@ -3126,10 +3133,22 @@ export async function GET(req: NextRequest) {
       if (existingSourceTitlesForDedup.has(item.title.toLowerCase())) return false;
       return true;
     })
-    .slice(0, 3)
+    .slice(0, WANT)
     .map((item) => ({ title: item.title, category: "", url: item.url, sourceLabel: item.source }));
 
-  const allToGenerate: GenItem[] = [...topicBankItems, ...newExternalSources];
+  // News first; evergreen topics only make up the shortfall. If neither can
+  // fill the run, publish fewer articles rather than repeating old ones.
+  const shortfall = Math.max(0, WANT - newExternalSources.length);
+  const allToGenerate: GenItem[] = [
+    ...newExternalSources,
+    ...topicBankItems.slice(0, shortfall),
+  ];
+
+  // One source of truth for covers. lib/blog-images owns the pool and the
+  // uniqueness rule; this route used to keep its own parallel list, which is
+  // how articles ended up sharing images with each other. pickCoverImage
+  // always returns a URL, so a post can never be written without a cover.
+  const usedPhotoIds = await getUsedCoverPhotoIds();
 
   // Process articles in parallel batches of 6
   const CONCURRENCY = 6;
@@ -3155,12 +3174,17 @@ export async function GET(req: NextRequest) {
         let slug = baseSlug; let si = 1;
         while (await prisma.blogPost.findUnique({ where: { slug } })) slug = `${baseSlug}-${si++}`;
 
+        // Deterministic from the slug, and unique against every cover already
+        // in the database plus the ones picked earlier in this run.
+        const cover = pickCoverImage(slug, usedPhotoIds);
+        usedPhotoIds.add(cover.photoId);
+
         await prisma.blogPost.create({
           data: {
             slug, title: headline, excerpt: generated.excerpt,
             content: generated.content + tipsHtml, category: finalCategory,
             tags: generated.tags, coverEmoji: meta.emoji, coverGradient: meta.gradient,
-            coverImage: pickFreshImage(finalCategory, usedImages),
+            coverImage: cover.url,
             author: "Echelon by TIBLOGICS",
             readingTime: Math.ceil(generated.content.replace(/<[^>]*>/g, "").split(" ").length / 200),
             featured: false, published: true, aiGenerated: true,
