@@ -33,3 +33,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Database dumps — these contain real customer data (emails, phone numbers,
+# order and appointment records). Never commit one.
+/db-migration/
+*.dump

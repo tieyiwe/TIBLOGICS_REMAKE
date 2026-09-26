@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Calendar, MapPin, DollarSign, Users, Clock, ArrowRight, Bell, X, ExternalLink } from "lucide-react";
 
 interface EventItem {
@@ -14,6 +15,7 @@ interface EventItem {
   currency: string;
   capacity?: number | null;
   spots?: number | null;
+  spotsLeft?: number | null;
   location: string;
   date?: string | null;
   endDate?: string | null;
@@ -38,58 +40,166 @@ interface TechEvent {
 
 const POPULAR_TECH_EVENTS: TechEvent[] = [
   {
-    name: "Google I/O",
-    organizer: "Google",
-    when: "May 2025",
-    location: "Mountain View, CA + Online",
-    description: "Google's annual developer conference showcasing the latest in Android, AI, Chrome, and Google Cloud.",
-    coverImage: "https://images.unsplash.com/photo-1573804633927-bfcbcd909acd?auto=format&fit=crop&w=800&q=80",
-    url: "https://io.google/2025/",
+    name: "Apple WWDC 2026",
+    organizer: "Apple",
+    when: "Jun 9–13, 2026",
+    location: "Cupertino, CA + Online",
+    description: "Apple's annual developer conference — iOS, macOS, Apple Intelligence updates, and the latest tools for building on the Apple ecosystem.",
+    coverImage: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80",
+    url: "https://developer.apple.com/wwdc26/",
   },
   {
-    name: "Microsoft Build",
-    organizer: "Microsoft",
-    when: "May 2025",
-    location: "Seattle, WA + Online",
-    description: "Developers gather to explore the latest in Azure, Copilot, and AI-powered developer tools.",
-    coverImage: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&w=800&q=80",
-    url: "https://build.microsoft.com/",
+    name: "VivaTech 2026",
+    organizer: "Vivendi / Les Echos",
+    when: "Jun 11–14, 2026",
+    location: "Paris, France",
+    description: "Europe's largest startup and tech conference — AI innovation, digital transformation, and global technology partnerships across 150+ countries.",
+    coverImage: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=800&q=80",
+    url: "https://vivatechnology.com/",
   },
   {
-    name: "AWS re:Invent",
-    organizer: "Amazon Web Services",
-    when: "Dec 2025",
-    location: "Las Vegas, NV",
-    description: "The world's largest cloud computing conference — announcements, deep dives, and 60,000+ attendees.",
-    coverImage: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80",
-    url: "https://reinvent.awsevents.com/",
-  },
-  {
-    name: "OpenAI DevDay",
-    organizer: "OpenAI",
-    when: "TBD 2025",
-    location: "San Francisco, CA",
-    description: "OpenAI's developer event covering GPT updates, new APIs, and the future of AI-powered applications.",
-    coverImage: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=800&q=80",
-    url: "https://openai.com/",
-  },
-  {
-    name: "Salesforce Dreamforce",
-    organizer: "Salesforce",
-    when: "Sep 2025",
-    location: "San Francisco, CA",
-    description: "The world's largest software conference — AI, CRM innovation, and Agentforce keynotes.",
+    name: "Collision Conference 2026",
+    organizer: "Collision",
+    when: "Jun 16–19, 2026",
+    location: "Toronto, Canada",
+    description: "North America's fastest-growing tech conference — startups, investors, and industry leaders exploring AI, climate tech, and market growth.",
     coverImage: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80",
+    url: "https://collisionconf.com/",
+  },
+  {
+    name: "London Tech Week 2026",
+    organizer: "London & Partners",
+    when: "Jun 15–19, 2026",
+    location: "London, UK",
+    description: "The UK's flagship tech event — government, enterprise, and startup leaders covering AI policy, investment trends, and the future of digital business.",
+    coverImage: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80",
+    url: "https://londontechweek.com/",
+  },
+  {
+    name: "VentureBeat Transform 2026",
+    organizer: "VentureBeat",
+    when: "Jul 14–15, 2026",
+    location: "San Francisco, CA",
+    description: "Enterprise AI decision-makers, practitioners, and vendors converge to discuss real-world AI deployment, ROI, and responsible AI at scale.",
+    coverImage: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=800&q=80",
+    url: "https://events.venturebeat.com/ai-impact-summit/",
+  },
+  {
+    name: "Black Hat USA 2026",
+    organizer: "Black Hat",
+    when: "Aug 1–6, 2026",
+    location: "Las Vegas, NV",
+    description: "The world's most respected cybersecurity conference — AI-powered threats, offensive security research, and enterprise defense briefings.",
+    coverImage: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80",
+    url: "https://www.blackhat.com/us-26/",
+  },
+  {
+    name: "SIGGRAPH 2026",
+    organizer: "ACM SIGGRAPH",
+    when: "Aug 10–14, 2026",
+    location: "Denver, CO",
+    description: "The premier annual conference on computer graphics and interactive techniques — where AI-generated imagery and 3D innovation define the next frontier.",
+    coverImage: "https://images.unsplash.com/photo-1639322537228-f710d846310a?auto=format&fit=crop&w=800&q=80",
+    url: "https://s2026.siggraph.org/",
+  },
+  {
+    name: "Salesforce Dreamforce 2026",
+    organizer: "Salesforce",
+    when: "Sep 15–18, 2026",
+    location: "San Francisco, CA",
+    description: "The world's largest software conference — Agentforce 3.0, AI-powered CRM, and 40,000+ attendees from every major industry worldwide.",
+    coverImage: "https://images.unsplash.com/photo-1573804633927-bfcbcd909acd?auto=format&fit=crop&w=800&q=80",
     url: "https://www.salesforce.com/dreamforce/",
   },
   {
-    name: "TechCrunch Disrupt",
+    name: "AI Summit New York 2026",
+    organizer: "AI Summit",
+    when: "Sep 23–24, 2026",
+    location: "New York, NY",
+    description: "Enterprise-focused AI conference for C-suite leaders and practitioners — real-world case studies, vendor briefings, and AI deployment at scale.",
+    coverImage: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=800&q=80",
+    url: "https://theaisummit.com/newyork/",
+  },
+  {
+    name: "TechCrunch Disrupt 2026",
     organizer: "TechCrunch",
-    when: "Oct 2025",
+    when: "Oct 7–9, 2026",
     location: "San Francisco, CA",
-    description: "Startup pitches, industry leaders, and the Startup Battlefield. A must for entrepreneurs and investors.",
-    coverImage: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=800&q=80",
-    url: "https://techcrunch.com/events/tc-disrupt-2025/",
+    description: "Startup Battlefield pitches, AI unicorn panels, and the investor conversations that shape the next wave of technology companies.",
+    coverImage: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80",
+    url: "https://techcrunch.com/events/tc-disrupt-2026/",
+  },
+  {
+    name: "GITEX Global 2026",
+    organizer: "DWTC",
+    when: "Oct 12–16, 2026",
+    location: "Dubai, UAE",
+    description: "The Middle East and Africa's largest tech show — AI, cloud, smart city innovation, and digital economy partnerships across 180+ countries.",
+    coverImage: "https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=800&q=80",
+    url: "https://www.gitex.com/",
+  },
+  {
+    name: "Gartner IT Symposium/Xpo 2026",
+    organizer: "Gartner",
+    when: "Oct 19–22, 2026",
+    location: "Orlando, FL",
+    description: "The world's most important gathering for CIOs and senior IT leaders — AI strategy, tech investment priorities, and the emerging vendor landscape.",
+    coverImage: "https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=800&q=80",
+    url: "https://www.gartner.com/en/conferences/na/symposium-us",
+  },
+  {
+    name: "OpenAI DevDay 2026",
+    organizer: "OpenAI",
+    when: "Oct/Nov 2026",
+    location: "San Francisco, CA",
+    description: "OpenAI's flagship developer event — new model capabilities, API updates, and the product roadmap defining the next generation of AI-powered applications.",
+    coverImage: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&w=800&q=80",
+    url: "https://openai.com/",
+  },
+  {
+    name: "Web Summit 2026",
+    organizer: "Web Summit",
+    when: "Nov 4–7, 2026",
+    location: "Lisbon, Portugal",
+    description: "70,000+ attendees and 2,500+ startups — AI policy, international investment, and the conversations that shape the global technology agenda.",
+    coverImage: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80",
+    url: "https://websummit.com/",
+  },
+  {
+    name: "Microsoft Ignite 2026",
+    organizer: "Microsoft",
+    when: "Nov 10–14, 2026",
+    location: "Chicago, IL + Online",
+    description: "Microsoft's premier enterprise conference — Azure AI, Copilot platform updates, and developer tools powering the next generation of business software.",
+    coverImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=800&q=80",
+    url: "https://ignite.microsoft.com/",
+  },
+  {
+    name: "AWS re:Invent 2026",
+    organizer: "Amazon Web Services",
+    when: "Dec 1–5, 2026",
+    location: "Las Vegas, NV",
+    description: "The world's largest cloud computing conference — 60,000+ builders, major AI infrastructure announcements, and deep-dive technical sessions.",
+    coverImage: "https://images.unsplash.com/photo-1676299081847-824916de030a?auto=format&fit=crop&w=800&q=80",
+    url: "https://reinvent.awsevents.com/",
+  },
+  {
+    name: "CES 2027",
+    organizer: "Consumer Technology Association",
+    when: "Jan 6–9, 2027",
+    location: "Las Vegas, NV",
+    description: "The defining consumer tech event of the year — AI hardware, robotics, smart devices, and the breakthroughs that set the global tech agenda for 2027.",
+    coverImage: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80",
+    url: "https://www.ces.tech/",
+  },
+  {
+    name: "Mobile World Congress 2027",
+    organizer: "GSMA",
+    when: "Feb 22–25, 2027",
+    location: "Barcelona, Spain",
+    description: "The global hub for mobile and connectivity innovation — AI-powered networks, 6G roadmaps, and the device ecosystem driving the next billion connected users.",
+    coverImage: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80",
+    url: "https://www.mwcbarcelona.com/",
   },
 ];
 
@@ -120,8 +230,8 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
 }
 
-function NotifyModal({ eventName, onClose }: { eventName: string; onClose: () => void }) {
-  const [form, setForm] = useState({ name: "", email: "" });
+function NotifyModal({ eventName, eventSlug, onClose }: { eventName: string; eventSlug: string; onClose: () => void }) {
+  const [form, setForm] = useState({ name: "", email: "", whatsapp: "" });
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -132,7 +242,7 @@ function NotifyModal({ eventName, onClose }: { eventName: string; onClose: () =>
       const res = await fetch("/api/events/notify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: form.name.trim(), email: form.email.trim(), event: eventName }),
+        body: JSON.stringify({ name: form.name.trim(), email: form.email.trim(), whatsapp: form.whatsapp.trim() || null, event: eventName, slug: eventSlug }),
       });
       if (res.ok) setStatus("done");
       else setStatus("error");
@@ -189,6 +299,13 @@ function NotifyModal({ eventName, onClose }: { eventName: string; onClose: () =>
                 className="w-full bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl px-4 py-2.5 text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:border-[#2251A3] focus:ring-1 focus:ring-[#2251A3]/20"
                 required
               />
+              <input
+                type="tel"
+                placeholder="WhatsApp number (optional)"
+                value={form.whatsapp}
+                onChange={(e) => setForm((f) => ({ ...f, whatsapp: e.target.value }))}
+                className="w-full bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl px-4 py-2.5 text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:border-[#2251A3] focus:ring-1 focus:ring-[#2251A3]/20"
+              />
               {status === "error" && (
                 <p className="text-xs text-red-500 font-dm">Something went wrong. Please try again.</p>
               )}
@@ -217,159 +334,155 @@ function EventCard({ event }: { event: EventItem }) {
   const [notifyOpen, setNotifyOpen] = useState(false);
   const isFree = event.price === 0;
   const typeColor = TYPE_COLORS[event.type] ?? "bg-gray-100 text-gray-700";
-  const registerHref = event.stripePaymentLink || "/book";
+  const isOpen = event.registrationOpen;
 
-  return (
-    <>
-      {notifyOpen && <NotifyModal eventName={event.title} onClose={() => setNotifyOpen(false)} />}
-      <div className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col">
-        <img
+  const gradientBorder = isOpen
+    ? "linear-gradient(135deg, #22c55e, #16a34a)"
+    : "linear-gradient(135deg, #F47C20, #f9a738)";
+
+  // Tags prefixed with "module:" render as module pills on the card
+  const modules = event.tags.filter(t => t.startsWith("module:")).map(t => t.slice(7));
+
+  const inner = (
+    <div className={`bg-white flex flex-col h-full${isOpen ? " group" : ""}`} style={{ borderRadius: "16px", overflow: "hidden" }}>
+      <div className="relative w-full h-48 overflow-hidden flex-shrink-0">
+        <Image
           src={event.coverImage || TYPE_FALLBACK_IMAGE[event.type] || TYPE_FALLBACK_IMAGE.EVENT}
           alt={event.title}
-          className="w-full h-48 object-cover"
+          fill
+          unoptimized
+          className={`object-cover transition-transform duration-500${isOpen ? " group-hover:scale-[1.02]" : ""}`}
         />
+        {isOpen ? (
+          <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-green-500 text-white text-xs font-dm font-semibold px-3 py-1 rounded-full shadow">
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse inline-block" />
+            Open Now
+          </div>
+        ) : (
+          <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-[#F47C20] text-white text-xs font-dm font-semibold px-3 py-1 rounded-full shadow">
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse inline-block" />
+            Coming Soon
+          </div>
+        )}
+      </div>
 
-        <div className="p-6 flex flex-col flex-1 gap-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={`text-xs font-dm font-semibold px-2 py-0.5 rounded-full ${typeColor}`}>
-              {event.type}
+      <div className="p-6 flex flex-col flex-1 gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`text-xs font-dm font-semibold px-2 py-0.5 rounded-full ${typeColor}`}>
+            {event.type}
+          </span>
+          {event.featured && (
+            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20]">
+              Featured
             </span>
-            {event.featured && (
-              <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20]">
-                Featured
-              </span>
-            )}
-            {isFree ? (
-              <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 ml-auto">
-                Free
-              </span>
-            ) : (
-              <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20] ml-auto">
-                ${(event.price / 100).toFixed(0)}
-              </span>
-            )}
+          )}
+          {!isOpen && (
+            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20] ml-auto">
+              {event.price > 0
+                ? `$${event.price % 100 === 0 ? (event.price / 100).toFixed(0) : (event.price / 100).toFixed(2)}`
+                : "Price TBA"}
+            </span>
+          )}
+          {isOpen && (isFree ? (
+            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 ml-auto">Free</span>
+          ) : (
+            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20] ml-auto">
+              ${(event.price / 100).toFixed(0)}
+            </span>
+          ))}
+        </div>
+
+        <h3 className={`font-syne font-bold text-lg text-[#0D1B2A] leading-snug transition-colors${isOpen ? " group-hover:text-[#F47C20]" : ""}`}>
+          {event.title}
+        </h3>
+
+        <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed line-clamp-2">
+          {event.description}
+        </p>
+
+        {/* Module pills */}
+        {modules.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            <p className="font-dm text-[10px] font-semibold text-[#7A8FA6] uppercase tracking-widest">Modules</p>
+            {modules.map((m, i) => (
+              <div key={m} className="flex items-start gap-2">
+                <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-[#F47C20]/10 text-[#F47C20] font-syne font-bold text-[10px] flex items-center justify-center">{i + 1}</span>
+                <span className="font-dm text-xs text-[#0D1B2A] font-medium leading-snug">{m}</span>
+              </div>
+            ))}
           </div>
+        )}
 
-          <h3 className="font-syne font-bold text-lg text-[#0D1B2A] leading-snug">
-            {event.title}
-          </h3>
-
-          <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed line-clamp-2 flex-1">
-            {event.description}
-          </p>
-
-          <div className="flex flex-col gap-1.5 mt-1">
-            {event.date && (
-              <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-                <Calendar size={13} />
-                <span>{formatDate(event.date)}</span>
-              </div>
-            )}
-            {event.timeSlot && (
-              <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-                <Clock size={13} />
-                <span>{event.timeSlot}</span>
-              </div>
-            )}
+        <div className="flex flex-col gap-1.5 mt-auto">
+          {event.date && (
             <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-              <MapPin size={13} />
-              <span>{event.location}</span>
+              <Calendar size={13} /><span>{formatDate(event.date)}</span>
             </div>
-            {event.spots != null && (
-              <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-                <Users size={13} />
-                <span>{event.spots} spots available</span>
+          )}
+          {event.timeSlot && (
+            <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
+              <Clock size={13} /><span>{event.timeSlot}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
+            <MapPin size={13} /><span>{event.location}</span>
+          </div>
+          {isOpen && event.spotsLeft != null && (
+            <div className={`flex items-center gap-2 text-xs font-dm font-semibold ${event.spotsLeft <= 5 ? "text-red-500" : "text-[#F47C20]"}`}>
+              <Users size={13} />
+              <span>
+                {event.spotsLeft === 0
+                  ? "Sold out"
+                  : event.spotsLeft <= 5
+                  ? `Only ${event.spotsLeft} seat${event.spotsLeft === 1 ? "" : "s"} left!`
+                  : `${event.spotsLeft} seats left`}
+              </span>
+            </div>
+          )}
+          {!isOpen && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 text-xs font-dm font-semibold px-2.5 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20]">
+                <Calendar size={12} /><span>This June</span>
               </div>
-            )}
-          </div>
+              {event.spots != null && (
+                <div className="flex items-center gap-1.5 text-xs font-dm font-semibold text-[#F47C20]">
+                  <Users size={13} /><span>{event.spots} seats available</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
-          <div className="flex gap-2 mt-2 pt-3 border-t border-[#D2DCE8]">
-            <Link
-              href={`/events/${event.slug}`}
-              className="flex-1 text-center font-dm font-medium text-sm text-[#2251A3] hover:text-[#1B3A6B] transition-colors py-2 rounded-xl border border-[#D2DCE8] hover:border-[#2251A3]"
+        <div className="pt-3 border-t border-[#D2DCE8]">
+          {isOpen ? (
+            <div className="w-full text-center font-dm font-semibold text-sm text-white bg-[#F47C20] group-hover:bg-[#e06a10] transition-colors py-2 rounded-xl">
+              {isFree ? "Join Free →" : "Register Now →"}
+            </div>
+          ) : (
+            <div
+              onClick={e => { e.preventDefault(); e.stopPropagation(); setNotifyOpen(true); }}
+              className="w-full flex items-center justify-center gap-1.5 font-dm font-semibold text-sm text-white bg-[#1B3A6B] hover:bg-[#2251A3] transition-colors py-2 rounded-xl cursor-pointer"
             >
-              Learn More
-            </Link>
-            {event.registrationOpen ? (
-              <a
-                href={registerHref}
-                target={event.stripePaymentLink ? "_blank" : "_self"}
-                rel="noopener noreferrer"
-                className="flex-1 text-center font-dm font-semibold text-sm text-white bg-[#F47C20] hover:bg-[#e06a10] transition-colors py-2 rounded-xl"
-              >
-                {isFree ? "Join Free" : "Register"} →
-              </a>
-            ) : (
-              <button
-                onClick={() => setNotifyOpen(true)}
-                className="flex-1 flex items-center justify-center gap-1.5 font-dm font-semibold text-sm text-white bg-[#1B3A6B] hover:bg-[#2251A3] transition-colors py-2 rounded-xl"
-              >
-                <Bell size={13} /> Join Waitlist
-              </button>
-            )}
-          </div>
+              <Bell size={13} /> Join Waitlist
+            </div>
+          )}
         </div>
       </div>
-    </>
+    </div>
   );
-}
-
-function ComingSoonCard() {
-  const [notifyOpen, setNotifyOpen] = useState(false);
 
   return (
     <>
-      {notifyOpen && <NotifyModal eventName="Practical AI Training" onClose={() => setNotifyOpen(false)} />}
-      <div className="bg-white border-2 border-[#F47C20]/30 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col relative">
-        <div className="w-full h-48 bg-gradient-to-br from-[#1B3A6B] via-[#2251A3] to-[#F47C20] flex items-center justify-center relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-4 left-4 w-16 h-16 border-2 border-white rounded-full" />
-            <div className="absolute bottom-6 right-6 w-24 h-24 border-2 border-white rounded-full" />
-            <div className="absolute top-12 right-12 w-8 h-8 border border-white rounded-full" />
-          </div>
-          <div className="text-center z-10">
-            <div className="text-4xl mb-2">🚀</div>
-            <p className="font-syne font-bold text-white text-lg">Practical AI Training</p>
-          </div>
-        </div>
-
-        <div className="p-6 flex flex-col flex-1 gap-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#2251A3]/10 text-[#2251A3]">
-              TRAINING
-            </span>
-            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20] text-white ml-auto">
-              Coming Soon
-            </span>
-          </div>
-
-          <h3 className="font-syne font-bold text-lg text-[#0D1B2A] leading-snug">
-            🚀 Practical AI Training
-          </h3>
-
-          <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed flex-1">
-            Hands-on AI implementation training for business owners, teams, and individuals. Learn to build workflows, automate tasks, advance your career, and create new income streams with AI.
-          </p>
-
-          <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-            <MapPin size={13} />
-            <span>Online · Live Sessions</span>
-          </div>
-
-          <div className="flex gap-2 mt-2 pt-3 border-t border-[#D2DCE8]">
-            <button
-              onClick={() => setNotifyOpen(true)}
-              className="flex items-center justify-center gap-2 flex-1 text-center font-dm font-semibold text-sm text-white bg-[#F47C20] hover:bg-[#e06a10] transition-colors py-2 rounded-xl"
-            >
-              <Bell size={14} />
-              Join Waitlist
-            </button>
-          </div>
-        </div>
+      {notifyOpen && <NotifyModal eventName={event.title} eventSlug={event.slug} onClose={() => setNotifyOpen(false)} />}
+      <div style={{ padding: "2px", borderRadius: "18px", background: gradientBorder }} className="hover:-translate-y-0.5 transition-transform duration-300">
+        <Link href={`/events/${event.slug}`} className="h-full flex flex-col" style={{ borderRadius: "16px" }}>
+          {inner}
+        </Link>
       </div>
     </>
   );
 }
+
 
 function TechEventCard({ ev }: { ev: TechEvent }) {
   return (
@@ -380,10 +493,11 @@ function TechEventCard({ ev }: { ev: TechEvent }) {
       className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col group"
     >
       <div className="relative w-full h-40 overflow-hidden">
-        <img
+        <Image
           src={ev.coverImage}
           alt={ev.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          fill
+          className="object-cover group-hover:scale-105 transition-transform duration-500"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
         <span className="absolute bottom-3 left-3 text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
@@ -421,7 +535,7 @@ export default function EventsPage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/events");
+        const res = await fetch("/api/events", { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setEvents(data.events ?? []);
@@ -433,6 +547,9 @@ export default function EventsPage() {
       }
     }
     load();
+    // Re-fetch every 60 s so spotsLeft stays current as people register
+    const interval = setInterval(load, 60_000);
+    return () => clearInterval(interval);
   }, []);
 
   const filtered = events.filter((e) => {
@@ -496,10 +613,6 @@ export default function EventsPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Always show coming soon card */}
-                {(activeFilter === "all" || activeFilter === "training") && (
-                  <ComingSoonCard />
-                )}
                 {filtered.map((event) => (
                   <EventCard key={event.id} event={event} />
                 ))}

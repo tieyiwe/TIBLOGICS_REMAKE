@@ -56,11 +56,11 @@ function generateScanResult(url: string): ScanResult {
   if (url.includes("tiblogics.com")) {
     return {
       url,
-      overallScore: 84,
+      overallScore: 91,
       seoScore: 91,
-      perfScore: 78,
-      uxScore: 82,
-      aiScore: 88,
+      perfScore: 82,
+      uxScore: 88,
+      aiScore: 95,
       findings: [
         { type: "good", text: "AI chat agent (Echelon) detected and active on all pages" },
         { type: "good", text: "Structured JSON-LD schema markup present (Organization, WebSite, LocalBusiness)" },
@@ -68,10 +68,10 @@ function generateScanResult(url: string): ScanResult {
         { type: "good", text: "Comprehensive SEO metadata on all key pages with Open Graph & Twitter Card" },
         { type: "good", text: "Dynamic sitemap with blog posts detected at /sitemap.xml" },
         { type: "warning", text: "Mobile Core Web Vitals — LCP can be further reduced with image preloading" },
-        { type: "warning", text: "CRM webhook integration present but no third-party CRM pixel detected" },
+        { type: "good", text: "Custom admin CRM detected — contacts, prospects, appointments, and pipeline managed natively (no third-party CRM required)" },
       ],
       aiDescription:
-        "This site demonstrates strong AI-first architecture with a live AI chat agent, structured data, comprehensive SEO metadata, and an AI-powered blog. Minor performance gains remain on mobile Core Web Vitals.",
+        "This site demonstrates best-in-class AI-first architecture: live AI chat agent, native CRM with contacts/prospects/appointments, AI-powered knowledge base, structured data, and comprehensive SEO. Minimal performance gains remain on mobile.",
     };
   }
 

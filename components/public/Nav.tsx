@@ -1,4 +1,4 @@
- "use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -13,13 +13,11 @@ const navLinks = [
   { label: "Startups & Products", href: "/products" },
   { label: "Try Smart Tools", href: "/tools" },
   { label: "AI TIMES", href: "/ai-times" },
-  { label: "Events", href: "/events" },
+  { label: "Events & Training", href: "/events" },
+  { label: "Learning Box", href: "/learning-box" },
+  { label: "Store", href: "/store" },
   { label: "About", href: "/about" },
 ];
-
-function openTibo() {
-  window.dispatchEvent(new CustomEvent("tibo:open"));
-}
 
 export default function Nav() {
   const pathname = usePathname();
@@ -52,9 +50,9 @@ export default function Nav() {
         )}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-10">
-          <div className="flex items-center justify-between min-h-[7.5rem] sm:min-h-[10.5rem] py-0 sm:py-2">
+          <div className="flex items-center justify-between min-h-[5.5rem] sm:min-h-[7.5rem] py-0 sm:py-2">
             <Link href="/" className="flex items-center flex-shrink-0">
-              <img src={NEW_LOGO} alt="TIBLOGICS" className="h-[7.5rem] sm:h-[10.5rem] w-auto" />
+              <img src={NEW_LOGO} alt="TIBLOGICS" className="h-[5.5rem] sm:h-[7.5rem] w-auto" />
             </Link>
 
             {/* Desktop Nav */}
@@ -96,12 +94,12 @@ export default function Nav() {
               })}
             </nav>
 
-            {/* Desktop CTAs */}
+            {/* Desktop CTA — single button so the nav links have room to
+                breathe. Tibo is still one click away from the floating
+                launcher on every page, and from the Tibo tab in the mobile
+                bottom bar. */}
             <div className="hidden lg:flex items-center gap-3">
-              <button onClick={openTibo} className="btn-primary text-sm py-2 px-4">
-                Talk to Tibo ↗
-              </button>
-              <Link href="/book" className="btn-secondary text-sm py-2 px-4">
+              <Link href="/book" className="btn-primary text-sm py-2 px-4">
                 Book a Free Consulting
               </Link>
             </div>
@@ -186,16 +184,13 @@ export default function Nav() {
           </nav>
 
           <div className="p-4 border-t border-[#D2DCE8] flex flex-col gap-3">
-            <button
-              onClick={() => { setMobileOpen(false); openTibo(); }}
-              className="btn-primary justify-center text-sm"
-            >
-              Talk to Tibo ↗
-            </button>
+            {/* Tibo is omitted here too: the mobile bottom bar already has a
+                dedicated Tibo tab, so repeating it in the drawer was
+                duplicate navigation. */}
             <Link
               href="/book"
               onClick={() => setMobileOpen(false)}
-              className="btn-secondary justify-center text-sm"
+              className="btn-primary justify-center text-sm"
             >
               Book a Meeting
             </Link>

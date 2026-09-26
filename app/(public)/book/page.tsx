@@ -3,25 +3,30 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Check, Clock, DollarSign } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
 
+// Consultations are free. This list is what the visitor wants to TALK ABOUT,
+// not something they buy — price stays 0 so no payment step is ever reached
+// The checkoutUrl branch in submit() is left in place as a safety net in
+// case a paid service is reintroduced later.
 const SERVICES = [
-  { id: "discovery", name: "Project Discovery Meeting", duration: "30 min", price: 0, badge: "Free", description: "Intro call to explore your project — zero commitment, zero cost.", color: "#F47C20" },
-  { id: "strategy", name: "AI Strategy Session", duration: "60 min", price: 49700, badge: "Popular", description: "Deep-dive into your AI opportunities and build a custom action plan.", color: "#2251A3" },
-  { id: "audit", name: "AI Readiness Audit", duration: "90 min + Deliverable", price: 89700, badge: null, description: "Full assessment of your tech stack and AI readiness with a written deliverable.", color: "#1B3A6B" },
-  { id: "website", name: "Website AI Transformation", duration: "45 min", price: 24900, badge: "New", description: "Review your current website and design an AI-powered upgrade plan.", color: "#0F6E56" },
-  { id: "cost", name: "AI Cost & Price Strategy for AI Product Builders", duration: "60 min", price: 29700, badge: null, description: "Calculate your AI costs and design a profitable pricing model.", color: "#7c3aed" },
-  { id: "tech", name: "Other Consulting (Apps, SaaS, Special Features…)", duration: "60 min", price: 24900, badge: null, description: "Expert guidance on app development, SaaS products, special features, or any technical challenge.", color: "#3A4A5C" },
+  { id: "discovery", name: "Project Discovery", duration: "30 min", price: 0, badge: "Start here", description: "Not sure where to begin? An intro call to explore your project — zero commitment.", color: "#F47C20" },
+  { id: "strategy", name: "AI Strategy", duration: "45 min", price: 0, badge: "Popular", description: "Talk through where AI could genuinely help your business, and where it wouldn't.", color: "#2251A3" },
+  { id: "audit", name: "AI Readiness", duration: "45 min", price: 0, badge: null, description: "Look at your current tech and processes, and what adopting AI would actually take.", color: "#1B3A6B" },
+  { id: "website", name: "Website & AI", duration: "45 min", price: 0, badge: null, description: "Review your current website and discuss an AI-powered upgrade.", color: "#0F6E56" },
+  { id: "cost", name: "AI Cost & Pricing", duration: "45 min", price: 0, badge: null, description: "For AI product builders: what your AI actually costs to run, and how to price it.", color: "#7c3aed" },
+  { id: "tech", name: "Something Else", duration: "45 min", price: 0, badge: null, description: "Apps, SaaS, a specific feature, or any other technical question.", color: "#3A4A5C" },
 ];
+
+// Project Discovery is the default: most visitors do not yet know which
+// specific conversation they need, and making them choose is friction. The
+// rest stay one click away for people who do know.
+const PRIMARY_TOPIC = SERVICES[0];
+const OTHER_TOPICS = SERVICES.slice(1);
 
 const ADD_ONS: { id: string; label: string; price: number }[] = [];
 
 const TIME_SLOTS = ["9:00 AM", "10:00 AM", "11:00 AM", "1:00 PM", "2:00 PM", "3:00 PM"];
-
-function formatPrice(cents: number) {
-  if (cents === 0) return "Free";
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(cents / 100);
-}
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -55,7 +60,10 @@ function isPastSlot(date: Date, slot: string): boolean {
 
 export default function BookPage() {
   const router = useRouter();
-  const [selectedService, setSelectedService] = useState(SERVICES[0]);
+  const [selectedService, setSelectedService] = useState(PRIMARY_TOPIC);
+  // Kept open once a specific topic is chosen, so the choice stays visible.
+  const [moreOpenState, setMoreOpen] = useState(false);
+  const moreOpen = moreOpenState || selectedService.id !== PRIMARY_TOPIC.id;
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -68,7 +76,70 @@ export default function BookPage() {
 
   const bookingPanelRef = useRef<HTMLDivElement>(null);
 
-  const total = selectedService.price;
+  function selectTopic(svc: (typeof SERVICES)[number]) {
+    setSelectedService(svc);
+    setStep(1);
+    setSelectedDate(null);
+    setSelectedSlot(null);
+    if (window.innerWidth < 1024) {
+      setTimeout(() => bookingPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+    }
+  }
+
+  // Plain function, not a component — called directly so React keeps the same
+  // elements across renders instead of remounting them.
+  function renderTopic(svc: (typeof SERVICES)[number], primary: boolean) {
+    const isSelected = selectedService.id === svc.id;
+    return (
+      <button
+        key={svc.id}
+        onClick={() => selectTopic(svc)}
+        aria-pressed={isSelected}
+        className={`relative w-full overflow-hidden text-left transition-all duration-200 ${
+          primary ? "rounded-2xl p-5" : "rounded-xl p-3.5"
+        }`}
+        style={{
+          border: isSelected ? `2.5px solid ${svc.color}` : "1.5px solid #D2DCE8",
+          background: isSelected ? `${svc.color}0F` : "white",
+          boxShadow: isSelected ? `0 0 0 4px ${svc.color}18, 0 4px 16px ${svc.color}22` : undefined,
+        }}
+      >
+        <div
+          className="absolute left-0 top-0 bottom-0 transition-all duration-200"
+          style={{ width: isSelected ? "5px" : "3px", backgroundColor: svc.color }}
+        />
+
+        {isSelected && (
+          <div
+            className="absolute top-3 right-3 flex h-5 w-5 items-center justify-center rounded-full"
+            style={{ backgroundColor: svc.color }}
+          >
+            <Check size={11} strokeWidth={3} className="text-white" />
+          </div>
+        )}
+
+        <div className="pl-3">
+          <div className="flex items-start justify-between gap-2">
+            <span
+              className={`font-syne font-bold transition-colors duration-200 ${primary ? "text-base" : "text-sm"}`}
+              style={{ color: isSelected ? svc.color : "#0D1B2A" }}
+            >
+              {svc.name}
+            </span>
+            {svc.badge && !isSelected && (
+              <span className="shrink-0 rounded-full bg-[#FEF0E3] px-2 py-0.5 text-xs font-bold text-[#F47C20]">
+                {svc.badge}
+              </span>
+            )}
+          </div>
+          <p className={`font-dm leading-relaxed text-[#7A8FA6] ${primary ? "mt-1.5 text-sm" : "mt-1 text-xs"}`}>
+            {svc.description}
+          </p>
+        </div>
+      </button>
+    );
+  }
+
 
   async function handleDateSelect(date: Date) {
     setSelectedDate(date);
@@ -102,7 +173,7 @@ export default function BookPage() {
           addOnRecording: false,
           addOnActionPlan: false,
           addOnSlackAccess: false,
-          totalAmount: total,
+          totalAmount: 0,
         }),
       });
       if (!res.ok) {
@@ -153,69 +224,41 @@ export default function BookPage() {
         <div className="text-center mb-10">
           <span className="section-tag">Book a Consulting</span>
           <h1 className="font-syne font-extrabold text-4xl text-[#0D1B2A] mt-2">Book a Consulting</h1>
-          <p className="font-dm text-[#3A4A5C] mt-2">Choose your session and pick a time that works for you.</p>
+          <p className="font-dm text-[#3A4A5C] mt-2">Free, no obligation. Pick what you'd like to discuss and a time that suits you.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          {/* Left: Service Selector */}
+          {/* Left: topic selector.
+              Project Discovery is the default and sits on its own as the
+              obvious starting point. The precise topics are one click away for
+              visitors who already know what they want, rather than six
+              equal-weight cards asking everyone to decide up front. */}
           <div className="lg:col-span-2 flex flex-col gap-3">
-            <h2 className="font-syne font-bold text-base text-[#0D1B2A]">Choose Your Session</h2>
-            {SERVICES.map((svc) => {
-              const isSelected = selectedService.id === svc.id;
-              return (
-                <button
-                  key={svc.id}
-                  onClick={() => {
-                    setSelectedService(svc); setStep(1); setSelectedDate(null); setSelectedSlot(null);
-                    if (window.innerWidth < 1024) {
-                      setTimeout(() => bookingPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
-                    }
-                  }}
-                  className="relative text-left rounded-2xl p-4 transition-all duration-200 overflow-hidden w-full"
-                  style={{
-                    border: isSelected ? `2.5px solid ${svc.color}` : "1.5px solid #D2DCE8",
-                    background: isSelected ? `${svc.color}0F` : "white",
-                    boxShadow: isSelected ? `0 0 0 4px ${svc.color}18, 0 4px 16px ${svc.color}22` : undefined,
-                    transform: isSelected ? "scale(1.01)" : undefined,
-                  }}
-                >
-                  {/* Color bar — thicker when selected */}
-                  <div
-                    className="absolute left-0 top-0 bottom-0 rounded-l-2xl transition-all duration-200"
-                    style={{ width: isSelected ? "5px" : "3px", backgroundColor: svc.color }}
-                  />
+            <h2 className="font-syne font-bold text-base text-[#0D1B2A]">What would you like to discuss?</h2>
 
-                  {/* Selected checkmark */}
-                  {isSelected && (
-                    <div
-                      className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: svc.color }}
-                    >
-                      <Check size={11} strokeWidth={3} className="text-white" />
-                    </div>
-                  )}
+            {renderTopic(PRIMARY_TOPIC, true)}
 
-                  <div className="pl-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <span
-                        className="font-syne font-bold text-sm transition-colors duration-200"
-                        style={{ color: isSelected ? svc.color : "#0D1B2A" }}
-                      >
-                        {svc.name}
-                      </span>
-                      {svc.badge && !isSelected && (
-                        <span className="shrink-0 bg-[#FEF0E3] text-[#F47C20] text-xs font-bold px-2 py-0.5 rounded-full">{svc.badge}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 mt-1">
-                      <span className="font-syne font-extrabold text-lg text-[#0D1B2A]">{formatPrice(svc.price)}</span>
-                      <span className="font-dm text-xs text-[#7A8FA6] flex items-center gap-1"><Clock size={11} />{svc.duration}</span>
-                    </div>
-                    <p className="font-dm text-xs text-[#7A8FA6] mt-1 leading-relaxed">{svc.description}</p>
-                  </div>
-                </button>
-              );
-            })}
+            <button
+              type="button"
+              onClick={() => setMoreOpen((v) => !v)}
+              aria-expanded={moreOpen}
+              className="flex items-center justify-between gap-2 rounded-xl border border-[#D2DCE8] bg-white px-4 py-3 text-left transition-colors hover:border-[#B9C7D8]"
+            >
+              <span className="font-dm text-sm text-[#3A4A5C]">
+                Know what you need? <span className="font-semibold text-[#1B3A6B]">Pick a specific topic</span>
+              </span>
+              <ChevronDown
+                size={16}
+                className="shrink-0 text-[#7A8FA6] transition-transform duration-200"
+                style={{ transform: moreOpen ? "rotate(180deg)" : undefined }}
+              />
+            </button>
+
+            {moreOpen && (
+              <div className="flex flex-col gap-2">
+                {OTHER_TOPICS.map((svc) => renderTopic(svc, false))}
+              </div>
+            )}
           </div>
 
           {/* Right: Booking Panel */}
@@ -224,8 +267,7 @@ export default function BookPage() {
             <div className="bg-[#1B3A6B] p-5">
               <div className="font-syne font-bold text-white text-base">{selectedService.name}</div>
               <div className="flex items-center gap-4 mt-1">
-                <span className="text-white/60 text-sm font-dm flex items-center gap-1"><Clock size={13} />{selectedService.duration}</span>
-                <span className="text-[#F47C20] font-syne font-bold text-sm">{formatPrice(selectedService.price)}</span>
+                <span className="text-[#F47C20] font-syne font-bold text-sm">Free</span>
               </div>
             </div>
 
@@ -374,10 +416,6 @@ export default function BookPage() {
                       placeholder="Share your main goals or challenges for this session..." />
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-[#D2DCE8]">
-                    <span className="font-dm text-sm text-[#7A8FA6]">Total: <span className="font-syne font-bold text-[#0D1B2A]">{formatPrice(total)}</span></span>
-                  </div>
-
                   <div className="flex gap-3">
                     <button onClick={() => setStep(1)} className="btn-secondary flex-1 justify-center text-sm">← Back</button>
                     <button
@@ -419,9 +457,9 @@ export default function BookPage() {
                         <span className="font-medium text-[#0D1B2A]">{formData.phone}</span>
                       </div>
                     )}
-                    <div className="border-t border-[#D2DCE8] pt-2 flex justify-between">
-                      <span className="font-syne font-bold text-[#0D1B2A]">Total</span>
-                      <span className="font-syne font-extrabold text-2xl text-[#2251A3]">{formatPrice(total)}</span>
+                    <div className="border-t border-[#D2DCE8] pt-2 flex justify-between items-center">
+                      <span className="font-syne font-bold text-[#0D1B2A]">Cost</span>
+                      <span className="font-syne font-extrabold text-xl text-[#0F6E56]">Free</span>
                     </div>
                   </div>
 
@@ -432,7 +470,7 @@ export default function BookPage() {
                       onClick={handleSubmit}
                       className="btn-primary flex-1 justify-center text-sm disabled:opacity-60"
                     >
-                      {submitting ? "Processing..." : total > 0 ? "Pay & Confirm →" : "Confirm Booking →"}
+                      {submitting ? "Processing..." : "Confirm Booking →"}
                     </button>
                   </div>
 
@@ -440,11 +478,9 @@ export default function BookPage() {
                     <p className="text-center text-sm text-red-500 font-dm">{submitError}</p>
                   )}
 
-                  {total > 0 && (
-                    <p className="text-center text-xs text-[#7A8FA6] font-dm">
-                      Secure payment via Stripe. You'll be redirected to complete payment.
-                    </p>
-                  )}
+                  <p className="text-center text-xs text-[#7A8FA6] font-dm">
+                    No payment required — you'll get a confirmation email with the meeting link.
+                  </p>
                 </div>
               )}
             </div>

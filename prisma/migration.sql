@@ -87,3 +87,37 @@ CREATE TABLE IF NOT EXISTS "Event" (
 CREATE UNIQUE INDEX IF NOT EXISTS "Event_slug_key" ON "Event"("slug");
 CREATE INDEX IF NOT EXISTS "Event_published_idx" ON "Event"("published");
 CREATE INDEX IF NOT EXISTS "Event_date_idx" ON "Event"("date");
+CREATE INDEX IF NOT EXISTS "Event_date_idx" ON "Event"("date");
+
+-- EventRegistration table (added post-initial-migration)
+CREATE TABLE IF NOT EXISTS "EventRegistration" (
+  "id" TEXT NOT NULL,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "eventSlug" TEXT NOT NULL,
+  "eventName" TEXT NOT NULL,
+  "firstName" TEXT NOT NULL,
+  "lastName" TEXT NOT NULL,
+  "email" TEXT NOT NULL,
+  "whatsapp" TEXT,
+  "role" TEXT,
+  "goal" TEXT,
+  "referral" TEXT,
+  "paymentMethod" TEXT NOT NULL,
+  "price" INTEGER NOT NULL DEFAULT 0,
+  "currency" TEXT NOT NULL DEFAULT 'USD',
+  "status" TEXT NOT NULL DEFAULT 'pending',
+  "notes" TEXT,
+  "confirmationNumber" TEXT,
+  CONSTRAINT "EventRegistration_pkey" PRIMARY KEY ("id")
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "EventRegistration_confirmationNumber_key" ON "EventRegistration"("confirmationNumber");
+CREATE INDEX IF NOT EXISTS "EventRegistration_eventSlug_idx" ON "EventRegistration"("eventSlug");
+CREATE INDEX IF NOT EXISTS "EventRegistration_email_idx" ON "EventRegistration"("email");
+CREATE INDEX IF NOT EXISTS "EventRegistration_createdAt_idx" ON "EventRegistration"("createdAt");
+
+-- Add confirmationNumber to existing EventRegistration tables (safe ALTER)
+ALTER TABLE "EventRegistration" ADD COLUMN IF NOT EXISTS "confirmationNumber" TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS "EventRegistration_confirmationNumber_key" ON "EventRegistration"("confirmationNumber");
+
+-- Add stripeSessionId to EventRegistration
+ALTER TABLE "EventRegistration" ADD COLUMN IF NOT EXISTS "stripeSessionId" TEXT;

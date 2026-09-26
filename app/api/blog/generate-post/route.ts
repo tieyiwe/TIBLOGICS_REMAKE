@@ -2,6 +2,7 @@ export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
+import { assignCoverImage } from "@/lib/blog-cover";
 
 const CATEGORY_MAP: Record<string, { emoji: string; gradient: string }> = {
   "breaking":    { emoji: "⚡", gradient: "from-red-600 to-orange-500" },
@@ -85,24 +86,6 @@ category must be one of: breaking, ai-business, tips, tools, case-studies, indus
 
     const meta = CATEGORY_MAP[generated.category] ?? CATEGORY_MAP["industry"];
 
-    // Fetch a stable cover image URL via Unsplash source (follows redirect → final images.unsplash.com URL)
-    let coverImage: string | null = null;
-    const query = encodeURIComponent(generated.imageQuery ?? `${generated.category} technology business`);
-    try {
-      const imgRes = await fetch(`https://source.unsplash.com/1200x630/?${query}`, {
-        redirect: "follow",
-        signal: AbortSignal.timeout(5000),
-      });
-      if (imgRes.ok && imgRes.url.includes("unsplash.com/photo")) {
-        coverImage = imgRes.url.split("?")[0] + "?w=1200&q=80&fit=crop&crop=center";
-      }
-    } catch { /* fall back to gradient */ }
-
-    // Final fallback: picsum with slug as seed (consistent, beautiful, no API key needed)
-    if (!coverImage) {
-      coverImage = null; // let gradient show — picsum images aren't always appropriate for business content
-    }
-
     const baseSlug = title
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, "")
@@ -116,6 +99,13 @@ category must be one of: breaking, ai-business, tips, tools, case-studies, indus
       slug = `${baseSlug}-${i++}`;
     }
 
+    // Cover image. The old source.unsplash.com endpoint was retired by
+    // Unsplash, so this fetch always failed and every generated article was
+    // saved with no cover. Now drawn from a fixed pool, and guaranteed not to
+    // collide with an image another article is already using.
+    const cover = await assignCoverImage(slug);
+    const coverImage = cover.url;
+
     const wordCount = generated.content.replace(/<[^>]*>/g, "").split(/\s+/).length;
 
     const post = await prisma.blogPost.create({
@@ -126,7 +116,7 @@ category must be one of: breaking, ai-business, tips, tools, case-studies, indus
         content: generated.content,
         category: generated.category,
         tags: (Array.isArray(generated.tags) ? generated.tags : []).slice(0, 10),
-        coverImage: coverImage ?? undefined,
+        coverImage,
         coverEmoji: meta.emoji,
         coverGradient: meta.gradient,
         author: "Echelon AI",

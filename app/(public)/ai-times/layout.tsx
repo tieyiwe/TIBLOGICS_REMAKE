@@ -11,18 +11,18 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: "https://tiblogics.com/ai-times" },
   openGraph: {
-    title: "AI TIMES — AI Insights for Business | TIBLOGICS",
-    description: "Practical AI knowledge for businesses — case studies, tool reviews, tips, and industry news curated by TIBLOGICS.",
+    title: "AI TIMES — Real Insights. Less Than 5 Min Reads. | TIBLOGICS",
+    description: "Stay up to date with the most relevant AI tech info without wasting time or getting lost in dreadful articles.",
     url: "https://tiblogics.com/ai-times",
     type: "website",
-    images: [{ url: "https://tiblogics.com/og-image.png", width: 1200, height: 630, alt: "AI TIMES by TIBLOGICS" }],
+    siteName: "AI Times | TIBLOGICS",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AI TIMES — AI Insights for Business",
-    description: "Case studies, tool reviews, tips, and industry news curated by TIBLOGICS.",
+    title: "AI TIMES — Real Insights. Less Than 5 Min Reads.",
+    description: "Stay up to date with the most relevant AI tech info without wasting time or getting lost in dreadful articles.",
     creator: "@tiblogics",
-    images: ["https://tiblogics.com/og-image.png"],
+    site: "@tiblogics",
   },
 };
 

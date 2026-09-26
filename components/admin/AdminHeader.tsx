@@ -7,21 +7,21 @@ import { useEffect, useRef, useState } from "react";
 import { Bell, Calendar, Briefcase, Handshake, Users, User } from "lucide-react";
 
 const pageTitles: Record<string, string> = {
-  "/admin": "Dashboard",
-  "/admin/appointments": "Appointments",
-  "/admin/prospects": "Prospects",
-  "/admin/scanner-leads": "Scanner Leads",
-  "/admin/tools": "Tool Analytics",
-  "/admin/revenue": "Revenue",
-  "/admin/settings": "Settings",
-  "/admin/content": "Content Manager",
-  "/admin/command-center": "Command Center",
-  "/admin/command-center/kanban": "Command Center — Kanban",
-  "/admin/command-center/timeline": "Command Center — Timeline",
-  "/admin/command-center/list": "Command Center — All Projects",
-  "/admin/command-center/sync": "Command Center — Sync",
-  "/admin/partnerships": "Partnerships",
-  "/admin/waitlist": "Waitlist",
+  "/admin_pro": "Dashboard",
+  "/admin_pro/appointments": "Appointments",
+  "/admin_pro/prospects": "Prospects",
+  "/admin_pro/scanner-leads": "Scanner Leads",
+  "/admin_pro/tools": "Tool Analytics",
+  "/admin_pro/revenue": "Revenue",
+  "/admin_pro/settings": "Settings",
+  "/admin_pro/content": "Content Manager",
+  "/admin_pro/command-center": "Command Center",
+  "/admin_pro/command-center/kanban": "Command Center — Kanban",
+  "/admin_pro/command-center/timeline": "Command Center — Timeline",
+  "/admin_pro/command-center/list": "Command Center — All Projects",
+  "/admin_pro/command-center/sync": "Command Center — Sync",
+  "/admin_pro/partnerships": "Partnerships",
+  "/admin_pro/waitlist": "Waitlist",
 };
 
 type NotifType = "appointment" | "contact" | "service_request" | "partnership" | "waitlist";
@@ -114,7 +114,7 @@ export default function AdminHeader() {
       <h1 className="font-syne font-bold text-[#0D1B2A] text-lg leading-tight">{pageTitle}</h1>
 
       <div className="flex items-center gap-4">
-        <Link href="/admin/appointments" className="btn-primary px-4 py-2 text-sm">
+        <Link href="/admin_pro/appointments" className="btn-primary px-4 py-2 text-sm">
           + New Appointment
         </Link>
 

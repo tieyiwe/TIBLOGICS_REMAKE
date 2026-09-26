@@ -33,6 +33,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         tags: Array.isArray(body.tags) ? body.tags.slice(0, 20) : undefined,
         coverEmoji: typeof body.coverEmoji === "string" ? body.coverEmoji.slice(0, 10) : undefined,
         coverGradient: typeof body.coverGradient === "string" ? body.coverGradient.slice(0, 100) : undefined,
+        coverImage: typeof body.coverImage === "string" ? body.coverImage : undefined,
         featured: typeof body.featured === "boolean" ? body.featured : undefined,
         published: typeof body.published === "boolean" ? body.published : undefined,
       },

@@ -22,9 +22,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     const { id } = await params;
     const body = await req.json();
+
+    const ALLOWED = ["name", "description", "status", "priority", "progress", "color", "deadline", "archived"];
+    const data: Record<string, unknown> = {};
+    for (const field of ALLOWED) {
+      if (field in body) data[field] = body[field];
+    }
+
     const project = await prisma.project.update({
       where: { id },
-      data: body,
+      data,
       include: { tasks: { orderBy: { order: "asc" } } },
     });
     return NextResponse.json(project);

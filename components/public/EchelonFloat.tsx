@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { X, Send, ChevronLeft, Loader2 } from "lucide-react";
 
@@ -112,10 +113,24 @@ export default function EchelonFloat() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const isAdmin = pathname?.startsWith("/admin");
+  const isAdmin = pathname?.startsWith("/admin_pro");
   const [blockedDateSet, setBlockedDateSet] = useState<Set<string>>(new Set());
   const ctaVisibleRef = useRef(false);
   const isOpenRef = useRef(false);
+  const sessionIdRef = useRef<string>("");
+
+  // Generate or restore a persistent session ID for this browser session
+  useEffect(() => {
+    if (isAdmin) return;
+    try {
+      let sid = sessionStorage.getItem("tibo_session_id");
+      if (!sid) {
+        sid = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+        sessionStorage.setItem("tibo_session_id", sid);
+      }
+      sessionIdRef.current = sid;
+    } catch { sessionIdRef.current = `${Date.now()}`; }
+  }, [isAdmin]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -266,11 +281,23 @@ export default function EchelonFloat() {
 
       const hasBooking = full.includes(BOOKING_MARKER);
       const clean = full.replace(BOOKING_MARKER, "").trim();
-      setMessages((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = { role: "assistant", content: clean };
-        return updated;
-      });
+      const finalMessages = (() => {
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { role: "assistant", content: clean };
+          // Save to backend (fire-and-forget) so expert can see conversation
+          if (sessionIdRef.current) {
+            fetch("/api/sessions/chat", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ sessionId: sessionIdRef.current, messages: updated }),
+            }).catch(() => {});
+          }
+          return updated;
+        });
+        return null;
+      })();
+      void finalMessages;
       if (hasBooking) setBookingStep("prompt");
       if (!isOpen) setHasUnread(true);
     } catch {
@@ -320,6 +347,7 @@ export default function EchelonFloat() {
           email: form.email,
           phone: form.phone || null,
           goalNotes: "Booked via TIBS chat assistant",
+          sessionId: sessionIdRef.current || undefined,
         }),
       });
       if (!res.ok) throw new Error("Booking failed");
@@ -617,7 +645,7 @@ export default function EchelonFloat() {
           {isOpen ? (
             <X size={22} className="text-white" strokeWidth={2.5} />
           ) : (
-            <img src="/tibo-avatar.svg" alt="Tibo" className="w-full h-full rounded-full object-cover" />
+            <Image src="/tibo-avatar.svg" alt="Tibo" width={56} height={56} className="w-full h-full rounded-full object-cover" />
           )}
           {hasUnread && !isOpen && (
             <span className="absolute top-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white bg-[#F47C20]" />

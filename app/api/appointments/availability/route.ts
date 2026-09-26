@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAdmin } from "@/lib/require-admin";
 
 const DEFAULT_DAYS = [1, 2, 3, 4, 5];
 const DEFAULT_SLOTS = ["9:00 AM", "10:00 AM", "11:00 AM", "2:00 PM", "3:00 PM", "4:00 PM"];
@@ -18,7 +19,12 @@ export async function GET() {
   }
 }
 
+// Staff only — this rewrites which days and times the public booking form
+// offers. GET stays public; the booking form reads it.
 export async function POST(req: NextRequest) {
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   try {
     const { days, slots } = await req.json();
     await Promise.all([
