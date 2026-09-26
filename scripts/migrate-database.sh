@@ -42,7 +42,12 @@ echo "    $(wc -l < "$DUMP_DIR/counts-old-$STAMP.csv") non-empty tables"
 
 echo "==> 3/5  Dumping OLD database -> $DUMP_FILE"
 # --no-owner / --no-acl: role names differ between hosts and would error.
-pg_dump "$OLD_DB_URL" --no-owner --no-acl --format=custom --file="$DUMP_FILE"
+# --schema=public: this app's tables all live in public (Prisma puts them
+# there). A Supabase source also carries auth, storage, graphql, realtime and
+# vault schemas, plus extensions like pgsodium and pg_graphql, which do not
+# exist on a plain Postgres target — dumping them makes the restore below fail
+# on its first statement because of --exit-on-error.
+pg_dump "$OLD_DB_URL" --no-owner --no-acl --schema=public --format=custom --file="$DUMP_FILE"
 echo "    dump size: $(du -h "$DUMP_FILE" | cut -f1)"
 
 echo "==> 4/5  Restoring into NEW database"
