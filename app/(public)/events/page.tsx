@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Calendar, MapPin, DollarSign, Users, Clock, ArrowRight, Bell, X, ExternalLink } from "lucide-react";
@@ -35,12 +35,15 @@ interface TechEvent {
   location: string;
   description: string;
   coverImage: string;
+  /** Last day, ISO. Drives the past/upcoming filter below. */
+  endsOn: string;
   url: string;
 }
 
 const POPULAR_TECH_EVENTS: TechEvent[] = [
   {
     name: "Apple WWDC 2026",
+    endsOn: "2026-06-13",
     organizer: "Apple",
     when: "Jun 9–13, 2026",
     location: "Cupertino, CA + Online",
@@ -50,6 +53,7 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
   },
   {
     name: "VivaTech 2026",
+    endsOn: "2026-06-14",
     organizer: "Vivendi / Les Echos",
     when: "Jun 11–14, 2026",
     location: "Paris, France",
@@ -59,6 +63,7 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
   },
   {
     name: "Collision Conference 2026",
+    endsOn: "2026-06-19",
     organizer: "Collision",
     when: "Jun 16–19, 2026",
     location: "Toronto, Canada",
@@ -68,6 +73,7 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
   },
   {
     name: "London Tech Week 2026",
+    endsOn: "2026-06-19",
     organizer: "London & Partners",
     when: "Jun 15–19, 2026",
     location: "London, UK",
@@ -77,6 +83,7 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
   },
   {
     name: "VentureBeat Transform 2026",
+    endsOn: "2026-07-15",
     organizer: "VentureBeat",
     when: "Jul 14–15, 2026",
     location: "San Francisco, CA",
@@ -86,6 +93,7 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
   },
   {
     name: "Black Hat USA 2026",
+    endsOn: "2026-08-06",
     organizer: "Black Hat",
     when: "Aug 1–6, 2026",
     location: "Las Vegas, NV",
@@ -95,6 +103,7 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
   },
   {
     name: "SIGGRAPH 2026",
+    endsOn: "2026-08-14",
     organizer: "ACM SIGGRAPH",
     when: "Aug 10–14, 2026",
     location: "Denver, CO",
@@ -104,6 +113,7 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
   },
   {
     name: "Salesforce Dreamforce 2026",
+    endsOn: "2026-09-18",
     organizer: "Salesforce",
     when: "Sep 15–18, 2026",
     location: "San Francisco, CA",
@@ -113,6 +123,7 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
   },
   {
     name: "AI Summit New York 2026",
+    endsOn: "2026-09-24",
     organizer: "AI Summit",
     when: "Sep 23–24, 2026",
     location: "New York, NY",
@@ -122,6 +133,7 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
   },
   {
     name: "TechCrunch Disrupt 2026",
+    endsOn: "2026-10-09",
     organizer: "TechCrunch",
     when: "Oct 7–9, 2026",
     location: "San Francisco, CA",
@@ -131,6 +143,7 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
   },
   {
     name: "GITEX Global 2026",
+    endsOn: "2026-10-16",
     organizer: "DWTC",
     when: "Oct 12–16, 2026",
     location: "Dubai, UAE",
@@ -140,6 +153,7 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
   },
   {
     name: "Gartner IT Symposium/Xpo 2026",
+    endsOn: "2026-10-22",
     organizer: "Gartner",
     when: "Oct 19–22, 2026",
     location: "Orlando, FL",
@@ -149,6 +163,7 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
   },
   {
     name: "OpenAI DevDay 2026",
+    endsOn: "2026-11-30",
     organizer: "OpenAI",
     when: "Oct/Nov 2026",
     location: "San Francisco, CA",
@@ -158,6 +173,7 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
   },
   {
     name: "Web Summit 2026",
+    endsOn: "2026-11-07",
     organizer: "Web Summit",
     when: "Nov 4–7, 2026",
     location: "Lisbon, Portugal",
@@ -167,6 +183,7 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
   },
   {
     name: "Microsoft Ignite 2026",
+    endsOn: "2026-11-14",
     organizer: "Microsoft",
     when: "Nov 10–14, 2026",
     location: "Chicago, IL + Online",
@@ -176,6 +193,7 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
   },
   {
     name: "AWS re:Invent 2026",
+    endsOn: "2026-12-05",
     organizer: "Amazon Web Services",
     when: "Dec 1–5, 2026",
     location: "Las Vegas, NV",
@@ -185,6 +203,7 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
   },
   {
     name: "CES 2027",
+    endsOn: "2027-01-09",
     organizer: "Consumer Technology Association",
     when: "Jan 6–9, 2027",
     location: "Las Vegas, NV",
@@ -194,6 +213,7 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
   },
   {
     name: "Mobile World Congress 2027",
+    endsOn: "2027-02-25",
     organizer: "GSMA",
     when: "Feb 22–25, 2027",
     location: "Barcelona, Spain",
@@ -202,6 +222,26 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
     url: "https://www.mwcbarcelona.com/",
   },
 ];
+
+/**
+ * Industry events that have not finished yet, soonest first.
+ *
+ * The list used to render verbatim, and `when` is display text ("Jun 9-13,
+ * 2026") that no code can compare against today — so every entry stayed on the
+ * page forever and the section filled up with conferences that had already
+ * happened. endsOn is the machine-readable counterpart; this drops anything
+ * past and keeps the rest in order, with no maintenance.
+ *
+ * Annual events whose next edition is not announced simply disappear until
+ * someone updates endsOn — better an honest gap than a wrong date.
+ */
+function upcomingTechEvents(now: Date = new Date()): TechEvent[] {
+  const today = now.toISOString().slice(0, 10);
+  return POPULAR_TECH_EVENTS
+    .filter((e) => e.endsOn >= today)
+    .sort((a, b) => a.endsOn.localeCompare(b.endsOn));
+}
+
 
 const FILTER_TABS = [
   { id: "all", label: "All" },
@@ -557,6 +597,10 @@ export default function EventsPage() {
     return e.type.toLowerCase() === activeFilter;
   });
 
+  // Computed once per mount rather than per render, so the list cannot shift
+  // underneath a re-render and server and client agree on the same day.
+  const upcomingEvents = useMemo(() => upcomingTechEvents(), []);
+
   return (
     <main className="min-h-screen bg-[#F4F7FB]">
       {/* Hero */}
@@ -620,16 +664,16 @@ export default function EventsPage() {
             )}
 
             {/* Popular Tech Events */}
-            {(activeFilter === "all" || activeFilter === "event") && (
+            {(activeFilter === "all" || activeFilter === "event") && upcomingEvents.length > 0 && (
               <div className="mt-16">
                 <div className="flex items-center gap-3 mb-6">
                   <div>
                     <h2 className="font-syne font-bold text-2xl text-[#0D1B2A]">Popular Industry Events</h2>
-                    <p className="font-dm text-sm text-[#7A8FA6] mt-1">Major tech conferences happening this year — stay informed.</p>
+                    <p className="font-dm text-sm text-[#7A8FA6] mt-1">Major tech conferences still ahead — stay informed.</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {POPULAR_TECH_EVENTS.map((ev) => (
+                  {upcomingEvents.map((ev) => (
                     <TechEventCard key={ev.name} ev={ev} />
                   ))}
                 </div>
