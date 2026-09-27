@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/claude";
 import { requireAdmin } from "@/lib/require-admin";
 
-type Platform = "linkedin" | "twitter" | "facebook" | "instagram";
+const PLATFORMS = ["linkedin", "twitter", "facebook", "instagram"] as const;
+type Platform = (typeof PLATFORMS)[number];
 
 async function postToLinkedIn(text: string, imageUrl?: string): Promise<{ success: boolean; url?: string; error?: string }> {
   const token = process.env.LINKEDIN_ACCESS_TOKEN;
@@ -93,11 +94,28 @@ export async function POST(req: NextRequest) {
     generate?: boolean;
   };
 
-  if (!platforms?.length) return NextResponse.json({ error: "At least one platform required" }, { status: 400 });
+  // Each entry is one Claude completion plus one live post to a company social
+  // account, so an unbounded or repeated `platforms` array was both a spend and
+  // a reputation problem. Accept each platform at most once.
+  const targets = Array.isArray(platforms)
+    ? [...new Set(platforms.filter((p): p is Platform => PLATFORMS.includes(p)))]
+    : [];
+  if (targets.length === 0) {
+    return NextResponse.json({ error: "At least one valid platform required" }, { status: 400 });
+  }
+  if (typeof topic === "string" && topic.length > 500) {
+    return NextResponse.json({ error: "topic too long" }, { status: 400 });
+  }
+  if (typeof tone === "string" && tone.length > 200) {
+    return NextResponse.json({ error: "tone too long" }, { status: 400 });
+  }
+  if (typeof customContent === "string" && customContent.length > 5000) {
+    return NextResponse.json({ error: "customContent too long" }, { status: 400 });
+  }
 
   const results: Record<string, { success: boolean; content?: string; url?: string; error?: string }> = {};
 
-  for (const platform of platforms) {
+  for (const platform of targets) {
     let content = customContent ?? "";
 
     if (generate || !customContent) {
