@@ -114,6 +114,23 @@ export function coverImageUrl(photoId: string): string {
   return `https://images.unsplash.com/${photoId}?${IMG_PARAMS}`;
 }
 
+/**
+ * A drawn cover, served by /api/blog/cover/[slug].
+ *
+ * Used once the photo pool is exhausted. The pool is finite and cannot be
+ * grown without verifying that each new photo ID still resolves, so beyond it
+ * the choice is a duplicate photo or a generated one — and a unique branded
+ * cover beats the same picture appearing on two articles.
+ */
+export function generatedCoverUrl(slug: string): string {
+  return `/api/blog/cover/${encodeURIComponent(slug)}`;
+}
+
+/** True for a cover this app draws rather than one from the photo pool. */
+export function isGeneratedCover(url: string | null | undefined): boolean {
+  return !!url && url.startsWith("/api/blog/cover/");
+}
+
 /** Extract the photo ID from a stored cover URL, for comparison. */
 export function photoIdFromUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -136,6 +153,8 @@ export interface PickResult {
   photoId: string;
   /** True when the pool was exhausted and an image had to be reused. */
   reused: boolean;
+  /** True when this is a drawn cover rather than one from the photo pool. */
+  generated?: boolean;
 }
 
 /**
@@ -160,8 +179,8 @@ export function pickCoverImage(slug: string, usedPhotoIds: Iterable<string>): Pi
     }
   }
 
-  const fallback = pool[start];
-  return { url: coverImageUrl(fallback), photoId: fallback, reused: true };
+  // Every photo is taken — draw one instead of handing back a duplicate.
+  return { url: generatedCoverUrl(slug), photoId: `generated:${slug}`, reused: false, generated: true };
 }
 
 /** How many distinct covers are available. */

@@ -41,10 +41,9 @@ export async function assignCoverImage(
 ): Promise<PickResult> {
   const used = await getUsedCoverPhotoIds(excludePostId);
   const result = pickCoverImage(slug, used);
-  if (result.reused) {
-    console.warn(
-      `[blog-cover] Cover pool exhausted (${used.size} in use) — reused an image for "${slug}". ` +
-        `Add more IDs to COVER_IMAGE_POOL in lib/blog-images.ts.`,
+  if (result.generated) {
+    console.info(
+      `[blog-cover] Photo pool full (${used.size} in use) — drew a cover for "${slug}".`,
     );
   }
   return result;
