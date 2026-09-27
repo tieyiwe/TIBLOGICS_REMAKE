@@ -36,7 +36,8 @@ const nextConfig = {
     ],
   },
   experimental: {
-    optimizePackageImports: ["lucide-react", "@radix-ui/react-icons"],
+    // @radix-ui/react-icons was listed here but was never a dependency.
+    optimizePackageImports: ["lucide-react"],
   },
   async redirects() {
     return [

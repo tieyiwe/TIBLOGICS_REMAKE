@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { Bot, Zap, Brain, Globe, Shield, BarChart3, Smartphone, GraduationCap, Cpu, ArrowRight } from "lucide-react";
 import SmartRecommendations from "@/components/public/SmartRecommendations";
-import VideoEmbed from "@/components/video/VideoEmbed";
+import VideoEmbed from "@/components/video/LazyVideoEmbed";
 import { trackPageVisit } from "@/lib/recommendations";
 
 // Split into what we lead with and what we round out with. Nine equal cards
