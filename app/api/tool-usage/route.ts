@@ -29,10 +29,10 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    // Fire-and-forget analytics: the caller does not read the result and cannot
+    // act on a failure, so a 500 here only produced a console error on every
+    // page that uses a tool. Record it server-side and stay quiet.
     console.error("[POST /api/tool-usage]", error);
-    return NextResponse.json(
-      { error: "Failed to log tool usage" },
-      { status: 500 }
-    );
+    return new NextResponse(null, { status: 204 });
   }
 }

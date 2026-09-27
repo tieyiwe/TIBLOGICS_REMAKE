@@ -602,9 +602,9 @@ export default function EventsPage() {
   const upcomingEvents = useMemo(() => upcomingTechEvents(), []);
 
   return (
-    <main className="min-h-screen bg-[#F4F7FB]">
+    <div className="min-h-screen bg-[#F4F7FB]">
       {/* Hero */}
-      <section className="bg-gradient-to-br from-[#0D1B2A] via-[#1B3A6B] to-[#2251A3] text-white py-20 px-4">
+      <section className="bg-gradient-to-br from-[#0D1B2A] via-[#1B3A6B] to-[#2251A3] text-white pt-32 sm:pt-44 pb-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-6">
             <span className="text-[#F47C20] text-sm">🎓</span>
@@ -620,7 +620,7 @@ export default function EventsPage() {
       </section>
 
       {/* Filter Tabs */}
-      <section className="bg-white border-b border-[#D2DCE8] sticky top-0 z-10">
+      <section className="bg-white border-b border-[#D2DCE8] sticky top-[89px] lg:top-[137px] z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-1 overflow-x-auto py-3 scrollbar-hide">
             {FILTER_TABS.map((tab) => (
@@ -650,9 +650,11 @@ export default function EventsPage() {
           </div>
         ) : (
           <>
-            {filtered.length === 0 && activeFilter !== "all" ? (
+            {filtered.length === 0 ? (
               <div className="text-center py-16">
-                <p className="font-syne font-bold text-xl text-[#1B3A6B] mb-2">No {activeFilter}s yet</p>
+                <p className="font-syne font-bold text-xl text-[#1B3A6B] mb-2">
+                  {activeFilter === "all" ? "No TIBLOGICS events scheduled right now" : `No ${activeFilter}s yet`}
+                </p>
                 <p className="font-dm text-[#7A8FA6]">Check back soon or explore other categories.</p>
               </div>
             ) : (
@@ -698,6 +700,6 @@ export default function EventsPage() {
           </>
         )}
       </section>
-    </main>
+    </div>
   );
 }

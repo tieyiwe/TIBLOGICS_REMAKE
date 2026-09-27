@@ -149,12 +149,25 @@ export default function EchelonFloat() {
     return () => clearTimeout(timer);
   }, [isAdmin]);
 
+  // Withdraw the greeting on its own. It is positioned over the primary CTA on
+  // several pages, so leaving it up until someone finds a 12px close button
+  // meant it blocked the main action indefinitely for anyone who ignored it.
+  useEffect(() => {
+    if (!showGreeting) return;
+    const t = setTimeout(() => setShowGreeting(false), 8_000);
+    return () => clearTimeout(t);
+  }, [showGreeting]);
+
   // Keep isOpenRef current so idle-timer closure doesn't see stale value
   useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
 
   // Idle re-engagement: show greeting after 45s, but only if chat is closed AND blog CTA is not on screen
   useEffect(() => {
     if (isAdmin || isOpen) return;
+    // Respect an explicit dismissal. This timer used to ignore it, so closing
+    // the greeting bought 45 seconds before it reappeared — on every page, for
+    // the whole session.
+    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem("tibo_dismissed")) return;
     const timer = setTimeout(() => {
       if (!isOpenRef.current && !ctaVisibleRef.current) {
         setShowGreeting(true);
@@ -602,6 +615,7 @@ export default function EchelonFloat() {
 
       {/* Greeting bubble */}
       {showGreeting && !isOpen && (
+
         <div
           className="fixed bottom-[148px] sm:bottom-24 right-4 sm:right-6 z-50 tibo-fade-in cursor-pointer"
           onClick={() => { setShowGreeting(false); setIsOpen(true); }}
@@ -610,8 +624,12 @@ export default function EchelonFloat() {
         >
           <div className="relative bg-white border border-[#D2DCE8] rounded-2xl shadow-xl px-4 py-3 max-w-[220px]">
             <button
-              onClick={(e) => { e.stopPropagation(); setShowGreeting(false); }}
-              className="absolute top-2 right-2 text-[#B0BEC5] hover:text-[#3A4A5C] transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowGreeting(false);
+                try { sessionStorage.setItem("tibo_dismissed", "1"); } catch { /* private mode */ }
+              }}
+              className="absolute top-0 right-0 w-10 h-10 flex items-center justify-center text-[#B0BEC5] hover:text-[#3A4A5C] transition-colors"
               aria-label="Dismiss"
             >
               <X size={12} />

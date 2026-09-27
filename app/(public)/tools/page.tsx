@@ -72,7 +72,7 @@ export default function ToolsPage() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <h2 className="font-syne font-bold text-lg text-[#0D1B2A]">{t.name}</h2>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${t.tag === "Paid" ? "bg-[#7c3aed]/10 text-[#7c3aed]" : "bg-green-100 text-green-700"}`}>
+                  <span className={`shrink-0 whitespace-nowrap text-xs font-bold px-2 py-0.5 rounded-full ${t.tag === "Paid" ? "bg-[#7c3aed]/10 text-[#7c3aed]" : "bg-green-100 text-green-700"}`}>
                     {t.tag}
                   </span>
                 </div>

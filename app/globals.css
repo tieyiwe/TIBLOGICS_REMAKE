@@ -61,11 +61,11 @@
 
 @layer components {
   .section-tag {
-    @apply text-[0.67rem] font-bold tracking-[0.13em] uppercase text-[#F47C20];
+    @apply text-[0.8125rem] font-bold tracking-[0.13em] uppercase text-[#B8500A];
   }
 
   .btn-primary {
-    @apply bg-[#F47C20] hover:bg-[#E05F00] text-white font-semibold rounded-lg px-5 py-2.5 transition-colors duration-200 inline-flex items-center gap-2;
+    @apply bg-[#B8500A] hover:bg-[#E05F00] text-white font-semibold rounded-lg px-5 py-2.5 transition-colors duration-200 inline-flex items-center gap-2;
   }
 
   .btn-secondary {

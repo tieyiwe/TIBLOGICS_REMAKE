@@ -7,7 +7,7 @@ import { Home, Wrench, BookOpen, CalendarDays, MessageCircle } from "lucide-reac
 const tabs = [
   { icon: Home,         label: "Home",    href: "/" },
   { icon: Wrench,       label: "Tools",   href: "/tools" },
-  { icon: BookOpen,     label: "AI TIMES", href: "/blog" },
+  { icon: BookOpen,     label: "AI TIMES", href: "/ai-times" },
   { icon: CalendarDays, label: "Book",    href: "/book" },
 ];
 
@@ -36,8 +36,8 @@ export default function MobileBottomNav() {
             <Link
               key={href}
               href={href}
-              className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-dm font-medium transition-all active:scale-95 ${
-                active ? "text-[#1B3A6B]" : "text-[#7A8FA6]"
+              className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 text-[11px] font-dm font-medium transition-all active:scale-95 ${
+                active ? "text-[#1B3A6B]" : "text-[#5A6E85]"
               }`}
             >
               {active && (
@@ -52,7 +52,7 @@ export default function MobileBottomNav() {
         {/* Tibo chat tab */}
         <button
           onClick={openTibo}
-          className="relative flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-dm font-medium text-[#7A8FA6] transition-all active:scale-95"
+          className="relative flex-1 flex flex-col items-center justify-center gap-0.5 text-[11px] font-dm font-medium text-[#5A6E85] transition-all active:scale-95"
         >
           <div className="relative">
             <MessageCircle size={21} strokeWidth={1.8} />
