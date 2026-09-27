@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
+import { rateLimit, secretEquals } from "@/lib/require-admin";
 
 async function getWebhookToken(): Promise<string | null> {
   const setting = await prisma.adminSettings.findUnique({ where: { key: "cc_webhook_token" } });
@@ -14,11 +15,18 @@ function fuzzyMatchTask(tasks: { id: string; text: string; done: boolean }[], ta
 }
 
 export async function POST(req: NextRequest) {
+  // The token is the only credential on this endpoint and it creates and edits
+  // projects, so bound guessing and compare in constant time.
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  if (!rateLimit(`cc-webhook:${ip}`, 30, 60_000)) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const authHeader = req.headers.get("authorization");
   const token = authHeader?.replace("Bearer ", "").trim();
 
   const storedToken = await getWebhookToken();
-  if (!storedToken || token !== storedToken) {
+  if (!secretEquals(token, storedToken ?? undefined)) {
     return NextResponse.json({ error: "Invalid or missing token" }, { status: 401 });
   }
 
