@@ -79,7 +79,10 @@ export async function POST() {
         fileSizeBytes: sizeBytes,
         downloadDays: 365,
         maxDownloads: 10,
-        featured: true, // all four rotate through the spotlight
+        // Exactly one pack is featured, set per-pack in prompt-packs.ts.
+        // This was hardcoded true, so every pack was featured and the
+        // spotlight rotated through all of them whether or not that was wanted.
+        featured: pack.featured ?? false,
         // Only publish if the file is genuinely there.
         published: sizeBytes !== null,
       };

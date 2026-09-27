@@ -22,6 +22,12 @@ export interface PromptPackSeed {
   coverImage: string;
   /** Order within the collection; lower shows first before rotation applies. */
   sortOrder: number;
+  /**
+   * Whether this pack gets the storefront spotlight. Exactly one is featured
+   * at a time — the seed used to mark every pack featured, which turned the
+   * spotlight into a rotation nobody chose.
+   */
+  featured?: boolean;
 }
 
 /** Every pack in this line sells at the same point — low-ticket, traffic-driving. */
@@ -58,6 +64,58 @@ Works with any major AI tool. No subscription, no login, no software to install 
 }
 
 export const PROMPT_PACKS: PromptPackSeed[] = [
+  // ─────────────────────────────────────────────────────────────────────────
+  {
+    slug: "the-realtor-ai-toolkit",
+    name: "The Realtor AI Toolkit",
+    tagline: "100 Tested, Powerful Prompts to Save 10+ Hours a Week",
+    shortDescription:
+      "100 ready-to-use ChatGPT and Claude prompts built for real estate agents: listing descriptions, lead follow-up, negotiation scripts, client emails and the awkward conversations that come with the job.",
+    description: `Real estate runs on writing. The listing that has to sound appealing and stay accurate, the follow-up to a lead who went quiet, the message to a seller whose price is wrong. None of it is the job you trained for, and all of it eats the week.
+
+## What's inside
+
+100 prompts across nine categories:
+
+1. **Client Communication** — welcome emails, weekly seller updates, closing-day checklists, the 30-day check-in
+2. **Listing Descriptions & Property Marketing** — MLS copy for houses, condos, land and luxury
+3. **Social Media & Content** — posts that market the listing without sounding like a billboard
+4. **Lead Generation & Follow-Up** — the follow-ups that get answered, including to leads who went cold
+5. **Objection Handling & Negotiation** — commission pushback, lowball offers, the price conversation
+6. **Showings, Open Houses & Buyer Support** — before, during and after
+7. **Transactions, Operations & SOPs** — the paperwork layer that quietly consumes days
+8. **Market Research, Pricing & Business Planning** — CMAs, market updates, your own pipeline
+9. **Difficult Situations & Reputation** — bad reviews, restricted showings, expiring listings, buyers who keep losing offers
+
+Plus **10 bonus power prompts** — including turning one fact sheet into a full listing launch package, and 30 days of content from a single input.
+
+## The Fair Housing note
+
+This pack is written Fair Housing aware. AI will happily produce a listing description that describes the *buyer* rather than the *property*, or slip in language about a neighbourhood that creates real liability. The prompts are built to avoid that, and the guidance flags what to strip before anything is published. Generic prompt packs do not do this, and in real estate it is not a small detail.
+
+## Who it's for
+
+Agents, brokers and teams — solo or in a brokerage. No AI experience needed. If you can paste text into a chat box, you can use every prompt here.
+
+## Why it saves time
+
+The hours don't go into showings. They go into everything around them: the description rewritten four times, the follow-up you keep meaning to send, the market update you owe a seller. This pack handles that layer so your attention goes back to the clients and the deals.
+
+${format(46, 100)}`,
+    tags: [
+      "AI prompts for realtors",
+      "ChatGPT prompts real estate",
+      "listing description generator",
+      "real estate lead follow-up",
+    ],
+    fileKey: "the-realtor-ai-toolkit.pdf",
+    fileName: "The-Realtor-AI-Toolkit.pdf",
+    pages: 46,
+    prompts: 100,
+    coverImage: "/shop/covers/the-realtor-ai-toolkit.png",
+    sortOrder: 0,
+    featured: true,
+  },
   // ─────────────────────────────────────────────────────────────────────────
   {
     slug: "the-finance-professionals-ai-toolkit",
