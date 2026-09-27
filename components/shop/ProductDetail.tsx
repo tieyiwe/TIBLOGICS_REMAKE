@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ShoppingBag, Check, ArrowLeft, ShieldCheck, Zap, Plus, Minus } from "lucide-react";
+import { ShoppingBag, Check, ArrowLeft, ShieldCheck, Zap, Plus, Minus, ChevronDown } from "lucide-react";
 import { useCart } from "./CartContext";
 import { formatMoney, type ShopProduct } from "./types";
 
@@ -26,41 +26,89 @@ const dm = "var(--font-dm-sans), sans-serif";
  * introduce a block read as headings rather than being lost in the paragraphs.
  */
 function ProductCopy({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+
   const blocks = text.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
+
+  // Show enough to know what this is, not the whole document. The full copy
+  // runs long enough to push related products off the bottom of the page,
+  // which costs more in browsing than the detail wins in persuasion.
+  const PREVIEW_BLOCKS = 4;
+  // Long lists get clipped too, otherwise the preview is either the whole
+  // contents or nothing: showing a few categories is the point.
+  const PREVIEW_LIST_ITEMS = 4;
+  const hasMore = blocks.length > PREVIEW_BLOCKS;
+  const shown = expanded || !hasMore ? blocks : blocks.slice(0, PREVIEW_BLOCKS);
+  const clipLists = hasMore && !expanded;
+
+  const render = (block: string, i: number) => {
+    const lines = block.split("\n").map((l) => l.trim()).filter(Boolean);
+
+    if (lines.length === 1 && lines[0].length <= 60 && !/[.:!?]$/.test(lines[0])) {
+      return (
+        <h4
+          key={i}
+          style={{
+            fontFamily: syne, fontWeight: 700, fontSize: ".95rem",
+            color: "#DCE7EA", margin: i === 0 ? "0 0 8px" : "22px 0 8px",
+          }}
+        >
+          {lines[0]}
+        </h4>
+      );
+    }
+
+    if (lines.length > 1 && lines.every((l) => l.length <= 150)) {
+      const items = clipLists ? lines.slice(0, PREVIEW_LIST_ITEMS) : lines;
+      return (
+        <ul key={i} style={{ margin: "0 0 14px", paddingLeft: "18px" }}>
+          {items.map((l) => (
+            <li key={l} style={{ marginBottom: "6px" }}>{l}</li>
+          ))}
+        </ul>
+      );
+    }
+
+    return <p key={i} style={{ margin: "0 0 14px" }}>{block}</p>;
+  };
 
   return (
     <div style={{ color: "#B0C4CC", fontSize: ".92rem", lineHeight: 1.75 }}>
-      {blocks.map((block, i) => {
-        const lines = block.split("\n").map((l) => l.trim()).filter(Boolean);
+      <div style={{ position: "relative" }}>
+        {shown.map(render)}
 
-        // A lone short line with no sentence-ending punctuation is a heading.
-        if (lines.length === 1 && lines[0].length <= 60 && !/[.:!?]$/.test(lines[0])) {
-          return (
-            <h4
-              key={i}
-              style={{
-                fontFamily: syne, fontWeight: 700, fontSize: ".95rem",
-                color: "#DCE7EA", margin: i === 0 ? "0 0 8px" : "22px 0 8px",
-              }}
-            >
-              {lines[0]}
-            </h4>
-          );
-        }
+        {/* Fade the cut edge so it reads as "continues" rather than "ends" */}
+        {hasMore && !expanded && (
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute", left: 0, right: 0, bottom: 0, height: "48px",
+              background: `linear-gradient(to bottom, rgba(19,26,27,0), ${S.dark})`,
+              pointerEvents: "none",
+            }}
+          />
+        )}
+      </div>
 
-        // Several short lines in a row are a list.
-        if (lines.length > 1 && lines.every((l) => l.length <= 150)) {
-          return (
-            <ul key={i} style={{ margin: "0 0 14px", paddingLeft: "18px" }}>
-              {lines.map((l) => (
-                <li key={l} style={{ marginBottom: "6px" }}>{l}</li>
-              ))}
-            </ul>
-          );
-        }
-
-        return <p key={i} style={{ margin: "0 0 14px" }}>{block}</p>;
-      })}
+      {hasMore && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: "7px",
+            marginTop: expanded ? "14px" : "4px",
+            background: "none", border: "none", cursor: "pointer", padding: 0,
+            color: S.orange, fontFamily: dm, fontSize: ".88rem", fontWeight: 700,
+          }}
+        >
+          {expanded ? "Show less" : `Read what's inside`}
+          <ChevronDown
+            size={15}
+            style={{ transition: "transform .2s", transform: expanded ? "rotate(180deg)" : undefined }}
+          />
+        </button>
+      )}
     </div>
   );
 }
