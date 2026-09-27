@@ -370,11 +370,29 @@ function NotifyModal({ eventName, eventSlug, onClose }: { eventName: string; eve
   );
 }
 
+/**
+ * Has this event's last session already happened?
+ *
+ * Read from the date rather than from registrationOpen, because the flag is set
+ * by hand and nobody remembers to clear it. The June cohort sat on this page
+ * badged "Open Now" and taking $849 registrations for three months after it
+ * finished. A date in the past now closes an event on its own.
+ */
+function hasFinished(event: EventItem, now: Date = new Date()): boolean {
+  const last = event.endDate ?? event.date;
+  if (!last) return false; // "date TBA" is not a past event
+  const end = new Date(last);
+  if (isNaN(end.getTime())) return false;
+  // Give the final day its full length rather than closing it at midnight.
+  return end.getTime() + 24 * 60 * 60 * 1000 < now.getTime();
+}
+
 function EventCard({ event }: { event: EventItem }) {
   const [notifyOpen, setNotifyOpen] = useState(false);
   const isFree = event.price === 0;
   const typeColor = TYPE_COLORS[event.type] ?? "bg-gray-100 text-gray-700";
-  const isOpen = event.registrationOpen;
+  const finished = hasFinished(event);
+  const isOpen = event.registrationOpen && !finished;
 
   const gradientBorder = isOpen
     ? "linear-gradient(135deg, #22c55e, #16a34a)"
@@ -397,6 +415,12 @@ function EventCard({ event }: { event: EventItem }) {
           <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-green-500 text-white text-xs font-dm font-semibold px-3 py-1 rounded-full shadow">
             <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse inline-block" />
             Open Now
+          </div>
+        ) : finished ? (
+          // A cohort that has run is neither open nor coming: saying "Coming
+          // Soon" over a date that has passed is worse than saying nothing.
+          <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-[#3A4A5C] text-white text-xs font-dm font-semibold px-3 py-1 rounded-full shadow">
+            Completed
           </div>
         ) : (
           <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-[#F47C20] text-white text-xs font-dm font-semibold px-3 py-1 rounded-full shadow">

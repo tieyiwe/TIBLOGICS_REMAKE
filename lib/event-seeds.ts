@@ -1,7 +1,12 @@
-// Canonical seed for the current live training event. Shared between the public
-// event page (lazy-create on first visit) and the admin Events API (ensure it
-// always appears in the dashboard). Editing the event in admin never overwrites
-// these values — they are create-only defaults.
+// Create-only seeds for the training events. Shared between the public event
+// page (lazy-create on first visit) and the admin Events API (so they always
+// appear in the dashboard). Editing an event in admin never overwrites these
+// values.
+//
+// Keeping a finished cohort here as `registrationOpen: true` meant a fresh
+// database recreated a past event badged "Open Now" and taking $849
+// registrations. Dates and open/closed state for a NEW cohort belong in admin,
+// not in this file.
 import type { Prisma } from "@prisma/client";
 
 export const TRAINING_EVENT_SLUG = "ai-practical-training-cohort-1";
@@ -24,9 +29,13 @@ export const TRAINING_EVENT_SEED: Prisma.EventCreateInput = {
   coverImage:
     "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=1200&q=80",
   tags: ["ai", "training", "practical", "cohort", "live", "zoom"],
-  featured: true,
+  // This cohort has run. Left published so its page and the certificates that
+  // link to it keep working, but not featured and not taking registrations —
+  // the API refuses a finished cohort regardless, and the card reads
+  // "Completed" rather than "Open Now".
+  featured: false,
   published: true,
-  registrationOpen: true,
+  registrationOpen: false,
 };
 
 // ── Parents AI Training — coming soon ────────────────────────────────────────

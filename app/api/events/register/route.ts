@@ -25,7 +25,9 @@ export async function POST(req: NextRequest) {
 
     const {
       firstName, lastName, email, whatsapp, role, goal, referral,
-      paymentMethod, event: eventName, eventSlug: bodySlug, price, currency, location,
+      // price, currency and location deliberately NOT taken from the body —
+      // they come from the Event row below.
+      paymentMethod, event: eventName, eventSlug: bodySlug,
       numSeats, additionalParticipants,
     } = body;
 
@@ -43,18 +45,67 @@ export async function POST(req: NextRequest) {
     };
     const eventSlug = bodySlug ?? slugMap[eventName] ?? eventName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
+    // The event has to exist, and its name, price and currency come from the
+    // row — not from the request. They were read straight off the body, and
+    // `price` feeds the Stripe line items for seats 2 and up, so a group
+    // booking could be checked out at any amount the caller chose, zero
+    // included. It also meant a registration could be recorded against an
+    // event name that does not exist.
+    const eventRow = await prisma.event.findUnique({
+      where: { slug: eventSlug },
+      select: {
+        title: true, price: true, currency: true, published: true,
+        registrationOpen: true, date: true, endDate: true, spots: true,
+      },
+    });
+    if (!eventRow || !eventRow.published) {
+      return NextResponse.json({ error: "That event could not be found." }, { status: 404 });
+    }
+
+    // A cohort that has already run must not keep taking registrations. The
+    // June cohort was still open three months after it finished, because
+    // registrationOpen is set by hand and nobody clears it.
+    const lastSession = eventRow.endDate ?? eventRow.date;
+    const hasFinished =
+      !!lastSession && lastSession.getTime() + 24 * 60 * 60 * 1000 < Date.now();
+    if (!eventRow.registrationOpen || hasFinished) {
+      return NextResponse.json(
+        {
+          error: hasFinished
+            ? "That cohort has finished. Join the waitlist and we will tell you when the next one opens."
+            : "Registration for that event is not open yet.",
+        },
+        { status: 409 },
+      );
+    }
+
+    if (typeof eventRow.spots === "number" && eventRow.spots < seats) {
+      return NextResponse.json(
+        {
+          error:
+            eventRow.spots <= 0
+              ? "That cohort is full."
+              : `Only ${eventRow.spots} seat${eventRow.spots === 1 ? "" : "s"} left.`,
+        },
+        { status: 409 },
+      );
+    }
+
+    const resolvedEventName = eventRow.title;
+    const resolvedCurrency = eventRow.currency;
+    // Stored in cents on the row already, so no conversion here.
+    const priceInt = eventRow.price;
+
     // Generate unique confirmation number (retry once on collision)
     let confirmationNumber = generateConfirmationNumber();
     const existing = await prisma.eventRegistration.findUnique({ where: { confirmationNumber } });
     if (existing) confirmationNumber = generateConfirmationNumber();
 
-    const priceInt = typeof price === "number" ? Math.round(price * 100) : 0;
-
     // Create primary registration
     const registration = await prisma.eventRegistration.create({
       data: {
         eventSlug,
-        eventName: eventName.slice(0, 200),
+        eventName: resolvedEventName.slice(0, 200),
         firstName: firstName.slice(0, 100),
         lastName: lastName.slice(0, 100),
         email: email.toLowerCase().trim().slice(0, 200),
@@ -64,7 +115,7 @@ export async function POST(req: NextRequest) {
         referral: referral ? String(referral).slice(0, 200) : null,
         paymentMethod: paymentMethod.slice(0, 50),
         price: priceInt,
-        currency: currency ?? "USD",
+        currency: resolvedCurrency,
         status: "pending",
         confirmationNumber,
       },
@@ -83,13 +134,13 @@ export async function POST(req: NextRequest) {
           await prisma.eventRegistration.create({
             data: {
               eventSlug,
-              eventName: eventName.slice(0, 200),
+              eventName: resolvedEventName.slice(0, 200),
               firstName: String(p.firstName ?? "").slice(0, 100),
               lastName: String(p.lastName ?? "").slice(0, 100),
               email: String(p.email ?? "").toLowerCase().trim().slice(0, 200),
               paymentMethod: paymentMethod.slice(0, 50),
               price: priceInt,
-              currency: currency ?? "USD",
+              currency: resolvedCurrency,
               status: "pending",
               confirmationNumber: cn,
               notes: `Group booking with ${confirmationNumber} (seat ${i + 2} of ${seats})`,
@@ -120,7 +171,7 @@ export async function POST(req: NextRequest) {
         ).replace(/\/$/, "");
 
         // Tiered seat pricing: seat 1 full, seat 2 −17%, seat 3 −23%, seat 4 −25%, seat 5+ full
-        const curr = (currency ?? "usd").toLowerCase();
+        const curr = resolvedCurrency.toLowerCase();
         const lineItems: object[] = [{ price: priceId, quantity: 1 }]; // seat 1 full price
         const discounts: Array<{ label: string; rate: number }> = [
           { label: "17% group discount", rate: 0.83 },
@@ -131,7 +182,7 @@ export async function POST(req: NextRequest) {
           lineItems.push({
             price_data: {
               currency: curr,
-              product_data: { name: `${eventName} — Seat ${i + 1} (${discounts[i - 1].label})` },
+              product_data: { name: `${resolvedEventName} — Seat ${i + 1} (${discounts[i - 1].label})` },
               unit_amount: Math.round(priceInt * discounts[i - 1].rate),
             },
             quantity: 1,
@@ -142,7 +193,7 @@ export async function POST(req: NextRequest) {
           lineItems.push({
             price_data: {
               currency: curr,
-              product_data: { name: `${eventName} — Additional Seats (standard rate)` },
+              product_data: { name: `${resolvedEventName} — Additional Seats (standard rate)` },
               unit_amount: priceInt,
             },
             quantity: seats - 4,
