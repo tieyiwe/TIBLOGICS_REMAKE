@@ -162,7 +162,7 @@ export default function BlogPageClient({ initialPosts }: { initialPosts: BlogPos
             AI TIMES
           </h1>
           <p className="font-syne font-bold text-[#F47C20] text-xl md:text-2xl mt-2 tracking-wide">
-            The #1 AI Digestable Knowledge
+            The #1 AI Digestible Knowledge
           </p>
           <p className="font-dm text-[#3A4A5C] text-base mt-2 max-w-xl mx-auto">
             Practical AI knowledge for businesses, builders, and curious minds.
@@ -175,6 +175,7 @@ export default function BlogPageClient({ initialPosts }: { initialPosts: BlogPos
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            aria-label="Search articles"
             placeholder="Search posts…"
             className="w-full pl-11 pr-4 py-3 bg-white border border-[#D2DCE8] rounded-2xl text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3] shadow-sm"
           />

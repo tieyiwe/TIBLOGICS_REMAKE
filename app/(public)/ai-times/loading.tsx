@@ -12,7 +12,7 @@ export default function BlogLoading() {
             AI TIMES
           </h1>
           <p className="font-syne font-bold text-[#F47C20] text-xl md:text-2xl mt-2 tracking-wide">
-            The #1 AI Digestable Knowledge
+            The #1 AI Digestible Knowledge
           </p>
           <p className="font-dm text-[#3A4A5C] text-base mt-2 max-w-xl mx-auto">
             Practical AI knowledge for businesses, builders, and curious minds.

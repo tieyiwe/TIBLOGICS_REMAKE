@@ -41,20 +41,20 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <div className="mb-3">
-              <Image src="/footer-logo-transparent.png" alt="TIBLOGICS" width={192} height={96} className="h-24 w-auto" />
+              <Image src="/footer-logo-light.png" alt="TIBLOGICS" width={192} height={96} className="h-24 w-auto" />
             </div>
-            <p className="text-[#7A9BBF] text-sm font-dm leading-relaxed mb-4">
+            <p className="text-[#9DB9D6] text-sm font-dm leading-relaxed mb-4">
               We create the right logics to fulfill your technical needs. AI-first.
               Tech-complete. North America, Africa & beyond.
             </p>
             <a
               href="mailto:info@tiblogics.com"
-              className="inline-flex items-center gap-2 text-[#F47C20] hover:text-[#FEF0E3] text-sm font-dm font-medium transition-colors"
+              className="inline-flex items-center gap-2 text-[#F9A738] hover:text-[#FEF0E3] text-sm font-dm font-medium transition-colors"
             >
               <Mail size={14} />
               info@tiblogics.com
             </a>
-            <div className="flex items-center gap-2 text-[#7A9BBF] text-sm font-dm mt-2">
+            <div className="flex items-center gap-2 text-[#9DB9D6] text-sm font-dm mt-2">
             </div>
           </div>
 
@@ -68,7 +68,7 @@ export default function Footer() {
                 <li key={s}>
                   <Link
                     href="/services"
-                    className="text-[#7A9BBF] hover:text-white text-sm font-dm transition-colors"
+                    className="text-[#9DB9D6] hover:text-white text-sm font-dm transition-colors"
                   >
                     {s}
                   </Link>
@@ -87,7 +87,7 @@ export default function Footer() {
                 <li key={p.label}>
                   <Link
                     href={p.href}
-                    className="text-[#7A9BBF] hover:text-white text-sm font-dm transition-colors"
+                    className="text-[#9DB9D6] hover:text-white text-sm font-dm transition-colors"
                   >
                     {p.label}
                   </Link>
@@ -106,7 +106,7 @@ export default function Footer() {
                 <li key={c.label}>
                   <Link
                     href={c.href}
-                    className="text-[#7A9BBF] hover:text-white text-sm font-dm transition-colors"
+                    className="text-[#9DB9D6] hover:text-white text-sm font-dm transition-colors"
                   >
                     {c.label}
                   </Link>
@@ -118,14 +118,14 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="border-t border-[#2251A3]/40 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-[#7A9BBF] text-xs font-dm">
+          <p className="text-[#9DB9D6] text-xs font-dm">
             © 2026 TIBLOGICS. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
-            <Link href="/privacy" className="text-[#7A9BBF] hover:text-white text-xs font-dm transition-colors">
+            <Link href="/privacy" className="text-[#9DB9D6] hover:text-white text-xs font-dm transition-colors">
               Privacy Policy
             </Link>
-            <Link href="/terms" className="text-[#7A9BBF] hover:text-white text-xs font-dm transition-colors">
+            <Link href="/terms" className="text-[#9DB9D6] hover:text-white text-xs font-dm transition-colors">
               Terms of Service
             </Link>
           </div>

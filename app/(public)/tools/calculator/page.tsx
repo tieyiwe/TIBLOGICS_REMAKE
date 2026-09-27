@@ -184,6 +184,7 @@ export default function CalculatorPage() {
                   </span>
                 </div>
                 <input
+                  aria-label="Input tokens per request"
                   type="range"
                   min={100}
                   max={8000}
@@ -193,7 +194,7 @@ export default function CalculatorPage() {
                     setUseCase("custom");
                     setInputTokens(Number(e.target.value));
                   }}
-                  className="w-full accent-[#F47C20]"
+                  className="w-full py-4 -my-4 accent-[#B8500A]"
                 />
               </div>
 
@@ -205,6 +206,7 @@ export default function CalculatorPage() {
                   </span>
                 </div>
                 <input
+                  aria-label="Output tokens per request"
                   type="range"
                   min={50}
                   max={4000}
@@ -214,7 +216,7 @@ export default function CalculatorPage() {
                     setUseCase("custom");
                     setOutputTokens(Number(e.target.value));
                   }}
-                  className="w-full accent-[#F47C20]"
+                  className="w-full py-4 -my-4 accent-[#B8500A]"
                 />
               </div>
 
@@ -226,6 +228,7 @@ export default function CalculatorPage() {
                   </span>
                 </div>
                 <input
+                  aria-label="Monthly requests"
                   type="range"
                   min={100}
                   max={100000}
@@ -235,7 +238,7 @@ export default function CalculatorPage() {
                     setUseCase("custom");
                     setMonthlyRequests(Number(e.target.value));
                   }}
-                  className="w-full accent-[#F47C20]"
+                  className="w-full py-4 -my-4 accent-[#B8500A]"
                 />
               </div>
 
@@ -245,13 +248,14 @@ export default function CalculatorPage() {
                   <span className="font-dm text-sm font-semibold text-[#0D1B2A]">{marginPct}%</span>
                 </div>
                 <input
+                  aria-label="Cache hit rate"
                   type="range"
                   min={10}
                   max={300}
                   step={5}
                   value={marginPct}
                   onChange={(e) => setMarginPct(Number(e.target.value))}
-                  className="w-full accent-[#F47C20]"
+                  className="w-full py-4 -my-4 accent-[#B8500A]"
                 />
               </div>
             </div>

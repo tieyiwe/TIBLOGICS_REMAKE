@@ -72,7 +72,7 @@ export default function StoreFront({
             <span style={{ fontSize: ".8rem", color: S.amber, fontWeight: 600 }}>The TIBLOGICS Store</span>
           </div>
           <h1 style={{ fontFamily: syne, fontWeight: 800, fontSize: "clamp(2.4rem,5vw,4rem)", lineHeight: 1.08, marginBottom: "18px" }}>
-            Premium tools.<br />
+            Premium tools.{" "}<br />
             <span style={{ background: "linear-gradient(135deg,#F47C4C,#F9A738)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Instant access.</span>
           </h1>
           <p style={{ color: "#B0C4CC", fontSize: "1.05rem", lineHeight: 1.7, maxWidth: "520px", margin: "0 auto" }}>
@@ -156,7 +156,7 @@ export default function StoreFront({
             </button>
           ))}
         </div>
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search products…"
+        <input aria-label="Search products" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search products…"
           style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: "50px", padding: "9px 18px", color: "#fff", fontSize: ".85rem", fontFamily: dm, minWidth: "200px", outline: "none" }} />
       </section>
 

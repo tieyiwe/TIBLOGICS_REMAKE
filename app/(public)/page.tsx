@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Hero from "@/components/public/Hero";
-import StatsBar from "@/components/public/StatsBar";
 import AIBanner from "@/components/public/AIBanner";
 import { Bot, Zap, Brain } from "lucide-react";
 
@@ -65,7 +64,10 @@ export default function HomePage() {
   return (
     <>
       <Hero />
-      <StatsBar />
+      {/* StatsBar is not rendered: all four of its values are hardcoded null in
+          components/public/StatsBar.tsx, so it drew a navy band of labels with no
+          numbers above them, directly above a panel that does show real figures.
+          Put the real numbers in that file and restore this line. */}
 
       {/* AI Banner */}
       <section className="py-6 bg-white">

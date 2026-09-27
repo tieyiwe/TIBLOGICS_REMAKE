@@ -340,7 +340,7 @@ export default function BlogPostPage({
             </span>
           ) : (
             <span className="hidden sm:block font-syne font-bold text-xs text-[#F47C20] tracking-wide uppercase">
-              The #1 AI Digestable Knowledge
+              The #1 AI Digestible Knowledge
             </span>
           )}
           <button
