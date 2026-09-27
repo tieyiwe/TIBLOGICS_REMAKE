@@ -39,28 +39,28 @@ export const PROMPT_PACK_COLLECTION_META = {
   slug: PROMPT_PACK_COLLECTION,
   name: "AI Prompt Packs",
   description:
-    "Industry-specific prompt libraries. Copy, paste, adapt — built for the work you actually do.",
+    "Industry-specific prompt libraries. Copy, paste, adapt, built for the work you actually do.",
   featured: true,
   sortOrder: 1,
 };
 
 /** Shared closing section, so the set reads consistently. */
 function format(pages: number, prompts: number): string {
-  return `## What format it comes in
+  return `What format it comes in
 
 A single ${pages}-page PDF, downloadable the moment you buy. It has a clickable table of contents, a category index and PDF sidebar bookmarks, so you can jump to the prompt you need in a couple of seconds rather than scrolling.
 
 Every one of the ${prompts} prompts follows the same three-part structure:
 
-- **Use this when** — the specific situation it's for, so you're not guessing
-- **The Prompt** — the full text, ready to paste into ChatGPT, Claude, Gemini or Copilot
-- **Pro tip** — how to adapt it, and the mistake people usually make
+Use this when: the specific situation it's for, so you're not guessing
+The Prompt: the full text, ready to paste into ChatGPT, Claude, Gemini or Copilot
+Pro tip: how to adapt it, and the mistake people usually make
 
 It closes with a bonus set of power prompts and a prompt-writing cheat sheet, so once you've outgrown the pack you can write your own to the same standard.
 
-Works with any major AI tool. No subscription, no login, no software to install — it's a PDF you own.
+Works with any major AI tool. No subscription, no login, no software to install, it's a PDF you own.
 
-*Published by TIBLOGICS · [www.tiblogics.com](https://www.tiblogics.com)*`;
+Published by TIBLOGICS · www.tiblogics.com`;
 }
 
 export const PROMPT_PACKS: PromptPackSeed[] = [
@@ -73,31 +73,31 @@ export const PROMPT_PACKS: PromptPackSeed[] = [
       "100 ready-to-use ChatGPT and Claude prompts built for real estate agents: listing descriptions, lead follow-up, negotiation scripts, client emails and the awkward conversations that come with the job.",
     description: `Real estate runs on writing. The listing that has to sound appealing and stay accurate, the follow-up to a lead who went quiet, the message to a seller whose price is wrong. None of it is the job you trained for, and all of it eats the week.
 
-## What's inside
+What's inside
 
 100 prompts across nine categories:
 
-1. **Client Communication** — welcome emails, weekly seller updates, closing-day checklists, the 30-day check-in
-2. **Listing Descriptions & Property Marketing** — MLS copy for houses, condos, land and luxury
-3. **Social Media & Content** — posts that market the listing without sounding like a billboard
-4. **Lead Generation & Follow-Up** — the follow-ups that get answered, including to leads who went cold
-5. **Objection Handling & Negotiation** — commission pushback, lowball offers, the price conversation
-6. **Showings, Open Houses & Buyer Support** — before, during and after
-7. **Transactions, Operations & SOPs** — the paperwork layer that quietly consumes days
-8. **Market Research, Pricing & Business Planning** — CMAs, market updates, your own pipeline
-9. **Difficult Situations & Reputation** — bad reviews, restricted showings, expiring listings, buyers who keep losing offers
+Client Communication: welcome emails, weekly seller updates, closing-day checklists, the 30-day check-in
+Listing Descriptions & Property Marketing: MLS copy for houses, condos, land and luxury
+Social Media & Content: posts that market the listing without sounding like a billboard
+Lead Generation & Follow-Up: the follow-ups that get answered, including to leads who went cold
+Objection Handling & Negotiation: commission pushback, lowball offers, the price conversation
+Showings, Open Houses & Buyer Support: before, during and after
+Transactions, Operations & SOPs: the paperwork layer that quietly consumes days
+Market Research, Pricing & Business Planning: CMAs, market updates, your own pipeline
+Difficult Situations & Reputation: bad reviews, restricted showings, expiring listings, buyers who keep losing offers
 
-Plus **10 bonus power prompts** — including turning one fact sheet into a full listing launch package, and 30 days of content from a single input.
+Plus 10 bonus power prompts, including turning one fact sheet into a full listing launch package, and 30 days of content from a single input.
 
-## The Fair Housing note
+The Fair Housing note
 
-This pack is written Fair Housing aware. AI will happily produce a listing description that describes the *buyer* rather than the *property*, or slip in language about a neighbourhood that creates real liability. The prompts are built to avoid that, and the guidance flags what to strip before anything is published. Generic prompt packs do not do this, and in real estate it is not a small detail.
+This pack is written Fair Housing aware. AI will happily produce a listing description that describes the buyer rather than the property, or slip in language about a neighbourhood that creates real liability. The prompts are built to avoid that, and the guidance flags what to strip before anything is published. Generic prompt packs do not do this, and in real estate it is not a small detail.
 
-## Who it's for
+Who it's for
 
-Agents, brokers and teams — solo or in a brokerage. No AI experience needed. If you can paste text into a chat box, you can use every prompt here.
+Agents, brokers and teams, solo or in a brokerage. No AI experience needed. If you can paste text into a chat box, you can use every prompt here.
 
-## Why it saves time
+Why it saves time
 
 The hours don't go into showings. They go into everything around them: the description rewritten four times, the follow-up you keep meaning to send, the market update you owe a seller. This pack handles that layer so your attention goes back to the clients and the deals.
 
@@ -123,33 +123,33 @@ ${format(46, 100)}`,
     tagline: "100 Plug-and-Play Prompts to Save 10+ Hours a Week",
     shortDescription:
       "100 ready-to-use ChatGPT and Claude prompts built specifically for financial advisors, planners, and accountants: client emails, tax season workflows, proposals, and the difficult conversations nobody has a template for.",
-    description: `Most prompt packs are written by people who have never sat across from a client explaining why their portfolio is down. This one is built around the work financial professionals actually do — including the parts nobody enjoys.
+    description: `Most prompt packs are written by people who have never sat across from a client explaining why their portfolio is down. This one is built around the work financial professionals actually do, including the parts nobody enjoys.
 
-## What's inside
+What's inside
 
 100 prompts across nine categories:
 
-1. **Client Emails & Everyday Communication** — the messages you write weekly, written faster
-2. **Client Onboarding & Meetings** — intake, agendas, follow-up summaries
-3. **Marketing & Social Media Content** — visible without sounding like everyone else
-4. **Prospecting, Referrals & Follow-Ups** — asking for referrals without the cringe
-5. **Financial Planning & Advisory Work** — scenarios, explanations, plan summaries
-6. **Tax Season & Accounting Workflows** — the six weeks where hours matter most
-7. **Pricing, Proposals & Client Reports** — proposals that justify the fee
-8. **Operations, SOPs & Admin** — the invisible work that eats the week
-9. **Difficult Clients & Sticky Situations** — the ones you rehearse in the car
+Client Emails & Everyday Communication: the messages you write weekly, written faster
+Client Onboarding & Meetings: intake, agendas, follow-up summaries
+Marketing & Social Media Content: visible without sounding like everyone else
+Prospecting, Referrals & Follow-Ups: asking for referrals without the cringe
+Financial Planning & Advisory Work: scenarios, explanations, plan summaries
+Tax Season & Accounting Workflows: the six weeks where hours matter most
+Pricing, Proposals & Client Reports: proposals that justify the fee
+Operations, SOPs & Admin: the invisible work that eats the week
+Difficult Clients & Sticky Situations: the ones you rehearse in the car
 
-Plus **10 bonus power prompts** and a prompt-writing cheat sheet.
+Plus 10 bonus power prompts and a prompt-writing cheat sheet.
 
-## The compliance note
+The compliance note
 
-This pack includes a section on fiduciary and advisory language that generic prompt packs don't address. AI will happily draft something that reads like advice when it shouldn't, or state a guarantee you cannot make. The guidance shows you what to strip before anything reaches a client — which is the difference between a useful tool and a compliance problem.
+This pack includes a section on fiduciary and advisory language that generic prompt packs don't address. AI will happily draft something that reads like advice when it shouldn't, or state a guarantee you cannot make. The guidance shows you what to strip before anything reaches a client, which is the difference between a useful tool and a compliance problem.
 
-## Who it's for
+Who it's for
 
-Financial advisors, planners, accountants and bookkeepers — whether you're solo or part of a firm. No AI experience needed. If you can paste text into a chat box, you can use every prompt here.
+Financial advisors, planners, accountants and bookkeepers, whether you're solo or part of a firm. No AI experience needed. If you can paste text into a chat box, you can use every prompt here.
 
-## Why it saves time
+Why it saves time
 
 The hours don't disappear into the complicated work. They disappear into the hundred small pieces of writing between the real work: the follow-up email, the meeting recap, the explanation you've written forty times. These prompts handle that layer, so your attention goes to the judgement your clients are actually paying for.
 
@@ -177,35 +177,35 @@ ${format(46, 100)}`,
     tagline: "91 Plug-and-Play Prompts to Save 10+ Hours a Week",
     shortDescription:
       "91 ready-to-use prompts for nonprofit teams doing more with less: donor stewardship, grant proposals, board updates, and volunteer recruitment, all copy-paste ready for ChatGPT or Claude.",
-    description: `Nonprofit teams are asked to do the communications work of an organisation three times their size. This pack is built for that reality — not for a marketing department that doesn't exist.
+    description: `Nonprofit teams are asked to do the communications work of an organisation three times their size. This pack is built for that reality, not for a marketing department that doesn't exist.
 
-## What's inside
+What's inside
 
 91 prompts across nine categories:
 
-1. **Donor Communication & Stewardship** — thank-yous that sound like a person wrote them
-2. **Grant Writing & Fundraising Proposals** — narrative sections, impact statements, budget justifications
-3. **Social Media & Content Marketing** — consistent presence without a content team
-4. **Email Campaigns & Newsletters** — appeals and updates that get opened
-5. **Volunteer Recruitment & Management** — recruiting, onboarding, and keeping people
-6. **Board & Stakeholder Communication** — updates that respect a board's time
-7. **Program Design & Impact Reporting** — describing outcomes without overclaiming
-8. **Event Planning & Promotion** — from save-the-date to the follow-up
-9. **Difficult Conversations & Crisis Comms** — funding shortfalls, staff changes, hard news
+Donor Communication & Stewardship: thank-yous that sound like a person wrote them
+Grant Writing & Fundraising Proposals: narrative sections, impact statements, budget justifications
+Social Media & Content Marketing: consistent presence without a content team
+Email Campaigns & Newsletters: appeals and updates that get opened
+Volunteer Recruitment & Management: recruiting, onboarding, and keeping people
+Board & Stakeholder Communication: updates that respect a board's time
+Program Design & Impact Reporting: describing outcomes without overclaiming
+Event Planning & Promotion: from save-the-date to the follow-up
+Difficult Conversations & Crisis Comms: funding shortfalls, staff changes, hard news
 
-Plus **10 bonus power prompts** and a prompt-writing cheat sheet.
+Plus 10 bonus power prompts and a prompt-writing cheat sheet.
 
-## Who it's for
+Who it's for
 
-Executive directors, development and fundraising staff, program managers, and the person whose job description quietly includes "and communications". Built for small teams especially — if you're the one writing the appeal, the grant and the board update, this is for you.
+Executive directors, development and fundraising staff, program managers, and the person whose job description quietly includes "and communications". Built for small teams especially, if you're the one writing the appeal, the grant and the board update, this is for you.
 
-## Why it saves time
+Why it saves time
 
-Grant deadlines don't move, and neither does the board meeting. The writing gets done late at night because it has to. These prompts move the first draft off your plate, so your energy goes into the parts only you can do — the relationships, the program judgement, the actual asking.
+Grant deadlines don't move, and neither does the board meeting. The writing gets done late at night because it has to. These prompts move the first draft off your plate, so your energy goes into the parts only you can do, the relationships, the program judgement, the actual asking.
 
 One grant narrative drafted in twenty minutes instead of an afternoon is the whole cost of this recovered.
 
-## An honest note on donors
+An honest note on donors
 
 Every donor communication in this pack still needs your specifics: the real story, the real number, the real name. AI drafts the structure. The warmth is yours, and donors can tell the difference.
 
@@ -233,34 +233,34 @@ ${format(38, 91)}`,
       "90 ready-to-use prompts built for restaurant owners and managers: menu descriptions, review responses, staff SOPs, and promotions, so you spend less time writing and more time running the floor.",
     description: `Nobody opened a restaurant because they wanted to write social captions at midnight. This pack takes the writing off the end of your day.
 
-## What's inside
+What's inside
 
 90 prompts across ten categories:
 
-1. **Guest Communication & Reservations** — confirmations, changes, special requests
-2. **Reviews & Reputation Management** — replies to the good, the unfair and the genuinely bad
-3. **Marketing & Social Media Content** — posting consistently without an agency
-4. **Menu Development & Food Descriptions** — descriptions that sell the dish
-5. **Advertising Copy & Promotions** — offers that fill a quiet Tuesday
-6. **Staff Management, Training & SOPs** — onboarding, shift briefs, standards
-7. **Operations, Vendors & Admin** — supplier emails, scheduling, the paperwork
-8. **Financial Tasks: Pricing, Costing & Reporting** — menu costing and margin conversations
-9. **Difficult Situations & Conflict** — complaints, refunds, staff issues
-10. **Planning, Strategy & Events** — private hire, seasonal changes, expansion
+Guest Communication & Reservations: confirmations, changes, special requests
+Reviews & Reputation Management: replies to the good, the unfair and the genuinely bad
+Marketing & Social Media Content: posting consistently without an agency
+Menu Development & Food Descriptions: descriptions that sell the dish
+Advertising Copy & Promotions: offers that fill a quiet Tuesday
+Staff Management, Training & SOPs: onboarding, shift briefs, standards
+Operations, Vendors & Admin: supplier emails, scheduling, the paperwork
+Financial Tasks: Pricing, Costing & Reporting: menu costing and margin conversations
+Difficult Situations & Conflict: complaints, refunds, staff issues
+Planning, Strategy & Events: private hire, seasonal changes, expansion
 
-Plus **bonus power prompts** and a prompt-writing cheat sheet.
+Plus bonus power prompts and a prompt-writing cheat sheet.
 
-## Who it's for
+Who it's for
 
-Independent restaurant owners, GMs, and whoever ends up handling the marketing. Written for operators, not marketers — plain language, no jargon.
+Independent restaurant owners, GMs, and whoever ends up handling the marketing. Written for operators, not marketers, plain language, no jargon.
 
-## Why it saves time
+Why it saves time
 
 A menu rewrite is a weekend. A month of social content is an evening you don't have. A careful reply to a one-star review takes three drafts and sits in your head all day.
 
-These prompts turn each of those into minutes. The review-response category alone is worth it — responding well and quickly measurably affects your rating, and it's the task most likely to get put off.
+These prompts turn each of those into minutes. The review-response category alone is worth it, responding well and quickly measurably affects your rating, and it's the task most likely to get put off.
 
-## The bit that matters
+The bit that matters
 
 Menu descriptions and review replies are the two places where writing directly moves revenue. Both are covered in depth here, with the pro tips that stop AI output sounding like a chain restaurant.
 
@@ -288,34 +288,34 @@ ${format(41, 90)}`,
       "100 ready-to-use prompts for agencies: client reporting, new business pitches, ad copy, and the scope-creep conversations every account manager dreads, all built to save your team real hours every week.",
     description: `Agencies bill for time, which makes every unbillable hour expensive. This pack targets exactly those hours: the reporting, the recaps, the fourth round of ad copy variations.
 
-## What's inside
+What's inside
 
 100 prompts across ten categories:
 
-1. **Client Communication & Account Management** — status updates, recaps, check-ins
-2. **New Business & Pitching** — proposals, credentials, pitch narratives
-3. **Ad Copy & Creative Production** — variations at volume, on brief
-4. **Social Media & Content Marketing** — calendars, captions, campaign content
-5. **Strategy & Campaign Planning** — briefs, positioning, channel plans
-6. **Research & Competitive Analysis** — landscape scans and audience work
-7. **Reporting & Performance Analysis** — turning numbers into a story clients act on
-8. **Difficult Conversations & Objection Handling** — scope creep, late payment, underperformance
-9. **Operations, SOPs & Admin** — the internal work nobody bills for
-10. **Agency-Specific & Specialized Tasks** — the things only agencies deal with
+Client Communication & Account Management: status updates, recaps, check-ins
+New Business & Pitching: proposals, credentials, pitch narratives
+Ad Copy & Creative Production: variations at volume, on brief
+Social Media & Content Marketing: calendars, captions, campaign content
+Strategy & Campaign Planning: briefs, positioning, channel plans
+Research & Competitive Analysis: landscape scans and audience work
+Reporting & Performance Analysis: turning numbers into a story clients act on
+Difficult Conversations & Objection Handling: scope creep, late payment, underperformance
+Operations, SOPs & Admin: the internal work nobody bills for
+Agency-Specific & Specialized Tasks: the things only agencies deal with
 
-Plus **bonus power prompts** and a prompt-writing cheat sheet.
+Plus bonus power prompts and a prompt-writing cheat sheet.
 
-## Who it's for
+Who it's for
 
-Advertising and marketing agencies, freelance strategists, and in-house teams that operate like an agency. Useful across the team — account managers, strategists, copywriters and the founder doing all three.
+Advertising and marketing agencies, freelance strategists, and in-house teams that operate like an agency. Useful across the team, account managers, strategists, copywriters and the founder doing all three.
 
-## Why it saves time
+Why it saves time
 
 Monthly reporting is the clearest case. Most agencies spend days turning dashboards into something a client will read. The reporting prompts here handle the narrative layer, so your team edits rather than writes from nothing.
 
-Then there's the scope-creep conversation. Every account manager has delayed that email for a week. There's a prompt for it — one that holds the line without damaging the relationship.
+Then there's the scope-creep conversation. Every account manager has delayed that email for a week. There's a prompt for it, one that holds the line without damaging the relationship.
 
-## On ad copy
+On ad copy
 
 The creative category is built for volume with variation that's actually different, not the same line reworded. The pro tips cover how to keep brand voice intact when you're generating at scale, which is where most agency AI use goes wrong.
 

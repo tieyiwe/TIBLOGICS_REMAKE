@@ -27,24 +27,24 @@ export const DIGITAL_PRODUCTS: DigitalProductSeed[] = [
   {
     slug: "ai-cost-pricing-model",
     name: "AI Cost & Pricing Model",
-    tagline: "Work out what your AI actually costs to run — before your margin disappears.",
+    tagline: "Work out what your AI actually costs to run, before your margin disappears.",
     description: `Most people building with AI price it like software and discover their unit costs too late.
 
 This is the spreadsheet model we use in our AI Cost & Pricing consultations. Fill in eight inputs and it calculates your true cost per request, cost per customer per month, break-even point, and gross margin.
 
-**What's inside**
+What's inside
 
-- Cost per request, split by input and output tokens — the split most people get wrong, since output typically costs 3–5× input
-- Cost per customer per month, including a retry/failure rate, because failed calls still bill
-- The costs people forget: vector storage, infrastructure, monitoring, and support time priced at a loaded hourly rate
-- Break-even calculation that tells you plainly when your price sits below your unit cost
-- A stress test covering the three variables that usually break an AI pricing model
+Cost per request, split by input and output tokens, the split most people get wrong, since output typically costs 3–5× input
+Cost per customer per month, including a retry/failure rate, because failed calls still bill
+The costs people forget: vector storage, infrastructure, monitoring, and support time priced at a loaded hourly rate
+Break-even calculation that tells you plainly when your price sits below your unit cost
+A stress test covering the three variables that usually break an AI pricing model
 
-**Who it's for**
+Who it's for
 
 Anyone selling a product with AI inside it: SaaS founders, agencies packaging AI services, and product managers who need a defensible number for a pricing conversation.
 
-**What it isn't**
+What it isn't
 
 It won't tell you what to charge. It tells you what you cannot charge less than, which is the part people skip.`,
     category: "Templates",
@@ -58,22 +58,22 @@ It won't tell you what to charge. It tells you what you cannot charge less than,
   {
     slug: "ai-readiness-scorecard",
     name: "AI Readiness Scorecard",
-    tagline: "Twenty questions that tell you whether you're ready — or about to waste six months.",
+    tagline: "Twenty questions that tell you whether you're ready, or about to waste six months.",
     description: `Organisations rarely fail at AI because the technology doesn't work. They fail because their data was inaccessible, their processes were undocumented, or nobody had agreed what would make them stop.
 
 This scorecard tests for exactly that, across five dimensions: data, process, people, governance and commercial readiness.
 
-**What's inside**
+What's inside
 
-- 20 scored questions, each with a description of what a full-marks answer actually looks like
-- Scoring bands that tell you what to do next, not just where you rank
-- A note on the single question that matters most — and why a low score there makes your total provisional
+20 scored questions, each with a description of what a full-marks answer actually looks like
+Scoring bands that tell you what to do next, not just where you rank
+A note on the single question that matters most, and why a low score there makes your total provisional
 
-**Who it's for**
+Who it's for
 
 Operations leads, business owners and anyone who has been asked to "look into AI" and wants to answer with evidence rather than opinion.
 
-**How to use it honestly**
+How to use it honestly
 
 Score it with someone who does the work daily, not only with the leadership team. Where those two scores disagree, the person doing the work is usually right.`,
     category: "Templates",
@@ -91,21 +91,21 @@ Score it with someone who does the work daily, not only with the leadership team
 
 This template is written to be adopted. It is deliberately permissive about ordinary use and specific about the handful of things that genuinely matter.
 
-**What's inside**
+What's inside
 
-- Scope, approved-tools table, and the three rules that cover most situations
-- A precise list of what must never be entered into an AI tool, and the redaction habit that avoids most of it
-- Where AI must not be the deciding factor — hiring, credit, safety, and anything where the human element is the point
-- A verification standard built on consequence rather than confidence
-- Disclosure guidance that distinguishes "normal use" from "should have been declared"
-- An incident route designed so people report mistakes early instead of hiding them
-- An adoption checklist, because an unadopted policy is worse than none
+Scope, approved-tools table, and the three rules that cover most situations
+A precise list of what must never be entered into an AI tool, and the redaction habit that avoids most of it
+Where AI must not be the deciding factor, hiring, credit, safety, and anything where the human element is the point
+A verification standard built on consequence rather than confidence
+Disclosure guidance that distinguishes "normal use" from "should have been declared"
+An incident route designed so people report mistakes early instead of hiding them
+An adoption checklist, because an unadopted policy is worse than none
 
-**Who it's for**
+Who it's for
 
-Any organisation whose staff are already using AI — which is most of them, whether or not anyone has said so.
+Any organisation whose staff are already using AI, which is most of them, whether or not anyone has said so.
 
-**Format**
+Format
 
 Markdown, so you can paste it straight into Notion, Confluence, Google Docs or Word and restyle it as your own.`,
     category: "Templates",
@@ -122,25 +122,25 @@ Markdown, so you can paste it straight into Notion, Confluence, Google Docs or W
     tagline: "60 prompts that hold up on real work, not demos.",
     description: `Prompt collections are usually long lists of things that work once. This is the set we actually reuse, organised by the job you're trying to do.
 
-Every prompt follows the same structure — task, context, audience, constraints — which is the difference between a usable draft and generic filler.
+Every prompt follows the same structure, task, context, audience, constraints, which is the difference between a usable draft and generic filler.
 
-**What's inside**
+What's inside
 
-- **Writing & editing** — including the diagnose-don't-rewrite prompt that improves your writing instead of replacing it
-- **Summarising & extraction** — including "what is NOT addressed that should be?", which is the one worth having for contracts
-- **Thinking & planning** — argue-against-me, pre-mortem, and the questions you don't know to ask
-- **Customer & sales** — objections, proposals, and follow-ups that aren't annoying
-- **Operations** — SOPs, meeting actions, and explaining technical work upward
-- **Learning** — the three-levels technique and the test-me prompt that makes things stick
-- **Verification** — how to pressure-test output, and why "are you sure?" is the wrong question
+Writing & editing: including the diagnose-don't-rewrite prompt that improves your writing instead of replacing it
+Summarising & extraction: including "what is NOT addressed that should be?", which is the one worth having for contracts
+Thinking & planning: argue-against-me, pre-mortem, and the questions you don't know to ask
+Customer & sales: objections, proposals, and follow-ups that aren't annoying
+Operations: SOPs, meeting actions, and explaining technical work upward
+Learning: the three-levels technique and the test-me prompt that makes things stick
+Verification: how to pressure-test output, and why "are you sure?" is the wrong question
 
-**Who it's for**
+Who it's for
 
 Anyone using AI daily who gets good results occasionally and wants them reliably.
 
-**The honest note**
+The honest note
 
-The last page explains why six prompts proven on your own work beat any library you can download — including this one. It's there because it's true.`,
+The last page explains why six prompts proven on your own work beat any library you can download, including this one. It's there because it's true.`,
     category: "Templates",
     tags: ["ai", "prompts", "productivity", "operations"],
     fileKey: "business-prompt-library.md",
@@ -157,22 +157,22 @@ The last page explains why six prompts proven on your own work beat any library 
 
 This playbook is built to avoid that single failure mode. It's the structure we use when running pilots with clients.
 
-**What's inside**
+What's inside
 
-- The two questions to answer in writing before day one — including the kill criterion, agreed before anyone is emotionally invested
-- Days 1–3: building a baseline the team recognises as true
-- Days 4–7: scoping narrowly enough that a positive result is attributable
-- Days 8–21: what to log daily, including the "corrections needed" column most people skip and which usually decides whether the pilot is real
-- Days 22–26: measuring against the same baseline, honestly
-- Days 27–30: a one-page write-up — circulated whatever the outcome
-- The three ways pilots go wrong, and how to spot each early
-- A one-page pilot scope template
+The two questions to answer in writing before day one, including the kill criterion, agreed before anyone is emotionally invested
+Days 1–3: building a baseline the team recognises as true
+Days 4–7: scoping narrowly enough that a positive result is attributable
+Days 8–21: what to log daily, including the "corrections needed" column most people skip and which usually decides whether the pilot is real
+Days 22–26: measuring against the same baseline, honestly
+Days 27–30: a one-page write-up, circulated whatever the outcome
+The three ways pilots go wrong, and how to spot each early
+A one-page pilot scope template
 
-**Who it's for**
+Who it's for
 
 Anyone about to spend real money finding out whether AI helps with a specific process.
 
-**The core idea**
+The core idea
 
 A pilot without an agreed stopping condition isn't a pilot. It's a procurement decision that has already been made.`,
     category: "Guides",
@@ -188,22 +188,22 @@ A pilot without an agreed stopping condition isn't a pilot. It's a procurement d
     tagline: "The questions that decide whether a deal fails after you've signed it.",
     description: `Vendor demos are designed to be impressive. This scorecard is designed to find what the demo didn't cover.
 
-Twenty-two weighted criteria across data handling, capability, lock-in, commercials, viability and support — with the exact question to put to the vendor on each line.
+Twenty-two weighted criteria across data handling, capability, lock-in, commercials, viability and support, with the exact question to put to the vendor on each line.
 
-**What's inside**
+What's inside
 
-- Weighted scoring, where the weights reflect how often that line is what actually goes wrong
-- The specific question to ask for every criterion, phrased to make vagueness obvious
-- Data-handling questions that separate "we don't train on your data by default" from "we don't train on your data"
-- Lock-in questions covering export format, deletion on exit, and whether the underlying model is swappable
-- Commercial questions that model the 3× volume case, where pricing surprises live
-- Scoring bands, plus the rule that any weight-5 criterion scoring 0–1 is disqualifying on its own however good the total looks
+Weighted scoring, where the weights reflect how often that line is what actually goes wrong
+The specific question to ask for every criterion, phrased to make vagueness obvious
+Data-handling questions that separate "we don't train on your data by default" from "we don't train on your data"
+Lock-in questions covering export format, deletion on exit, and whether the underlying model is swappable
+Commercial questions that model the 3× volume case, where pricing surprises live
+Scoring bands, plus the rule that any weight-5 criterion scoring 0–1 is disqualifying on its own however good the total looks
 
-**Who it's for**
+Who it's for
 
 Anyone about to sign with an AI vendor, and anyone who has been asked to justify a choice already made.
 
-**Why the weighting matters**
+Why the weighting matters
 
 A strong total can hide one fatal weakness. The kit tells you which five lines to check individually before you sign.`,
     category: "Templates",

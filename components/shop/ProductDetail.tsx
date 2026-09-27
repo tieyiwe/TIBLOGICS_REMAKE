@@ -18,6 +18,53 @@ const S = {
 const syne = "var(--font-syne), sans-serif";
 const dm = "var(--font-dm-sans), sans-serif";
 
+/**
+ * Renders a product description as structured copy.
+ *
+ * This used to be a pre-wrap block, so the description printed exactly as
+ * stored. The copy is now plain prose with no markup, and short lines that
+ * introduce a block read as headings rather than being lost in the paragraphs.
+ */
+function ProductCopy({ text }: { text: string }) {
+  const blocks = text.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
+
+  return (
+    <div style={{ color: "#B0C4CC", fontSize: ".92rem", lineHeight: 1.75 }}>
+      {blocks.map((block, i) => {
+        const lines = block.split("\n").map((l) => l.trim()).filter(Boolean);
+
+        // A lone short line with no sentence-ending punctuation is a heading.
+        if (lines.length === 1 && lines[0].length <= 60 && !/[.:!?]$/.test(lines[0])) {
+          return (
+            <h4
+              key={i}
+              style={{
+                fontFamily: syne, fontWeight: 700, fontSize: ".95rem",
+                color: "#DCE7EA", margin: i === 0 ? "0 0 8px" : "22px 0 8px",
+              }}
+            >
+              {lines[0]}
+            </h4>
+          );
+        }
+
+        // Several short lines in a row are a list.
+        if (lines.length > 1 && lines.every((l) => l.length <= 150)) {
+          return (
+            <ul key={i} style={{ margin: "0 0 14px", paddingLeft: "18px" }}>
+              {lines.map((l) => (
+                <li key={l} style={{ marginBottom: "6px" }}>{l}</li>
+              ))}
+            </ul>
+          );
+        }
+
+        return <p key={i} style={{ margin: "0 0 14px" }}>{block}</p>;
+      })}
+    </div>
+  );
+}
+
 export default function ProductDetail({ product: p, related }: { product: ShopProduct; related: ShopProduct[] }) {
   const { add, setOpen } = useCart();
   const [activeImg, setActiveImg] = useState(0);
@@ -136,7 +183,7 @@ export default function ProductDetail({ product: p, related }: { product: ShopPr
             {p.description && (
               <div style={{ borderTop: `1px solid ${S.border}`, paddingTop: "24px" }}>
                 <h3 style={{ fontFamily: syne, fontWeight: 700, fontSize: "1rem", marginBottom: "12px" }}>Details</h3>
-                <div style={{ color: "#B0C4CC", fontSize: ".92rem", lineHeight: 1.75, whiteSpace: "pre-wrap" }}>{p.description}</div>
+                <ProductCopy text={p.description} />
               </div>
             )}
 
