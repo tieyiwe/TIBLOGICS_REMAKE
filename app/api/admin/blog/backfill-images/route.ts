@@ -26,6 +26,7 @@ export async function POST() {
     const fixedMissing: string[] = [];
     const fixedDuplicate: string[] = [];
     let exhausted = false;
+    let generated = 0;
 
     for (const post of posts) {
       const currentId = photoIdFromUrl(post.coverImage);
@@ -39,6 +40,12 @@ export async function POST() {
       const reason = currentId ? "duplicate" : "missing";
       const pick = pickCoverImage(post.slug, taken);
       if (pick.reused) exhausted = true;
+      if (pick.generated) {
+        // Photo pool is full — this article got a drawn cover instead of a
+        // duplicate. Still worth reporting: it means the pool is at capacity.
+        exhausted = true;
+        generated += 1;
+      }
 
       await prisma.blogPost.update({
         where: { id: post.id },
@@ -56,9 +63,11 @@ export async function POST() {
       missingFixed: fixedMissing.length,
       duplicatesFixed: fixedDuplicate.length,
       distinctImagesInUse: taken.size,
-      // True only if there are more articles than images — the signal to add
-      // more IDs to the pool rather than a silent duplication.
+      // True when there are more articles than photos. No longer a problem in
+      // itself — those articles get drawn covers — but it tells you the pool is
+      // at capacity and every further article will be a generated one.
       poolExhausted: exhausted,
+      generatedCovers: generated,
       details: { missing: fixedMissing.slice(0, 40), duplicates: fixedDuplicate.slice(0, 40) },
     });
   } catch (err) {
