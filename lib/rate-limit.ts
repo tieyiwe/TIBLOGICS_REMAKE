@@ -85,6 +85,63 @@ function memoryAllows(key: string, max: number, windowMs: number): boolean {
 }
 
 /**
+ * The increment itself. One statement, so the read and the write cannot be
+ * interleaved by another request. An expired window resets to 1 rather than
+ * being deleted first, which would leave a gap two callers could both slip
+ * through.
+ */
+async function consume(stored: string, max: number, resetAt: Date): Promise<boolean> {
+  const rows = await prisma.$queryRaw<Array<{ count: number }>>`
+    INSERT INTO "RateLimit" ("key", "count", "resetAt")
+    VALUES (${stored}, 1, ${resetAt})
+    ON CONFLICT ("key") DO UPDATE SET
+      "count" = CASE WHEN "RateLimit"."resetAt" <= now() THEN 1 ELSE "RateLimit"."count" + 1 END,
+      "resetAt" = CASE WHEN "RateLimit"."resetAt" <= now() THEN ${resetAt} ELSE "RateLimit"."resetAt" END
+    RETURNING "count"
+  `;
+  return Number(rows[0]?.count ?? 1) <= max;
+}
+
+/**
+ * Create the table if it is missing, at most once per process.
+ *
+ * Attempted only after a query has already failed, so the happy path never
+ * pays for it. IF NOT EXISTS makes it safe when several instances start at
+ * once. Returns whether the table should now be usable.
+ */
+let ensureTablePromise: Promise<boolean> | null = null;
+function ensureTable(): Promise<boolean> {
+  ensureTablePromise ??= (async () => {
+    try {
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "RateLimit" (
+          "key" TEXT NOT NULL PRIMARY KEY,
+          "count" INTEGER NOT NULL DEFAULT 0,
+          "resetAt" TIMESTAMP(3) NOT NULL
+        )
+      `);
+      await prisma.$executeRawUnsafe(
+        `CREATE INDEX IF NOT EXISTS "RateLimit_resetAt_idx" ON "RateLimit"("resetAt")`,
+      );
+      return true;
+    } catch (err) {
+      // A database user without DDL rights, or an unreachable database. Log
+      // once — silently running on per-instance counters forever is the kind
+      // of thing that should be visible.
+      console.error(
+        "[rate-limit] could not create the RateLimit table; falling back to " +
+          "per-instance counters. Run POST /api/admin/sync-db/rate-limit as an " +
+          "admin to create it.",
+        err instanceof Error ? err.message : err,
+      );
+      // Do not retry on every request for the rest of the process's life.
+      return false;
+    }
+  })();
+  return ensureTablePromise;
+}
+
+/**
  * Consume one unit against `key`. Returns true when the caller may proceed.
  *
  * `max` is the number of allowed requests per `windowMs`. The window starts on
@@ -99,22 +156,22 @@ export async function checkRateLimit(
   const stored = storageKey(key);
   const resetAt = new Date(Date.now() + windowMs);
   try {
-    // One statement, so the read and the write cannot be interleaved by another
-    // request. An expired window resets to 1 rather than being deleted first,
-    // which would leave a gap two callers could both slip through.
-    const rows = await prisma.$queryRaw<Array<{ count: number }>>`
-      INSERT INTO "RateLimit" ("key", "count", "resetAt")
-      VALUES (${stored}, 1, ${resetAt})
-      ON CONFLICT ("key") DO UPDATE SET
-        "count" = CASE WHEN "RateLimit"."resetAt" <= now() THEN 1 ELSE "RateLimit"."count" + 1 END,
-        "resetAt" = CASE WHEN "RateLimit"."resetAt" <= now() THEN ${resetAt} ELSE "RateLimit"."resetAt" END
-      RETURNING "count"
-    `;
-    const count = Number(rows[0]?.count ?? 1);
-    return count <= max;
+    return await consume(stored, max, resetAt);
   } catch {
-    // Table missing or database unreachable. An approximate per-instance limit
-    // is better than none, and better than a 500 on a public endpoint.
+    // Most likely the table does not exist yet — this project has no
+    // migrations, so a deploy arrives before any DDL has run. Create it once,
+    // then retry, rather than making someone remember to POST to a sync route
+    // for a table the code cannot work properly without.
+    if (await ensureTable()) {
+      try {
+        return await consume(stored, max, resetAt);
+      } catch {
+        // Fall through to memory.
+      }
+    }
+    // Database unreachable, or the create was not permitted. An approximate
+    // per-instance limit is better than none, and better than a 500 on a
+    // public endpoint.
     return memoryAllows(stored, max, windowMs);
   }
 }
