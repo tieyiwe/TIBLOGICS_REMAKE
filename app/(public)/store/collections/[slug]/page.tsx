@@ -1,6 +1,12 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { cache } from "react";
 import prisma from "@/lib/prisma";
+
+/** Shared by generateMetadata and the page; see store/[slug] for why. */
+const getCollection = cache(async (slug: string) =>
+  prisma.collection.findUnique({ where: { slug } }).catch(() => null),
+);
 import CollectionView from "@/components/shop/CollectionView";
 import type { ShopProduct } from "@/components/shop/types";
 
@@ -12,7 +18,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const c = await prisma.collection.findUnique({ where: { slug } }).catch(() => null);
+  const c = await getCollection(slug);
   if (!c || !c.published) return {};
   return {
     title: `${c.name} | TIBLOGICS Store`,
@@ -23,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CollectionPage({ params }: Props) {
   const { slug } = await params;
-  const c = await prisma.collection.findUnique({ where: { slug } }).catch(() => null);
+  const c = await getCollection(slug);
   if (!c || !c.published) return notFound();
 
   const raw = await prisma.product

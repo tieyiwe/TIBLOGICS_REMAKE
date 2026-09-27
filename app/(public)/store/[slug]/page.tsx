@@ -1,6 +1,16 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { cache } from "react";
 import prisma from "@/lib/prisma";
+
+/**
+ * generateMetadata and the page component both need this row, and Next calls
+ * them separately — so every product page ran the same findUnique twice.
+ * React's cache() dedupes it within a single render pass.
+ */
+const getProduct = cache(async (slug: string) =>
+  prisma.product.findUnique({ where: { slug } }).catch(() => null),
+);
 import ProductDetail from "@/components/shop/ProductDetail";
 import type { ShopProduct } from "@/components/shop/types";
 
@@ -26,7 +36,7 @@ function toShopProduct(p: {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const p = await prisma.product.findUnique({ where: { slug } }).catch(() => null);
+  const p = await getProduct(slug);
   if (!p || !p.published) return {};
   return {
     title: `${p.name} | TIBLOGICS Store`,
@@ -41,7 +51,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const p = await prisma.product.findUnique({ where: { slug } }).catch(() => null);
+  const p = await getProduct(slug);
   if (!p || !p.published) return notFound();
 
   const related = await prisma.product
