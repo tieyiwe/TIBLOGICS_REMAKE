@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
+import { CLAUDE_FAST_MODEL } from "@/lib/claude";
 
 export const maxDuration = 60;
 
@@ -56,7 +57,7 @@ CONTENT (HTML – preserve all tags and attributes):
 ${post.content}`;
 
     const response = await haiku.create({
-      model: "claude-haiku-4-5-20251001",
+      model: CLAUDE_FAST_MODEL,
       max_tokens: 8192,
       messages: [{ role: "user", content: prompt }],
     });

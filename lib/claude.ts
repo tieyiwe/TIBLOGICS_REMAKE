@@ -6,7 +6,15 @@ const anthropic = new Anthropic({
   timeout: 120_000, // 2 min — generous for blog generation
 });
 
-export const CLAUDE_MODEL = "claude-sonnet-4-6";
+// Set CLAUDE_MODEL / CLAUDE_FAST_MODEL in the environment to change models
+// without a deploy — useful when a new one lands and you want to try it.
+//
+// The writing model does the work readers see: articles, headlines, analysis.
+// The fast model handles the mechanical, high-volume jobs — translations and
+// tip extraction — where the cheaper model is the right tool rather than a
+// compromise.
+export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? "claude-opus-5";
+export const CLAUDE_FAST_MODEL = process.env.CLAUDE_FAST_MODEL ?? "claude-haiku-4-5";
 
 // Uses SSE streaming so the connection stays alive during generation.
 // messages.create() sits silent while tokens compute → hosting kills it.

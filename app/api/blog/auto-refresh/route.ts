@@ -4,7 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
 import { pickCoverImage } from "@/lib/blog-images";
 import { getUsedCoverPhotoIds } from "@/lib/blog-cover";
-import { streamChat } from "@/lib/claude";
+import { streamChat, CLAUDE_FAST_MODEL } from "@/lib/claude";
 import resend from "@/lib/resend";
 import { assignCoverImage } from "@/lib/blog-cover";
 
@@ -530,7 +530,11 @@ Return a JSON object:
     const raw = await streamChat(
       [{ role: "user", content: prompt }],
       `You write for AI TIMES, a technology publication read by operators and founders. You announce what happened, teach the reader enough that they understand it themselves, and hand them the questions a careful person would ask before acting. Your headlines earn attention with the real consequence, never with manufactured drama, and you never write a sentence that only restates the one before it. The current year is ${CURRENT_YEAR}. Never describe 2025 or 2024 as "this year" or "the current year".`,
-      2000
+      // 550-750 words of HTML, JSON-escaped, plus headline, excerpt and tags.
+      // The old 2000 cap sat right on that boundary: anything over it truncated
+      // mid-JSON, the parse below threw, and the article was dropped with no
+      // trace beyond a missing post.
+      4000
     );
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON");
@@ -601,7 +605,7 @@ ${post.excerpt}
 CONTENT (HTML – preserve all tags and attributes):
 ${post.content.slice(0, 6000)}`;
   const response = await anthropic.messages.create({
-    model: "claude-haiku-4-5-20251001",
+    model: CLAUDE_FAST_MODEL,
     max_tokens: 8192,
     messages: [{ role: "user", content: prompt }],
   });
