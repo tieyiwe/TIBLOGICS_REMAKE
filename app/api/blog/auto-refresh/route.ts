@@ -2973,6 +2973,16 @@ export async function GET(req: NextRequest) {
     const allExisting = await prisma.blogPost.findMany({
       select: { id: true, title: true, slug: true, author: true, coverImage: true },
     });
+    // Canned articles — SEED_POSTS and EDITORIAL_SPOTLIGHTS — exist to give an
+    // empty site something to show on day one. They were being topped up on
+    // EVERY refresh: anything missing from the library got inserted and dated
+    // today, so pre-written pieces kept surfacing as fresh news. They now run
+    // once, when there is genuinely nothing published.
+    //
+    // The cover-repair pass below still runs for existing posts either way —
+    // that fixes images, it does not create articles.
+    const libraryIsEmpty = allExisting.length === 0;
+
     existingTitles = new Set(allExisting.map((p: { title: string }) => p.title.toLowerCase().trim()));
     const existingSlugSet = new Set(allExisting.map((p: { slug: string }) => p.slug));
     function titleExists(t: string) {
@@ -2989,6 +2999,7 @@ export async function GET(req: NextRequest) {
     // Insert editorial spotlights not already in DB
     for (const sp of EDITORIAL_SPOTLIGHTS) {
       try {
+        if (!libraryIsEmpty) break; // bootstrap only — see libraryIsEmpty above
         if (titleExists(sp.title)) continue;
         const base = sp.title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-").slice(0, 70);
         const slug = freshSlug(base);
@@ -3048,6 +3059,9 @@ export async function GET(req: NextRequest) {
           }
           continue;
         }
+        // Missing from the library — only insert while bootstrapping, otherwise
+        // a pre-written article would be published today as if it were news.
+        if (!libraryIsEmpty) continue;
         const base = sp.title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-").slice(0, 70);
         const slug = freshSlug(base);
         await prisma.blogPost.create({
