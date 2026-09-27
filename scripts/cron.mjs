@@ -26,17 +26,34 @@ const JOBS = {
   exams: { path: "/api/cron/exam-sweep", suggested: "every 15 minutes" },
 };
 
+/**
+ * Which deployment to drive.
+ *
+ * Resolved the same way next.config.js resolves NEXTAUTH_URL, so this needs no
+ * variable of its own on a deployment that is already configured. CRON_BASE_URL
+ * is only for pointing a run somewhere else, such as a local server.
+ */
+function resolveBase() {
+  const explicit = process.env.CRON_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL;
+  if (explicit) return explicit;
+  if (process.env.REPLIT_DEV_DOMAIN) return `https://${process.env.REPLIT_DEV_DOMAIN}`;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "https://tiblogics.com";
+}
+
 const secret = process.env.CRON_SECRET;
-const base = (process.env.CRON_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+const base = resolveBase().replace(/\/$/, "");
 
 if (!secret) {
-  console.error("CRON_SECRET is not set. Set it here and in the deployment's secrets, to the same value.");
+  console.error(
+    "CRON_SECRET is not set in this shell.\n" +
+      "It is a Replit Secret, so add it to the Scheduled Deployment's secrets too —\n" +
+      "the job endpoints return 503 without it rather than running unauthenticated.",
+  );
   process.exit(2);
 }
-if (!base) {
-  console.error("Set CRON_BASE_URL (or NEXT_PUBLIC_APP_URL) to the site's URL, e.g. https://tiblogics.com");
-  process.exit(2);
-}
+
+console.log(`Target: ${base}`);
 
 const which = (process.argv[2] ?? "all").toLowerCase();
 const names = which === "all" ? Object.keys(JOBS) : [which];
