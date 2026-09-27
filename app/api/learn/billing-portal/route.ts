@@ -26,8 +26,11 @@ export async function POST() {
     );
     return NextResponse.json({ url });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("[POST /api/learn/billing-portal]", msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    // See /api/learn/checkout — Stripe error text is internal detail.
+    console.error("[POST /api/learn/billing-portal]", err);
+    return NextResponse.json(
+      { error: "Could not open the billing portal. Please try again or contact support." },
+      { status: 500 },
+    );
   }
 }

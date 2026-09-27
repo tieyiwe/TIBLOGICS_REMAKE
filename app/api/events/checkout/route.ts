@@ -42,8 +42,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ checkoutUrl: session.url });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error("[POST /api/events/checkout]", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    // Stripe errors quote our own request parameters and key mode back at us;
+    // this endpoint is public, so log the detail and return a fixed message.
+    console.error("[POST /api/events/checkout]", error);
+    return NextResponse.json(
+      { error: "Could not start checkout. Please try again or contact support." },
+      { status: 500 },
+    );
   }
 }

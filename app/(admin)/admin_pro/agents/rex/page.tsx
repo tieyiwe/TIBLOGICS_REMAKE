@@ -112,7 +112,6 @@ export default function RexPage() {
   const [agentMsgs, setAgentMsgs] = useState<AgentMsg[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(false);
   const [filterTab, setFilterTab] = useState("inbox");
-  const [callingId, setCallingId] = useState<string | null>(null);
   const [triageId, setTriageId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [localNotes, setLocalNotes] = useState<Record<string, string>>({});
@@ -156,43 +155,6 @@ export default function RexPage() {
       body: JSON.stringify({ read: true }),
     });
     setAgentMsgs((prev) => prev.filter((m) => m.id !== id));
-  }
-
-  async function callLead(lead: Lead) {
-    if (!lead.phone) {
-      alert("No phone number on file for this lead.");
-      return;
-    }
-    if (
-      !confirm(
-        `Call ${lead.contactName ?? lead.companyName} at ${lead.phone}?\n\n${
-          process.env.NEXT_PUBLIC_BLAND_ENABLED
-            ? "A real call will be initiated via Bland.ai."
-            : "Demo mode: call will be simulated."
-        }`
-      )
-    )
-      return;
-
-    setCallingId(lead.id);
-    try {
-      const res = await fetch(`/api/admin/agents/leads/${lead.id}/call`, { method: "POST" });
-      const data = await res.json();
-      if (res.ok) {
-        await loadLeads();
-        if (data.simulated) {
-          alert(
-            "Demo: Call simulated and lead marked as Contacted.\n\nTo enable real calls, add BLAND_AI_API_KEY to your environment variables."
-          );
-        } else {
-          alert(`Call initiated! Bland.ai Call ID: ${data.callId}`);
-        }
-      } else {
-        alert(data.error ?? "Call failed. Please try again.");
-      }
-    } finally {
-      setCallingId(null);
-    }
   }
 
   async function triage(leadId: string, status: LeadStatus) {
@@ -487,26 +449,6 @@ export default function RexPage() {
 
                       {/* Action buttons */}
                       <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
-                        {/* Call */}
-                        <button
-                          onClick={() => callLead(lead)}
-                          disabled={callingId === lead.id || !lead.phone}
-                          title={lead.phone ? `Call ${lead.phone}` : "No phone number"}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-dm text-xs font-semibold transition-all ${
-                            callingId === lead.id
-                              ? "bg-[#E6F5F0] text-[#0F6E56] opacity-70"
-                              : lead.phone
-                              ? "bg-[#0F6E56] text-white hover:bg-[#0d5f49]"
-                              : "bg-[#F4F7FB] text-[#7A8FA6] cursor-not-allowed"
-                          }`}
-                        >
-                          {callingId === lead.id ? (
-                            <div className="w-3 h-3 border-2 border-[#0F6E56]/30 border-t-[#0F6E56] rounded-full animate-spin" />
-                          ) : (
-                            <PhoneCall size={12} />
-                          )}
-                          Call
-                        </button>
 
                         {/* Triage */}
                         <div className="relative">

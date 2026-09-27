@@ -48,8 +48,12 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json({ url });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("[POST /api/learn/checkout]", msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    // Any signed-up learner can reach this, and a Stripe error names our price
+    // ids and key mode. Log the detail, hand back a fixed message.
+    console.error("[POST /api/learn/checkout]", err);
+    return NextResponse.json(
+      { error: "Could not start checkout. Please try again or contact support." },
+      { status: 500 },
+    );
   }
 }

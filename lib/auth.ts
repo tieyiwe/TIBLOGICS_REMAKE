@@ -1,10 +1,53 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { rateLimit, secretEquals } from "@/lib/require-admin";
+import { timingSafeEqual } from "crypto";
 
 // tieyiwebass@gmail.com is the Owner — the super account above all admins
 const OWNER_EMAIL = "tieyiwebass@gmail.com";
+
+// These two helpers are duplicated from lib/require-admin.ts rather than
+// imported: that module imports `authOptions` from here, and a cycle through
+// the auth config is not worth saving a few lines.
+
+/** Constant-time compare of a guess against a configured secret. */
+function secretEquals(presented: unknown, secret: string | undefined): boolean {
+  if (!secret || typeof presented !== "string") return false;
+  const a = Buffer.from(presented);
+  const b = Buffer.from(secret);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+/**
+ * Per-identity throttle on sign-in attempts.
+ *
+ * The credentials endpoint had no limit at all, so both providers accepted
+ * unlimited online guesses — against the owner's master password, a
+ * collaborator's hash, or any student account. Keyed by the attempted email
+ * (not the IP) so a distributed attempt on one account is still bounded; the
+ * cost of a wrong guess is a bcrypt compare, which is exactly what we are
+ * rationing. In-memory, so each server instance counts separately.
+ */
+const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+const MAX_LOGIN_ATTEMPTS = 10;
+const LOGIN_WINDOW_MS = 900_000; // 15 minutes
+
+function loginAllowed(key: string): boolean {
+  const now = Date.now();
+  const entry = loginAttempts.get(key);
+  if (!entry || now > entry.resetAt) {
+    loginAttempts.set(key, { count: 1, resetAt: now + LOGIN_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= MAX_LOGIN_ATTEMPTS) return false;
+  entry.count++;
+  return true;
+}
+
+/** Clear the counter on success so normal use never trips the limit. */
+function loginSucceeded(key: string): void {
+  loginAttempts.delete(key);
+}
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
@@ -17,6 +60,9 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
+
+        const throttleKey = `staff:${credentials.email.toLowerCase().trim()}`;
+        if (!loginAllowed(throttleKey)) return null;
 
         // Lazy import so a Prisma binary failure doesn't crash the auth module at load time
         let prisma: Awaited<typeof import("@/lib/prisma")>["prisma"];
@@ -56,6 +102,7 @@ export const authOptions: NextAuthOptions = {
                   }).catch(() => {});
                 }
               } catch { /* non-blocking */ }
+              loginSucceeded(throttleKey);
               return ownerUser;
             }
           }
@@ -67,7 +114,10 @@ export const authOptions: NextAuthOptions = {
             });
             if (stored?.value) {
               const valid = await bcrypt.compare(credentials.password, stored.value);
-              if (valid) return ownerUser;
+              if (valid) {
+                loginSucceeded(throttleKey);
+                return ownerUser;
+              }
             }
           } catch { /* fall through */ }
 
@@ -89,6 +139,7 @@ export const authOptions: NextAuthOptions = {
             data: { lastLoginAt: new Date() },
           });
 
+          loginSucceeded(throttleKey);
           return {
             id: collab.id,
             email: collab.email,
@@ -116,6 +167,9 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
+        const throttleKey = `student:${credentials.email.toLowerCase().trim()}`;
+        if (!loginAllowed(throttleKey)) return null;
+
         let prisma: Awaited<typeof import("@/lib/prisma")>["prisma"];
         try {
           ({ prisma } = await import("@/lib/prisma"));
@@ -136,6 +190,7 @@ export const authOptions: NextAuthOptions = {
             .update({ where: { id: student.id }, data: { lastLoginAt: new Date() } })
             .catch(() => {});
 
+          loginSucceeded(throttleKey);
           return {
             id: student.id,
             email: student.email,

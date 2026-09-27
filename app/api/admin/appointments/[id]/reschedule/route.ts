@@ -15,8 +15,16 @@ export async function POST(
   const { id } = await params;
   const { suggestedDate, suggestedTimeSlot, message } = await req.json();
 
-  if (!suggestedDate || !suggestedTimeSlot) {
-    return NextResponse.json({ error: "suggestedDate and suggestedTimeSlot are required" }, { status: 400 });
+  // All three land in an email and in appointment.notes, which the admin UI
+  // parses as JSON elsewhere — so bound the types and lengths here.
+  if (typeof suggestedDate !== "string" || !suggestedDate || suggestedDate.length > 100) {
+    return NextResponse.json({ error: "suggestedDate is required" }, { status: 400 });
+  }
+  if (typeof suggestedTimeSlot !== "string" || !suggestedTimeSlot || suggestedTimeSlot.length > 100) {
+    return NextResponse.json({ error: "suggestedTimeSlot is required" }, { status: 400 });
+  }
+  if (message !== undefined && message !== null && (typeof message !== "string" || message.length > 2000)) {
+    return NextResponse.json({ error: "message must be under 2000 characters" }, { status: 400 });
   }
 
   const appt = await prisma.appointment.findUnique({ where: { id } });
@@ -74,6 +82,11 @@ async function sendRescheduleEmail(data: {
 
   const safeFirst = escapeHtml(data.firstName);
   const safeMsg = data.message ? escapeHtml(data.message) : null;
+  // Also from the public booking form, so escaped alongside the rest.
+  const safeDuration = escapeHtml(data.serviceDuration);
+  const safeTimezone = escapeHtml(data.timezone);
+  const safeOrigSlot = escapeHtml(data.originalTimeSlot);
+  const safeNewSlot = escapeHtml(data.suggestedTimeSlot);
 
   await resend.emails.send({
     from: process.env.FROM_EMAIL ?? "hello@tiblogics.com",
@@ -99,9 +112,9 @@ async function sendRescheduleEmail(data: {
       <div style="background:#FEF0E3;border-radius:14px;padding:20px 24px;margin-bottom:16px;border-left:4px solid #F47C20;">
         <p style="margin:0 0 10px;font-size:11px;color:#F47C20;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Original Time</p>
         <table style="width:100%;border-collapse:collapse;">
-          <tr><td style="padding:4px 0;color:#7A8FA6;font-size:13px;width:90px;">Service</td><td style="padding:4px 0;color:#0D1B2A;font-size:13px;font-weight:600;">${serviceLabel} (${data.serviceDuration})</td></tr>
+          <tr><td style="padding:4px 0;color:#7A8FA6;font-size:13px;width:90px;">Service</td><td style="padding:4px 0;color:#0D1B2A;font-size:13px;font-weight:600;">${serviceLabel} (${safeDuration})</td></tr>
           <tr><td style="padding:4px 0;color:#7A8FA6;font-size:13px;">Date</td><td style="padding:4px 0;color:#9B7451;font-size:13px;font-weight:600;text-decoration:line-through;">${origDateLabel}</td></tr>
-          <tr><td style="padding:4px 0;color:#7A8FA6;font-size:13px;">Time</td><td style="padding:4px 0;color:#9B7451;font-size:13px;font-weight:600;text-decoration:line-through;">${data.originalTimeSlot} (${data.timezone})</td></tr>
+          <tr><td style="padding:4px 0;color:#7A8FA6;font-size:13px;">Time</td><td style="padding:4px 0;color:#9B7451;font-size:13px;font-weight:600;text-decoration:line-through;">${safeOrigSlot} (${safeTimezone})</td></tr>
         </table>
       </div>
 
@@ -109,9 +122,9 @@ async function sendRescheduleEmail(data: {
       <div style="background:#EBF5FF;border-radius:14px;padding:20px 24px;margin-bottom:24px;border-left:4px solid #2251A3;">
         <p style="margin:0 0 10px;font-size:11px;color:#2251A3;text-transform:uppercase;letter-spacing:1px;font-weight:700;">✅ Suggested New Time</p>
         <table style="width:100%;border-collapse:collapse;">
-          <tr><td style="padding:4px 0;color:#7A8FA6;font-size:13px;width:90px;">Service</td><td style="padding:4px 0;color:#0D1B2A;font-size:13px;font-weight:600;">${serviceLabel} (${data.serviceDuration})</td></tr>
+          <tr><td style="padding:4px 0;color:#7A8FA6;font-size:13px;width:90px;">Service</td><td style="padding:4px 0;color:#0D1B2A;font-size:13px;font-weight:600;">${serviceLabel} (${safeDuration})</td></tr>
           <tr><td style="padding:4px 0;color:#7A8FA6;font-size:13px;">Date</td><td style="padding:4px 0;color:#0D1B2A;font-size:13px;font-weight:700;">${newDateLabel}</td></tr>
-          <tr><td style="padding:4px 0;color:#7A8FA6;font-size:13px;">Time</td><td style="padding:4px 0;color:#0D1B2A;font-size:13px;font-weight:700;">${data.suggestedTimeSlot} (${data.timezone})</td></tr>
+          <tr><td style="padding:4px 0;color:#7A8FA6;font-size:13px;">Time</td><td style="padding:4px 0;color:#0D1B2A;font-size:13px;font-weight:700;">${safeNewSlot} (${safeTimezone})</td></tr>
         </table>
       </div>
 
