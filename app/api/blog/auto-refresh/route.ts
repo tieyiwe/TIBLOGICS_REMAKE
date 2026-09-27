@@ -12,6 +12,7 @@ import { EDITORIAL_SPOTLIGHTS } from "@/lib/blog/content/spotlights";
 import { streamChat, CLAUDE_FAST_MODEL } from "@/lib/claude";
 import resend from "@/lib/resend";
 import { assignCoverImage } from "@/lib/blog-cover";
+import { requireAdmin, secretEquals } from "@/lib/require-admin";
 
 const anthropic = new Anthropic();
 
@@ -761,17 +762,30 @@ export async function GET(req: NextRequest) {
   // a cap on how much of the wire gets turned into articles at once.
   const WANT = Math.min(12, Math.max(1, Number(searchParams.get("count")) || 6));
 
-  // Verify caller: Vercel cron sends Authorization: Bearer <CRON_SECRET>
-  // External cron services (cron-job.org, Upstash, etc.) can use ?secret=<CRON_SECRET>
-  // Allow unauthenticated check-only requests (admin status polling)
+  // Verify the caller. A run calls a paid model many times and publishes to
+  // the live site, so it takes a real credential.
+  //
+  // This used to treat `?force=true` as proof of an admin, on the reasoning
+  // that the admin page is the only thing that sends it. The route does not
+  // sit behind that page, so anyone could start a run — and with CRON_SECRET
+  // unset the whole check was skipped, leaving it open outright. Both are
+  // closed here: a cron secret, or a staff session, and nothing else.
+  //
+  // check=true stays open. It reads two timestamps and is what the admin
+  // status widget polls.
   if (!checkOnly) {
     const cronSecret = process.env.CRON_SECRET;
     const authHeader = req.headers.get("authorization");
-    const isVercelCron = cronSecret && authHeader === `Bearer ${cronSecret}`;
-    const isExternalCron = cronSecret && searchParams.get("secret") === cronSecret;
-    const isForceFromAdmin = force; // admin page uses ?force=true (protected by admin session at page level)
-    if (cronSecret && !isVercelCron && !isExternalCron && !isForceFromAdmin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const bearer = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    // Constant-time: the secret is presented in a query string an attacker can
+    // vary freely, which is the case a byte-by-byte compare leaks.
+    const isCron =
+      !!cronSecret &&
+      (secretEquals(bearer, cronSecret) || secretEquals(searchParams.get("secret"), cronSecret));
+
+    if (!isCron) {
+      const staffErr = await requireAdmin();
+      if (staffErr) return staffErr;
     }
   }
 

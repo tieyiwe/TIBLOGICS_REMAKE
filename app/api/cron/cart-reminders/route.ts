@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { secretEquals } from "@/lib/require-admin";
 import { sendCartReminderEmail } from "@/lib/resend";
 
 // Sends abandoned-cart reminder emails.
@@ -13,11 +14,19 @@ const REMINDER_GAP_MS = 22 * 60 * 60 * 1000; // 22 hours between reminders
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
+  // Fail CLOSED. An unset CRON_SECRET used to skip the check entirely, which
+  // left anyone able to fire reminder emails at every abandoned cart on the
+  // site and burn each cart's two-reminder allowance.
   const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    console.error("[cron/cart-reminders] CRON_SECRET is not set — refusing to run");
+    return NextResponse.json({ error: "Not configured" }, { status: 503 });
+  }
   const authHeader = req.headers.get("authorization");
-  if (cronSecret) {
-    const ok = authHeader === `Bearer ${cronSecret}` || searchParams.get("secret") === cronSecret;
-    if (!ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const bearer = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  // Constant-time: the secret arrives in a query string an attacker can vary.
+  if (!secretEquals(bearer, cronSecret) && !secretEquals(searchParams.get("secret"), cronSecret)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const now = Date.now();

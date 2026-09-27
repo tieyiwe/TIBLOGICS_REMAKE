@@ -63,19 +63,24 @@ export async function POST() {
         fileSizeBytes: sizeBytes,
         downloadDays: 365,
         maxDownloads: 10,
-        featured: p.featured ?? false,
         stock: null, // digital goods don't run out
       };
 
       const existingId = existingBySlug.get(p.slug);
       if (existingId) {
-        // Never overwrite a price or publish state an admin has already set —
-        // `data` deliberately carries neither.
+        // Never overwrite a price, a publish state or a feature flag an admin
+        // has already set — `data` deliberately carries none of them.
         writes.push(prisma.product.update({ where: { id: existingId }, data }));
       } else {
         writes.push(
           prisma.product.create({
-            data: { slug: p.slug, price: 0, published: false, ...data },
+            data: {
+              slug: p.slug,
+              price: 0,
+              published: false,
+              featured: p.featured ?? false,
+              ...data,
+            },
           }),
         );
       }

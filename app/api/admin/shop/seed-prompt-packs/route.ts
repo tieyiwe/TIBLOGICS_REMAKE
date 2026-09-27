@@ -56,7 +56,7 @@ export async function POST() {
     // The loop now only builds work (and the on-disk warnings, in pack order).
     // Prisma promises are lazy, so nothing is sent until the Promise.all below.
     const writes: Promise<unknown>[] = [];
-    const outcomes: Array<{ slug: string; isNew: boolean }> = [];
+    const outcomes: Array<{ slug: string; isNew: boolean; hasFile: boolean }> = [];
 
     for (const pack of PROMPT_PACKS) {
       // Verify the PDF is on disk. A product that sells and then fails at
@@ -70,7 +70,11 @@ export async function POST() {
       try {
         sizeBytes = statSync(path).size;
       } catch {
-        warnings.push(`${pack.slug}: PDF missing on disk — NOT published`);
+        warnings.push(
+          existingBySlug.has(pack.slug)
+            ? `${pack.slug}: PDF missing on disk — left as it is, but buyers cannot download it until the file is deployed`
+            : `${pack.slug}: PDF missing on disk — created unpublished`,
+        );
       }
 
       const data = {
@@ -93,21 +97,39 @@ export async function POST() {
         fileSizeBytes: sizeBytes,
         downloadDays: 365,
         maxDownloads: 10,
-        // Exactly one pack is featured, set per-pack in prompt-packs.ts.
-        // This was hardcoded true, so every pack was featured and the
-        // spotlight rotated through all of them whether or not that was wanted.
-        featured: pack.featured ?? false,
-        // Only publish if the file is genuinely there.
-        published: sizeBytes !== null,
       };
 
       const existingId = existingBySlug.get(pack.slug);
       if (existingId) {
+        // `published` and `featured` are deliberately NOT in the update.
+        //
+        // They belong to whoever is running the store. This seed used to write
+        // both on every run, which had two bad consequences: a pack unpublished
+        // or featured by hand in admin silently reverted on the next seed, and
+        // — worse — running the seed on a deploy where the PDF had not landed
+        // yet took a live, selling product off the storefront while leaving it
+        // visible in admin. That is exactly how the Realtor toolkit
+        // disappeared from the store but stayed in the admin list.
+        //
+        // A file that goes missing is already handled at the point it matters:
+        // the download route returns "temporarily unavailable" rather than a
+        // broken file, and the warning below says which pack to look at.
         writes.push(prisma.product.update({ where: { id: existingId }, data }));
       } else {
-        writes.push(prisma.product.create({ data: { slug: pack.slug, ...data } }));
+        writes.push(
+          prisma.product.create({
+            data: {
+              slug: pack.slug,
+              ...data,
+              // Exactly one pack is featured, set per-pack in prompt-packs.ts.
+              featured: pack.featured ?? false,
+              // A brand new pack only goes live if its file is genuinely there.
+              published: sizeBytes !== null,
+            },
+          }),
+        );
       }
-      outcomes.push({ slug: pack.slug, isNew: !existingId });
+      outcomes.push({ slug: pack.slug, isNew: !existingId, hasFile: sizeBytes !== null });
     }
 
     await Promise.all(writes);
@@ -118,9 +140,14 @@ export async function POST() {
       else updated.push(o.slug);
     }
 
-    const live = await prisma.product.count({
-      where: { category: PROMPT_PACK_CATEGORY, published: true },
+    // Reported per pack so "it's in admin but not in the store" is answerable
+    // from this response alone, rather than by guessing.
+    const packStates = await prisma.product.findMany({
+      where: { slug: { in: PROMPT_PACKS.map((p) => p.slug) } },
+      select: { slug: true, published: true, featured: true },
+      orderBy: { slug: "asc" },
     });
+    const live = packStates.filter((p) => p.published).length;
 
     revalidateShop();
 
@@ -130,6 +157,12 @@ export async function POST() {
       updated: updated.length,
       createdSlugs: created,
       updatedSlugs: updated,
+      packs: packStates.map((p) => ({
+        slug: p.slug,
+        published: p.published,
+        featured: p.featured,
+        fileOnDisk: outcomes.find((o) => o.slug === p.slug)?.hasFile ?? false,
+      })),
       published: live,
       price: `$${(PROMPT_PACK_PRICE / 100).toFixed(0)}`,
       collection: PROMPT_PACK_COLLECTION,

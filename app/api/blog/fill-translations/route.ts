@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
+import { secretEquals } from "@/lib/require-admin";
 import { CLAUDE_FAST_MODEL } from "@/lib/claude";
 
 export const maxDuration = 300;
@@ -70,8 +71,15 @@ async function runWithConcurrency<T>(
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const secret = searchParams.get("secret");
-  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+  // Constant-time, and a Bearer header is accepted too so this can be driven
+  // by the same scheduler as the other cron routes.
+  const cronSecret = process.env.CRON_SECRET;
+  const authHeader = req.headers.get("authorization");
+  const bearer = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  if (
+    !cronSecret ||
+    (!secretEquals(bearer, cronSecret) && !secretEquals(searchParams.get("secret"), cronSecret))
+  ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
