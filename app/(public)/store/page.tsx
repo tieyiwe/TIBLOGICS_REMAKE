@@ -8,13 +8,27 @@ import { pickSpotlight, daysUntilRotation } from "@/lib/shop/spotlight";
 export const revalidate = 300;
 
 export default async function ShopPage() {
+  // Deliberately NOT wrapped in .catch(() => []).
+  //
+  // This page is prerendered and then cached for `revalidate` seconds. With a
+  // fallback, a build that could not reach the database — no DATABASE_URL in
+  // the build step, database asleep — baked an empty storefront into the cache
+  // and the build still reported success. That is how the store came up with
+  // nothing on it while every product sat published in admin.
+  //
+  // Letting it throw is the better failure on both paths: at build time the
+  // deploy fails with the actual Prisma error instead of shipping an empty
+  // shop, and during a revalidation Next keeps serving the last good page
+  // rather than replacing it with one.
   const [rawProducts, rawCollections] = await Promise.all([
-    prisma.product
-      .findMany({ where: { published: true }, orderBy: [{ featured: "desc" }, { createdAt: "desc" }] })
-      .catch(() => []),
-    prisma.collection
-      .findMany({ where: { published: true }, orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }] })
-      .catch(() => []),
+    prisma.product.findMany({
+      where: { published: true },
+      orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
+    }),
+    prisma.collection.findMany({
+      where: { published: true },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+    }),
   ]);
 
   const products: ShopProduct[] = rawProducts.map((p) => ({

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkTargetUrl, BLOCK_MESSAGES } from "@/lib/ssrf";
 
 const rateMap = new Map<string, { count: number; resetAt: number }>();
 
@@ -12,18 +13,6 @@ function checkRate(ip: string): boolean {
   if (entry.count >= 20) return false;
   entry.count++;
   return true;
-}
-
-function isPrivateOrLoopback(hostname: string): boolean {
-  if (hostname === "localhost" || hostname === "::1") return true;
-  return [
-    /^127\./,
-    /^10\./,
-    /^192\.168\./,
-    /^172\.(1[6-9]|2\d|3[01])\./,
-    /^169\.254\./,
-    /^0\./,
-  ].some((p) => p.test(hostname));
 }
 
 export async function POST(req: NextRequest) {
@@ -43,20 +32,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "URL required" }, { status: 400 });
   }
 
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(url);
-  } catch {
-    return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
+  // Resolves the hostname and refuses it if it maps to anything internal; the
+  // old check only looked at the text of the hostname.
+  const checked = await checkTargetUrl(url);
+  if (!checked.ok) {
+    return NextResponse.json({ error: BLOCK_MESSAGES[checked.reason] }, { status: 400 });
   }
-
-  if (!["http:", "https:"].includes(parsedUrl.protocol)) {
-    return NextResponse.json({ error: "Only HTTP/HTTPS URLs allowed" }, { status: 400 });
-  }
-
-  if (isPrivateOrLoopback(parsedUrl.hostname)) {
-    return NextResponse.json({ error: "Private or loopback addresses are not allowed" }, { status: 400 });
-  }
+  const parsedUrl = checked.url;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10_000);

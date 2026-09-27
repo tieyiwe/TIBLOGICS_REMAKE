@@ -3,19 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
 import { requireAdmin } from "@/lib/require-admin";
-
-/** Matches the guard in app/api/scanner/speed/route.ts. */
-function isPrivateOrLoopback(hostname: string): boolean {
-  if (hostname === "localhost" || hostname === "::1") return true;
-  return [
-    /^127\./,
-    /^10\./,
-    /^192\.168\./,
-    /^172\.(1[6-9]|2\d|3[01])\./,
-    /^169\.254\./,
-    /^0\./,
-  ].some((p) => p.test(hostname));
-}
+import { checkTargetUrl, safeFetch } from "@/lib/ssrf";
 
 /**
  * The lead's website as a URL we are willing to fetch, or null.
@@ -26,17 +14,10 @@ function isPrivateOrLoopback(hostname: string): boolean {
  * `http://169.254.169.254/...` or a localhost port would have exfiltrated
  * cloud metadata and internal responses through the analysis field.
  */
-function safeTargetUrl(website: string | null): URL | null {
+async function safeTargetUrl(website: string | null): Promise<URL | null> {
   if (!website) return null;
-  let url: URL;
-  try {
-    url = new URL(website.startsWith("http") ? website : `https://${website}`);
-  } catch {
-    return null;
-  }
-  if (!["http:", "https:"].includes(url.protocol)) return null;
-  if (isPrivateOrLoopback(url.hostname)) return null;
-  return url;
+  const checked = await checkTargetUrl(website);
+  return checked.ok ? checked.url : null;
 }
 
 export async function POST(req: NextRequest) {
@@ -52,16 +33,19 @@ export async function POST(req: NextRequest) {
   if (!lead) return NextResponse.json({ error: "Lead not found" }, { status: 404 });
 
   let pageText = "";
-  const target = safeTargetUrl(lead.website);
+  const target = await safeTargetUrl(lead.website);
   const websiteUrl = target?.toString() ?? null;
 
   // Try to fetch the website
   if (target) {
     try {
-      const res = await fetch(target, {
+      // safeFetch follows redirects but re-checks every hop, so a lead's site
+      // that 302s somewhere internal is refused rather than followed. Plain
+      // redirect: "manual" simply gave up on sites that redirect, which is
+      // most of them.
+      const res = await safeFetch(target, {
         headers: { "User-Agent": "Mozilla/5.0 (compatible; TIBLOGICSBot/1.0)" },
         signal: AbortSignal.timeout(8000),
-        redirect: "manual", // a redirect would sidestep the host check above
       });
       if (res.ok) {
         const html = await res.text();

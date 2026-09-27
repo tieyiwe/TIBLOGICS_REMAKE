@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkTargetUrl, safeFetch, BLOCK_MESSAGES, SsrfBlockedError } from "@/lib/ssrf";
 import { audit, type Signals } from "@/lib/scanner/audit";
 
 // Real measurement for the AI Scanner.
@@ -23,19 +24,14 @@ function checkRate(ip: string): boolean {
   return true;
 }
 
-function isPrivateOrLoopback(hostname: string): boolean {
-  if (hostname === "localhost" || hostname === "::1") return true;
-  return [/^127\./, /^10\./, /^192\.168\./, /^172\.(1[6-9]|2\d|3[01])\./, /^169\.254\./, /^0\./].some(
-    (p) => p.test(hostname),
-  );
-}
-
 const UA = "TIBLOGICSScanner/2.0 (+https://tiblogics.com)";
 
 /** HEAD-or-GET probe that only reports whether something is really there. */
 async function probe(url: string, signal: AbortSignal): Promise<string | null> {
   try {
-    const res = await fetch(url, { signal, headers: { "User-Agent": UA }, redirect: "follow" });
+    // safeFetch follows redirects itself and re-checks each hop; plain
+    // redirect: "follow" would follow a public URL to an internal one.
+    const res = await safeFetch(url, { signal, headers: { "User-Agent": UA } });
     if (!res.ok) return null;
     return (await res.text()).slice(0, 20_000);
   } catch {
@@ -59,18 +55,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "URL required" }, { status: 400 });
   }
 
-  let target: URL;
-  try {
-    target = new URL(raw.startsWith("http") ? raw : `https://${raw}`);
-  } catch {
-    return NextResponse.json({ error: "That does not look like a valid URL" }, { status: 400 });
+  // Resolves the name and rejects it if any address behind it is internal —
+  // a hostname pointing at 10.x or the metadata service used to get through.
+  const checked = await checkTargetUrl(raw);
+  if (!checked.ok) {
+    return NextResponse.json({ error: BLOCK_MESSAGES[checked.reason] }, { status: 400 });
   }
-  if (!["http:", "https:"].includes(target.protocol)) {
-    return NextResponse.json({ error: "Only HTTP and HTTPS are supported" }, { status: 400 });
-  }
-  if (isPrivateOrLoopback(target.hostname)) {
-    return NextResponse.json({ error: "Private and loopback addresses are not allowed" }, { status: 400 });
-  }
+  const target = checked.url;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20_000);
@@ -79,16 +70,20 @@ export async function POST(req: NextRequest) {
     const start = performance.now();
     let res: Response;
     try {
-      res = await fetch(target.toString(), {
+      res = await safeFetch(target, {
         signal: controller.signal,
         headers: {
           "User-Agent": UA,
           Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
           "Accept-Encoding": "gzip, deflate, br",
         },
-        redirect: "follow",
       });
     } catch (err) {
+      // A redirect into private space is the caller's problem, not ours, and
+      // saying so is more useful than "could not reach the site".
+      if (err instanceof SsrfBlockedError) {
+        return NextResponse.json({ error: BLOCK_MESSAGES[err.reason] }, { status: 400 });
+      }
       const msg = controller.signal.aborted
         ? "The site took too long to respond (over 20 seconds)"
         : err instanceof Error
