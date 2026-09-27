@@ -1,32 +1,35 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
+import {
+  CONSULTATION_TOPICS as SERVICES,
+  PRIMARY_TOPIC,
+  OTHER_TOPICS,
+  DEFAULT_AVAIL_DAYS,
+  DEFAULT_AVAIL_SLOTS,
+} from "@/lib/booking/services";
 
-// Consultations are free. This list is what the visitor wants to TALK ABOUT,
-// not something they buy — price stays 0 so no payment step is ever reached
+// Consultations are free. SERVICES is what the visitor wants to TALK ABOUT,
+// not something they buy — price stays 0 so no payment step is ever reached.
 // The checkoutUrl branch in submit() is left in place as a safety net in
-// case a paid service is reintroduced later.
-const SERVICES = [
-  { id: "discovery", name: "Project Discovery", duration: "30 min", price: 0, badge: "Start here", description: "Not sure where to begin? An intro call to explore your project — zero commitment.", color: "#F47C20" },
-  { id: "strategy", name: "AI Strategy", duration: "45 min", price: 0, badge: "Popular", description: "Talk through where AI could genuinely help your business, and where it wouldn't.", color: "#2251A3" },
-  { id: "audit", name: "AI Readiness", duration: "45 min", price: 0, badge: null, description: "Look at your current tech and processes, and what adopting AI would actually take.", color: "#1B3A6B" },
-  { id: "website", name: "Website & AI", duration: "45 min", price: 0, badge: null, description: "Review your current website and discuss an AI-powered upgrade.", color: "#0F6E56" },
-  { id: "cost", name: "AI Cost & Pricing", duration: "45 min", price: 0, badge: null, description: "For AI product builders: what your AI actually costs to run, and how to price it.", color: "#7c3aed" },
-  { id: "tech", name: "Something Else", duration: "45 min", price: 0, badge: null, description: "Apps, SaaS, a specific feature, or any other technical question.", color: "#3A4A5C" },
-];
+// case a paid service is reintroduced later. The list lives in lib/booking so
+// the API can validate against exactly what this form offers.
 
-// Project Discovery is the default: most visitors do not yet know which
-// specific conversation they need, and making them choose is friction. The
-// rest stay one click away for people who do know.
-const PRIMARY_TOPIC = SERVICES[0];
-const OTHER_TOPICS = SERVICES.slice(1);
-
-const ADD_ONS: { id: string; label: string; price: number }[] = [];
-
-const TIME_SLOTS = ["9:00 AM", "10:00 AM", "11:00 AM", "1:00 PM", "2:00 PM", "3:00 PM"];
+/**
+ * Calendar date as YYYY-MM-DD from the *displayed* day, not via toISOString().
+ *
+ * `new Date(y, m, d).toISOString()` converts to UTC first, so for a visitor
+ * east of UTC it yields the previous day — they would see another day's booked
+ * slots and book a date one off from the one they clicked.
+ */
+function toDateKey(d: Date): string {
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -70,11 +73,45 @@ export default function BookPage() {
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [isBlocked, setIsBlocked] = useState(false);
+  // The days and times admin actually offers. This form used to hard-code a
+  // slot list, so anything set in admin_pro/appointments/availability had no
+  // effect on what visitors could pick — and the server now rejects slots
+  // outside it, which would have turned that mismatch into a failed booking.
+  const [availDays, setAvailDays] = useState<number[]>(DEFAULT_AVAIL_DAYS);
+  const [availSlots, setAvailSlots] = useState<string[]>(DEFAULT_AVAIL_SLOTS);
+  const [blockedKeys, setBlockedKeys] = useState<string[]>([]);
   const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", phone: "", company: "", goalNotes: "" });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
   const bookingPanelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [a, b] = await Promise.all([
+          fetch("/api/appointments/availability").then((r) => r.json()),
+          fetch("/api/appointments/blocked-dates").then((r) => r.json()).catch(() => ({ blocked: [] })),
+        ]);
+        if (cancelled) return;
+        if (Array.isArray(a?.days) && a.days.length) setAvailDays(a.days);
+        if (Array.isArray(a?.slots) && a.slots.length) setAvailSlots(a.slots);
+        if (Array.isArray(b?.blocked)) {
+          setBlockedKeys(
+            b.blocked
+              .map((x: { date?: string }) => (typeof x?.date === "string" ? x.date.slice(0, 10) : null))
+              .filter(Boolean) as string[],
+          );
+        }
+      } catch {
+        // Defaults already match the server's fallback, so the form still works.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function selectTopic(svc: (typeof SERVICES)[number]) {
     setSelectedService(svc);
@@ -144,7 +181,7 @@ export default function BookPage() {
   async function handleDateSelect(date: Date) {
     setSelectedDate(date);
     setSelectedSlot(null);
-    const dateStr = date.toISOString().split("T")[0];
+    const dateStr = toDateKey(date);
     try {
       const r = await fetch(`/api/appointments/available?date=${dateStr}`);
       const data = await r.json();
@@ -162,18 +199,14 @@ export default function BookPage() {
       const res = await fetch("/api/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        // Duration, price and total are derived server-side from serviceType,
+        // so they are deliberately not sent. The date goes as a plain calendar
+        // day: an ISO timestamp is a different day either side of midnight UTC.
         body: JSON.stringify({
           serviceType: selectedService.name,
-          serviceDuration: selectedService.duration,
-          servicePrice: selectedService.price,
-          date: selectedDate,
+          date: selectedDate ? toDateKey(selectedDate) : null,
           timeSlot: selectedSlot,
-          timezone: "America/New_York",
           ...formData,
-          addOnRecording: false,
-          addOnActionPlan: false,
-          addOnSlackAccess: false,
-          totalAmount: 0,
         }),
       });
       if (!res.ok) {
@@ -210,8 +243,9 @@ export default function BookPage() {
   function isSelectable(day: number) {
     const d = new Date(year, month, day);
     d.setHours(0, 0, 0, 0);
-    const dow = d.getDay();
-    return d >= today && dow !== 0 && dow !== 6;
+    if (d < today) return false;
+    if (!availDays.includes(d.getDay())) return false;
+    return !blockedKeys.includes(toDateKey(d));
   }
 
   function isSameDay(a: Date, b: Date) {
@@ -342,7 +376,7 @@ export default function BookPage() {
                         <p className="text-sm text-[#7A8FA6] font-dm">This date is unavailable. Please select another day.</p>
                       ) : (
                         <div className="grid grid-cols-3 gap-2">
-                          {TIME_SLOTS.map(slot => {
+                          {availSlots.map(slot => {
                             const booked = bookedSlots.includes(slot);
                             const past = isPastSlot(selectedDate!, slot);
                             const unavailable = booked || past;
@@ -419,7 +453,7 @@ export default function BookPage() {
                   <div className="flex gap-3">
                     <button onClick={() => setStep(1)} className="btn-secondary flex-1 justify-center text-sm">← Back</button>
                     <button
-                      disabled={!formData.firstName || !formData.email}
+                      disabled={!formData.firstName || !formData.lastName || !formData.email}
                       onClick={() => setStep(3)}
                       className="btn-primary flex-1 justify-center text-sm disabled:opacity-40"
                     >
