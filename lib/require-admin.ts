@@ -4,20 +4,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
-const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
-
-/** Returns true (allowed) or false (blocked). key = `${route}:${ip}` */
-export function rateLimit(key: string, max = 10, windowMs = 60_000): boolean {
-  const now = Date.now();
-  const entry = rateLimitStore.get(key);
-  if (!entry || now > entry.resetAt) {
-    rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
-    return true;
-  }
-  if (entry.count >= max) return false;
-  entry.count++;
-  return true;
-}
+// Rate limiting moved to lib/rate-limit.ts, where the counter is shared rather
+// than living in a per-instance Map that reset on every deploy. Re-exported
+// here so the many routes that import their guards from this module keep one
+// import. The name changed from `rateLimit` deliberately: the new function is
+// async, and `if (!promise)` is always false, so a forgotten await would have
+// silently disabled a limit instead of failing to compile.
+export { checkRateLimit } from "@/lib/rate-limit";
 
 /**
  * Returns null if authenticated (admin or collaborator), or a 401 response.

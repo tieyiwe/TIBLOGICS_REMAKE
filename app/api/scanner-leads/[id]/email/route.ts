@@ -1,24 +1,11 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { isValidEmail } from "@/lib/require-admin";
-
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + 60000 });
-    return true;
-  }
-  if (entry.count >= 10) return false;
-  entry.count++;
-  return true;
-}
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-  if (!checkRateLimit(ip)) {
+  if (!(await checkRateLimit(`scanner-lead-email:${ip}`, 10, 60_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 

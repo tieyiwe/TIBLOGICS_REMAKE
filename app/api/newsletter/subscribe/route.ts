@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { isValidEmail, rateLimit } from "@/lib/require-admin";
+import { isValidEmail, checkRateLimit } from "@/lib/require-admin";
 import resend from "@/lib/resend";
 
 const ADMIN_EMAIL = process.env.TIWE_EMAIL || process.env.TITAN_SMTP_USER || "info@tiblogics.com";
@@ -33,7 +33,7 @@ async function notifyAdmin(email: string, firstName: string | null, source: stri
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-  if (!rateLimit(`newsletter:${ip}`, 5, 60_000)) {
+  if (!(await checkRateLimit(`newsletter:${ip}`, 5, 60_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
   try {

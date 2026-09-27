@@ -1,4 +1,5 @@
 import { NextAuthOptions } from "next-auth";
+import { checkRateLimit, clearRateLimit } from "@/lib/rate-limit";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { timingSafeEqual } from "crypto";
@@ -26,27 +27,24 @@ function secretEquals(presented: unknown, secret: string | undefined): boolean {
  * collaborator's hash, or any student account. Keyed by the attempted email
  * (not the IP) so a distributed attempt on one account is still bounded; the
  * cost of a wrong guess is a bcrypt compare, which is exactly what we are
- * rationing. In-memory, so each server instance counts separately.
+ * rationing.
+ *
+ * The counter is shared (lib/rate-limit). It used to be a per-instance Map,
+ * which meant a redeploy handed an attacker a fresh ten guesses — and on a
+ * platform that recycles idle containers, that is not a rare event.
  */
-const loginAttempts = new Map<string, { count: number; resetAt: number }>();
 const MAX_LOGIN_ATTEMPTS = 10;
 const LOGIN_WINDOW_MS = 900_000; // 15 minutes
 
-function loginAllowed(key: string): boolean {
-  const now = Date.now();
-  const entry = loginAttempts.get(key);
-  if (!entry || now > entry.resetAt) {
-    loginAttempts.set(key, { count: 1, resetAt: now + LOGIN_WINDOW_MS });
-    return true;
-  }
-  if (entry.count >= MAX_LOGIN_ATTEMPTS) return false;
-  entry.count++;
-  return true;
+function loginAllowed(key: string): Promise<boolean> {
+  return checkRateLimit(`login:${key}`, MAX_LOGIN_ATTEMPTS, LOGIN_WINDOW_MS);
 }
 
 /** Clear the counter on success so normal use never trips the limit. */
 function loginSucceeded(key: string): void {
-  loginAttempts.delete(key);
+  // Not awaited: the login should not wait on a bookkeeping delete, and a
+  // failure only means the caller keeps a few counted attempts.
+  void clearRateLimit(`login:${key}`);
 }
 
 export const authOptions: NextAuthOptions = {
@@ -62,7 +60,7 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null;
 
         const throttleKey = `staff:${credentials.email.toLowerCase().trim()}`;
-        if (!loginAllowed(throttleKey)) return null;
+        if (!(await loginAllowed(throttleKey))) return null;
 
         // Lazy import so a Prisma binary failure doesn't crash the auth module at load time
         let prisma: Awaited<typeof import("@/lib/prisma")>["prisma"];
@@ -168,7 +166,7 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null;
 
         const throttleKey = `student:${credentials.email.toLowerCase().trim()}`;
-        if (!loginAllowed(throttleKey)) return null;
+        if (!(await loginAllowed(throttleKey))) return null;
 
         let prisma: Awaited<typeof import("@/lib/prisma")>["prisma"];
         try {

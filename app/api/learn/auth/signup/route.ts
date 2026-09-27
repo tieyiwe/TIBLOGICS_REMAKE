@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { rateLimit } from "@/lib/require-admin";
+import { checkRateLimit } from "@/lib/require-admin";
 import { sendStudentWelcomeEmail } from "@/lib/learn/emails";
 
 const SignupSchema = z.object({
@@ -13,7 +13,7 @@ const SignupSchema = z.object({
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-  if (!rateLimit(`learn-signup:${ip}`, 5, 60_000)) {
+  if (!(await checkRateLimit(`learn-signup:${ip}`, 5, 60_000))) {
     return NextResponse.json({ error: "Too many attempts. Try again shortly." }, { status: 429 });
   }
 

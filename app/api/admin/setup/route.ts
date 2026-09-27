@@ -2,20 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { secretEquals } from "@/lib/require-admin";
-
-const deleteRateLimit = new Map<string, { count: number; resetAt: number }>();
-
-function checkDeleteRate(ip: string): boolean {
-  const now = Date.now();
-  const entry = deleteRateLimit.get(ip);
-  if (!entry || now > entry.resetAt) {
-    deleteRateLimit.set(ip, { count: 1, resetAt: now + 3600000 }); // 1-hr window
-    return true;
-  }
-  if (entry.count >= 5) return false; // max 5 attempts/hr
-  entry.count++;
-  return true;
-}
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET() {
   try {
@@ -77,7 +64,7 @@ export async function POST(req: NextRequest) {
 // Requires either the current password or the RESET_TOKEN env var.
 export async function DELETE(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-  if (!checkDeleteRate(ip)) {
+  if (!(await checkRateLimit(`admin-setup-delete:${ip}`, 5, 3_600_000))) {
     return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
   }
 

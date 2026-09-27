@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { rateLimit } from "@/lib/require-admin";
+import { checkRateLimit } from "@/lib/require-admin";
 
 const Body = z.object({
   email: z.string().trim().toLowerCase().email("Enter a valid email"),
@@ -10,7 +10,7 @@ const Body = z.object({
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-  if (!rateLimit(`learn-waitlist:${ip}`, 8, 60_000)) {
+  if (!(await checkRateLimit(`learn-waitlist:${ip}`, 8, 60_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 

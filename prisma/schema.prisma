@@ -14,32 +14,32 @@ datasource db {
 }
 
 model Appointment {
-  id              String    @id @default(cuid())
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  serviceType     String
-  serviceDuration String
-  servicePrice    Int
-  date            DateTime
-  timeSlot        String
-  timezone        String    @default("America/New_York")
-  firstName       String
-  lastName        String
-  email           String
-  company         String?
-  phone           String?
-  goalNotes       String?
-  addOnRecording      Boolean @default(false)
-  addOnActionPlan     Boolean @default(false)
-  addOnSlackAccess    Boolean @default(false)
-  totalAmount     Int
-  status          AppointmentStatus @default(PENDING)
+  id               String            @id @default(cuid())
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  serviceType      String
+  serviceDuration  String
+  servicePrice     Int
+  date             DateTime
+  timeSlot         String
+  timezone         String            @default("America/New_York")
+  firstName        String
+  lastName         String
+  email            String
+  company          String?
+  phone            String?
+  goalNotes        String?
+  addOnRecording   Boolean           @default(false)
+  addOnActionPlan  Boolean           @default(false)
+  addOnSlackAccess Boolean           @default(false)
+  totalAmount      Int
+  status           AppointmentStatus @default(PENDING)
   stripeSessionId  String?
   stripePaymentId  String?
   paymentStatus    String?
   zoomLink         String?
   notes            String?
-  reminderSent     Boolean   @default(false)
+  reminderSent     Boolean           @default(false)
   confirmedAt      DateTime?
   cancelledAt      DateTime?
   cancelReason     String?
@@ -137,6 +137,17 @@ model AdminSettings {
   updatedAt DateTime @updatedAt
 }
 
+/// Rate-limit counters. Shared so a limit survives a restart and holds across
+/// instances — the in-memory version reset on every deploy and counted per
+/// instance. Rows are disposable; pruneRateLimits() clears expired ones.
+model RateLimit {
+  key     String   @id
+  count   Int      @default(0)
+  resetAt DateTime
+
+  @@index([resetAt])
+}
+
 model BlockedDate {
   id        String   @id @default(cuid())
   date      DateTime
@@ -193,14 +204,14 @@ enum ProjectPriority {
 }
 
 model ProjectTask {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   text      String
-  done      Boolean  @default(false)
-  createdAt DateTime @default(now())
+  done      Boolean   @default(false)
+  createdAt DateTime  @default(now())
   dueDate   DateTime?
-  order     Int      @default(0)
+  order     Int       @default(0)
 
   @@index([projectId])
 }
@@ -350,20 +361,20 @@ model ActiveSession {
 }
 
 model Collaborator {
-  id            String    @id @default(cuid())
+  id            String                    @id @default(cuid())
   name          String
-  email         String    @unique
+  email         String                    @unique
   passwordHash  String?
-  role          String    @default("CUSTOM")
+  role          String                    @default("CUSTOM")
   permissions   String[]
-  isAdmin       Boolean   @default(false)
-  active        Boolean   @default(true)
-  inviteToken   String?   @unique
+  isAdmin       Boolean                   @default(false)
+  active        Boolean                   @default(true)
+  inviteToken   String?                   @unique
   inviteExpires DateTime?
   invitedBy     String
   lastLoginAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
   activityLogs  CollaboratorActivityLog[]
 
   @@index([email])
@@ -387,35 +398,35 @@ model CollaboratorActivityLog {
 }
 
 model AgentLead {
-  id            String          @id @default(cuid())
-  source        String          @default("ai_generated")
-  companyName   String
-  contactName   String?
-  email         String?
-  phone         String?
-  website       String?
-  location      String?
-  industry      String?
-  description   String?         @db.Text
-  notes         String?         @db.Text
-  status        AgentLeadStatus @default(NEW)
-  fromAgent     String          @default("aria")
-  assignedTo    String?
-  callSid           String?
-  callStatus        String?
-  callNotes         String?   @db.Text
-  callTranscript    String?   @db.Text
-  callSummary       String?   @db.Text
-  blandCallId       String?
-  interestedIn      String[]
-  hasWebsite        Boolean?
-  businessInfo      Json?
-  scrapedAt         DateTime?
-  area              String?
-  transferredAt     DateTime?
-  contactedAt       DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id             String          @id @default(cuid())
+  source         String          @default("ai_generated")
+  companyName    String
+  contactName    String?
+  email          String?
+  phone          String?
+  website        String?
+  location       String?
+  industry       String?
+  description    String?         @db.Text
+  notes          String?         @db.Text
+  status         AgentLeadStatus @default(NEW)
+  fromAgent      String          @default("aria")
+  assignedTo     String?
+  callSid        String?
+  callStatus     String?
+  callNotes      String?         @db.Text
+  callTranscript String?         @db.Text
+  callSummary    String?         @db.Text
+  blandCallId    String?
+  interestedIn   String[]
+  hasWebsite     Boolean?
+  businessInfo   Json?
+  scrapedAt      DateTime?
+  area           String?
+  transferredAt  DateTime?
+  contactedAt    DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@index([status])
   @@index([fromAgent])
@@ -523,25 +534,25 @@ model Student {
 }
 
 model LearnTrack {
-  id                   String  @id @default(cuid())
+  id                   String   @id @default(cuid())
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
-  slug                 String  @unique
+  slug                 String   @unique
   title                String
   titleFr              String?
   tagline              String?
-  description          String  @db.Text
-  descriptionFr        String? @db.Text
-  level                String  @default("beginner")   // starter|beginner|intermediate|advanced
-  levelEnd             String?                         // set when the track spans levels
-  status               String  @default("draft")       // draft|coming_soon|live
-  sortOrder            Int     @default(0)
-  accentColor          String  @default("#F47C4C")
+  description          String   @db.Text
+  descriptionFr        String?  @db.Text
+  level                String   @default("beginner") // starter|beginner|intermediate|advanced
+  levelEnd             String? // set when the track spans levels
+  status               String   @default("draft") // draft|coming_soon|live
+  sortOrder            Int      @default(0)
+  accentColor          String   @default("#F47C4C")
   heroImage            String?
-  outcomes             Json    @default("[]")
+  outcomes             Json     @default("[]")
   audience             String?
   certificateName      String
-  estimatedHours       Float   @default(0)
+  estimatedHours       Float    @default(0)
   estimatedWeeksAt3Hrs Int?
 
   modules      LearnModule[]
@@ -555,35 +566,35 @@ model LearnTrack {
 }
 
 model LearnModule {
-  id               String @id @default(cuid())
+  id               String     @id @default(cuid())
   trackId          String
   track            LearnTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
   title            String
   summary          String?
   sortOrder        Int
-  estimatedMinutes Int    @default(0)
+  estimatedMinutes Int        @default(0)
 
-  lessons    Lesson[]
-  quiz       Quiz?
-  examQs     FinalExamQuestion[]
-  labs       Lab[]
+  lessons Lesson[]
+  quiz    Quiz?
+  examQs  FinalExamQuestion[]
+  labs    Lab[]
 
   @@index([trackId])
 }
 
 model Lesson {
-  id              String  @id @default(cuid())
+  id              String      @id @default(cuid())
   moduleId        String
   module          LearnModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   title           String
   sortOrder       Int
-  contentType     String  @default("mixed")  // video|article|mixed
+  contentType     String      @default("mixed") // video|article|mixed
   videoUrl        String?
-  bodyMd          String  @db.Text
-  durationMinutes Int     @default(0)
+  bodyMd          String      @db.Text
+  durationMinutes Int         @default(0)
   objective       String?
-  isPreview       Boolean @default(false)
-  hasPractice     Boolean @default(false)
+  isPreview       Boolean     @default(false)
+  hasPractice     Boolean     @default(false)
 
   resources  LessonResource[]
   microCheck MicroCheck?
@@ -594,55 +605,55 @@ model Lesson {
 }
 
 model LessonResource {
-  id           String  @id @default(cuid())
-  lessonId     String
-  lesson       Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  title        String
-  url          String
-  resourceType String  @default("tool")  // tool|article|video|dataset|template|account_signup
-  isFree       Boolean @default(true)
-  isRequired   Boolean @default(false)
-  notes        String?
-  sortOrder    Int     @default(0)
-  lastCheckedStatus Int?                 // admin link checker result
+  id                String  @id @default(cuid())
+  lessonId          String
+  lesson            Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  title             String
+  url               String
+  resourceType      String  @default("tool") // tool|article|video|dataset|template|account_signup
+  isFree            Boolean @default(true)
+  isRequired        Boolean @default(false)
+  notes             String?
+  sortOrder         Int     @default(0)
+  lastCheckedStatus Int? // admin link checker result
 
   @@index([lessonId])
 }
 
 // ── Tier 1: micro-checks (after every lesson) ──────────────────────────────
 model MicroCheck {
-  id             String @id @default(cuid())
-  lessonId       String @unique
-  lesson         Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  passScore      Int    @default(67)
-  questionsServed Int   @default(3)
+  id              String @id @default(cuid())
+  lessonId        String @unique
+  lesson          Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  passScore       Int    @default(67)
+  questionsServed Int    @default(3)
 
   questions MicroCheckQuestion[]
   attempts  MicroCheckAttempt[]
 }
 
 model MicroCheckQuestion {
-  id           String @id @default(cuid())
+  id           String     @id @default(cuid())
   microCheckId String
   microCheck   MicroCheck @relation(fields: [microCheckId], references: [id], onDelete: Cascade)
-  question     String @db.Text
+  question     String     @db.Text
   options      Json
   correctIndex Int
-  explanation  String @db.Text
+  explanation  String     @db.Text
 
   @@index([microCheckId])
 }
 
 model MicroCheckAttempt {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
   studentId    String
-  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
   microCheckId String
   microCheck   MicroCheck @relation(fields: [microCheckId], references: [id], onDelete: Cascade)
   score        Int
   passed       Boolean
   answers      Json
-  createdAt    DateTime @default(now())
+  createdAt    DateTime   @default(now())
 
   @@index([studentId])
   @@index([microCheckId])
@@ -650,11 +661,11 @@ model MicroCheckAttempt {
 
 // ── Tier 2: module quizzes ─────────────────────────────────────────────────
 model Quiz {
-  id              String @id @default(cuid())
-  moduleId        String @unique
+  id              String      @id @default(cuid())
+  moduleId        String      @unique
   module          LearnModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  passScore       Int    @default(80)
-  questionsServed Int    @default(8)
+  passScore       Int         @default(80)
+  questionsServed Int         @default(8)
 
   questions QuizQuestion[]
   attempts  QuizAttempt[]
@@ -689,33 +700,33 @@ model QuizAttempt {
 
 // ── Tier 3: timed final exam ───────────────────────────────────────────────
 model FinalExam {
-  id                String @id @default(cuid())
-  trackId           String @unique
-  track             LearnTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
-  title             String
-  timeLimitMinutes  Int
-  questionsServed   Int
-  passScore         Int    @default(75)
-  distinctionScore  Int    @default(90)
-  maxAttempts       Int    @default(3)
-  cooldownHours     Int    @default(24)
-  instructionsMd    String @db.Text
+  id               String     @id @default(cuid())
+  trackId          String     @unique
+  track            LearnTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  title            String
+  timeLimitMinutes Int
+  questionsServed  Int
+  passScore        Int        @default(75)
+  distinctionScore Int        @default(90)
+  maxAttempts      Int        @default(3)
+  cooldownHours    Int        @default(24)
+  instructionsMd   String     @db.Text
 
   questions FinalExamQuestion[]
   sessions  FinalExamSession[]
 }
 
 model FinalExamQuestion {
-  id           String  @id @default(cuid())
+  id           String       @id @default(cuid())
   finalExamId  String
-  finalExam    FinalExam @relation(fields: [finalExamId], references: [id], onDelete: Cascade)
+  finalExam    FinalExam    @relation(fields: [finalExamId], references: [id], onDelete: Cascade)
   moduleId     String?
   module       LearnModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
-  question     String  @db.Text
+  question     String       @db.Text
   options      Json
   correctIndex Int
-  explanation  String  @db.Text
-  difficulty   Int     @default(2)   // 1=recall 2=application 3=analysis
+  explanation  String       @db.Text
+  difficulty   Int          @default(2) // 1=recall 2=application 3=analysis
 
   @@index([finalExamId])
   @@index([moduleId])
@@ -727,7 +738,7 @@ model FinalExamSession {
   student         Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
   finalExamId     String
   finalExam       FinalExam @relation(fields: [finalExamId], references: [id], onDelete: Cascade)
-  status          String    @default("in_progress")  // in_progress|submitted|expired
+  status          String    @default("in_progress") // in_progress|submitted|expired
   questionIds     Json
   startedAt       DateTime  @default(now())
   expiresAt       DateTime
@@ -750,24 +761,28 @@ model FinalExamSession {
 //   critique — spot the planted flaws in a supplied AI answer
 //   build    — do a real task, tick the steps, submit an artefact
 model Lab {
-  id               String  @id @default(cuid())
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  trackId          String
-  track            LearnTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
-  moduleId         String?
-  module           LearnModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
-  lessonId         String?
-  lesson           Lesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  id        String       @id @default(cuid())
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  trackId   String
+  track     LearnTrack   @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  moduleId  String?
+  module    LearnModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  lessonId  String?
+  lesson    Lesson?      @relation(fields: [lessonId], references: [id], onDelete: SetNull)
 
   slug             String  @unique
   title            String
-  labType          String  @default("prompt")   // prompt|critique|build
+  labType          String  @default("prompt") // prompt|critique|build
   briefMd          String  @db.Text
   scenarioMd       String? @db.Text
-  /** Criteria the attempt is scored against. Shown to the learner up front. */
+  /**
+   * Criteria the attempt is scored against. Shown to the learner up front.
+   */
   objectives       Json    @default("[]")
-  /** Type-specific settings (planted flaws, checklist steps, sandbox system prompt). */
+  /**
+   * Type-specific settings (planted flaws, checklist steps, sandbox system prompt).
+   */
   config           Json    @default("{}")
   passScore        Int     @default(70)
   points           Int     @default(40)
@@ -782,24 +797,30 @@ model Lab {
 }
 
 model LabAttempt {
-  id          String   @id @default(cuid())
-  studentId   String
-  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  labId       String
-  lab         Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
-  status      String   @default("in_progress")  // in_progress|submitted
-  /** Learner's work: prompt text, selections, checklist state, artefact URL. */
-  submission  Json     @default("{}")
-  /** Sandbox conversation, for prompt labs. */
-  transcript  Json     @default("[]")
-  score       Int?
-  passed      Boolean  @default(false)
-  feedbackMd  String?  @db.Text
-  /** Per-objective outcome, so feedback can be shown against each criterion. */
-  breakdown   Json?
-  runCount    Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  studentId  String
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  labId      String
+  lab        Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
+  status     String   @default("in_progress") // in_progress|submitted
+  /**
+   * Learner's work: prompt text, selections, checklist state, artefact URL.
+   */
+  submission Json     @default("{}")
+  /**
+   * Sandbox conversation, for prompt labs.
+   */
+  transcript Json     @default("[]")
+  score      Int?
+  passed     Boolean  @default(false)
+  feedbackMd String?  @db.Text
+  /**
+   * Per-objective outcome, so feedback can be shown against each criterion.
+   */
+  breakdown  Json?
+  runCount   Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([studentId])
   @@index([labId])
@@ -808,12 +829,12 @@ model LabAttempt {
 
 // ── Capstone ───────────────────────────────────────────────────────────────
 model Capstone {
-  id            String @id @default(cuid())
-  trackId       String @unique
+  id            String     @id @default(cuid())
+  trackId       String     @unique
   track         LearnTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
-  briefMd       String @db.Text
+  briefMd       String     @db.Text
   rubric        Json
-  passThreshold Int    @default(70)
+  passThreshold Int        @default(70)
 
   submissions CapstoneSubmission[]
 }
@@ -824,7 +845,7 @@ model CapstoneSubmission {
   student       Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
   capstoneId    String
   capstone      Capstone  @relation(fields: [capstoneId], references: [id], onDelete: Cascade)
-  status        String    @default("submitted")  // submitted|in_review|revisions_requested|passed|failed
+  status        String    @default("submitted") // submitted|in_review|revisions_requested|passed|failed
   submissionUrl String?
   submissionMd  String?   @db.Text
   reviewerNotes String?   @db.Text
@@ -846,8 +867,8 @@ model LearnSubscription {
   student              Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
   stripeCustomerId     String?
   stripeSubscriptionId String?   @unique
-  status               String    @default("trialing")  // trialing|active|past_due|canceled
-  plan                 String    @default("monthly")   // monthly|annual
+  status               String    @default("trialing") // trialing|active|past_due|canceled
+  plan                 String    @default("monthly") // monthly|annual
   currentPeriodEnd     DateTime?
   graceUntil           DateTime?
   cancelAtPeriodEnd    Boolean   @default(false)
@@ -873,7 +894,7 @@ model PointsLedger {
   id        String   @id @default(cuid())
   studentId String
   student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  source    String   // lesson_complete|micro_check_pass|quiz_pass|quiz_perfect|final_exam_pass|final_exam_distinction|capstone_pass|streak_bonus|track_complete
+  source    String // lesson_complete|micro_check_pass|quiz_pass|quiz_perfect|final_exam_pass|final_exam_distinction|capstone_pass|streak_bonus|track_complete
   refId     String?
   points    Int
   createdAt DateTime @default(now())
@@ -883,19 +904,19 @@ model PointsLedger {
 }
 
 model LearnCertificate {
-  id             String   @id @default(cuid())
-  studentId      String
-  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  trackId        String
-  track          LearnTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
-  verificationId String   @unique @default(uuid())
-  recipientName  String
+  id              String     @id @default(cuid())
+  studentId       String
+  student         Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  trackId         String
+  track           LearnTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  verificationId  String     @unique @default(uuid())
+  recipientName   String
   certificateName String
-  distinction    Boolean  @default(false)
-  examScore      Int?
-  issuedAt       DateTime @default(now())
-  pdfUrl         String?
-  revoked        Boolean  @default(false)
+  distinction     Boolean    @default(false)
+  examScore       Int?
+  issuedAt        DateTime   @default(now())
+  pdfUrl          String?
+  revoked         Boolean    @default(false)
 
   @@unique([studentId, trackId])
   @@index([verificationId])
@@ -919,15 +940,15 @@ model Product {
   name           String
   tagline        String?
   description    String   @db.Text
-  price          Int      @default(0)   // current price in cents
-  compareAtPrice Int?                   // original price (strike-through when on sale)
+  price          Int      @default(0) // current price in cents
+  compareAtPrice Int? // original price (strike-through when on sale)
   currency       String   @default("USD")
-  images         String[]               // image URLs (first = primary)
+  images         String[] // image URLs (first = primary)
   category       String   @default("General")
-  collections    String[]               // slugs of collections this product belongs to
+  collections    String[] // slugs of collections this product belongs to
   tags           String[]
-  stock          Int?                   // null = not tracked / unlimited
-  digital        Boolean  @default(true)  // digital => no shipping address collected
+  stock          Int? // null = not tracked / unlimited
+  digital        Boolean  @default(true) // digital => no shipping address collected
   featured       Boolean  @default(false)
   published      Boolean  @default(false)
   onSale         Boolean  @default(false)
@@ -940,21 +961,29 @@ model Product {
   //   external — a hosted resource (Notion, Sheets) opened via the same
   //              token check, so the link is never exposed before purchase
   //   none     — nothing to deliver (physical or service items)
-  deliveryType   String   @default("none")
-  /** Path under private/downloads/. Deliberately NOT in /public: anything
-      there is fetchable without paying. */
-  fileKey        String?
-  /** Filename the buyer sees when saving. */
-  fileName       String?
-  fileFormat     String?
-  fileSizeBytes  Int?
-  /** Destination for deliveryType = external. */
-  externalUrl    String?
-  /** How long a purchase stays downloadable, and how many times. */
-  downloadDays   Int      @default(365)
-  maxDownloads   Int      @default(10)
+  deliveryType  String  @default("none")
+  /**
+   * Path under private/downloads/. Deliberately NOT in /public: anything
+   * there is fetchable without paying.
+   */
+  fileKey       String?
+  /**
+   * Filename the buyer sees when saving.
+   */
+  fileName      String?
+  fileFormat    String?
+  fileSizeBytes Int?
+  /**
+   * Destination for deliveryType = external.
+   */
+  externalUrl   String?
+  /**
+   * How long a purchase stays downloadable, and how many times.
+   */
+  downloadDays  Int     @default(365)
+  maxDownloads  Int     @default(10)
 
-  grants         DownloadGrant[]
+  grants DownloadGrant[]
 
   @@index([published])
   @@index([category])
@@ -979,16 +1008,16 @@ model Collection {
 }
 
 model AbandonedCart {
-  id           String    @id @default(cuid())
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  email        String    @unique
-  items        Json                       // [{ id, slug, name, price, image, quantity }]
-  subtotal     Int       @default(0)
-  currency     String    @default("USD")
-  reminderCount Int      @default(0)
+  id             String    @id @default(cuid())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  email          String    @unique
+  items          Json // [{ id, slug, name, price, image, quantity }]
+  subtotal       Int       @default(0)
+  currency       String    @default("USD")
+  reminderCount  Int       @default(0)
   lastReminderAt DateTime?
-  recoveredAt  DateTime?
+  recoveredAt    DateTime?
 
   @@index([recoveredAt])
   @@index([updatedAt])
@@ -998,19 +1027,23 @@ model AbandonedCart {
 /// Created only by the Stripe webhook after payment, so a grant existing is
 /// itself proof of purchase.
 model DownloadGrant {
-  id            String   @id @default(cuid())
-  createdAt     DateTime @default(now())
-  /** Random, unguessable; this is the credential in the download URL. */
-  token         String   @unique
-  orderId       String
-  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId     String
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  /** Denormalised so a grant still works if the buyer's order email changes. */
-  email         String
-  downloadCount Int      @default(0)
-  maxDownloads  Int      @default(10)
-  expiresAt     DateTime
+  id             String    @id @default(cuid())
+  createdAt      DateTime  @default(now())
+  /**
+   * Random, unguessable; this is the credential in the download URL.
+   */
+  token          String    @unique
+  orderId        String
+  order          Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /**
+   * Denormalised so a grant still works if the buyer's order email changes.
+   */
+  email          String
+  downloadCount  Int       @default(0)
+  maxDownloads   Int       @default(10)
+  expiresAt      DateTime
   lastDownloadAt DateTime?
 
   @@index([orderId])
@@ -1026,7 +1059,7 @@ model Order {
   email           String
   customerName    String?
   phone           String?
-  items           Json                    // [{ productId, slug, name, price, quantity, image }]
+  items           Json // [{ productId, slug, name, price, quantity, image }]
   subtotal        Int      @default(0)
   total           Int      @default(0)
   currency        String   @default("USD")
@@ -1035,7 +1068,7 @@ model Order {
   shippingAddress Json?
   notes           String?
 
-  grants          DownloadGrant[]
+  grants DownloadGrant[]
 
   @@index([email])
   @@index([status])
@@ -1043,30 +1076,30 @@ model Order {
 }
 
 model Event {
-  id               String   @id @default(cuid())
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  title            String
-  slug             String   @unique
-  description      String   @db.Text
-  content          String?  @db.Text
-  type             String   @default("TRAINING")
-  price            Int      @default(0)
-  currency         String   @default("USD")
-  capacity         Int?
-  location         String   @default("Online")
-  date             DateTime?
-  endDate          DateTime?
-  timeSlot         String?
-  timezone         String   @default("America/New_York")
-  coverImage       String?
-  tags             String[]
-  featured         Boolean  @default(false)
-  published        Boolean  @default(false)
-  registrationOpen Boolean  @default(true)
+  id                String    @id @default(cuid())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  title             String
+  slug              String    @unique
+  description       String    @db.Text
+  content           String?   @db.Text
+  type              String    @default("TRAINING")
+  price             Int       @default(0)
+  currency          String    @default("USD")
+  capacity          Int?
+  location          String    @default("Online")
+  date              DateTime?
+  endDate           DateTime?
+  timeSlot          String?
+  timezone          String    @default("America/New_York")
+  coverImage        String?
+  tags              String[]
+  featured          Boolean   @default(false)
+  published         Boolean   @default(false)
+  registrationOpen  Boolean   @default(true)
   stripePaymentLink String?
-  spots            Int?
-  zoomLink         String?
+  spots             Int?
+  zoomLink          String?
 
   @@index([published])
   @@index([date])

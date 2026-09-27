@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireAdmin, rateLimit } from "@/lib/require-admin";
+import { requireAdmin, checkRateLimit } from "@/lib/require-admin";
 
 /** Clamp a client-reported score to the 0–100 range the admin UI renders. */
 function score(v: unknown): number {
@@ -12,7 +12,7 @@ function score(v: unknown): number {
 // result here before asking for an email.
 export async function POST(req: Request) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-  if (!rateLimit(`scanner-leads:${ip}`, 20, 60_000)) {
+  if (!(await checkRateLimit(`scanner-leads:${ip}`, 20, 60_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 

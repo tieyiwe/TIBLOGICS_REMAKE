@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { isValidEmail, requireAdmin, rateLimit } from "@/lib/require-admin";
+import { isValidEmail, requireAdmin, checkRateLimit } from "@/lib/require-admin";
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-  if (!rateLimit(`waitlist:${ip}`, 5, 60_000)) {
+  if (!(await checkRateLimit(`waitlist:${ip}`, 5, 60_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 

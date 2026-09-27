@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { rateLimit } from "@/lib/require-admin";
+import { checkRateLimit } from "@/lib/require-admin";
 
 // Anonymous visitors persist their advisor transcript here, so this is an
 // unauthenticated write into AdminSettings. Both the key and the value need
@@ -12,7 +12,7 @@ const SESSION_ID = /^[A-Za-z0-9_-]{1,64}$/;
 
 export async function POST(req: Request) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-  if (!rateLimit(`sessions-chat:${ip}`, 60, 60_000)) {
+  if (!(await checkRateLimit(`sessions-chat:${ip}`, 60, 60_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 

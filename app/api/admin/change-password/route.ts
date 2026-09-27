@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin, rateLimit, secretEquals } from "@/lib/require-admin";
+import { requireAdmin, checkRateLimit, secretEquals } from "@/lib/require-admin";
 
 export async function POST(req: Request) {
   // Staff only. A bare session check passed here for TIBLOGICS Learn students
@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   // This endpoint verifies the owner password, so it is a guessing oracle for
   // any account that reaches it. Bound the attempts.
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-  if (!rateLimit(`change-password:${ip}`, 10, 900_000)) {
+  if (!(await checkRateLimit(`change-password:${ip}`, 10, 900_000))) {
     return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
   }
 

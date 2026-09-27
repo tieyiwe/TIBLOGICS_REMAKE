@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
-import { isValidEmail, rateLimit } from "@/lib/require-admin";
+import { isValidEmail, checkRateLimit } from "@/lib/require-admin";
 
 // Saves / updates a shopper's cart keyed by email so we can send an
 // abandonment reminder later. Called when a shopper opts in from the drawer.
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-  if (!rateLimit(`shop-cart:${ip}`, 20, 60_000)) {
+  if (!(await checkRateLimit(`shop-cart:${ip}`, 20, 60_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 

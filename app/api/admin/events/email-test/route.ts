@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { sendEventWelcomeEmail, sendEventRegistrationConfirmation } from "@/lib/resend";
-import { requireAdmin, rateLimit } from "@/lib/require-admin";
+import { requireAdmin, checkRateLimit } from "@/lib/require-admin";
 
 export async function GET() {
   // Staff only. A bare session check passed here for TIBLOGICS Learn students
@@ -17,7 +17,7 @@ export async function GET() {
   const to = session?.user?.email ?? "";
   if (!to) return NextResponse.json({ error: "No recipient" }, { status: 400 });
 
-  if (!rateLimit(`events-email-test:${to}`, 5, 600_000)) {
+  if (!(await checkRateLimit(`events-email-test:${to}`, 5, 600_000))) {
     return NextResponse.json({ error: "Too many test sends. Try again shortly." }, { status: 429 });
   }
 

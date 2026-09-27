@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import payments from "@/lib/payments";
 import { requireStudent } from "@/lib/learn/session";
-import { rateLimit } from "@/lib/require-admin";
+import { checkRateLimit } from "@/lib/require-admin";
 
 const Body = z.object({
   plan: z.enum(["monthly", "annual"]),
@@ -22,7 +22,7 @@ const SITE = (
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-  if (!rateLimit(`learn-checkout:${ip}`, 10, 60_000)) {
+  if (!(await checkRateLimit(`learn-checkout:${ip}`, 10, 60_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 

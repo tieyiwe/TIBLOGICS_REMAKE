@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import resend from "@/lib/resend";
 import { sendTiweNotification } from "@/lib/resend";
 import { createMeeting, calcEndTime } from "@/lib/meeting-providers";
-import { isValidEmail, escapeHtml, requireAdmin, rateLimit, anonymiseIp } from "@/lib/require-admin";
+import { isValidEmail, escapeHtml, requireAdmin, checkRateLimit } from "@/lib/require-admin";
 import { listLimit } from "@/lib/admin/list-limit";
 import { findTopicByName } from "@/lib/booking/services";
 import {
@@ -88,17 +88,20 @@ export async function POST(req: Request) {
     // flood of requests; the tight one, consumed further down only when a
     // booking is actually about to be written, stops slot hoarding without
     // punishing someone who picks a blocked date a few times.
-    const ip = anonymiseIp(
+    // The full address, not a /24. checkRateLimit stores a keyed hash rather
+    // than the address itself, so precision here costs nothing in retained
+    // data — and a /24 put a whole office network on one shared allowance,
+    // where five bookings an hour would have colleagues blocking each other.
+    const ip =
       req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
-        req.headers.get("x-real-ip") ??
-        "unknown",
-    );
+      req.headers.get("x-real-ip") ??
+      "unknown";
     // With no forwarded header there is no caller to attribute to, and keying
     // on the literal "unknown" would put every visitor in one bucket — five
     // bookings and the site stops taking any. Fall back to the email instead,
     // so a limit can never be shared between unrelated people.
     const knownIp = ip !== "unknown";
-    if (!rateLimit(`appointments:req:${ip}`, knownIp ? 30 : 300, 10 * 60_000)) {
+    if (!(await checkRateLimit(`appointments:req:${ip}`, knownIp ? 30 : 300, 10 * 60_000))) {
       return NextResponse.json(
         { error: "Too many requests. Please try again in a few minutes." },
         { status: 429 },
@@ -212,7 +215,7 @@ export async function POST(req: Request) {
     // the per-IP booking allowance spent — a visitor who first tried a blocked
     // date or a taken slot has not used any of it up.
     const bookingKey = knownIp ? ip : `email:${String(email).toLowerCase()}`;
-    if (!rateLimit(`appointments:new:${bookingKey}`, 5, 60 * 60_000)) {
+    if (!(await checkRateLimit(`appointments:new:${bookingKey}`, 5, 60 * 60_000))) {
       return NextResponse.json(
         {
           error:

@@ -1,3 +1,4 @@
+import { checkRateLimit } from "@/lib/rate-limit";
 export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/claude";
@@ -44,23 +45,9 @@ Based on the user context provided, return a JSON object with exactly this struc
 
 Return exactly 3 recommendations, ranked by relevance. Be specific and contextual — if they visited the scanner, recommend the audit. If they're in healthcare, mention CareFlow AI. If they're interested in cost, recommend the calculator. Never be generic.`;
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + 3600000 });
-    return true;
-  }
-  if (entry.count >= 30) return false;
-  entry.count++;
-  return true;
-}
-
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for") ?? "unknown";
-  if (!checkRateLimit(ip)) {
+  if (!(await checkRateLimit(`recommendations:${ip}`, 30, 3_600_000))) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }
 

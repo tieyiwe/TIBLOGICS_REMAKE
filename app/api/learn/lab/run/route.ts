@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { requireEntitledStudent } from "@/lib/learn/session";
-import { rateLimit } from "@/lib/require-admin";
+import { checkRateLimit } from "@/lib/require-admin";
 import { streamChat } from "@/lib/claude";
 import { parseConfig } from "@/lib/learn/labs/types";
 
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   if (error) return error;
 
   // 20 sandbox runs per student per hour
-  if (!rateLimit(`lab-run:${student.id}`, 20, 3_600_000)) {
+  if (!(await checkRateLimit(`lab-run:${student.id}`, 20, 3_600_000))) {
     return NextResponse.json(
       { error: "You've hit the hourly limit for sandbox runs. Try again shortly." },
       { status: 429 },

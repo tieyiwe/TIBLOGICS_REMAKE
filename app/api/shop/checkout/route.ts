@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import stripe from "@/lib/stripe";
-import { rateLimit } from "@/lib/require-admin";
+import { checkRateLimit } from "@/lib/require-admin";
 import type Stripe from "stripe";
 
 function orderNumber() {
@@ -14,7 +14,7 @@ function orderNumber() {
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-  if (!rateLimit(`shop-checkout:${ip}`, 10, 60_000)) {
+  if (!(await checkRateLimit(`shop-checkout:${ip}`, 10, 60_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 

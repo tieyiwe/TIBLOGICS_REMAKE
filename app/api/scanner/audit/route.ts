@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkTargetUrl, safeFetch, BLOCK_MESSAGES, SsrfBlockedError } from "@/lib/ssrf";
 import { audit, type Signals } from "@/lib/scanner/audit";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 // Real measurement for the AI Scanner.
 //
@@ -9,20 +10,6 @@ import { audit, type Signals } from "@/lib/scanner/audit";
 // lib/scanner/audit.ts for the checks.
 
 export const maxDuration = 30;
-
-const rateMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRate(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateMap.set(ip, { count: 1, resetAt: now + 3_600_000 });
-    return true;
-  }
-  if (entry.count >= 20) return false;
-  entry.count++;
-  return true;
-}
 
 const UA = "TIBLOGICSScanner/2.0 (+https://tiblogics.com)";
 
@@ -41,7 +28,7 @@ async function probe(url: string, signal: AbortSignal): Promise<string | null> {
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for") ?? "unknown";
-  if (!checkRate(ip)) {
+  if (!(await checkRateLimit(`scanner-audit:${ip}`, 20, 3_600_000))) {
     return NextResponse.json({ error: "Rate limit exceeded. Try again later." }, { status: 429 });
   }
 

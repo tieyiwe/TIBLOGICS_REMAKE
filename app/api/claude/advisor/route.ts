@@ -1,3 +1,4 @@
+import { checkRateLimit } from "@/lib/rate-limit";
 export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/claude";
@@ -19,23 +20,9 @@ PROSPECT_PROFILE|name:[full name or "Unknown"]|biz:[business name]|industry:[ind
 
 Keep all responses to 2-4 sentences maximum. Ask ONE question at a time. Be warm and conversational, not salesy.`;
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + 3600000 });
-    return true;
-  }
-  if (entry.count >= 20) return false;
-  entry.count++;
-  return true;
-}
-
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for") ?? "unknown";
-  if (!checkRateLimit(ip)) {
+  if (!(await checkRateLimit(`claude-advisor:${ip}`, 20, 3_600_000))) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }
   try {
