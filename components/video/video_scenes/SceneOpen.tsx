@@ -33,24 +33,24 @@ export function SceneOpen() {
         </motion.div>
         
         <div className="overflow-hidden">
-          <motion.h1 
+          <motion.div 
             className="text-[5cqw] font-syne font-bold text-white tracking-tight leading-none uppercase"
             initial={{ y: '100%' }}
             animate={phase >= 1 ? { y: '0%' } : { y: '100%' }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           >
             AI Implementation
-          </motion.h1>
+          </motion.div>
         </div>
         <div className="overflow-hidden mt-2">
-          <motion.h1 
+          <motion.div 
             className="text-[4cqw] font-syne font-medium text-white/70 tracking-tight leading-none uppercase"
             initial={{ y: '100%' }}
             animate={phase >= 2 ? { y: '0%' } : { y: '100%' }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           >
             & Digital Solutions
-          </motion.h1>
+          </motion.div>
         </div>
       </div>
     </motion.div>

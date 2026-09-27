@@ -6,9 +6,11 @@ import AIBanner from "@/components/public/AIBanner";
 import { Bot, Zap, Brain } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "TIBLOGICS — AI Implementation & Digital Solutions Agency",
+  // The layout template appends " | TIBLOGICS", so naming the brand here
+  // repeated it in every search result.
+  title: "AI Implementation & Digital Solutions Agency",
   description:
-    "TIBLOGICS builds custom AI agents, workflow automation, and full-stack digital products for businesses in North America, Africa, and beyond. Start with a free discovery meeting.",
+    "TIBLOGICS builds AI agents, workflow automation, and full-stack digital products for businesses in North America, Africa and beyond. Book a free discovery call.",
   keywords: [
     "AI implementation agency", "AI agents", "workflow automation", "AI consulting",
     "digital transformation", "AI for small business", "LLM integration", "AI strategy",

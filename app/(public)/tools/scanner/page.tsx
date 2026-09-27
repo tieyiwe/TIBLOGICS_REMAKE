@@ -32,6 +32,37 @@ interface ScanResult {
   aiDescription: string;
 }
 
+/** One honest paragraph, assembled from what was measured. */
+function describeResult(d: {
+  overallScore: number; aiScore: number; perfScore: number; seoScore: number;
+  measured?: { schemaTypes?: string[]; ttfb?: number | null; imagesWithAlt?: number; imagesTotal?: number };
+}): string {
+  const m = d.measured ?? {};
+  const parts: string[] = [];
+
+  parts.push(
+    d.overallScore >= 80 ? "This site is in good shape overall."
+      : d.overallScore >= 60 ? "This site has solid foundations with clear gaps."
+      : "This site has significant gaps worth addressing.",
+  );
+
+  if ((m.schemaTypes?.length ?? 0) > 0) {
+    parts.push(`AI assistants can identify it: structured data declares ${m.schemaTypes!.slice(0, 3).join(", ")}.`);
+  } else {
+    parts.push("It publishes no structured data, so AI assistants have to infer what the business is — the single biggest gap for AI visibility.");
+  }
+
+  if (typeof m.ttfb === "number") {
+    parts.push(m.ttfb < 600 ? `The server is responsive (${m.ttfb}ms).` : `The server is slow to respond (${m.ttfb}ms).`);
+  }
+
+  if (m.imagesTotal && m.imagesWithAlt !== undefined && m.imagesWithAlt < m.imagesTotal) {
+    parts.push(`${m.imagesTotal - m.imagesWithAlt} image${m.imagesTotal - m.imagesWithAlt === 1 ? "" : "s"} lack alt text.`);
+  }
+
+  return parts.join(" ");
+}
+
 interface SpeedResult {
   ttfb: number | null;
   totalTime: number | null;
@@ -51,72 +82,6 @@ const SCAN_STAGES = [
   "Assessing UX patterns...",
   "Computing final score...",
 ];
-
-function generateScanResult(url: string): ScanResult {
-  if (url.includes("tiblogics.com")) {
-    return {
-      url,
-      overallScore: 91,
-      seoScore: 91,
-      perfScore: 82,
-      uxScore: 88,
-      aiScore: 95,
-      findings: [
-        { type: "good", text: "AI chat agent (Echelon) detected and active on all pages" },
-        { type: "good", text: "Structured JSON-LD schema markup present (Organization, WebSite, LocalBusiness)" },
-        { type: "good", text: "SSL certificate valid and HTTPS enforced" },
-        { type: "good", text: "Comprehensive SEO metadata on all key pages with Open Graph & Twitter Card" },
-        { type: "good", text: "Dynamic sitemap with blog posts detected at /sitemap.xml" },
-        { type: "warning", text: "Mobile Core Web Vitals — LCP can be further reduced with image preloading" },
-        { type: "good", text: "Custom admin CRM detected — contacts, prospects, appointments, and pipeline managed natively (no third-party CRM required)" },
-      ],
-      aiDescription:
-        "This site demonstrates best-in-class AI-first architecture: live AI chat agent, native CRM with contacts/prospects/appointments, AI-powered knowledge base, structured data, and comprehensive SEO. Minimal performance gains remain on mobile.",
-    };
-  }
-
-  const seoScore = Math.floor(Math.random() * 40) + 45;
-  const perfScore = Math.floor(Math.random() * 35) + 50;
-  const uxScore = Math.floor(Math.random() * 35) + 45;
-  const aiScore = Math.floor(Math.random() * 45) + 10;
-  const overallScore = Math.floor((seoScore + perfScore + uxScore) / 3);
-
-  const genericFindings: Finding[] = [
-    {
-      type: aiScore < 30 ? "critical" : "warning",
-      text:
-        aiScore < 30
-          ? "No AI integrations detected — major competitive gap"
-          : "Limited AI capabilities — opportunity for enhancement",
-    },
-    {
-      type: seoScore < 60 ? "warning" : "good",
-      text:
-        seoScore < 60 ? "SEO metadata incomplete on several pages" : "SEO fundamentals are solid",
-    },
-    {
-      type: perfScore < 65 ? "warning" : "good",
-      text:
-        perfScore < 65
-          ? "Page load speed needs optimization"
-          : "Performance scores are acceptable",
-    },
-    { type: "warning", text: "No automated lead capture or CRM integration found" },
-    { type: "good", text: "Mobile-responsive layout detected" },
-    { type: "critical", text: "No AI-powered personalization or recommendation engine" },
-  ];
-
-  return {
-    url,
-    overallScore,
-    seoScore,
-    perfScore,
-    uxScore,
-    aiScore,
-    findings: genericFindings,
-    aiDescription: `This site scores ${overallScore}/100 overall. The biggest opportunity is AI integration — adding automation, a chatbot, and AI-driven personalization could significantly improve lead capture and user engagement.`,
-  };
-}
 
 function scoreColor(score: number): string {
   if (score >= 70) return "#22c55e";
@@ -477,6 +442,9 @@ export default function ScannerPage() {
   const [scanning, setScanning] = useState(false);
   const [stage, setStage] = useState(0);
   const [result, setResult] = useState<ScanResult | null>(null);
+  // A scan that cannot reach the site has to say so. Silently showing nothing
+  // reads as a broken tool.
+  const [scanError, setScanError] = useState<string | null>(null);
   const [speedResult, setSpeedResult] = useState<SpeedResult | null>(null);
   const [speedLoading, setSpeedLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -494,6 +462,7 @@ export default function ScannerPage() {
     }
 
     setResult(null);
+    setScanError(null);
     setSpeedResult(null);
     setSpeedLoading(true);
     setEmailSubmitted(false);
@@ -514,11 +483,41 @@ export default function ScannerPage() {
       if (currentStage <= 5) setStage(currentStage);
     }, 800);
 
-    await new Promise((r) => setTimeout(r, 5000));
+    // The audit is the scan. The staged progress above is presentation; this
+    // is the request that actually measures the site.
+    let scanResult: ScanResult;
+    try {
+      const auditRes = await fetch("/api/scanner/audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: normalizedUrl }),
+      });
+      const data = await auditRes.json();
+      if (!auditRes.ok) throw new Error(data?.error || "The scan could not be completed");
+
+      scanResult = {
+        url: data.url ?? normalizedUrl,
+        overallScore: data.overallScore,
+        seoScore: data.seoScore,
+        perfScore: data.perfScore,
+        uxScore: data.uxScore,
+        aiScore: data.aiScore,
+        // The engine grades bad/warning/good; this UI has always said "critical".
+        findings: (data.findings ?? []).map((f: { type: string; text: string }) => ({
+          type: f.type === "bad" ? "critical" : (f.type as "warning" | "good"),
+          text: f.text,
+        })),
+        aiDescription: describeResult(data),
+      };
+    } catch (err) {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      setScanning(false);
+      setScanError(err instanceof Error ? err.message : "The scan could not be completed");
+      setSpeedLoading(false);
+      return;
+    }
 
     if (intervalRef.current) clearInterval(intervalRef.current);
-
-    const scanResult = generateScanResult(normalizedUrl);
     setScanning(false);
     setResult(scanResult);
 
@@ -618,6 +617,13 @@ export default function ScannerPage() {
         </form>
 
         {/* Scanning State */}
+        {scanError && !scanning && (
+          <div className="max-w-xl mx-auto mb-8 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-center">
+            <p className="font-syne font-bold text-[#0D1B2A]">That scan did not complete</p>
+            <p className="font-dm text-sm text-[#7A8FA6] mt-1">{scanError}</p>
+          </div>
+        )}
+
         {scanning && (
           <div className="flex flex-col items-center justify-center py-16 gap-6">
             <div className="relative w-20 h-20">
