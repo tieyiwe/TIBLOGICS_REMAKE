@@ -6,8 +6,8 @@ import ProductCard, { SHOP_CARD_STYLES } from "./ProductCard";
 import type { ShopProduct, ShopCollection } from "./types";
 
 const S = { darker: "#0C1112", muted: "#8A9BA0" };
-const syne = "'Syne', sans-serif";
-const dm = "'DM Sans', sans-serif";
+const syne = "var(--font-syne), sans-serif";
+const dm = "var(--font-dm-sans), sans-serif";
 
 export default function CollectionView({ collection, products }: { collection: ShopCollection; products: ShopProduct[] }) {
   return (

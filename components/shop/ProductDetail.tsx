@@ -15,8 +15,8 @@ const S = {
   muted: "#8A9BA0",
   border: "rgba(255,255,255,0.08)",
 };
-const syne = "'Syne', sans-serif";
-const dm = "'DM Sans', sans-serif";
+const syne = "var(--font-syne), sans-serif";
+const dm = "var(--font-dm-sans), sans-serif";
 
 export default function ProductDetail({ product: p, related }: { product: ShopProduct; related: ShopProduct[] }) {
   const { add, setOpen } = useCart();

@@ -140,12 +140,12 @@ export default function CartDrawer() {
           transition: "transform .32s cubic-bezier(.4,0,.2,1)",
           display: "flex",
           flexDirection: "column",
-          fontFamily: "'DM Sans',sans-serif",
+          fontFamily: "var(--font-dm-sans), sans-serif",
           color: "#fff",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 22px", borderBottom: "1px solid rgba(255,255,255,.08)" }}>
-          <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "1.15rem" }}>
+          <div style={{ fontFamily: "var(--font-syne), sans-serif", fontWeight: 800, fontSize: "1.15rem" }}>
             Your Cart {count > 0 && <span style={{ color: "#8A9BA0", fontWeight: 500 }}>· {count}</span>}
           </div>
           <button onClick={() => setOpen(false)} aria-label="Close cart" style={{ background: "none", border: "none", color: "#8A9BA0", cursor: "pointer", padding: 4 }}>
@@ -191,7 +191,7 @@ export default function CartDrawer() {
           <div style={{ borderTop: "1px solid rgba(255,255,255,.08)", padding: "20px 22px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "14px" }}>
               <span style={{ color: "#8A9BA0" }}>Subtotal</span>
-              <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "1.2rem" }}>{formatMoney(subtotal, "USD")}</span>
+              <span style={{ fontFamily: "var(--font-syne), sans-serif", fontWeight: 800, fontSize: "1.2rem" }}>{formatMoney(subtotal, "USD")}</span>
             </div>
 
             {/* Save cart / reminder opt-in */}
@@ -201,7 +201,7 @@ export default function CartDrawer() {
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setSavedEmail(false); }}
                 placeholder="Email me a reminder (optional)"
-                style={{ width: "100%", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: "12px", padding: "11px 40px 11px 14px", color: "#fff", fontSize: ".85rem", fontFamily: "'DM Sans',sans-serif", outline: "none" }}
+                style={{ width: "100%", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: "12px", padding: "11px 40px 11px 14px", color: "#fff", fontSize: ".85rem", fontFamily: "var(--font-dm-sans), sans-serif", outline: "none" }}
               />
               {savedEmail && isEmail(email) && (
                 <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "#22A387", display: "flex" }}><Check size={16} /></span>
@@ -222,7 +222,7 @@ export default function CartDrawer() {
                 border: "none",
                 background: "linear-gradient(135deg,#F47C4C,#F9A738)",
                 color: "#131A1B",
-                fontFamily: "'Syne',sans-serif",
+                fontFamily: "var(--font-syne), sans-serif",
                 fontWeight: 700,
                 fontSize: "1rem",
                 cursor: loading ? "default" : "pointer",

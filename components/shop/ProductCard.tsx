@@ -12,7 +12,7 @@ const S = {
   muted: "#8A9BA0",
   border: "rgba(255,255,255,0.08)",
 };
-const syne = "'Syne', sans-serif";
+const syne = "var(--font-syne), sans-serif";
 
 export function AddButton({ p }: { p: ShopProduct }) {
   const { add } = useCart();
@@ -73,7 +73,7 @@ export default function ProductCard({ p }: { p: ShopProduct }) {
         color: "#fff",
       }}
     >
-      <div style={{ position: "relative", aspectRatio: "1/1", background: "linear-gradient(135deg,#1C2526,#0C1112)", overflow: "hidden" }}>
+      <div style={{ position: "relative", aspectRatio: "4/5", background: "linear-gradient(135deg,#1C2526,#0C1112)", overflow: "hidden" }}>
         {p.images[0] ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={p.images[0]} alt={p.name} className="shop-card-img" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -83,12 +83,12 @@ export default function ProductCard({ p }: { p: ShopProduct }) {
           </div>
         )}
         {onSale && (
-          <span style={{ position: "absolute", top: "12px", left: "12px", background: "linear-gradient(135deg,#F47C4C,#F9A738)", color: "#131A1B", fontFamily: syne, fontWeight: 800, fontSize: ".72rem", padding: "4px 10px", borderRadius: "20px" }}>
+          <span style={{ position: "absolute", top: "12px", right: "12px", background: "linear-gradient(135deg,#F47C4C,#F9A738)", color: "#131A1B", fontFamily: syne, fontWeight: 800, fontSize: ".72rem", padding: "4px 10px", borderRadius: "20px" }}>
             −{pct}%
           </span>
         )}
         {p.featured && !onSale && (
-          <span style={{ position: "absolute", top: "12px", left: "12px", background: "rgba(19,26,27,.8)", color: "#F9A738", fontFamily: syne, fontWeight: 700, fontSize: ".7rem", padding: "4px 10px", borderRadius: "20px", border: "1px solid rgba(249,167,56,.4)" }}>
+          <span style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(19,26,27,.8)", color: "#F9A738", fontFamily: syne, fontWeight: 700, fontSize: ".7rem", padding: "4px 10px", borderRadius: "20px", border: "1px solid rgba(249,167,56,.4)" }}>
             ★ Featured
           </span>
         )}

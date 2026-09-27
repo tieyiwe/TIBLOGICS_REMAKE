@@ -11,7 +11,7 @@ const S = {
   muted: "#8A9BA0",
   border: "rgba(255,255,255,0.08)",
 };
-const syne = "'Syne', sans-serif";
+const syne = "var(--font-syne), sans-serif";
 
 export const SPOTLIGHT_STYLES = `
   .spot{

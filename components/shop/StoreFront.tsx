@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, Check } from "lucide-react";
 import ProductCard, { SHOP_CARD_STYLES } from "./ProductCard";
 import Spotlight, { SPOTLIGHT_STYLES } from "./Spotlight";
+import BrandPromo from "./BrandPromo";
 import type { ShopProduct, ShopCollection } from "./types";
 
 const S = {
@@ -14,8 +15,8 @@ const S = {
   muted: "#8A9BA0",
   border: "rgba(255,255,255,0.08)",
 };
-const syne = "'Syne', sans-serif";
-const dm = "'DM Sans', sans-serif";
+const syne = "var(--font-syne), sans-serif";
+const dm = "var(--font-dm-sans), sans-serif";
 
 export default function StoreFront({
   products,
@@ -55,10 +56,12 @@ export default function StoreFront({
   return (
     <div style={{ background: S.darker, color: "#fff", fontFamily: dm, minHeight: "100vh" }}>
       <style>{SHOP_CARD_STYLES + SPOTLIGHT_STYLES + `
-        .col-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+        .col-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,260px));gap:16px}
         @media(max-width:560px){.col-strip{grid-template-columns:repeat(2,1fr);gap:12px}}
         .col-card{transition:transform .3s,border-color .3s}
         .col-card:hover{transform:translateY(-4px);border-color:rgba(244,124,76,.5)}
+        .trust-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+        @media(max-width:760px){.trust-strip{grid-template-columns:1fr}}
       `}</style>
 
       {/* Hero */}
@@ -66,7 +69,7 @@ export default function StoreFront({
         <div style={{ maxWidth: "760px", margin: "0 auto" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(244,124,76,.1)", border: "1px solid rgba(244,124,76,.3)", borderRadius: "30px", padding: "7px 16px", marginBottom: "24px" }}>
             <ShoppingBag size={15} color={S.amber} />
-            <span style={{ fontSize: ".8rem", color: S.amber, fontWeight: 600 }}>The TIBLOGICS Shop</span>
+            <span style={{ fontSize: ".8rem", color: S.amber, fontWeight: 600 }}>The TIBLOGICS Store</span>
           </div>
           <h1 style={{ fontFamily: syne, fontWeight: 800, fontSize: "clamp(2.4rem,5vw,4rem)", lineHeight: 1.08, marginBottom: "18px" }}>
             Premium tools.<br />
@@ -75,6 +78,29 @@ export default function StoreFront({
           <p style={{ color: "#B0C4CC", fontSize: "1.05rem", lineHeight: 1.7, maxWidth: "520px", margin: "0 auto" }}>
             Curated templates, resources, and digital products — built by TIBLOGICS to move you forward faster.
           </p>
+        </div>
+      </section>
+
+      {/* What a first-time buyer checks before trusting a store */}
+      <section style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
+        <div className="trust-strip">
+          {[
+            { t: "Instant download", d: "Delivered the moment you pay" },
+            { t: "Yours to keep", d: "No subscription, no expiry" },
+            { t: "Secure checkout", d: "Card details never touch us" },
+          ].map((x) => (
+            <div key={x.t} style={{
+              display: "flex", alignItems: "flex-start", gap: "10px",
+              border: `1px solid ${S.border}`, borderRadius: "14px",
+              padding: "14px 16px", background: "rgba(255,255,255,.02)",
+            }}>
+              <Check size={15} color="#22A387" style={{ marginTop: "2px", flexShrink: 0 }} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: ".88rem", color: "#DCE7EA" }}>{x.t}</div>
+                <div style={{ color: S.muted, fontSize: ".8rem", marginTop: "1px" }}>{x.d}</div>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -89,7 +115,7 @@ export default function StoreFront({
       {/* Featured collections */}
       {featuredCollections.length > 0 && !collection && (
         <section style={{ maxWidth: "1200px", margin: "0 auto", padding: "8px 24px 8px" }}>
-          <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.15rem", marginBottom: "16px" }}>Shop by Collection</div>
+          <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.15rem", marginBottom: "16px" }}>Browse by Collection</div>
           <div className="col-strip">
             {featuredCollections.map((c) => (
               <button key={c.slug} onClick={() => { setCollection(c.slug); setCat("All"); }} className="col-card"
@@ -152,6 +178,9 @@ export default function StoreFront({
           </div>
         )}
       </section>
+
+      <BrandPromo />
+
     </div>
   );
 }
