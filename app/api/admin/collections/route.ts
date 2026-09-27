@@ -34,9 +34,15 @@ export async function POST(req: NextRequest) {
     if (!name) return NextResponse.json({ error: "Name is required" }, { status: 400 });
 
     let base = slugify(body.slug || name) || `collection-${Date.now()}`;
+    // Every candidate (`base`, `base-1`, …) shares the `base` prefix, so one
+    // query covers them all instead of a findUnique per attempt.
+    const taken = new Set(
+      (await prisma.collection.findMany({ where: { slug: { startsWith: base } }, select: { slug: true } }))
+        .map((c) => c.slug),
+    );
     let slug = base;
     let n = 1;
-    while (await prisma.collection.findUnique({ where: { slug } })) slug = `${base}-${n++}`;
+    while (taken.has(slug)) slug = `${base}-${n++}`;
 
     const collection = await prisma.collection.create({
       data: {

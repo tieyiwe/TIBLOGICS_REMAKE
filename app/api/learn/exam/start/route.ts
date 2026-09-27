@@ -50,9 +50,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Attempt limit + cooldown
+    // Only the count, the pass flag and the latest submittedAt are read below.
+    // Without a select this dragged back every past attempt's questionIds and
+    // full answer map as JSON.
     const past = await prisma.finalExamSession.findMany({
       where: { studentId: student.id, finalExamId: exam.id, status: { in: ["submitted", "expired"] } },
       orderBy: { startedAt: "desc" },
+      select: { passed: true, submittedAt: true },
     });
     if (past.some((s) => s.passed)) {
       return NextResponse.json({ error: "You have already passed this exam." }, { status: 409 });

@@ -46,20 +46,21 @@ export async function issueCertificate(
     };
   }
 
-  const [student, track] = await Promise.all([
+  // The exam lookup does not depend on student/track, so it joins the same
+  // batch rather than adding a third round trip.
+  const [student, track, bestExam] = await Promise.all([
     prisma.student.findUnique({ where: { id: studentId }, select: { name: true, email: true } }),
     prisma.learnTrack.findUnique({ where: { id: trackId }, select: { certificateName: true, title: true } }),
+    // Distinction comes from the best passing exam score
+    prisma.finalExamSession
+      .findFirst({
+        where: { studentId, finalExam: { trackId }, passed: true },
+        orderBy: { score: "desc" },
+        select: { score: true, finalExam: { select: { distinctionScore: true } } },
+      })
+      .catch(() => null),
   ]);
   if (!student || !track) return { ok: false, reason: "Student or track not found" };
-
-  // Distinction comes from the best passing exam score
-  const bestExam = await prisma.finalExamSession
-    .findFirst({
-      where: { studentId, finalExam: { trackId }, passed: true },
-      orderBy: { score: "desc" },
-      select: { score: true, finalExam: { select: { distinctionScore: true } } },
-    })
-    .catch(() => null);
 
   const examScore = bestExam?.score ?? null;
   const distinction =

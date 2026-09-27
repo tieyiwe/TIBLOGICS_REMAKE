@@ -105,16 +105,31 @@ export async function POST(req: Request) {
 
         // Update inventory / sold counts (best-effort)
         const items = Array.isArray(order.items) ? (order.items as unknown as Array<{ productId: string; quantity: number }>) : [];
-        for (const it of items) {
-          const prod = await prisma.product.findUnique({ where: { id: it.productId }, select: { stock: true } }).catch(() => null);
-          await prisma.product.update({
-            where: { id: it.productId },
-            data: {
-              soldCount: { increment: it.quantity },
-              ...(prod?.stock != null ? { stock: { decrement: Math.min(prod.stock, it.quantity) } } : {}),
-            },
-          }).catch((err) => console.error("[stripe/webhook] product update", err));
-        }
+        // One read for every line item's stock, then the per-item updates go out
+        // together. A missing row (or a failed read) leaves stock untracked for
+        // that item, exactly as the old per-item `.catch(() => null)` did.
+        const stockById = new Map<string, number | null>(
+          (
+            await prisma.product
+              .findMany({
+                where: { id: { in: items.map((it) => it.productId) } },
+                select: { id: true, stock: true },
+              })
+              .catch(() => [])
+          ).map((p) => [p.id, p.stock]),
+        );
+        await Promise.all(
+          items.map((it) => {
+            const stock = stockById.get(it.productId) ?? null;
+            return prisma.product.update({
+              where: { id: it.productId },
+              data: {
+                soldCount: { increment: it.quantity },
+                ...(stock != null ? { stock: { decrement: Math.min(stock, it.quantity) } } : {}),
+              },
+            }).catch((err) => console.error("[stripe/webhook] product update", err));
+          }),
+        );
 
         if (email) {
           // Mark any saved cart for this shopper as recovered (stops reminders)

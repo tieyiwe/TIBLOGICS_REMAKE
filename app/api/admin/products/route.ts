@@ -45,9 +45,15 @@ export async function POST(req: NextRequest) {
 
     // Ensure a unique slug
     let base = slugify(body.slug || name) || `product-${Date.now()}`;
+    // Every candidate (`base`, `base-1`, `base-2`, …) shares the `base` prefix,
+    // so one query covers them all instead of a findUnique per attempt.
+    const taken = new Set(
+      (await prisma.product.findMany({ where: { slug: { startsWith: base } }, select: { slug: true } }))
+        .map((p) => p.slug),
+    );
     let slug = base;
     let n = 1;
-    while (await prisma.product.findUnique({ where: { slug } })) {
+    while (taken.has(slug)) {
       slug = `${base}-${n++}`;
     }
 

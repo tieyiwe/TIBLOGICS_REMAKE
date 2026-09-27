@@ -26,23 +26,37 @@ export async function POST() {
   const warnings: string[] = [];
 
   try {
-    // Collection first, so products have something to belong to.
-    await prisma.collection.upsert({
-      where: { slug: PROMPT_PACK_COLLECTION },
-      create: {
-        slug: PROMPT_PACK_COLLECTION,
-        name: PROMPT_PACK_COLLECTION_META.name,
-        description: PROMPT_PACK_COLLECTION_META.description,
-        featured: PROMPT_PACK_COLLECTION_META.featured,
-        sortOrder: PROMPT_PACK_COLLECTION_META.sortOrder,
-        published: true,
-      },
-      update: {
-        name: PROMPT_PACK_COLLECTION_META.name,
-        description: PROMPT_PACK_COLLECTION_META.description,
-        featured: PROMPT_PACK_COLLECTION_META.featured,
-      },
-    });
+    // The collection and the "which packs already exist?" lookup touch
+    // different tables and neither reads the other, so they go out together.
+    // One findMany over every pack slug replaces a findUnique per pack.
+    const [, existingRows] = await Promise.all([
+      prisma.collection.upsert({
+        where: { slug: PROMPT_PACK_COLLECTION },
+        create: {
+          slug: PROMPT_PACK_COLLECTION,
+          name: PROMPT_PACK_COLLECTION_META.name,
+          description: PROMPT_PACK_COLLECTION_META.description,
+          featured: PROMPT_PACK_COLLECTION_META.featured,
+          sortOrder: PROMPT_PACK_COLLECTION_META.sortOrder,
+          published: true,
+        },
+        update: {
+          name: PROMPT_PACK_COLLECTION_META.name,
+          description: PROMPT_PACK_COLLECTION_META.description,
+          featured: PROMPT_PACK_COLLECTION_META.featured,
+        },
+      }),
+      prisma.product.findMany({
+        where: { slug: { in: PROMPT_PACKS.map((p) => p.slug) } },
+        select: { id: true, slug: true },
+      }),
+    ]);
+    const existingBySlug = new Map(existingRows.map((r) => [r.slug, r.id]));
+
+    // The loop now only builds work (and the on-disk warnings, in pack order).
+    // Prisma promises are lazy, so nothing is sent until the Promise.all below.
+    const writes: Promise<unknown>[] = [];
+    const outcomes: Array<{ slug: string; isNew: boolean }> = [];
 
     for (const pack of PROMPT_PACKS) {
       // Verify the PDF is on disk. A product that sells and then fails at
@@ -87,18 +101,21 @@ export async function POST() {
         published: sizeBytes !== null,
       };
 
-      const existing = await prisma.product.findUnique({
-        where: { slug: pack.slug },
-        select: { id: true },
-      });
-
-      if (existing) {
-        await prisma.product.update({ where: { id: existing.id }, data });
-        updated.push(pack.slug);
+      const existingId = existingBySlug.get(pack.slug);
+      if (existingId) {
+        writes.push(prisma.product.update({ where: { id: existingId }, data }));
       } else {
-        await prisma.product.create({ data: { slug: pack.slug, ...data } });
-        created.push(pack.slug);
+        writes.push(prisma.product.create({ data: { slug: pack.slug, ...data } }));
       }
+      outcomes.push({ slug: pack.slug, isNew: !existingId });
+    }
+
+    await Promise.all(writes);
+
+    // Reported in PROMPT_PACKS order, as before.
+    for (const o of outcomes) {
+      if (o.isNew) created.push(o.slug);
+      else updated.push(o.slug);
     }
 
     const live = await prisma.product.count({

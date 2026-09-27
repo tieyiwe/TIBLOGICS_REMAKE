@@ -36,15 +36,17 @@ export function notifyMilestone(input: MilestoneInput): void {
 }
 
 async function sendMilestone({ studentId, kind, trackId, detail, points = 0 }: MilestoneInput) {
-  const student = await prisma.student.findUnique({
-    where: { id: studentId },
-    select: { email: true, name: true },
-  });
+  // Different tables, neither reads the other.
+  const [student, track] = await Promise.all([
+    prisma.student.findUnique({
+      where: { id: studentId },
+      select: { email: true, name: true },
+    }),
+    trackId
+      ? prisma.learnTrack.findUnique({ where: { id: trackId }, select: { title: true } })
+      : Promise.resolve(null),
+  ]);
   if (!student) return;
-
-  const track = trackId
-    ? await prisma.learnTrack.findUnique({ where: { id: trackId }, select: { title: true } })
-    : null;
 
   const copy: Record<MilestoneKind, { milestone: string; detail: string }> = {
     module_quiz_passed: {
@@ -104,12 +106,14 @@ export function checkLevelUp(studentId: string, totalBefore: number, totalAfter:
  * previous completion count was below half and the new one is at or above.
  */
 export async function checkHalfway(studentId: string, trackId: string): Promise<void> {
-  const total = await prisma.lesson.count({ where: { module: { trackId } } });
+  // Two independent counts.
+  const [total, done] = await Promise.all([
+    prisma.lesson.count({ where: { module: { trackId } } }),
+    prisma.lessonProgress.count({
+      where: { studentId, lesson: { module: { trackId } } },
+    }),
+  ]);
   if (total < 4) return; // too short for a halfway point to mean anything
-
-  const done = await prisma.lessonProgress.count({
-    where: { studentId, lesson: { module: { trackId } } },
-  });
 
   const half = Math.ceil(total / 2);
   // Exactly at the crossing point — one lesson earlier this was false.

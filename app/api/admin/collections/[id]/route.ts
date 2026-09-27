@@ -32,12 +32,16 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params;
   try {
     // Remove this collection's slug from any products referencing it
-    const col = await prisma.collection.findUnique({ where: { id } });
+    const col = await prisma.collection.findUnique({ where: { id }, select: { slug: true } });
     if (col) {
       const affected = await prisma.product.findMany({ where: { collections: { has: col.slug } }, select: { id: true, collections: true } });
-      for (const p of affected) {
-        await prisma.product.update({ where: { id: p.id }, data: { collections: p.collections.filter((s) => s !== col.slug) } });
-      }
+      // Each product gets a different resulting array, so this cannot collapse
+      // into one updateMany — but the writes don't depend on each other.
+      await Promise.all(
+        affected.map((p) =>
+          prisma.product.update({ where: { id: p.id }, data: { collections: p.collections.filter((s) => s !== col.slug) } }),
+        ),
+      );
     }
     await prisma.collection.delete({ where: { id } });
     return NextResponse.json({ ok: true });

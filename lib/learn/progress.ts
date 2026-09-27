@@ -22,8 +22,12 @@ export async function markLessonComplete(studentId: string, lessonId: string) {
     })
     .catch(() => {});
 
-  const pointsAwarded = await awardPoints(studentId, "lesson_complete", lessonId);
-  const nextLessonId = await findNextLesson(lesson.module.trackId, lesson.module.sortOrder, lesson.sortOrder);
+  // Awarding points and looking up the next lesson share no data — the second
+  // only needs `lesson`, which is already in hand.
+  const [pointsAwarded, nextLessonId] = await Promise.all([
+    awardPoints(studentId, "lesson_complete", lessonId),
+    findNextLesson(lesson.module.trackId, lesson.module.sortOrder, lesson.sortOrder),
+  ]);
 
   return { ok: true as const, pointsAwarded, nextLessonId };
 }
@@ -57,15 +61,21 @@ export interface TrackProgress {
 
 /** Progress + "hours remaining" for a single track. */
 export async function getTrackProgress(studentId: string, trackId: string): Promise<TrackProgress> {
-  const lessons = await prisma.lesson.findMany({
-    where: { module: { trackId } },
-    orderBy: [{ module: { sortOrder: "asc" } }, { sortOrder: "asc" }],
-    select: { id: true, durationMinutes: true },
-  });
-  const done = await prisma.lessonProgress.findMany({
-    where: { studentId, lessonId: { in: lessons.map((l) => l.id) } },
-    select: { lessonId: true },
-  });
+  // Scoping the progress rows through the lesson→module relation instead of an
+  // `in:` list of lesson ids drops the dependency between the two queries, so
+  // both go out at once. Identical row set either way — same track filter.
+  // Matters here because getAllTrackProgress fans this out per track.
+  const [lessons, done] = await Promise.all([
+    prisma.lesson.findMany({
+      where: { module: { trackId } },
+      orderBy: [{ module: { sortOrder: "asc" } }, { sortOrder: "asc" }],
+      select: { id: true, durationMinutes: true },
+    }),
+    prisma.lessonProgress.findMany({
+      where: { studentId, lesson: { module: { trackId } } },
+      select: { lessonId: true },
+    }),
+  ]);
   const doneSet = new Set(done.map((d) => d.lessonId));
   const remaining = lessons.filter((l) => !doneSet.has(l.id));
 

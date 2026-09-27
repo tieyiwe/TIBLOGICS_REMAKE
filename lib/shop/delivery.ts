@@ -51,7 +51,18 @@ export async function grantDownloadsForOrder(
   email: string,
 ): Promise<GrantedItem[]> {
   const existing = await prisma.downloadGrant
-    .findMany({ where: { orderId }, include: { product: true } })
+    .findMany({
+      where: { orderId },
+      // Product is a wide row (description, images, copy); only the delivery
+      // fields are read back out below.
+      select: {
+        token: true,
+        expiresAt: true,
+        product: {
+          select: { name: true, deliveryType: true, fileName: true, fileFormat: true },
+        },
+      },
+    })
     .catch(() => []);
 
   if (existing.length > 0) {
@@ -65,7 +76,10 @@ export async function grantDownloadsForOrder(
     }));
   }
 
-  const order = await prisma.order.findUnique({ where: { id: orderId } }).catch(() => null);
+  // Only the line items are needed to work out what to grant.
+  const order = await prisma.order
+    .findUnique({ where: { id: orderId }, select: { items: true } })
+    .catch(() => null);
   if (!order) return [];
 
   const items = Array.isArray(order.items)
@@ -75,37 +89,48 @@ export async function grantDownloadsForOrder(
   if (productIds.length === 0) return [];
 
   const products = await prisma.product
-    .findMany({ where: { id: { in: productIds }, deliveryType: { not: "none" } } })
+    .findMany({
+      where: { id: { in: productIds }, deliveryType: { not: "none" } },
+      select: {
+        id: true, slug: true, name: true, deliveryType: true,
+        fileName: true, fileFormat: true, downloadDays: true, maxDownloads: true,
+      },
+    })
     .catch(() => []);
 
-  const granted: GrantedItem[] = [];
-  for (const product of products) {
-    const expiresAt = new Date(Date.now() + product.downloadDays * 86_400_000);
-    const token = newDownloadToken();
-    try {
-      await prisma.downloadGrant.create({
-        data: {
+  // One insert per deliverable product, all in flight at once. Each keeps its
+  // own try/catch so a single failed grant still logs and is skipped rather
+  // than losing the rest of the order's downloads.
+  const results = await Promise.all(
+    products.map(async (product): Promise<GrantedItem | null> => {
+      const expiresAt = new Date(Date.now() + product.downloadDays * 86_400_000);
+      const token = newDownloadToken();
+      try {
+        await prisma.downloadGrant.create({
+          data: {
+            token,
+            orderId,
+            productId: product.id,
+            email,
+            maxDownloads: product.maxDownloads,
+            expiresAt,
+          },
+        });
+        return {
+          productName: product.name,
           token,
-          orderId,
-          productId: product.id,
-          email,
-          maxDownloads: product.maxDownloads,
+          deliveryType: product.deliveryType as DeliveryType,
+          fileName: product.fileName,
+          fileFormat: product.fileFormat,
           expiresAt,
-        },
-      });
-      granted.push({
-        productName: product.name,
-        token,
-        deliveryType: product.deliveryType as DeliveryType,
-        fileName: product.fileName,
-        fileFormat: product.fileFormat,
-        expiresAt,
-      });
-    } catch (err) {
-      console.error("[shop/delivery] grant failed", product.slug, err);
-    }
-  }
-  return granted;
+        };
+      } catch (err) {
+        console.error("[shop/delivery] grant failed", product.slug, err);
+        return null;
+      }
+    }),
+  );
+  return results.filter((g): g is GrantedItem => g !== null);
 }
 
 export type RedeemResult =

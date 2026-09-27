@@ -93,9 +93,15 @@ category must be one of: breaking, ai-business, tips, tools, case-studies, indus
       .replace(/\s+/g, "-")
       .slice(0, 70);
 
+    // Every candidate (`baseSlug`, `baseSlug-1`, …) shares the prefix, so one
+    // query covers them all instead of a findUnique per attempt.
+    const takenSlugs = new Set(
+      (await prisma.blogPost.findMany({ where: { slug: { startsWith: baseSlug } }, select: { slug: true } }))
+        .map((p) => p.slug),
+    );
     let slug = baseSlug;
     let i = 1;
-    while (await prisma.blogPost.findUnique({ where: { slug } })) {
+    while (takenSlugs.has(slug)) {
       slug = `${baseSlug}-${i++}`;
     }
 

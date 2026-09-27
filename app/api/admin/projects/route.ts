@@ -36,21 +36,18 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { tasks, ...data } = body;
-    const project = await prisma.project.create({ data });
-    if (tasks?.length) {
-      await prisma.projectTask.createMany({
-        data: tasks.map((t: string, i: number) => ({
-          projectId: project.id,
-          text: t,
-          order: i,
-        })),
-      });
-    }
-    const full = await prisma.project.findUnique({
-      where: { id: project.id },
+    // Nested create + include: one statement instead of insert project, insert
+    // tasks, then re-read the project back to return it with its tasks.
+    const project = await prisma.project.create({
+      data: {
+        ...data,
+        ...(tasks?.length
+          ? { tasks: { create: tasks.map((t: string, i: number) => ({ text: t, order: i })) } }
+          : {}),
+      },
       include: { tasks: { orderBy: { order: "asc" } } },
     });
-    return NextResponse.json(full, { status: 201 });
+    return NextResponse.json(project, { status: 201 });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Failed to create project" }, { status: 500 });

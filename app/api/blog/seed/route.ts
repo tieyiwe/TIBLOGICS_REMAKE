@@ -83,10 +83,11 @@ function slugify(title: string): string {
 
 export async function POST() {
   try {
-    const existingTitles = new Set(
-      (await prisma.blogPost.findMany({ select: { title: true } }))
-        .map((p) => p.title.toLowerCase())
-    );
+    // Titles and slugs in one pass — the slug set replaces the per-seed
+    // findUnique loop that used to probe for a free slug.
+    const allExisting = await prisma.blogPost.findMany({ select: { title: true, slug: true } });
+    const existingTitles = new Set(allExisting.map((p) => p.title.toLowerCase()));
+    const existingSlugs = new Set(allExisting.map((p) => p.slug));
 
     let inserted = 0;
     let skipped = 0;
@@ -100,9 +101,10 @@ export async function POST() {
       const base = slugify(seed.title);
       let slug = base;
       let i = 1;
-      while (await prisma.blogPost.findUnique({ where: { slug } })) {
+      while (existingSlugs.has(slug)) {
         slug = `${base}-${i++}`;
       }
+      existingSlugs.add(slug); // so two seeds in this run cannot collide
 
       await prisma.blogPost.create({
         data: {

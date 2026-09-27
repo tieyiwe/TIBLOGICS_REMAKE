@@ -21,6 +21,18 @@ export async function POST() {
   const warnings: string[] = [];
 
   try {
+    // One lookup for every seed slug, instead of a findUnique per product.
+    const existingRows = await prisma.product.findMany({
+      where: { slug: { in: DIGITAL_PRODUCTS.map((p) => p.slug) } },
+      select: { id: true, slug: true },
+    });
+    const existingBySlug = new Map(existingRows.map((r) => [r.slug, r.id]));
+
+    // The loop only builds work (and the on-disk warnings, in seed order).
+    // Prisma promises are lazy, so nothing is sent until the Promise.all below.
+    const writes: Promise<unknown>[] = [];
+    const outcomes: Array<{ slug: string; isNew: boolean }> = [];
+
     for (const p of DIGITAL_PRODUCTS) {
       // Confirm the file is actually on disk. A product whose file is missing
       // would sell fine and fail at download, which is the worst order to
@@ -36,11 +48,6 @@ export async function POST() {
       } catch {
         warnings.push(`${p.slug}: file "${p.fileKey}" not found on disk — product seeded but will not deliver`);
       }
-
-      const existing = await prisma.product.findUnique({
-        where: { slug: p.slug },
-        select: { id: true, price: true, published: true },
-      });
 
       const data = {
         name: p.name,
@@ -60,16 +67,27 @@ export async function POST() {
         stock: null, // digital goods don't run out
       };
 
-      if (existing) {
-        // Never overwrite a price or publish state an admin has already set.
-        await prisma.product.update({ where: { id: existing.id }, data });
-        updated.push(p.slug);
+      const existingId = existingBySlug.get(p.slug);
+      if (existingId) {
+        // Never overwrite a price or publish state an admin has already set —
+        // `data` deliberately carries neither.
+        writes.push(prisma.product.update({ where: { id: existingId }, data }));
       } else {
-        await prisma.product.create({
-          data: { slug: p.slug, price: 0, published: false, ...data },
-        });
-        created.push(p.slug);
+        writes.push(
+          prisma.product.create({
+            data: { slug: p.slug, price: 0, published: false, ...data },
+          }),
+        );
       }
+      outcomes.push({ slug: p.slug, isNew: !existingId });
+    }
+
+    await Promise.all(writes);
+
+    // Reported in DIGITAL_PRODUCTS order, as before.
+    for (const o of outcomes) {
+      if (o.isNew) created.push(o.slug);
+      else updated.push(o.slug);
     }
 
     const needPricing = await prisma.product.count({

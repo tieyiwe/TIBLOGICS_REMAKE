@@ -420,13 +420,23 @@ async function patchMissingTranslations(limit = 2): Promise<number> {
       orderBy: { createdAt: "desc" },
       take: 50,
     });
+    // One query for every cache key across all 50 candidates, instead of up to
+    // two findUniques per article.
+    const cached = new Set(
+      (
+        await prisma.adminSettings.findMany({
+          where: {
+            key: { in: articles.flatMap((a) => [`tx:${a.slug}:fr`, `tx:${a.slug}:sw`]) },
+          },
+          select: { key: true },
+        })
+      ).map((r) => r.key),
+    );
     for (const article of articles) {
       if (patched >= limit) break;
-      let needsAny = false;
-      for (const lang of ["fr", "sw"] as const) {
-        const exists = await prisma.adminSettings.findUnique({ where: { key: `tx:${article.slug}:${lang}` } });
-        if (!exists) { needsAny = true; break; }
-      }
+      const needsAny = (["fr", "sw"] as const).some(
+        (lang) => !cached.has(`tx:${article.slug}:${lang}`),
+      );
       if (!needsAny) continue;
       for (const lang of ["fr", "sw"] as const) {
         try { await translatePostContent(article.slug, article, lang); } catch { /* skip */ }
@@ -475,6 +485,9 @@ async function patchDuplicateCoverImages(usedImages: Set<string>): Promise<numbe
     });
 
     const seenImages = new Set<string>();
+    // Images are still picked in createdAt order (pickFreshImage reads and grows
+    // `usedImages` as it goes); only the writes are batched.
+    const writes: Promise<unknown>[] = [];
 
     for (const post of allPosts) {
       if (!post.coverImage) continue;
@@ -484,13 +497,14 @@ async function patchDuplicateCoverImages(usedImages: Set<string>): Promise<numbe
       } else if (post.aiGenerated) {
         // Only reassign AI-generated duplicates — never touch manually-curated covers
         const newImage = pickFreshImage(post.category, usedImages);
-        await prisma.blogPost.update({
+        writes.push(prisma.blogPost.update({
           where: { id: post.id },
           data: { coverImage: newImage },
-        });
+        }));
         patched++;
       }
     }
+    await Promise.all(writes);
   } catch { /* non-blocking */ }
   return patched;
 }
@@ -554,20 +568,25 @@ const ARTICLE_COVER_OVERRIDES: Array<{ titleFragment: string; coverImage: string
 ];
 
 async function patchArticleCoverOverrides() {
-  for (const override of ARTICLE_COVER_OVERRIDES) {
-    try {
-      const post = await prisma.blogPost.findFirst({
-        where: { title: { contains: override.titleFragment, mode: "insensitive" } },
-        select: { id: true, coverImage: true },
-      });
-      if (post && post.coverImage !== override.coverImage) {
-        await prisma.blogPost.update({
-          where: { id: post.id },
-          data: { coverImage: override.coverImage },
+  // Each override targets a different article, so they no longer queue behind
+  // one another. Kept as a findFirst per override rather than one OR query, so
+  // "which post matches this fragment" resolves exactly as it did before.
+  await Promise.all(
+    ARTICLE_COVER_OVERRIDES.map(async (override) => {
+      try {
+        const post = await prisma.blogPost.findFirst({
+          where: { title: { contains: override.titleFragment, mode: "insensitive" } },
+          select: { id: true, coverImage: true },
         });
-      }
-    } catch { /* ignore */ }
-  }
+        if (post && post.coverImage !== override.coverImage) {
+          await prisma.blogPost.update({
+            where: { id: post.id },
+            data: { coverImage: override.coverImage },
+          });
+        }
+      } catch { /* ignore */ }
+    }),
+  );
 }
 
 // Replace known-broken cover image URLs with working fallbacks
@@ -688,9 +707,15 @@ async function patchFeaturedRotation(): Promise<void> {
     const toEnable = articles.filter((a) => idsToFeature.has(a.id) && !a.featured);
     const toDisable = articles.filter((a) => !idsToFeature.has(a.id) && a.featured);
 
+    // Every row in a group gets the same flag, so two updateManys replace one
+    // UPDATE per article (this ran across the whole published library).
     await Promise.all([
-      ...toEnable.map((a) => prisma.blogPost.update({ where: { id: a.id }, data: { featured: true } })),
-      ...toDisable.map((a) => prisma.blogPost.update({ where: { id: a.id }, data: { featured: false } })),
+      toEnable.length
+        ? prisma.blogPost.updateMany({ where: { id: { in: toEnable.map((a) => a.id) } }, data: { featured: true } })
+        : Promise.resolve(),
+      toDisable.length
+        ? prisma.blogPost.updateMany({ where: { id: { in: toDisable.map((a) => a.id) } }, data: { featured: false } })
+        : Promise.resolve(),
     ]);
 
     if (needsRotation) {
@@ -1058,14 +1083,21 @@ export async function GET(req: NextRequest) {
     ...hnStories.map((s) => ({ title: s.title, url: s.url, source: "Hacker News" })),
     ...devArticles.map((a) => ({ title: a.title, url: a.url, source: "DEV.to" })),
   ];
+  // One scan of BlogPost for all three sets, instead of three separate ones
+  // (source URLs, titles, and the slugs the generation loop probes below).
+  const dedupRows = await prisma.blogPost.findMany({
+    select: { sourceUrl: true, title: true, slug: true },
+  });
   const existingSourceUrls = new Set(
-    (await prisma.blogPost.findMany({ select: { sourceUrl: true } }))
-      .map((p) => p.sourceUrl).filter(Boolean) as string[]
+    dedupRows.map((p) => p.sourceUrl).filter(Boolean) as string[]
   );
   const existingSourceTitlesForDedup = new Set(
-    (await prisma.blogPost.findMany({ select: { title: true } }))
-      .map((p) => p.title.toLowerCase())
+    dedupRows.map((p) => p.title.toLowerCase())
   );
+  // Shared by every article generated below. Checking and reserving in memory
+  // also stops two articles in the same batch from claiming one slug, which the
+  // old per-article findUnique could not see.
+  const takenSlugs = new Set(dedupRows.map((p) => p.slug));
   const newExternalSources: GenItem[] = externalSources
     .filter((item) => {
       if (item.url && existingSourceUrls.has(item.url)) return false;
@@ -1111,7 +1143,8 @@ export async function GET(req: NextRequest) {
 
         const baseSlug = headline.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-").slice(0, 70);
         let slug = baseSlug; let si = 1;
-        while (await prisma.blogPost.findUnique({ where: { slug } })) slug = `${baseSlug}-${si++}`;
+        while (takenSlugs.has(slug)) slug = `${baseSlug}-${si++}`;
+        takenSlugs.add(slug);
 
         // Deterministic from the slug, and unique against every cover already
         // in the database plus the ones picked earlier in this run.
@@ -1142,37 +1175,39 @@ export async function GET(req: NextRequest) {
     }));
   }
 
-  // Persist used topics (keep last 300 entries to prevent unbounded growth)
-  try {
-    const updatedTopics = [...usedTopicsSet, ...topicBankItems.map((t) => t.title)];
-    await prisma.adminSettings.upsert({
-      where: { key: USED_TOPICS_KEY },
-      create: { key: USED_TOPICS_KEY, value: JSON.stringify(updatedTopics.slice(-300)) },
-      update: { value: JSON.stringify(updatedTopics.slice(-300)) },
-    });
-  } catch { /* ignore */ }
-
-  // Update last refresh timestamp — ignore if table missing
-  try {
-    await prisma.adminSettings.upsert({
-      where: { key: "blog_last_refresh" },
-      create: { key: "blog_last_refresh", value: new Date().toISOString() },
-      update: { value: new Date().toISOString() },
-    });
-  } catch { /* ignore */ }
-
-  try {
-    await prisma.blogRefreshLog.create({
-      data: {
-        success: errors.length === 0,
-        postsAdded,
-        message: errors.length > 0 ? errors.slice(0, 3).join("; ") : null,
-      },
-    });
-  } catch { /* ignore */ }
-
-  // Release the idempotency lock
-  try { await prisma.adminSettings.delete({ where: { key: LOCK_KEY } }); } catch { /* ignore */ }
+  // Four independent bookkeeping writes — used topics, the refresh timestamp,
+  // the run log, and releasing the lock. None reads another, and each still
+  // swallows its own error exactly as before.
+  const updatedTopics = [...usedTopicsSet, ...topicBankItems.map((t) => t.title)];
+  await Promise.all([
+    // Persist used topics (keep last 300 entries to prevent unbounded growth)
+    prisma.adminSettings
+      .upsert({
+        where: { key: USED_TOPICS_KEY },
+        create: { key: USED_TOPICS_KEY, value: JSON.stringify(updatedTopics.slice(-300)) },
+        update: { value: JSON.stringify(updatedTopics.slice(-300)) },
+      })
+      .catch(() => { /* ignore */ }),
+    // Update last refresh timestamp — ignore if table missing
+    prisma.adminSettings
+      .upsert({
+        where: { key: "blog_last_refresh" },
+        create: { key: "blog_last_refresh", value: new Date().toISOString() },
+        update: { value: new Date().toISOString() },
+      })
+      .catch(() => { /* ignore */ }),
+    prisma.blogRefreshLog
+      .create({
+        data: {
+          success: errors.length === 0,
+          postsAdded,
+          message: errors.length > 0 ? errors.slice(0, 3).join("; ") : null,
+        },
+      })
+      .catch(() => { /* ignore */ }),
+    // Release the idempotency lock
+    prisma.adminSettings.delete({ where: { key: LOCK_KEY } }).catch(() => { /* ignore */ }),
+  ]);
 
   return NextResponse.json({ message: `Added ${postsAdded} new posts`, postsAdded, imagesPatched, tipsPatched, translationsPatched });
 }

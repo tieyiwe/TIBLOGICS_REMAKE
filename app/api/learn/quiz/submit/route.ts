@@ -77,13 +77,17 @@ export async function POST(req: NextRequest) {
     const { score, graded } = scoreAnswers(served, answers);
     const passed = score >= quiz.passScore;
 
-    const priorAttempts = await prisma.quizAttempt.count({
-      where: { studentId: student.id, quizId: id },
-    });
-    const alreadyPassed = await prisma.quizAttempt.findFirst({
-      where: { studentId: student.id, quizId: id, passed: true },
-      select: { id: true },
-    });
+    // Both look at attempts made BEFORE this one, so both must precede the
+    // create below — but neither reads the other, so they go out together.
+    const [priorAttempts, alreadyPassed] = await Promise.all([
+      prisma.quizAttempt.count({
+        where: { studentId: student.id, quizId: id },
+      }),
+      prisma.quizAttempt.findFirst({
+        where: { studentId: student.id, quizId: id, passed: true },
+        select: { id: true },
+      }),
+    ]);
 
     await prisma.quizAttempt.create({
       data: {
@@ -98,16 +102,20 @@ export async function POST(req: NextRequest) {
     // Only the FIRST pass awards points. Perfect first attempt → +75 instead of +50.
     let pointsAwarded = 0;
     if (passed && !alreadyPassed) {
-      const totalBefore = await getTotalPoints(student.id);
+      // The track lookup for the milestone email is independent of the points
+      // total, so it rides along instead of waiting for the award to finish.
+      const [totalBefore, mod] = await Promise.all([
+        getTotalPoints(student.id),
+        // First pass on this module is a genuine milestone worth an email
+        prisma.quiz
+          .findUnique({ where: { id }, select: { module: { select: { trackId: true } } } })
+          .catch(() => null),
+      ]);
       const perfectFirstTry = score === 100 && priorAttempts === 0;
       pointsAwarded = perfectFirstTry
         ? await awardPoints(student.id, "quiz_perfect", id)
         : await awardPoints(student.id, "quiz_pass", id);
 
-      // First pass on this module is a genuine milestone worth an email
-      const mod = await prisma.quiz
-        .findUnique({ where: { id }, select: { module: { select: { trackId: true } } } })
-        .catch(() => null);
       notifyMilestone({
         studentId: student.id,
         kind: "module_quiz_passed",

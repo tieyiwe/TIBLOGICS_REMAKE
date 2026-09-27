@@ -18,22 +18,29 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   const { id } = await params;
 
   try {
-    const appt = await prisma.appointment.findUnique({ where: { id } });
+    // Both are keyed off the route's `id` alone, so neither waits on the other.
+    const [appt, sessionRecord] = await Promise.all([
+      prisma.appointment.findUnique({ where: { id } }),
+      // Link to the pre-booking chat session, if one was recorded
+      prisma.adminSettings.findUnique({ where: { key: `appt:sid:${id}` } }),
+    ]);
     if (!appt) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    // Fetch linked session chat history
-    const sessionRecord = await prisma.adminSettings.findUnique({ where: { key: `appt:sid:${id}` } });
+    // The chat history keys off sessionRecord and the prospect off appt.email —
+    // different inputs, both already in hand, so these two also go together.
+    const [chatRecord, prospect] = await Promise.all([
+      sessionRecord?.value
+        ? prisma.adminSettings.findUnique({ where: { key: `chat:${sessionRecord.value}` } })
+        : Promise.resolve(null),
+      // Fetch prospect profile by email — only these fields reach the prompt
+      prisma.prospect.findFirst({
+        where: { email: appt.email },
+        orderBy: { createdAt: "desc" },
+        select: { status: true, business: true, industry: true, budget: true, mainChallenge: true },
+      }),
+    ]);
     let chatHistory: Array<{ role: string; content: string }> = [];
-    if (sessionRecord?.value) {
-      const chatRecord = await prisma.adminSettings.findUnique({ where: { key: `chat:${sessionRecord.value}` } });
-      if (chatRecord?.value) chatHistory = JSON.parse(chatRecord.value);
-    }
-
-    // Fetch prospect profile by email
-    const prospect = await prisma.prospect.findFirst({
-      where: { email: appt.email },
-      orderBy: { createdAt: "desc" },
-    });
+    if (chatRecord?.value) chatHistory = JSON.parse(chatRecord.value);
 
     const chatText =
       chatHistory.length > 0

@@ -90,12 +90,29 @@ export async function seedTrack(track: SeedTrack): Promise<SeedReport> {
   // Module numbers → ids, so final-exam questions can map to modules
   const moduleIds: string[] = [];
 
+  // Two lookups for the whole track instead of a findFirst per module and per
+  // lesson. Identity is unchanged: (trackId, sortOrder) for a module and
+  // (moduleId, sortOrder) for a lesson. The lesson query filters through the
+  // module relation rather than an `in:` list of ids, so it needs nothing from
+  // the module query and the two go out together.
+  const [existingModules, existingLessons] = await Promise.all([
+    prisma.learnModule.findMany({
+      where: { trackId: row.id },
+      select: { id: true, sortOrder: true },
+    }),
+    prisma.lesson.findMany({
+      where: { module: { trackId: row.id } },
+      select: { id: true, moduleId: true, sortOrder: true },
+    }),
+  ]);
+  const moduleIdByOrder = new Map(existingModules.map((m) => [m.sortOrder, m.id]));
+  const lessonIdByModuleOrder = new Map(
+    existingLessons.map((l) => [`${l.moduleId}:${l.sortOrder}`, l.id]),
+  );
+
   for (const [mi, mod] of track.modules.entries()) {
     // sortOrder is the stable identity of a module within a track
-    const existingModule = await prisma.learnModule.findFirst({
-      where: { trackId: row.id, sortOrder: mi },
-      select: { id: true },
-    });
+    const existingModuleId = moduleIdByOrder.get(mi);
 
     const modData = {
       title: mod.title,
@@ -103,8 +120,8 @@ export async function seedTrack(track: SeedTrack): Promise<SeedReport> {
       estimatedMinutes: moduleMinutes(mod),
     };
 
-    const modRow = existingModule
-      ? await prisma.learnModule.update({ where: { id: existingModule.id }, data: modData })
+    const modRow = existingModuleId
+      ? await prisma.learnModule.update({ where: { id: existingModuleId }, data: modData })
       : await prisma.learnModule.create({
           data: { trackId: row.id, sortOrder: mi, ...modData },
         });
@@ -112,10 +129,7 @@ export async function seedTrack(track: SeedTrack): Promise<SeedReport> {
     moduleIds[mi] = modRow.id;
 
     for (const [li, lesson] of mod.lessons.entries()) {
-      const existingLesson = await prisma.lesson.findFirst({
-        where: { moduleId: modRow.id, sortOrder: li },
-        select: { id: true },
-      });
+      const existingLessonId = lessonIdByModuleOrder.get(`${modRow.id}:${li}`);
 
       const lessonData = {
         title: lesson.title,
@@ -128,47 +142,57 @@ export async function seedTrack(track: SeedTrack): Promise<SeedReport> {
         hasPractice: (lesson.resources?.length ?? 0) > 0,
       };
 
-      const lessonRow = existingLesson
-        ? await prisma.lesson.update({ where: { id: existingLesson.id }, data: lessonData })
+      const lessonRow = existingLessonId
+        ? await prisma.lesson.update({ where: { id: existingLessonId }, data: lessonData })
         : await prisma.lesson.create({
             data: { moduleId: modRow.id, sortOrder: li, ...lessonData },
           });
 
       lessonCount++;
 
-      // Resources — replaced wholesale, they carry no learner state
-      await prisma.lessonResource.deleteMany({ where: { lessonId: lessonRow.id } });
-      if (lesson.resources?.length) {
-        await prisma.lessonResource.createMany({
-          data: lesson.resources.map((r, ri) => ({
-            lessonId: lessonRow.id,
-            title: r.title,
-            url: r.url,
-            resourceType: r.resourceType,
-            isFree: r.isFree ?? true,
-            isRequired: r.isRequired ?? false,
-            notes: r.notes ?? null,
-            sortOrder: ri,
-          })),
-        });
-      }
-
-      // Micro-check. Attempts reference the MicroCheck, not its questions, so
-      // replacing the bank preserves learner history.
+      // Validated before either write chain starts, so warning order across
+      // lessons is unchanged and a bad bank still aborts the seed.
       if (lesson.microCheck?.length) {
         validateBank(`${track.slug} M${mi + 1}L${li + 1} micro`, lesson.microCheck, warnings);
-
-        const check = await prisma.microCheck.upsert({
-          where: { lessonId: lessonRow.id },
-          create: { lessonId: lessonRow.id, passScore: 67, questionsServed: 3 },
-          update: { questionsServed: Math.min(3, lesson.microCheck.length) },
-        });
-        await prisma.microCheckQuestion.deleteMany({ where: { microCheckId: check.id } });
-        await prisma.microCheckQuestion.createMany({
-          data: lesson.microCheck.map((question) => ({ microCheckId: check.id, ...q(question) })),
-        });
         microQuestions += lesson.microCheck.length;
       }
+
+      // Resources and the micro-check are separate tables and neither chain
+      // reads the other, so they run side by side.
+      await Promise.all([
+        (async () => {
+          // Resources — replaced wholesale, they carry no learner state
+          await prisma.lessonResource.deleteMany({ where: { lessonId: lessonRow.id } });
+          if (lesson.resources?.length) {
+            await prisma.lessonResource.createMany({
+              data: lesson.resources.map((r, ri) => ({
+                lessonId: lessonRow.id,
+                title: r.title,
+                url: r.url,
+                resourceType: r.resourceType,
+                isFree: r.isFree ?? true,
+                isRequired: r.isRequired ?? false,
+                notes: r.notes ?? null,
+                sortOrder: ri,
+              })),
+            });
+          }
+        })(),
+        (async () => {
+          // Micro-check. Attempts reference the MicroCheck, not its questions,
+          // so replacing the bank preserves learner history.
+          if (!lesson.microCheck?.length) return;
+          const check = await prisma.microCheck.upsert({
+            where: { lessonId: lessonRow.id },
+            create: { lessonId: lessonRow.id, passScore: 67, questionsServed: 3 },
+            update: { questionsServed: Math.min(3, lesson.microCheck.length) },
+          });
+          await prisma.microCheckQuestion.deleteMany({ where: { microCheckId: check.id } });
+          await prisma.microCheckQuestion.createMany({
+            data: lesson.microCheck.map((question) => ({ microCheckId: check.id, ...q(question) })),
+          });
+        })(),
+      ]);
     }
 
     // Module quiz

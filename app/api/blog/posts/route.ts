@@ -75,9 +75,15 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const baseSlug = slugify(body.title);
+    // Every candidate (`baseSlug`, `baseSlug-1`, …) shares the prefix, so one
+    // query covers them all instead of a findUnique per attempt.
+    const taken = new Set(
+      (await prisma.blogPost.findMany({ where: { slug: { startsWith: baseSlug } }, select: { slug: true } }))
+        .map((p) => p.slug),
+    );
     let slug = baseSlug;
     let i = 1;
-    while (await prisma.blogPost.findUnique({ where: { slug } })) {
+    while (taken.has(slug)) {
       slug = `${baseSlug}-${i++}`;
     }
 

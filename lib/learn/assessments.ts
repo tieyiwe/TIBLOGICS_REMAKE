@@ -106,41 +106,44 @@ export function perModuleBreakdown(graded: GradedQuestion[]): Record<string, num
  * This is what unlocks the final exam.
  */
 export async function allModuleQuizzesPassed(studentId: string, trackId: string): Promise<boolean> {
-  const quizzes = await prisma.quiz.findMany({
-    where: { module: { trackId } },
-    select: { id: true },
-  });
-  if (quizzes.length === 0) return false;
+  // Filtering the attempts through the quiz→module relation instead of an `in:`
+  // list of quiz ids removes the dependency on the first query, so both run at
+  // once. Same set of quizzes on both sides, so the counts still line up.
+  const [quizCount, passed] = await Promise.all([
+    prisma.quiz.count({ where: { module: { trackId } } }),
+    prisma.quizAttempt.findMany({
+      where: { studentId, passed: true, quiz: { module: { trackId } } },
+      select: { quizId: true },
+      distinct: ["quizId"],
+    }),
+  ]);
+  if (quizCount === 0) return false;
 
-  const passed = await prisma.quizAttempt.findMany({
-    where: { studentId, passed: true, quizId: { in: quizzes.map((q) => q.id) } },
-    select: { quizId: true },
-    distinct: ["quizId"],
-  });
-  return passed.length === quizzes.length;
+  return passed.length === quizCount;
 }
 
 /** Every micro-check in the track attempted at least once (certification gate). */
 export async function allMicroChecksAttempted(studentId: string, trackId: string): Promise<boolean> {
-  const checks = await prisma.microCheck.findMany({
-    where: { lesson: { module: { trackId } } },
-    select: { id: true },
-  });
-  if (checks.length === 0) return true; // nothing to attempt
-  const attempted = await prisma.microCheckAttempt.findMany({
-    where: { studentId, microCheckId: { in: checks.map((c) => c.id) } },
-    select: { microCheckId: true },
-    distinct: ["microCheckId"],
-  });
-  return attempted.length === checks.length;
+  // Relation filter rather than an `in:` list of ids, so the two run together.
+  const [checkCount, attempted] = await Promise.all([
+    prisma.microCheck.count({ where: { lesson: { module: { trackId } } } }),
+    prisma.microCheckAttempt.findMany({
+      where: { studentId, microCheck: { lesson: { module: { trackId } } } },
+      select: { microCheckId: true },
+      distinct: ["microCheckId"],
+    }),
+  ]);
+  if (checkCount === 0) return true; // nothing to attempt
+  return attempted.length === checkCount;
 }
 
 /** Has the final exam been passed? */
 export async function finalExamPassed(studentId: string, trackId: string): Promise<boolean> {
-  const exam = await prisma.finalExam.findUnique({ where: { trackId }, select: { id: true } });
-  if (!exam) return false;
+  // The exam lookup existed only to get an id to filter sessions by; filtering
+  // through the relation does it in one query. No exam for the track still means
+  // no sessions, hence false.
   const pass = await prisma.finalExamSession.findFirst({
-    where: { studentId, finalExamId: exam.id, passed: true },
+    where: { studentId, finalExam: { trackId }, passed: true },
     select: { id: true },
   });
   return !!pass;
@@ -148,10 +151,9 @@ export async function finalExamPassed(studentId: string, trackId: string): Promi
 
 /** Has the capstone been approved? */
 export async function capstonePassed(studentId: string, trackId: string): Promise<boolean> {
-  const capstone = await prisma.capstone.findUnique({ where: { trackId }, select: { id: true } });
-  if (!capstone) return false;
+  // Same as above: one relation-filtered query instead of id lookup then filter.
   const sub = await prisma.capstoneSubmission.findFirst({
-    where: { studentId, capstoneId: capstone.id, status: "passed" },
+    where: { studentId, capstone: { trackId }, status: "passed" },
     select: { id: true },
   });
   return !!sub;
