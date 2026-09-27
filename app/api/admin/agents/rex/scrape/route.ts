@@ -1,13 +1,49 @@
 export const maxDuration = 30;
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
+import { requireAdmin } from "@/lib/require-admin";
+
+/** Matches the guard in app/api/scanner/speed/route.ts. */
+function isPrivateOrLoopback(hostname: string): boolean {
+  if (hostname === "localhost" || hostname === "::1") return true;
+  return [
+    /^127\./,
+    /^10\./,
+    /^192\.168\./,
+    /^172\.(1[6-9]|2\d|3[01])\./,
+    /^169\.254\./,
+    /^0\./,
+  ].some((p) => p.test(hostname));
+}
+
+/**
+ * The lead's website as a URL we are willing to fetch, or null.
+ *
+ * agentLead.website is whatever a Rex search wrote — usually an AI-invented
+ * domain, never an operator-reviewed value. Fetched unchecked it was an SSRF
+ * primitive: the page body is summarised straight back to the caller, so
+ * `http://169.254.169.254/...` or a localhost port would have exfiltrated
+ * cloud metadata and internal responses through the analysis field.
+ */
+function safeTargetUrl(website: string | null): URL | null {
+  if (!website) return null;
+  let url: URL;
+  try {
+    url = new URL(website.startsWith("http") ? website : `https://${website}`);
+  } catch {
+    return null;
+  }
+  if (!["http:", "https:"].includes(url.protocol)) return null;
+  if (isPrivateOrLoopback(url.hostname)) return null;
+  return url;
+}
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Staff only. A bare session check passed here for TIBLOGICS Learn students
+  // too, since learners share this NextAuth instance — requireAdmin rejects them.
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
 
   const { leadId } = await req.json();
   if (!leadId) return NextResponse.json({ error: "leadId required" }, { status: 400 });
@@ -16,16 +52,16 @@ export async function POST(req: NextRequest) {
   if (!lead) return NextResponse.json({ error: "Lead not found" }, { status: 404 });
 
   let pageText = "";
-  const websiteUrl = lead.website
-    ? lead.website.startsWith("http") ? lead.website : `https://${lead.website}`
-    : null;
+  const target = safeTargetUrl(lead.website);
+  const websiteUrl = target?.toString() ?? null;
 
   // Try to fetch the website
-  if (websiteUrl) {
+  if (target) {
     try {
-      const res = await fetch(websiteUrl, {
+      const res = await fetch(target, {
         headers: { "User-Agent": "Mozilla/5.0 (compatible; TIBLOGICSBot/1.0)" },
         signal: AbortSignal.timeout(8000),
+        redirect: "manual", // a redirect would sidestep the host check above
       });
       if (res.ok) {
         const html = await res.text();

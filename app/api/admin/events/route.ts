@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { TRAINING_EVENT_SEED, TRAINING_EVENT_SLUG, PARENTS_EVENT_SEED, PARENTS_EVENT_SLUG } from "@/lib/event-seeds";
+import { requireAdmin } from "@/lib/require-admin";
 
 function slugify(title: string) {
   return title.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-").slice(0, 80);
 }
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Staff only. A bare session check passed here for TIBLOGICS Learn students
+  // too, since learners share this NextAuth instance — requireAdmin rejects them.
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
 
   // Ensure the current live training event always appears in admin, even if no
   // one has visited the public page yet. Create-only: existing edits preserved.
@@ -60,8 +61,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
 
   const body = await req.json();
   const base = slugify(body.title ?? "event");

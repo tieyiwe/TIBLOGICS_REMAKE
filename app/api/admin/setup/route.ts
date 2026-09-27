@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { secretEquals } from "@/lib/require-admin";
 
 const deleteRateLimit = new Map<string, { count: number; resetAt: number }>();
 
@@ -41,9 +42,9 @@ export async function POST(req: NextRequest) {
   try {
     const { password } = await req.json();
 
-    if (!password || password.length < 8) {
+    if (typeof password !== "string" || password.length < 8 || password.length > 200) {
       return NextResponse.json(
-        { error: "Password must be at least 8 characters" },
+        { error: "Password must be between 8 and 200 characters" },
         { status: 400 }
       );
     }
@@ -83,8 +84,9 @@ export async function DELETE(req: NextRequest) {
   try {
     const { password, resetToken } = await req.json().catch(() => ({}));
 
-    // Check reset token first (for production recovery)
-    if (process.env.RESET_TOKEN && resetToken === process.env.RESET_TOKEN) {
+    // Check reset token first (for production recovery). Constant-time: a
+    // correct token here wipes the admin password with no session at all.
+    if (secretEquals(resetToken, process.env.RESET_TOKEN)) {
       await prisma.adminSettings.deleteMany({ where: { key: "admin_password_hash" } });
       return NextResponse.json({ success: true, message: "Password reset. Visit /admin_pro/login to set a new one." });
     }

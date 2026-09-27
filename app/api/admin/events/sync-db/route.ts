@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { TRAINING_EVENT_SEED, TRAINING_EVENT_SLUG } from "@/lib/event-seeds";
+import { requireAdmin } from "@/lib/require-admin";
 
 export async function POST() {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Staff only. A bare session check passed here for TIBLOGICS Learn students
+  // too, since learners share this NextAuth instance — requireAdmin rejects them.
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
 
   const log: string[] = [];
 

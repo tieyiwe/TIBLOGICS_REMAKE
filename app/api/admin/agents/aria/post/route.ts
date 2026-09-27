@@ -1,8 +1,7 @@
 export const maxDuration = 30;
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { streamChat } from "@/lib/claude";
+import { requireAdmin } from "@/lib/require-admin";
 
 type Platform = "linkedin" | "twitter" | "facebook" | "instagram";
 
@@ -81,8 +80,10 @@ async function postToFacebook(text: string): Promise<{ success: boolean; url?: s
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Staff only. A bare session check passed here for TIBLOGICS Learn students
+  // too, since learners share this NextAuth instance — requireAdmin rejects them.
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
 
   const { platforms, topic, tone, customContent, generate } = await req.json() as {
     platforms: Platform[];

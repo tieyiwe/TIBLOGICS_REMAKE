@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { secretEquals } from "@/lib/require-admin";
 
 const recoverRateLimit = new Map<string, { count: number; resetAt: number }>();
 
@@ -31,8 +32,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    if (newPassword.length < 8) {
-      return NextResponse.json({ error: "New password must be at least 8 characters" }, { status: 400 });
+    if (typeof newPassword !== "string" || newPassword.length < 8 || newPassword.length > 200) {
+      return NextResponse.json({ error: "New password must be between 8 and 200 characters" }, { status: 400 });
     }
 
     // ADMIN_PASSWORD env var is required — without it this endpoint is disabled
@@ -43,7 +44,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (masterPassword !== process.env.ADMIN_PASSWORD) {
+    // Constant-time: this is a sessionless endpoint that hands out the admin
+    // password on a correct guess, so it must not leak a prefix-match signal.
+    if (!secretEquals(masterPassword, process.env.ADMIN_PASSWORD)) {
       return NextResponse.json({ error: "Incorrect recovery password" }, { status: 403 });
     }
 

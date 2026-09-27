@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "crypto";
 import { getServerSession, type Session } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
@@ -115,6 +116,22 @@ export async function logActivity(opts: {
   } catch {
     // Non-blocking — never fail the request over a log write
   }
+}
+
+/**
+ * Constant-time comparison of a presented value against a configured secret.
+ *
+ * `presented === process.env.SOMETHING` short-circuits on the first differing
+ * byte, and these secrets (ADMIN_PASSWORD, RESET_TOKEN) gate password recovery
+ * paths that are reachable without a session. Returns false when the secret is
+ * unset, so a missing env var can never authorise anyone.
+ */
+export function secretEquals(presented: unknown, secret: string | undefined): boolean {
+  if (!secret || typeof presented !== "string") return false;
+  const a = Buffer.from(presented);
+  const b = Buffer.from(secret);
+  // timingSafeEqual requires equal lengths; length alone is not the secret.
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 /** Escape user-supplied strings before embedding in HTML email templates */

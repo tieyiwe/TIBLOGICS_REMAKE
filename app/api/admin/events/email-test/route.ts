@@ -1,14 +1,25 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { sendEventWelcomeEmail, sendEventRegistrationConfirmation } from "@/lib/resend";
+import { requireAdmin, rateLimit } from "@/lib/require-admin";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
+  // Staff only. A bare session check passed here for TIBLOGICS Learn students
+  // too, since learners share this NextAuth instance — requireAdmin rejects them.
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const to = req.nextUrl.searchParams.get("to") ?? session.user?.email ?? "";
+  // The recipient is always the caller's own mailbox. A `?to=` override turned
+  // this diagnostic into an open relay: two templates rendered with attacker
+  // text, sent from our verified domain to any address, once per request.
+  const to = session?.user?.email ?? "";
   if (!to) return NextResponse.json({ error: "No recipient" }, { status: 400 });
+
+  if (!rateLimit(`events-email-test:${to}`, 5, 600_000)) {
+    return NextResponse.json({ error: "Too many test sends. Try again shortly." }, { status: 429 });
+  }
 
   const results: Record<string, string> = {};
 

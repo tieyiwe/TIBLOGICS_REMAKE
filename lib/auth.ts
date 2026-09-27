@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+import { rateLimit, secretEquals } from "@/lib/require-admin";
 
 // tieyiwebass@gmail.com is the Owner — the super account above all admins
 const OWNER_EMAIL = "tieyiwebass@gmail.com";
@@ -40,7 +41,9 @@ export const authOptions: NextAuthOptions = {
           // works in every environment (dev, staging, prod) without needing the
           // DB to be seeded first.
           if (process.env.ADMIN_PASSWORD) {
-            if (credentials.password === process.env.ADMIN_PASSWORD) {
+            // Constant-time — a `===` here compares a master credential against
+            // unlimited attacker-chosen guesses and exits at the first mismatch.
+            if (secretEquals(credentials.password, process.env.ADMIN_PASSWORD)) {
               // Auto-seed bcrypt hash into this environment's DB if missing
               try {
                 const existing = await prisma.adminSettings.findUnique({

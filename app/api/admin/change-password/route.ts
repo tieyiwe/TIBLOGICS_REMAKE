@@ -1,17 +1,30 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import bcrypt from "bcryptjs";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin, rateLimit, secretEquals } from "@/lib/require-admin";
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Staff only. A bare session check passed here for TIBLOGICS Learn students
+  // too, since learners share this NextAuth instance — requireAdmin rejects them.
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
+  // This endpoint verifies the owner password, so it is a guessing oracle for
+  // any account that reaches it. Bound the attempts.
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  if (!rateLimit(`change-password:${ip}`, 10, 900_000)) {
+    return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
+  }
 
   const { currentPassword, newPassword } = await req.json();
 
-  if (!newPassword || newPassword.length < 8) {
-    return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
+  // Capped as well as floored: bcrypt only reads the first 72 bytes, so a
+  // multi-megabyte string is pure work for the server and no extra strength.
+  if (typeof newPassword !== "string" || newPassword.length < 8 || newPassword.length > 200) {
+    return NextResponse.json({ error: "Password must be between 8 and 200 characters" }, { status: 400 });
+  }
+  if (typeof currentPassword !== "string") {
+    return NextResponse.json({ error: "Current password is required" }, { status: 400 });
   }
 
   // Verify current password
@@ -21,7 +34,7 @@ export async function POST(req: Request) {
 
   let currentValid = false;
   // Accept env ADMIN_PASSWORD as master override for current-password verification
-  if (process.env.ADMIN_PASSWORD && currentPassword === process.env.ADMIN_PASSWORD) {
+  if (secretEquals(currentPassword, process.env.ADMIN_PASSWORD)) {
     currentValid = true;
   } else if (stored?.value) {
     currentValid = await bcrypt.compare(currentPassword, stored.value);

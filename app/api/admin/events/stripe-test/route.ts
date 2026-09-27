@@ -1,14 +1,21 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import stripe from "@/lib/stripe";
+import { requireAdmin } from "@/lib/require-admin";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Staff only. A bare session check passed here for TIBLOGICS Learn students
+  // too, since learners share this NextAuth instance — requireAdmin rejects them.
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
 
   const priceId = process.env.STRIPE_EVENT_PRICE_ID;
-  const keyPrefix = process.env.STRIPE_SECRET_KEY?.slice(0, 12) + "...";
+  // The old `keyPrefix` echoed the first 12 characters of STRIPE_SECRET_KEY.
+  // "live vs test" is the only thing this diagnostic actually needed, and
+  // that's what `priceLiveMode` already reports — so report the mode, never
+  // any part of the key itself.
+  const keyMode = process.env.STRIPE_SECRET_KEY
+    ? process.env.STRIPE_SECRET_KEY.startsWith("sk_live") ? "live" : "test"
+    : "not set";
 
   if (!priceId) return NextResponse.json({ error: "STRIPE_EVENT_PRICE_ID not set" });
 
@@ -16,7 +23,7 @@ export async function GET() {
     const price = await (stripe as any).prices.retrieve(priceId);
     return NextResponse.json({
       ok: true,
-      keyPrefix,
+      keyMode,
       priceId,
       priceAmount: price.unit_amount,
       priceCurrency: price.currency,
@@ -24,7 +31,8 @@ export async function GET() {
       priceActive: price.active,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ ok: false, keyPrefix, priceId, error: message });
+    // Stripe errors can quote request payloads back — log them, don't return them.
+    console.error("[admin/events/stripe-test]", err);
+    return NextResponse.json({ ok: false, keyMode, priceId, error: "Could not retrieve that price from Stripe." });
   }
 }

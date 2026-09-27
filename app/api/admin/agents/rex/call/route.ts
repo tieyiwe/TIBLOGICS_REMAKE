@@ -1,19 +1,27 @@
 export const maxDuration = 30;
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/require-admin";
 
 const BLAND_API_KEY = process.env.BLAND_AI_API_KEY ?? "";
 const BLAND_BASE = "https://api.bland.ai/v1";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://tiblogics.com";
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Staff only. A bare session check passed here for TIBLOGICS Learn students
+  // too, since learners share this NextAuth instance — requireAdmin rejects them.
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
 
   if (!BLAND_API_KEY) {
     return NextResponse.json({ error: "BLAND_AI_API_KEY not configured" }, { status: 503 });
+  }
+  // The callback carries this secret because Bland.ai signs nothing. Without it
+  // the result webhook would reject every callback for this call, so refuse to
+  // place a call we could never receive the outcome of.
+  const webhookSecret = process.env.BLAND_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    return NextResponse.json({ error: "BLAND_WEBHOOK_SECRET not configured" }, { status: 503 });
   }
 
   const { leadId } = await req.json();
@@ -85,7 +93,7 @@ Keep the entire call under 3 minutes.`;
         record: true,
         wait_for_greeting: true,
         max_duration: 4,
-        webhook: `${APP_URL}/api/webhooks/bland-ai`,
+        webhook: `${APP_URL}/api/webhooks/bland-ai?secret=${encodeURIComponent(webhookSecret)}`,
         metadata: { leadId: lead.id },
         analysis_schema: analysisSchema,
       }),

@@ -1,8 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
 
+/**
+ * Shared-secret check for the Bland.ai callback.
+ *
+ * Bland.ai posts no signature, so the secret travels in the webhook URL that
+ * app/api/admin/agents/rex/call/route.ts registers per call. Until this check
+ * existed the endpoint was fully open: anyone could post a leadId and rewrite
+ * that lead's status, transcript and call summary, and the Claude fallback
+ * below meant every unauthenticated request could also bill us for a
+ * completion. Fails CLOSED when the secret is unset, matching
+ * app/api/cron/exam-sweep/route.ts — a misconfigured deployment should stop
+ * accepting callbacks, not accept anonymous ones.
+ */
+function authorised(req: NextRequest): boolean {
+  const expected = process.env.BLAND_WEBHOOK_SECRET;
+  if (!expected) return false;
+  const presented =
+    req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ??
+    req.nextUrl.searchParams.get("secret") ??
+    "";
+  const a = Buffer.from(presented);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 export async function POST(req: NextRequest) {
+  if (!process.env.BLAND_WEBHOOK_SECRET) {
+    console.error("[webhooks/bland-ai] BLAND_WEBHOOK_SECRET is not set — refusing callbacks");
+    return NextResponse.json({ error: "Webhook is not configured" }, { status: 503 });
+  }
+  if (!authorised(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
 
