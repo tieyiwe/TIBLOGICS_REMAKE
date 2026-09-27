@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/require-admin";
+import { listLimit } from "@/lib/admin/list-limit";
 import prisma from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
@@ -17,6 +18,9 @@ export async function GET(req: NextRequest) {
   const registrations = await prisma.eventRegistration.findMany({
     where,
     orderBy: { createdAt: "desc" },
+    // Grows with every event; the summary below counts what was read, so a
+    // larger ?limit= is available when a whole cohort is genuinely needed.
+    take: listLimit(req.url, { def: 500, max: 5000 }),
     select: {
       id: true,
       createdAt: true,

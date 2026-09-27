@@ -4,6 +4,7 @@ import resend from "@/lib/resend";
 import { sendTiweNotification } from "@/lib/resend";
 import { createMeeting, calcEndTime } from "@/lib/meeting-providers";
 import { isValidEmail, escapeHtml, requireAdmin, rateLimit, anonymiseIp } from "@/lib/require-admin";
+import { listLimit } from "@/lib/admin/list-limit";
 import { findTopicByName } from "@/lib/booking/services";
 import {
   getAvailability,
@@ -61,6 +62,9 @@ export async function GET(req: Request) {
     const appointments = await prisma.appointment.findMany({
       where,
       orderBy: { date: "desc" },
+      // Every booking ever made, with full contact details, in one response.
+      // Capped; the admin list filters by status and date range anyway.
+      take: listLimit(req.url, { def: 500, max: 5000 }),
     });
 
     return NextResponse.json(appointments);

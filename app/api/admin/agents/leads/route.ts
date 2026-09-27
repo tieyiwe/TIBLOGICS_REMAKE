@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
+import { listLimit } from "@/lib/admin/list-limit";
 
 export async function GET(req: NextRequest) {
   const unauth = await requireAdmin();
@@ -18,6 +19,7 @@ export async function GET(req: NextRequest) {
       ...(status ? { status: status as never } : {}),
     },
     orderBy: { createdAt: "desc" },
+    take: listLimit(req.url, { def: 500, max: 5000 }),
   });
   return NextResponse.json(leads);
 }
