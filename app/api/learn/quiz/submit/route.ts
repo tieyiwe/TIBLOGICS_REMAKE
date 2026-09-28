@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { requireEntitledStudent } from "@/lib/learn/session";
-import { scoreAnswers } from "@/lib/learn/assessments";
+import { presentQuestion, scoreAnswers } from "@/lib/learn/assessments";
 import { awardPoints, getTotalPoints } from "@/lib/learn/points";
 import { checkLevelUp, notifyMilestone } from "@/lib/learn/milestones";
 
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       const served = check.questions.filter((q) => answeredIds.includes(q.id));
       if (served.length === 0) return NextResponse.json({ error: "No matching questions" }, { status: 400 });
 
-      const { score, graded } = scoreAnswers(served, answers);
+      const { score, graded } = scoreAnswers(served.map((q) => presentQuestion(q, student.id)), answers);
       const passed = score >= check.passScore;
 
       const priorAttempts = await prisma.microCheckAttempt.count({
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
     const served = quiz.questions.filter((q) => answeredIds.includes(q.id));
     if (served.length === 0) return NextResponse.json({ error: "No matching questions" }, { status: 400 });
 
-    const { score, graded } = scoreAnswers(served, answers);
+    const { score, graded } = scoreAnswers(served.map((q) => presentQuestion(q, student.id)), answers);
     const passed = score >= quiz.passScore;
 
     // Both look at attempts made BEFORE this one, so both must precede the

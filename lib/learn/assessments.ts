@@ -43,6 +43,34 @@ export function toOptions(raw: unknown): string[] {
   return Array.isArray(raw) ? raw.map((o) => String(o)) : [];
 }
 
+/**
+ * A question with its options in this learner's order, and the correct index
+ * remapped to match.
+ *
+ * Options used to be served in the order they were written, and they were
+ * written with the right answer second: B was correct for 95-98% of questions,
+ * so always picking B scored 98% on the AI Foundations final exam. Every
+ * question is now shuffled per learner.
+ *
+ * Deterministic from (learner, question), so scoring recomputes the same order
+ * without storing it — serve and score just both call this. The same learner
+ * sees a question the same way each time, but the right answer's position
+ * varies from question to question, which is what defeats pattern-guessing.
+ * Both serving and scoring must work in this presented order; a raw
+ * correctIndex never leaves the server.
+ */
+export function presentQuestion<T extends { id: string; options: unknown; correctIndex: number }>(
+  q: T,
+  learnerId: string,
+): T {
+  const opts = toOptions(q.options);
+  const order = seededShuffle(
+    opts.map((_, i) => i),
+    `${learnerId}:${q.id}:options`,
+  );
+  return { ...q, options: order.map((i) => opts[i]), correctIndex: order.indexOf(q.correctIndex) };
+}
+
 /** Strip correct answers before sending to the client. */
 export function serveQuestion(q: {
   id: string; question: string; options: unknown; moduleId?: string | null;

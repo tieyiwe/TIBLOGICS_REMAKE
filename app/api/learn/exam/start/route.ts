@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { requireEntitledStudent } from "@/lib/learn/session";
-import { allModuleQuizzesPassed, seededShuffle, serveQuestion } from "@/lib/learn/assessments";
+import { allModuleQuizzesPassed, presentQuestion, seededShuffle, serveQuestion } from "@/lib/learn/assessments";
 
 // Creates a server-clocked exam session (Part B rule 6).
 // started_at / expires_at are computed here; the client only renders a
@@ -120,12 +120,12 @@ export async function POST(req: NextRequest) {
 
 /** Build the client payload — questions WITHOUT correct answers. */
 async function hydrate(
-  session: { id: string; questionIds: unknown; expiresAt: Date; answers: unknown; attemptNumber: number },
-  bank: Array<{ id: string; question: string; options: unknown; moduleId: string | null }>,
+  session: { id: string; studentId: string; questionIds: unknown; expiresAt: Date; answers: unknown; attemptNumber: number },
+  bank: Array<{ id: string; question: string; options: unknown; correctIndex: number; moduleId: string | null }>,
 ) {
   const ids = Array.isArray(session.questionIds) ? (session.questionIds as string[]) : [];
   const byId = new Map(bank.map((q) => [q.id, q]));
-  const questions = ids.map((id) => byId.get(id)).filter(Boolean).map((q) => serveQuestion(q!));
+  const questions = ids.map((id) => byId.get(id)).filter(Boolean).map((q) => serveQuestion(presentQuestion(q!, session.studentId)));
   return {
     sessionId: session.id,
     questions,

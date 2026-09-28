@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireEntitledStudent } from "@/lib/learn/session";
-import { seededShuffle, serveQuestion } from "@/lib/learn/assessments";
+import { presentQuestion, seededShuffle, serveQuestion } from "@/lib/learn/assessments";
 
 // Serves a randomized subset of a micro-check or module quiz.
 // Correct answers and explanations are stripped — the client cannot see them
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         id: check.id,
         passScore: check.passScore,
-        questions: picked.map(serveQuestion),
+        questions: picked.map((q) => serveQuestion(presentQuestion(q, student.id))),
       });
     }
 
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       id: quiz.id,
       passScore: quiz.passScore,
-      questions: picked.map(serveQuestion),
+      questions: picked.map((q) => serveQuestion(presentQuestion(q, student.id))),
     });
   } catch (err) {
     console.error("[GET /api/learn/quiz/serve]", err);

@@ -2,7 +2,7 @@
 // expiry sweep cron, so a late submission and an auto-sweep score identically.
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
-import { perModuleBreakdown, scoreAnswers } from "./assessments";
+import { perModuleBreakdown, presentQuestion, scoreAnswers } from "./assessments";
 import { awardPoints, getTotalPoints } from "./points";
 import { checkLevelUp, notifyMilestone } from "./milestones";
 
@@ -20,7 +20,12 @@ export async function finaliseExamSession(sessionId: string, lateSubmission = fa
   const served = ids.map((id) => byId.get(id)).filter(Boolean) as typeof exam.questions;
 
   const answers = (session.answers ?? {}) as Record<string, number>;
-  const { score, graded } = scoreAnswers(served, answers);
+  // Answers were saved against the learner's shuffled order (see
+  // presentQuestion), so they are scored in that order too.
+  const { score, graded } = scoreAnswers(
+    served.map((q) => presentQuestion(q, session.studentId)),
+    answers,
+  );
 
   const passed = score >= exam.passScore;
   const distinction = score >= exam.distinctionScore;
