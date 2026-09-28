@@ -962,3 +962,6 @@ export async function sendCartReminderEmail(cart: {
 }
 
 export default resendCompat;
+
+/** For senders that live beside the feature they belong to (lib/monitor/email.ts). */
+export { getTransport as mailTransport, FROM as MAIL_FROM };

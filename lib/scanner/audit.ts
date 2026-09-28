@@ -14,6 +14,8 @@
 export type FindingType = "good" | "warning" | "bad";
 
 export interface Finding {
+  /** Which check produced this, stable across runs (see Check.key). */
+  check: string;
   type: FindingType;
   text: string;
   /** Which sub-score this contributed to, for grouping in the UI. */
@@ -58,6 +60,8 @@ export interface AuditResult {
 
 /** One scored check. `weight` is its share of the category. */
 interface Check {
+  /** Stable identifier, so a rescan can say which check changed. */
+  key: string;
   area: Finding["area"];
   weight: number;
   pass: boolean;
@@ -155,14 +159,14 @@ export function audit(s: Signals): AuditResult {
   const checks: Check[] = [
     // ── SEO ────────────────────────────────────────────────────────────────
     {
-      area: "seo", weight: 3, pass: title.length >= 10 && title.length <= 70,
+      key: "title", area: "seo", weight: 3, pass: title.length >= 10 && title.length <= 70,
       score: title.length === 0 ? 0 : title.length <= 70 ? 1 : 0.5,
       good: `Page title is present and well-sized (${title.length} characters)`,
       bad: title.length === 0 ? "No <title> tag — search results have nothing to show"
         : `Title is ${title.length} characters; aim for 10–70 so it is not truncated`,
     },
     {
-      area: "seo", weight: 3, pass: desc.length >= 50 && desc.length <= 160,
+      key: "description", area: "seo", weight: 3, pass: desc.length >= 50 && desc.length <= 160,
       // Full marks inside the target range. This used to score 0.6 for any
       // non-empty description, so a perfectly sized one still showed a warning.
       score: desc.length === 0 ? 0 : desc.length >= 50 && desc.length <= 160 ? 1 : 0.6,
@@ -170,80 +174,80 @@ export function audit(s: Signals): AuditResult {
       bad: desc.length === 0 ? "No meta description — search engines will invent one"
         : `Meta description is ${desc.length} characters; aim for 50–160`,
     },
-    { area: "seo", weight: 2, pass: canonical,
+    { key: "canonical", area: "seo", weight: 2, pass: canonical,
       good: "Canonical URL is declared", bad: "No canonical URL — duplicate pages can compete with each other" },
-    { area: "seo", weight: 2, pass: !!ogTitle && !!ogImage,
+    { key: "open-graph", area: "seo", weight: 2, pass: !!ogTitle && !!ogImage,
       good: "Open Graph tags present — links preview correctly when shared",
       bad: "Missing Open Graph title or image — shared links will look broken" },
-    { area: "seo", weight: 1, pass: !!twitterCard, soft: true,
+    { key: "twitter-card", area: "seo", weight: 1, pass: !!twitterCard, soft: true,
       good: "Twitter Card metadata present", bad: "No Twitter Card metadata" },
-    { area: "seo", weight: 2, pass: h1 === 1,
+    { key: "h1", area: "seo", weight: 2, pass: h1 === 1,
       score: h1 === 1 ? 1 : h1 === 0 ? 0 : 0.5,
       good: "Exactly one H1, as search engines expect",
       bad: h1 === 0 ? "No H1 heading on the page" : `${h1} H1 headings — there should be exactly one` },
-    { area: "seo", weight: 2, pass: s.sitemapFound,
+    { key: "sitemap", area: "seo", weight: 2, pass: s.sitemapFound,
       good: "XML sitemap found", bad: "No sitemap.xml found — crawlers have to guess your page list" },
-    { area: "seo", weight: 1, pass: !!s.robotsTxt,
+    { key: "robots", area: "seo", weight: 1, pass: !!s.robotsTxt,
       good: "robots.txt is present", bad: "No robots.txt" },
 
     // ── Performance ────────────────────────────────────────────────────────
     {
-      area: "perf", weight: 4, pass: (s.ttfb ?? 9999) < 600,
+      key: "ttfb", area: "perf", weight: 4, pass: (s.ttfb ?? 9999) < 600,
       score: s.ttfb == null ? 0 : s.ttfb < 400 ? 1 : s.ttfb < 800 ? 0.7 : s.ttfb < 1500 ? 0.4 : 0.1,
       good: `Server responds quickly (${s.ttfb}ms to first byte)`,
       bad: `Slow first byte (${s.ttfb}ms) — under 600ms is the target`,
     },
     {
-      area: "perf", weight: 3, pass: s.bytes < 500_000,
+      key: "page-weight", area: "perf", weight: 3, pass: s.bytes < 500_000,
       score: s.bytes < 150_000 ? 1 : s.bytes < 500_000 ? 0.7 : s.bytes < 1_500_000 ? 0.4 : 0.1,
       good: `Page weight is reasonable (${Math.round(s.bytes / 1024)}KB of HTML)`,
       bad: `Heavy page (${Math.round(s.bytes / 1024)}KB of HTML) — slow on mobile data`,
     },
-    { area: "perf", weight: 2, pass: s.compressed,
+    { key: "compression", area: "perf", weight: 2, pass: s.compressed,
       good: "Responses are compressed (gzip/brotli)", bad: "No compression — pages transfer larger than they need to" },
-    { area: "perf", weight: 2, pass: s.cached,
+    { key: "caching", area: "perf", weight: 2, pass: s.cached,
       good: "Caching headers are set", bad: "No caching headers — repeat visits re-download everything" },
-    { area: "perf", weight: 2, pass: s.https,
+    { key: "https", area: "perf", weight: 2, pass: s.https,
       good: "Served over HTTPS", bad: "Not served over HTTPS — browsers will warn visitors" },
 
     // ── UX ─────────────────────────────────────────────────────────────────
-    { area: "ux", weight: 4, pass: !!viewport,
+    { key: "viewport", area: "ux", weight: 4, pass: !!viewport,
       good: "Mobile viewport is configured", bad: "No viewport meta tag — the site will not scale on phones" },
-    { area: "ux", weight: 3, pass: altRatio >= 0.9,
+    { key: "alt-text", area: "ux", weight: 3, pass: altRatio >= 0.9,
       score: altRatio,
       good: `Images have alt text (${imagesWithAlt}/${imagesTotal})`,
       bad: `Only ${imagesWithAlt} of ${imagesTotal} images have alt text — screen readers and image search cannot read the rest` },
-    { area: "ux", weight: 2, pass: h1 >= 1 && h2 >= 1,
+    { key: "headings", area: "ux", weight: 2, pass: h1 >= 1 && h2 >= 1,
       good: "Heading structure is in place", bad: "Thin heading structure — headings are how scanners and screen readers navigate" },
-    { area: "ux", weight: 2, pass: langAttr,
+    { key: "lang", area: "ux", weight: 2, pass: langAttr,
       good: "Page language is declared", bad: "No lang attribute on <html> — assistive tech cannot pick a voice" },
-    { area: "ux", weight: 1, pass: favicon, soft: true,
+    { key: "favicon", area: "ux", weight: 1, pass: favicon, soft: true,
       good: "Favicon is set", bad: "No favicon" },
-    { area: "ux", weight: 2, pass: s.statusCode >= 200 && s.statusCode < 300,
+    { key: "status", area: "ux", weight: 2, pass: s.statusCode >= 200 && s.statusCode < 300,
       good: `Page returns ${s.statusCode}`, bad: `Page returns ${s.statusCode} rather than 200` },
 
     // ── AI readiness ───────────────────────────────────────────────────────
     {
-      area: "ai", weight: 5, pass: schema.length > 0,
+      key: "structured-data", area: "ai", weight: 5, pass: schema.length > 0,
       score: schema.length === 0 ? 0 : schema.length >= 3 ? 1 : 0.6,
       good: `Structured data found (${schema.slice(0, 4).join(", ")}) — AI assistants can read what this business is`,
       bad: "No JSON-LD structured data — AI assistants and search engines have to guess what this page is about",
     },
-    { area: "ai", weight: 3, pass: semantic >= 4,
+    { key: "semantic-html", area: "ai", weight: 3, pass: semantic >= 4,
       score: Math.min(1, semantic / 4),
       good: `Semantic HTML used (${semantic} landmark elements) — machines can find the parts of the page`,
       bad: "Little semantic HTML — hard for AI agents to tell navigation from content" },
-    { area: "ai", weight: 3, pass: words >= 300,
+    { key: "content-depth", area: "ai", weight: 3, pass: words >= 300,
       score: words >= 600 ? 1 : words >= 300 ? 0.7 : words >= 120 ? 0.35 : 0.1,
       good: `Substantive page content (${words} words) for models to work from`,
       bad: `Only ${words} words of readable text — an AI summarising this page has little to go on` },
-    { area: "ai", weight: 2, pass: !blocksAiCrawlers,
+    { key: "ai-crawlers", area: "ai", weight: 2, pass: !blocksAiCrawlers,
       good: "AI crawlers are not blocked in robots.txt",
       bad: "robots.txt blocks AI crawlers — your business will be absent from AI answers" },
-    { area: "ai", weight: 2, pass: desc.length >= 50,
+    { key: "ai-summary", area: "ai", weight: 2, pass: desc.length >= 50,
       good: "Descriptive metadata gives assistants a summary to quote",
       bad: "Weak or missing description — assistants have no summary to quote" },
-    { area: "ai", weight: 1, pass: s.llmsTxt, soft: true,
+    { key: "llms-txt", area: "ai", weight: 1, pass: s.llmsTxt, soft: true,
       good: "llms.txt published — an explicit guide for AI crawlers",
       bad: "No llms.txt — an emerging standard for telling AI systems what matters on your site" },
   ];
@@ -268,6 +272,7 @@ export function audit(s: Signals): AuditResult {
   const findings: Finding[] = checks.map((c) => {
     const passed = (c.score ?? (c.pass ? 1 : 0)) >= 0.9;
     return {
+      check: c.key,
       area: c.area,
       type: passed ? "good" : c.soft || (c.score ?? 0) >= 0.5 ? "warning" : "bad",
       text: passed ? c.good : c.bad,

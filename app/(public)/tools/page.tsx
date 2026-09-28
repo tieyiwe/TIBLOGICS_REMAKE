@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Search, Bot, Calculator } from "lucide-react";
+import { Search, Bot, Calculator, Radar } from "lucide-react";
 import SmartRecommendations from "@/components/public/SmartRecommendations";
 import { useEffect } from "react";
 import { trackPageVisit } from "@/lib/recommendations";
@@ -13,6 +13,15 @@ const ALL_TOOLS = [
     href: "/tools/scanner",
     color: "#2251A3",
     tag: "Free",
+    retired: false,
+  },
+  {
+    icon: Radar,
+    name: "Readiness Monitor",
+    desc: "Your site and up to three competitors, rescanned every week, with an email when something changes.",
+    href: "/tools/readiness-monitor",
+    color: "#B8500A",
+    tag: "Paid",
     retired: false,
   },
   {

@@ -794,6 +794,18 @@ export default function ScannerPage() {
                 Book a Free Meeting ↗
               </Link>
             </div>
+
+            <Link
+              href="/tools/readiness-monitor"
+              className="block bg-white border border-[#D2DCE8] rounded-2xl p-5 hover:border-[#B8500A] transition-colors"
+            >
+              <p className="font-syne font-bold text-[#0D1B2A] text-base">
+                How do your competitors score? <span className="text-[#B8500A]">Readiness Monitor →</span>
+              </p>
+              <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">
+                These checks every week on your site and up to three competitors, with an email when something changes.
+              </p>
+            </Link>
           </div>
         )}
         <SmartRecommendations currentPage="/tools/scanner" compact />

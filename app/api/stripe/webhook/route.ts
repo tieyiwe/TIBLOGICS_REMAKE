@@ -5,6 +5,8 @@ import Stripe from "stripe";
 import { createMeeting } from "@/lib/meeting-providers";
 import stripe from "@/lib/stripe";
 import { grantDownloadsForOrder } from "@/lib/shop/delivery";
+import { activateMonitor, syncMonitorSubscription } from "@/lib/monitor/billing";
+import { MONITOR_PRODUCT } from "@/lib/monitor/config";
 
 const SITE_URL = (
   process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
@@ -44,6 +46,9 @@ export async function POST(req: Request) {
       if (sub.metadata?.product === "learn" && sub.metadata?.studentId) {
         await upsertLearnSubscription(sub);
       }
+      if (sub.metadata?.product === MONITOR_PRODUCT) {
+        await syncMonitorSubscription(sub);
+      }
     }
 
     if (event.type === "invoice.payment_failed") {
@@ -81,6 +86,15 @@ export async function POST(req: Request) {
           const full = await stripe.subscriptions.retrieve(subId);
           await upsertLearnSubscription(full, studentId);
           console.log(`[stripe/webhook] ✓ Learn subscription active for student ${studentId}`);
+        }
+      }
+
+      // ── Readiness Monitor subscription checkout ──────────────────────────
+      if (session.metadata?.product === MONITOR_PRODUCT && session.mode === "subscription") {
+        const monitorId = session.metadata.monitorId || session.client_reference_id;
+        const subId = typeof session.subscription === "string" ? session.subscription : null;
+        if (monitorId && subId) {
+          await activateMonitor(monitorId, await stripe.subscriptions.retrieve(subId));
         }
       }
 

@@ -9,6 +9,7 @@
 //   node scripts/cron.mjs news
 //   node scripts/cron.mjs carts
 //   node scripts/cron.mjs exams
+//   node scripts/cron.mjs monitor
 //   node scripts/cron.mjs all
 //
 // Needs two environment variables:
@@ -24,6 +25,8 @@ const JOBS = {
   news: { path: "/api/blog/auto-refresh", suggested: "every 6 hours" },
   carts: { path: "/api/cron/cart-reminders", suggested: "hourly" },
   exams: { path: "/api/cron/exam-sweep", suggested: "every 15 minutes" },
+  // Readiness Monitor rescans. Only subscribers whose week is up are scanned.
+  monitor: { path: "/api/cron/monitor-scans", suggested: "hourly" },
 };
 
 /**
@@ -77,7 +80,7 @@ for (const name of names) {
     const res = await fetch(url, {
       headers: { authorization: `Bearer ${secret}` },
       // A news run generates several articles; give it room.
-      signal: AbortSignal.timeout(name === "news" ? 600_000 : 120_000),
+      signal: AbortSignal.timeout(name === "news" ? 600_000 : name === "monitor" ? 330_000 : 120_000),
     });
     const body = await res.text();
     const secs = ((Date.now() - started) / 1000).toFixed(1);

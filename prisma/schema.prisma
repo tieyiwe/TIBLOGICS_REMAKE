@@ -122,6 +122,60 @@ model ScannerLead {
   @@index([aiScore])
 }
 
+/// A paid Readiness Monitor: one customer site plus up to three competitors,
+/// rescanned on a schedule. Tables are created by lib/monitor/db.ts on first
+/// use, since this project has no migrations.
+model MonitorSubscription {
+  id                   String    @id @default(cuid())
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  email                String
+  name                 String?
+  siteUrl              String
+  competitors          String[]
+  /// pending (checkout not finished) | active | past_due | canceled
+  status               String    @default("pending")
+  stripeCustomerId     String?
+  stripeSubscriptionId String?   @unique
+  currentPeriodEnd     DateTime?
+  /// The dashboard link is derived from this salt (see lib/monitor/token.ts);
+  /// only the link's hash is stored.
+  tokenSalt            String
+  tokenHash            String    @unique
+  lastRunAt            DateTime?
+  nextRunAt            DateTime?
+  /// Set while a run is in progress, so two cron calls cannot scan twice.
+  runStartedAt         DateTime?
+  lastManualRunAt      DateTime?
+
+  scans MonitorScan[]
+
+  @@index([status, nextRunAt])
+  @@index([email])
+}
+
+model MonitorScan {
+  id             String              @id @default(cuid())
+  createdAt      DateTime            @default(now())
+  subscriptionId String
+  subscription   MonitorSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  /// Every site scanned in one pass shares a runId.
+  runId          String
+  url            String
+  isOwn          Boolean
+  ok             Boolean
+  error          String?
+  overallScore   Int?
+  seoScore       Int?
+  perfScore      Int?
+  uxScore        Int?
+  aiScore        Int?
+  findings       Json?
+
+  @@index([subscriptionId, createdAt])
+  @@index([runId])
+}
+
 model ToolUsage {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())

@@ -16,6 +16,7 @@ import {
   Calendar,
   Users,
   Search,
+  Radar,
   DollarSign,
   Settings,
   FileEdit,
@@ -80,6 +81,7 @@ const navItems: NavItem[] = [
   { label: "Prospects", href: "/admin_pro/prospects", icon: Users },
   { label: "Scanner Leads", href: "/admin_pro/scanner-leads", icon: Search },
   { label: "Tool Analytics", href: "/admin_pro/tools", icon: BarChart2 },
+  { label: "Readiness Monitor", href: "/admin_pro/monitor", icon: Radar },
   { label: "Revenue", href: "/admin_pro/revenue", icon: DollarSign },
   {
     label: "Blog",
@@ -185,6 +187,7 @@ const NAV_PERMISSION_MAP: Record<string, string> = {
   "/admin_pro/prospects":      "prospects",
   "/admin_pro/scanner-leads":  "scanner_leads",
   "/admin_pro/tools":          "tools",
+  "/admin_pro/monitor":        "tools",
   "/admin_pro/revenue":        "revenue",
   "/admin_pro/blog":           "blog",
   "/admin_pro/newsletter":     "blog",
