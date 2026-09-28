@@ -237,6 +237,38 @@ function WriteTab(props: {
   const [findings, setFindings] = useState<Finding[]>([]);
   const [deepBusy, setDeepBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  // Full prompt text already fetched this session, so repeat copies are instant.
+  const [cache, setCache] = useState<Record<string, FullPrompt>>({});
+
+  function flash(id: string) {
+    setCopiedId(id);
+    setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 1500);
+  }
+
+  /** Copy a prompt straight from the list, without opening it. */
+  async function quickCopy(id: string) {
+    let p = cache[id];
+    if (!p) {
+      const res = await fetch(`/api/toolkit/prompt/${encodeURIComponent(id)}`).catch(() => null);
+      const d = res ? await res.json().catch(() => ({})) : {};
+      if (!res?.ok || !d.prompt) return setError(d.error ?? "Could not copy that prompt.");
+      p = d.prompt as FullPrompt;
+      setCache((c) => ({ ...c, [id]: p }));
+    }
+    try {
+      await navigator.clipboard.writeText(p.prompt);
+      flash(id);
+    } catch {
+      // Some browsers refuse clipboard access after a network wait; open it instead.
+      open(id);
+    }
+  }
+
+  /** The prompt with whatever fields have been filled in so far. */
+  const filledPrompt = selected
+    ? selected.fields.reduce((text, f) => (fields[f]?.trim() ? text.split(`[${f}]`).join(fields[f].trim()) : text), selected.prompt)
+    : "";
 
   const categories = useMemo(() => [...new Set(props.index.filter((p) => p.vertical === vertical).map((p) => p.category))], [props.index, vertical]);
   const list = useMemo(() => {
@@ -261,6 +293,7 @@ function WriteTab(props: {
     setLoadingPrompt(false);
     if (!res?.ok) return setError(d.error ?? "Could not open that prompt.");
     setSelected(d.prompt);
+    setCache((c) => ({ ...c, [d.prompt.id]: d.prompt }));
     setFields({});
     setExtra("");
   }
@@ -303,12 +336,20 @@ function WriteTab(props: {
         </div>
         <ul className="mt-3 max-h-[60vh] overflow-y-auto -mx-1">
           {list.map((p) => (
-            <li key={p.id}>
+            <li key={p.id} className={`group flex items-start gap-1 rounded-lg ${selected?.id === p.id ? "bg-[#FEF6EE]" : "hover:bg-[#F4F7FB]"}`}>
               <button
                 onClick={() => open(p.id)}
-                className={`w-full text-left px-2.5 py-2 rounded-lg font-dm text-sm ${selected?.id === p.id ? "bg-[#FEF6EE] text-[#0D1B2A] font-semibold" : "text-[#3A4A5C] hover:bg-[#F4F7FB]"}`}
+                className={`flex-1 text-left px-2.5 py-2 font-dm text-sm ${selected?.id === p.id ? "text-[#0D1B2A] font-semibold" : "text-[#3A4A5C]"}`}
               >
                 {p.title}
+              </button>
+              <button
+                onClick={() => quickCopy(p.id)}
+                title="Copy this prompt"
+                aria-label={`Copy the prompt: ${p.title}`}
+                className="shrink-0 mt-1.5 mr-1 rounded-md p-1.5 text-[#7A8FA6] hover:bg-white hover:text-[#B8500A]"
+              >
+                {copiedId === p.id ? <Check size={14} className="text-green-600" /> : <ClipboardCopy size={14} />}
               </button>
             </li>
           ))}
@@ -329,6 +370,20 @@ function WriteTab(props: {
             <p className="font-dm text-xs font-semibold uppercase tracking-wider text-[#B8500A]">{selected.category}</p>
             <h2 className="font-syne font-bold text-lg text-[#0D1B2A] mt-1">{selected.title}</h2>
             <p className="font-dm text-sm text-[#3A4A5C] mt-2"><span className="font-semibold">Use this when:</span> {selected.useWhen}</p>
+            <div className="mt-4 rounded-xl border border-[#E6EBF1] bg-[#F8FAFD] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-dm text-xs font-semibold uppercase tracking-wider text-[#7A8FA6]">The prompt</p>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(filledPrompt).then(() => flash(`full:${selected.id}`)).catch(() => {})}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-[#D2DCE8] px-3 py-1.5 font-dm text-xs font-semibold text-[#0D1B2A] hover:border-[#B8500A]"
+                >
+                  {copiedId === `full:${selected.id}` ? <><Check size={13} className="text-green-600" /> Copied</> : <><ClipboardCopy size={13} /> Copy prompt</>}
+                </button>
+              </div>
+              <p className="font-dm text-sm text-[#0D1B2A] mt-2 whitespace-pre-wrap leading-relaxed">{filledPrompt}</p>
+              <p className="font-dm text-xs text-[#7A8FA6] mt-2">Copies with the fields you&apos;ve filled in below. Use it in any AI tool, or press &ldquo;Write it&rdquo; to have it written here with your business profile and a compliance check.</p>
+            </div>
             {selected.fields.length > 0 && (
               <div className="grid sm:grid-cols-2 gap-3 mt-5">
                 {selected.fields.map((f) => (

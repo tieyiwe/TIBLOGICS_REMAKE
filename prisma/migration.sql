@@ -44,10 +44,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS "WaitlistEntry_email_product_key" ON "Waitlist
 ALTER TABLE "ProjectTask" ADD CONSTRAINT "ProjectTask_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "CollaboratorActivityLog" ADD CONSTRAINT "CollaboratorActivityLog_collaboratorId_fkey" FOREIGN KEY ("collaboratorId") REFERENCES "Collaborator"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
--- AgentLead outreach columns (Lead Hunter + Bland.ai voice outreach)
+-- AgentLead outreach columns (Lead Hunter)
 ALTER TABLE "AgentLead" ADD COLUMN IF NOT EXISTS "callTranscript" TEXT;
 ALTER TABLE "AgentLead" ADD COLUMN IF NOT EXISTS "callSummary" TEXT;
-ALTER TABLE "AgentLead" ADD COLUMN IF NOT EXISTS "blandCallId" TEXT;
 ALTER TABLE "AgentLead" ADD COLUMN IF NOT EXISTS "interestedIn" TEXT[] DEFAULT '{}';
 ALTER TABLE "AgentLead" ADD COLUMN IF NOT EXISTS "hasWebsite" BOOLEAN;
 ALTER TABLE "AgentLead" ADD COLUMN IF NOT EXISTS "businessInfo" JSONB;

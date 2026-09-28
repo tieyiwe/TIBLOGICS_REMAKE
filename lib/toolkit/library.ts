@@ -31,6 +31,8 @@ const library = data as { verticals: LibraryVertical[]; prompts: LibraryPrompt[]
 
 export const LIBRARY_VERTICALS = library.verticals;
 export const LIBRARY_SIZE = library.prompts.length;
+/** Distinct task categories across all industries. */
+export const CATEGORY_COUNT = new Set(library.prompts.map((p) => `${p.vertical}:${p.category}`)).size;
 
 export function getPrompt(id: string): LibraryPrompt | null {
   return library.prompts.find((p) => p.id === id) ?? null;

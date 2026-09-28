@@ -556,7 +556,6 @@ model AgentLead {
   callNotes      String?         @db.Text
   callTranscript String?         @db.Text
   callSummary    String?         @db.Text
-  blandCallId    String?
   interestedIn   String[]
   hasWebsite     Boolean?
   businessInfo   Json?

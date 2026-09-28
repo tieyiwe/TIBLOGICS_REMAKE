@@ -29,7 +29,7 @@ const PROJECTS = [
   },
   {
     name: "CareFlow AI",
-    description: "AI-powered social work agency platform. Twilio/Bland.ai automated client wellness check-ins.",
+    description: "AI-powered social work agency platform. Automated phone check-ins with clients.",
     category: "SAAS" as ProjectCategory, status: "ACTIVE" as ProjectStatus, priority: "HIGH" as ProjectPriority,
     progress: 60, revenueEarned: 0, revenuePotential: 120000, monthlyRecurring: 0,
     deadline: new Date("2026-08-01"), starred: false, color: "#1A7A5E",
@@ -65,7 +65,7 @@ const PROJECTS = [
     category: "CLIENT" as ProjectCategory, status: "ACTIVE" as ProjectStatus, priority: "HIGH" as ProjectPriority,
     progress: 55, revenueEarned: 5400, revenuePotential: 10800, monthlyRecurring: 549,
     deadline: new Date("2026-05-15"), starred: true, color: "#D85A30",
-    tasks: ["Interactive proposal sent", "Service agreement signed", "Website redesign", "Online ordering system", "AI Phone Agent (Bland AI)", "Social media setup"]
+    tasks: ["Interactive proposal sent", "Service agreement signed", "Website redesign", "Online ordering system", "AI Phone Agent", "Social media setup"]
   },
   {
     name: "ONAPAC Congo",
