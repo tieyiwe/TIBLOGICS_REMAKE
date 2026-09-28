@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { useT } from "@/lib/i18n/client";
 
 /**
  * An animated TIBLOGICS unit for the store.
@@ -30,6 +31,7 @@ const LINKS = [
 ];
 
 export default function BrandPromo() {
+  const t = useT();
   return (
     <section style={{ maxWidth: "1200px", margin: "0 auto", padding: "40px 24px 8px" }}>
       <style>{`
@@ -87,7 +89,7 @@ export default function BrandPromo() {
 
         <div className="tb-promo" style={{ position: "relative" }}>
           <svg className="tb-mark" viewBox="0 0 240 190" width="240" height="190" role="img"
-               aria-label="The TIBLOGICS network mark">
+               aria-label={t("pages.store.promo.markLabel")}>
             <defs>
               <linearGradient id="tbg" x1="0" y1="0" x2="1" y2="1">
                 <stop offset="0%" stopColor="#F9A738" />
@@ -111,21 +113,23 @@ export default function BrandPromo() {
               display: "inline-block", fontSize: ".72rem", fontWeight: 700, letterSpacing: ".14em",
               color: "#F9A738", marginBottom: "12px",
             }}>
-              BUILT BY TIBLOGICS
+              {t("pages.store.promo.kicker")}
             </span>
 
-            {/* Fixed height so the rotating lines never shift the layout */}
-            <div style={{ position: "relative", height: "2.6em", marginBottom: "10px" }}>
+            {/* All lines share one grid cell, so the box is as tall as the
+                longest line (French and Swahili wrap further than English) and
+                the rotation never shifts the layout. */}
+            <div style={{ display: "grid", marginBottom: "10px" }}>
               {[
-                "The prompts we actually use on client work.",
-                "Written by people who ship this for a living.",
-                "No fluff, no filler — just what works.",
+                t("pages.store.promo.line1"),
+                t("pages.store.promo.line2"),
+                t("pages.store.promo.line3"),
               ].map((line, i) => (
                 <h2
                   key={line}
                   className="tb-line"
                   style={{
-                    position: "absolute", inset: 0, margin: 0,
+                    gridArea: "1 / 1", margin: 0,
                     fontFamily: "var(--font-syne), sans-serif",
                     fontWeight: 800, fontSize: "clamp(1.25rem,2.3vw,1.7rem)",
                     lineHeight: 1.25, color: "#fff",
@@ -138,8 +142,7 @@ export default function BrandPromo() {
             </div>
 
             <p style={{ color: "#8A9BA0", fontSize: ".92rem", lineHeight: 1.65, maxWidth: "52ch", margin: "0 0 18px" }}>
-              TIBLOGICS builds AI systems for real businesses. Everything in this store
-              came out of that work — not a content farm.
+              {t("pages.store.promo.body")}
             </p>
 
             <Link
@@ -151,7 +154,7 @@ export default function BrandPromo() {
                 fontSize: ".86rem", fontWeight: 700, textDecoration: "none",
               }}
             >
-              See what we build <ArrowRight size={15} />
+              {t("pages.store.promo.cta")} <ArrowRight size={15} />
             </Link>
           </div>
         </div>

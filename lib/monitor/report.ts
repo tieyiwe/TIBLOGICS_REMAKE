@@ -84,6 +84,8 @@ export interface Gap {
   /** Competitors that pass this check. */
   aheadHosts: string[];
   severity: "bad" | "warning";
+  /** The subscriber's finding, for re-rendering `yours` in another language. */
+  finding?: Finding;
 }
 
 /**
@@ -102,7 +104,7 @@ export function competitorGaps(sites: SiteSummary[]): Gap[] {
     if (f.type === "good") continue;
     const ahead = rivals.filter((r) => r.findings.some((rf) => rf.check === f.check && rf.type === "good"));
     if (ahead.length === 0) continue;
-    gaps.push({ check: f.check, area: f.area, yours: f.text, aheadHosts: ahead.map((r) => r.host), severity: f.type });
+    gaps.push({ check: f.check, area: f.area, yours: f.text, aheadHosts: ahead.map((r) => r.host), severity: f.type, finding: f });
   }
   // Most competitors ahead first, then real defects before warnings.
   return gaps.sort(
@@ -121,8 +123,8 @@ export function rankOf(sites: SiteSummary[]): { rank: number; of: number } | nul
 
 export type Change =
   | { kind: "score"; host: string; isOwn: boolean; area: Area; from: number; to: number }
-  | { kind: "fixed"; check: string; text: string }
-  | { kind: "regressed"; check: string; text: string };
+  | { kind: "fixed"; check: string; text: string; finding?: Finding }
+  | { kind: "regressed"; check: string; text: string; finding?: Finding };
 
 /** Score moves smaller than this are noise (a slower server response on the day). */
 const OWN_THRESHOLD = 3;
@@ -145,8 +147,8 @@ export function changesBetween(prev: SiteSummary[], curr: SiteSummary[]): Change
       for (const f of c.findings) {
         const before = p.findings.find((x) => x.check === f.check);
         if (!before) continue;
-        if (before.type !== "good" && f.type === "good") changes.push({ kind: "fixed", check: f.check, text: f.text });
-        if (before.type === "good" && f.type !== "good") changes.push({ kind: "regressed", check: f.check, text: f.text });
+        if (before.type !== "good" && f.type === "good") changes.push({ kind: "fixed", check: f.check, text: f.text, finding: f });
+        if (before.type === "good" && f.type !== "good") changes.push({ kind: "regressed", check: f.check, text: f.text, finding: f });
       }
     }
   }

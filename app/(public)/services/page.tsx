@@ -7,49 +7,34 @@ import SmartRecommendations from "@/components/public/SmartRecommendations";
 import VideoEmbed from "@/components/video/LazyVideoEmbed";
 import { trackPageVisit } from "@/lib/recommendations";
 import OpenTiboButton from "@/components/public/OpenTiboButton";
+import { useT } from "@/lib/i18n/client";
 
 // Split into what we lead with and what we round out with. Nine equal cards
 // asked every visitor to rank us themselves; three of these are already the
 // core offer everywhere else on the site, so the page says so.
+//
+// `name` stays English: it is the value passed to /services/get-started and
+// stored with the request. What the visitor reads comes from the dictionary.
 const CORE = [
-  {
-    icon: Bot,
-    name: "AI Implementation & Agents",
-    desc: "Custom agents, LLM integration, RAG systems and workflow automation built around how your operation actually runs — from a single chatbot to autonomous pipelines.",
-    color: "#2251A3",
-  },
-  {
-    icon: Zap,
-    name: "Workflow Automation",
-    desc: "End-to-end process automation with n8n, Make, Zapier and custom pipelines. The repetitive work stops being someone's job.",
-    color: "#F47C20",
-  },
-  {
-    icon: Brain,
-    name: "AI Strategy & Consulting",
-    desc: "Readiness audits, strategy sessions and an implementation roadmap — including the honest answer about where AI is not the right tool.",
-    color: "#0F6E56",
-  },
+  { id: "agents", icon: Bot, name: "AI Implementation & Agents", color: "#2251A3" },
+  { id: "automation", icon: Zap, name: "Workflow Automation", color: "#F47C20" },
+  { id: "strategy", icon: Brain, name: "AI Strategy & Consulting", color: "#0F6E56" },
 ];
 
 const ALSO = [
-  { icon: Globe, name: "Web & App Development", desc: "Next.js, React, full-stack — production-ready, not a prototype.", color: "#2251A3" },
-  { icon: Shield, name: "Cybersecurity", desc: "Security audits, penetration testing and hardened, compliance-ready infrastructure.", color: "#7c3aed" },
-  { icon: BarChart3, name: "Data Analytics", desc: "Dashboards, pipelines and insight from the data you already hold.", color: "#1B3A6B" },
-  { icon: Smartphone, name: "Mobile Development", desc: "React Native apps that feel native on iOS and Android.", color: "#D85A30" },
-  { icon: GraduationCap, name: "AI Training & Academy", desc: "Team workshops, on-site training and 90+ lessons on the TIBLOGICS AI Academy.", color: "#7c3aed" },
-  { icon: Cpu, name: "System Design & IoT", desc: "Multi-service architecture, IoT integration and distributed systems.", color: "#0F6E56" },
+  { id: "web", icon: Globe, name: "Web & App Development", color: "#2251A3" },
+  { id: "security", icon: Shield, name: "Cybersecurity", color: "#7c3aed" },
+  { id: "data", icon: BarChart3, name: "Data Analytics", color: "#1B3A6B" },
+  { id: "mobile", icon: Smartphone, name: "Mobile Development", color: "#D85A30" },
+  { id: "training", icon: GraduationCap, name: "AI Training & Academy", color: "#7c3aed" },
+  { id: "iot", icon: Cpu, name: "System Design & IoT", color: "#0F6E56" },
 ];
 
 // What a visitor actually wants to know before enquiring: what happens next.
-const ENGAGEMENT = [
-  { step: "01", title: "A conversation", body: "Free, 30 minutes. You describe the problem; we say whether we are the right people for it." },
-  { step: "02", title: "A written plan", body: "Scope, approach, timeline and cost — before anyone commits to anything." },
-  { step: "03", title: "We build", body: "In the open, with something working in front of you early rather than a reveal at the end." },
-  { step: "04", title: "We stay", body: "Handover, training, or we keep running it. Whichever leaves you in the better position." },
-];
+const ENGAGEMENT = ["01", "02", "03", "04"];
 
 export default function ServicesPage() {
+  const t = useT();
   useEffect(() => {
     trackPageVisit("/services");
   }, []);
@@ -59,17 +44,17 @@ export default function ServicesPage() {
       {/* Hero */}
       <div className="bg-[#1B3A6B] py-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <span className="section-tag">Services</span>
+          <span className="section-tag">{t("pages.services.hero.tag")}</span>
           <h1 className="font-syne font-extrabold text-4xl md:text-5xl text-white mt-3 leading-tight">
-            AI-first. <span className="text-[#F47C20]">Tech-complete.</span>
+            {t("pages.services.hero.title")} <span className="text-[#F47C20]">{t("pages.services.hero.titleAccent")}</span>
           </h1>
           <p className="font-dm text-white/70 text-lg mt-4 max-w-2xl mx-auto">
-            Every service we offer starts with an AI lens. We identify automation opportunities, recommend AI tools, and architect systems that scale.
+            {t("pages.services.hero.body")}
           </p>
-          <div className="flex justify-center gap-3 mt-6">
-            <Link href="/book" className="btn-primary">Book a Consulting</Link>
+          <div className="flex flex-wrap justify-center gap-3 mt-6">
+            <Link href="/book" className="btn-primary">{t("pages.services.hero.book")}</Link>
             <OpenTiboButton className="bg-white text-[#1B3A6B] hover:bg-[#EBF0FA] font-semibold rounded-lg px-5 py-2.5 transition-colors inline-flex items-center gap-2">
-              Talk to Tibo
+              {t("pages.services.hero.tibo")}
             </OpenTiboButton>
           </div>
         </div>
@@ -78,8 +63,8 @@ export default function ServicesPage() {
       {/* Video Showcase */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-6">
-          <span className="section-tag">See It in Action</span>
-          <h2 className="font-syne font-bold text-xl text-[#0D1B2A] mt-2">What We Do</h2>
+          <span className="section-tag">{t("pages.services.video.tag")}</span>
+          <h2 className="font-syne font-bold text-xl text-[#0D1B2A] mt-2">{t("pages.services.video.title")}</h2>
         </div>
         <VideoEmbed />
       </div>
@@ -87,12 +72,12 @@ export default function ServicesPage() {
       {/* What we do — core three, then the rest */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16">
         <div className="max-w-2xl mb-8">
-          <span className="section-tag">What we do</span>
+          <span className="section-tag">{t("pages.services.what.tag")}</span>
           <h2 className="font-syne font-extrabold text-3xl text-[#0D1B2A] mt-2">
-            Three things we are known for.
+            {t("pages.services.what.title")}
           </h2>
           <p className="font-dm text-[#3A4A5C] mt-3 leading-relaxed">
-            Most engagements start in one of these. The rest of what we do supports them.
+            {t("pages.services.what.body")}
           </p>
         </div>
 
@@ -114,13 +99,13 @@ export default function ServicesPage() {
               >
                 <svc.icon size={23} style={{ color: svc.color }} />
               </div>
-              <h3 className="font-syne font-bold text-lg text-[#0D1B2A] leading-snug">{svc.name}</h3>
-              <p className="font-dm text-sm text-[#7A8FA6] leading-relaxed mt-2 flex-1">{svc.desc}</p>
+              <h3 className="font-syne font-bold text-lg text-[#0D1B2A] leading-snug">{t(`pages.services.svc.${svc.id}.name`)}</h3>
+              <p className="font-dm text-sm text-[#7A8FA6] leading-relaxed mt-2 flex-1">{t(`pages.services.svc.${svc.id}.desc`)}</p>
               <span
                 className="mt-5 inline-flex items-center gap-1.5 font-dm text-sm font-semibold transition-all duration-200 group-hover:gap-2.5"
                 style={{ color: svc.color }}
               >
-                Start here <ArrowRight size={14} />
+                {t("pages.services.startHere")} <ArrowRight size={14} />
               </span>
             </Link>
           ))}
@@ -128,7 +113,7 @@ export default function ServicesPage() {
 
         <div className="rounded-2xl border border-[#D2DCE8] bg-[#F4F7FB] p-6 sm:p-8">
           <h3 className="font-syne font-bold text-lg text-[#0D1B2A] mb-5">
-            And everything around them
+            {t("pages.services.also.title")}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-5">
             {ALSO.map((svc) => (
@@ -145,9 +130,9 @@ export default function ServicesPage() {
                 </div>
                 <div className="min-w-0">
                   <span className="font-syne font-bold text-sm text-[#0D1B2A] group-hover:text-[#2251A3] transition-colors">
-                    {svc.name}
+                    {t(`pages.services.svc.${svc.id}.name`)}
                   </span>
-                  <p className="font-dm text-xs text-[#7A8FA6] leading-relaxed mt-0.5">{svc.desc}</p>
+                  <p className="font-dm text-xs text-[#7A8FA6] leading-relaxed mt-0.5">{t(`pages.services.svc.${svc.id}.desc`)}</p>
                 </div>
               </Link>
             ))}
@@ -159,18 +144,18 @@ export default function ServicesPage() {
       <div className="bg-[#0D1B2A]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="max-w-2xl mb-10">
-            <span className="section-tag">How it works</span>
+            <span className="section-tag">{t("pages.services.how.tag")}</span>
             <h2 className="font-syne font-extrabold text-3xl text-white mt-2">
-              What happens after you get in touch.
+              {t("pages.services.how.title")}
             </h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {ENGAGEMENT.map((e) => (
-              <div key={e.step} className="relative pt-5 border-t border-white/15">
+            {ENGAGEMENT.map((step, i) => (
+              <div key={step} className="relative pt-5 border-t border-white/15">
                 <span className="absolute -top-px left-0 h-px w-10 bg-[#F47C20]" />
-                <span className="font-dm text-xs font-bold text-[#F47C20]">{e.step}</span>
-                <h3 className="font-syne font-bold text-lg text-white mt-2">{e.title}</h3>
-                <p className="font-dm text-sm text-white/60 leading-relaxed mt-1.5">{e.body}</p>
+                <span className="font-dm text-xs font-bold text-[#F47C20]">{step}</span>
+                <h3 className="font-syne font-bold text-lg text-white mt-2">{t(`pages.services.step${i + 1}.title`)}</h3>
+                <p className="font-dm text-sm text-white/60 leading-relaxed mt-1.5">{t(`pages.services.step${i + 1}.body`)}</p>
               </div>
             ))}
           </div>
@@ -179,10 +164,10 @@ export default function ServicesPage() {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="mt-16 text-center bg-[#F4F7FB] rounded-2xl p-10">
-          <span className="section-tag">Not sure where to start?</span>
-          <h2 className="font-syne font-extrabold text-2xl text-[#0D1B2A] mt-2">Book a free discovery meeting.</h2>
-          <p className="font-dm text-[#3A4A5C] mt-2 max-w-md mx-auto">30 minutes, zero commitment. We'll listen to your challenges and tell you exactly what we'd recommend.</p>
-          <Link href="/book" className="btn-primary mt-5 inline-flex">Get Started for Free</Link>
+          <span className="section-tag">{t("pages.services.cta.tag")}</span>
+          <h2 className="font-syne font-extrabold text-2xl text-[#0D1B2A] mt-2">{t("pages.services.cta.title")}</h2>
+          <p className="font-dm text-[#3A4A5C] mt-2 max-w-md mx-auto">{t("pages.services.cta.body")}</p>
+          <Link href="/book" className="btn-primary mt-5 inline-flex">{t("pages.services.cta.button")}</Link>
         </div>
         <SmartRecommendations currentPage="/services" compact />
       </div>

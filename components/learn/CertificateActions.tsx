@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/lib/i18n/client";
 
 // Share + save actions. Printing to PDF uses the browser's own engine, which
 // keeps the certificate a single source of truth — no second rendering path
@@ -14,6 +15,7 @@ export default function CertificateActions({
   verificationId: string;
   issuedAt: string;
 }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
   const url = typeof window !== "undefined" ? window.location.href : "";
 
@@ -58,19 +60,19 @@ export default function CertificateActions({
           rel="noopener noreferrer"
           className="rounded-full bg-[#0A66C2] px-5 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
         >
-          Add to LinkedIn
+          {t("learn.cert.addToLinkedIn")}
         </a>
         <button
           onClick={() => window.print()}
           className="rounded-full bg-[var(--ink)] px-5 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
         >
-          Save as PDF
+          {t("learn.cert.saveAsPdf")}
         </button>
         <button
           onClick={copy}
           className="rounded-full border border-[var(--border)] bg-white px-5 py-2.5 text-sm font-semibold text-[var(--ink2)] transition-colors hover:border-[var(--ink3)]"
         >
-          {copied ? "✓ Link copied" : "Copy verification link"}
+          {copied ? `✓ ${t("learn.cert.linkCopied")}` : t("learn.cert.copyLink")}
         </button>
       </div>
     </>

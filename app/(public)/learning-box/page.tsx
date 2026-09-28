@@ -1,26 +1,42 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import CatalogBrowser from "@/components/learn/CatalogBrowser";
 import LevelPicker from "@/components/learn/LevelPicker";
-import { LEVEL_SLUGS } from "@/lib/learn/levels";
 import Reveal from "@/components/learn/Reveal";
 import { getCatalog } from "@/lib/learn/catalog";
-import { PLANS, formatPlanPrice, FOUNDING_PRICING } from "@/lib/payments/provider";
+import { fmtPrice } from "@/lib/learn/format";
+import { PLANS, FOUNDING_PRICING } from "@/lib/payments/provider";
+import { getLocale, getT } from "@/lib/i18n/server";
+import { loadTrackSources, localizedTracks, withTrackText } from "@/lib/i18n/sources/learn";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Learning Box | TIBLOGICS Learn",
-  description:
-      "Three certification levels, Basic to Expert, that make you genuinely proficient with AI. Hands-on labs, quizzes, a timed exam and a reviewed capstone at every level, with systems thinking all the way through.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return {
+    title: t("learn.box.metaTitle"),
+    description: t("learn.box.metaDescription"),
+  };
+}
 
 export default async function LearningBoxPage() {
-  const tracks = await getCatalog();
+  const [catalog, locale, t] = await Promise.all([getCatalog(), getLocale(), getT()]);
+  const { texts, pending } = await localizedTracks(
+    locale === "en" ? [] : await loadTrackSources({ slug: { in: catalog.map((c) => c.slug) } }),
+    locale,
+  );
+  const tracks = catalog.map((c) => withTrackText(c, texts.get(c.slug)));
   const monthly = PLANS.monthly;
-  // The three levels are the path; anything else in the catalog is listed
-  // separately under it.
-  const otherTracks = tracks.filter((t) => !LEVEL_SLUGS.has(t.slug));
+
+  const approach = [
+    { l: t("learn.certLevel.1.name"), t: t("learn.box.approach.1.title"), d: t("learn.box.approach.1.body") },
+    { l: t("learn.certLevel.2.name"), t: t("learn.box.approach.2.title"), d: t("learn.box.approach.2.body") },
+    { l: t("learn.certLevel.3.name"), t: t("learn.box.approach.3.title"), d: t("learn.box.approach.3.body") },
+  ];
+  const includes = [1, 2, 3, 4, 5].map((n) => ({
+    n: `0${n}`,
+    t: t(`learn.box.includes.${n}.title`),
+    d: t(`learn.box.includes.${n}.body`),
+  }));
 
   return (
     <div className="bg-[var(--s2)]">
@@ -39,15 +55,13 @@ export default async function LearningBoxPage() {
             className="mt-3 max-w-3xl text-3xl font-black leading-tight sm:text-5xl"
             style={{ "--stagger-index": 1 } as React.CSSProperties}
           >
-            Learn AI properly — and prove it.
+            {t("learn.box.heroTitle")}
           </h1>
           <p
             className="mt-5 max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg"
             style={{ "--stagger-index": 2 } as React.CSSProperties}
           >
-            Three levels, from your first prompt to leading AI across an organisation. Each ends in
-            a certificate you can actually defend: hands-on labs, a quiz per module, a timed final
-            exam, and a capstone reviewed by a human being. No participation trophies.
+            {t("learn.box.heroBody")}
           </p>
           <div
             className="mt-8 flex flex-wrap items-center gap-4"
@@ -57,44 +71,35 @@ export default async function LearningBoxPage() {
               href="/learn/signup"
               className="rounded-full bg-gradient-to-r from-[var(--orange)] to-[#F9A738] px-7 py-3.5 text-sm font-bold text-[var(--ink)] transition-opacity hover:opacity-90"
             >
-              Start learning
+              {t("learn.cta.startLearning")}
             </Link>
             <p className="text-sm text-white/60">
               {FOUNDING_PRICING && (
                 <span className="mr-2 rounded-full bg-white/10 px-2.5 py-1 text-xs font-bold text-[var(--orange)]">
-                  Founding rate
+                  {t("learn.billing.foundingRate")}
                 </span>
               )}
-              <strong className="text-white">{formatPlanPrice(monthly)}/month</strong> — every track
-              included. Cancel anytime.
+              <strong className="text-white">{t("learn.price.perMonth", { price: fmtPrice(monthly.amount, locale) })}</strong>{" "}
+              {t("learn.box.heroPriceTail")}
             </p>
           </div>
         </div>
       </section>
 
-      {/* The certification path */}
-      <section className="mx-auto max-w-6xl px-4 pt-14">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--orange)]">The certification path</p>
-        <h2 className="mt-2 text-2xl font-black text-[var(--ink)] sm:text-3xl">Basic → Intermediate → Expert</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--ink2)]">
-          Start where you are. Each level is a complete track with its own certificate, and each
-          one assumes the one before it, so you can begin at Level 2 if you already use AI every day.
+      {pending && (
+        <p role="status" className="mx-auto mt-6 max-w-6xl px-4 text-xs text-[var(--ink3)]">
+          {t("common.translationPending")}
         </p>
+      )}
+
+      {/* The certification path, the specialist tracks, and the questions
+          that point at one of them */}
+      <section className="mx-auto max-w-6xl px-4 pt-14">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--orange)]">{t("learn.box.pathEyebrow")}</p>
+        <h2 className="mt-2 text-2xl font-black text-[var(--ink)] sm:text-3xl">{t("learn.box.pathTitle")}</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--ink2)]">{t("learn.box.pathBody")}</p>
         <div className="mt-8">
-          <LevelPicker
-            catalog={tracks.filter((t) => LEVEL_SLUGS.has(t.slug))}
-            ladder={tracks.map((t) => ({
-              slug: t.slug,
-              title: t.title,
-              accentColor: t.accentColor,
-              certificateName: t.certificateName,
-              estimatedHours: t.estimatedHours,
-              outcomes: t.outcomes,
-              moduleCount: t.moduleCount,
-              labCount: t.labCount,
-              status: t.status,
-            }))}
-          />
+          <LevelPicker tracks={tracks} />
         </div>
       </section>
 
@@ -102,20 +107,12 @@ export default async function LearningBoxPage() {
       <section className="mx-auto max-w-6xl px-4 pt-14">
         <div className="grid gap-8 rounded-3xl bg-[var(--ink)] p-8 text-white sm:p-10 lg:grid-cols-[1fr_1.2fr] lg:items-center">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--orange)]">Our approach</p>
-            <h2 className="mt-2 text-2xl font-black leading-tight sm:text-3xl">Systems thinking, all the way through</h2>
-            <p className="mt-3 text-sm leading-relaxed text-white/70">
-              Most AI courses teach the tool. We teach the system around it: the people, steps,
-              feedback loops and bottlenecks that decide whether AI actually helps, or just moves
-              the problem somewhere else.
-            </p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--orange)]">{t("learn.box.approachEyebrow")}</p>
+            <h2 className="mt-2 text-2xl font-black leading-tight sm:text-3xl">{t("learn.box.approachTitle")}</h2>
+            <p className="mt-3 text-sm leading-relaxed text-white/70">{t("learn.box.approachBody")}</p>
           </div>
           <ul className="grid gap-3 sm:grid-cols-3">
-            {[
-              { l: "Basic", t: "See the whole picture", d: "Parts, connections and knock-on effects. Find the bottleneck before you automate anything." },
-              { l: "Intermediate", t: "Map your own work", d: "Turn your workflow into a system map, then decide where AI belongs, and where it would only move the queue." },
-              { l: "Expert", t: "Lead at scale", d: "Loops, delays, incentives and leverage points, applied to agents, evaluation, security and adoption." },
-            ].map((x) => (
+            {approach.map((x) => (
               <li key={x.l} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                 <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--orange)]">{x.l}</p>
                 <p className="mt-1 text-sm font-bold">{x.t}</p>
@@ -126,61 +123,26 @@ export default async function LearningBoxPage() {
         </div>
       </section>
 
-      {/* Other tracks, if any sit outside the three levels */}
-      <section className="mx-auto max-w-6xl px-4 py-14">
-        {tracks.length === 0 ? (
+      {tracks.length === 0 && (
+        <section className="mx-auto max-w-6xl px-4 pt-14">
           <div className="rounded-2xl border border-dashed border-[var(--border)] bg-white p-12 text-center">
-            <h2 className="text-lg font-bold text-[var(--ink)]">The catalog is being prepared</h2>
+            <h2 className="text-lg font-bold text-[var(--ink)]">{t("learn.box.emptyTitle")}</h2>
             <p className="mx-auto mt-2 max-w-md text-sm text-[var(--ink2)]">
-              Tracks are being finalised now. Check back shortly, or{" "}
+              {t("learn.box.emptyBody")}{" "}
               <Link href="/contact" className="font-semibold text-[var(--blue2)] underline">
-                get in touch
-              </Link>{" "}
-              and we'll let you know the moment they open.
+                {t("learn.box.emptyContact")}
+              </Link>
             </p>
           </div>
-        ) : otherTracks.length > 0 ? (
-          <>
-            <h2 className="text-xl font-bold text-[var(--ink)]">More tracks</h2>
-            <div className="mt-6">
-              <CatalogBrowser tracks={otherTracks} />
-            </div>
-          </>
-        ) : null}
-      </section>
+        </section>
+      )}
 
       {/* What every track includes */}
-      <section className="border-t border-[var(--border)] bg-white px-4 py-14">
+      <section className="mt-14 border-t border-[var(--border)] bg-white px-4 py-14">
         <div className="mx-auto max-w-6xl">
-          <h2 className="text-2xl font-bold text-[var(--ink)]">What every level includes</h2>
+          <h2 className="text-2xl font-bold text-[var(--ink)]">{t("learn.box.includesTitle")}</h2>
           <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
-            {[
-              {
-                n: "01",
-                t: "Hands-on labs",
-                d: "Do the work inside the platform: run prompts against a real model, find the planted errors in an AI answer, map a real system. Assessed against published criteria.",
-              },
-              {
-                n: "02",
-                t: "Quick checks",
-                d: "Three questions after every lesson, with feedback that explains why an answer is right, not just whether it was.",
-              },
-              {
-                n: "03",
-                t: "Module quizzes",
-                d: "Eight questions drawn from a larger bank, 80% to pass. Retake as often as you need; the questions and their order change each time.",
-              },
-              {
-                n: "04",
-                t: "Timed final exam",
-                d: "A real exam with a real clock, run on our server. Randomized per attempt, with a per-module breakdown of your result.",
-              },
-              {
-                n: "05",
-                t: "Reviewed capstone",
-                d: "A practical project scored against a published rubric by a human reviewer. This is what makes the certificate mean something.",
-              },
-            ].map((x, i) => (
+            {includes.map((x, i) => (
               <Reveal key={x.n} delay={i * 80}>
                 <div className="learn-lift h-full rounded-2xl border border-[var(--border)] p-6">
                   <span className="text-xs font-black text-[var(--orange)]">{x.n}</span>

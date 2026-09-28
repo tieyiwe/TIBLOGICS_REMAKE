@@ -6,6 +6,8 @@ import { requireEntitledStudent } from "@/lib/learn/session";
 import { presentQuestion, scoreAnswers } from "@/lib/learn/assessments";
 import { awardPoints, getTotalPoints } from "@/lib/learn/points";
 import { checkLevelUp, notifyMilestone } from "@/lib/learn/milestones";
+import { getLocale, translatorFor } from "@/lib/i18n/server";
+import { localizeQuestions } from "@/lib/i18n/sources/labs";
 
 // Scores micro-checks (mode: "micro") and module quizzes (mode: "quiz").
 // Correct answers are read here and NOWHERE else — the client never receives
@@ -19,14 +21,16 @@ const Body = z.object({
 export async function POST(req: NextRequest) {
   const { error, student } = await requireEntitledStudent();
   if (error) return error;
+  const locale = await getLocale();
+  const t = translatorFor(locale);
 
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
-  if (!parsed.success) return NextResponse.json({ error: "Invalid submission" }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: t("labs.api.invalidSubmission") }, { status: 400 });
   const { mode, id, answers } = parsed.data;
 
   const answeredIds = Object.keys(answers);
   if (answeredIds.length === 0) {
-    return NextResponse.json({ error: "No answers submitted" }, { status: 400 });
+    return NextResponse.json({ error: t("labs.api.noAnswers") }, { status: 400 });
   }
 
   try {
@@ -35,11 +39,14 @@ export async function POST(req: NextRequest) {
         where: { id },
         include: { questions: true },
       });
-      if (!check) return NextResponse.json({ error: "Not found" }, { status: 404 });
+      if (!check) return NextResponse.json({ error: t("labs.api.notFound") }, { status: 404 });
 
-      // Only grade the questions that were actually served to this attempt
-      const served = check.questions.filter((q) => answeredIds.includes(q.id));
-      if (served.length === 0) return NextResponse.json({ error: "No matching questions" }, { status: 400 });
+      // Only grade the questions that were actually served to this attempt.
+      // Translation changes texts only: options stay at their stored index,
+      // so the same choices score the same in every language.
+      const bank = await localizeQuestions("micro", check.id, check.questions, locale, answeredIds);
+      const served = bank.questions.filter((q) => answeredIds.includes(q.id));
+      if (served.length === 0) return NextResponse.json({ error: t("labs.api.noMatching") }, { status: 400 });
 
       const { score, graded } = scoreAnswers(served.map((q) => presentQuestion(q, student.id)), answers);
       const passed = score >= check.passScore;
@@ -69,10 +76,11 @@ export async function POST(req: NextRequest) {
 
     // ── Module quiz ────────────────────────────────────────────────────────
     const quiz = await prisma.quiz.findUnique({ where: { id }, include: { questions: true } });
-    if (!quiz) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!quiz) return NextResponse.json({ error: t("labs.api.notFound") }, { status: 404 });
 
-    const served = quiz.questions.filter((q) => answeredIds.includes(q.id));
-    if (served.length === 0) return NextResponse.json({ error: "No matching questions" }, { status: 400 });
+    const bank = await localizeQuestions("quiz", quiz.id, quiz.questions, locale, answeredIds);
+    const served = bank.questions.filter((q) => answeredIds.includes(q.id));
+    if (served.length === 0) return NextResponse.json({ error: t("labs.api.noMatching") }, { status: 400 });
 
     const { score, graded } = scoreAnswers(served.map((q) => presentQuestion(q, student.id)), answers);
     const passed = score >= quiz.passScore;
@@ -128,6 +136,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ score, passed, passScore: quiz.passScore, graded, pointsAwarded });
   } catch (err) {
     console.error("[POST /api/learn/quiz/submit]", err);
-    return NextResponse.json({ error: "Could not score submission" }, { status: 500 });
+    return NextResponse.json({ error: t("labs.api.scoreSubmissionFailed") }, { status: 500 });
   }
 }

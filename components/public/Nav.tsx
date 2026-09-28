@@ -5,22 +5,26 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n/client";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const NEW_LOGO = "/logo.png";
 
+// `key` is the dictionary key (site.nav.*); labels are looked up at render.
 const navLinks = [
-  { label: "Services", href: "/services" },
-  { label: "Startups & Products", href: "/products" },
-  { label: "Try Smart Tools", href: "/tools" },
-  { label: "AI TIMES", href: "/ai-times" },
-  { label: "Events & Training", href: "/events" },
-  { label: "Learning Box", href: "/learning-box" },
-  { label: "Store", href: "/store" },
-  { label: "About", href: "/about" },
+  { key: "services", href: "/services" },
+  { key: "products", href: "/products" },
+  { key: "tools", href: "/tools" },
+  { key: "aiTimes", href: "/ai-times" },
+  { key: "events", href: "/events" },
+  { key: "learningBox", href: "/learning-box" },
+  { key: "store", href: "/store" },
+  { key: "about", href: "/about" },
 ];
 
 export default function Nav() {
   const pathname = usePathname();
+  const t = useT();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -51,41 +55,44 @@ export default function Nav() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-10">
           <div className="flex items-center justify-between min-h-[5.5rem] sm:min-h-[7.5rem] py-0 sm:py-2">
-            <Link href="/" className="flex items-center flex-shrink-0">
+            <Link href="/" className="flex items-center flex-shrink-0" aria-label={t("site.nav.home")}>
               <img src={NEW_LOGO} alt="TIBLOGICS" className="h-[5.5rem] sm:h-[7.5rem] w-auto" />
             </Link>
 
             {/* Desktop Nav */}
-            <nav className="hidden lg:flex items-center gap-7">
+            {/* Gaps tighten below xl: French and Swahili labels run 20-40%
+                longer than English, and the row must not overflow at 1024px. */}
+            <nav aria-label={t("site.nav.main")} className="hidden lg:flex flex-1 min-w-0 flex-wrap items-center justify-center gap-x-4 gap-y-1 2xl:gap-x-6 px-2">
               {navLinks.map((link) => {
-                const isAITimes = link.label === "AI TIMES";
+                const label = t(`site.nav.${link.key}`);
+                const isAITimes = link.key === "aiTimes";
                 if (isAITimes) {
                   return (
                     <Link
-                      key={link.label}
+                      key={link.key}
                       href={link.href}
                       className={cn(
-                        "font-dm font-semibold text-sm px-3 py-1.5 rounded-full transition-all duration-200",
+                        "whitespace-nowrap font-dm font-semibold text-sm px-3 py-1.5 rounded-full transition-all duration-200",
                         "bg-gradient-to-r from-emerald-600 via-green-500 to-teal-600 text-white shadow-sm hover:from-emerald-700 hover:to-teal-700",
                         isActive(link.href) && "ring-2 ring-[#F47C20] ring-offset-1"
                       )}
                     >
-                      {link.label}
+                      {label}
                     </Link>
                   );
                 }
                 return (
                   <Link
-                    key={link.label}
+                    key={link.key}
                     href={link.href}
                     className={cn(
-                      "font-dm font-medium text-sm transition-colors duration-200",
+                      "whitespace-nowrap font-dm font-medium text-sm transition-colors duration-200",
                       isActive(link.href)
                         ? "text-[#1B3A6B] font-semibold"
                         : "text-[#3A4A5C] hover:text-[#1B3A6B]"
                     )}
                   >
-                    {link.label}
+                    {label}
                     {isActive(link.href) && (
                       <span className="block h-0.5 bg-[#F47C20] rounded-full mt-0.5" />
                     )}
@@ -98,9 +105,12 @@ export default function Nav() {
                 breathe. Tibo is still one click away from the floating
                 launcher on every page, and from the Tibo tab in the mobile
                 bottom bar. */}
-            <div className="hidden lg:flex items-center gap-3">
-              <Link href="/book" className="btn-primary text-sm py-2 px-4">
-                Book a Free Consulting
+            {/* The language picker sits above the button rather than beside
+                it, so it costs the link row no width. */}
+            <div className="hidden lg:flex flex-shrink-0 flex-col items-end gap-1.5">
+              <LanguageSwitcher />
+              <Link href="/book" className="btn-primary whitespace-nowrap text-sm py-2 px-4">
+                {t("site.nav.cta")}
               </Link>
             </div>
 
@@ -108,7 +118,8 @@ export default function Nav() {
             <button
               className="lg:hidden p-2 rounded-lg text-[#1B3A6B] hover:bg-[#EBF0FA] transition-colors"
               onClick={() => setMobileOpen(true)}
-              aria-label="Open menu"
+              aria-label={t("site.nav.openMenu")}
+              aria-expanded={mobileOpen}
             >
               <Menu size={22} />
             </button>
@@ -137,22 +148,27 @@ export default function Nav() {
             mobileOpen ? "translate-x-0" : "translate-x-full"
           )}
         >
-          <div className="flex items-center justify-between p-4 border-b border-[#D2DCE8]">
+          <div className="flex items-center justify-between gap-3 p-4 border-b border-[#D2DCE8]">
+            {/* The language picker sits at the top of the drawer so it is
+                reachable on phones without scrolling the link list. */}
+            <LanguageSwitcher />
             <button
               onClick={() => setMobileOpen(false)}
+              aria-label={t("site.nav.closeMenu")}
               className="p-2 rounded-lg hover:bg-[#F4F7FB] transition-colors"
             >
               <X size={20} className="text-[#3A4A5C]" />
             </button>
           </div>
 
-          <nav className="p-4 flex flex-col gap-1 flex-1">
+          <nav aria-label={t("site.nav.main")} className="p-4 flex flex-col gap-1 flex-1 overflow-y-auto">
             {navLinks.map((link) => {
-              const isAITimes = link.label === "AI TIMES";
+              const label = t(`site.nav.${link.key}`);
+              const isAITimes = link.key === "aiTimes";
               if (isAITimes) {
                 return (
                   <Link
-                    key={link.label}
+                    key={link.key}
                     href={link.href}
                     onClick={() => setMobileOpen(false)}
                     className={cn(
@@ -161,13 +177,13 @@ export default function Nav() {
                       isActive(link.href) && "ring-2 ring-[#F47C20] ring-offset-1"
                     )}
                   >
-                    {link.label}
+                    {label}
                   </Link>
                 );
               }
               return (
                 <Link
-                  key={link.label}
+                  key={link.key}
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
                   className={cn(
@@ -177,7 +193,7 @@ export default function Nav() {
                       : "text-[#3A4A5C] hover:bg-[#F4F7FB] hover:text-[#1B3A6B]"
                   )}
                 >
-                  {link.label}
+                  {label}
                 </Link>
               );
             })}
@@ -192,7 +208,7 @@ export default function Nav() {
               onClick={() => setMobileOpen(false)}
               className="btn-primary justify-center text-sm"
             >
-              Book a Meeting
+              {t("site.nav.ctaMobile")}
             </Link>
           </div>
         </div>

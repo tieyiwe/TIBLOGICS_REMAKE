@@ -5,21 +5,23 @@ import { requireEntitledStudent } from "@/lib/learn/session";
 import { markLessonComplete } from "@/lib/learn/progress";
 import { computeStreak, getTotalPoints, levelFor } from "@/lib/learn/points";
 import { checkHalfway, checkLevelUp } from "@/lib/learn/milestones";
+import { getT } from "@/lib/i18n/server";
 
 const Body = z.object({ lessonId: z.string().min(1) });
 
 export async function POST(req: NextRequest) {
   const { error, student } = await requireEntitledStudent();
   if (error) return error;
+  const t = await getT();
 
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
-  if (!parsed.success) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: t("learn.api.invalidRequest") }, { status: 400 });
 
   // Capture the total BEFORE the award so a level crossing can be detected
   const totalBefore = await getTotalPoints(student.id);
 
   const result = await markLessonComplete(student.id, parsed.data.lessonId);
-  if (!result.ok) return NextResponse.json({ error: result.error }, { status: 404 });
+  if (!result.ok) return NextResponse.json({ error: t("learn.api.lessonNotFound") }, { status: 404 });
 
   const streak = await computeStreak(student.id);
   const total = await getTotalPoints(student.id);

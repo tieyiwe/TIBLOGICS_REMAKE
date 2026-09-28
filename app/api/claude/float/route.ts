@@ -2,11 +2,13 @@ import { checkRateLimit } from "@/lib/rate-limit";
 export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/claude";
+import { getLocale } from "@/lib/i18n/server";
+import { replyInLanguage } from "@/lib/i18n/config";
 
 const FLOAT_SYSTEM_PROMPT = `You are Tibo, the AI assistant for TIBLOGICS — an AI implementation and digital solutions agency serving businesses and individual builders across North America and Francophone Africa.
 
 == YOUR PERSONALITY ==
-Be warm, natural, and genuinely curious — like a knowledgeable friend who actually listens, not a chatbot running through a script. Keep responses to 2–4 sentences. Never be generic or salesy. Respond in English or French based on what the user writes.
+Be warm, natural, and genuinely curious — like a knowledgeable friend who actually listens, not a chatbot running through a script. Keep responses to 2–4 sentences. Never be generic or salesy. Respond in the language the user writes in (English, French or Swahili).
 
 == HOW TO HANDLE CONVERSATIONS ==
 1. Listen first. When someone describes a project or problem, acknowledge what they said and ask ONE good follow-up question to understand their situation better. Do not immediately pitch services or suggest a meeting.
@@ -107,10 +109,19 @@ export async function POST(req: NextRequest) {
     const anthropic = (await import("@/lib/claude")).default;
     const { CLAUDE_MODEL } = await import("@/lib/claude");
 
+    // The site is in English, French or Swahili; answer in the visitor's
+    // language. The booking marker is parsed by the widget, so it must stay
+    // exactly as written whatever the language.
+    const locale = await getLocale();
+    const language = replyInLanguage(locale);
+    const system = language
+      ? `${FLOAT_SYSTEM_PROMPT}\n\n== LANGUAGE ==\n${language} Keep the marker [BOOK_APPOINTMENT] and the page paths exactly as written.`
+      : FLOAT_SYSTEM_PROMPT;
+
     const stream = anthropic.messages.stream({
       model: CLAUDE_MODEL,
       max_tokens: 512,
-      system: FLOAT_SYSTEM_PROMPT,
+      system,
       messages,
     });
 

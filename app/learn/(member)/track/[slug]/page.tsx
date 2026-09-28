@@ -3,11 +3,23 @@ import { notFound, redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { getStudent } from "@/lib/learn/session";
 import { getTrackProgress, getTrackGates } from "@/lib/learn/progress";
-import { formatMinutes } from "@/lib/learn/types";
+import type { Metadata } from "next";
 import { LAB_TYPE_META, type LabType } from "@/lib/learn/labs/types";
 import ProgressRing from "@/components/learn/ProgressRing";
+import { handsOnMinutes } from "@/lib/learn/catalog";
+import { fmtBreakdown, fmtMinutes } from "@/lib/learn/format";
+import { getLocale, getT } from "@/lib/i18n/server";
+import { loadTrackSources, localizedTrack, trackText } from "@/lib/i18n/sources/learn";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const [src] = await loadTrackSources({ slug });
+  if (!src) return {};
+  const { text } = await localizedTrack(src, await getLocale());
+  return { title: text.title };
+}
 
 export default async function TrackHome({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -41,6 +53,23 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
 
   if (!track) notFound();
 
+  const [t, locale, [src]] = await Promise.all([getT(), getLocale(), loadTrackSources({ slug })]);
+  const { text, pending } = src
+    ? locale === "en"
+      ? { text: trackText(src), pending: false }
+      : await localizedTrack(src, locale)
+    : { text: null, pending: false };
+  const time = {
+    lessonMinutes: track.modules.reduce((n, m) => n + m.lessons.reduce((a, l) => a + l.durationMinutes, 0), 0),
+    handsOnMinutes: handsOnMinutes({
+      labMinutes: track.labs.map((l) => l.estimatedMinutes),
+      quizCount: track.modules.filter((m) => m.quiz).length,
+      examMinutes: track.finalExam?.timeLimitMinutes,
+      hasCapstone: !!track.capstone,
+    }),
+    estimatedHours: track.estimatedHours,
+  };
+
   const [progress, gates, done, quizPasses, cert] = await Promise.all([
     getTrackProgress(student.id, track.id),
     getTrackGates(student.id, track.id),
@@ -72,10 +101,10 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
   const passedQuizIds = new Set(quizPasses.map((q) => q.quizId));
 
   const GATES = [
-    { key: "microChecks", label: "Quick checks attempted", ok: gates.microChecks },
-    { key: "quizzes", label: "All module quizzes passed", ok: gates.quizzes },
-    { key: "exam", label: "Final exam passed", ok: gates.exam },
-    { key: "capstone", label: "Capstone approved", ok: gates.capstone },
+    { key: "microChecks", label: t("learn.gates.microChecks"), ok: gates.microChecks },
+    { key: "quizzes", label: t("learn.gates.quizzes"), ok: gates.quizzes },
+    { key: "exam", label: t("learn.gates.exam"), ok: gates.exam },
+    { key: "capstone", label: t("learn.gates.capstone"), ok: gates.capstone },
   ];
 
   return (
@@ -83,11 +112,17 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
       <header className="flex flex-wrap items-center gap-6 rounded-2xl border border-[var(--border)] bg-white p-6">
         <ProgressRing percent={progress.percent} color={track.accentColor} size={76} />
         <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-black text-[var(--ink)]">{track.title}</h1>
+          <h1 className="text-xl font-black text-[var(--ink)]">{text?.title ?? track.title}</h1>
           <p className="mt-1 text-sm text-[var(--ink3)]">
-            {progress.completedLessons} of {progress.totalLessons} lessons ·{" "}
-            {formatMinutes(progress.minutesRemaining)} remaining
+            {t("learn.dash.lessonsDone", { done: progress.completedLessons, total: progress.totalLessons })} ·{" "}
+            {t("learn.time.remaining", { time: fmtMinutes(t, progress.minutesRemaining) })}
           </p>
+          <p className="mt-1 text-xs text-[var(--ink3)]">{fmtBreakdown(t, locale, time)}</p>
+          {pending && (
+            <p role="status" className="mt-2 text-xs text-[var(--ink3)]">
+              {t("common.translationPending")}
+            </p>
+          )}
         </div>
         {progress.nextLessonId && (
           <Link
@@ -95,14 +130,14 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
             className="rounded-full px-6 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
             style={{ background: track.accentColor }}
           >
-            {progress.completedLessons > 0 ? "Resume →" : "Start →"}
+            {progress.completedLessons > 0 ? t("learn.dash.resume") : t("learn.ladder.start")} →
           </Link>
         )}
       </header>
 
       {/* Certificate gates */}
       <section className="rounded-2xl border border-[var(--border)] bg-white p-6">
-        <h2 className="text-base font-bold text-[var(--ink)]">Your path to the certificate</h2>
+        <h2 className="text-base font-bold text-[var(--ink)]">{t("learn.gates.title")}</h2>
         <ul className="mt-4 space-y-2.5">
           {GATES.map((g) => (
             <li key={g.key} className="flex items-center gap-3 text-sm">
@@ -126,12 +161,12 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
             href={`/certificates/${cert.verificationId}`}
             className="mt-5 inline-block rounded-full bg-[var(--ink)] px-6 py-2.5 text-sm font-bold text-white"
           >
-            View your certificate →
+            {t("learn.trackHome.viewCertificate")} →
           </Link>
         ) : (
           gates.eligible && (
             <p className="mt-5 rounded-lg bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
-              All requirements met — your certificate is being issued.
+              {t("learn.gates.allMet")}
             </p>
           )
         )}
@@ -139,7 +174,7 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
 
       {/* Modules */}
       <section>
-        <h2 className="text-base font-bold text-[var(--ink)]">Modules</h2>
+        <h2 className="text-base font-bold text-[var(--ink)]">{t("learn.catalog.modules")}</h2>
         <div className="mt-4 space-y-4">
           {track.modules.map((m, mi) => {
             const total = m.lessons.length;
@@ -151,10 +186,10 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
               <div key={m.id} className="rounded-2xl border border-[var(--border)] bg-white p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <h3 className="text-sm font-bold text-[var(--ink)]">
-                    {mi + 1}. {m.title}
+                    {mi + 1}. {text?.modules[m.id]?.title ?? m.title}
                   </h3>
                   <span className="text-xs font-semibold text-[var(--ink3)]">
-                    {complete}/{total} lessons
+                    {t("learn.dash.lessonsFraction", { done: complete, total })}
                   </span>
                 </div>
 
@@ -171,9 +206,10 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
                         >
                           {doneIds.has(l.id) ? "✓" : "○"}
                         </span>
-                        <span className="min-w-0 flex-1 truncate">{l.title}</span>
+                        <span className="min-w-0 flex-1 truncate">{text?.lessons[l.id]?.title ?? l.title}</span>
+                        <span className="sr-only">{doneIds.has(l.id) ? t("learn.lesson.completed") : ""}</span>
                         <span className="shrink-0 text-xs text-[var(--ink3)]">
-                          {formatMinutes(l.durationMinutes)}
+                          {fmtMinutes(t, l.durationMinutes)}
                         </span>
                       </Link>
                     </li>
@@ -184,9 +220,9 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
                   <div className="mt-3 border-t border-[var(--border)] pt-3">
                     {quizPassed ? (
                       <p className="text-xs font-semibold text-green-700">
-                        ✓ Module quiz passed —{" "}
+                        ✓ {t("learn.trackHome.quizPassed")}{" "}
                         <Link href={`/learn/quiz/${m.quiz.id}`} className="underline">
-                          retake for practice
+                          {t("learn.trackHome.retake")}
                         </Link>
                       </p>
                     ) : allDone ? (
@@ -194,11 +230,11 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
                         href={`/learn/quiz/${m.quiz.id}`}
                         className="text-xs font-bold text-[var(--blue2)] underline"
                       >
-                        Take the module quiz ({m.quiz.passScore}% to pass) →
+                        {t("learn.trackHome.takeQuiz", { score: m.quiz.passScore })} →
                       </Link>
                     ) : (
                       <p className="text-xs text-[var(--ink3)]">
-                        Finish every lesson to unlock the module quiz.
+                        {t("learn.trackHome.quizLocked")}
                       </p>
                     )}
                   </div>
@@ -212,10 +248,8 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
       {/* Labs */}
       {track.labs.length > 0 && (
         <section>
-          <h2 className="text-base font-bold text-[var(--ink)]">Labs</h2>
-          <p className="mt-1 text-sm text-[var(--ink3)]">
-            Hands-on practice. Optional, but this is where the reading turns into skill.
-          </p>
+          <h2 className="text-base font-bold text-[var(--ink)]">{t("learn.trackHome.labs")}</h2>
+          <p className="mt-1 text-sm text-[var(--ink3)]">{t("learn.trackHome.labsIntro")}</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {track.labs.map((lab) => {
               const passed = passedLabIds.has(lab.id);
@@ -231,15 +265,15 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
                       className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold"
                       style={{ background: `${track.accentColor}18`, color: track.accentColor }}
                     >
-                      <span aria-hidden="true">{meta.icon}</span> {meta.label}
+                      <span aria-hidden="true">{meta.icon}</span> {t(`learn.labType.${lab.labType in LAB_TYPE_META ? lab.labType : "prompt"}`)}
                     </span>
                     {passed && (
-                      <span className="shrink-0 text-xs font-bold text-green-700">✓ Passed</span>
+                      <span className="shrink-0 text-xs font-bold text-green-700">✓ {t("learn.trackHome.passed")}</span>
                     )}
                   </div>
                   <h3 className="mt-2.5 text-sm font-bold text-[var(--ink)]">{lab.title}</h3>
                   <p className="mt-1 text-xs text-[var(--ink3)]">
-                    ~{lab.estimatedMinutes} min · {lab.points} pts
+                    ~{fmtMinutes(t, lab.estimatedMinutes)} · {t("learn.trackHome.pts", { n: lab.points })}
                   </p>
                 </Link>
               );
@@ -252,23 +286,26 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
       <section className="grid gap-4 sm:grid-cols-2">
         {track.finalExam && (
           <div className="rounded-2xl border border-[var(--border)] bg-white p-5">
-            <h3 className="text-sm font-bold text-[var(--ink)]">{track.finalExam.title}</h3>
+            <h3 className="text-sm font-bold text-[var(--ink)]">{text?.examTitle ?? track.finalExam.title}</h3>
             <p className="mt-1 text-xs text-[var(--ink3)]">
-              {track.finalExam.questionsServed} questions ·{" "}
-              {formatMinutes(track.finalExam.timeLimitMinutes)} · {track.finalExam.passScore}% to pass
+              {t("learn.trackHome.examMeta", {
+                n: track.finalExam.questionsServed,
+                time: fmtMinutes(t, track.finalExam.timeLimitMinutes),
+                score: track.finalExam.passScore,
+              })}
             </p>
             {gates.exam ? (
-              <p className="mt-3 text-xs font-semibold text-green-700">✓ Passed</p>
+              <p className="mt-3 text-xs font-semibold text-green-700">✓ {t("learn.trackHome.passed")}</p>
             ) : gates.quizzes ? (
               <Link
                 href={`/learn/exam/${track.slug}`}
                 className="mt-3 inline-block rounded-full bg-[var(--ink)] px-5 py-2 text-xs font-bold text-white"
               >
-                Start the final exam →
+                {t("learn.trackHome.startExam")} →
               </Link>
             ) : (
               <p className="mt-3 text-xs text-[var(--ink3)]">
-                Pass every module quiz to unlock this.
+                {t("learn.trackHome.examLocked")}
               </p>
             )}
           </div>
@@ -276,18 +313,16 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
 
         {track.capstone && (
           <div className="rounded-2xl border border-[var(--border)] bg-white p-5">
-            <h3 className="text-sm font-bold text-[var(--ink)]">Capstone project</h3>
-            <p className="mt-1 text-xs text-[var(--ink3)]">
-              Reviewed by a person, against a published rubric.
-            </p>
+            <h3 className="text-sm font-bold text-[var(--ink)]">{t("learn.trackHome.capstone")}</h3>
+            <p className="mt-1 text-xs text-[var(--ink3)]">{t("learn.trackHome.capstoneIntro")}</p>
             {gates.capstone ? (
-              <p className="mt-3 text-xs font-semibold text-green-700">✓ Approved</p>
+              <p className="mt-3 text-xs font-semibold text-green-700">✓ {t("learn.trackHome.approved")}</p>
             ) : (
               <Link
                 href={`/learn/capstone/${track.slug}`}
                 className="mt-3 inline-block rounded-full bg-[var(--ink)] px-5 py-2 text-xs font-bold text-white"
               >
-                View the brief →
+                {t("learn.trackHome.viewBrief")} →
               </Link>
             )}
           </div>

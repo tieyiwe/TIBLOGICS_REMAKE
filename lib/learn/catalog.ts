@@ -23,6 +23,30 @@ export interface CatalogTrack {
   quizCount: number;
   hasExam: boolean;
   hasCapstone: boolean;
+  /** Sum of lesson durations. */
+  lessonMinutes: number;
+  /** Labs, module quizzes, final exam and capstone (see handsOnMinutes). */
+  handsOnMinutes: number;
+}
+
+// Time to complete, beyond reading the lessons. Labs carry their own
+// estimate; the rest are allowances: a module quiz takes about 10 minutes and
+// a capstone about 3 hours, and the exam takes its time limit.
+export const QUIZ_MINUTES = 10;
+export const CAPSTONE_MINUTES = 180;
+
+export function handsOnMinutes(x: {
+  labMinutes: number[];
+  quizCount: number;
+  examMinutes: number | null | undefined;
+  hasCapstone: boolean;
+}): number {
+  return (
+    x.labMinutes.reduce((n, m) => n + m, 0) +
+    x.quizCount * QUIZ_MINUTES +
+    (x.examMinutes ?? 0) +
+    (x.hasCapstone ? CAPSTONE_MINUTES : 0)
+  );
 }
 
 function normalise(t: {
@@ -30,9 +54,10 @@ function normalise(t: {
   level: string; levelEnd: string | null; status: string; accentColor: string;
   certificateName: string; estimatedHours: number; estimatedWeeksAt3Hrs: number | null;
   audience: string | null; outcomes: unknown;
-  modules: Array<{ _count: { lessons: number; labs?: number }; quiz: { id: string } | null }>;
+  modules: Array<{ _count: { lessons: number; labs?: number }; quiz: { id: string } | null; lessons: Array<{ durationMinutes: number }> }>;
   _count: { labs: number };
-  finalExam: { id: string } | null;
+  labs: Array<{ estimatedMinutes: number }>;
+  finalExam: { id: string; timeLimitMinutes: number } | null;
   capstone: { id: string } | null;
 }): CatalogTrack {
   return {
@@ -56,6 +81,13 @@ function normalise(t: {
     quizCount: t.modules.filter((m) => m.quiz).length,
     hasExam: !!t.finalExam,
     hasCapstone: !!t.capstone,
+    lessonMinutes: t.modules.reduce((n, m) => n + m.lessons.reduce((a, l) => a + l.durationMinutes, 0), 0),
+    handsOnMinutes: handsOnMinutes({
+      labMinutes: t.labs.map((l) => l.estimatedMinutes),
+      quizCount: t.modules.filter((m) => m.quiz).length,
+      examMinutes: t.finalExam?.timeLimitMinutes,
+      hasCapstone: !!t.capstone,
+    }),
   };
 }
 
@@ -67,10 +99,15 @@ export async function getCatalog(): Promise<CatalogTrack[]> {
       orderBy: { sortOrder: "asc" },
       include: {
         modules: {
-          select: { _count: { select: { lessons: true } }, quiz: { select: { id: true } } },
+          select: {
+            _count: { select: { lessons: true } },
+            quiz: { select: { id: true } },
+            lessons: { select: { durationMinutes: true } },
+          },
         },
         _count: { select: { labs: true } },
-        finalExam: { select: { id: true } },
+        labs: { where: { isPublished: true }, select: { estimatedMinutes: true } },
+        finalExam: { select: { id: true, timeLimitMinutes: true } },
         capstone: { select: { id: true } },
       },
     })
@@ -105,6 +142,7 @@ export async function getTrackBySlug(slug: string) {
           },
         },
         capstone: { select: { briefMd: true, passThreshold: true } },
+        labs: { where: { isPublished: true }, select: { estimatedMinutes: true } },
       },
     })
     .catch(() => null);
@@ -114,3 +152,16 @@ export async function getTrackBySlug(slug: string) {
 }
 
 export type TrackDetail = NonNullable<Awaited<ReturnType<typeof getTrackBySlug>>>;
+
+/** Lesson and hands-on minutes for a track landing page. */
+export function trackTime(t: TrackDetail): { lessonMinutes: number; handsOnMinutes: number } {
+  return {
+    lessonMinutes: t.modules.reduce((n, m) => n + m.lessons.reduce((a, l) => a + l.durationMinutes, 0), 0),
+    handsOnMinutes: handsOnMinutes({
+      labMinutes: t.labs.map((l) => l.estimatedMinutes),
+      quizCount: t.modules.filter((m) => m.quiz).length,
+      examMinutes: t.finalExam?.timeLimitMinutes,
+      hasCapstone: !!t.capstone,
+    }),
+  };
+}

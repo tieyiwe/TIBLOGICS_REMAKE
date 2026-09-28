@@ -4,6 +4,9 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { requireEntitledStudent } from "@/lib/learn/session";
 import { allModuleQuizzesPassed, presentQuestion, seededShuffle, serveQuestion } from "@/lib/learn/assessments";
+import { getLocale, translatorFor } from "@/lib/i18n/server";
+import type { Locale } from "@/lib/i18n/config";
+import { localizeQuestions } from "@/lib/i18n/sources/labs";
 
 // Creates a server-clocked exam session (Part B rule 6).
 // started_at / expires_at are computed here; the client only renders a
@@ -13,9 +16,11 @@ const Body = z.object({ trackSlug: z.string().min(1) });
 export async function POST(req: NextRequest) {
   const { error, student } = await requireEntitledStudent();
   if (error) return error;
+  const locale = await getLocale();
+  const t = translatorFor(locale);
 
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
-  if (!parsed.success) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: t("labs.api.invalid") }, { status: 400 });
 
   try {
     const track = await prisma.learnTrack.findUnique({
@@ -23,14 +28,11 @@ export async function POST(req: NextRequest) {
       select: { id: true, finalExam: { include: { questions: true } } },
     });
     const exam = track?.finalExam;
-    if (!track || !exam) return NextResponse.json({ error: "Exam not found" }, { status: 404 });
+    if (!track || !exam) return NextResponse.json({ error: t("labs.api.examNotFound") }, { status: 404 });
 
     // Gate: all module quizzes must be passed first
     if (!(await allModuleQuizzesPassed(student.id, track.id))) {
-      return NextResponse.json(
-        { error: "Pass every module quiz before starting the final exam." },
-        { status: 403 },
-      );
+      return NextResponse.json({ error: t("labs.api.passQuizzesFirst") }, { status: 403 });
     }
 
     // Resume an in-progress session rather than starting a new one
@@ -40,7 +42,7 @@ export async function POST(req: NextRequest) {
     });
     if (existing) {
       if (existing.expiresAt.getTime() > Date.now()) {
-        return NextResponse.json(await hydrate(existing, exam.questions));
+        return NextResponse.json(await hydrate(existing, exam.id, exam.questions, locale));
       }
       // Expired while away — close it out so a fresh attempt can start
       await prisma.finalExamSession.update({
@@ -59,11 +61,11 @@ export async function POST(req: NextRequest) {
       select: { passed: true, submittedAt: true },
     });
     if (past.some((s) => s.passed)) {
-      return NextResponse.json({ error: "You have already passed this exam." }, { status: 409 });
+      return NextResponse.json({ error: t("labs.api.examAlreadyPassed") }, { status: 409 });
     }
     if (past.length >= exam.maxAttempts) {
       return NextResponse.json(
-        { error: "You've used all attempts. Contact support to request a reset.", supportReset: true },
+        { error: t("labs.api.attemptsUsed"), supportReset: true },
         { status: 403 },
       );
     }
@@ -72,14 +74,14 @@ export async function POST(req: NextRequest) {
       const readyAt = last.submittedAt.getTime() + exam.cooldownHours * 3600_000;
       if (Date.now() < readyAt) {
         return NextResponse.json(
-          { error: "Cooldown active before your next attempt.", retryAt: new Date(readyAt).toISOString() },
+          { error: t("labs.api.cooldown"), retryAt: new Date(readyAt).toISOString() },
           { status: 429 },
         );
       }
     }
 
     if (exam.questions.length === 0) {
-      return NextResponse.json({ error: "This exam has no questions yet." }, { status: 503 });
+      return NextResponse.json({ error: t("labs.api.noExamQuestions") }, { status: 503 });
     }
 
     // Fresh randomized set per attempt
@@ -108,22 +110,29 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({
-      ...(await hydrate(session, exam.questions)),
+      ...(await hydrate(session, exam.id, exam.questions, locale)),
       extendedTime: multiplier > 1,
       limitMinutes,
     });
   } catch (err) {
     console.error("[POST /api/learn/exam/start]", err);
-    return NextResponse.json({ error: "Could not start the exam" }, { status: 500 });
+    return NextResponse.json({ error: t("labs.api.examStartFailed") }, { status: 500 });
   }
 }
 
-/** Build the client payload — questions WITHOUT correct answers. */
+/**
+ * Build the client payload — questions WITHOUT correct answers — in the
+ * learner's language. Options are translated at their stored index before
+ * the per-learner shuffle, so saved answers mean the same in any language.
+ */
 async function hydrate(
   session: { id: string; studentId: string; questionIds: unknown; expiresAt: Date; answers: unknown; attemptNumber: number },
-  bank: Array<{ id: string; question: string; options: unknown; correctIndex: number; moduleId: string | null }>,
+  examId: string,
+  rawBank: Array<{ id: string; question: string; options: unknown; correctIndex: number; explanation: string; moduleId: string | null }>,
+  locale: Locale,
 ) {
   const ids = Array.isArray(session.questionIds) ? (session.questionIds as string[]) : [];
+  const { questions: bank, pending } = await localizeQuestions("exam", examId, rawBank, locale, ids);
   const byId = new Map(bank.map((q) => [q.id, q]));
   const questions = ids.map((id) => byId.get(id)).filter(Boolean).map((q) => serveQuestion(presentQuestion(q!, session.studentId)));
   return {
@@ -133,5 +142,6 @@ async function hydrate(
     serverNow: new Date().toISOString(),
     answers: (session.answers ?? {}) as Record<string, number>,
     attemptNumber: session.attemptNumber,
+    pending,
   };
 }

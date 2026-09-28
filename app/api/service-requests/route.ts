@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getT } from "@/lib/i18n/server";
 import prisma from "@/lib/prisma";
 import resend from "@/lib/resend";
 import { listLimit } from "@/lib/admin/list-limit";
@@ -25,12 +26,13 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const t = await getT();
   // Public, and every accepted request emails a confirmation to an address
   // the caller chooses. Without a cap that is a way to send mail from this
   // domain to anyone. Same shape as the booking form's limits.
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? req.headers.get("x-real-ip") ?? "unknown";
   if (!(await checkRateLimit(`service-request:${ip}`, ip === "unknown" ? 50 : 5, 60 * 60_000))) {
-    return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+    return NextResponse.json({ error: t("pages.api.tooManyLater") }, { status: 429 });
   }
 
   try {
@@ -39,19 +41,19 @@ export async function POST(req: NextRequest) {
 
     // Validate required fields
     if (!firstName || typeof firstName !== "string" || firstName.length > 100) {
-      return NextResponse.json({ error: "Invalid first name" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.invalidFirstName") }, { status: 400 });
     }
     if (!lastName || typeof lastName !== "string" || lastName.length > 100) {
-      return NextResponse.json({ error: "Invalid last name" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.invalidLastName") }, { status: 400 });
     }
     if (!isValidEmail(email)) {
-      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.invalidEmail") }, { status: 400 });
     }
     if (!service || typeof service !== "string" || service.length > 200) {
-      return NextResponse.json({ error: "Invalid service" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.invalidService") }, { status: 400 });
     }
     if (!description || typeof description !== "string" || description.length > 5000) {
-      return NextResponse.json({ error: "Description required (max 5000 chars)" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.descriptionRequired") }, { status: 400 });
     }
 
     const request = await prisma.serviceRequest.create({
@@ -90,7 +92,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ id: request.id, ok: true }, { status: 201 });
   } catch (err) {
     console.error("Service request error:", err);
-    return NextResponse.json({ error: "Failed to submit request" }, { status: 500 });
+    return NextResponse.json({ error: t("pages.api.failedRequest") }, { status: 500 });
   }
 }
 

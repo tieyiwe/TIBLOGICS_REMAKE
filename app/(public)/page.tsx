@@ -3,66 +3,65 @@ import Link from "next/link";
 import Hero from "@/components/public/Hero";
 import AIBanner from "@/components/public/AIBanner";
 import { Bot, Zap, Brain, BookOpen, HeartPulse, Package, GraduationCap } from "lucide-react";
+import { getLocale, translatorFor } from "@/lib/i18n/server";
 
-export const metadata: Metadata = {
-  // The layout template appends " | TIBLOGICS", so naming the brand here
-  // repeated it in every search result.
-  title: "AI Implementation & Digital Solutions Agency",
-  description:
-    "TIBLOGICS builds AI agents, workflow automation, and full-stack digital products for businesses in North America, Africa and beyond. Book a free discovery call.",
-  keywords: [
-    "AI implementation agency", "AI agents", "workflow automation", "AI consulting",
-    "digital transformation", "AI for small business", "LLM integration", "AI strategy",
-    "web development", "mobile development", "cybersecurity", "data analytics", "TIBLOGICS",
-  ],
-  alternates: { canonical: "https://tiblogics.com" },
-  openGraph: {
-    title: "TIBLOGICS — AI Implementation & Digital Solutions",
-    description: "We build custom AI agents, workflow automation, and digital products for ambitious businesses. AI-first. Tech-complete.",
-    url: "https://tiblogics.com",
-    type: "website",
-    images: [{ url: "https://tiblogics.com/og-image.png", width: 1200, height: 630, alt: "TIBLOGICS" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "TIBLOGICS — AI Implementation & Digital Solutions",
-    description: "Custom AI agents, workflow automation, and digital products for ambitious businesses.",
-    creator: "@tiblogics",
-    images: ["https://tiblogics.com/og-image.png"],
-  },
-};
+const OG_IMAGE = "https://tiblogics.com/og-image.png";
+const OG_LOCALE = { en: "en_US", fr: "fr_FR", sw: "sw_KE" } as const;
+const SERVICE_COUNT = 9;
 
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = translatorFor(locale);
+  return {
+    // The layout template appends " | TIBLOGICS", so naming the brand here
+    // repeated it in every search result.
+    title: t("home.meta.title"),
+    description: t("home.meta.description"),
+    keywords: [
+      "AI implementation agency", "AI agents", "workflow automation", "AI consulting",
+      "digital transformation", "AI for small business", "LLM integration", "AI strategy",
+      "web development", "mobile development", "cybersecurity", "data analytics", "TIBLOGICS",
+    ],
+    alternates: { canonical: "https://tiblogics.com" },
+    openGraph: {
+      title: t("home.meta.ogTitle"),
+      description: t("home.meta.ogDescription"),
+      url: "https://tiblogics.com",
+      type: "website",
+      locale: OG_LOCALE[locale],
+      images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: "TIBLOGICS" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: t("home.meta.ogTitle"),
+      description: t("home.meta.twitterDescription"),
+      creator: "@tiblogics",
+      images: [OG_IMAGE],
+    },
+  };
+}
+
+// Text lives in home.services.<key>.name / .desc
 const featuredServices = [
-  {
-    icon: Bot,
-    name: "AI Implementation & Agents",
-    desc: "Custom AI agents, LLM integration, and intelligent automation tailored to your operations.",
-    color: "#2251A3",
-  },
-  {
-    icon: Zap,
-    name: "Workflow Automation",
-    desc: "End-to-end automation using n8n, Make, and custom pipelines. Eliminate repetitive work.",
-    color: "#F47C20",
-  },
-  {
-    icon: Brain,
-    name: "AI Strategy & Consulting",
-    desc: "AI readiness audits, strategy sessions, and implementation roadmaps for leaders who move fast.",
-    color: "#0F6E56",
-  },
+  { icon: Bot, key: "ai", color: "#2251A3" },
+  { icon: Zap, key: "automation", color: "#F47C20" },
+  { icon: Brain, key: "strategy", color: "#0F6E56" },
 ];
 
 const featuredProducts = [
   // Icons rather than emoji: emoji render differently on every platform and are
   // the quickest way for a page to read as a template.
-  { name: "InStory", desc: "AI-powered K-8 learning stories built for schools.", icon: BookOpen, color: "#2251A3", tag: "EdTech" },
-  { name: "CareFlow AI", desc: "AI voice assistant for healthcare: check-ins, appointment booking, and patient support.", icon: HeartPulse, color: "#0F6E56", tag: "HealthTech" },
-  { name: "ShipFrica", desc: "White-label shipping SaaS for African diaspora logistics.", icon: Package, color: "#F47C20", tag: "Logistics" },
-  { name: "AI Academy", desc: "90+ lessons across 3 AI courses on Skool.", icon: GraduationCap, color: "#7c3aed", tag: "EdTech" },
+  // Product names stay in English; descriptions are home.products.<key>.
+  { name: "InStory", key: "instory", icon: BookOpen, color: "#2251A3", tag: "edtech" },
+  { name: "CareFlow AI", key: "careflow", icon: HeartPulse, color: "#0F6E56", tag: "healthtech" },
+  { name: "ShipFrica", key: "shipfrica", icon: Package, color: "#F47C20", tag: "logistics" },
+  { name: "AI Academy", key: "academy", icon: GraduationCap, color: "#7c3aed", tag: "edtech" },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const locale = await getLocale();
+  const t = translatorFor(locale);
+  const serviceCount = SERVICE_COUNT.toLocaleString(locale);
   return (
     <>
       <Hero />
@@ -81,18 +80,18 @@ export default function HomePage() {
       {/* Services teaser */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-end justify-between mb-8">
+          <div className="flex items-end justify-between gap-4 mb-8">
             <div>
-              <span className="section-tag">Full-Spectrum Solutions</span>
+              <span className="section-tag">{t("home.services.tag")}</span>
               <h2 className="font-syne font-extrabold text-3xl text-[#0D1B2A] mt-2">
-                AI-first. Tech-complete.
+                {t("home.services.title")}
               </h2>
             </div>
             <Link
               href="/services"
-              className="hidden sm:inline-flex items-center gap-1 text-[#2251A3] font-medium text-sm hover:text-[#1B3A6B] transition-colors"
+              className="hidden sm:inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap text-[#2251A3] font-medium text-sm hover:text-[#1B3A6B] transition-colors"
             >
-              All 9 services →
+              {t("home.services.all", { n: serviceCount })}
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
@@ -100,7 +99,7 @@ export default function HomePage() {
               const Icon = svc.icon;
               return (
                 <div
-                  key={svc.name}
+                  key={svc.key}
                   className="bg-white border border-[#D2DCE8] rounded-2xl p-6 hover:shadow-[0_4px_24px_rgba(27,58,107,0.12)] hover:-translate-y-0.5 transition-all duration-200"
                 >
                   <div
@@ -109,14 +108,14 @@ export default function HomePage() {
                   >
                     <Icon size={22} style={{ color: svc.color }} />
                   </div>
-                  <h3 className="font-syne font-bold text-base text-[#0D1B2A]">{svc.name}</h3>
-                  <p className="font-dm text-sm text-[#7A8FA6] leading-relaxed mt-1">{svc.desc}</p>
+                  <h3 className="font-syne font-bold text-base text-[#0D1B2A]">{t(`home.services.${svc.key}.name`)}</h3>
+                  <p className="font-dm text-sm text-[#7A8FA6] leading-relaxed mt-1">{t(`home.services.${svc.key}.desc`)}</p>
                 </div>
               );
             })}
           </div>
           <Link href="/services" className="sm:hidden btn-ghost text-sm">
-            View all 9 services →
+            {t("home.services.viewAll", { n: serviceCount })}
           </Link>
         </div>
       </section>
@@ -124,18 +123,18 @@ export default function HomePage() {
       {/* Products teaser */}
       <section className="py-16 bg-[#F4F7FB]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-end justify-between mb-8">
+          <div className="flex items-end justify-between gap-4 mb-8">
             <div>
-              <span className="section-tag">Our Startups &amp; Products</span>
+              <span className="section-tag">{t("home.products.tag")}</span>
               <h2 className="font-syne font-extrabold text-3xl text-[#0D1B2A] mt-2">
-                Built in-house. Deployed globally.
+                {t("home.products.title")}
               </h2>
             </div>
             <Link
               href="/products"
-              className="hidden sm:inline-flex items-center gap-1 text-[#2251A3] font-medium text-sm hover:text-[#1B3A6B] transition-colors"
+              className="hidden sm:inline-flex flex-shrink-0 items-center gap-1 whitespace-nowrap text-[#2251A3] font-medium text-sm hover:text-[#1B3A6B] transition-colors"
             >
-              All products →
+              {t("home.products.all")}
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
@@ -150,14 +149,14 @@ export default function HomePage() {
                 >
                   <p.icon size={21} style={{ color: p.color }} />
                 </div>
-                <span className="section-tag">{p.tag}</span>
+                <span className="section-tag">{t(`home.products.tag.${p.tag}`)}</span>
                 <h3 className="font-syne font-bold text-base text-[#0D1B2A]">{p.name}</h3>
-                <p className="font-dm text-xs text-[#7A8FA6] leading-relaxed flex-1">{p.desc}</p>
+                <p className="font-dm text-xs text-[#7A8FA6] leading-relaxed flex-1">{t(`home.products.${p.key}`)}</p>
               </div>
             ))}
           </div>
           <Link href="/products" className="sm:hidden btn-ghost text-sm">
-            View all products →
+            {t("home.products.viewAll")}
           </Link>
         </div>
       </section>
@@ -165,20 +164,19 @@ export default function HomePage() {
       {/* Booking CTA */}
       <section className="py-16 bg-white">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <span className="section-tag">Work With Us</span>
+          <span className="section-tag">{t("home.cta.tag")}</span>
           <h2 className="font-syne font-extrabold text-3xl text-[#0D1B2A] mt-2">
-            Ready to move fast?
+            {t("home.cta.title")}
           </h2>
           <p className="font-dm text-[#3A4A5C] text-lg mt-3">
-            Book a free 30-minute discovery meeting. We&apos;ll listen to your
-            challenges and tell you exactly what we&apos;d recommend.
+            {t("home.cta.body")}
           </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-3 mt-6">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap justify-center gap-3 mt-6">
             <Link href="/book" className="btn-primary justify-center">
-              Book a Free Consulting →
+              {t("home.cta.book")}
             </Link>
             <Link href="/services" className="btn-secondary justify-center">
-              Explore Services
+              {t("home.cta.explore")}
             </Link>
           </div>
         </div>

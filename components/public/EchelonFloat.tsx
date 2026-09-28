@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { X, Send, ChevronLeft, Loader2 } from "lucide-react";
+import { useLocale, useT } from "@/lib/i18n/client";
+import type { Locale } from "@/lib/i18n/config";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -23,15 +25,27 @@ interface BookingData {
 }
 
 const BOOKING_MARKER = "[BOOK_APPOINTMENT]";
+// These strings are what the appointments API stores and checks; only their
+// display is localized (see slotLabel).
 const ALL_SLOTS = ["9:00 AM", "10:00 AM", "11:00 AM", "2:00 PM", "3:00 PM", "4:00 PM"];
 
-const INITIAL_MESSAGE: Message = {
-  role: "assistant",
-  content:
-    "Hey! I'm Tibo 👋 How can I help you today? Ask me anything about TIBLOGICS — services, products, pricing, or how AI can transform your business.",
-};
+type TFn = ReturnType<typeof useT>;
 
-function getAvailableDates(blockedSet: Set<string>): Array<{ value: string; label: string }> {
+function welcome(t: TFn): Message {
+  return { role: "assistant", content: t("site.chat.welcome") };
+}
+
+/** "2:00 PM" shown the way the visitor's language writes times (14:00, 14 h 00…). */
+function slotLabel(slot: string, locale: Locale): string {
+  const m = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(slot.trim());
+  if (!m) return slot;
+  let h = Number(m[1]) % 12;
+  if (m[3].toUpperCase() === "PM") h += 12;
+  const d = new Date(2000, 0, 1, h, Number(m[2]));
+  return d.toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" });
+}
+
+function getAvailableDates(blockedSet: Set<string>, locale: Locale): Array<{ value: string; label: string }> {
   const dates: Array<{ value: string; label: string }> = [];
   const d = new Date();
   d.setDate(d.getDate() + 1);
@@ -43,7 +57,7 @@ function getAvailableDates(blockedSet: Set<string>): Array<{ value: string; labe
     if (day !== 0 && day !== 6 && !blockedSet.has(iso)) {
       dates.push({
         value: iso,
-        label: d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
+        label: d.toLocaleDateString(locale, { weekday: "short", month: "short", day: "numeric" }),
       });
     }
     d.setDate(d.getDate() + 1);
@@ -58,10 +72,12 @@ function BookingForm({
   onSubmit,
 }: {
   dateLabel: string;
+  /** Already localized for display. */
   timeSlot: string;
   onBack: () => void;
   onSubmit: (data: { firstName: string; lastName: string; email: string; phone: string }) => void;
 }) {
+  const t = useT();
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", phone: "" });
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -73,25 +89,25 @@ function BookingForm({
   return (
     <div className="px-4 pb-4 pt-3 space-y-2">
       <div className="flex items-center gap-2 mb-3">
-        <button onClick={onBack} className="text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors">
+        <button onClick={onBack} aria-label={t("site.chat.book.back")} className="text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors">
           <ChevronLeft size={15} />
         </button>
         <p className="text-xs font-semibold text-[#3A4A5C] uppercase tracking-wide">
-          {dateLabel} · {timeSlot} EST
+          {t("site.chat.book.slot", { date: dateLabel, time: timeSlot })}
         </p>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <input value={form.firstName} onChange={set("firstName")} placeholder="First name" className={fieldCls} />
-        <input value={form.lastName} onChange={set("lastName")} placeholder="Last name" className={fieldCls} />
+        <input value={form.firstName} onChange={set("firstName")} placeholder={t("site.chat.book.firstName")} aria-label={t("site.chat.book.firstName")} autoComplete="given-name" className={fieldCls} />
+        <input value={form.lastName} onChange={set("lastName")} placeholder={t("site.chat.book.lastName")} aria-label={t("site.chat.book.lastName")} autoComplete="family-name" className={fieldCls} />
       </div>
-      <input value={form.email} onChange={set("email")} placeholder="Email address" type="email" className={fieldCls} />
-      <input value={form.phone} onChange={set("phone")} placeholder="Phone number" type="tel" className={fieldCls} />
+      <input value={form.email} onChange={set("email")} placeholder={t("site.chat.book.email")} aria-label={t("site.chat.book.email")} type="email" autoComplete="email" className={fieldCls} />
+      <input value={form.phone} onChange={set("phone")} placeholder={t("site.chat.book.phone")} aria-label={t("site.chat.book.phone")} type="tel" autoComplete="tel" className={fieldCls} />
       <button
         onClick={() => valid && onSubmit(form)}
         disabled={!valid}
         className="w-full bg-[#1B3A6B] text-white rounded-xl py-2.5 text-sm font-semibold font-dm disabled:opacity-40 hover:bg-[#2251A3] transition-colors mt-1"
       >
-        Confirm Meeting
+        {t("site.chat.book.confirm")}
       </button>
     </div>
   );
@@ -99,8 +115,10 @@ function BookingForm({
 
 export default function EchelonFloat() {
   const pathname = usePathname();
+  const t = useT();
+  const locale = useLocale();
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
+  const [messages, setMessages] = useState<Message[]>(() => [welcome(t)]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
@@ -135,6 +153,13 @@ export default function EchelonFloat() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading, bookingStep]);
+
+  // Switching language re-renders with a new dictionary. If the conversation
+  // has not started, swap the greeting so it matches; a conversation in
+  // progress is left as it is.
+  useEffect(() => {
+    setMessages((prev) => (prev.length === 1 && prev[0].role === "assistant" ? [welcome(t)] : prev));
+  }, [t]);
 
   // Initial greeting bubble after 8s (once per session)
   useEffect(() => {
@@ -216,11 +241,13 @@ export default function EchelonFloat() {
         url: string; overallScore: number; criticals: number; aiScore: number;
       };
       setTimeout(() => {
+        const nf = new Intl.NumberFormat(locale);
+        const issues = t(criticals === 1 ? "site.chat.scanIssues.one" : "site.chat.scanIssues.other", { n: nf.format(criticals) });
         setMessages([
-          INITIAL_MESSAGE,
+          welcome(t),
           {
             role: "assistant",
-            content: `I can see you just scanned **${url}** — overall score **${overallScore}/100**, **${criticals} critical issue${criticals !== 1 ? "s" : ""}**, and an AI readiness score of **${aiScore}/100**.\n\nThere are clear opportunities here. Would you like me to set up a meeting with our team to walk through the findings?`,
+            content: t("site.chat.scan", { url, overall: nf.format(overallScore), issues, ai: nf.format(aiScore) }),
           },
         ]);
         setBookingStep("prompt");
@@ -230,7 +257,7 @@ export default function EchelonFloat() {
     }
     window.addEventListener("tibo:scan-complete", handleScanComplete);
     return () => window.removeEventListener("tibo:scan-complete", handleScanComplete);
-  }, []);
+  }, [t, locale]);
 
   useEffect(() => {
     if (isOpen) {
@@ -292,6 +319,9 @@ export default function EchelonFloat() {
         }
       }
 
+      // A stream that only carried an error event used to leave an empty
+      // bubble; show the (localized) connection message instead.
+      if (!full.trim()) throw new Error("Empty reply");
       const hasBooking = full.includes(BOOKING_MARKER);
       const clean = full.replace(BOOKING_MARKER, "").trim();
       const finalMessages = (() => {
@@ -316,7 +346,7 @@ export default function EchelonFloat() {
     } catch {
       setMessages((prev) => {
         const updated = [...prev];
-        updated[updated.length - 1] = { role: "assistant", content: "Sorry, I'm having trouble connecting right now. Please email info@tiblogics.com for help." };
+        updated[updated.length - 1] = { role: "assistant", content: t("site.chat.error") };
         return updated;
       });
       if (!isOpen) setHasUnread(true);
@@ -369,7 +399,12 @@ export default function EchelonFloat() {
         ...prev,
         {
           role: "assistant",
-          content: `You're all set, ${form.firstName}! 🎉\n\nYour **20-min Discovery Meeting** is confirmed for **${bookingData.dateLabel}** at **${bookingData.timeSlot} EST**. A confirmation email is on its way to **${form.email}**.\n\nWe're looking forward to speaking with you!`,
+          content: t("site.chat.book.done", {
+            name: form.firstName,
+            date: bookingData.dateLabel ?? "",
+            time: bookingData.timeSlot ? slotLabel(bookingData.timeSlot, locale) : "",
+            email: form.email,
+          }),
         },
       ]);
     } catch {
@@ -378,7 +413,7 @@ export default function EchelonFloat() {
         ...prev,
         {
           role: "assistant",
-          content: "Sorry, there was an issue saving your booking. Please try again or email **info@tiblogics.com** and we'll sort it out.",
+          content: t("site.chat.book.failed"),
         },
       ]);
     }
@@ -386,7 +421,7 @@ export default function EchelonFloat() {
 
   function declineBooking() {
     setBookingStep(null);
-    handleSend("No thanks, I'll keep exploring for now.");
+    handleSend(t("site.chat.book.decline"));
   }
 
   function renderBookingUI() {
@@ -394,25 +429,25 @@ export default function EchelonFloat() {
       return (
         <div className="px-4 pb-4 pt-2 flex gap-2">
           <button onClick={() => setBookingStep("date")}
-            className="flex-1 bg-[#1B3A6B] text-white rounded-xl py-2.5 text-sm font-semibold font-dm hover:bg-[#2251A3] transition-colors">
-            Yes, let&apos;s do it!
+            className="flex-1 bg-[#1B3A6B] text-white rounded-xl px-2 py-2.5 text-sm leading-tight font-semibold font-dm hover:bg-[#2251A3] transition-colors">
+            {t("site.chat.book.yes")}
           </button>
           <button onClick={declineBooking}
-            className="flex-1 border border-[#D2DCE8] text-[#3A4A5C] rounded-xl py-2.5 text-sm font-medium font-dm hover:border-[#1B3A6B] hover:text-[#1B3A6B] transition-colors">
-            Not right now
+            className="flex-1 border border-[#D2DCE8] text-[#3A4A5C] rounded-xl px-2 py-2.5 text-sm leading-tight font-medium font-dm hover:border-[#1B3A6B] hover:text-[#1B3A6B] transition-colors">
+            {t("site.chat.book.no")}
           </button>
         </div>
       );
     }
     if (bookingStep === "date") {
-      const dates = getAvailableDates(blockedDateSet);
+      const dates = getAvailableDates(blockedDateSet, locale);
       return (
         <div className="px-4 pb-4 pt-3 space-y-2">
           <div className="flex items-center gap-2">
-            <button onClick={() => setBookingStep("prompt")} className="text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors">
+            <button onClick={() => setBookingStep("prompt")} aria-label={t("site.chat.book.back")} className="text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors">
               <ChevronLeft size={15} />
             </button>
-            <p className="text-xs font-semibold text-[#3A4A5C] uppercase tracking-wide">Pick a date</p>
+            <p className="text-xs font-semibold text-[#3A4A5C] uppercase tracking-wide">{t("site.chat.book.pickDate")}</p>
           </div>
           <div className="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto">
             {dates.map((d) => (
@@ -429,11 +464,11 @@ export default function EchelonFloat() {
       return (
         <div className="px-4 pb-4 pt-3 space-y-2">
           <div className="flex items-center gap-2">
-            <button onClick={() => setBookingStep("date")} className="text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors">
+            <button onClick={() => setBookingStep("date")} aria-label={t("site.chat.book.back")} className="text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors">
               <ChevronLeft size={15} />
             </button>
             <p className="text-xs font-semibold text-[#3A4A5C] uppercase tracking-wide truncate">
-              {bookingData.dateLabel} — Pick a time (EST)
+              {t("site.chat.book.pickTime", { date: bookingData.dateLabel ?? "" })}
             </p>
           </div>
           {slotsLoading ? (
@@ -442,9 +477,9 @@ export default function EchelonFloat() {
             </div>
           ) : availableSlots.length === 0 ? (
             <div className="text-center py-3">
-              <p className="text-xs text-[#7A8FA6] font-dm">No slots available — pick another date.</p>
+              <p className="text-xs text-[#7A8FA6] font-dm">{t("site.chat.book.noSlots")}</p>
               <button onClick={() => setBookingStep("date")} className="mt-2 text-xs text-[#2251A3] font-medium hover:underline">
-                ← Choose different date
+                {t("site.chat.book.otherDate")}
               </button>
             </div>
           ) : (
@@ -453,7 +488,7 @@ export default function EchelonFloat() {
                 <button key={slot}
                   onClick={() => { setBookingData((d) => ({ ...d, timeSlot: slot })); setBookingStep("form"); }}
                   className="border border-[#D2DCE8] rounded-xl py-2 text-xs font-medium font-dm text-[#3A4A5C] hover:border-[#1B3A6B] hover:text-[#1B3A6B] hover:bg-[#EBF0FA] transition-colors">
-                  {slot}
+                  {slotLabel(slot, locale)}
                 </button>
               ))}
             </div>
@@ -465,7 +500,7 @@ export default function EchelonFloat() {
       return (
         <BookingForm
           dateLabel={bookingData.dateLabel!}
-          timeSlot={bookingData.timeSlot!}
+          timeSlot={slotLabel(bookingData.timeSlot!, locale)}
           onBack={() => setBookingStep("time")}
           onSubmit={handleBookingSubmit}
         />
@@ -474,7 +509,7 @@ export default function EchelonFloat() {
     if (bookingStep === "submitting") {
       return (
         <div className="px-4 pb-4 pt-3 flex items-center gap-2 text-sm font-dm text-[#7A8FA6]">
-          <Loader2 size={15} className="animate-spin" /> Booking your meeting…
+          <Loader2 size={15} className="animate-spin" aria-hidden="true" /> {t("site.chat.book.submitting")}
         </div>
       );
     }
@@ -515,7 +550,7 @@ export default function EchelonFloat() {
           style={{ maxHeight: "min(72dvh, 600px)" }}
           data-chat-widget="echelon"
           data-ai-agent="true"
-          aria-label="Echelon AI Chat Assistant"
+          aria-label={t("site.chat.dialog")}
           role="dialog"
           aria-modal="true"
         >
@@ -534,14 +569,14 @@ export default function EchelonFloat() {
                 </p>
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
-                  <p className="text-white/60 text-xs leading-tight">TIBLOGICS AI Assistant</p>
+                  <p className="text-white/60 text-xs leading-tight">{t("site.chat.subtitle")}</p>
                 </div>
               </div>
             </div>
             <button
               onClick={() => setIsOpen(false)}
               className="text-white/70 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"
-              aria-label="Close chat"
+              aria-label={t("site.chat.close")}
             >
               <X size={18} />
             </button>
@@ -567,7 +602,7 @@ export default function EchelonFloat() {
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-white border border-[#E8EFF8] rounded-2xl rounded-tl-sm px-3 py-2.5 shadow-sm flex items-center gap-1">
+                <div role="status" aria-label={t("site.chat.typing")} className="bg-white border border-[#E8EFF8] rounded-2xl rounded-tl-sm px-3 py-2.5 shadow-sm flex items-center gap-1">
                   <div className="typing-dot w-2 h-2 rounded-full bg-[#7A8FA6]" />
                   <div className="typing-dot w-2 h-2 rounded-full bg-[#7A8FA6]" />
                   <div className="typing-dot w-2 h-2 rounded-full bg-[#7A8FA6]" />
@@ -596,14 +631,15 @@ export default function EchelonFloat() {
                 onFocus={() => {
                   setTimeout(() => inputRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 300);
                 }}
-                placeholder="Ask Tibo anything…"
+                placeholder={t("site.chat.placeholder")}
+                aria-label={t("site.chat.placeholder")}
                 disabled={loading}
                 className="flex-1 bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl px-3 py-2 text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3] disabled:opacity-50 transition-colors"
               />
               <button
                 onClick={() => handleSend()}
                 disabled={loading || !input.trim()}
-                aria-label="Send message"
+                aria-label={t("site.chat.send")}
                 className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[#F47C20] hover:bg-[#d96b18] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Send size={15} className="text-white" strokeWidth={2.5} />
@@ -620,7 +656,7 @@ export default function EchelonFloat() {
           className="fixed bottom-[148px] sm:bottom-24 right-4 sm:right-6 z-50 tibo-fade-in cursor-pointer"
           onClick={() => { setShowGreeting(false); setIsOpen(true); }}
           role="button"
-          aria-label="Open Tibo chat"
+          aria-label={t("site.chat.greeting.open")}
         >
           <div className="relative bg-white border border-[#D2DCE8] rounded-2xl shadow-xl px-4 py-3 max-w-[220px]">
             <button
@@ -630,13 +666,13 @@ export default function EchelonFloat() {
                 try { sessionStorage.setItem("tibo_dismissed", "1"); } catch { /* private mode */ }
               }}
               className="absolute top-0 right-0 w-10 h-10 flex items-center justify-center text-[#B0BEC5] hover:text-[#3A4A5C] transition-colors"
-              aria-label="Dismiss"
+              aria-label={t("site.chat.greeting.dismiss")}
             >
               <X size={12} />
             </button>
-            <p className="font-syne font-bold text-xs text-[#0D1B2A] mb-1">👋 Hey there!</p>
+            <p className="font-syne font-bold text-xs text-[#0D1B2A] mb-1 pr-6">{t("site.chat.greeting.title")}</p>
             <p className="font-dm text-xs text-[#3A4A5C] leading-relaxed pr-3">
-              I'm Tibo — tap to chat about AI for your business.
+              {t("site.chat.greeting.body")}
             </p>
             <div className="absolute -bottom-2 right-7 w-3 h-3 bg-white border-r border-b border-[#D2DCE8] rotate-45" />
           </div>
@@ -644,7 +680,7 @@ export default function EchelonFloat() {
       )}
 
       {/* Floating trigger button — desktop only (mobile uses MobileBottomNav Tibo tab) */}
-      <div className="hidden sm:block fixed bottom-6 right-6 z-[55]" data-chat-widget="echelon-trigger" aria-label="Open Echelon AI Assistant">
+      <div className="hidden sm:block fixed bottom-6 right-6 z-[55]" data-chat-widget="echelon-trigger" aria-label={t("site.chat.launcher")}>
         {!isOpen && (
           <span
             className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-30 pointer-events-none"
@@ -653,7 +689,7 @@ export default function EchelonFloat() {
         )}
         <button
           onClick={() => setIsOpen((prev) => !prev)}
-          aria-label={isOpen ? "Close Tibo chat" : "Talk to Tibo"}
+          aria-label={isOpen ? t("site.chat.closeTibo") : t("site.chat.talk")}
           className="relative w-[54px] h-[54px] rounded-full flex items-center justify-center transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F47C20] focus-visible:ring-offset-2"
           style={{
             background: isOpen ? "#F47C20" : "linear-gradient(135deg, #1B3A6B 0%, #2251A3 100%)",

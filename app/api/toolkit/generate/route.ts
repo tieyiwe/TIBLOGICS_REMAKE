@@ -4,6 +4,8 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { requireToolkit } from "@/lib/toolkit/guard-request";
 import { runsUsed } from "@/lib/toolkit/access";
 import { getPrompt } from "@/lib/toolkit/library";
+import { getLocale, translatorFor } from "@/lib/i18n/server";
+import { localizedPrompt } from "@/lib/i18n/sources/toolkit";
 import { generate, ModelDeclinedError, type Profile } from "@/lib/toolkit/ai";
 import { scanText } from "@/lib/toolkit/guard/scan";
 import { MAX_TEXT } from "@/lib/toolkit/config";
@@ -20,18 +22,24 @@ export async function POST(req: NextRequest) {
   const gate = await requireToolkit({ generate: true });
   if (gate.error) return gate.error;
   const { student, plan } = gate.access;
+  const locale = await getLocale();
+  const t = translatorFor(locale);
 
   if (!(await checkRateLimit(`toolkit-run:${student.id}`, 20, 60_000))) {
-    return NextResponse.json({ error: "Slow down a little. Try again in a minute." }, { status: 429 });
+    return NextResponse.json({ error: t("toolkit.api.slowDown") }, { status: 429 });
   }
   const used = await runsUsed(student.id);
   if (used >= plan!.monthlyRuns) {
-    return NextResponse.json({ error: `You've used all ${plan!.monthlyRuns} runs for this month. They reset on the 1st.` }, { status: 429 });
+    return NextResponse.json({ error: t("toolkit.api.runsLimit", { n: plan!.monthlyRuns }) }, { status: 429 });
   }
 
   const body = await req.json().catch(() => null);
-  const prompt = typeof body?.promptId === "string" ? getPrompt(body.promptId) : null;
-  if (!prompt) return NextResponse.json({ error: "Choose a prompt" }, { status: 400 });
+  const english = typeof body?.promptId === "string" ? getPrompt(body.promptId) : null;
+  if (!english) return NextResponse.json({ error: t("toolkit.api.choosePrompt") }, { status: 400 });
+  // The prompt as the user saw it: translated, unless the client says it had
+  // the English version (its category was still being translated), so the
+  // filled-in fields match the placeholders in the text used.
+  const prompt = body.english === true ? english : ((await localizedPrompt(english.id, locale))?.prompt ?? english);
 
   const fields: Record<string, string> = {};
   if (body.fields && typeof body.fields === "object") {
@@ -47,13 +55,14 @@ export async function POST(req: NextRequest) {
 
   let result;
   try {
-    result = await generate(prompt, fields, extra, profile);
+    // The draft is written in the visitor's language whichever prompt version was used.
+    result = await generate(prompt, fields, extra, profile, locale);
   } catch (err) {
     if (err instanceof ModelDeclinedError) {
-      return NextResponse.json({ error: "The AI declined this one. Try rewording your notes." }, { status: 422 });
+      return NextResponse.json({ error: t("toolkit.api.declinedGen") }, { status: 422 });
     }
     console.error("[toolkit/generate]", err instanceof Error ? err.message : err);
-    return NextResponse.json({ error: "Generation failed. Please try again." }, { status: 502 });
+    return NextResponse.json({ error: t("toolkit.api.genFailed") }, { status: 502 });
   }
 
   // The rules check follows the prompt's industry, not the profile's, so a
@@ -65,7 +74,8 @@ export async function POST(req: NextRequest) {
       studentId: student.id,
       kind: "generate",
       promptId: prompt.id,
-      title: prompt.title,
+      // History titles are stored in English and shown translated (app/toolkit/page.tsx).
+      title: english.title,
       input: JSON.stringify({ fields, extra }),
       output: result.text,
       findings: JSON.parse(JSON.stringify(findings)),

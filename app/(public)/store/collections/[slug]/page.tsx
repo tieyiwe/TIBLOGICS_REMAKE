@@ -8,6 +8,7 @@ const getCollection = cache(async (slug: string) =>
   prisma.collection.findUnique({ where: { slug } }).catch(() => null),
 );
 import CollectionView from "@/components/shop/CollectionView";
+import { getT } from "@/lib/i18n/server";
 import type { ShopProduct } from "@/components/shop/types";
 
 export const revalidate = 30;
@@ -20,9 +21,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const c = await getCollection(slug);
   if (!c || !c.published) return {};
+  const t = await getT();
   return {
-    title: `${c.name} | TIBLOGICS Store`,
-    description: (c.description || `Browse the ${c.name} collection`).slice(0, 160),
+    title: t("pages.store.meta.productTitle", { name: c.name }),
+    description: (c.description || t("pages.store.meta.collectionDescription", { name: c.name })).slice(0, 160),
     openGraph: { title: c.name, description: c.description.slice(0, 160), images: c.image ? [{ url: c.image }] : undefined },
   };
 }

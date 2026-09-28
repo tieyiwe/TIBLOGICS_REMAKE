@@ -24,6 +24,8 @@ Your job is to save the reviewer time, not to replace them. Be specific and evid
 
 Be direct about weaknesses — a reviewer who trusts a soft draft does the learner no favours. Equally, do not manufacture criticism where the work is genuinely good.
 
+Learners may write in English, French or Swahili. Always write this draft in English for the reviewer; when you quote a submission written in another language, quote it as written and add a short English translation in brackets.
+
 Format as markdown with a short overall summary, then a section per rubric criterion, then a list of specific questions the reviewer may want to probe.`;
 
 export async function generateCapstonePreReview(submissionId: string): Promise<string | null> {

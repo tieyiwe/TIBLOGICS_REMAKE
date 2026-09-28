@@ -5,6 +5,13 @@ import { creditDays, formatMoney } from "./config";
 import { blueprintLink } from "./token";
 import { sendBlueprintPaidEmail } from "./email";
 import { generateBlueprint } from "./generate";
+import { isLocale } from "@/lib/i18n/config";
+
+/** The language saved with the intake at purchase, if any. */
+function localeOf(intake: unknown) {
+  const l = (intake as { locale?: unknown } | null)?.locale;
+  return isLocale(l) ? l : undefined;
+}
 
 /**
  * Checkout paid: mark the draft paid, email the link and credit code, and
@@ -38,6 +45,7 @@ export async function markBlueprintPaid(blueprintId: string, session: Stripe.Che
     creditCode: bp.creditCode,
     credit: formatMoney(bp.amountPaid),
     creditUntil: bp.creditExpiresAt!.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+    locale: localeOf(bp.intake),
   }).catch((err) => console.error("[blueprint] paid email failed", blueprintId, err instanceof Error ? err.message : err));
 
   // Not awaited: Stripe needs a prompt answer. If this process dies first, the

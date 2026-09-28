@@ -32,8 +32,12 @@ export interface LibraryVertical {
 
 const base = data as { verticals: LibraryVertical[]; prompts: LibraryPrompt[] };
 
-/** The [BRACKETED FIELDS] a prompt asks the user to fill in, in order. */
-function fieldsOf(prompt: string): string[] {
+/**
+ * The [BRACKETED FIELDS] a prompt asks the user to fill in, in order. Also
+ * used on translated prompts (lib/i18n/sources/toolkit.ts), so the inputs
+ * always match the placeholders in the text being shown.
+ */
+export function fieldsOf(prompt: string): string[] {
   const out: string[] = [];
   for (const m of prompt.matchAll(/\[([^\]]{2,160})\]/g)) if (!out.includes(m[1])) out.push(m[1]);
   return out;

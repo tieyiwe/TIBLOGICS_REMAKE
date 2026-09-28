@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n/client";
+
 // Video host abstraction (Part B rule 5). Components never assume a provider —
 // swapping YouTube for Mux/Vimeo happens here and nowhere else.
 function parse(url: string): { kind: "youtube" | "vimeo" | "file"; src: string } | null {
@@ -29,6 +31,7 @@ function parse(url: string): { kind: "youtube" | "vimeo" | "file"; src: string }
 }
 
 export default function LessonVideo({ url, title }: { url: string; title: string }) {
+  const t = useT();
   const parsed = parse(url);
 
   if (!parsed) {
@@ -39,7 +42,7 @@ export default function LessonVideo({ url, title }: { url: string; title: string
         rel="noopener noreferrer"
         className="block rounded-2xl border border-[var(--border)] bg-white p-6 text-sm font-semibold text-[var(--blue2)] underline"
       >
-        Watch the video for this lesson →
+        {t("learn.video.watch")} →
       </a>
     );
   }
@@ -55,8 +58,8 @@ export default function LessonVideo({ url, title }: { url: string; title: string
         crossOrigin="anonymous"
       >
         <source src={parsed.src} />
-        Your browser can't play this video.{" "}
-        <a href={parsed.src}>Download it instead</a>.
+        {t("learn.video.cantPlay")}{" "}
+        <a href={parsed.src}>{t("learn.video.download")}</a>
       </video>
     );
   }
@@ -65,7 +68,7 @@ export default function LessonVideo({ url, title }: { url: string; title: string
     <div className="relative w-full overflow-hidden rounded-2xl border border-[var(--border)] bg-black pt-[56.25%]">
       <iframe
         src={parsed.src}
-        title={`Video: ${title}`}
+        title={t("learn.video.title", { title })}
         allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
         allowFullScreen
         loading="lazy"

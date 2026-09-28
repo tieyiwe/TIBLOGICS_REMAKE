@@ -20,6 +20,10 @@ export interface Finding {
   text: string;
   /** Which sub-score this contributed to, for grouping in the UI. */
   area: "seo" | "perf" | "ux" | "ai";
+  /** Message id for translation: "tools.check.<msg>" (lib/i18n/messages/tools.ts). */
+  msg?: string;
+  /** The measured values the message quotes. */
+  vars?: Record<string, string | number>;
 }
 
 export interface Signals {
@@ -69,6 +73,11 @@ interface Check {
   score?: number;
   good: string;
   bad: string;
+  /** Translation ids when they differ from "<key>.good" / "<key>.bad". */
+  goodMsg?: string;
+  badMsg?: string;
+  /** Values the messages quote, for translated text. */
+  vars?: Record<string, string | number>;
   /** A failed check that is a nice-to-have rather than a defect. */
   soft?: boolean;
 }
@@ -164,6 +173,8 @@ export function audit(s: Signals): AuditResult {
       good: `Page title is present and well-sized (${title.length} characters)`,
       bad: title.length === 0 ? "No <title> tag — search results have nothing to show"
         : `Title is ${title.length} characters; aim for 10–70 so it is not truncated`,
+      badMsg: title.length === 0 ? "title.bad.empty" : "title.bad.length",
+      vars: { n: title.length },
     },
     {
       key: "description", area: "seo", weight: 3, pass: desc.length >= 50 && desc.length <= 160,
@@ -173,6 +184,8 @@ export function audit(s: Signals): AuditResult {
       good: `Meta description is present and well-sized (${desc.length} characters)`,
       bad: desc.length === 0 ? "No meta description — search engines will invent one"
         : `Meta description is ${desc.length} characters; aim for 50–160`,
+      badMsg: desc.length === 0 ? "description.bad.empty" : "description.bad.length",
+      vars: { n: desc.length },
     },
     { key: "canonical", area: "seo", weight: 2, pass: canonical,
       good: "Canonical URL is declared", bad: "No canonical URL — duplicate pages can compete with each other" },
@@ -184,7 +197,8 @@ export function audit(s: Signals): AuditResult {
     { key: "h1", area: "seo", weight: 2, pass: h1 === 1,
       score: h1 === 1 ? 1 : h1 === 0 ? 0 : 0.5,
       good: "Exactly one H1, as search engines expect",
-      bad: h1 === 0 ? "No H1 heading on the page" : `${h1} H1 headings — there should be exactly one` },
+      bad: h1 === 0 ? "No H1 heading on the page" : `${h1} H1 headings — there should be exactly one`,
+      badMsg: h1 === 0 ? "h1.bad.none" : "h1.bad.many", vars: { n: h1 } },
     { key: "sitemap", area: "seo", weight: 2, pass: s.sitemapFound,
       good: "XML sitemap found", bad: "No sitemap.xml found — crawlers have to guess your page list" },
     { key: "robots", area: "seo", weight: 1, pass: !!s.robotsTxt,
@@ -196,12 +210,14 @@ export function audit(s: Signals): AuditResult {
       score: s.ttfb == null ? 0 : s.ttfb < 400 ? 1 : s.ttfb < 800 ? 0.7 : s.ttfb < 1500 ? 0.4 : 0.1,
       good: `Server responds quickly (${s.ttfb}ms to first byte)`,
       bad: `Slow first byte (${s.ttfb}ms) — under 600ms is the target`,
+      vars: { ms: s.ttfb ?? 0 },
     },
     {
       key: "page-weight", area: "perf", weight: 3, pass: s.bytes < 500_000,
       score: s.bytes < 150_000 ? 1 : s.bytes < 500_000 ? 0.7 : s.bytes < 1_500_000 ? 0.4 : 0.1,
       good: `Page weight is reasonable (${Math.round(s.bytes / 1024)}KB of HTML)`,
       bad: `Heavy page (${Math.round(s.bytes / 1024)}KB of HTML) — slow on mobile data`,
+      vars: { kb: Math.round(s.bytes / 1024) },
     },
     { key: "compression", area: "perf", weight: 2, pass: s.compressed,
       good: "Responses are compressed (gzip/brotli)", bad: "No compression — pages transfer larger than they need to" },
@@ -216,7 +232,8 @@ export function audit(s: Signals): AuditResult {
     { key: "alt-text", area: "ux", weight: 3, pass: altRatio >= 0.9,
       score: altRatio,
       good: `Images have alt text (${imagesWithAlt}/${imagesTotal})`,
-      bad: `Only ${imagesWithAlt} of ${imagesTotal} images have alt text — screen readers and image search cannot read the rest` },
+      bad: `Only ${imagesWithAlt} of ${imagesTotal} images have alt text — screen readers and image search cannot read the rest`,
+      vars: { with: imagesWithAlt, total: imagesTotal } },
     { key: "headings", area: "ux", weight: 2, pass: h1 >= 1 && h2 >= 1,
       good: "Heading structure is in place", bad: "Thin heading structure — headings are how scanners and screen readers navigate" },
     { key: "lang", area: "ux", weight: 2, pass: langAttr,
@@ -224,7 +241,8 @@ export function audit(s: Signals): AuditResult {
     { key: "favicon", area: "ux", weight: 1, pass: favicon, soft: true,
       good: "Favicon is set", bad: "No favicon" },
     { key: "status", area: "ux", weight: 2, pass: s.statusCode >= 200 && s.statusCode < 300,
-      good: `Page returns ${s.statusCode}`, bad: `Page returns ${s.statusCode} rather than 200` },
+      good: `Page returns ${s.statusCode}`, bad: `Page returns ${s.statusCode} rather than 200`,
+      vars: { code: s.statusCode } },
 
     // ── AI readiness ───────────────────────────────────────────────────────
     {
@@ -232,15 +250,18 @@ export function audit(s: Signals): AuditResult {
       score: schema.length === 0 ? 0 : schema.length >= 3 ? 1 : 0.6,
       good: `Structured data found (${schema.slice(0, 4).join(", ")}) — AI assistants can read what this business is`,
       bad: "No JSON-LD structured data — AI assistants and search engines have to guess what this page is about",
+      vars: { types: schema.slice(0, 4).join(", ") },
     },
     { key: "semantic-html", area: "ai", weight: 3, pass: semantic >= 4,
       score: Math.min(1, semantic / 4),
       good: `Semantic HTML used (${semantic} landmark elements) — machines can find the parts of the page`,
-      bad: "Little semantic HTML — hard for AI agents to tell navigation from content" },
+      bad: "Little semantic HTML — hard for AI agents to tell navigation from content",
+      vars: { n: semantic } },
     { key: "content-depth", area: "ai", weight: 3, pass: words >= 300,
       score: words >= 600 ? 1 : words >= 300 ? 0.7 : words >= 120 ? 0.35 : 0.1,
       good: `Substantive page content (${words} words) for models to work from`,
-      bad: `Only ${words} words of readable text — an AI summarising this page has little to go on` },
+      bad: `Only ${words} words of readable text — an AI summarising this page has little to go on`,
+      vars: { n: words } },
     { key: "ai-crawlers", area: "ai", weight: 2, pass: !blocksAiCrawlers,
       good: "AI crawlers are not blocked in robots.txt",
       bad: "robots.txt blocks AI crawlers — your business will be absent from AI answers" },
@@ -276,6 +297,8 @@ export function audit(s: Signals): AuditResult {
       area: c.area,
       type: passed ? "good" : c.soft || (c.score ?? 0) >= 0.5 ? "warning" : "bad",
       text: passed ? c.good : c.bad,
+      msg: passed ? c.goodMsg ?? `${c.key}.good` : c.badMsg ?? `${c.key}.bad`,
+      ...(c.vars ? { vars: c.vars } : {}),
     };
   });
 

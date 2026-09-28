@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useT } from "@/lib/i18n/client";
 
 export default function ForgotPasswordPage() {
+  const t = useT();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -17,7 +19,7 @@ export default function ForgotPasswordPage() {
       body: JSON.stringify({ email }),
     }).catch(() => null);
     const data = res ? await res.json().catch(() => ({})) : {};
-    setMsg(res?.ok ? { ok: true, text: data.message } : { ok: false, text: data.error ?? "Something went wrong. Try again." });
+    setMsg(res?.ok ? { ok: true, text: data.message } : { ok: false, text: data.error ?? t("learn.error.tryAgain") });
     setBusy(false);
   }
 
@@ -28,14 +30,14 @@ export default function ForgotPasswordPage() {
           TIB<span className="text-[var(--orange)]">LOGICS</span>
         </Link>
         <div className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-7 shadow-sm">
-          <h1 className="text-xl font-bold text-[var(--ink)]">Reset your password</h1>
-          <p className="mt-1 text-sm text-[var(--ink3)]">We&apos;ll email you a link to choose a new one.</p>
+          <h1 className="text-xl font-bold text-[var(--ink)]">{t("learn.auth.resetTitle")}</h1>
+          <p className="mt-1 text-sm text-[var(--ink3)]">{t("learn.auth.resetIntro")}</p>
           {msg?.ok ? (
             <p className="mt-6 rounded-lg bg-green-50 px-3 py-2.5 text-sm text-green-800">{msg.text}</p>
           ) : (
             <form onSubmit={submit} className="mt-6 space-y-4">
               <div>
-                <label htmlFor="email" className="block text-sm font-semibold text-[var(--ink)]">Email</label>
+                <label htmlFor="email" className="block text-sm font-semibold text-[var(--ink)]">{t("learn.account.email")}</label>
                 <input
                   id="email"
                   type="email"
@@ -52,12 +54,12 @@ export default function ForgotPasswordPage() {
                 disabled={busy}
                 className="w-full rounded-full bg-gradient-to-r from-[var(--orange)] to-[#F9A738] py-3 text-sm font-bold text-[var(--ink)] hover:opacity-90 disabled:opacity-50"
               >
-                {busy ? "Sending…" : "Send reset link"}
+                {busy ? t("learn.auth.sending") : t("learn.auth.sendLink")}
               </button>
             </form>
           )}
           <p className="mt-6 text-center text-sm text-[var(--ink2)]">
-            <Link href="/learn/login" className="font-semibold text-[var(--blue2)] underline underline-offset-2">Back to sign in</Link>
+            <Link href="/learn/login" className="font-semibold text-[var(--blue2)] underline underline-offset-2">{t("learn.auth.backToSignIn")}</Link>
           </p>
         </div>
       </div>

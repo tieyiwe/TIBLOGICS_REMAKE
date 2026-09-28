@@ -19,7 +19,9 @@ export function creditDays(): number {
   return Number.isInteger(n) && n > 0 ? n : 90;
 }
 
-export function formatMoney(cents: number): string {
+/** US dollars in the reader's locale ("$299", "299 $US"). */
+export function formatMoney(cents: number, locale = "en-US"): string {
   const v = cents / 100;
-  return `$${v % 1 === 0 ? v.toLocaleString("en-US") : v.toFixed(2)}`;
+  const digits = v % 1 === 0 ? 0 : 2;
+  return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: digits, maximumFractionDigits: digits }).format(v);
 }

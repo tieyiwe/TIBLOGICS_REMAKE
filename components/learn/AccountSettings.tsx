@@ -2,41 +2,46 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { LOCALES, LOCALE_NAMES, isLocale, type Locale } from "@/lib/i18n/config";
+import { useLocale, useSetLocale, useT } from "@/lib/i18n/client";
 
 // Accessibility mode (Part B rule 7) is a stored preference, not a cosmetic
 // toggle — the exam engine reads it server-side to grant 1.5x time.
 export default function AccountSettings({
   accessibilityMode,
   leaderboardOptIn,
-  locale,
-  frCoverage,
 }: {
   accessibilityMode: boolean;
   leaderboardOptIn: boolean;
-  locale: string;
-  frCoverage: number;
 }) {
+  const t = useT();
+  const locale = useLocale();
+  const setLocale = useSetLocale();
   const router = useRouter();
   const [a11y, setA11y] = useState(accessibilityMode);
   const [board, setBoard] = useState(leaderboardOptIn);
-  const [lang, setLang] = useState(locale);
   const [saved, setSaved] = useState("");
+  const [failed, setFailed] = useState("");
 
-  async function save(patch: {
-    accessibilityMode?: boolean;
-    leaderboardOptIn?: boolean;
-    locale?: "en" | "fr";
-  }) {
+  function flashSaved() {
+    setSaved(t("learn.account.saved"));
+    setTimeout(() => setSaved(""), 2000);
+  }
+
+  async function save(patch: { accessibilityMode?: boolean; leaderboardOptIn?: boolean }) {
     setSaved("");
+    setFailed("");
     const res = await fetch("/api/learn/account", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
-    });
-    if (res.ok) {
-      setSaved("Saved");
+    }).catch(() => null);
+    if (res?.ok) {
+      flashSaved();
       router.refresh();
-      setTimeout(() => setSaved(""), 2000);
+    } else {
+      const d = res ? await res.json().catch(() => ({})) : {};
+      setFailed(d.error ?? t("learn.account.saveFailed"));
     }
   }
 
@@ -81,13 +86,18 @@ export default function AccountSettings({
   return (
     <section className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold text-[var(--ink)]">Preferences</h2>
+        <h2 className="text-sm font-bold text-[var(--ink)]">{t("learn.account.preferences")}</h2>
         {saved && (
           <span role="status" className="text-xs font-semibold text-green-700">
             ✓ {saved}
           </span>
         )}
       </div>
+      {failed && (
+        <p role="alert" className="mt-2 text-xs text-red-600">
+          {failed}
+        </p>
+      )}
 
       <div className="mt-2 divide-y divide-[var(--border)]">
         <Toggle
@@ -97,8 +107,8 @@ export default function AccountSettings({
             setA11y(v);
             save({ accessibilityMode: v });
           }}
-          title="Accessibility mode"
-          description="Larger text, higher contrast, bigger tap targets, reduced motion — and 1.5× time on every timed exam. You can turn this on or off whenever you like; it applies to exams you start afterwards."
+          title={t("learn.account.accessibilityMode")}
+          description={t("learn.account.accessibilityDesc")}
         />
         <Toggle
           id="board"
@@ -107,33 +117,34 @@ export default function AccountSettings({
             setBoard(v);
             save({ leaderboardOptIn: v });
           }}
-          title="Show me on the leaderboard"
-          description="Off by default. Learning at your own pace shouldn't mean being ranked against strangers unless you want to be."
+          title={t("learn.account.leaderboard")}
+          description={t("learn.account.leaderboardDesc")}
         />
 
-        {/* Language. French is partially translated — anything not yet
-            translated falls back to English rather than showing a blank. */}
+        {/* Language: the same choice as the switcher in the menu. It is saved
+            on the account (so it follows the learner to other devices and
+            into emails) and as a cookie for this browser. */}
         <div className="py-4">
           <label htmlFor="locale" className="block text-sm font-semibold text-[var(--ink)]">
-            Language
+            {t("common.language")}
           </label>
-          <p className="mt-1 text-xs leading-relaxed text-[var(--ink2)]">
-            {frCoverage < 100
-              ? `French is ${frCoverage}% translated. Anything not yet translated shows in English.`
-              : "Choose the language for the member area."}
-          </p>
+          <p className="mt-1 text-xs leading-relaxed text-[var(--ink2)]">{t("learn.account.languageDesc")}</p>
           <select
             id="locale"
-            value={lang}
-            onChange={(e) => {
-              const v = e.target.value as "en" | "fr";
-              setLang(v);
-              save({ locale: v });
+            value={locale}
+            onChange={async (e) => {
+              const v = e.target.value;
+              if (!isLocale(v)) return;
+              await setLocale(v as Locale);
+              flashSaved();
             }}
             className="mt-2 rounded-lg border border-[var(--border)] px-3 py-2 text-sm"
           >
-            <option value="en">English</option>
-            <option value="fr">Français{frCoverage < 100 ? " (partial)" : ""}</option>
+            {LOCALES.map((l) => (
+              <option key={l} value={l}>
+                {LOCALE_NAMES[l]}
+              </option>
+            ))}
           </select>
         </div>
       </div>

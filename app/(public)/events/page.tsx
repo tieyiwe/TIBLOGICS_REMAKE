@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Calendar, MapPin, DollarSign, Users, Clock, ArrowRight, Bell, X, ExternalLink } from "lucide-react";
+import { Calendar, MapPin, Users, Clock, ArrowRight, Bell, X, ExternalLink } from "lucide-react";
+import { useLocale, useT } from "@/lib/i18n/client";
 
 interface EventItem {
   id: string;
@@ -29,195 +30,201 @@ interface EventItem {
 }
 
 interface TechEvent {
+  /** Dictionary id: pages.events.tech.<id>.desc */
+  id: string;
   name: string;
   organizer: string;
-  when: string;
-  location: string;
-  description: string;
-  coverImage: string;
+  /** First day, ISO. Missing when only the months are known. */
+  startsOn?: string;
   /** Last day, ISO. Drives the past/upcoming filter below. */
   endsOn: string;
+  /** Dictionary id: pages.events.place.<place> */
+  place: string;
+  online?: boolean;
+  coverImage: string;
   url: string;
 }
 
 const POPULAR_TECH_EVENTS: TechEvent[] = [
   {
+    id: "wwdc",
     name: "Apple WWDC 2026",
+    startsOn: "2026-06-09",
     endsOn: "2026-06-13",
     organizer: "Apple",
-    when: "Jun 9–13, 2026",
-    location: "Cupertino, CA + Online",
-    description: "Apple's annual developer conference — iOS, macOS, Apple Intelligence updates, and the latest tools for building on the Apple ecosystem.",
+    place: "cupertino",
+    online: true,
     coverImage: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80",
     url: "https://developer.apple.com/wwdc26/",
   },
   {
+    id: "vivatech",
     name: "VivaTech 2026",
+    startsOn: "2026-06-11",
     endsOn: "2026-06-14",
     organizer: "Vivendi / Les Echos",
-    when: "Jun 11–14, 2026",
-    location: "Paris, France",
-    description: "Europe's largest startup and tech conference — AI innovation, digital transformation, and global technology partnerships across 150+ countries.",
+    place: "paris",
     coverImage: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=800&q=80",
     url: "https://vivatechnology.com/",
   },
   {
+    id: "collision",
     name: "Collision Conference 2026",
+    startsOn: "2026-06-16",
     endsOn: "2026-06-19",
     organizer: "Collision",
-    when: "Jun 16–19, 2026",
-    location: "Toronto, Canada",
-    description: "North America's fastest-growing tech conference — startups, investors, and industry leaders exploring AI, climate tech, and market growth.",
+    place: "toronto",
     coverImage: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80",
     url: "https://collisionconf.com/",
   },
   {
+    id: "ltw",
     name: "London Tech Week 2026",
+    startsOn: "2026-06-15",
     endsOn: "2026-06-19",
     organizer: "London & Partners",
-    when: "Jun 15–19, 2026",
-    location: "London, UK",
-    description: "The UK's flagship tech event — government, enterprise, and startup leaders covering AI policy, investment trends, and the future of digital business.",
+    place: "london",
     coverImage: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80",
     url: "https://londontechweek.com/",
   },
   {
+    id: "transform",
     name: "VentureBeat Transform 2026",
+    startsOn: "2026-07-14",
     endsOn: "2026-07-15",
     organizer: "VentureBeat",
-    when: "Jul 14–15, 2026",
-    location: "San Francisco, CA",
-    description: "Enterprise AI decision-makers, practitioners, and vendors converge to discuss real-world AI deployment, ROI, and responsible AI at scale.",
+    place: "sf",
     coverImage: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=800&q=80",
     url: "https://events.venturebeat.com/ai-impact-summit/",
   },
   {
+    id: "blackhat",
     name: "Black Hat USA 2026",
+    startsOn: "2026-08-01",
     endsOn: "2026-08-06",
     organizer: "Black Hat",
-    when: "Aug 1–6, 2026",
-    location: "Las Vegas, NV",
-    description: "The world's most respected cybersecurity conference — AI-powered threats, offensive security research, and enterprise defense briefings.",
+    place: "vegas",
     coverImage: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80",
     url: "https://www.blackhat.com/us-26/",
   },
   {
+    id: "siggraph",
     name: "SIGGRAPH 2026",
+    startsOn: "2026-08-10",
     endsOn: "2026-08-14",
     organizer: "ACM SIGGRAPH",
-    when: "Aug 10–14, 2026",
-    location: "Denver, CO",
-    description: "The premier annual conference on computer graphics and interactive techniques — where AI-generated imagery and 3D innovation define the next frontier.",
+    place: "denver",
     coverImage: "https://images.unsplash.com/photo-1639322537228-f710d846310a?auto=format&fit=crop&w=800&q=80",
     url: "https://s2026.siggraph.org/",
   },
   {
+    id: "dreamforce",
     name: "Salesforce Dreamforce 2026",
+    startsOn: "2026-09-15",
     endsOn: "2026-09-18",
     organizer: "Salesforce",
-    when: "Sep 15–18, 2026",
-    location: "San Francisco, CA",
-    description: "The world's largest software conference — Agentforce 3.0, AI-powered CRM, and 40,000+ attendees from every major industry worldwide.",
+    place: "sf",
     coverImage: "https://images.unsplash.com/photo-1573804633927-bfcbcd909acd?auto=format&fit=crop&w=800&q=80",
     url: "https://www.salesforce.com/dreamforce/",
   },
   {
+    id: "aisummit",
     name: "AI Summit New York 2026",
+    startsOn: "2026-09-23",
     endsOn: "2026-09-24",
     organizer: "AI Summit",
-    when: "Sep 23–24, 2026",
-    location: "New York, NY",
-    description: "Enterprise-focused AI conference for C-suite leaders and practitioners — real-world case studies, vendor briefings, and AI deployment at scale.",
+    place: "ny",
     coverImage: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=800&q=80",
     url: "https://theaisummit.com/newyork/",
   },
   {
+    id: "disrupt",
     name: "TechCrunch Disrupt 2026",
+    startsOn: "2026-10-07",
     endsOn: "2026-10-09",
     organizer: "TechCrunch",
-    when: "Oct 7–9, 2026",
-    location: "San Francisco, CA",
-    description: "Startup Battlefield pitches, AI unicorn panels, and the investor conversations that shape the next wave of technology companies.",
+    place: "sf",
     coverImage: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80",
     url: "https://techcrunch.com/events/tc-disrupt-2026/",
   },
   {
+    id: "gitex",
     name: "GITEX Global 2026",
+    startsOn: "2026-10-12",
     endsOn: "2026-10-16",
     organizer: "DWTC",
-    when: "Oct 12–16, 2026",
-    location: "Dubai, UAE",
-    description: "The Middle East and Africa's largest tech show — AI, cloud, smart city innovation, and digital economy partnerships across 180+ countries.",
+    place: "dubai",
     coverImage: "https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=800&q=80",
     url: "https://www.gitex.com/",
   },
   {
+    id: "gartner",
     name: "Gartner IT Symposium/Xpo 2026",
+    startsOn: "2026-10-19",
     endsOn: "2026-10-22",
     organizer: "Gartner",
-    when: "Oct 19–22, 2026",
-    location: "Orlando, FL",
-    description: "The world's most important gathering for CIOs and senior IT leaders — AI strategy, tech investment priorities, and the emerging vendor landscape.",
+    place: "orlando",
     coverImage: "https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=800&q=80",
     url: "https://www.gartner.com/en/conferences/na/symposium-us",
   },
   {
+    id: "devday",
     name: "OpenAI DevDay 2026",
+    // Dates not announced yet: shown as "Oct/Nov 2026".
     endsOn: "2026-11-30",
     organizer: "OpenAI",
-    when: "Oct/Nov 2026",
-    location: "San Francisco, CA",
-    description: "OpenAI's flagship developer event — new model capabilities, API updates, and the product roadmap defining the next generation of AI-powered applications.",
+    place: "sf",
     coverImage: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&w=800&q=80",
     url: "https://openai.com/",
   },
   {
+    id: "websummit",
     name: "Web Summit 2026",
+    startsOn: "2026-11-04",
     endsOn: "2026-11-07",
     organizer: "Web Summit",
-    when: "Nov 4–7, 2026",
-    location: "Lisbon, Portugal",
-    description: "70,000+ attendees and 2,500+ startups — AI policy, international investment, and the conversations that shape the global technology agenda.",
+    place: "lisbon",
     coverImage: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80",
     url: "https://websummit.com/",
   },
   {
+    id: "ignite",
     name: "Microsoft Ignite 2026",
+    startsOn: "2026-11-10",
     endsOn: "2026-11-14",
     organizer: "Microsoft",
-    when: "Nov 10–14, 2026",
-    location: "Chicago, IL + Online",
-    description: "Microsoft's premier enterprise conference — Azure AI, Copilot platform updates, and developer tools powering the next generation of business software.",
+    place: "chicago",
+    online: true,
     coverImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=800&q=80",
     url: "https://ignite.microsoft.com/",
   },
   {
+    id: "reinvent",
     name: "AWS re:Invent 2026",
+    startsOn: "2026-12-01",
     endsOn: "2026-12-05",
     organizer: "Amazon Web Services",
-    when: "Dec 1–5, 2026",
-    location: "Las Vegas, NV",
-    description: "The world's largest cloud computing conference — 60,000+ builders, major AI infrastructure announcements, and deep-dive technical sessions.",
+    place: "vegas",
     coverImage: "https://images.unsplash.com/photo-1676299081847-824916de030a?auto=format&fit=crop&w=800&q=80",
     url: "https://reinvent.awsevents.com/",
   },
   {
+    id: "ces",
     name: "CES 2027",
+    startsOn: "2027-01-06",
     endsOn: "2027-01-09",
     organizer: "Consumer Technology Association",
-    when: "Jan 6–9, 2027",
-    location: "Las Vegas, NV",
-    description: "The defining consumer tech event of the year — AI hardware, robotics, smart devices, and the breakthroughs that set the global tech agenda for 2027.",
+    place: "vegas",
     coverImage: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80",
     url: "https://www.ces.tech/",
   },
   {
+    id: "mwc",
     name: "Mobile World Congress 2027",
+    startsOn: "2027-02-22",
     endsOn: "2027-02-25",
     organizer: "GSMA",
-    when: "Feb 22–25, 2027",
-    location: "Barcelona, Spain",
-    description: "The global hub for mobile and connectivity innovation — AI-powered networks, 6G roadmaps, and the device ecosystem driving the next billion connected users.",
+    place: "barcelona",
     coverImage: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80",
     url: "https://www.mwcbarcelona.com/",
   },
@@ -226,7 +233,7 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
 /**
  * Industry events that have not finished yet, soonest first.
  *
- * The list used to render verbatim, and `when` is display text ("Jun 9-13,
+ * The list used to render verbatim, and the dates were display text ("Jun 9-13,
  * 2026") that no code can compare against today — so every entry stayed on the
  * page forever and the section filled up with conferences that had already
  * happened. endsOn is the machine-readable counterpart; this drops anything
@@ -243,13 +250,7 @@ function upcomingTechEvents(now: Date = new Date()): TechEvent[] {
 }
 
 
-const FILTER_TABS = [
-  { id: "all", label: "All" },
-  { id: "event", label: "Events" },
-  { id: "training", label: "Training" },
-  { id: "workshop", label: "Workshops" },
-  { id: "webinar", label: "Webinars" },
-];
+const FILTER_TABS = ["all", "event", "training", "workshop", "webinar"];
 
 const TYPE_COLORS: Record<string, string> = {
   TRAINING: "bg-[#2251A3]/10 text-[#2251A3]",
@@ -265,12 +266,39 @@ const TYPE_FALLBACK_IMAGE: Record<string, string> = {
   EVENT: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=800&q=80",
 };
 
-function formatDate(dateStr: string) {
+function formatDate(dateStr: string, locale: string) {
   const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString(locale, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+}
+
+/** Money in the event's own currency, written the visitor's way. */
+function formatPrice(cents: number, currency: string, locale: string) {
+  const whole = cents % 100 === 0;
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: currency || "USD",
+      minimumFractionDigits: whole ? 0 : 2,
+      maximumFractionDigits: whole ? 0 : 2,
+    }).format(cents / 100);
+  } catch {
+    return `$${(cents / 100).toFixed(whole ? 0 : 2)}`;
+  }
+}
+
+type T = (key: string, vars?: Record<string, string | number>) => string;
+
+/** "9–13 June 2026" in the visitor's language, from the ISO days. */
+function techEventWhen(ev: TechEvent, locale: string, t: T): string {
+  const end = new Date(`${ev.endsOn}T12:00:00Z`);
+  if (!ev.startsOn) return t("pages.events.octNov", { y: end.getUTCFullYear() });
+  const start = new Date(`${ev.startsOn}T12:00:00Z`);
+  const f = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+  return f.formatRange(start, end);
 }
 
 function NotifyModal({ eventName, eventSlug, onClose }: { eventName: string; eventSlug: string; onClose: () => void }) {
+  const t = useT();
   const [form, setForm] = useState({ name: "", email: "", whatsapp: "" });
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
 
@@ -297,27 +325,27 @@ function NotifyModal({ eventName, eventSlug, onClose }: { eventName: string; eve
         className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 relative"
         onClick={(e) => e.stopPropagation()}
       >
-        <button onClick={onClose} className="absolute top-4 right-4 text-[#7A8FA6] hover:text-[#0D1B2A]">
+        <button onClick={onClose} aria-label={t("pages.events.notify.close")} className="absolute top-4 right-4 text-[#7A8FA6] hover:text-[#0D1B2A]">
           <X size={18} />
         </button>
 
         {status === "done" ? (
           <div className="text-center py-4">
             <div className="text-4xl mb-3">🎉</div>
-            <h3 className="font-syne font-bold text-xl text-[#0D1B2A] mb-2">You&apos;re on the waitlist!</h3>
-            <p className="font-dm text-sm text-[#3A4A5C]">We&apos;ll reach out as soon as registration opens.</p>
+            <h3 className="font-syne font-bold text-xl text-[#0D1B2A] mb-2">{t("pages.events.notify.done.title")}</h3>
+            <p className="font-dm text-sm text-[#3A4A5C]">{t("pages.events.notify.done.body")}</p>
             <button onClick={onClose} className="mt-5 w-full bg-[#1B3A6B] text-white rounded-xl py-2.5 font-dm font-semibold text-sm hover:bg-[#2251A3] transition-colors">
-              Close
+              {t("pages.events.notify.close")}
             </button>
           </div>
         ) : (
           <>
-            <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-full bg-[#F47C20]/10 flex items-center justify-center">
+            <div className="flex items-center gap-3 mb-5 pr-6">
+              <div className="w-10 h-10 shrink-0 rounded-full bg-[#F47C20]/10 flex items-center justify-center">
                 <Bell size={18} className="text-[#F47C20]" />
               </div>
               <div>
-                <h3 className="font-syne font-bold text-lg text-[#0D1B2A] leading-tight">Join the Waitlist</h3>
+                <h3 className="font-syne font-bold text-lg text-[#0D1B2A] leading-tight">{t("pages.events.notify.title")}</h3>
                 <p className="font-dm text-xs text-[#7A8FA6]">{eventName}</p>
               </div>
             </div>
@@ -325,7 +353,8 @@ function NotifyModal({ eventName, eventSlug, onClose }: { eventName: string; eve
             <form onSubmit={handleSubmit} className="space-y-3">
               <input
                 type="text"
-                placeholder="Your name"
+                placeholder={t("pages.events.notify.name")}
+                aria-label={t("pages.events.notify.name")}
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                 className="w-full bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl px-4 py-2.5 text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:border-[#2251A3] focus:ring-1 focus:ring-[#2251A3]/20"
@@ -333,7 +362,8 @@ function NotifyModal({ eventName, eventSlug, onClose }: { eventName: string; eve
               />
               <input
                 type="email"
-                placeholder="Email address"
+                placeholder={t("pages.events.notify.email")}
+                aria-label={t("pages.events.notify.email")}
                 value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                 className="w-full bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl px-4 py-2.5 text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:border-[#2251A3] focus:ring-1 focus:ring-[#2251A3]/20"
@@ -341,13 +371,14 @@ function NotifyModal({ eventName, eventSlug, onClose }: { eventName: string; eve
               />
               <input
                 type="tel"
-                placeholder="WhatsApp number (optional)"
+                placeholder={t("pages.events.notify.whatsapp")}
+                aria-label={t("pages.events.notify.whatsapp")}
                 value={form.whatsapp}
                 onChange={(e) => setForm((f) => ({ ...f, whatsapp: e.target.value }))}
                 className="w-full bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl px-4 py-2.5 text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:border-[#2251A3] focus:ring-1 focus:ring-[#2251A3]/20"
               />
               {status === "error" && (
-                <p className="text-xs text-red-500 font-dm">Something went wrong. Please try again.</p>
+                <p className="text-xs text-red-500 font-dm">{t("pages.events.notify.error")}</p>
               )}
               <button
                 type="submit"
@@ -358,7 +389,7 @@ function NotifyModal({ eventName, eventSlug, onClose }: { eventName: string; eve
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <>
-                    <Bell size={14} /> Join Waitlist
+                    <Bell size={14} /> {t("pages.events.notify.submit")}
                   </>
                 )}
               </button>
@@ -388,6 +419,9 @@ function hasFinished(event: EventItem, now: Date = new Date()): boolean {
 }
 
 function EventCard({ event }: { event: EventItem }) {
+  const t = useT();
+  const locale = useLocale();
+  const typeLabel = t(`pages.events.type.${event.type}`);
   const [notifyOpen, setNotifyOpen] = useState(false);
   const isFree = event.price === 0;
   const typeColor = TYPE_COLORS[event.type] ?? "bg-gray-100 text-gray-700";
@@ -414,18 +448,18 @@ function EventCard({ event }: { event: EventItem }) {
         {isOpen ? (
           <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-green-500 text-white text-xs font-dm font-semibold px-3 py-1 rounded-full shadow">
             <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse inline-block" />
-            Open Now
+            {t("pages.events.card.openNow")}
           </div>
         ) : finished ? (
           // A cohort that has run is neither open nor coming: saying "Coming
           // Soon" over a date that has passed is worse than saying nothing.
           <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-[#3A4A5C] text-white text-xs font-dm font-semibold px-3 py-1 rounded-full shadow">
-            Completed
+            {t("pages.events.card.completed")}
           </div>
         ) : (
           <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-[#F47C20] text-white text-xs font-dm font-semibold px-3 py-1 rounded-full shadow">
             <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse inline-block" />
-            Coming Soon
+            {t("pages.events.card.comingSoon")}
           </div>
         )}
       </div>
@@ -433,25 +467,25 @@ function EventCard({ event }: { event: EventItem }) {
       <div className="p-6 flex flex-col flex-1 gap-3">
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`text-xs font-dm font-semibold px-2 py-0.5 rounded-full ${typeColor}`}>
-            {event.type}
+            {typeLabel.startsWith("pages.") ? event.type : typeLabel}
           </span>
           {event.featured && (
             <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20]">
-              Featured
+              {t("pages.events.card.featured")}
             </span>
           )}
           {!isOpen && (
             <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20] ml-auto">
               {event.price > 0
-                ? `$${event.price % 100 === 0 ? (event.price / 100).toFixed(0) : (event.price / 100).toFixed(2)}`
-                : "Price TBA"}
+                ? formatPrice(event.price, event.currency, locale)
+                : t("pages.events.card.priceTba")}
             </span>
           )}
           {isOpen && (isFree ? (
-            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 ml-auto">Free</span>
+            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 ml-auto">{t("pages.events.card.free")}</span>
           ) : (
             <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20] ml-auto">
-              ${(event.price / 100).toFixed(0)}
+              {formatPrice(event.price, event.currency, locale)}
             </span>
           ))}
         </div>
@@ -467,7 +501,7 @@ function EventCard({ event }: { event: EventItem }) {
         {/* Module pills */}
         {modules.length > 0 && (
           <div className="flex flex-col gap-1.5">
-            <p className="font-dm text-[10px] font-semibold text-[#7A8FA6] uppercase tracking-widest">Modules</p>
+            <p className="font-dm text-[10px] font-semibold text-[#7A8FA6] uppercase tracking-widest">{t("pages.events.card.modules")}</p>
             {modules.map((m, i) => (
               <div key={m} className="flex items-start gap-2">
                 <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-[#F47C20]/10 text-[#F47C20] font-syne font-bold text-[10px] flex items-center justify-center">{i + 1}</span>
@@ -480,7 +514,7 @@ function EventCard({ event }: { event: EventItem }) {
         <div className="flex flex-col gap-1.5 mt-auto">
           {event.date && (
             <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-              <Calendar size={13} /><span>{formatDate(event.date)}</span>
+              <Calendar size={13} /><span>{formatDate(event.date, locale)}</span>
             </div>
           )}
           {event.timeSlot && (
@@ -496,21 +530,23 @@ function EventCard({ event }: { event: EventItem }) {
               <Users size={13} />
               <span>
                 {event.spotsLeft === 0
-                  ? "Sold out"
+                  ? t("pages.events.card.soldOut")
+                  : event.spotsLeft === 1
+                  ? t("pages.events.card.onlyOne")
                   : event.spotsLeft <= 5
-                  ? `Only ${event.spotsLeft} seat${event.spotsLeft === 1 ? "" : "s"} left!`
-                  : `${event.spotsLeft} seats left`}
+                  ? t("pages.events.card.onlyFew", { n: event.spotsLeft })
+                  : t("pages.events.card.seatsLeft", { n: event.spotsLeft.toLocaleString(locale) })}
               </span>
             </div>
           )}
           {!isOpen && (
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-1.5 text-xs font-dm font-semibold px-2.5 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20]">
-                <Calendar size={12} /><span>This June</span>
+                <Calendar size={12} /><span>{t("pages.events.card.thisJune")}</span>
               </div>
               {event.spots != null && (
                 <div className="flex items-center gap-1.5 text-xs font-dm font-semibold text-[#F47C20]">
-                  <Users size={13} /><span>{event.spots} seats available</span>
+                  <Users size={13} /><span>{t("pages.events.card.seatsAvailable", { n: event.spots.toLocaleString(locale) })}</span>
                 </div>
               )}
             </div>
@@ -520,14 +556,14 @@ function EventCard({ event }: { event: EventItem }) {
         <div className="pt-3 border-t border-[#D2DCE8]">
           {isOpen ? (
             <div className="w-full text-center font-dm font-semibold text-sm text-white bg-[#F47C20] group-hover:bg-[#e06a10] transition-colors py-2 rounded-xl">
-              {isFree ? "Join Free →" : "Register Now →"}
+              {isFree ? t("pages.events.card.joinFree") : t("pages.events.card.register")}
             </div>
           ) : (
             <div
               onClick={e => { e.preventDefault(); e.stopPropagation(); setNotifyOpen(true); }}
               className="w-full flex items-center justify-center gap-1.5 font-dm font-semibold text-sm text-white bg-[#1B3A6B] hover:bg-[#2251A3] transition-colors py-2 rounded-xl cursor-pointer"
             >
-              <Bell size={13} /> Join Waitlist
+              <Bell size={13} /> {t("pages.events.card.waitlist")}
             </div>
           )}
         </div>
@@ -549,6 +585,9 @@ function EventCard({ event }: { event: EventItem }) {
 
 
 function TechEventCard({ ev }: { ev: TechEvent }) {
+  const t = useT();
+  const locale = useLocale();
+  const place = t(`pages.events.place.${ev.place}`);
   return (
     <a
       href={ev.url}
@@ -565,24 +604,24 @@ function TechEventCard({ ev }: { ev: TechEvent }) {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
         <span className="absolute bottom-3 left-3 text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
-          INDUSTRY EVENT
+          {t("pages.events.industry.badge")}
         </span>
       </div>
       <div className="p-5 flex flex-col gap-2 flex-1">
         <h3 className="font-syne font-bold text-base text-[#0D1B2A] group-hover:text-[#2251A3] transition-colors">{ev.name}</h3>
         <p className="font-dm text-xs text-[#7A8FA6] font-medium">{ev.organizer}</p>
-        <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed flex-1 line-clamp-2">{ev.description}</p>
+        <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed flex-1 line-clamp-2">{t(`pages.events.tech.${ev.id}.desc`)}</p>
         <div className="flex flex-col gap-1 mt-1">
           <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-            <Calendar size={12} /><span>{ev.when}</span>
+            <Calendar size={12} /><span>{techEventWhen(ev, locale, t)}</span>
           </div>
           <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-            <MapPin size={12} /><span>{ev.location}</span>
+            <MapPin size={12} /><span>{ev.online ? t("pages.events.online", { place }) : place}</span>
           </div>
         </div>
         <div className="pt-3 border-t border-[#D2DCE8] mt-1 flex items-center justify-between">
           <span className="font-dm text-xs font-semibold text-[#2251A3] group-hover:text-[#F47C20] transition-colors">
-            Visit official site →
+            {t("pages.events.industry.visit")}
           </span>
           <ExternalLink size={12} className="text-[#7A8FA6]" />
         </div>
@@ -592,6 +631,7 @@ function TechEventCard({ ev }: { ev: TechEvent }) {
 }
 
 export default function EventsPage() {
+  const t = useT();
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("all");
@@ -632,13 +672,13 @@ export default function EventsPage() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-6">
             <span className="text-[#F47C20] text-sm">🎓</span>
-            <span className="font-dm text-sm text-white/80">Events & Training</span>
+            <span className="font-dm text-sm text-white/80">{t("pages.events.hero.badge")}</span>
           </div>
           <h1 className="font-syne font-extrabold text-4xl sm:text-5xl lg:text-6xl mb-5 leading-tight">
-            Events &amp; Training
+            {t("pages.events.hero.title")}
           </h1>
           <p className="font-dm text-lg sm:text-xl text-white/70 max-w-2xl mx-auto leading-relaxed">
-            Level up your AI knowledge — live sessions, workshops, and hands-on training.
+            {t("pages.events.hero.body")}
           </p>
         </div>
       </section>
@@ -649,15 +689,15 @@ export default function EventsPage() {
           <div className="flex items-center gap-1 overflow-x-auto py-3 scrollbar-hide">
             {FILTER_TABS.map((tab) => (
               <button
-                key={tab.id}
-                onClick={() => setActiveFilter(tab.id)}
+                key={tab}
+                onClick={() => setActiveFilter(tab)}
                 className={`flex-shrink-0 px-4 py-2 rounded-full font-dm font-medium text-sm transition-all ${
-                  activeFilter === tab.id
+                  activeFilter === tab
                     ? "bg-[#1B3A6B] text-white"
                     : "text-[#3A4A5C] hover:bg-[#EBF0FA] hover:text-[#1B3A6B]"
                 }`}
               >
-                {tab.label}
+                {t(`pages.events.filter.${tab}`)}
               </button>
             ))}
           </div>
@@ -677,9 +717,9 @@ export default function EventsPage() {
             {filtered.length === 0 ? (
               <div className="text-center py-16">
                 <p className="font-syne font-bold text-xl text-[#1B3A6B] mb-2">
-                  {activeFilter === "all" ? "No TIBLOGICS events scheduled right now" : `No ${activeFilter}s yet`}
+                  {t(`pages.events.empty.${activeFilter}`)}
                 </p>
-                <p className="font-dm text-[#7A8FA6]">Check back soon or explore other categories.</p>
+                <p className="font-dm text-[#7A8FA6]">{t("pages.events.empty.body")}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -694,13 +734,13 @@ export default function EventsPage() {
               <div className="mt-16">
                 <div className="flex items-center gap-3 mb-6">
                   <div>
-                    <h2 className="font-syne font-bold text-2xl text-[#0D1B2A]">Popular Industry Events</h2>
-                    <p className="font-dm text-sm text-[#7A8FA6] mt-1">Major tech conferences still ahead — stay informed.</p>
+                    <h2 className="font-syne font-bold text-2xl text-[#0D1B2A]">{t("pages.events.industry.title")}</h2>
+                    <p className="font-dm text-sm text-[#7A8FA6] mt-1">{t("pages.events.industry.body")}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {upcomingEvents.map((ev) => (
-                    <TechEventCard key={ev.name} ev={ev} />
+                    <TechEventCard key={ev.id} ev={ev} />
                   ))}
                 </div>
               </div>
@@ -709,16 +749,16 @@ export default function EventsPage() {
             {/* CTA */}
             <div className="mt-16 bg-gradient-to-r from-[#1B3A6B] to-[#2251A3] rounded-2xl p-8 sm:p-12 text-center text-white">
               <h2 className="font-syne font-bold text-2xl sm:text-3xl mb-3">
-                Want private training for your team?
+                {t("pages.events.cta.title")}
               </h2>
               <p className="font-dm text-white/70 mb-6 max-w-xl mx-auto">
-                We offer customized AI training sessions for businesses, organizations, and individuals. Whether you&apos;re building a team capability or advancing your own career and income with AI — let&apos;s design a program that fits your goals.
+                {t("pages.events.cta.body")}
               </p>
               <Link
                 href="/book"
                 className="inline-flex items-center gap-2 bg-[#F47C20] hover:bg-[#e06a10] text-white font-dm font-semibold px-6 py-3 rounded-xl transition-colors"
               >
-                Book a Free Consultation <ArrowRight size={16} />
+                {t("pages.events.cta.button")} <ArrowRight size={16} />
               </Link>
             </div>
           </>

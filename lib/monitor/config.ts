@@ -40,7 +40,9 @@ export function monitorPricing(): MonitorPricing | null {
   };
 }
 
-export function formatMonitorPrice(p: MonitorPricing): string {
+/** The price in the reader's locale, keeping its currency ("$99", "99 $US"). */
+export function formatMonitorPrice(p: MonitorPricing, locale = "en-US"): string {
   const v = p.amount / 100;
-  return `$${v % 1 === 0 ? v.toFixed(0) : v.toFixed(2)}`;
+  const digits = v % 1 === 0 ? 0 : 2;
+  return new Intl.NumberFormat(locale, { style: "currency", currency: p.currency, minimumFractionDigits: digits, maximumFractionDigits: digits }).format(v);
 }

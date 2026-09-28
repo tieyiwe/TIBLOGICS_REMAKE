@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Markdown from "./Markdown";
-import { formatMinutes } from "@/lib/learn/types";
+import { useLocale, useT } from "@/lib/i18n/client";
 
 interface Question {
   id: string;
@@ -33,6 +33,17 @@ interface ExamConfig {
 
 type Phase = "intro" | "running" | "results";
 
+/** "45 min", "1 h 30 min", "dakika 45": formatMinutes in the learner's language. */
+function useMinutes() {
+  const t = useT();
+  return (mins: number) => {
+    if (mins < 60) return t("labs.time.min", { n: mins });
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m === 0 ? t(h === 1 ? "labs.time.hr.one" : "labs.time.hr.other", { n: h }) : t("labs.time.hrMin", { h, m });
+  };
+}
+
 export default function ExamRunner({
   trackSlug,
   accentColor,
@@ -43,6 +54,7 @@ export default function ExamRunner({
   attemptsLeft,
   cooldownUntil,
   extendedTime,
+  modules = [],
 }: {
   trackSlug: string;
   accentColor: string;
@@ -53,8 +65,14 @@ export default function ExamRunner({
   attemptsLeft: number;
   cooldownUntil: string | null;
   extendedTime: boolean;
+  /** Module names for the per-module results, in the learner's language. */
+  modules?: Array<{ id: string; title: string }>;
 }) {
   const router = useRouter();
+  const t = useT();
+  const locale = useLocale();
+  const formatMinutes = useMinutes();
+  const [pending, setPending] = useState(false);
   const [phase, setPhase] = useState<Phase>("intro");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -107,10 +125,11 @@ export default function ExamRunner({
         body: JSON.stringify({ trackSlug }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "Could not start the exam");
+      if (!res.ok) throw new Error(data.error ?? t("labs.exam.startError"));
 
       setSessionId(data.sessionId);
       setQuestions(data.questions ?? []);
+      setPending(!!data.pending);
       setAnswers(data.answers ?? {});
       // Trust the server's clock: convert its expiry into a local deadline
       // using the offset between server and browser time.
@@ -119,7 +138,7 @@ export default function ExamRunner({
       setPhase("running");
       window.scrollTo({ top: 0 });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("labs.error.generic"));
     } finally {
       setBusy(false);
     }
@@ -151,7 +170,7 @@ export default function ExamRunner({
 
   async function submit(auto = false) {
     if (!sessionId || submittingRef.current) return;
-    if (!auto && !confirm("Submit your exam? You can't change answers afterwards.")) return;
+    if (!auto && !confirm(t("labs.exam.confirm"))) return;
 
     submittingRef.current = true;
     setBusy(true);
@@ -163,13 +182,13 @@ export default function ExamRunner({
         body: JSON.stringify({ sessionId, answers }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "Could not submit the exam");
+      if (!res.ok) throw new Error(data.error ?? t("labs.exam.submitError"));
       setResult(data);
       setPhase("results");
       router.refresh();
       window.scrollTo({ top: 0 });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("labs.error.generic"));
       submittingRef.current = false;
     } finally {
       setBusy(false);
@@ -188,24 +207,46 @@ export default function ExamRunner({
             {result.score}%
           </p>
           <h1 className="mt-3 text-2xl font-black text-[var(--ink)]">
-            {result.distinction ? "Passed with Distinction" : result.passed ? "Passed" : "Not this time"}
+            {result.distinction ? t("labs.exam.distinction") : result.passed ? t("labs.exam.passed") : t("labs.exam.notThisTime")}
           </h1>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[var(--ink2)]">
-            {result.passed
-              ? "The exam is behind you. The capstone is the last step to your certificate."
-              : `You needed ${exam.passScore}%. The breakdown below shows exactly which modules to revisit before your next attempt.`}
+            {result.passed ? t("labs.exam.passedBody") : t("labs.exam.failBody", { pass: exam.passScore })}
           </p>
           {result.expired && (
             <p className="mx-auto mt-3 max-w-md rounded-lg bg-amber-50 px-4 py-2 text-sm text-amber-900">
-              Time ran out, so we scored the answers you'd saved. Nothing was lost.
+              {t("labs.exam.expiredNote")}
             </p>
           )}
           {result.pointsAwarded > 0 && (
             <p className="mt-3 text-sm font-bold text-[var(--orange2)]">
-              +{result.pointsAwarded} points
+              {t("labs.points", { n: result.pointsAwarded })}
             </p>
           )}
         </div>
+
+        {/* The fail message points here; it was promised but never shown. */}
+        {Object.keys(result.perModuleScores ?? {}).length > 0 && (
+          <div className="mx-auto mt-8 max-w-md">
+            <h2 className="text-sm font-bold text-[var(--ink)]">{t("labs.exam.byModule")}</h2>
+            <ul className="mt-3 space-y-2">
+              {(modules.length ? modules.filter((m) => m.id in result.perModuleScores) : Object.keys(result.perModuleScores).map((id) => ({ id, title: id }))).map((m) => {
+                const pct = result.perModuleScores[m.id] ?? 0;
+                const ok = pct >= exam.passScore;
+                return (
+                  <li key={m.id} className="text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[var(--ink2)]">{m.title}</span>
+                      <span className="font-bold" style={{ color: ok ? "#22A387" : "#E05F00" }}>{pct}%</span>
+                    </div>
+                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[var(--s3)]">
+                      <div className="h-full rounded-full" style={{ width: `${pct}%`, background: ok ? "#22A387" : "#E05F00" }} />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
 
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link
@@ -213,21 +254,21 @@ export default function ExamRunner({
             className="rounded-full px-6 py-2.5 text-sm font-bold text-white"
             style={{ background: accentColor }}
           >
-            Back to the track →
+            {t("labs.exam.backToTrack")}
           </Link>
           {result.passed && (
             <Link
               href={`/learn/capstone/${trackSlug}`}
               className="rounded-full bg-[var(--ink)] px-6 py-2.5 text-sm font-bold text-white"
             >
-              Start the capstone →
+              {t("labs.exam.startCapstone")}
             </Link>
           )}
         </div>
 
         <details className="mt-8">
           <summary className="cursor-pointer text-sm font-semibold text-[var(--blue2)]">
-            Review every question and explanation
+            {t("labs.exam.review")}
           </summary>
           <ol className="mt-5 space-y-6">
             {result.graded.map((g, i) => (
@@ -289,11 +330,11 @@ export default function ExamRunner({
               {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
             </span>
             <span className="text-sm text-[var(--ink3)]">
-              {answered}/{questions.length} answered
-              {saveState === "saving" && <span className="ml-2 text-xs">saving…</span>}
-              {saveState === "saved" && <span className="ml-2 text-xs text-green-700">saved</span>}
+              {t("labs.answered", { n: answered, total: questions.length })}
+              {saveState === "saving" && <span className="ml-2 text-xs">{t("labs.exam.savingState")}</span>}
+              {saveState === "saved" && <span className="ml-2 text-xs text-green-700">{t("labs.exam.savedState")}</span>}
               {saveState === "error" && (
-                <span className="ml-2 text-xs text-red-600">save failed — retrying on next answer</span>
+                <span className="ml-2 text-xs text-red-600">{t("labs.exam.saveFailed")}</span>
               )}
             </span>
           </div>
@@ -307,10 +348,11 @@ export default function ExamRunner({
 
         {urgent && (
           <p role="alert" className="mb-5 rounded-lg bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-800">
-            Under five minutes left. Your answers are already saved — if the clock runs out we'll
-            score what you have.
+            {t("labs.exam.urgent")}
           </p>
         )}
+
+        {pending && <p className="mb-5 text-xs text-[var(--ink3)]">{t("common.translationPending")}</p>}
 
         <ol className="space-y-8">
           {questions.map((q, i) => (
@@ -353,7 +395,7 @@ export default function ExamRunner({
           className="mt-8 w-full rounded-full py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           style={{ background: accentColor }}
         >
-          {busy ? "Submitting…" : `Submit exam (${answered}/${questions.length} answered)`}
+          {busy ? t("labs.exam.submitting") : t("labs.exam.submitN", { n: answered, total: questions.length })}
         </button>
       </section>
     );
@@ -369,10 +411,10 @@ export default function ExamRunner({
 
       <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          ["Questions", String(exam.questionsServed)],
-          ["Time limit", formatMinutes(extendedTime ? Math.round(exam.timeLimitMinutes * 1.5) : exam.timeLimitMinutes)],
-          ["To pass", `${exam.passScore}%`],
-          ["Distinction", `${exam.distinctionScore}%`],
+          [t("labs.exam.questions"), String(exam.questionsServed)],
+          [t("labs.exam.timeLimit"), formatMinutes(extendedTime ? Math.round(exam.timeLimitMinutes * 1.5) : exam.timeLimitMinutes)],
+          [t("labs.exam.toPass"), `${exam.passScore}%`],
+          [t("labs.exam.distinctionLabel"), `${exam.distinctionScore}%`],
         ].map(([k, v]) => (
           <div key={k} className="rounded-xl bg-[var(--s2)] p-3">
             <dt className="text-xs text-[var(--ink3)]">{k}</dt>
@@ -383,7 +425,7 @@ export default function ExamRunner({
 
       {extendedTime && (
         <p className="mt-3 rounded-lg bg-[var(--blue-light)] px-4 py-2.5 text-sm text-[var(--blue)]">
-          Accessibility mode is on, so you have 1.5× the standard time.
+          {t("labs.exam.extended")}
         </p>
       )}
 
@@ -394,12 +436,12 @@ export default function ExamRunner({
       )}
 
       <div className="mt-6 rounded-xl border border-[var(--border)] p-5">
-        <h2 className="text-sm font-bold text-[var(--ink)]">Before you begin</h2>
+        <h2 className="text-sm font-bold text-[var(--ink)]">{t("labs.exam.before")}</h2>
         <ul className="mt-3 space-y-2 text-sm leading-relaxed text-[var(--ink2)]">
-          <li>• The clock runs on our server. Closing this tab won't pause it.</li>
-          <li>• Every answer is saved the moment you pick it — a dropped connection won't cost you.</li>
-          <li>• If time runs out, we score what you've saved. You never get a zero for a technical failure.</li>
-          <li>• You have {attemptsLeft} attempt{attemptsLeft === 1 ? "" : "s"} left, each with a different set of questions.</li>
+          <li>• {t("labs.exam.rule1")}</li>
+          <li>• {t("labs.exam.rule2")}</li>
+          <li>• {t("labs.exam.rule3")}</li>
+          <li>• {t(attemptsLeft === 1 ? "labs.exam.attemptsLeft.one" : "labs.exam.attemptsLeft.other", { n: attemptsLeft })}</li>
         </ul>
       </div>
 
@@ -411,20 +453,19 @@ export default function ExamRunner({
 
       {alreadyPassed ? (
         <p className="mt-6 rounded-lg bg-green-50 px-4 py-3 text-center text-sm font-semibold text-green-800">
-          You've already passed this exam.
+          {t("labs.exam.alreadyPassed")}
         </p>
       ) : attemptsLeft === 0 ? (
         <p className="mt-6 rounded-lg bg-amber-50 px-4 py-3 text-center text-sm text-amber-900">
-          You've used all {exam.maxAttempts} attempts.{" "}
+          {t("labs.exam.noAttempts", { n: exam.maxAttempts })}{" "}
           <Link href="/contact" className="font-semibold underline">
-            Contact us
+            {t("labs.exam.contactUs")}
           </Link>{" "}
-          — we can reset it after a conversation about where it went wrong.
+          {t("labs.exam.resetNote")}
         </p>
       ) : cooldownDate && !hasInProgress ? (
         <p className="mt-6 rounded-lg bg-[var(--s2)] px-4 py-3 text-center text-sm text-[var(--ink2)]">
-          Your next attempt unlocks {cooldownDate.toLocaleString()}. Use the time to review — the
-          cooldown exists so retries are studied, not spammed.
+          {t("labs.exam.cooldown", { date: cooldownDate.toLocaleString(locale) })}
         </p>
       ) : (
         <button
@@ -433,7 +474,7 @@ export default function ExamRunner({
           className="mt-6 w-full rounded-full py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           style={{ background: accentColor }}
         >
-          {busy ? "Preparing…" : hasInProgress ? "Resume your exam →" : "Start the exam →"}
+          {busy ? t("labs.exam.preparing") : hasInProgress ? t("labs.exam.resume") : t("labs.exam.start")}
         </button>
       )}
     </section>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/lib/i18n/client";
 
 interface Question {
   id: string;
@@ -29,7 +30,9 @@ export default function MicroCheck({
   passScore: number;
   accentColor: string;
 }) {
+  const t = useT();
   const [questions, setQuestions] = useState<Question[] | null>(null);
+  const [pending, setPending] = useState(false);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [result, setResult] = useState<{ score: number; passed: boolean; graded: Graded[]; pointsAwarded: number } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -41,12 +44,13 @@ export default function MicroCheck({
     try {
       const res = await fetch(`/api/learn/quiz/serve?mode=micro&id=${microCheckId}`);
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "Could not load the check");
+      if (!res.ok) throw new Error(data.error ?? t("labs.micro.loadError"));
       setQuestions(data.questions);
+      setPending(!!data.pending);
       setAnswers({});
       setResult(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("labs.error.generic"));
     } finally {
       setBusy(false);
     }
@@ -63,10 +67,10 @@ export default function MicroCheck({
         body: JSON.stringify({ mode: "micro", id: microCheckId, answers }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "Could not score your answers");
+      if (!res.ok) throw new Error(data.error ?? t("labs.micro.scoreError"));
       setResult(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("labs.error.generic"));
     } finally {
       setBusy(false);
     }
@@ -78,18 +82,15 @@ export default function MicroCheck({
   if (!questions) {
     return (
       <section className="rounded-2xl border border-[var(--border)] bg-white p-6 text-center">
-        <h2 className="text-base font-bold text-[var(--ink)]">Quick check</h2>
-        <p className="mx-auto mt-1 max-w-md text-sm text-[var(--ink2)]">
-          A couple of questions to make sure that landed. No pressure — you can retake it as many
-          times as you like.
-        </p>
+        <h2 className="text-base font-bold text-[var(--ink)]">{t("labs.micro.title")}</h2>
+        <p className="mx-auto mt-1 max-w-md text-sm text-[var(--ink2)]">{t("labs.micro.intro")}</p>
         <button
           onClick={load}
           disabled={busy}
           className="mt-4 rounded-full px-6 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           style={{ background: accentColor }}
         >
-          {busy ? "Loading…" : "Start quick check"}
+          {busy ? t("labs.loading") : t("labs.micro.start")}
         </button>
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       </section>
@@ -102,12 +103,14 @@ export default function MicroCheck({
       <section className="rounded-2xl border border-[var(--border)] bg-white p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-base font-bold text-[var(--ink)]">
-            {result.passed ? "Nice work" : "Worth another look"}
+            {result.passed ? t("labs.micro.niceWork") : t("labs.micro.anotherLook")}
           </h2>
           <p className="text-sm font-bold" style={{ color: result.passed ? "#22A387" : "#E05F00" }}>
-            {result.score}% {result.passed ? "· passed" : `· ${passScore}% to pass`}
+            {result.passed
+              ? t("labs.micro.passedTag", { score: result.score })
+              : t("labs.micro.toPassTag", { score: result.score, pass: passScore })}
             {result.pointsAwarded > 0 && (
-              <span className="ml-2 text-[var(--orange2)]">+{result.pointsAwarded} pts</span>
+              <span className="ml-2 text-[var(--orange2)]">{t("labs.pts", { n: result.pointsAwarded })}</span>
             )}
           </p>
         </div>
@@ -153,7 +156,7 @@ export default function MicroCheck({
           disabled={busy}
           className="mt-5 rounded-full border border-[var(--border)] px-5 py-2.5 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)]"
         >
-          Try a different set
+          {t("labs.micro.tryDifferent")}
         </button>
       </section>
     );
@@ -162,7 +165,8 @@ export default function MicroCheck({
   // ── Answering ───────────────────────────────────────────────────────────
   return (
     <section className="rounded-2xl border border-[var(--border)] bg-white p-6">
-      <h2 className="text-base font-bold text-[var(--ink)]">Quick check</h2>
+      <h2 className="text-base font-bold text-[var(--ink)]">{t("labs.micro.title")}</h2>
+      {pending && <p className="mt-2 text-xs text-[var(--ink3)]">{t("common.translationPending")}</p>}
       <ol className="mt-4 space-y-6">
         {questions.map((q, i) => (
           <li key={q.id}>
@@ -204,7 +208,7 @@ export default function MicroCheck({
         className="mt-5 rounded-full px-6 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
         style={{ background: accentColor }}
       >
-        {busy ? "Checking…" : allAnswered ? "Check my answers" : "Answer every question"}
+        {busy ? t("labs.checking") : allAnswered ? t("labs.micro.check") : t("labs.micro.answerAll")}
       </button>
     </section>
   );

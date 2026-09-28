@@ -7,6 +7,7 @@
 import prisma from "@/lib/prisma";
 import { sendMilestoneEmail } from "./emails";
 import { levelFor } from "./points";
+import { rankName, translator } from "./i18n";
 
 /**
  * A milestone email is sent at most once per (student, milestone) because the
@@ -25,6 +26,8 @@ interface MilestoneInput {
   kind: MilestoneKind;
   trackId?: string;
   detail?: string;
+  /** For level_up: the new level's index (from levelFor). */
+  levelIndex?: number;
   points?: number;
 }
 
@@ -35,12 +38,12 @@ export function notifyMilestone(input: MilestoneInput): void {
   );
 }
 
-async function sendMilestone({ studentId, kind, trackId, detail, points = 0 }: MilestoneInput) {
+async function sendMilestone({ studentId, kind, trackId, detail, levelIndex, points = 0 }: MilestoneInput) {
   // Different tables, neither reads the other.
   const [student, track] = await Promise.all([
     prisma.student.findUnique({
       where: { id: studentId },
-      select: { email: true, name: true },
+      select: { email: true, name: true, locale: true },
     }),
     trackId
       ? prisma.learnTrack.findUnique({ where: { id: trackId }, select: { title: true } })
@@ -48,28 +51,28 @@ async function sendMilestone({ studentId, kind, trackId, detail, points = 0 }: M
   ]);
   if (!student) return;
 
+  // In the learner's saved language. Track titles stay as stored (English).
+  const t = translator(student.locale);
+  const title = track?.title ?? t("learn.email.milestone.yourTrack");
   const copy: Record<MilestoneKind, { milestone: string; detail: string }> = {
     module_quiz_passed: {
-      milestone: "Module complete",
-      detail:
-        detail ??
-        `You've passed the quiz for a module in ${track?.title ?? "your track"}. That module is signed off.`,
+      milestone: t("learn.email.milestone.module.title"),
+      detail: detail ?? t("learn.email.milestone.module.body", { title }),
     },
     half_track: {
-      milestone: "Halfway there",
-      detail:
-        detail ??
-        `You're past the halfway point of ${track?.title ?? "your track"}. The second half tends to go faster than the first.`,
+      milestone: t("learn.email.milestone.half.title"),
+      detail: detail ?? t("learn.email.milestone.half.body", { title }),
     },
     exam_passed: {
-      milestone: "Final exam passed",
-      detail:
-        detail ??
-        `You've cleared the final exam for ${track?.title ?? "your track"}. Only the capstone stands between you and the certificate.`,
+      milestone: t("learn.email.milestone.exam.title"),
+      detail: detail ?? t("learn.email.milestone.exam.body", { title }),
     },
     level_up: {
-      milestone: detail ?? "New level reached",
-      detail: `Your points total has taken you to a new level.`,
+      milestone:
+        levelIndex != null
+          ? t("learn.email.milestone.level.reached", { rank: rankName(t, levelIndex) })
+          : detail ?? t("learn.email.milestone.level.title"),
+      detail: t("learn.email.milestone.level.body"),
     },
   };
 
@@ -80,6 +83,7 @@ async function sendMilestone({ studentId, kind, trackId, detail, points = 0 }: M
     milestone: c.milestone,
     detail: c.detail,
     points,
+    locale: student.locale,
   });
 }
 
@@ -95,7 +99,7 @@ export function checkLevelUp(studentId: string, totalBefore: number, totalAfter:
     notifyMilestone({
       studentId,
       kind: "level_up",
-      detail: `You've reached ${after.name}`,
+      levelIndex: after.index,
       points: totalAfter - totalBefore,
     });
   }

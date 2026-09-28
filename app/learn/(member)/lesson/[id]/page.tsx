@@ -3,8 +3,19 @@ import { notFound, redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { getStudent } from "@/lib/learn/session";
 import LessonPlayer from "@/components/learn/LessonPlayer";
+import type { Metadata } from "next";
+import { getLocale, getT } from "@/lib/i18n/server";
+import { LESSON_SOURCE, loadTrackSources, localizedLesson, localizedTrack } from "@/lib/i18n/sources/learn";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const src = await prisma.lesson.findUnique({ where: { id }, select: LESSON_SOURCE }).catch(() => null);
+  if (!src) return {};
+  const { text } = await localizedLesson(src, await getLocale());
+  return { title: text.title };
+}
 
 export default async function LessonPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -54,6 +65,18 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
     }),
   ]);
 
+  // The lesson and the outline in the learner's language. Each is one cached
+  // record (the outline comes from the track record, so a 40-lesson rail is
+  // one translation, not 40); while either is pending the page shows English
+  // and says so.
+  const [t, locale, [trackSrc]] = await Promise.all([getT(), getLocale(), loadTrackSources({ id: trackId })]);
+  const [{ text, pending: lessonPending }, trackLocalized] = await Promise.all([
+    localizedLesson(lesson, locale),
+    trackSrc ? localizedTrack(trackSrc, locale) : Promise.resolve(null),
+  ]);
+  const tt = trackLocalized?.text;
+  const pending = lessonPending || !!trackLocalized?.pending;
+
   const doneIds = new Set(completed.map((c) => c.lessonId));
   const isDone = doneIds.has(lesson.id);
 
@@ -70,44 +93,50 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
 
   return (
     <div>
-      <nav aria-label="Breadcrumb" className="mb-4 text-sm text-[var(--ink3)]">
+      <nav aria-label={t("learn.lesson.breadcrumb")} className="mb-4 text-sm text-[var(--ink3)]">
         <Link href={`/learn/track/${lesson.module.track.slug}`} className="hover:text-[var(--ink)]">
-          {lesson.module.track.title}
+          {tt?.title ?? lesson.module.track.title}
         </Link>
         <span className="mx-2" aria-hidden="true">
           /
         </span>
-        <span>{lesson.module.title}</span>
+        <span>{tt?.modules[lesson.moduleId]?.title ?? lesson.module.title}</span>
       </nav>
+      {pending && (
+        <p role="status" className="mb-4 rounded-lg bg-[var(--blue-light)] px-3 py-2 text-xs text-[var(--blue)]">
+          {t("common.translationPending")}
+        </p>
+      )}
 
       <LessonPlayer
         lesson={{
           id: lesson.id,
-          title: lesson.title,
-          bodyMd: lesson.bodyMd,
+          title: text.title,
+          bodyMd: text.bodyMd,
+          sourceMd: lesson.bodyMd,
           videoUrl: lesson.videoUrl,
           contentType: lesson.contentType,
           durationMinutes: lesson.durationMinutes,
-          objective: lesson.objective,
+          objective: text.objective,
           hasPractice: lesson.hasPractice,
         }}
         resources={lesson.resources.map((r) => ({
           id: r.id,
-          title: r.title,
+          title: text.resources[r.id]?.title ?? r.title,
           url: r.url,
           resourceType: r.resourceType,
           isFree: r.isFree,
           isRequired: r.isRequired,
-          notes: r.notes,
+          notes: text.resources[r.id]?.notes ?? r.notes,
         }))}
         microCheck={lesson.microCheck}
         modules={modules.map((m) => ({
           id: m.id,
-          title: m.title,
+          title: tt?.modules[m.id]?.title ?? m.title,
           quizId: m.quiz?.id ?? null,
           lessons: m.lessons.map((l) => ({
             id: l.id,
-            title: l.title,
+            title: l.id === lesson.id ? text.title : tt?.lessons[l.id]?.title ?? l.title,
             durationMinutes: l.durationMinutes,
             done: doneIds.has(l.id),
           })),

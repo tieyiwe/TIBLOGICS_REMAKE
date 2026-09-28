@@ -12,6 +12,7 @@ const getProduct = cache(async (slug: string) =>
   prisma.product.findUnique({ where: { slug } }).catch(() => null),
 );
 import ProductDetail from "@/components/shop/ProductDetail";
+import { getT } from "@/lib/i18n/server";
 import type { ShopProduct } from "@/components/shop/types";
 
 export const revalidate = 30;
@@ -38,8 +39,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const p = await getProduct(slug);
   if (!p || !p.published) return {};
+  const t = await getT();
   return {
-    title: `${p.name} | TIBLOGICS Store`,
+    title: t("pages.store.meta.productTitle", { name: p.name }),
     description: (p.tagline ?? p.description).slice(0, 160),
     openGraph: {
       title: p.name,

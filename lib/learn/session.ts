@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { getT } from "@/lib/i18n/server";
 
 export interface StudentSession {
   id: string;
@@ -93,7 +94,8 @@ export async function requireStudent(): Promise<
 > {
   const student = await getStudent();
   if (!student) {
-    return { error: NextResponse.json({ error: "Sign in required" }, { status: 401 }), student: null };
+    const t = await getT();
+    return { error: NextResponse.json({ error: t("learn.api.signInRequired") }, { status: 401 }), student: null };
   }
   return { error: null, student };
 }
@@ -106,7 +108,8 @@ export async function requireEntitledStudent(): Promise<
   if (error) return { error, student: null };
   const ent = await getEntitlement(student.id);
   if (!ent.entitled) {
-    return { error: NextResponse.json({ error: "Subscription required" }, { status: 402 }), student: null };
+    const t = await getT();
+    return { error: NextResponse.json({ error: t("learn.api.subscriptionRequired") }, { status: 402 }), student: null };
   }
   return { error: null, student };
 }

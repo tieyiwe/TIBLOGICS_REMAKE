@@ -5,6 +5,8 @@
 // Prompt labs use a model to coach, and degrade to a deterministic heuristic
 // if the key is missing or the call fails, rather than blocking the learner.
 import { streamChat } from "@/lib/claude";
+import { LANGUAGE_FOR_AI, replyInLanguage, type Locale } from "@/lib/i18n/config";
+import { translatorFor, type T } from "@/lib/i18n/server";
 import {
   weightedScore,
   type CritiqueLabConfig,
@@ -15,6 +17,18 @@ import {
   type PromptLabConfig,
   type WorkbenchLabConfig,
 } from "./types";
+
+/**
+ * Added to a grader's system prompt so the learner reads comments and
+ * feedback in their language, while the JSON stays machine-readable.
+ */
+export function graderLanguage(locale: Locale): string {
+  if (locale === "en") return "";
+  const lang = LANGUAGE_FOR_AI[locale];
+  return `\n\nLanguage: the learner is working in ${lang} and may have written their work in it. Write every "comment" and the "feedbackMd" in ${lang}. Keep the JSON keys and every objectiveId exactly as given, unchanged. ${replyInLanguage(locale)}`;
+}
+
+const EN: T = translatorFor("en");
 
 // ── Critique ────────────────────────────────────────────────────────────────
 /**
@@ -27,6 +41,7 @@ export function evaluateCritique(
   selectedIds: string[],
   objectives: LabObjective[],
   passScore: number,
+  t: T = EN,
 ): LabEvaluation {
   const selected = new Set(selectedIds);
   const flawCandidates = config.candidates.filter((c) => c.isFlaw);
@@ -46,55 +61,55 @@ export function evaluateCritique(
   const breakdown: ObjectiveResult[] = [
     {
       objectiveId: objectives[0]?.id ?? "recall",
-      label: objectives[0]?.label ?? "Identified the problems",
+      label: objectives[0]?.label ?? t("labs.eval.critique.recall"),
       met: recall >= 0.7,
       score: Math.round(recall * 100),
-      comment: `You caught ${caught.length} of ${flawCandidates.length} planted problems.`,
+      comment: t("labs.eval.critique.caught", { caught: caught.length, total: flawCandidates.length }),
     },
     {
       objectiveId: objectives[1]?.id ?? "precision",
-      label: objectives[1]?.label ?? "Didn't over-flag",
+      label: objectives[1]?.label ?? t("labs.eval.critique.precision"),
       met: falsePositives.length === 0,
       score: Math.round((1 - precisionPenalty) * 100),
       comment:
         falsePositives.length === 0
-          ? "You didn't flag anything that was actually fine — good judgement."
-          : `You flagged ${falsePositives.length} statement${falsePositives.length === 1 ? "" : "s"} that were actually accurate.`,
+          ? t("labs.eval.critique.noFalse")
+          : falsePositives.length === 1
+            ? t("labs.eval.critique.falseOne")
+            : t("labs.eval.critique.falseOther", { n: falsePositives.length }),
     },
   ];
 
   const lines: string[] = [];
 
   if (caught.length > 0) {
-    lines.push("## What you caught\n");
+    lines.push(`## ${t("labs.eval.critique.caughtTitle")}\n`);
     for (const c of caught) {
       const flaw = config.flaws.find((f) => f.id === c.flawId);
-      lines.push(`- **${c.text}**  \n  ${flaw?.explanation ?? "Correctly identified."}`);
+      lines.push(`- **${c.text}**  \n  ${flaw?.explanation ?? t("labs.eval.critique.correct")}`);
     }
     lines.push("");
   }
 
   if (missed.length > 0) {
-    lines.push("## What you missed\n");
+    lines.push(`## ${t("labs.eval.critique.missedTitle")}\n`);
     for (const c of missed) {
       const flaw = config.flaws.find((f) => f.id === c.flawId);
       lines.push(
-        `- **${c.text}**  \n  ${flaw?.explanation ?? "This was a planted problem."}` +
-          (flaw ? `  \n  *Category: ${flaw.category}*` : ""),
+        `- **${c.text}**  \n  ${flaw?.explanation ?? t("labs.eval.critique.planted")}` +
+          (flaw ? `  \n  *${t("labs.eval.critique.category", { c: t(`labs.flaw.${flaw.category}`) })}*` : ""),
       );
     }
     lines.push("");
   }
 
   if (falsePositives.length > 0) {
-    lines.push("## Flagged but actually fine\n");
+    lines.push(`## ${t("labs.eval.critique.fineTitle")}\n`);
     for (const c of falsePositives) {
-      lines.push(`- **${c.text}**  \n  This statement was accurate as written.`);
+      lines.push(`- **${c.text}**  \n  ${t("labs.eval.critique.accurate")}`);
     }
     lines.push("");
-    lines.push(
-      "Over-flagging is its own failure mode. Treating everything as suspect is no more useful than trusting everything — the skill is telling them apart.",
-    );
+    lines.push(t("labs.eval.critique.overflag"));
   }
 
   return { score, passed: score >= passScore, feedbackMd: lines.join("\n"), breakdown };
@@ -113,6 +128,7 @@ export function evaluateBuild(
   reflection: string | null,
   objectives: LabObjective[],
   passScore: number,
+  t: T = EN,
 ): LabEvaluation {
   const done = new Set(checked);
   const total = config.steps.length;
@@ -126,27 +142,27 @@ export function evaluateBuild(
   const breakdown: ObjectiveResult[] = [
     {
       objectiveId: objectives[0]?.id ?? "steps",
-      label: objectives[0]?.label ?? "Completed every step",
+      label: objectives[0]?.label ?? t("labs.eval.build.steps"),
       met: completed === total,
       score: stepScore,
-      comment: `${completed} of ${total} steps marked complete.`,
+      comment: t("labs.eval.build.stepsDone", { done: completed, total }),
     },
     {
       objectiveId: objectives[1]?.id ?? "artifact",
-      label: objectives[1]?.label ?? "Submitted your work",
+      label: objectives[1]?.label ?? t("labs.eval.build.artifact"),
       met: hasArtifact || !config.requireArtifact,
       score: hasArtifact || !config.requireArtifact ? 100 : 0,
-      comment: hasArtifact ? "Artefact link provided." : "No link to your work provided.",
+      comment: hasArtifact ? t("labs.eval.build.hasLink") : t("labs.eval.build.noLink"),
     },
     {
       objectiveId: objectives[2]?.id ?? "reflection",
-      label: objectives[2]?.label ?? "Explained what happened",
+      label: objectives[2]?.label ?? t("labs.eval.build.reflection"),
       met: reflectionWords >= 60,
       score: reflectionScore,
       comment:
         reflectionWords >= 60
-          ? "You described what you actually did."
-          : `Your reflection is ${reflectionWords} words. Aim for at least 60 — the writing is where the learning consolidates.`,
+          ? t("labs.eval.build.reflectionOk")
+          : t("labs.eval.build.reflectionShort", { n: reflectionWords }),
     },
   ];
 
@@ -155,10 +171,7 @@ export function evaluateBuild(
   return {
     score,
     passed: score >= passScore && (hasArtifact || !config.requireArtifact),
-    feedbackMd:
-      score >= passScore
-        ? "Logged. This lab is self-attested — we're recording that you did the work, not marking its quality. If you cut corners, the only person affected is you.\n\nIf you'd like a person to look at what you produced, bring it to your capstone."
-        : "Some parts are still outstanding. Check the breakdown above — nothing here is a judgement on quality, only on completeness.",
+    feedbackMd: score >= passScore ? t("labs.eval.build.passed") : t("labs.eval.build.failed"),
     breakdown,
   };
 }
@@ -190,10 +203,12 @@ export async function evaluatePrompt(
   sandboxResponse: string,
   objectives: LabObjective[],
   passScore: number,
+  locale: Locale = "en",
 ): Promise<LabEvaluation> {
+  const t = translatorFor(locale);
   // No key, no prompt, or a failed call — fall back rather than block.
   if (!process.env.ANTHROPIC_API_KEY || !learnerPrompt.trim()) {
-    return heuristicPromptEval(learnerPrompt, objectives, passScore);
+    return heuristicPromptEval(learnerPrompt, objectives, passScore, t);
   }
 
   const objectiveList = objectives
@@ -220,9 +235,9 @@ ${sandboxResponse.slice(0, 4000)}
 Grade the prompt now. JSON only.`;
 
   try {
-    const raw = await streamChat([{ role: "user", content: userMsg }], COACH_SYSTEM, 1600);
+    const raw = await streamChat([{ role: "user", content: userMsg }], COACH_SYSTEM + graderLanguage(locale), 1600);
     const parsed = extractJson(raw);
-    if (!parsed) return heuristicPromptEval(learnerPrompt, objectives, passScore);
+    if (!parsed) return heuristicPromptEval(learnerPrompt, objectives, passScore, t);
 
     const results: ObjectiveResult[] = objectives.map((o) => {
       const match = parsed.objectives?.find((x) => x.objectiveId === o.id);
@@ -232,7 +247,7 @@ Grade the prompt now. JSON only.`;
         label: o.label,
         score,
         met: score >= 70,
-        comment: String(match?.comment ?? "Not assessed."),
+        comment: String(match?.comment ?? t("labs.eval.notAssessed")),
       };
     });
 
@@ -245,7 +260,7 @@ Grade the prompt now. JSON only.`;
     };
   } catch (err) {
     console.error("[labs] prompt evaluation failed, using heuristic", err);
-    return heuristicPromptEval(learnerPrompt, objectives, passScore);
+    return heuristicPromptEval(learnerPrompt, objectives, passScore, t);
   }
 }
 
@@ -257,6 +272,7 @@ function heuristicPromptEval(
   prompt: string,
   objectives: LabObjective[],
   passScore: number,
+  t: T,
 ): LabEvaluation {
   const text = prompt.trim();
   const words = text.split(/\s+/).filter(Boolean).length;
@@ -267,14 +283,13 @@ function heuristicPromptEval(
     label: o.label,
     score: base,
     met: base >= 70,
-    comment: "Scored on length and effort only — detailed coaching was unavailable.",
+    comment: t("labs.eval.prompt.effortOnly"),
   }));
 
   return {
     score: base,
     passed: base >= passScore,
-    feedbackMd:
-      "> **Coaching unavailable.** Detailed feedback couldn't be generated for this attempt, so this was scored on effort alone. Your work is saved — rerun the lab later for a proper critique.",
+    feedbackMd: t("labs.eval.prompt.unavailable"),
     breakdown: results,
   };
 }
@@ -308,9 +323,11 @@ export async function evaluateWorkbench(
   answers: Record<string, string>,
   objectives: LabObjective[],
   passScore: number,
+  locale: Locale = "en",
 ): Promise<LabEvaluation> {
+  const t = translatorFor(locale);
   if (!process.env.ANTHROPIC_API_KEY) {
-    return heuristicWorkbenchEval(config, answers, objectives, passScore);
+    return heuristicWorkbenchEval(config, answers, objectives, passScore, t);
   }
 
   const objectiveList = objectives
@@ -332,19 +349,19 @@ ${work}
 Grade the work now. JSON only.`;
 
   try {
-    const raw = await streamChat([{ role: "user", content: userMsg }], WORKBENCH_SYSTEM, 1800);
+    const raw = await streamChat([{ role: "user", content: userMsg }], WORKBENCH_SYSTEM + graderLanguage(locale), 1800);
     const parsed = extractJson(raw);
-    if (!parsed) return heuristicWorkbenchEval(config, answers, objectives, passScore);
+    if (!parsed) return heuristicWorkbenchEval(config, answers, objectives, passScore, t);
     const results: ObjectiveResult[] = objectives.map((o) => {
       const match = parsed.objectives?.find((x) => x.objectiveId === o.id);
       const score = clamp(Number(match?.score ?? 0));
-      return { objectiveId: o.id, label: o.label, score, met: score >= 70, comment: String(match?.comment ?? "Not assessed.") };
+      return { objectiveId: o.id, label: o.label, score, met: score >= 70, comment: String(match?.comment ?? t("labs.eval.notAssessed")) };
     });
     const score = weightedScore(results, objectives);
     return { score, passed: score >= passScore, feedbackMd: String(parsed.feedbackMd ?? ""), breakdown: results };
   } catch (err) {
     console.error("[labs] workbench evaluation failed, using completeness check", err);
-    return heuristicWorkbenchEval(config, answers, objectives, passScore);
+    return heuristicWorkbenchEval(config, answers, objectives, passScore, t);
   }
 }
 
@@ -353,6 +370,7 @@ function heuristicWorkbenchEval(
   answers: Record<string, string>,
   objectives: LabObjective[],
   passScore: number,
+  t: T,
 ): LabEvaluation {
   const fieldScores = config.fields.map((f) => {
     const w = (answers[f.id] ?? "").trim().split(/\s+/).filter(Boolean).length;
@@ -367,13 +385,12 @@ function heuristicWorkbenchEval(
     label: o.label,
     score: base,
     met: base >= 70,
-    comment: "Checked for completeness only. The detailed assessment was unavailable.",
+    comment: t("labs.eval.workbench.completeness"),
   }));
   return {
     score: base,
     passed: base >= passScore,
-    feedbackMd:
-      "> **Not assessed yet.** Your work is saved, but the assessment couldn't run just now, so it has only been checked for completeness and can't pass on that alone. Submit again in a few minutes to have it assessed against each criterion.",
+    feedbackMd: t("labs.eval.workbench.pending"),
     breakdown: results,
   };
 }

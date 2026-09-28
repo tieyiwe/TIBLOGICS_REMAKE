@@ -3,6 +3,7 @@ import { z } from "zod";
 import payments from "@/lib/payments";
 import { requireStudent } from "@/lib/learn/session";
 import { checkRateLimit } from "@/lib/require-admin";
+import { getT } from "@/lib/i18n/server";
 
 const Body = z.object({
   plan: z.enum(["monthly", "annual"]),
@@ -21,19 +22,20 @@ const SITE = (
 ).replace(/\/$/, "");
 
 export async function POST(req: NextRequest) {
+  const t = await getT();
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
   if (!(await checkRateLimit(`learn-checkout:${ip}`, 10, 60_000))) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    return NextResponse.json({ error: t("learn.api.tooMany") }, { status: 429 });
   }
 
   const { error, student } = await requireStudent();
   if (error) return error;
 
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
-  if (!parsed.success) return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: t("learn.api.invalidPlan") }, { status: 400 });
 
   if (!process.env.STRIPE_SECRET_KEY) {
-    return NextResponse.json({ error: "Payments are not configured" }, { status: 503 });
+    return NextResponse.json({ error: t("learn.api.paymentsOff") }, { status: 503 });
   }
 
   try {
@@ -52,7 +54,7 @@ export async function POST(req: NextRequest) {
     // ids and key mode. Log the detail, hand back a fixed message.
     console.error("[POST /api/learn/checkout]", err);
     return NextResponse.json(
-      { error: "Could not start checkout. Please try again or contact support." },
+      { error: t("learn.api.checkoutFailed") },
       { status: 500 },
     );
   }

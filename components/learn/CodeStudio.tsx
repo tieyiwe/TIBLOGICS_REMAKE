@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Markdown from "./Markdown";
+import { useT } from "@/lib/i18n/client";
 
 // Code Studio: build a single-file web app in the browser, the way an engineer
 // would: small steps, AI changes reviewed before they are applied, versions
@@ -16,13 +17,23 @@ export interface StudioCheck { id: string; label: string; code: string; hint?: s
 export interface StudioField { id: string; label: string; prompt: string; placeholder?: string; minWords?: number }
 export interface StudioSubmission {
   code: string;
-  checkResults: Array<{ id: string; pass: boolean; message?: string }>;
+  checkResults: Array<{ id: string; pass: boolean; message?: string; kind?: CheckFailKind }>;
   commits: Array<{ message: string; at: string }>;
   answers: Record<string, string>;
 }
 
+/** Why a check failed, so the UI can say it in the learner's language. */
+type CheckFailKind = "fail" | "timeout" | "error" | "noresponse";
+
 interface Version { message: string; at: string; code: string }
-interface Turn { request: string; reply: string; proposal?: string | null; decision?: "applied" | "discarded" }
+interface Turn {
+  request: string;
+  reply: string;
+  proposal?: string | null;
+  /** The code the AI was given, to warn before an apply overwrites later edits. */
+  base?: string;
+  decision?: "applied" | "discarded";
+}
 
 const RUNNER = `<script>
 window.addEventListener("message", async function (e) {
@@ -35,11 +46,12 @@ window.addEventListener("message", async function (e) {
     try {
       var r = await Promise.race([
         new AF("doc", "win", c.code)(document, window),
-        new Promise(function (_, rej) { setTimeout(function () { rej(new Error("Timed out")); }, 3000); })
+        new Promise(function (_, rej) { setTimeout(function () { rej({ tibTimeout: true }); }, 3000); })
       ]);
-      out.push({ id: c.id, pass: r === true, message: r === true ? "" : (typeof r === "string" ? r : "Check failed") });
+      out.push(r === true ? { id: c.id, pass: true, message: "" } : { id: c.id, pass: false, message: typeof r === "string" ? r : "", kind: "fail" });
     } catch (err) {
-      out.push({ id: c.id, pass: false, message: String((err && err.message) || err) });
+      if (err && err.tibTimeout) out.push({ id: c.id, pass: false, message: "Timed out", kind: "timeout" });
+      else out.push({ id: c.id, pass: false, message: String((err && err.message) || err), kind: "error" });
     }
   }
   parent.postMessage({ type: "tib-check-results", nonce: d.nonce, results: out }, "*");
@@ -90,6 +102,7 @@ export default function CodeStudio({
   busy: boolean;
   onSubmit: (s: StudioSubmission) => void;
 }) {
+  const t = useT();
   const storeKey = `tiblogics:code-lab:${labId}`;
   const [code, setCode] = useState(initialCode || starterCode);
   const [preview, setPreview] = useState(initialCode || starterCode);
@@ -110,19 +123,26 @@ export default function CodeStudio({
   const checkFrame = useRef<HTMLIFrameElement>(null);
   const [checkDoc, setCheckDoc] = useState<string | null>(null);
   const nonce = useRef("");
+  const watchdog = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Restore work saved in this browser (after mount, to keep hydration stable).
+  // The AI conversation is kept too: it used to vanish on refresh, taking any
+  // proposal not yet reviewed with it.
   useEffect(() => {
     try {
       const saved = JSON.parse(window.localStorage.getItem(storeKey) ?? "null");
       if (saved?.code) { setCode(saved.code); setPreview(saved.code); }
       if (Array.isArray(saved?.versions)) setVersions(saved.versions);
       if (saved?.answers) setAnswers(saved.answers);
+      if (Array.isArray(saved?.turns)) setTurns(saved.turns);
     } catch { /* storage unavailable */ }
   }, [storeKey]);
   useEffect(() => {
-    try { window.localStorage.setItem(storeKey, JSON.stringify({ code, versions, answers })); } catch { /* ignore */ }
-  }, [storeKey, code, versions, answers]);
+    // Reviewed proposals are not needed again, so they are not stored.
+    const keep = turns.slice(-20).map((x) => (x.decision ? { ...x, proposal: null, base: undefined } : x));
+    try { window.localStorage.setItem(storeKey, JSON.stringify({ code, versions, answers, turns: keep })); } catch { /* ignore */ }
+  }, [storeKey, code, versions, answers, turns]);
+  useEffect(() => () => { if (watchdog.current) clearTimeout(watchdog.current); }, []);
 
   // Live preview follows the editor after a short pause.
   useEffect(() => {
@@ -136,6 +156,7 @@ export default function CodeStudio({
       const d = e.data;
       if (!d || d.type !== "tib-check-results" || d.nonce !== nonce.current) return;
       if (e.source !== checkFrame.current?.contentWindow) return;
+      if (watchdog.current) clearTimeout(watchdog.current);
       setCheckResults(d.results);
       setChecking(false);
       setCheckDoc(null);
@@ -147,18 +168,20 @@ export default function CodeStudio({
   const runChecks = useCallback(() => {
     setChecking(true);
     setCheckResults(null);
-    nonce.current = Math.random().toString(36).slice(2);
+    const run = Math.random().toString(36).slice(2);
+    nonce.current = run;
     setCheckedCode(code);
     setCheckDoc(withRunner(code));
-    // If the page never loads (an infinite loop, say), report it.
-    setTimeout(() => {
-      setChecking((still) => {
-        if (still) {
-          setCheckResults(checks.map((c) => ({ id: c.id, pass: false, message: "The page did not respond. Look for an endless loop or a script error." })));
-          setCheckDoc(null);
-        }
-        return false;
-      });
+    // If the page never loads (an infinite loop, say), report it. The timer
+    // belongs to this run only: it used to fire 12 seconds after ANY run and
+    // fail whichever run was in progress by then.
+    if (watchdog.current) clearTimeout(watchdog.current);
+    watchdog.current = setTimeout(() => {
+      if (nonce.current !== run) return;
+      nonce.current = "";
+      setCheckResults(checks.map((c) => ({ id: c.id, pass: false, message: "The page did not respond (endless loop or script error).", kind: "noresponse" as const })));
+      setCheckDoc(null);
+      setChecking(false);
     }, 12_000);
   }, [code, checks]);
 
@@ -190,21 +213,23 @@ export default function CodeStudio({
     }).catch(() => null);
     const d = res ? await res.json().catch(() => ({})) : {};
     if (res?.ok) {
-      setTurns((t) => [...t, { request, reply: d.reply, proposal: d.code ?? null }]);
+      setTurns((all) => [...all, { request, reply: d.reply, proposal: d.code ?? null, base: code }]);
       setRunsLeft(d.runsLeft ?? 0);
       setRequest("");
     } else {
-      setError(d.error ?? "The AI pair programmer didn't respond.");
+      setError(d.error ?? t("labs.code.aiError"));
       if (typeof d.runsLeft === "number") setRunsLeft(d.runsLeft);
     }
     setAsking(false);
   }
 
   function decide(i: number, decision: "applied" | "discarded") {
-    const t = turns[i];
-    if (decision === "applied" && t.proposal) {
-      setCode(t.proposal);
-      setPreview(t.proposal);
+    const turn = turns[i];
+    if (decision === "applied" && turn.proposal) {
+      // The proposal is a whole file based on the code at the time of asking.
+      if (turn.base !== undefined && turn.base !== code && !confirm(t("labs.code.overwriteConfirm"))) return;
+      setCode(turn.proposal);
+      setPreview(turn.proposal);
       setPreviewKey((k) => k + 1);
     }
     setTurns((all) => all.map((x, j) => (j === i ? { ...x, decision } : x)));
@@ -227,7 +252,7 @@ export default function CodeStudio({
 
   function submit() {
     if (!checkResults || stale) {
-      setError("Run the checks on your latest code before you submit.");
+      setError(t("labs.code.runFirst"));
       return;
     }
     onSubmit({
@@ -244,10 +269,10 @@ export default function CodeStudio({
         <h2 className="text-base font-bold text-[var(--ink)]">💻 Code Studio</h2>
         <div className="flex flex-wrap gap-2">
           <button type="button" className={`${btn} border border-[var(--border)] text-[var(--ink2)]`} onClick={() => { setPreview(code); setPreviewKey((k) => k + 1); }}>
-            ↻ Run preview
+            {t("labs.code.runPreview")}
           </button>
           <button type="button" className={`${btn} text-white`} style={{ background: accentColor }} onClick={runChecks} disabled={checking}>
-            {checking ? "Checking..." : `✓ Run checks (${checks.length})`}
+            {checking ? t("labs.checking") : t("labs.code.runChecks", { n: checks.length })}
           </button>
         </div>
       </div>
@@ -256,9 +281,9 @@ export default function CodeStudio({
         {/* Editor */}
         <div className="border-b border-[var(--border)] lg:border-b-0 lg:border-r">
           <div className="flex items-center justify-between bg-[#0F172A] px-3 py-1.5 text-[11px] text-[#94A3B8]">
-            <span>index.html · {lineCount} lines</span>
-            <button type="button" className="hover:text-white" onClick={() => { if (confirm("Reset to the starter code? Saved versions are kept.")) setCode(starterCode); }}>
-              Reset to starter
+            <span>{t("labs.code.lines", { n: lineCount })}</span>
+            <button type="button" className="hover:text-white" onClick={() => { if (confirm(t("labs.code.resetConfirm"))) setCode(starterCode); }}>
+              {t("labs.code.reset")}
             </button>
           </div>
           <textarea
@@ -267,7 +292,7 @@ export default function CodeStudio({
             onChange={(e) => setCode(e.target.value)}
             onKeyDown={onKeyDown}
             spellCheck={false}
-            aria-label="Code editor"
+            aria-label={t("labs.code.editor")}
             className="h-[460px] w-full resize-y bg-[#0F172A] p-3 font-mono text-[12.5px] leading-relaxed text-[#E2E8F0] outline-none"
           />
         </div>
@@ -276,9 +301,9 @@ export default function CodeStudio({
         <div className="flex min-h-[460px] flex-col">
           <div className="flex border-b border-[var(--border)] text-xs font-bold">
             {([
-              ["preview", "Live preview"],
-              ["ai", `AI pair programmer (${runsLeft})`],
-              ["versions", `Versions (${versions.length})`],
+              ["preview", t("labs.code.tabPreview")],
+              ["ai", t("labs.code.tabAi", { n: runsLeft })],
+              ["versions", t("labs.code.tabVersions", { n: versions.length })],
             ] as const).map(([id, label]) => (
               <button
                 key={id}
@@ -293,42 +318,39 @@ export default function CodeStudio({
           </div>
 
           {tab === "preview" && (
-            <iframe key={previewKey} title="Live preview" sandbox="allow-scripts allow-modals allow-forms" srcDoc={preview} className="w-full flex-1 bg-white" />
+            <iframe key={previewKey} title={t("labs.code.previewTitle")} sandbox="allow-scripts allow-modals allow-forms" srcDoc={preview} className="w-full flex-1 bg-white" />
           )}
 
           {tab === "ai" && (
             <div className="flex flex-1 flex-col">
               <div className="max-h-[360px] flex-1 space-y-3 overflow-auto p-3">
                 {turns.length === 0 && (
-                  <p className="text-sm text-[var(--ink2)]">
-                    Ask for one small change at a time, like an engineer would: &ldquo;Add the #people input and show the per-person amount.&rdquo;
-                    You review every change before it goes into your code.
-                  </p>
+                  <p className="text-sm text-[var(--ink2)]">{t("labs.code.aiIntro")}</p>
                 )}
-                {turns.map((t, i) => {
-                  const stat = t.proposal ? diffStat(code, t.proposal) : null;
+                {turns.map((turn, i) => {
+                  const stat = turn.proposal ? diffStat(code, turn.proposal) : null;
                   return (
                     <div key={i} className="rounded-xl border border-[var(--border)] text-sm">
-                      <p className="border-b border-[var(--border)] bg-[var(--s2)] px-3 py-2 text-xs"><strong>You:</strong> {t.request}</p>
-                      <div className="p-3"><Markdown source={t.reply} /></div>
-                      {t.proposal && !t.decision && stat && (
+                      <p className="border-b border-[var(--border)] bg-[var(--s2)] px-3 py-2 text-xs"><strong>{t("labs.code.you")}</strong> {turn.request}</p>
+                      <div className="p-3"><Markdown source={turn.reply} /></div>
+                      {turn.proposal && !turn.decision && stat && (
                         <div className="border-t border-[var(--border)] p-3">
                           <p className="text-xs font-bold text-[var(--ink)]">
-                            Proposed change: <span className="text-green-700">+{stat.added.length}</span> / <span className="text-red-600">-{stat.removed.length}</span> lines. Review it before applying.
+                            {t("labs.code.proposed")} <span className="text-green-700">+{stat.added.length}</span> / <span className="text-red-600">-{stat.removed.length}</span> {t("labs.code.proposedTail")}
                           </p>
                           <pre className="mt-2 max-h-40 overflow-auto rounded-lg bg-[#0F172A] p-2 text-[11px] leading-relaxed">
                             {stat.removed.slice(0, 40).map((l, j) => <div key={`r${j}`} className="text-red-300">- {l}</div>)}
                             {stat.added.slice(0, 60).map((l, j) => <div key={`a${j}`} className="text-green-300">+ {l}</div>)}
                           </pre>
                           <div className="mt-2 flex gap-2">
-                            <button type="button" className={`${btn} text-white`} style={{ background: accentColor }} onClick={() => decide(i, "applied")}>Apply change</button>
-                            <button type="button" className={`${btn} border border-[var(--border)] text-[var(--ink2)]`} onClick={() => decide(i, "discarded")}>Discard</button>
+                            <button type="button" className={`${btn} text-white`} style={{ background: accentColor }} onClick={() => decide(i, "applied")}>{t("labs.code.apply")}</button>
+                            <button type="button" className={`${btn} border border-[var(--border)] text-[var(--ink2)]`} onClick={() => decide(i, "discarded")}>{t("labs.code.discard")}</button>
                           </div>
                         </div>
                       )}
-                      {t.decision && (
+                      {turn.decision && (
                         <p className="border-t border-[var(--border)] px-3 py-2 text-xs text-[var(--ink3)]">
-                          {t.decision === "applied" ? "Applied. Check the preview, run the checks, then save a version." : "Discarded."}
+                          {turn.decision === "applied" ? t("labs.code.applied") : t("labs.code.discarded")}
                         </p>
                       )}
                     </div>
@@ -341,11 +363,11 @@ export default function CodeStudio({
                   onChange={(e) => setRequest(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) ask(); }}
                   rows={3}
-                  placeholder="Ask for one small change, or ask it to explain the code."
+                  placeholder={t("labs.code.askPlaceholder")}
                   className="w-full rounded-lg border border-[var(--border)] p-2 text-sm outline-none"
                 />
                 <button type="button" onClick={ask} disabled={asking || !request.trim() || runsLeft <= 0} className={`${btn} mt-2 text-white`} style={{ background: accentColor }}>
-                  {asking ? "Thinking..." : runsLeft <= 0 ? "No AI requests left" : "Ask the AI"}
+                  {asking ? t("labs.code.thinking") : runsLeft <= 0 ? t("labs.code.noRequests") : t("labs.code.ask")}
                 </button>
               </div>
             </div>
@@ -353,25 +375,23 @@ export default function CodeStudio({
 
           {tab === "versions" && (
             <div className="flex-1 space-y-3 p-3">
-              <p className="text-sm text-[var(--ink2)]">
-                Save a version after every change that works, like a Git commit. If something breaks, restore the last good one.
-              </p>
+              <p className="text-sm text-[var(--ink2)]">{t("labs.code.versionsIntro")}</p>
               <div className="flex gap-2">
                 <input
                   value={commitMsg}
                   onChange={(e) => setCommitMsg(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") saveVersion(); }}
-                  placeholder='Message, e.g. "Add tip input and total"'
+                  placeholder={t("labs.code.commitPlaceholder")}
                   className="flex-1 rounded-lg border border-[var(--border)] px-3 py-2 text-sm outline-none"
                 />
-                <button type="button" onClick={() => saveVersion()} disabled={!commitMsg.trim()} className={`${btn} text-white`} style={{ background: accentColor }}>Save</button>
+                <button type="button" onClick={() => saveVersion()} disabled={!commitMsg.trim()} className={`${btn} text-white`} style={{ background: accentColor }}>{t("labs.code.save")}</button>
               </div>
               <ol className="max-h-[320px] space-y-2 overflow-auto">
                 {[...versions].reverse().map((v, i) => (
                   <li key={v.at + i} className="flex items-center justify-between gap-2 rounded-lg border border-[var(--border)] px-3 py-2 text-sm">
                     <span className="min-w-0 truncate"><span className="font-mono text-xs text-[var(--ink3)]">#{versions.length - i}</span> {v.message}</span>
                     <button type="button" className="shrink-0 text-xs font-semibold text-[var(--blue2)]" onClick={() => { setCode(v.code); setPreview(v.code); setPreviewKey((k) => k + 1); }}>
-                      Restore
+                      {t("labs.code.restore")}
                     </button>
                   </li>
                 ))}
@@ -384,8 +404,8 @@ export default function CodeStudio({
       {/* Checks */}
       <div className="border-t border-[var(--border)] p-4">
         <h3 className="text-sm font-bold text-[var(--ink)]">
-          Automated checks {checkResults && <span style={{ color: passCount === checks.length ? "#0F6E56" : "#E05F00" }}>{passCount}/{checks.length} passing</span>}
-          {stale && <span className="ml-2 text-xs font-normal text-[var(--ink3)]">(code changed since the last run)</span>}
+          {t("labs.code.checksTitle")} {checkResults && <span style={{ color: passCount === checks.length ? "#0F6E56" : "#E05F00" }}>{t("labs.code.passing", { pass: passCount, total: checks.length })}</span>}
+          {stale && <span className="ml-2 text-xs font-normal text-[var(--ink3)]">{t("labs.code.stale")}</span>}
         </h3>
         <ul className="mt-2 space-y-1.5">
           {checks.map((c) => {
@@ -395,14 +415,25 @@ export default function CodeStudio({
                 <span aria-hidden="true" className="mt-0.5 w-4 text-center">{!r ? "○" : r.pass ? "✅" : "❌"}</span>
                 <span className="text-[var(--ink2)]">
                   {c.label}
-                  {r && !r.pass && (r.message || c.hint) && <span className="block text-xs text-[var(--ink3)]">{r.message || c.hint}</span>}
+                  {r && !r.pass && <FailReason result={r} hint={c.hint} />}
                 </span>
               </li>
             );
           })}
         </ul>
         {checkDoc && (
-          <iframe ref={checkFrame} title="Checks" sandbox="allow-scripts allow-forms" srcDoc={checkDoc} onLoad={onCheckFrameLoad} className="hidden" />
+          // Off screen rather than display:none, so the page gets a real layout
+          // and checks that measure or scroll behave as they do in the preview.
+          <iframe
+            ref={checkFrame}
+            title={t("labs.code.checksFrame")}
+            sandbox="allow-scripts allow-forms"
+            srcDoc={checkDoc}
+            onLoad={onCheckFrameLoad}
+            aria-hidden="true"
+            tabIndex={-1}
+            className="pointer-events-none fixed left-[-10000px] top-0 h-[600px] w-[800px] opacity-0"
+          />
         )}
       </div>
 
@@ -424,7 +455,7 @@ export default function CodeStudio({
                   placeholder={f.placeholder}
                   className="mt-2 w-full rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm outline-none"
                 />
-                <p className={`text-right text-xs ${n >= min ? "text-[#0F6E56]" : "text-[var(--ink3)]"}`}>{n} words{n < min ? ` · aim for ${min}+` : " ✓"}</p>
+                <p className={`text-right text-xs ${n >= min ? "text-[#0F6E56]" : "text-[var(--ink3)]"}`}>{n < min ? t("labs.wordsAim", { n, min }) : t("labs.wordsDone", { n })}</p>
               </div>
             );
           })}
@@ -440,12 +471,32 @@ export default function CodeStudio({
           className="w-full rounded-full py-3.5 text-sm font-bold text-white disabled:opacity-40"
           style={{ background: accentColor }}
         >
-          {busy ? "Assessing your build..." : "Submit for assessment"}
+          {busy ? t("labs.code.assessing") : t("labs.code.submit")}
         </button>
         <p className="mt-2 text-center text-xs text-[var(--ink3)]">
-          {missingField ? "Fill in every written part first. " : ""}Your latest check run, your saved versions and what you asked the AI are assessed along with the code.
+          {missingField ? `${t("labs.code.fillFirst")} ` : ""}{t("labs.code.submitNote")}
         </p>
       </div>
     </section>
+  );
+}
+
+/**
+ * Why a check failed. The lab's hint (translated) comes first; the check's own
+ * message, written in English inside the check code, follows as detail.
+ */
+function FailReason({ result, hint }: { result: StudioSubmission["checkResults"][number]; hint?: string }) {
+  const t = useT();
+  const kind = result.kind ?? (result.message ? "error" : "fail");
+  const lead =
+    kind === "noresponse"
+      ? t("labs.code.noResponse")
+      : hint || (kind === "timeout" ? t("labs.code.timedOut") : t("labs.code.checkFailed"));
+  const detail = kind !== "noresponse" && kind !== "timeout" && result.message ? result.message : "";
+  return (
+    <span className="block text-xs text-[var(--ink3)]">
+      {lead}
+      {detail && <span className="block font-mono text-[11px]">{t("labs.code.details", { msg: detail })}</span>}
+    </span>
   );
 }

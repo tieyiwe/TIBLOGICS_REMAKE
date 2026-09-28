@@ -1,12 +1,16 @@
+"use client";
+
+import { useT } from "@/lib/i18n/client";
+
 // "Practice It" (Part D). Every lesson that needs a tool links it here, with
 // its cost stated up front — nobody should hit a paywall mid-exercise.
-const TYPE_META: Record<string, { icon: string; label: string }> = {
-  tool: { icon: "🛠", label: "Tool" },
-  article: { icon: "📄", label: "Reading" },
-  video: { icon: "🎬", label: "Video" },
-  dataset: { icon: "📊", label: "Dataset" },
-  template: { icon: "📋", label: "Template" },
-  account_signup: { icon: "🔑", label: "Free account needed" },
+const TYPE_ICON: Record<string, string> = {
+  tool: "🛠",
+  article: "📄",
+  video: "🎬",
+  dataset: "📊",
+  template: "📋",
+  account_signup: "🔑",
 };
 
 export default function PracticePanel({
@@ -24,11 +28,13 @@ export default function PracticePanel({
   }>;
   accentColor: string;
 }) {
+  const t = useT();
   const required = resources.filter((r) => r.isRequired);
   const optional = resources.filter((r) => !r.isRequired);
 
   const Item = ({ r }: { r: (typeof resources)[number] }) => {
-    const meta = TYPE_META[r.resourceType] ?? TYPE_META.tool;
+    const type = r.resourceType in TYPE_ICON ? r.resourceType : "tool";
+    const meta = { icon: TYPE_ICON[type], label: t(`learn.resource.${type}`) };
     return (
       <li className="rounded-xl border border-[var(--border)] bg-white p-4">
         <div className="flex items-start gap-3">
@@ -54,7 +60,7 @@ export default function PracticePanel({
                   r.isFree ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-800"
                 }`}
               >
-                {r.isFree ? "Free" : "Paid"}
+                {r.isFree ? t("learn.practice.free") : t("learn.practice.paid")}
               </span>
             </p>
             {r.notes && (
@@ -73,11 +79,9 @@ export default function PracticePanel({
       style={{ borderColor: accentColor, background: `${accentColor}0A` }}
     >
       <h2 id="practice-heading" className="flex items-center gap-2 text-base font-bold text-[var(--ink)]">
-        <span aria-hidden="true">⚡</span> Practice it
+        <span aria-hidden="true">⚡</span> {t("learn.practice.title")}
       </h2>
-      <p className="mt-1 text-sm text-[var(--ink2)]">
-        Reading about this isn't the same as doing it. Open these and try it yourself.
-      </p>
+      <p className="mt-1 text-sm text-[var(--ink2)]">{t("learn.practice.intro")}</p>
 
       {required.length > 0 && (
         <ul className="mt-4 space-y-2.5">
@@ -90,7 +94,7 @@ export default function PracticePanel({
       {optional.length > 0 && (
         <>
           <p className="mt-5 text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">
-            Optional — go deeper
+            {t("learn.practice.optional")}
           </p>
           <ul className="mt-2 space-y-2.5">
             {optional.map((r) => (

@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/lib/i18n/client";
 
 export default function WaitlistForm({ trackSlug }: { trackSlug: string }) {
+  const t = useT();
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "saving" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
@@ -18,12 +20,12 @@ export default function WaitlistForm({ trackSlug }: { trackSlug: string }) {
         body: JSON.stringify({ email, trackSlug }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "Could not join the waitlist");
+      if (!res.ok) throw new Error(data.error ?? t("learn.waitlist.failed"));
       setState("done");
-      setMessage(data.message ?? "You're on the list — we'll email you when it opens.");
+      setMessage(data.message ?? t("learn.waitlist.joined"));
     } catch (err) {
       setState("error");
-      setMessage(err instanceof Error ? err.message : "Something went wrong");
+      setMessage(err instanceof Error ? err.message : t("learn.error.generic"));
     }
   }
 
@@ -38,7 +40,7 @@ export default function WaitlistForm({ trackSlug }: { trackSlug: string }) {
   return (
     <form onSubmit={submit} className="flex flex-col gap-2">
       <label htmlFor={`wl-${trackSlug}`} className="sr-only">
-        Email address to join the waitlist
+        {t("learn.waitlist.label")}
       </label>
       <div className="flex gap-2">
         <input
@@ -47,7 +49,7 @@ export default function WaitlistForm({ trackSlug }: { trackSlug: string }) {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@email.com"
+          placeholder={t("learn.waitlist.placeholder")}
           className="min-w-0 flex-1 rounded-lg border border-[var(--border)] px-3 py-2 text-sm outline-none focus:border-[var(--blue3)] focus:ring-2 focus:ring-[var(--blue3)]/20"
         />
         <button
@@ -55,7 +57,7 @@ export default function WaitlistForm({ trackSlug }: { trackSlug: string }) {
           disabled={state === "saving"}
           className="shrink-0 rounded-lg bg-[var(--ink)] px-3 py-2 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
         >
-          {state === "saving" ? "…" : "Notify me"}
+          {state === "saving" ? "…" : t("learn.waitlist.notifyMe")}
         </button>
       </div>
       {state === "error" && <p className="text-xs text-red-600">{message}</p>}

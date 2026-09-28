@@ -8,12 +8,15 @@ import MicroCheck from "./MicroCheck";
 import PracticePanel from "./PracticePanel";
 import PracticePad from "./PracticePad";
 import Markdown from "./Markdown";
-import { formatMinutes } from "@/lib/learn/types";
+import { fmtMinutes } from "@/lib/learn/format";
+import { useT } from "@/lib/i18n/client";
 
 interface LessonView {
   id: string;
   title: string;
   bodyMd: string;
+  /** The English body, when bodyMd is a translation (finds the task section). */
+  sourceMd?: string;
   videoUrl: string | null;
   contentType: string;
   durationMinutes: number;
@@ -65,6 +68,7 @@ export default function LessonPlayer({
   trackSlug: string;
   accentColor: string;
 }) {
+  const t = useT();
   const router = useRouter();
   const [done, setDone] = useState(alreadyComplete);
   const [saving, setSaving] = useState(false);
@@ -83,7 +87,7 @@ export default function LessonPlayer({
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setDone(true);
-        if (data.pointsAwarded > 0) setToast(`+${data.pointsAwarded} points`);
+        if (data.pointsAwarded > 0) setToast(t("learn.lesson.pointsToast", { n: data.pointsAwarded }));
         router.refresh();
       }
     } finally {
@@ -98,10 +102,10 @@ export default function LessonPlayer({
         <header>
           <h1 className="text-2xl font-black leading-tight text-[var(--ink)]">{lesson.title}</h1>
           <p className="mt-2 text-sm text-[var(--ink3)]">
-            {formatMinutes(lesson.durationMinutes)}
+            {fmtMinutes(t, lesson.durationMinutes)}
             {done && (
               <span className="ml-3 font-semibold text-green-700" role="status">
-                ✓ Completed
+                ✓ {t("learn.lesson.completed")}
               </span>
             )}
           </p>
@@ -110,7 +114,7 @@ export default function LessonPlayer({
               className="mt-4 rounded-xl border-l-4 bg-white p-4 text-sm leading-relaxed text-[var(--ink2)]"
               style={{ borderLeftColor: accentColor }}
             >
-              <strong className="text-[var(--ink)]">By the end of this lesson: </strong>
+              <strong className="text-[var(--ink)]">{t("learn.lesson.objective")} </strong>
               {lesson.objective}
             </p>
           )}
@@ -137,7 +141,7 @@ export default function LessonPlayer({
 
         {/* Built-in AI practice pad: every lesson is hands-on */}
         <div className="mt-6">
-          <PracticePad lessonId={lesson.id} bodyMd={lesson.bodyMd} accentColor={accentColor} />
+          <PracticePad lessonId={lesson.id} bodyMd={lesson.bodyMd} sourceMd={lesson.sourceMd} accentColor={accentColor} />
         </div>
 
         {/* Quick check */}
@@ -158,7 +162,7 @@ export default function LessonPlayer({
               href={`/learn/lesson/${prevId}`}
               className="rounded-full border border-[var(--border)] bg-white px-5 py-2.5 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)]"
             >
-              ← Previous
+              ← {t("learn.lesson.previous")}
             </Link>
           )}
 
@@ -169,7 +173,7 @@ export default function LessonPlayer({
               className="rounded-full px-6 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
               style={{ background: accentColor }}
             >
-              {saving ? "Saving…" : "Mark complete"}
+              {saving ? t("learn.lesson.saving") : t("learn.lesson.markComplete")}
             </button>
           )}
 
@@ -178,14 +182,14 @@ export default function LessonPlayer({
               href={`/learn/lesson/${nextId}`}
               className="rounded-full bg-[var(--ink)] px-6 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
             >
-              Next lesson →
+              {t("learn.lesson.next")} →
             </Link>
           ) : (
             <Link
               href={`/learn/track/${trackSlug}`}
               className="rounded-full bg-[var(--ink)] px-6 py-2.5 text-sm font-bold text-white"
             >
-              Back to track →
+              {t("learn.lesson.backToTrack")} →
             </Link>
           )}
 
@@ -200,17 +204,17 @@ export default function LessonPlayer({
         {moduleQuizId && moduleComplete && (
           <div className="mt-6 rounded-2xl border-2 border-dashed p-6 text-center" style={{ borderColor: accentColor }}>
             <p className="text-sm font-bold text-[var(--ink)]">
-              You've finished every lesson in this module.
+              {t("learn.lesson.moduleFinished")}
             </p>
             <p className="mt-1 text-sm text-[var(--ink2)]">
-              Take the module quiz to unlock the final exam.
+              {t("learn.lesson.takeQuizToUnlock")}
             </p>
             <Link
               href={`/learn/quiz/${moduleQuizId}`}
               className="mt-4 inline-block rounded-full px-6 py-2.5 text-sm font-bold text-white"
               style={{ background: accentColor }}
             >
-              Start module quiz →
+              {t("learn.lesson.startQuiz")} →
             </Link>
           </div>
         )}
@@ -223,12 +227,12 @@ export default function LessonPlayer({
           aria-expanded={outlineOpen}
           className="flex w-full items-center justify-between rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm font-bold text-[var(--ink)] lg:hidden"
         >
-          Track outline
+          {t("learn.lesson.outline")}
           <span aria-hidden="true">{outlineOpen ? "−" : "+"}</span>
         </button>
 
         <nav
-          aria-label="Track outline"
+          aria-label={t("learn.lesson.outline")}
           className={`${outlineOpen ? "block" : "hidden"} mt-3 lg:sticky lg:top-20 lg:mt-0 lg:block`}
         >
           <div className="max-h-[calc(100vh-6rem)] overflow-y-auto rounded-2xl border border-[var(--border)] bg-white p-4">
@@ -273,7 +277,7 @@ export default function LessonPlayer({
                         href={`/learn/quiz/${m.quizId}`}
                         className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-semibold text-[var(--blue2)] hover:bg-[var(--s2)]"
                       >
-                        <span aria-hidden="true">📝</span> Module quiz
+                        <span aria-hidden="true">📝</span> {t("learn.lesson.moduleQuiz")}
                       </Link>
                     </li>
                   )}

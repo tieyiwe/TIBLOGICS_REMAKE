@@ -25,7 +25,7 @@ export default async function MemberLayout({ children }: { children: React.React
         studentName={student.name}
         points={total}
         level={levelFor(total)}
-        locale={student.locale}
+        savedLocale={student.locale}
       />
       {entitlement.inGrace && <GraceBanner graceUntil={entitlement.graceUntil} />}
       <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>

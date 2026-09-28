@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { ArrowRight, Check, Clock } from "lucide-react";
-import type { ShopProduct } from "./types";
+import { formatMoney, type ShopProduct } from "./types";
+import { useLocale, useT } from "@/lib/i18n/client";
 
 const S = {
   card: "#1A2223",
@@ -47,11 +48,24 @@ export default function Spotlight({
   rotatesInDays: number;
   featuredCount: number;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const cover = product.images?.[0];
-  const price = (product.price / 100).toFixed(0);
+  const money = (cents: number) => {
+    try {
+      return new Intl.NumberFormat(locale, {
+        style: "currency",
+        currency: product.currency || "USD",
+        maximumFractionDigits: 0,
+      }).format(cents / 100);
+    } catch {
+      return formatMoney(cents, product.currency);
+    }
+  };
+  const price = money(product.price);
   const compare =
     product.compareAtPrice && product.compareAtPrice > product.price
-      ? (product.compareAtPrice / 100).toFixed(0)
+      ? money(product.compareAtPrice)
       : null;
 
   // "PDF · 46 pages · 100 prompts" → chips, when the field is set that way.
@@ -71,7 +85,7 @@ export default function Spotlight({
           background: `linear-gradient(135deg, ${S.card} 0%, #0F1617 100%)`,
           border: `1px solid ${S.border}`,
           borderRadius: "24px",
-          padding: "40px",
+          padding: "clamp(20px, 5vw, 40px)",
           overflow: "hidden",
         }}
       >
@@ -131,7 +145,7 @@ export default function Spotlight({
                 }}
               />
               <span style={{ fontSize: ".76rem", color: S.amber, fontWeight: 700, letterSpacing: ".04em" }}>
-                THIS WEEK'S SPOTLIGHT
+                {t("pages.store.spot.badge")}
               </span>
             </div>
 
@@ -207,19 +221,19 @@ export default function Spotlight({
                   borderRadius: "40px",
                 }}
               >
-                Get it for ${price}
+                {t("pages.store.spot.cta", { price })}
                 <ArrowRight size={17} />
               </Link>
 
               {compare && (
                 <span style={{ color: S.muted, fontSize: ".9rem" }}>
-                  <s>${compare}</s>
+                  <s>{compare}</s>
                 </span>
               )}
 
               <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: S.muted, fontSize: ".82rem" }}>
                 <Check size={14} color="#22A387" />
-                Instant download
+                {t("pages.store.spot.instant")}
               </span>
             </div>
 
@@ -235,8 +249,9 @@ export default function Spotlight({
                 }}
               >
                 <Clock size={12} />
-                A different pack takes the spotlight in {rotatesInDays} day
-                {rotatesInDays === 1 ? "" : "s"}
+                {rotatesInDays === 1
+                  ? t("pages.store.spot.rotatesOne")
+                  : t("pages.store.spot.rotatesMany", { n: rotatesInDays })}
               </p>
             )}
           </div>

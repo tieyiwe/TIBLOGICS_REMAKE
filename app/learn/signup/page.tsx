@@ -4,9 +4,14 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { PLANS, formatPlanPrice, FOUNDING_PRICING } from "@/lib/payments/provider";
+import { PLANS, FOUNDING_PRICING } from "@/lib/payments/provider";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { fmtPrice } from "@/lib/learn/format";
+import { useLocale, useT } from "@/lib/i18n/client";
 
 function SignupForm() {
+  const t = useT();
+  const locale = useLocale();
   const router = useRouter();
   const params = useSearchParams();
   // Carried from the track landing page so the learner lands back on the
@@ -31,10 +36,10 @@ function SignupForm() {
       const res = await fetch("/api/learn/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, locale }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "Could not create your account");
+      if (!res.ok) throw new Error(data.error ?? t("learn.auth.createFailed"));
 
       // Sign in immediately so the learner lands on the plan step already authenticated
       const signInRes = await signIn("student", { email, password, redirect: false });
@@ -50,7 +55,7 @@ function SignupForm() {
       router.push(track ? `/learn/subscribe?track=${encodeURIComponent(track)}` : "/learn/subscribe");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("learn.error.generic"));
       setBusy(false);
     }
   }
@@ -64,32 +69,32 @@ function SignupForm() {
         </Link>
 
         <div className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-7 shadow-sm">
-          <h1 className="text-xl font-bold text-[var(--ink)]">Create your account</h1>
+          <h1 className="text-xl font-bold text-[var(--ink)]">{t("learn.auth.createAccount")}</h1>
           {next ? (
-            <p className="mt-1 text-sm text-[var(--ink3)]">One account for TIBLOGICS Learn and our tools.</p>
+            <p className="mt-1 text-sm text-[var(--ink3)]">{t("learn.auth.oneAccount")}</p>
           ) : (
           <p className="mt-1 text-sm text-[var(--ink3)]">
             {FOUNDING_PRICING && (
-              <span className="mr-1 font-bold text-[var(--orange2)]">Founding rate ·</span>
+              <span className="mr-1 font-bold text-[var(--orange2)]">{t("learn.billing.foundingRate")} ·</span>
             )}
-            {formatPlanPrice(PLANS.monthly)}/month for every track. Cancel anytime.
+            {t("learn.auth.priceLine", { price: fmtPrice(PLANS.monthly.amount, locale) })}
           </p>
           )}
 
           {track && (
             <p className="mt-4 rounded-lg bg-[var(--blue-light)] px-3 py-2.5 text-sm text-[var(--blue)]">
-              You're signing up to start{" "}
-              <strong>{track.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</strong>.
-              We'll take you straight there once you're set up.
+              {t("learn.auth.signingUpFor1")}{" "}
+              <strong>{track.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</strong>
+              {t("learn.auth.signingUpFor2")}
             </p>
           )}
 
           <form onSubmit={submit} className="mt-6 space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-semibold text-[var(--ink)]">
-                Full name
+                {t("learn.auth.fullName")}
               </label>
-              <p className="text-xs text-[var(--ink3)]">This is the name printed on your certificate.</p>
+              <p className="text-xs text-[var(--ink3)]">{t("learn.auth.nameOnCert")}</p>
               <input
                 id="name"
                 required
@@ -101,7 +106,7 @@ function SignupForm() {
             </div>
             <div>
               <label htmlFor="email" className="block text-sm font-semibold text-[var(--ink)]">
-                Email
+                {t("learn.account.email")}
               </label>
               <input
                 id="email"
@@ -115,7 +120,7 @@ function SignupForm() {
             </div>
             <div>
               <label htmlFor="password" className="block text-sm font-semibold text-[var(--ink)]">
-                Password
+                {t("learn.auth.password")}
               </label>
               <input
                 id="password"
@@ -127,7 +132,7 @@ function SignupForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="mt-1.5 w-full rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm outline-none focus:border-[var(--blue3)] focus:ring-2 focus:ring-[var(--blue3)]/20"
               />
-              <p className="mt-1 text-xs text-[var(--ink3)]">At least 8 characters.</p>
+              <p className="mt-1 text-xs text-[var(--ink3)]">{t("learn.auth.passwordHint")}</p>
             </div>
 
             {error && (
@@ -141,16 +146,19 @@ function SignupForm() {
               disabled={busy}
               className="w-full rounded-full bg-gradient-to-r from-[var(--orange)] to-[#F9A738] py-3 text-sm font-bold text-[var(--ink)] transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {busy ? "Creating account…" : "Create account"}
+              {busy ? t("learn.auth.creating") : t("learn.auth.createButton")}
             </button>
           </form>
 
           <p className="mt-6 text-center text-sm text-[var(--ink2)]">
-            Already have an account?{" "}
+            {t("learn.auth.alreadyHaveAccount")}{" "}
             <Link href={next ? `/learn/login?next=${encodeURIComponent(next)}` : "/learn/login"} className="font-semibold text-[var(--blue2)] underline underline-offset-2">
-              Sign in
+              {t("learn.nav.signIn")}
             </Link>
           </p>
+        </div>
+        <div className="mt-5 flex justify-center">
+          <LanguageSwitcher />
         </div>
       </div>
     </div>
@@ -158,12 +166,13 @@ function SignupForm() {
 }
 
 export default function StudentSignupPage() {
+  const t = useT();
   // useSearchParams needs a Suspense boundary in the app router
   return (
     <Suspense
       fallback={
         <div className="flex min-h-screen items-center justify-center bg-[var(--s2)]">
-          <p className="text-sm text-[var(--ink3)]">Loading…</p>
+          <p className="text-sm text-[var(--ink3)]">{t("learn.common.loading")}</p>
         </div>
       }
     >

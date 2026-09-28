@@ -4,6 +4,8 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useT } from "@/lib/i18n/client";
 
 /**
  * Only same-site paths are allowed as a post-login destination. A bare
@@ -18,6 +20,7 @@ function safeNext(raw: string | null): string {
 }
 
 function LoginForm() {
+  const t = useT();
   const router = useRouter();
   const params = useSearchParams();
   const next = safeNext(params.get("next"));
@@ -34,7 +37,7 @@ function LoginForm() {
 
     const res = await signIn("student", { email, password, redirect: false });
     if (res?.error) {
-      setError("That email and password don't match an account.");
+      setError(t("learn.auth.badCredentials"));
       setBusy(false);
       return;
     }
@@ -46,7 +49,7 @@ function LoginForm() {
     <form onSubmit={submit} className="space-y-4">
       <div>
         <label htmlFor="email" className="block text-sm font-semibold text-[var(--ink)]">
-          Email
+          {t("learn.account.email")}
         </label>
         <input
           id="email"
@@ -60,7 +63,7 @@ function LoginForm() {
       </div>
       <div>
         <label htmlFor="password" className="block text-sm font-semibold text-[var(--ink)]">
-          Password
+          {t("learn.auth.password")}
         </label>
         <input
           id="password"
@@ -84,7 +87,7 @@ function LoginForm() {
         disabled={busy}
         className="w-full rounded-full bg-[var(--ink)] py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
       >
-        {busy ? "Signing in…" : "Sign in"}
+        {busy ? t("learn.auth.signingIn") : t("learn.nav.signIn")}
       </button>
     </form>
   );
@@ -92,16 +95,18 @@ function LoginForm() {
 
 /** Keeps ?next= so someone who signs up from here lands where they were going. */
 function SignupLink() {
+  const t = useT();
   const next = useSearchParams().get("next");
   const href = next ? `/learn/signup?next=${encodeURIComponent(safeNext(next))}` : "/learn/signup";
   return (
     <Link href={href} className="font-semibold text-[var(--blue2)] underline underline-offset-2">
-      Create an account
+      {t("learn.auth.createAnAccount")}
     </Link>
   );
 }
 
 export default function StudentLoginPage() {
+  const t = useT();
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--s2)] px-4 py-12">
       <div className="w-full max-w-sm">
@@ -111,35 +116,38 @@ export default function StudentLoginPage() {
         </Link>
 
         <div className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-7 shadow-sm">
-          <h1 className="text-xl font-bold text-[var(--ink)]">Welcome back</h1>
-          <p className="mt-1 text-sm text-[var(--ink3)]">Sign in to continue your track.</p>
+          <h1 className="text-xl font-bold text-[var(--ink)]">{t("learn.auth.welcomeBack")}</h1>
+          <p className="mt-1 text-sm text-[var(--ink3)]">{t("learn.auth.signInToContinue")}</p>
 
           <div className="mt-6">
-            <Suspense fallback={<p className="text-sm text-[var(--ink3)]">Loading…</p>}>
+            <Suspense fallback={<p className="text-sm text-[var(--ink3)]">{t("learn.common.loading")}</p>}>
               <LoginForm />
             </Suspense>
           </div>
 
           <p className="mt-4 text-center text-sm">
             <Link href="/learn/forgot" className="text-[var(--blue2)] underline underline-offset-2">
-              Forgot your password?
+              {t("learn.auth.forgot")}
             </Link>
           </p>
 
           <p className="mt-4 text-center text-sm text-[var(--ink2)]">
-            New here?{" "}
-            <Suspense fallback={<Link href="/learn/signup" className="font-semibold text-[var(--blue2)] underline underline-offset-2">Create an account</Link>}>
+            {t("learn.auth.newHere")}{" "}
+            <Suspense fallback={<Link href="/learn/signup" className="font-semibold text-[var(--blue2)] underline underline-offset-2">{t("learn.auth.createAnAccount")}</Link>}>
               <SignupLink />
             </Suspense>
           </p>
         </div>
 
         <p className="mt-5 text-center text-xs text-[var(--ink3)]">
-          Looking for the admin dashboard?{" "}
+          {t("learn.auth.adminPrompt")}{" "}
           <Link href="/admin_pro/login" className="underline">
-            Sign in here
+            {t("learn.auth.adminLink")}
           </Link>
         </p>
+        <div className="mt-4 flex justify-center">
+          <LanguageSwitcher />
+        </div>
       </div>
     </div>
   );

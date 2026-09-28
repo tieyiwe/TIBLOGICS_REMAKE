@@ -1,6 +1,17 @@
 // Transactional emails for TIBLOGICS Learn, sent via the existing ARFA
 // (education-branded) mailer so they match the training emails.
 import { arfaMailer } from "@/lib/resend";
+import prisma from "@/lib/prisma";
+import { translator, type T } from "./i18n";
+
+// Each email goes out in the learner's saved language (Student.locale). A
+// caller that already has it passes `locale`; otherwise it is looked up by
+// email address, and anything unknown falls back to English.
+async function tFor(email: string, locale?: string | null): Promise<T> {
+  if (locale) return translator(locale);
+  const s = await prisma.student.findUnique({ where: { email }, select: { locale: true } }).catch(() => null);
+  return translator(s?.locale);
+}
 
 // Mirrors the fallback chain used by checkout/billing-portal. Without the
 // NEXTAUTH_URL step, a deployment that sets only NEXTAUTH_URL sends links to
@@ -10,7 +21,7 @@ const SITE = (
   process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
 ).replace(/\/$/, "");
 
-function shell(title: string, bodyHtml: string, cta?: { href: string; label: string }) {
+function shell(t: T, title: string, bodyHtml: string, cta?: { href: string; label: string }) {
   return `
   <div style="background:#F4F7FB;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
     <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e6ebf1;">
@@ -29,7 +40,7 @@ function shell(title: string, bodyHtml: string, cta?: { href: string; label: str
         </div>` : ""}
       </div>
       <div style="background:#F4F7FB;padding:18px 32px;text-align:center;color:#8A9BA0;font-size:12px;">
-        © ${new Date().getFullYear()} TIBLOGICS · All rights reserved
+        © ${new Date().getFullYear()} TIBLOGICS · ${t("learn.email.rights")}
       </div>
     </div>
   </div>`;
@@ -41,29 +52,32 @@ const esc = (v: string) =>
 
 const p = (t: string) => `<p style="font-size:14px;color:#5b6b72;line-height:1.7;margin:0 0 14px;">${t}</p>`;
 
-export async function sendStudentWelcomeEmail(s: { email: string; name: string }) {
+export async function sendStudentWelcomeEmail(s: { email: string; name: string; locale?: string | null }) {
+  const t = await tFor(s.email, s.locale);
   await arfaMailer.emails.send({
     to: s.email,
-    subject: "Welcome to TIBLOGICS Learn 🎓",
+    subject: `${t("learn.email.welcome.subject")} 🎓`,
     html: shell(
-      `Welcome, ${esc(s.name.split(" ")[0])}!`,
-      p("Your TIBLOGICS Learn account is ready. Browse the catalog, start a track, and work through practical lessons that end in a real, verifiable certificate.") +
-      p("Every track gives you quick checks after each lesson, a quiz per module, a final exam, and a capstone reviewed by a human — so your certificate actually means something."),
-      { href: `${SITE}/learning-box`, label: "Browse the catalog →" },
+      t,
+      t("learn.email.welcome.title", { name: esc(s.name.split(" ")[0]) }),
+      p(t("learn.email.welcome.p1")) + p(t("learn.email.welcome.p2")),
+      { href: `${SITE}/learning-box`, label: `${t("learn.email.welcome.cta")} →` },
     ),
   });
 }
 
 export async function sendMilestoneEmail(s: {
-  email: string; name: string; milestone: string; detail: string; points: number;
+  email: string; name: string; milestone: string; detail: string; points: number; locale?: string | null;
 }) {
+  const t = await tFor(s.email, s.locale);
   await arfaMailer.emails.send({
     to: s.email,
-    subject: `🎉 ${s.milestone} — TIBLOGICS Learn`,
+    subject: `🎉 ${s.milestone} | TIBLOGICS Learn`,
     html: shell(
+      t,
       `${s.milestone}`,
-      p(s.detail) + p(`<strong style="color:#131A1B;">+${s.points} points</strong> added to your total.`),
-      { href: `${SITE}/learn`, label: "Keep learning →" },
+      p(esc(s.detail)) + p(t("learn.email.milestone.points", { points: `<strong style="color:#131A1B;">+${s.points}</strong>` })),
+      { href: `${SITE}/learn`, label: `${t("learn.email.milestone.cta")} →` },
     ),
   });
 }
@@ -71,41 +85,36 @@ export async function sendMilestoneEmail(s: {
 export async function sendCapstoneStatusEmail(s: {
   email: string; name: string; trackTitle: string;
   status: "in_review" | "revisions_requested" | "passed" | "failed";
-  notes?: string | null; score?: number | null;
+  notes?: string | null; score?: number | null; locale?: string | null;
 }) {
+  const t = await tFor(s.email, s.locale);
+  const key = { in_review: "inReview", revisions_requested: "revisions", passed: "passed", failed: "failed" }[s.status];
   const map = {
-    in_review:            { subject: "Your capstone is under review", title: "Capstone received — under review" },
-    revisions_requested:  { subject: "Revisions requested on your capstone", title: "A few revisions needed" },
-    passed:               { subject: "🎉 Your capstone passed!", title: "Your capstone passed!" },
-    failed:               { subject: "Capstone result", title: "Capstone not yet passed" },
-  }[s.status];
+    subject: `${s.status === "passed" ? "🎉 " : ""}${t(`learn.email.capstone.${key}.subject`)}`,
+    title: t(`learn.email.capstone.${key}.title`),
+  };
 
   const body =
-    p(`Track: <strong style="color:#131A1B;">${s.trackTitle}</strong>`) +
-    (s.status === "passed"
-      ? p("Congratulations — this was the last requirement. Your certificate is being issued and will arrive in a separate email.")
-      : s.status === "revisions_requested"
-      ? p("Your submission is close. Address the reviewer's notes below and resubmit — there's no limit on resubmissions.")
-      : s.status === "in_review"
-      ? p("A TIBLOGICS reviewer has your submission. We aim to return feedback within 5 business days.")
-      : p("Your submission didn't meet the rubric threshold this time. The reviewer's notes below explain exactly what to strengthen — you can resubmit.")) +
-    (s.score != null ? p(`Score: <strong style="color:#131A1B;">${s.score}%</strong>`) : "") +
+    p(t("learn.email.capstone.track", { title: `<strong style="color:#131A1B;">${esc(s.trackTitle)}</strong>` })) +
+    p(t(`learn.email.capstone.${key}.body`)) +
+    (s.score != null ? p(t("learn.email.capstone.score", { score: `<strong style="color:#131A1B;">${s.score}%</strong>` })) : "") +
     (s.notes ? `<div style="background:#F4F7FB;border-left:3px solid #F47C20;border-radius:8px;padding:14px 16px;margin:16px 0;">
-        <div style="font-size:12px;color:#8A9BA0;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Reviewer notes</div>
+        <div style="font-size:12px;color:#8A9BA0;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">${t("learn.email.capstone.notes")}</div>
         <div style="font-size:14px;color:#131A1B;line-height:1.7;white-space:pre-wrap;">${s.notes}</div>
       </div>` : "");
 
   await arfaMailer.emails.send({
     to: s.email,
     subject: map.subject,
-    html: shell(map.title, body, { href: `${SITE}/learn`, label: "Open my dashboard →" }),
+    html: shell(t, map.title, body, { href: `${SITE}/learn`, label: `${t("learn.email.capstone.cta")} →` }),
   });
 }
 
 export async function sendCertificateEmail(s: {
   email: string; name: string; certificateName: string;
-  verificationId: string; distinction: boolean;
+  verificationId: string; distinction: boolean; locale?: string | null;
 }) {
+  const t = await tFor(s.email, s.locale);
   const verifyUrl = `${SITE}/certificates/${s.verificationId}`;
   const linkedIn =
     `https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME` +
@@ -115,28 +124,34 @@ export async function sendCertificateEmail(s: {
 
   await arfaMailer.emails.send({
     to: s.email,
-    subject: `🏅 Your ${s.certificateName} certificate is ready`,
+    subject: `🏅 ${t("learn.email.cert.subject", { cert: s.certificateName })}`,
     html: shell(
-      `Congratulations, ${esc(s.name.split(" ")[0])}!`,
-      p(`You've earned the <strong style="color:#131A1B;">${s.certificateName}</strong> certificate${s.distinction ? ` <strong style="color:#F47C20;">with Distinction</strong>` : ""}.`) +
-      p("You passed every quick check and module quiz, cleared the final exam, and had your capstone approved by a human reviewer. That's the whole thing — well done.") +
-      p(`Anyone can verify it at:<br/><a href="${verifyUrl}" style="color:#F47C20;">${verifyUrl}</a>`) +
-      p(`<a href="${linkedIn}" style="color:#F47C20;font-weight:600;">Add it to your LinkedIn profile →</a>`),
-      { href: verifyUrl, label: "View my certificate →" },
+      t,
+      t("learn.email.cert.title", { name: esc(s.name.split(" ")[0]) }),
+      p(
+        t(s.distinction ? "learn.email.cert.earnedDistinction" : "learn.email.cert.earned", {
+          cert: `<strong style="color:#131A1B;">${esc(s.certificateName)}</strong>`,
+        }),
+      ) +
+      p(t("learn.email.cert.p2")) +
+      p(`${t("learn.email.cert.verify")}<br/><a href="${verifyUrl}" style="color:#F47C20;">${verifyUrl}</a>`) +
+      p(`<a href="${linkedIn}" style="color:#F47C20;font-weight:600;">${t("learn.email.cert.linkedin")} →</a>`),
+      { href: verifyUrl, label: `${t("learn.email.cert.cta")} →` },
     ),
   });
 }
 
 /** Password reset. The link carries the raw token; only its hash is stored. */
-export async function sendPasswordResetEmail(s: { email: string; name: string; token: string }) {
+export async function sendPasswordResetEmail(s: { email: string; name: string; token: string; locale?: string | null }) {
+  const t = await tFor(s.email, s.locale);
   await arfaMailer.emails.send({
     to: s.email,
-    subject: "Reset your TIBLOGICS password",
+    subject: t("learn.email.reset.subject"),
     html: shell(
-      `Reset your password, ${esc(s.name.split(" ")[0])}`,
-      p("Someone (hopefully you) asked to reset the password for your TIBLOGICS account. The link below works once and expires in one hour.") +
-      p("If you didn't ask for this, ignore this email. Your password stays the same."),
-      { href: `${SITE}/learn/reset?token=${encodeURIComponent(s.token)}`, label: "Choose a new password →" },
+      t,
+      t("learn.email.reset.title", { name: esc(s.name.split(" ")[0]) }),
+      p(t("learn.email.reset.p1")) + p(t("learn.email.reset.p2")),
+      { href: `${SITE}/learn/reset?token=${encodeURIComponent(s.token)}`, label: `${t("learn.email.reset.cta")} →` },
     ),
   });
 }

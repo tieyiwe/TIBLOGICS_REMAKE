@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { CERT_LEVELS } from "@/lib/learn/levels";
+import { fmtBreakdown } from "@/lib/learn/format";
+import { useLocale, useT } from "@/lib/i18n/client";
 
 /**
  * The Basic → Intermediate → Expert path, as three connected steps.
@@ -16,6 +20,8 @@ export interface LadderTrack {
   accentColor: string;
   certificateName: string;
   estimatedHours: number;
+  lessonMinutes?: number;
+  handsOnMinutes?: number;
   outcomes?: string[];
   moduleCount?: number;
   labCount?: number;
@@ -40,6 +46,8 @@ export default function CertificationLadder({
   /** Slug of the level the "find my level" questions recommended. */
   highlight?: string | null;
 }) {
+  const tr = useT();
+  const locale = useLocale();
   const bySlug = new Map(tracks.map((t) => [t.slug, t]));
 
   return (
@@ -55,17 +63,18 @@ export default function CertificationLadder({
             : `/learning-box/${lvl.slug}`
           : null;
 
+        const name = tr(`learn.certLevel.${lvl.level}.name`);
         const cta = !live
-          ? "Coming soon"
+          ? tr("learn.catalog.comingSoon")
           : mode === "public"
             ? i === 0
-              ? "Start here"
-              : `Explore Level ${lvl.level}`
+              ? tr("learn.ladder.startHere")
+              : tr("learn.ladder.explore", { n: lvl.level })
             : p?.certified
-              ? "View certificate"
+              ? tr("learn.ladder.viewCertificate")
               : p?.started
-                ? "Continue"
-                : "Start";
+                ? tr("learn.ladder.continue")
+                : tr("learn.ladder.start");
 
         const Card = (
           <div
@@ -79,7 +88,7 @@ export default function CertificationLadder({
                 className="absolute -top-3 left-6 rounded-full px-3 py-0.5 text-[11px] font-bold text-white shadow"
                 style={{ background: accent }}
               >
-                Recommended for you
+                {tr("learn.catalog.recommended")}
               </span>
             )}
             <div className="flex items-center justify-between gap-3">
@@ -87,19 +96,19 @@ export default function CertificationLadder({
                 className="rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-white"
                 style={{ background: accent }}
               >
-                Level {lvl.level} · {lvl.name}
+                {tr("learn.ladder.levelTag", { n: lvl.level, name })}
               </span>
               {p?.certified && (
                 <span className="rounded-full bg-[#0F6E56]/10 px-2.5 py-1 text-[11px] font-bold text-[#0F6E56]">
-                  ✓ Certified
+                  ✓ {tr("learn.ladder.certified")}
                 </span>
               )}
             </div>
 
             <h3 className="mt-4 text-xl font-black leading-snug text-[var(--ink)]">
-              {t?.title ?? lvl.name}
+              {t?.title ?? name}
             </h3>
-            <p className="mt-2 text-sm leading-relaxed text-[var(--ink2)]">{lvl.promise}</p>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--ink2)]">{tr(`learn.certLevel.${lvl.level}.promise`)}</p>
 
             {t?.outcomes && t.outcomes.length > 0 && (
               <ul className="mt-4 space-y-1.5">
@@ -115,22 +124,30 @@ export default function CertificationLadder({
             <div className="mt-auto pt-5">
               <p className="text-xs text-[var(--ink3)]">
                 {live && t
-                  ? [
-                      `~${Math.round(t.estimatedHours)} hours`,
-                      t.moduleCount ? `${t.moduleCount} modules` : null,
-                      t.labCount ? `${t.labCount} hands-on labs` : null,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")
-                  : lvl.assumes}
+                  ? fmtBreakdown(tr, locale, {
+                      lessonMinutes: t.lessonMinutes ?? 0,
+                      handsOnMinutes: t.handsOnMinutes ?? 0,
+                      estimatedHours: t.estimatedHours,
+                    })
+                  : tr(`learn.certLevel.${lvl.level}.assumes`)}
               </p>
+              {live && t && (t.moduleCount || t.labCount) ? (
+                <p className="mt-1 text-xs text-[var(--ink3)]">
+                  {[
+                    t.moduleCount ? tr(`learn.count.modules.${t.moduleCount === 1 ? "one" : "other"}`, { n: t.moduleCount }) : null,
+                    t.labCount ? tr(`learn.count.labs.${t.labCount === 1 ? "one" : "other"}`, { n: t.labCount }) : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              ) : null}
 
               {mode === "learner" && live && p && !p.certified && (
                 <div className="mt-3">
                   <div className="h-1.5 overflow-hidden rounded-full bg-[var(--s2)]">
                     <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${p.percent}%`, background: accent }} />
                   </div>
-                  <p className="mt-1 text-[11px] text-[var(--ink3)]">{p.percent}% of lessons complete</p>
+                  <p className="mt-1 text-[11px] text-[var(--ink3)]">{tr("learn.ladder.percentComplete", { n: p.percent })}</p>
                 </div>
               )}
 
@@ -140,8 +157,8 @@ export default function CertificationLadder({
                       is the same on every card and pushed the part that
                       differs off the end of the line. */}
                   {t?.certificateName
-                    ? `Certificate: ${t.certificateName.replace(/^TIBLOGICS Certified\s*[—:-]?\s*/, "")}`
-                    : "Certificate on completion"}
+                    ? tr("learn.ladder.certificate", { name: t.certificateName.replace(/^TIBLOGICS Certified\s*[—:-]?\s*/, "") })
+                    : tr("learn.ladder.certificateOnCompletion")}
                 </span>
                 <span className="flex-shrink-0 text-sm font-bold" style={{ color: live ? accent : "var(--ink3)" }}>
                   {cta}
@@ -153,7 +170,7 @@ export default function CertificationLadder({
         );
 
         return (
-          <li key={lvl.level} className="relative">
+          <li key={lvl.level} id={`track-${lvl.slug}`} className="relative scroll-mt-28">
             {href ? (
               <Link href={href} className="block h-full rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--orange)]">
                 {Card}

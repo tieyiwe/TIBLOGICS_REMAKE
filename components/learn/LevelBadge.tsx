@@ -1,4 +1,8 @@
-import { LEVEL_META, levelLabel, type TrackLevel } from "@/lib/learn/types";
+"use client";
+
+import { LEVEL_META, type TrackLevel } from "@/lib/learn/types";
+import { levelLabel, levelMeaning } from "@/lib/learn/format";
+import { useT } from "@/lib/i18n/client";
 
 // Level badge with a plain-language meaning (Part C1) — the label alone
 // ("Intermediate") means nothing to someone new, so the meaning is always
@@ -14,8 +18,9 @@ export default function LevelBadge({
   showMeaning?: boolean;
   size?: "sm" | "md";
 }) {
+  const t = useT();
   const meta = LEVEL_META[level as TrackLevel] ?? LEVEL_META.beginner;
-  const label = levelLabel(level, levelEnd);
+  const label = levelLabel(t, level, levelEnd);
 
   return (
     <span className="inline-flex flex-col gap-1">
@@ -28,9 +33,7 @@ export default function LevelBadge({
         <span aria-hidden="true">{meta.emoji}</span>
         {label}
       </span>
-      {showMeaning && (
-        <span className="text-xs text-[var(--ink3)]">{meta.meaning}</span>
-      )}
+      {showMeaning && <span className="text-xs text-[var(--ink3)]">{levelMeaning(t, level)}</span>}
     </span>
   );
 }

@@ -1,4 +1,6 @@
 import { mailTransport, MAIL_FROM } from "@/lib/resend";
+import { format, type Locale } from "@/lib/i18n/config";
+import { dictionary } from "@/lib/i18n/messages";
 
 // Automation Blueprint emails. Customer-typed values are escaped.
 
@@ -22,15 +24,19 @@ function frame(title: string, body: string): string {
   </div>`;
 }
 
+/** The subject line in the customer's language; the body stays English. */
+const subject = (key: string, locale: Locale | undefined, company: string) =>
+  format(dictionary(locale ?? "en")[key] ?? dictionary("en")[key], { company });
+
 const p = (t: string) => `<p style="font-size:14px;color:#3A4A5C;line-height:1.7;margin:0 0 12px;">${t}</p>`;
 const button = (href: string, label: string) =>
   `<div style="margin:22px 0;"><a href="${esc(href)}" style="display:inline-block;background:#F47C20;color:#fff;font-weight:700;font-size:15px;text-decoration:none;padding:13px 28px;border-radius:10px;">${label}</a></div>`;
 
-export async function sendBlueprintPaidEmail(b: { email: string; name: string; company: string; link: string; creditCode: string; credit: string; creditUntil: string }) {
+export async function sendBlueprintPaidEmail(b: { email: string; name: string; company: string; link: string; creditCode: string; credit: string; creditUntil: string; locale?: Locale }) {
   await mailTransport().sendMail({
     from: MAIL_FROM,
     to: b.email,
-    subject: `Your Automation Blueprint for ${b.company} is being written`,
+    subject: subject("tools.bp.email.paidSubject", b.locale, b.company),
     html: frame(
       `Thanks, ${esc(b.name.split(" ")[0])}`,
       p(`We're writing the blueprint for <strong>${esc(b.company)}</strong> now. It usually takes a few minutes; we'll email you again the moment it's ready, and the link below will show it.`) +
@@ -40,11 +46,11 @@ export async function sendBlueprintPaidEmail(b: { email: string; name: string; c
   });
 }
 
-export async function sendBlueprintReadyEmail(b: { email: string; name: string; company: string; link: string }) {
+export async function sendBlueprintReadyEmail(b: { email: string; name: string; company: string; link: string; locale?: Locale }) {
   await mailTransport().sendMail({
     from: MAIL_FROM,
     to: b.email,
-    subject: `Your Automation Blueprint for ${b.company} is ready`,
+    subject: subject("tools.bp.email.readySubject", b.locale, b.company),
     html: frame(
       "Your blueprint is ready",
       p(`The Automation Blueprint for <strong>${esc(b.company)}</strong> is ready to read. It sets out where your team's time goes, what to automate first, and a week-by-week plan.`) +

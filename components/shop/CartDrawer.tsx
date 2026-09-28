@@ -4,11 +4,14 @@ import { useState, useEffect, useRef } from "react";
 import { ShoppingBag, X, Plus, Minus, Trash2, Loader2, Check } from "lucide-react";
 import { useCart } from "./CartContext";
 import { formatMoney } from "./types";
+import { useLocale, useT } from "@/lib/i18n/client";
 
 const EMAIL_KEY = "tiblogics_cart_email";
 const isEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
 export default function CartDrawer() {
+  const t = useT();
+  const locale = useLocale();
   const { lines, count, subtotal, open, setOpen, setQty, remove } = useCart();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -56,13 +59,13 @@ export default function CartDrawer() {
       });
       const data = await res.json();
       if (!res.ok || !data.checkoutUrl) {
-        setError(data.error || "Checkout failed. Please try again.");
+        setError(data.error || t("pages.store.cart.checkoutFailed"));
         setLoading(false);
         return;
       }
       window.location.href = data.checkoutUrl;
     } catch {
-      setError("Network error. Please try again.");
+      setError(t("pages.store.cart.network"));
       setLoading(false);
     }
   }
@@ -72,7 +75,7 @@ export default function CartDrawer() {
       {/* Floating cart button */}
       <button
         onClick={() => setOpen(true)}
-        aria-label="Open cart"
+        aria-label={t("pages.store.cart.open")}
         style={{
           position: "fixed",
           bottom: "92px",
@@ -146,9 +149,9 @@ export default function CartDrawer() {
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 22px", borderBottom: "1px solid rgba(255,255,255,.08)" }}>
           <div style={{ fontFamily: "var(--font-syne), sans-serif", fontWeight: 800, fontSize: "1.15rem" }}>
-            Your Cart {count > 0 && <span style={{ color: "#8A9BA0", fontWeight: 500 }}>· {count}</span>}
+            {t("pages.store.cart.title")} {count > 0 && <span style={{ color: "#8A9BA0", fontWeight: 500 }}>· {count}</span>}
           </div>
-          <button onClick={() => setOpen(false)} aria-label="Close cart" style={{ background: "none", border: "none", color: "#8A9BA0", cursor: "pointer", padding: 4 }}>
+          <button onClick={() => setOpen(false)} aria-label={t("pages.store.cart.close")} style={{ background: "none", border: "none", color: "#8A9BA0", cursor: "pointer", padding: 4 }}>
             <X size={22} />
           </button>
         </div>
@@ -157,7 +160,7 @@ export default function CartDrawer() {
           {lines.length === 0 ? (
             <div style={{ textAlign: "center", color: "#8A9BA0", padding: "64px 0" }}>
               <ShoppingBag size={40} style={{ margin: "0 auto 16px", opacity: 0.4 }} />
-              <p style={{ fontSize: ".95rem" }}>Your cart is empty.</p>
+              <p style={{ fontSize: ".95rem" }}>{t("pages.store.cart.empty")}</p>
             </div>
           ) : (
             lines.map((l) => (
@@ -172,14 +175,14 @@ export default function CartDrawer() {
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: ".9rem", marginBottom: "4px", lineHeight: 1.3 }}>{l.name}</div>
-                  <div style={{ color: "#F47C4C", fontWeight: 700, fontSize: ".88rem", marginBottom: "8px" }}>{formatMoney(l.price, "USD")}</div>
+                  <div style={{ color: "#F47C4C", fontWeight: 700, fontSize: ".88rem", marginBottom: "8px" }}>{formatMoney(l.price, "USD", locale)}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,.06)", borderRadius: "8px", overflow: "hidden" }}>
                       <button onClick={() => setQty(l.id, l.quantity - 1)} style={{ width: "28px", height: "28px", background: "none", border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Minus size={13} /></button>
                       <span style={{ minWidth: "24px", textAlign: "center", fontSize: ".85rem", fontWeight: 700 }}>{l.quantity}</span>
                       <button onClick={() => setQty(l.id, l.quantity + 1)} style={{ width: "28px", height: "28px", background: "none", border: "none", color: "#F47C4C", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Plus size={13} /></button>
                     </div>
-                    <button onClick={() => remove(l.id)} aria-label="Remove" style={{ background: "none", border: "none", color: "#8A9BA0", cursor: "pointer", padding: 4 }}><Trash2 size={15} /></button>
+                    <button onClick={() => remove(l.id)} aria-label={t("pages.store.cart.remove")} style={{ background: "none", border: "none", color: "#8A9BA0", cursor: "pointer", padding: 4 }}><Trash2 size={15} /></button>
                   </div>
                 </div>
               </div>
@@ -190,8 +193,8 @@ export default function CartDrawer() {
         {lines.length > 0 && (
           <div style={{ borderTop: "1px solid rgba(255,255,255,.08)", padding: "20px 22px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "14px" }}>
-              <span style={{ color: "#8A9BA0" }}>Subtotal</span>
-              <span style={{ fontFamily: "var(--font-syne), sans-serif", fontWeight: 800, fontSize: "1.2rem" }}>{formatMoney(subtotal, "USD")}</span>
+              <span style={{ color: "#8A9BA0" }}>{t("pages.store.cart.subtotal")}</span>
+              <span style={{ fontFamily: "var(--font-syne), sans-serif", fontWeight: 800, fontSize: "1.2rem" }}>{formatMoney(subtotal, "USD", locale)}</span>
             </div>
 
             {/* Save cart / reminder opt-in */}
@@ -200,14 +203,15 @@ export default function CartDrawer() {
                 type="email"
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setSavedEmail(false); }}
-                placeholder="Email me a reminder (optional)"
+                placeholder={t("pages.store.cart.reminder")}
+                aria-label={t("pages.store.cart.reminder")}
                 style={{ width: "100%", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: "12px", padding: "11px 40px 11px 14px", color: "#fff", fontSize: ".85rem", fontFamily: "var(--font-dm-sans), sans-serif", outline: "none" }}
               />
               {savedEmail && isEmail(email) && (
                 <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "#22A387", display: "flex" }}><Check size={16} /></span>
               )}
               <p style={{ color: "#8A9BA0", fontSize: ".7rem", marginTop: "6px", lineHeight: 1.4 }}>
-                We&apos;ll save your cart and remind you if you don&apos;t check out.
+                {t("pages.store.cart.reminderNote")}
               </p>
             </div>
 
@@ -233,9 +237,9 @@ export default function CartDrawer() {
                 gap: "8px",
               }}
             >
-              {loading ? (<><Loader2 size={18} className="animate-spin" /> Redirecting…</>) : "Checkout Securely →"}
+              {loading ? (<><Loader2 size={18} className="animate-spin" /> {t("pages.store.cart.redirecting")}</>) : t("pages.store.cart.checkout")}
             </button>
-            <p style={{ textAlign: "center", color: "#8A9BA0", fontSize: ".72rem", marginTop: "12px" }}>🔒 Secure payment via Stripe</p>
+            <p style={{ textAlign: "center", color: "#8A9BA0", fontSize: ".72rem", marginTop: "12px" }}>{t("pages.store.cart.stripe")}</p>
           </div>
         )}
       </aside>

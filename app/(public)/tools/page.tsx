@@ -4,69 +4,65 @@ import { Search, Bot, Calculator, Radar, Wand2, FileText } from "lucide-react";
 import SmartRecommendations from "@/components/public/SmartRecommendations";
 import { useEffect } from "react";
 import { trackPageVisit } from "@/lib/recommendations";
+import { useT } from "@/lib/i18n/client";
 
 const ALL_TOOLS = [
   {
     icon: Search,
-    name: "Website AI Scanner",
-    desc: "Scan any website and get an instant AI readiness score with actionable findings.",
+    id: "scanner",
     href: "/tools/scanner",
     color: "#2251A3",
-    tag: "Free",
+    paid: false,
     retired: false,
   },
   {
     icon: Wand2,
-    name: "Toolkit Live + Compliance Guard",
-    desc: "Our industry prompt libraries, written with your business details, with every draft checked for Fair Housing, financial-advertising and FTC risks.",
+    id: "toolkit",
     href: "/tools/toolkit-live",
     color: "#B8500A",
-    tag: "Paid",
+    paid: true,
     retired: false,
   },
   {
     icon: FileText,
-    name: "Automation Blueprint",
-    desc: "A written plan for automating up to three of your repetitive processes, with a roadmap and hours saved. Credited if we build it.",
+    id: "blueprint",
     href: "/tools/automation-blueprint",
     color: "#B8500A",
-    tag: "Paid",
+    paid: true,
     retired: false,
   },
   {
     icon: Radar,
-    name: "Readiness Monitor",
-    desc: "Your site and up to three competitors, rescanned every week, with an email when something changes.",
+    id: "monitor",
     href: "/tools/readiness-monitor",
     color: "#B8500A",
-    tag: "Paid",
+    paid: true,
     retired: false,
   },
   {
     icon: Bot,
-    name: "AI Project Advisor",
-    desc: "Chat with Echelon to get personalized AI implementation recommendations for your business.",
+    id: "advisor",
     href: "/tools/advisor",
     color: "#F47C20",
-    tag: "Free",
+    paid: false,
     retired: true,
   },
   {
     icon: Calculator,
-    name: "AI Product Cost Calculator",
-    desc: "Building an AI product? This tool helps you figure out your real API costs across all major models before you commit to a budget.",
+    id: "calculator",
     href: "/tools/calculator",
     color: "#7c3aed",
-    tag: "Free",
+    paid: false,
     retired: false,
   },
 ];
 
 const tools = ALL_TOOLS.filter(
-  (t) => !t.retired || process.env.NODE_ENV !== "production"
+  (tool) => !tool.retired || process.env.NODE_ENV !== "production"
 );
 
 export default function ToolsPage() {
+  const t = useT();
   useEffect(() => {
     trackPageVisit("/tools");
   }, []);
@@ -75,38 +71,38 @@ export default function ToolsPage() {
     <div className="pt-32 sm:pt-44 pb-20 min-h-screen bg-[#F4F7FB]">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <span className="section-tag">Try Smart Tools</span>
+          <span className="section-tag">{t("tools.index.tag")}</span>
           <h1 className="font-syne font-extrabold text-4xl md:text-5xl text-[#0D1B2A] mt-2">
-            AI tools, on us.
+            {t("tools.index.title")}
           </h1>
           <p className="font-dm text-[#3A4A5C] text-lg mt-3 max-w-xl mx-auto">
-            No signup required. Get real insights about your business and AI costs in minutes.
+            {t("tools.index.subtitle")}
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {tools.map((t) => (
+          {tools.map((tool) => (
             <Link
-              key={t.name}
-              href={t.href}
+              key={tool.id}
+              href={tool.href}
               className="bg-white border border-[#D2DCE8] rounded-2xl p-6 flex flex-col gap-4 hover:shadow-[0_4px_24px_rgba(27,58,107,0.12)] hover:-translate-y-0.5 transition-all duration-200 group"
             >
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: t.color + "20" }}
+                style={{ backgroundColor: tool.color + "20" }}
               >
-                <t.icon size={22} style={{ color: t.color }} />
+                <tool.icon size={22} style={{ color: tool.color }} aria-hidden />
               </div>
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <h2 className="font-syne font-bold text-lg text-[#0D1B2A]">{t.name}</h2>
-                  <span className={`shrink-0 whitespace-nowrap text-xs font-bold px-2 py-0.5 rounded-full ${t.tag === "Paid" ? "bg-[#7c3aed]/10 text-[#7c3aed]" : "bg-green-100 text-green-700"}`}>
-                    {t.tag}
+                <div className="flex items-start gap-2 mb-1">
+                  <h2 className="font-syne font-bold text-lg text-[#0D1B2A] min-w-0">{t(`tools.index.${tool.id}.name`)}</h2>
+                  <span className={`shrink-0 whitespace-nowrap text-xs font-bold px-2 py-0.5 mt-1 rounded-full ${tool.paid ? "bg-[#7c3aed]/10 text-[#7c3aed]" : "bg-green-100 text-green-700"}`}>
+                    {tool.paid ? t("tools.index.paid") : t("tools.index.free")}
                   </span>
                 </div>
-                <p className="font-dm text-sm text-[#7A8FA6] leading-relaxed">{t.desc}</p>
+                <p className="font-dm text-sm text-[#7A8FA6] leading-relaxed">{t(`tools.index.${tool.id}.desc`)}</p>
               </div>
-              <span className="font-dm font-medium text-sm mt-auto" style={{ color: t.color }}>
-                Try it now →
+              <span className="font-dm font-medium text-sm mt-auto" style={{ color: tool.color }}>
+                {t("tools.index.tryNow")}
               </span>
             </Link>
           ))}

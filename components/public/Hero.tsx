@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import HeroScanner from "./HeroScanner";
+import { getT } from "@/lib/i18n/server";
+import { accent } from "./accent";
 
 // Products built in-house, the same list the footer carries. Worded as "built
 // in-house" to match what the rest of the site already says, rather than
@@ -16,7 +18,8 @@ const BUILT: { name: string; href?: string }[] = [
   { name: "AI Central" },
 ];
 
-export default function Hero() {
+export default async function Hero() {
+  const t = await getT();
   return (
     <section className="relative overflow-hidden bg-white pt-28 sm:pt-36 lg:pt-40 pb-14 sm:pb-20">
       {/* Quiet backdrop: a faint dot field fading out from the top right, so the
@@ -40,7 +43,7 @@ export default function Hero() {
           <div className="flex flex-col gap-6 lg:pt-6">
             <p className="anim-fade-in inline-flex items-center gap-2 self-start rounded-full border border-[#D2DCE8] bg-white/80 px-3 py-1.5 font-dm text-xs font-semibold tracking-wide text-[#3A4A5C] backdrop-blur">
               <span className="h-1.5 w-1.5 rounded-full bg-[#F47C20]" />
-              AI implementation · North America &amp; Africa
+              {t("home.hero.badge")}
             </p>
 
             {/* One accent, three lines. The previous headline ran to seven lines
@@ -50,27 +53,26 @@ export default function Hero() {
               className="anim-fade-up font-syne font-extrabold tracking-tight text-[#0D1B2A] text-[2.4rem] leading-[1.08] sm:text-5xl lg:text-[3.6rem]"
               style={{ animationDelay: "0.08s" }}
             >
-              We build AI that fixes{" "}
-              <span className="font-display italic font-semibold text-[#F47C20]">
-                what&apos;s actually
-              </span>{" "}
-              holding you back.
+              {accent(t("home.hero.title"), (words, i) => (
+                <span key={i} className="font-display italic font-semibold text-[#F47C20]">
+                  {words}
+                </span>
+              ))}
             </h1>
 
             <p
               className="anim-fade-up max-w-xl font-dm text-lg leading-relaxed text-[#3A4A5C]"
               style={{ animationDelay: "0.16s" }}
             >
-              Agents, automation and full-stack products, scoped honestly and shipped
-              fast, for businesses in North America, Africa and beyond.
+              {t("home.hero.subtitle")}
             </p>
 
-            <div className="anim-fade-up flex flex-col gap-3 sm:flex-row" style={{ animationDelay: "0.24s" }}>
+            <div className="anim-fade-up flex flex-col gap-3 sm:flex-row sm:flex-wrap" style={{ animationDelay: "0.24s" }}>
               <Link href="/book" className="btn-primary justify-center">
-                Book a free consultation <ArrowRight size={16} />
+                {t("home.hero.ctaBook")} <ArrowRight size={16} aria-hidden="true" />
               </Link>
               <Link href="/services" className="btn-secondary justify-center">
-                Explore services
+                {t("home.hero.ctaServices")}
               </Link>
             </div>
           </div>
@@ -83,7 +85,7 @@ export default function Hero() {
         {/* Proof strip */}
         <div className="mt-16 sm:mt-20 border-t border-[#E8EFF8] pt-8">
           <p className="text-center font-dm text-xs font-semibold uppercase tracking-[0.18em] text-[#7A8FA6]">
-            Built in-house at TIBLOGICS
+            {t("home.hero.built")}
           </p>
           <ul className="mt-5 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 sm:gap-x-12">
             {BUILT.map(({ name, href }) => (

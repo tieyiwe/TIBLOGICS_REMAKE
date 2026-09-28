@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { formatMinutes } from "@/lib/learn/types";
+import { fmtMinutes } from "@/lib/learn/format";
+import { useT } from "@/lib/i18n/client";
 
 interface ModuleView {
   id: string;
@@ -26,6 +27,7 @@ export default function ModuleAccordion({
   modules: ModuleView[];
   accentColor: string;
 }) {
+  const t = useT();
   // First module open by default so the page never looks empty
   const [open, setOpen] = useState<Set<string>>(new Set(modules[0] ? [modules[0].id] : []));
 
@@ -41,7 +43,7 @@ export default function ModuleAccordion({
   if (modules.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-[var(--border)] bg-white p-8 text-center text-sm text-[var(--ink3)]">
-        The curriculum for this track is being finalised.
+        {t("learn.accordion.empty")}
       </p>
     );
   }
@@ -68,9 +70,9 @@ export default function ModuleAccordion({
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-bold text-[var(--ink)]">{m.title}</span>
                   <span className="mt-0.5 block text-xs text-[var(--ink3)]">
-                    {m.lessons.length} lesson{m.lessons.length === 1 ? "" : "s"}
-                    {m.estimatedMinutes > 0 && ` · ${formatMinutes(m.estimatedMinutes)}`}
-                    {m.hasQuiz && ` · quiz (${m.quizPassScore ?? 80}% to pass)`}
+                    {t(m.lessons.length === 1 ? "learn.count.lessons.one" : "learn.count.lessons.other", { n: m.lessons.length })}
+                    {m.estimatedMinutes > 0 && ` · ${fmtMinutes(t, m.estimatedMinutes)}`}
+                    {m.hasQuiz && ` · ${t("learn.accordion.quizShort", { score: m.quizPassScore ?? 80 })}`}
                   </span>
                 </span>
                 <span
@@ -97,7 +99,7 @@ export default function ModuleAccordion({
                         <span className="font-medium text-[var(--ink)]">{l.title}</span>
                         {l.isPreview && (
                           <span className="ml-2 rounded bg-[var(--orange-light)] px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--orange2)]">
-                            Free preview
+                            {t("learn.catalog.freePreview")}
                           </span>
                         )}
                         {l.objective && (
@@ -108,7 +110,7 @@ export default function ModuleAccordion({
                       </span>
                       {l.durationMinutes > 0 && (
                         <span className="shrink-0 text-xs text-[var(--ink3)]">
-                          {formatMinutes(l.durationMinutes)}
+                          {fmtMinutes(t, l.durationMinutes)}
                         </span>
                       )}
                     </li>
@@ -117,7 +119,7 @@ export default function ModuleAccordion({
                 {m.hasQuiz && (
                   <p className="mt-4 flex items-center gap-2 rounded-lg bg-[var(--s2)] px-3 py-2 text-xs font-medium text-[var(--ink2)]">
                     <span aria-hidden="true">📝</span>
-                    Module quiz — {m.quizPassScore ?? 80}% to pass, unlimited retakes
+                    {t("learn.accordion.quizLong", { score: m.quizPassScore ?? 80 })}
                   </p>
                 )}
               </div>

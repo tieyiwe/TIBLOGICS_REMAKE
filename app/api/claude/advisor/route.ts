@@ -1,7 +1,8 @@
 import { checkRateLimit } from "@/lib/rate-limit";
 export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
-import { streamChat } from "@/lib/claude";
+import { getLocale, translatorFor } from "@/lib/i18n/server";
+import { replyInLanguage } from "@/lib/i18n/config";
 
 const ADVISOR_SYSTEM_PROMPT = `You are Tibo, the AI Project Advisor for TIBLOGICS, an AI implementation and digital solutions agency.
 
@@ -21,10 +22,18 @@ PROSPECT_PROFILE|name:[full name or "Unknown"]|biz:[business name]|industry:[ind
 Keep all responses to 2-4 sentences maximum. Ask ONE question at a time. Be warm and conversational, not salesy.`;
 
 export async function POST(req: NextRequest) {
+  const locale = await getLocale();
+  const t = translatorFor(locale);
   const ip = req.headers.get("x-forwarded-for") ?? "unknown";
   if (!(await checkRateLimit(`claude-advisor:${ip}`, 20, 3_600_000))) {
-    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+    return NextResponse.json({ error: t("tools.api.rateLimit") }, { status: 429 });
   }
+  // Answers in the visitor's language. The profile line is parsed by the
+  // page, so its markers stay as specified.
+  const system =
+    locale === "en"
+      ? ADVISOR_SYSTEM_PROMPT
+      : `${ADVISOR_SYSTEM_PROMPT}\n\n${replyInLanguage(locale)} Keep the PROSPECT_PROFILE line's markers and field names (PROSPECT_PROFILE, name:, biz:, industry:, challenge:, budget:, solutions:) exactly as specified; write the values in that language.`;
   try {
     const { messages } = await req.json();
 
@@ -34,7 +43,7 @@ export async function POST(req: NextRequest) {
     const stream = anthropic.messages.stream({
       model: CLAUDE_MODEL,
       max_tokens: 1024,
-      system: ADVISOR_SYSTEM_PROMPT,
+      system,
       messages,
     });
 
@@ -49,7 +58,7 @@ export async function POST(req: NextRequest) {
           }
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         } catch (err) {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "Stream error" })}\n\n`));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: t("tools.api.aiUnavailable") })}\n\n`));
         } finally {
           controller.close();
         }
@@ -65,6 +74,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error("Tibo advisor error:", err);
-    return NextResponse.json({ error: "AI service unavailable" }, { status: 500 });
+    return NextResponse.json({ error: t("tools.api.aiUnavailable") }, { status: 500 });
   }
 }

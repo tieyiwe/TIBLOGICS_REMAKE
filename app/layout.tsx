@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Lora, Plus_Jakarta_Sans, Cormorant_Garamond, Cinzel } from "next/font/google";
 import "./globals.css";
-import { getLocale } from "@/lib/i18n/server";
+import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { dictionary } from "@/lib/i18n/messages";
 import { I18nProvider } from "@/lib/i18n/client";
 
@@ -44,62 +44,74 @@ const DEFAULT_TITLE = "TIBLOGICS — AI Implementation & Digital Solutions";
 const DEFAULT_DESC =
   "TIBLOGICS builds AI agents, workflow automation, and full-stack digital products for businesses in North America, Africa, and beyond. AI-first. Tech-complete.";
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: { default: DEFAULT_TITLE, template: `%s | ${SITE_NAME}` },
-  description: DEFAULT_DESC,
-  keywords: [
-    "AI implementation", "AI agency", "AI agents", "workflow automation",
-    "machine learning", "AI consulting", "AI chatbot development",
-    "digital transformation", "AI for small business", "LLM integration",
-    "RAG systems", "n8n automation", "Next.js development", "AI readiness",
-    "AI implementation North America", "AI implementation Africa",
-    "Francophone Africa tech", "TIBLOGICS", "AI strategy consulting",
-    "custom AI solutions", "business automation", "AI productivity tools",
-  ],
-  authors: [{ name: "Tieyiwe Bassole", url: SITE_URL }],
-  creator: "TIBLOGICS",
-  publisher: "TIBLOGICS",
-  category: "Technology",
-  classification: "AI Implementation & Digital Solutions Agency",
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+// Open Graph locale for each site language.
+const OG_LOCALE = { en: "en_US", fr: "fr_FR", sw: "sw_KE" } as const;
+
+// Title and description follow the visitor's language; the JSON-LD below
+// stays in English (DEFAULT_TITLE / DEFAULT_DESC).
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = translatorFor(locale);
+  const title = t("site.meta.title");
+  const description = t("site.meta.description");
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: { default: title, template: `%s | ${SITE_NAME}` },
+    description,
+    keywords: [
+      "AI implementation", "AI agency", "AI agents", "workflow automation",
+      "machine learning", "AI consulting", "AI chatbot development",
+      "digital transformation", "AI for small business", "LLM integration",
+      "RAG systems", "n8n automation", "Next.js development", "AI readiness",
+      "AI implementation North America", "AI implementation Africa",
+      "Francophone Africa tech", "TIBLOGICS", "AI strategy consulting",
+      "custom AI solutions", "business automation", "AI productivity tools",
+    ],
+    authors: [{ name: "Tieyiwe Bassole", url: SITE_URL }],
+    creator: "TIBLOGICS",
+    publisher: "TIBLOGICS",
+    category: "Technology",
+    classification: "AI Implementation & Digital Solutions Agency",
+    robots: {
       index: true,
       follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
-  },
-  alternates: { canonical: SITE_URL },
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: SITE_URL,
-    siteName: SITE_NAME,
-    title: DEFAULT_TITLE,
-    description: DEFAULT_DESC,
-    images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: "TIBLOGICS — AI Solutions. Real Business Impact." }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: DEFAULT_TITLE,
-    description: DEFAULT_DESC,
-    creator: "@tiblogics",
-    site: "@tiblogics",
-    images: [`${SITE_URL}/opengraph-image`],
-  },
-  icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    shortcut: "/icon.svg",
-    apple: "/icon.svg",
-  },
-  verification: {
-    google: "tiblogics-google-verify",
-  },
-};
+    alternates: { canonical: SITE_URL },
+    openGraph: {
+      type: "website",
+      locale: OG_LOCALE[locale],
+      alternateLocale: Object.values(OG_LOCALE).filter((l) => l !== OG_LOCALE[locale]),
+      url: SITE_URL,
+      siteName: SITE_NAME,
+      title,
+      description,
+      images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: t("site.meta.ogImageAlt") }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      creator: "@tiblogics",
+      site: "@tiblogics",
+      images: [`${SITE_URL}/opengraph-image`],
+    },
+    icons: {
+      icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+      shortcut: "/icon.svg",
+      apple: "/icon.svg",
+    },
+    verification: {
+      google: "tiblogics-google-verify",
+    },
+  };
+}
 
 const jsonLd = {
   "@context": "https://schema.org",

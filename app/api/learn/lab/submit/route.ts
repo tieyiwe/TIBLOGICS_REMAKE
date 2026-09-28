@@ -6,9 +6,11 @@ import { requireEntitledStudent } from "@/lib/learn/session";
 import { checkRateLimit } from "@/lib/require-admin";
 import { awardPoints, getTotalPoints } from "@/lib/learn/points";
 import { checkLevelUp } from "@/lib/learn/milestones";
-import { parseConfig, parseObjectives, type LabEvaluation } from "@/lib/learn/labs/types";
+import type { LabEvaluation } from "@/lib/learn/labs/types";
 import { evaluateBuild, evaluateCritique, evaluatePrompt, evaluateWorkbench } from "@/lib/learn/labs/evaluate";
 import { evaluateCode, MAX_CODE } from "@/lib/learn/labs/code";
+import { getLocale, translatorFor } from "@/lib/i18n/server";
+import { localizeLab } from "@/lib/i18n/sources/labs";
 
 export const maxDuration = 120;
 
@@ -33,25 +35,32 @@ const Body = z.object({
 export async function POST(req: NextRequest) {
   const { error, student } = await requireEntitledStudent();
   if (error) return error;
+  const locale = await getLocale();
+  const t = translatorFor(locale);
 
   if (!(await checkRateLimit(`lab-submit:${student.id}`, 30, 3_600_000))) {
-    return NextResponse.json({ error: "Too many submissions. Try again shortly." }, { status: 429 });
+    return NextResponse.json({ error: t("labs.api.submitRate") }, { status: 429 });
   }
 
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid request" }, { status: 400 });
+    return NextResponse.json({ error: t("labs.api.invalid") }, { status: 400 });
   }
   const { labId, prompt, selections, checked, artifactUrl, reflection, answers, code, checkResults, commits } = parsed.data;
 
   try {
     const lab = await prisma.lab.findUnique({ where: { id: labId } });
     if (!lab || !lab.isPublished) {
-      return NextResponse.json({ error: "Lab not found" }, { status: 404 });
+      return NextResponse.json({ error: t("labs.api.labNotFound") }, { status: 404 });
     }
 
-    const objectives = parseObjectives(lab.objectives);
-    const config = parseConfig(lab.labType, lab.config);
+    // Graded against the lab as the learner saw it: same ids, answer flags and
+    // check code as the stored config (only texts differ), so the score cannot
+    // depend on the language. Feedback, labels and the revealed flaw
+    // explanations come out in the learner's language.
+    const shown = await localizeLab(lab, locale);
+    const objectives = shown.objectives;
+    const config = shown.config;
 
     const attempt = await prisma.labAttempt.findFirst({
       where: { studentId: student.id, labId, status: "in_progress" },
@@ -64,12 +73,12 @@ export async function POST(req: NextRequest) {
     if (config.kind === "critique") {
       const picked = selections ?? [];
       submission = { selections: picked };
-      evaluation = evaluateCritique(config, picked, objectives, lab.passScore);
+      evaluation = evaluateCritique(config, picked, objectives, lab.passScore, t);
     } else if (config.kind === "build") {
       const steps = checked ?? [];
       submission = { checked: steps, artifactUrl: artifactUrl ?? null, reflection: reflection ?? null };
       if (config.requireArtifact && !artifactUrl?.trim()) {
-        return NextResponse.json({ error: "Add a link to your work before submitting." }, { status: 400 });
+        return NextResponse.json({ error: t("labs.api.needLink") }, { status: 400 });
       }
       evaluation = evaluateBuild(
         config,
@@ -78,14 +87,15 @@ export async function POST(req: NextRequest) {
         reflection ?? null,
         objectives,
         lab.passScore,
+        t,
       );
     } else if (config.kind === "code") {
-      if (!code?.trim()) return NextResponse.json({ error: "There is no code to submit yet." }, { status: 400 });
+      if (!code?.trim()) return NextResponse.json({ error: t("labs.api.noCode") }, { status: 400 });
       const work: Record<string, string> = {};
       for (const f of config.fields ?? []) work[f.id] = (answers?.[f.id] ?? "").trim();
       const missing = (config.fields ?? []).filter((f) => !work[f.id]);
       if (missing.length) {
-        return NextResponse.json({ error: `Fill in every written part (missing: ${missing.map((f) => f.label).join(", ")}).` }, { status: 400 });
+        return NextResponse.json({ error: t("labs.api.missingWritten", { list: missing.map((f) => f.label).join(", ") }) }, { status: 400 });
       }
       const transcript = Array.isArray(attempt?.transcript) ? (attempt!.transcript as Array<{ prompt?: string }>) : [];
       submission = { code, checkResults: checkResults ?? [], commits: commits ?? [], answers: work };
@@ -99,6 +109,7 @@ export async function POST(req: NextRequest) {
         answers: work,
         objectives,
         passScore: lab.passScore,
+        locale,
       });
     } else if (config.kind === "workbench") {
       // Only the lab's own fields are kept, so a crafted request cannot smuggle
@@ -108,17 +119,17 @@ export async function POST(req: NextRequest) {
       const empty = config.fields.filter((f) => !work[f.id]);
       if (empty.length > 0) {
         return NextResponse.json(
-          { error: `Fill in every part before submitting (missing: ${empty.map((f) => f.label).join(", ")}).` },
+          { error: t("labs.api.missingParts", { list: empty.map((f) => f.label).join(", ") }) },
           { status: 400 },
         );
       }
       submission = { answers: work };
-      evaluation = await evaluateWorkbench(lab.briefMd, lab.scenarioMd, config, work, objectives, lab.passScore);
+      evaluation = await evaluateWorkbench(lab.briefMd, lab.scenarioMd, config, work, objectives, lab.passScore, locale);
     } else {
       // Prompt lab — grade the latest prompt against the response it produced
       const text = (prompt ?? (attempt?.submission as { prompt?: string } | null)?.prompt ?? "").trim();
       if (!text) {
-        return NextResponse.json({ error: "Write a prompt before submitting." }, { status: 400 });
+        return NextResponse.json({ error: t("labs.api.needPrompt") }, { status: 400 });
       }
       const transcript = Array.isArray(attempt?.transcript)
         ? (attempt.transcript as Array<{ prompt: string; response: string }>)
@@ -135,6 +146,7 @@ export async function POST(req: NextRequest) {
         lastResponse,
         objectives,
         lab.passScore,
+        locale,
       );
     }
 
@@ -176,6 +188,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error("[POST /api/learn/lab/submit]", err);
-    return NextResponse.json({ error: "Could not score your lab. Your work is saved." }, { status: 500 });
+    return NextResponse.json({ error: t("labs.api.scoreFailed") }, { status: 500 });
   }
 }

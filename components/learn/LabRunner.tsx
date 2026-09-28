@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import Markdown from "./Markdown";
 import CodeStudio, { type StudioCheck, type StudioSubmission } from "./CodeStudio";
 import { LAB_TYPE_META, type LabObjective, type LabType } from "@/lib/learn/labs/types";
+import { useT } from "@/lib/i18n/client";
 
 interface Breakdown {
   objectiveId: string;
@@ -56,8 +57,11 @@ export default function LabRunner({
   trackSlug,
   accentColor,
   priorAttempt,
+  pending = false,
 }: {
   lab: LabView;
+  /** The lab's texts are still being translated; English is shown meanwhile. */
+  pending?: boolean;
   trackSlug: string;
   accentColor: string;
   priorAttempt: {
@@ -72,7 +76,14 @@ export default function LabRunner({
   } | null;
 }) {
   const router = useRouter();
-  const meta = LAB_TYPE_META[lab.labType];
+  const t = useT();
+  const meta = LAB_TYPE_META[lab.labType] ?? LAB_TYPE_META.prompt;
+  const typeLabel = t(`labs.type.${lab.labType in LAB_TYPE_META ? lab.labType : "prompt"}.label`);
+  // Criterion names in the current language, whatever language the attempt
+  // was graded in; the grader's comments stay as written.
+  const rowLabel = (b: Breakdown) =>
+    lab.objectives.find((o) => o.id === b.objectiveId)?.label ??
+    (b.objectiveId === "automated-checks" ? t("labs.eval.code.checks") : b.label);
 
   const submitted = priorAttempt?.status === "submitted" && priorAttempt.score != null;
 
@@ -160,11 +171,11 @@ export default function LabRunner({
         body: JSON.stringify({ labId: lab.id, prompt }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "The sandbox didn't respond");
+      if (!res.ok) throw new Error(data.error ?? t("labs.error.sandbox"));
       setTranscript((t) => [...t, { prompt, response: data.response }]);
       setRunsUsed(data.runsUsed);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("labs.error.generic"));
     } finally {
       setBusy(false);
     }
@@ -190,7 +201,7 @@ export default function LabRunner({
         body: JSON.stringify(body),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "Could not score your lab");
+      if (!res.ok) throw new Error(data.error ?? t("labs.error.score"));
       setResult(data);
       if (lab.labType === "workbench" || lab.labType === "code") {
         try {
@@ -202,7 +213,7 @@ export default function LabRunner({
       router.refresh();
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("labs.error.generic"));
     } finally {
       setBusy(false);
     }
@@ -237,9 +248,15 @@ export default function LabRunner({
     <div className="mx-auto max-w-3xl">
       <nav aria-label="Breadcrumb" className="mb-4 text-sm text-[var(--ink3)]">
         <Link href={`/learn/track/${trackSlug}`} className="hover:text-[var(--ink)]">
-          ← Back to track
+          {t("labs.backToTrack")}
         </Link>
       </nav>
+
+      {pending && (
+        <p className="mb-4 rounded-lg bg-[var(--s2)] px-4 py-2.5 text-sm text-[var(--ink2)]">
+          {t("common.translationPending")}
+        </p>
+      )}
 
       {/* Header */}
       <header className="rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
@@ -248,10 +265,10 @@ export default function LabRunner({
             className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold"
             style={{ background: `${accentColor}18`, color: accentColor }}
           >
-            <span aria-hidden="true">{meta.icon}</span> {meta.label}
+            <span aria-hidden="true">{meta.icon}</span> {typeLabel}
           </span>
           <span className="text-xs text-[var(--ink3)]">
-            ~{lab.estimatedMinutes} min · {lab.points} pts · {lab.passScore}% to pass
+            {t("labs.meta", { min: lab.estimatedMinutes, points: lab.points, pass: lab.passScore })}
           </span>
         </div>
 
@@ -265,7 +282,7 @@ export default function LabRunner({
         {lab.objectives.length > 0 && (
           <div className="mt-5 rounded-xl bg-[var(--s2)] p-4">
             <h2 className="text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">
-              What you're scored on
+              {t("labs.scoredOn")}
             </h2>
             <ul className="mt-2 space-y-1.5">
               {lab.objectives.map((o) => (
@@ -291,16 +308,16 @@ export default function LabRunner({
               {result.score}%
             </p>
             <h2 className="mt-2 text-xl font-bold text-[var(--ink)]">
-              {result.passed ? "Lab passed" : "Not yet"}
+              {result.passed ? t("labs.result.passed") : t("labs.result.notYet")}
             </h2>
             <p className="mt-1 text-sm text-[var(--ink2)]">
               {result.passed
-                ? "Nice work — this one's logged."
-                : `You need ${result.passScore}%. Read the feedback, then try again.`}
+                ? t("labs.result.passedBody")
+                : t("labs.result.failBody", { pass: result.passScore })}
             </p>
             {result.pointsAwarded > 0 && (
               <p className="mt-2 text-sm font-bold text-[var(--orange2)]">
-                +{result.pointsAwarded} points
+                {t("labs.points", { n: result.pointsAwarded })}
               </p>
             )}
           </div>
@@ -310,7 +327,7 @@ export default function LabRunner({
               {result.breakdown.map((b) => (
                 <li key={b.objectiveId} className="rounded-xl border border-[var(--border)] p-4">
                   <div className="flex items-start justify-between gap-3">
-                    <p className="text-sm font-semibold text-[var(--ink)]">{b.label}</p>
+                    <p className="text-sm font-semibold text-[var(--ink)]">{rowLabel(b)}</p>
                     <span
                       className="shrink-0 text-sm font-bold"
                       style={{ color: b.met ? "#22A387" : "#E05F00" }}
@@ -336,14 +353,14 @@ export default function LabRunner({
               disabled={busy}
               className="rounded-full border border-[var(--border)] px-6 py-2.5 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)] disabled:opacity-50"
             >
-              {result.passed ? "Try again for practice" : "Try again"}
+              {result.passed ? t("labs.result.retryPractice") : t("labs.result.retry")}
             </button>
             <Link
               href={`/learn/track/${trackSlug}`}
               className="rounded-full px-6 py-2.5 text-sm font-bold text-white"
               style={{ background: accentColor }}
             >
-              Back to track →
+              {t("labs.backToTrackCta")}
             </Link>
           </div>
         </section>
@@ -354,7 +371,7 @@ export default function LabRunner({
         <>
           {lab.scenarioMd && (
             <section className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
-              <h2 className="text-base font-bold text-[var(--ink)]">The scenario</h2>
+              <h2 className="text-base font-bold text-[var(--ink)]">{t("labs.scenario")}</h2>
               <div className="mt-3">
                 <Markdown source={lab.scenarioMd} />
               </div>
@@ -381,19 +398,16 @@ export default function LabRunner({
           {lab.labType === "prompt" && (
             <section className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-base font-bold text-[var(--ink)]">Your prompt</h2>
+                <h2 className="text-base font-bold text-[var(--ink)]">{t("labs.prompt.title")}</h2>
                 <span className="text-xs text-[var(--ink3)]">
-                  {maxRuns - runsUsed} of {maxRuns} sandbox runs left
+                  {t("labs.prompt.runsLeft", { left: Math.max(0, maxRuns - runsUsed), max: maxRuns })}
                 </span>
               </div>
-              <p className="mt-1 text-sm text-[var(--ink2)]">
-                Write your prompt, run it against a real model, and refine it. You're graded on the
-                prompt — not on how good the model's answer happened to be.
-              </p>
+              <p className="mt-1 text-sm text-[var(--ink2)]">{t("labs.prompt.intro")}</p>
 
               {lab.contextMd && (
                 <details className="mt-4 rounded-xl bg-[var(--s2)] p-4" open>
-                  <summary className="cursor-pointer text-sm font-semibold text-[var(--ink)]">Material the AI receives with your prompt</summary>
+                  <summary className="cursor-pointer text-sm font-semibold text-[var(--ink)]">{t("labs.prompt.context")}</summary>
                   <div className="mt-2 max-h-72 overflow-auto"><Markdown source={lab.contextMd} /></div>
                 </details>
               )}
@@ -402,7 +416,7 @@ export default function LabRunner({
                 rows={8}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Write your prompt here…"
+                placeholder={t("labs.prompt.placeholder")}
                 className="mt-4 w-full rounded-xl border border-[var(--border)] px-4 py-3 font-mono text-sm leading-relaxed outline-none focus:border-[var(--blue3)] focus:ring-2 focus:ring-[var(--blue3)]/20"
               />
 
@@ -413,7 +427,7 @@ export default function LabRunner({
                   className="rounded-full border-2 px-5 py-2.5 text-sm font-bold disabled:opacity-40"
                   style={{ borderColor: accentColor, color: accentColor }}
                 >
-                  {busy ? "Running…" : runsUsed >= maxRuns ? "No runs left" : "▶ Run in sandbox"}
+                  {busy ? t("labs.prompt.running") : runsUsed >= maxRuns ? t("labs.prompt.noRuns") : t("labs.prompt.run")}
                 </button>
                 <button
                   onClick={() => submit()}
@@ -421,25 +435,25 @@ export default function LabRunner({
                   className="rounded-full px-6 py-2.5 text-sm font-bold text-white disabled:opacity-40"
                   style={{ background: accentColor }}
                 >
-                  {busy ? "Scoring…" : "Submit for grading"}
+                  {busy ? t("labs.scoring") : t("labs.prompt.submit")}
                 </button>
               </div>
 
               {transcript.length > 0 && (
                 <div className="mt-6">
                   <h3 className="text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">
-                    Sandbox history
+                    {t("labs.prompt.history")}
                   </h3>
                   <ol className="mt-3 space-y-4">
-                    {transcript.map((t, i) => (
+                    {transcript.map((run, i) => (
                       <li key={i} className="rounded-xl border border-[var(--border)] p-4">
-                        <p className="text-xs font-bold text-[var(--ink3)]">Run {i + 1} — your prompt</p>
+                        <p className="text-xs font-bold text-[var(--ink3)]">{t("labs.prompt.runLabel", { n: i + 1 })}</p>
                         <pre className="mt-1 whitespace-pre-wrap font-mono text-xs text-[var(--ink2)]">
-                          {t.prompt}
+                          {run.prompt}
                         </pre>
-                        <p className="mt-3 text-xs font-bold text-[var(--ink3)]">Response</p>
+                        <p className="mt-3 text-xs font-bold text-[var(--ink3)]">{t("labs.prompt.response")}</p>
                         <div className="mt-1 max-h-72 overflow-auto rounded-lg bg-[var(--s2)] p-3">
-                          <Markdown source={t.response} />
+                          <Markdown source={run.response} />
                         </div>
                       </li>
                     ))}
@@ -453,22 +467,16 @@ export default function LabRunner({
           {lab.labType === "critique" && (
             <>
               <section className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
-                <h2 className="text-base font-bold text-[var(--ink)]">The AI's answer</h2>
-                <p className="mt-1 text-sm text-[var(--ink2)]">
-                  Read it carefully. Some of this is wrong.
-                </p>
+                <h2 className="text-base font-bold text-[var(--ink)]">{t("labs.critique.answerTitle")}</h2>
+                <p className="mt-1 text-sm text-[var(--ink2)]">{t("labs.critique.answerIntro")}</p>
                 <div className="mt-4 rounded-xl border-l-4 bg-[var(--s2)] p-5" style={{ borderColor: accentColor }}>
                   <Markdown source={lab.answerMd ?? ""} />
                 </div>
               </section>
 
               <section className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
-                <h2 className="text-base font-bold text-[var(--ink)]">What's wrong with it?</h2>
-                <p className="mt-1 text-sm text-[var(--ink2)]">
-                  Select every statement that's a genuine problem. Some of these are perfectly fine —
-                  flagging those counts against you, because knowing what's <em>acceptable</em> is
-                  half the skill.
-                </p>
+                <h2 className="text-base font-bold text-[var(--ink)]">{t("labs.critique.question")}</h2>
+                <p className="mt-1 text-sm text-[var(--ink2)]">{t("labs.critique.instructions")}</p>
                 <ul className="mt-4 space-y-2">
                   {(lab.candidates ?? []).map((c) => (
                     <li key={c.id}>
@@ -496,7 +504,13 @@ export default function LabRunner({
                   className="mt-5 w-full rounded-full py-3.5 text-sm font-bold text-white disabled:opacity-40"
                   style={{ background: accentColor }}
                 >
-                  {busy ? "Scoring…" : selected.size === 0 ? "Select at least one" : `Submit ${selected.size} selection${selected.size === 1 ? "" : "s"}`}
+                  {busy
+                    ? t("labs.scoring")
+                    : selected.size === 0
+                      ? t("labs.critique.selectOne")
+                      : selected.size === 1
+                        ? t("labs.critique.submitOne")
+                        : t("labs.critique.submitMany", { n: selected.size })}
                 </button>
               </section>
             </>
@@ -505,12 +519,8 @@ export default function LabRunner({
           {/* BUILD LAB */}
           {lab.labType === "workbench" && (
             <section className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
-              <h2 className="text-base font-bold text-[var(--ink)]">Your work</h2>
-              <p className="mt-1 text-sm text-[var(--ink2)]">
-                Work through each part here. It is assessed against the criteria above, so be
-                specific: name the real steps, people and consequences. Drafts are kept in this
-                browser until you submit.
-              </p>
+              <h2 className="text-base font-bold text-[var(--ink)]">{t("labs.workbench.title")}</h2>
+              <p className="mt-1 text-sm text-[var(--ink2)]">{t("labs.workbench.intro")}</p>
               <ol className="mt-5 space-y-6">
                 {(lab.fields ?? []).map((f, i) => {
                   const n = wordCount(answers[f.id] ?? "");
@@ -536,7 +546,7 @@ export default function LabRunner({
                         className="ml-8 mt-2 w-[calc(100%-2rem)] rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm leading-relaxed outline-none focus:border-[var(--blue3)] focus:ring-2 focus:ring-[var(--blue3)]/20"
                       />
                       <p className={`ml-8 mt-1 text-right text-xs ${n >= min ? "text-[#0F6E56]" : "text-[var(--ink3)]"}`}>
-                        {n} words{n < min ? ` · aim for ${min}+` : " ✓"}
+                        {n < min ? t("labs.wordsAim", { n, min }) : t("labs.wordsDone", { n })}
                       </p>
                     </li>
                   );
@@ -549,21 +559,18 @@ export default function LabRunner({
                 className="mt-6 w-full rounded-full py-3.5 text-sm font-bold text-white disabled:opacity-40"
                 style={{ background: accentColor }}
               >
-                {busy ? "Assessing your work…" : "Submit for assessment"}
+                {busy ? t("labs.workbench.assessing") : t("labs.workbench.submit")}
               </button>
               {(lab.fields ?? []).some((f) => !(answers[f.id] ?? "").trim()) && (
-                <p className="mt-2 text-center text-xs text-[var(--ink3)]">Every part needs an answer before you can submit.</p>
+                <p className="mt-2 text-center text-xs text-[var(--ink3)]">{t("labs.workbench.needAll")}</p>
               )}
             </section>
           )}
 
           {lab.labType === "build" && (
             <section className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
-              <h2 className="text-base font-bold text-[var(--ink)]">Steps</h2>
-              <p className="mt-1 text-sm text-[var(--ink2)]">
-                Do these for real, then tick them off. This one's on your honour — we can't see
-                inside another tool, and we're not pretending to.
-              </p>
+              <h2 className="text-base font-bold text-[var(--ink)]">{t("labs.build.steps")}</h2>
+              <p className="mt-1 text-sm text-[var(--ink2)]">{t("labs.build.intro")}</p>
               <ul className="mt-4 space-y-2">
                 {(lab.steps ?? []).map((s) => (
                   <li key={s.id}>
@@ -596,7 +603,7 @@ export default function LabRunner({
               {lab.requireArtifact !== false && (
                 <div className="mt-5">
                   <label htmlFor="artifact" className="block text-sm font-semibold text-[var(--ink)]">
-                    {lab.artifactLabel ?? "Link to your work"}
+                    {lab.artifactLabel ?? t("labs.build.link")}
                   </label>
                   <input
                     id="artifact"
@@ -606,18 +613,15 @@ export default function LabRunner({
                     placeholder="https://…"
                     className="mt-1.5 w-full rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm outline-none focus:border-[var(--blue3)] focus:ring-2 focus:ring-[var(--blue3)]/20"
                   />
-                  <p className="mt-1 text-xs text-[var(--ink3)]">Make sure it's publicly viewable.</p>
+                  <p className="mt-1 text-xs text-[var(--ink3)]">{t("labs.build.linkHelp")}</p>
                 </div>
               )}
 
               <div className="mt-5">
                 <label htmlFor="reflection" className="block text-sm font-semibold text-[var(--ink)]">
-                  What happened?
+                  {t("labs.build.reflection")}
                 </label>
-                <p className="text-xs text-[var(--ink3)]">
-                  At least 60 words. What did you try, what surprised you, what would you do
-                  differently? The writing is where it sticks.
-                </p>
+                <p className="text-xs text-[var(--ink3)]">{t("labs.build.reflectionHelp")}</p>
                 <textarea
                   id="reflection"
                   rows={7}
@@ -626,7 +630,7 @@ export default function LabRunner({
                   className="mt-1.5 w-full rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm outline-none focus:border-[var(--blue3)] focus:ring-2 focus:ring-[var(--blue3)]/20"
                 />
                 <p className="mt-1 text-right text-xs text-[var(--ink3)]">
-                  {reflection.trim().split(/\s+/).filter(Boolean).length} words
+                  {t("labs.words", { n: wordCount(reflection) })}
                 </p>
               </div>
 
@@ -636,7 +640,7 @@ export default function LabRunner({
                 className="mt-5 w-full rounded-full py-3.5 text-sm font-bold text-white disabled:opacity-40"
                 style={{ background: accentColor }}
               >
-                {busy ? "Saving…" : "Submit lab"}
+                {busy ? t("labs.saving") : t("labs.build.submit")}
               </button>
             </section>
           )}

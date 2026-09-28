@@ -1,6 +1,8 @@
 // Overall score per site across runs, as a plain SVG line chart. Rendered on
 // the server; there is nothing to interact with.
 
+import { getT } from "@/lib/i18n/server";
+
 const COLORS = ["#F47C20", "#2251A3", "#0F6E56", "#7c3aed"];
 
 interface Point {
@@ -8,7 +10,9 @@ interface Point {
   sites: Array<{ host: string; isOwn: boolean; overall: number | null }>;
 }
 
-export default function ScoreHistory({ history }: { history: Point[] }) {
+/** `at` is the run's date, already short and in the reader's locale. */
+export default async function ScoreHistory({ history }: { history: Point[] }) {
+  const t = await getT();
   const W = 640, H = 220, L = 32, R = 12, T = 12, B = 28;
   const hosts: Array<{ host: string; isOwn: boolean }> = [];
   for (const p of history) {
@@ -31,17 +35,17 @@ export default function ScoreHistory({ history }: { history: Point[] }) {
 
   return (
     <section className="bg-white border border-[#D2DCE8] rounded-2xl p-5 md:p-6">
-      <h2 className="font-syne font-bold text-base text-[#0D1B2A]">Overall score over time</h2>
+      <h2 className="font-syne font-bold text-base text-[#0D1B2A]">{t("tools.dash.chartTitle")}</h2>
       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
         {lines.map((l) => (
           <span key={l.host} className="inline-flex items-center gap-1.5 font-dm text-xs text-[#3A4A5C]">
             <span className="w-3 h-1 rounded-full" style={{ background: l.color }} />
             {l.host}
-            {l.isOwn && " (you)"}
+            {l.isOwn && ` ${t("tools.dash.chartYou")}`}
           </span>
         ))}
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto mt-3" role="img" aria-label="Overall score over time for each site">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto mt-3" role="img" aria-label={t("tools.dash.chartAria")}>
         {[0, 25, 50, 75, 100].map((v) => (
           <g key={v}>
             <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} stroke="#EEF2F7" />
@@ -59,7 +63,7 @@ export default function ScoreHistory({ history }: { history: Point[] }) {
               fontSize="10"
               fill="#7A8FA6"
             >
-              {p.at.replace(/, \d{4}$/, "")}
+              {p.at}
             </text>
           ) : null,
         )}

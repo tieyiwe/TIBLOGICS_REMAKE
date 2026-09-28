@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ShoppingBag, Check, ArrowLeft, ShieldCheck, Zap, Plus, Minus, ChevronDown } from "lucide-react";
 import { useCart } from "./CartContext";
 import { formatMoney, type ShopProduct } from "./types";
+import { useLocale, useT } from "@/lib/i18n/client";
 
 const S = {
   darker: "#0C1112",
@@ -26,6 +27,7 @@ const dm = "var(--font-dm-sans), sans-serif";
  * introduce a block read as headings rather than being lost in the paragraphs.
  */
 function ProductCopy({ text }: { text: string }) {
+  const t = useT();
   const [expanded, setExpanded] = useState(false);
 
   const blocks = text.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
@@ -102,7 +104,7 @@ function ProductCopy({ text }: { text: string }) {
             color: S.orange, fontFamily: dm, fontSize: ".88rem", fontWeight: 700,
           }}
         >
-          {expanded ? "Show less" : `Read what's inside`}
+          {expanded ? t("pages.store.detail.showLess") : t("pages.store.detail.readMore")}
           <ChevronDown
             size={15}
             style={{ transition: "transform .2s", transform: expanded ? "rotate(180deg)" : undefined }}
@@ -114,6 +116,8 @@ function ProductCopy({ text }: { text: string }) {
 }
 
 export default function ProductDetail({ product: p, related }: { product: ShopProduct; related: ShopProduct[] }) {
+  const t = useT();
+  const locale = useLocale();
   const { add, setOpen } = useCart();
   const [activeImg, setActiveImg] = useState(0);
   const [qty, setQty] = useState(1);
@@ -148,7 +152,7 @@ export default function ProductDetail({ product: p, related }: { product: ShopPr
 
       <div style={{ maxWidth: "1080px", margin: "0 auto", padding: "120px 24px 100px" }}>
         <Link href="/store" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: S.muted, textDecoration: "none", fontSize: ".88rem", marginBottom: "32px" }}>
-          <ArrowLeft size={16} /> Back to store
+          <ArrowLeft size={16} /> {t("pages.store.backToStore").replace(/^←\s*/, "")}
         </Link>
 
         <div className="pd-grid">
@@ -165,7 +169,7 @@ export default function ProductDetail({ product: p, related }: { product: ShopPr
             {p.images.length > 1 && (
               <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                 {p.images.map((img, i) => (
-                  <button key={i} onClick={() => setActiveImg(i)} style={{ width: "68px", height: "68px", borderRadius: "12px", overflow: "hidden", border: `2px solid ${i === activeImg ? S.orange : S.border}`, cursor: "pointer", padding: 0, background: "none" }}>
+                  <button key={i} onClick={() => setActiveImg(i)} aria-label={t("pages.store.detail.image", { n: i + 1 })} style={{ width: "68px", height: "68px", borderRadius: "12px", overflow: "hidden", border: `2px solid ${i === activeImg ? S.orange : S.border}`, cursor: "pointer", padding: 0, background: "none" }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   </button>
@@ -181,11 +185,11 @@ export default function ProductDetail({ product: p, related }: { product: ShopPr
             {p.tagline && <p style={{ color: "#B0C4CC", fontSize: "1.02rem", lineHeight: 1.6, marginBottom: "22px" }}>{p.tagline}</p>}
 
             <div style={{ display: "flex", alignItems: "baseline", gap: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
-              <span style={{ fontFamily: syne, fontWeight: 800, fontSize: "2.4rem" }}>{p.price === 0 ? "Free" : formatMoney(p.price, p.currency)}</span>
+              <span style={{ fontFamily: syne, fontWeight: 800, fontSize: "2.4rem" }}>{p.price === 0 ? t("pages.store.card.free") : formatMoney(p.price, p.currency, locale)}</span>
               {onSale && (
                 <>
-                  <span style={{ color: S.muted, fontSize: "1.1rem", textDecoration: "line-through" }}>{formatMoney(p.compareAtPrice!, p.currency)}</span>
-                  <span style={{ background: "linear-gradient(135deg,#F47C4C,#F9A738)", color: "#131A1B", fontFamily: syne, fontWeight: 800, fontSize: ".78rem", padding: "4px 12px", borderRadius: "20px" }}>Save {pct}%</span>
+                  <span style={{ color: S.muted, fontSize: "1.1rem", textDecoration: "line-through" }}>{formatMoney(p.compareAtPrice!, p.currency, locale)}</span>
+                  <span style={{ background: "linear-gradient(135deg,#F47C4C,#F9A738)", color: "#131A1B", fontFamily: syne, fontWeight: 800, fontSize: ".78rem", padding: "4px 12px", borderRadius: "20px" }}>{t("pages.store.detail.save", { pct })}</span>
                 </>
               )}
             </div>
@@ -193,7 +197,7 @@ export default function ProductDetail({ product: p, related }: { product: ShopPr
             {/* Stock */}
             {p.stock != null && (
               <div style={{ fontSize: ".85rem", color: soldOut ? "#F87171" : p.stock <= 5 ? S.amber : "#4ade80", marginBottom: "20px", fontWeight: 600 }}>
-                {soldOut ? "Out of stock" : p.stock <= 5 ? `Only ${p.stock} left in stock` : "In stock"}
+                {soldOut ? t("pages.store.detail.outOfStock") : p.stock <= 5 ? t("pages.store.detail.onlyLeft", { n: p.stock }) : t("pages.store.detail.inStock")}
               </div>
             )}
 
@@ -201,15 +205,15 @@ export default function ProductDetail({ product: p, related }: { product: ShopPr
             {!soldOut && (
               <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "16px", flexWrap: "wrap" }}>
                 <div style={{ display: "flex", alignItems: "center", background: S.card, border: `1px solid ${S.border}`, borderRadius: "50px", overflow: "hidden" }}>
-                  <button onClick={() => setQty((q) => Math.max(1, q - 1))} style={{ width: "42px", height: "44px", background: "none", border: "none", color: "#fff", cursor: "pointer" }}><Minus size={16} style={{ margin: "0 auto" }} /></button>
+                  <button onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label={t("pages.store.detail.decrease")} style={{ width: "42px", height: "44px", background: "none", border: "none", color: "#fff", cursor: "pointer" }}><Minus size={16} style={{ margin: "0 auto" }} /></button>
                   <span style={{ minWidth: "32px", textAlign: "center", fontWeight: 700 }}>{qty}</span>
-                  <button onClick={() => setQty((q) => Math.min(cap, q + 1))} style={{ width: "42px", height: "44px", background: "none", border: "none", color: S.orange, cursor: "pointer" }}><Plus size={16} style={{ margin: "0 auto" }} /></button>
+                  <button onClick={() => setQty((q) => Math.min(cap, q + 1))} aria-label={t("pages.store.detail.increase")} style={{ width: "42px", height: "44px", background: "none", border: "none", color: S.orange, cursor: "pointer" }}><Plus size={16} style={{ margin: "0 auto" }} /></button>
                 </div>
                 <button
                   onClick={() => addToCart(false)}
-                  style={{ flex: 1, minWidth: "160px", padding: "14px 24px", borderRadius: "50px", border: `1px solid ${S.border}`, background: added ? "#22A387" : "rgba(255,255,255,.06)", color: "#fff", fontFamily: syne, fontWeight: 700, fontSize: ".95rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                  style={{ flex: 1, minWidth: "min(160px, 100%)", padding: "14px 20px", borderRadius: "50px", border: `1px solid ${S.border}`, background: added ? "#22A387" : "rgba(255,255,255,.06)", color: "#fff", fontFamily: syne, fontWeight: 700, fontSize: ".95rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
                 >
-                  {added ? (<><Check size={17} /> Added to cart</>) : (<><ShoppingBag size={17} /> Add to Cart</>)}
+                  {added ? (<><Check size={17} /> {t("pages.store.detail.addedToCart")}</>) : (<><ShoppingBag size={17} /> {t("pages.store.detail.addToCart")}</>)}
                 </button>
               </div>
             )}
@@ -218,19 +222,19 @@ export default function ProductDetail({ product: p, related }: { product: ShopPr
               disabled={soldOut}
               style={{ width: "100%", padding: "16px 24px", borderRadius: "50px", border: "none", background: soldOut ? "rgba(255,255,255,.08)" : "linear-gradient(135deg,#F47C4C,#F9A738)", color: soldOut ? S.muted : "#131A1B", fontFamily: syne, fontWeight: 800, fontSize: "1.05rem", cursor: soldOut ? "not-allowed" : "pointer", marginBottom: "28px" }}
             >
-              {soldOut ? "Sold Out" : "Buy Now →"}
+              {soldOut ? t("pages.store.card.soldOut") : t("pages.store.detail.buyNow")}
             </button>
 
             {/* Trust badges */}
             <div style={{ display: "flex", gap: "20px", flexWrap: "wrap", marginBottom: "28px" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: "7px", color: S.muted, fontSize: ".82rem" }}><ShieldCheck size={16} color={S.amber} /> Secure Stripe checkout</span>
-              {p.digital && <span style={{ display: "flex", alignItems: "center", gap: "7px", color: S.muted, fontSize: ".82rem" }}><Zap size={16} color={S.amber} /> Instant digital access</span>}
+              <span style={{ display: "flex", alignItems: "center", gap: "7px", color: S.muted, fontSize: ".82rem" }}><ShieldCheck size={16} color={S.amber} /> {t("pages.store.detail.secure")}</span>
+              {p.digital && <span style={{ display: "flex", alignItems: "center", gap: "7px", color: S.muted, fontSize: ".82rem" }}><Zap size={16} color={S.amber} /> {t("pages.store.detail.instant")}</span>}
             </div>
 
             {/* Description */}
             {p.description && (
               <div style={{ borderTop: `1px solid ${S.border}`, paddingTop: "24px" }}>
-                <h3 style={{ fontFamily: syne, fontWeight: 700, fontSize: "1rem", marginBottom: "12px" }}>Details</h3>
+                <h3 style={{ fontFamily: syne, fontWeight: 700, fontSize: "1rem", marginBottom: "12px" }}>{t("pages.store.detail.details")}</h3>
                 <ProductCopy text={p.description} />
               </div>
             )}
@@ -248,7 +252,7 @@ export default function ProductDetail({ product: p, related }: { product: ShopPr
         {/* Related */}
         {related.length > 0 && (
           <div style={{ marginTop: "72px" }}>
-            <h2 style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.5rem", marginBottom: "24px" }}>You might also like</h2>
+            <h2 style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.5rem", marginBottom: "24px" }}>{t("pages.store.detail.related")}</h2>
             <div className="rel-grid">
               {related.map((r) => {
                 const rSale = r.onSale && r.compareAtPrice && r.compareAtPrice > r.price;
@@ -264,9 +268,9 @@ export default function ProductDetail({ product: p, related }: { product: ShopPr
                     </div>
                     <div style={{ padding: "14px" }}>
                       <div style={{ fontFamily: syne, fontWeight: 700, fontSize: ".9rem", marginBottom: "6px", lineHeight: 1.3 }}>{r.name}</div>
-                      <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
-                        <span style={{ fontFamily: syne, fontWeight: 800, color: S.orange }}>{r.price === 0 ? "Free" : formatMoney(r.price, r.currency)}</span>
-                        {rSale && <span style={{ color: S.muted, fontSize: ".78rem", textDecoration: "line-through" }}>{formatMoney(r.compareAtPrice!, r.currency)}</span>}
+                      <div style={{ display: "flex", alignItems: "baseline", gap: "8px", flexWrap: "wrap" }}>
+                        <span style={{ fontFamily: syne, fontWeight: 800, color: S.orange }}>{r.price === 0 ? t("pages.store.card.free") : formatMoney(r.price, r.currency, locale)}</span>
+                        {rSale && <span style={{ color: S.muted, fontSize: ".78rem", textDecoration: "line-through" }}>{formatMoney(r.compareAtPrice!, r.currency, locale)}</span>}
                       </div>
                     </div>
                   </Link>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useT } from "@/lib/i18n/client";
 
 interface Question {
   id: string;
@@ -39,7 +40,9 @@ export default function QuizRunner({
   alreadyPassed: boolean;
 }) {
   const router = useRouter();
+  const t = useT();
   const [questions, setQuestions] = useState<Question[] | null>(null);
+  const [pending, setPending] = useState(false);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [result, setResult] = useState<{
     score: number; passed: boolean; graded: Graded[]; pointsAwarded: number;
@@ -53,13 +56,14 @@ export default function QuizRunner({
     try {
       const res = await fetch(`/api/learn/quiz/serve?mode=quiz&id=${quizId}`);
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "Could not load the quiz");
+      if (!res.ok) throw new Error(data.error ?? t("labs.quiz.loadError"));
       setQuestions(data.questions);
+      setPending(!!data.pending);
       setAnswers({});
       setResult(null);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("labs.error.generic"));
     } finally {
       setBusy(false);
     }
@@ -75,12 +79,12 @@ export default function QuizRunner({
         body: JSON.stringify({ mode: "quiz", id: quizId, answers }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "Could not score the quiz");
+      if (!res.ok) throw new Error(data.error ?? t("labs.quiz.scoreError"));
       setResult(data);
       router.refresh();
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t("labs.error.generic"));
     } finally {
       setBusy(false);
     }
@@ -93,31 +97,28 @@ export default function QuizRunner({
   if (!questions) {
     return (
       <section className="rounded-2xl border border-[var(--border)] bg-white p-8 text-center">
-        <h1 className="text-xl font-black text-[var(--ink)]">Module quiz</h1>
+        <h1 className="text-xl font-black text-[var(--ink)]">{t("labs.quiz.title")}</h1>
         <p className="mt-1 text-sm font-semibold text-[var(--ink2)]">{moduleTitle}</p>
 
         <dl className="mx-auto mt-6 grid max-w-sm grid-cols-2 gap-4 text-left">
           <div className="rounded-xl bg-[var(--s2)] p-3">
-            <dt className="text-xs text-[var(--ink3)]">Questions</dt>
+            <dt className="text-xs text-[var(--ink3)]">{t("labs.quiz.questions")}</dt>
             <dd className="text-sm font-bold text-[var(--ink)]">{questionsServed}</dd>
           </div>
           <div className="rounded-xl bg-[var(--s2)] p-3">
-            <dt className="text-xs text-[var(--ink3)]">To pass</dt>
+            <dt className="text-xs text-[var(--ink3)]">{t("labs.quiz.toPass")}</dt>
             <dd className="text-sm font-bold text-[var(--ink)]">{passScore}%</dd>
           </div>
         </dl>
 
         {bestScore != null && (
           <p className="mt-4 text-sm text-[var(--ink2)]">
-            Your best so far: <strong>{bestScore}%</strong>
-            {alreadyPassed && <span className="ml-2 font-semibold text-green-700">✓ passed</span>}
+            {t("labs.quiz.best")} <strong>{bestScore}%</strong>
+            {alreadyPassed && <span className="ml-2 font-semibold text-green-700">{t("labs.quiz.passedTag")}</span>}
           </p>
         )}
 
-        <p className="mx-auto mt-4 max-w-md text-sm text-[var(--ink2)]">
-          No time limit. Retake as often as you like — the questions are drawn from a larger bank, so
-          you'll get a different set each time.
-        </p>
+        <p className="mx-auto mt-4 max-w-md text-sm text-[var(--ink2)]">{t("labs.quiz.noLimit")}</p>
 
         <button
           onClick={load}
@@ -125,7 +126,7 @@ export default function QuizRunner({
           className="mt-6 rounded-full px-7 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           style={{ background: accentColor }}
         >
-          {busy ? "Loading…" : alreadyPassed ? "Retake for practice" : "Start the quiz"}
+          {busy ? t("labs.loading") : alreadyPassed ? t("labs.quiz.retake") : t("labs.quiz.start")}
         </button>
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       </section>
@@ -141,16 +142,14 @@ export default function QuizRunner({
             {result.score}%
           </p>
           <h1 className="mt-2 text-xl font-bold text-[var(--ink)]">
-            {result.passed ? "Passed" : "Not quite yet"}
+            {result.passed ? t("labs.quiz.passed") : t("labs.quiz.notYet")}
           </h1>
           <p className="mt-1 text-sm text-[var(--ink2)]">
-            {result.passed
-              ? "This module is signed off. On to the next one."
-              : `You need ${passScore}% to pass. Review the explanations below, then try a fresh set.`}
+            {result.passed ? t("labs.quiz.passedBody") : t("labs.quiz.failBody", { pass: passScore })}
           </p>
           {result.pointsAwarded > 0 && (
             <p className="mt-2 text-sm font-bold text-[var(--orange2)]">
-              +{result.pointsAwarded} points
+              {t("labs.points", { n: result.pointsAwarded })}
             </p>
           )}
         </div>
@@ -197,14 +196,14 @@ export default function QuizRunner({
             disabled={busy}
             className="rounded-full border border-[var(--border)] px-6 py-2.5 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)]"
           >
-            {result.passed ? "Retake for practice" : "Try a fresh set"}
+            {result.passed ? t("labs.quiz.retake") : t("labs.quiz.fresh")}
           </button>
           <Link
             href={`/learn/track/${trackSlug}`}
             className="rounded-full px-6 py-2.5 text-sm font-bold text-white"
             style={{ background: accentColor }}
           >
-            Back to track →
+            {t("labs.backToTrackCta")}
           </Link>
         </div>
       </section>
@@ -218,7 +217,7 @@ export default function QuizRunner({
         <div className="flex items-center justify-between text-sm">
           <span className="font-bold text-[var(--ink)]">{moduleTitle}</span>
           <span className="text-[var(--ink3)]">
-            {answeredCount}/{questions.length} answered
+            {t("labs.answered", { n: answeredCount, total: questions.length })}
           </span>
         </div>
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--s3)]">
@@ -231,6 +230,8 @@ export default function QuizRunner({
           />
         </div>
       </div>
+
+      {pending && <p className="-mt-2 mb-6 text-xs text-[var(--ink3)]">{t("common.translationPending")}</p>}
 
       <ol className="space-y-8">
         {questions.map((q, i) => (
@@ -274,10 +275,10 @@ export default function QuizRunner({
         style={{ background: accentColor }}
       >
         {busy
-          ? "Scoring…"
+          ? t("labs.scoring")
           : allAnswered
-          ? "Submit quiz"
-          : `Answer all ${questions.length} questions to submit`}
+          ? t("labs.quiz.submit")
+          : t("labs.quiz.answerAllN", { n: questions.length })}
       </button>
     </section>
   );

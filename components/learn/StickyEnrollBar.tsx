@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import WaitlistForm from "./WaitlistForm";
-import { PLANS, formatPlanPrice, FOUNDING_PRICING } from "@/lib/payments/provider";
+import { PLANS, FOUNDING_PRICING } from "@/lib/payments/provider";
+import { fmtPrice } from "@/lib/learn/format";
+import { useLocale, useT } from "@/lib/i18n/client";
 
 // Sticky enrol CTA (Part C2). Appears after the hero scrolls away so it
 // doesn't compete with the page's own call to action.
@@ -18,6 +20,8 @@ export default function StickyEnrollBar({
   comingSoon: boolean;
   trackSlug: string;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -39,16 +43,16 @@ export default function StickyEnrollBar({
           <p className="truncate text-sm font-bold text-[var(--ink)]">{trackTitle}</p>
           <p className="text-xs text-[var(--ink3)]">
             {comingSoon ? (
-              "Opening soon — join the waitlist"
+              t("learn.enroll.openingSoon")
             ) : (
               <>
                 {FOUNDING_PRICING && (
-                  <span className="mr-1.5 font-bold text-[var(--orange2)]">Founding rate</span>
+                  <span className="mr-1.5 font-bold text-[var(--orange2)]">{t("learn.billing.foundingRate")}</span>
                 )}
                 <strong className="text-[var(--ink2)]">
-                  {formatPlanPrice(PLANS.monthly)}/mo
+                  {t("learn.price.perMonthShort", { price: fmtPrice(PLANS.monthly.amount, locale) })}
                 </strong>{" "}
-                · every track included
+                · {t("learn.billing.everyTrack")}
               </>
             )}
           </p>
@@ -64,7 +68,7 @@ export default function StickyEnrollBar({
             className="shrink-0 rounded-full px-6 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
             style={{ background: accentColor }}
           >
-            Create account & start →
+            {t("learn.enroll.createAndStart")} →
           </Link>
         )}
       </div>

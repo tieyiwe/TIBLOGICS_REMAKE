@@ -1,28 +1,14 @@
-const STATUS_META: Record<
-  string,
-  { label: string; blurb: string; tone: "neutral" | "warn" | "good" | "bad" }
-> = {
-  submitted: {
-    label: "Submitted",
-    blurb: "We have your work. A reviewer will pick it up shortly.",
-    tone: "neutral",
-  },
-  in_review: {
-    label: "In review",
-    blurb: "A TIBLOGICS reviewer is reading your submission now.",
-    tone: "neutral",
-  },
-  revisions_requested: {
-    label: "Revisions requested",
-    blurb: "You're close. Address the notes below and resubmit — there's no limit on attempts.",
-    tone: "warn",
-  },
-  passed: { label: "Passed", blurb: "Approved. Your certificate is on its way.", tone: "good" },
-  failed: {
-    label: "Not passed",
-    blurb: "This one didn't meet the rubric. The notes explain what to strengthen — you can resubmit.",
-    tone: "bad",
-  },
+"use client";
+
+import { useLocale, useT } from "@/lib/i18n/client";
+
+// Label and blurb for each status come from labs.capstone.status.<status>.
+const STATUS_TONE: Record<string, "neutral" | "warn" | "good" | "bad"> = {
+  submitted: "neutral",
+  in_review: "neutral",
+  revisions_requested: "warn",
+  passed: "good",
+  failed: "bad",
 };
 
 const TONES = {
@@ -51,22 +37,25 @@ export default function CapstoneStatus({
   passThreshold: number;
   accentColor: string;
 }) {
-  const meta = STATUS_META[status] ?? STATUS_META.submitted;
+  const t = useT();
+  const locale = useLocale();
+  const key = status in STATUS_TONE ? status : "submitted";
+  const tone = STATUS_TONE[key];
   const stepIndex = status === "passed" ? 2 : status === "in_review" ? 1 : 0;
   const terminalBad = status === "failed" || status === "revisions_requested";
 
   return (
-    <section className={`rounded-2xl border-2 p-6 ${TONES[meta.tone]}`}>
+    <section className={`rounded-2xl border-2 p-6 ${TONES[tone]}`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-base font-bold text-[var(--ink)]">{meta.label}</h2>
+        <h2 className="text-base font-bold text-[var(--ink)]">{t(`labs.capstone.status.${key}`)}</h2>
         {score != null && (
           <span className="text-sm font-bold text-[var(--ink)]">
             {score}%{" "}
-            <span className="font-normal text-[var(--ink3)]">({passThreshold}% to pass)</span>
+            <span className="font-normal text-[var(--ink3)]">{t("labs.capstone.toPass", { pass: passThreshold })}</span>
           </span>
         )}
       </div>
-      <p className="mt-1.5 text-sm leading-relaxed text-[var(--ink2)]">{meta.blurb}</p>
+      <p className="mt-1.5 text-sm leading-relaxed text-[var(--ink2)]">{t(`labs.capstone.status.${key}.blurb`)}</p>
 
       {/* Timeline */}
       {!terminalBad && (
@@ -85,7 +74,7 @@ export default function CapstoneStatus({
                   i <= stepIndex ? "text-[var(--ink)]" : "text-[var(--ink3)]"
                 }`}
               >
-                {STATUS_META[s].label}
+                {t(`labs.capstone.status.${s}`)}
               </span>
               {i < STEPS.length - 1 && (
                 <span
@@ -102,7 +91,7 @@ export default function CapstoneStatus({
       {reviewerNotes && (
         <div className="mt-5 rounded-xl bg-white/70 p-4">
           <p className="text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">
-            Reviewer feedback
+            {t("labs.capstone.reviewerFeedback")}
           </p>
           <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[var(--ink2)]">
             {reviewerNotes}
@@ -111,8 +100,8 @@ export default function CapstoneStatus({
       )}
 
       <p className="mt-4 text-xs text-[var(--ink3)]">
-        Submitted {new Date(submittedAt).toLocaleDateString()}
-        {reviewedAt && ` · reviewed ${new Date(reviewedAt).toLocaleDateString()}`}
+        {t("labs.capstone.submittedOn", { date: new Date(submittedAt).toLocaleDateString(locale) })}
+        {reviewedAt && ` · ${t("labs.capstone.reviewedOn", { date: new Date(reviewedAt).toLocaleDateString(locale) })}`}
       </p>
     </section>
   );

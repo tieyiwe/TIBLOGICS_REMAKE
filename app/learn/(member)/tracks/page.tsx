@@ -2,7 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getStudent } from "@/lib/learn/session";
 import { getAllTrackProgress } from "@/lib/learn/progress";
-import { formatMinutes } from "@/lib/learn/types";
+import type { Metadata } from "next";
+import { fmtBreakdown, fmtMinutes } from "@/lib/learn/format";
+import { getCatalog } from "@/lib/learn/catalog";
+import { getLocale, getT } from "@/lib/i18n/server";
+import { loadTrackSources, localizedTracks } from "@/lib/i18n/sources/learn";
 import ProgressRing from "@/components/learn/ProgressRing";
 import CertificationLadder from "@/components/learn/CertificationLadder";
 import { LEVEL_SLUGS } from "@/lib/learn/levels";
@@ -10,17 +14,32 @@ import prisma from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("learn.tracks.metaTitle") };
+}
+
 export default async function MyTracksPage() {
   const student = await getStudent();
   if (!student) redirect("/learn/login");
 
-  const [tracks, certs] = await Promise.all([
+  const [rawTracks, certs, catalog, t, locale] = await Promise.all([
     getAllTrackProgress(student.id),
     prisma.learnCertificate.findMany({
       where: { studentId: student.id, revoked: false },
       select: { track: { select: { slug: true } } },
     }),
+    getCatalog(),
+    getT(),
+    getLocale(),
   ]);
+  const { texts, pending } = await localizedTracks(
+    locale === "en" ? [] : await loadTrackSources({ id: { in: rawTracks.map((x) => x.track.id) } }),
+    locale,
+  );
+  const tracks = rawTracks.map((x) => ({ ...x, track: { ...x.track, title: texts.get(x.track.slug)?.title ?? x.track.title } }));
+  // Lesson and hands-on minutes, for "About X hours: Y of lessons, Z hands-on".
+  const time = new Map(catalog.map((c) => [c.slug, c]));
   const certified = new Set(certs.map((c) => c.track.slug));
   const progress = Object.fromEntries(
     tracks.map(({ track, progress: pr }) => [
@@ -33,10 +52,13 @@ export default async function MyTracksPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-black text-[var(--ink)]">My tracks</h1>
-      <p className="mt-1 text-sm text-[var(--ink3)]">
-        Every level is included in your subscription. Start wherever fits you best.
-      </p>
+      <h1 className="text-2xl font-black text-[var(--ink)]">{t("learn.nav.myTracks")}</h1>
+      <p className="mt-1 text-sm text-[var(--ink3)]">{t("learn.tracks.intro")}</p>
+      {pending && (
+        <p role="status" className="mt-2 text-xs text-[var(--ink3)]">
+          {t("common.translationPending")}
+        </p>
+      )}
 
       <div className="mt-6">
         <CertificationLadder
@@ -48,11 +70,13 @@ export default async function MyTracksPage() {
             accentColor: track.accentColor,
             certificateName: track.certificateName,
             estimatedHours: track.estimatedHours,
+            lessonMinutes: time.get(track.slug)?.lessonMinutes,
+            handsOnMinutes: time.get(track.slug)?.handsOnMinutes,
           }))}
         />
       </div>
 
-      {others.length > 0 && <h2 className="mt-10 text-lg font-bold text-[var(--ink)]">More tracks</h2>}
+      {others.length > 0 && <h2 className="mt-10 text-lg font-bold text-[var(--ink)]">{t("learn.tracks.more")}</h2>}
 
       {others.length > 0 && (
         <div className="mt-4 space-y-4">
@@ -66,14 +90,17 @@ export default async function MyTracksPage() {
               <div className="min-w-0 flex-1">
                 <h2 className="text-sm font-bold text-[var(--ink)]">{track.title}</h2>
                 <p className="mt-1 text-xs text-[var(--ink3)]">
-                  {progress.completedLessons}/{progress.totalLessons} lessons
+                  {t("learn.dash.lessonsFraction", { done: progress.completedLessons, total: progress.totalLessons })}
                   {progress.minutesRemaining > 0 &&
-                    ` · ${formatMinutes(progress.minutesRemaining)} remaining`}
+                    ` · ${t("learn.time.remaining", { time: fmtMinutes(t, progress.minutesRemaining) })}`}
                 </p>
+                {time.get(track.slug) && (
+                  <p className="mt-1 text-xs text-[var(--ink3)]">{fmtBreakdown(t, locale, time.get(track.slug)!)}</p>
+                )}
                 <p className="mt-1 text-xs text-[var(--ink3)]">{track.certificateName}</p>
               </div>
               <span className="text-sm font-bold" style={{ color: track.accentColor }}>
-                {progress.completedLessons === 0 ? "Start →" : "Continue →"}
+                {progress.completedLessons === 0 ? t("learn.ladder.start") : t("learn.ladder.continue")} →
               </span>
             </Link>
           ))}

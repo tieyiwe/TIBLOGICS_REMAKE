@@ -6,6 +6,7 @@ import { MAX_ATTEMPTS, STALE_GENERATION_MINUTES } from "./config";
 import { BUDGET_LABELS, currentHours, IntakeSchema, type Intake } from "./intake";
 import { blueprintLink } from "./token";
 import { sendBlueprintReadyEmail } from "./email";
+import { LANGUAGE_FOR_AI, replyInLanguage, type Locale } from "@/lib/i18n/config";
 
 // Writes the blueprint.
 //
@@ -79,6 +80,14 @@ Reply with JSON only, no prose and no code fences, in exactly this shape:
   "measure": ["the numbers to track to know it worked"]
 }`;
 
+/** The system prompt, told to write in the customer's language when it is not English. */
+function systemFor(locale: Locale): string {
+  if (locale === "en") return SYSTEM;
+  return `${SYSTEM}
+
+${replyInLanguage(locale)} Keep every JSON key, and the effort values "low", "medium" and "high", exactly as shown in English; write every other string value in ${LANGUAGE_FOR_AI[locale]}. Keep product and software names as they are.`;
+}
+
 function brief(i: Intake): string {
   const lines = [
     `Company: ${i.company}`,
@@ -145,7 +154,7 @@ export async function generateBlueprint(id: string): Promise<GenerateOutcome> {
   try {
     const intake = IntakeSchema.parse(bp.intake);
     const msg = await anthropic.messages
-      .stream({ model: CLAUDE_MODEL, max_tokens: 16000, system: SYSTEM, messages: [{ role: "user", content: brief(intake) }] })
+      .stream({ model: CLAUDE_MODEL, max_tokens: 16000, system: systemFor(intake.locale ?? "en"), messages: [{ role: "user", content: brief(intake) }] })
       .finalMessage();
     if ((msg.stop_reason as string) === "refusal") throw new Error("The model declined to write this blueprint.");
     if (msg.stop_reason === "max_tokens") throw new Error("The blueprint was cut off before it finished.");
@@ -163,7 +172,7 @@ export async function generateBlueprint(id: string): Promise<GenerateOutcome> {
         outputTokens: { increment: msg.usage.output_tokens },
       },
     });
-    await sendBlueprintReadyEmail({ email: saved.email, name: saved.name, company: saved.company, link: await blueprintLink(saved) }).catch((err) =>
+    await sendBlueprintReadyEmail({ email: saved.email, name: saved.name, company: saved.company, link: await blueprintLink(saved), locale: intake.locale }).catch((err) =>
       console.error("[blueprint] ready email failed", id, err instanceof Error ? err.message : err),
     );
     return "ready";

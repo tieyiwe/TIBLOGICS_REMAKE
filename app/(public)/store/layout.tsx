@@ -1,10 +1,15 @@
+import type { Metadata } from "next";
+import { getT } from "@/lib/i18n/server";
 import { CartProvider } from "@/components/shop/CartContext";
 import CartDrawer from "@/components/shop/CartDrawer";
 
-export const metadata = {
-  title: "Store | TIBLOGICS",
-  description: "Premium tools, templates, and resources from TIBLOGICS. Instant access, built to move you forward.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return {
+    title: t("pages.store.meta.title"),
+    description: t("pages.store.meta.description"),
+  };
+}
 
 export default function ShopLayout({ children }: { children: React.ReactNode }) {
   return (

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getT } from "@/lib/i18n/server";
 import prisma from "@/lib/prisma";
 import { isValidEmail, requireAdmin, checkRateLimit } from "@/lib/require-admin";
 
@@ -27,18 +28,19 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const t = await getT();
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
   if (!(await checkRateLimit(`events-notify:${ip}`, 5, 60_000))) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    return NextResponse.json({ error: t("pages.api.tooMany") }, { status: 429 });
   }
   try {
     const { name, email, whatsapp, event, slug } = await req.json();
 
     if (!isValidEmail(email)) {
-      return NextResponse.json({ error: "Invalid email" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.invalidEmail") }, { status: 400 });
     }
     if (!name || typeof name !== "string" || name.trim().length < 1 || name.length > 100) {
-      return NextResponse.json({ error: "Invalid name" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.invalidName") }, { status: 400 });
     }
 
     // Use slug as primary identifier so admin can filter reliably
@@ -63,6 +65,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("[POST /api/events/notify]", error);
-    return NextResponse.json({ error: "Failed to save" }, { status: 500 });
+    return NextResponse.json({ error: t("pages.api.events.saveFailed") }, { status: 500 });
   }
 }

@@ -1,6 +1,10 @@
-export default function Loading() {
+import { getT } from "@/lib/i18n/server";
+
+export default async function Loading() {
+  const t = await getT();
   return (
-    <div className="pt-32 sm:pt-44 min-h-screen bg-white">
+    <div className="pt-32 sm:pt-44 min-h-screen bg-white" role="status" aria-busy="true">
+      <span className="sr-only">{t("site.loading")}</span>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="animate-pulse space-y-6 max-w-2xl">
           <div className="h-3 bg-[#E8EFF8] rounded-full w-20" />

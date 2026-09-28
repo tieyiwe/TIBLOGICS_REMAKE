@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LOCALES } from "@/lib/i18n/config";
 
 // What the customer tells us, validated once for the form and the API.
 
@@ -27,7 +28,41 @@ export const IntakeSchema = z.object({
   goals: text(1000, "Goals").min(5, "What would you like to get out of this?"),
   budget: z.enum(["not-sure", "under-1k", "1k-5k", "5k-15k", "15k-plus"]),
   processes: z.array(ProcessSchema).min(1, "Describe at least one process").max(3, "Up to three processes"),
+  /** The language the customer bought in; the blueprint is written in it. Absent on older intakes (English). */
+  locale: z.enum(LOCALES).optional(),
 });
+
+/**
+ * Translation keys for the messages above, so the API can answer in the
+ * visitor's language (lib/i18n/messages/tools.ts, "tools.bp.v.*").
+ */
+export const ISSUE_KEYS: Record<string, string> = {
+  "Name each process": "nameEach",
+  "Describe the steps in a sentence or two": "steps",
+  "How often does it happen?": "howOften",
+  "Roughly how long does it take?": "howLong",
+  "Your name is required": "name",
+  "Enter a valid email": "email",
+  "Company name is required": "company",
+  "What industry are you in?": "industry",
+  "List the software you already use": "tools",
+  "What would you like to get out of this?": "goals",
+  "Describe at least one process": "atLeastOne",
+  "Up to three processes": "upToThree",
+};
+
+/** The labels used in "<label> is too long", keyed for translation ("tools.bp.field.*"). */
+export const FIELD_KEYS: Record<string, string> = {
+  "Process name": "processName",
+  Steps: "steps",
+  Tools: "tools",
+  "What goes wrong": "pain",
+  Name: "name",
+  Company: "company",
+  Industry: "industry",
+  "Software you use": "software",
+  Goals: "goals",
+};
 
 export type Intake = z.infer<typeof IntakeSchema>;
 export type ProcessIntake = z.infer<typeof ProcessSchema>;

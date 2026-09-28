@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/lib/i18n/client";
 
 // Shown while a past_due subscription is inside its 7-day grace window.
 // Access stays intact — the point is to warn, not to punish mid-lesson.
 export default function GraceBanner({ graceUntil }: { graceUntil: Date | string | null }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const until = graceUntil ? new Date(graceUntil) : null;
   const daysLeft = until
@@ -27,18 +29,18 @@ export default function GraceBanner({ graceUntil }: { graceUntil: Date | string 
     <div role="alert" className="border-b border-amber-200 bg-amber-50">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3">
         <p className="min-w-0 flex-1 text-sm text-amber-900">
-          <strong>We couldn't process your last payment.</strong> You still have full access
+          <strong>{t("learn.grace.title")}</strong>{" "}
           {daysLeft != null && daysLeft > 0
-            ? ` for ${daysLeft} more day${daysLeft === 1 ? "" : "s"}`
-            : " for now"}
-          . Update your card to keep it.
+            ? t(daysLeft === 1 ? "learn.grace.days.one" : "learn.grace.days.other", { n: daysLeft })
+            : t("learn.grace.now")}{" "}
+          {t("learn.grace.update")}
         </p>
         <button
           onClick={openPortal}
           disabled={busy}
           className="shrink-0 rounded-full bg-amber-900 px-4 py-2 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
         >
-          {busy ? "Opening…" : "Update payment method"}
+          {busy ? t("learn.common.opening") : t("learn.grace.button")}
         </button>
       </div>
     </div>

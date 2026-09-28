@@ -11,6 +11,7 @@ import {
   DEFAULT_AVAIL_DAYS,
   DEFAULT_AVAIL_SLOTS,
 } from "@/lib/booking/services";
+import { useLocale, useT } from "@/lib/i18n/client";
 
 // Consultations are free. SERVICES is what the visitor wants to TALK ABOUT,
 // not something they buy — price stays 0 so no payment step is ever reached.
@@ -39,8 +40,6 @@ function getFirstDayOfMonth(year: number, month: number) {
   return new Date(year, month, 1).getDay();
 }
 
-const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-
 function parseSlotMinutes(slot: string): number {
   const [time, period] = slot.split(" ");
   const [h, m] = time.split(":").map(Number);
@@ -61,8 +60,19 @@ function isPastSlot(date: Date, slot: string): boolean {
   return parseSlotMinutes(slot) <= nowMinutes + 30; // block slots within 30 min of now
 }
 
+/** "2:00 PM" as the visitor's locale writes a time of day. */
+function slotLabel(slot: string, locale: string): string {
+  const mins = parseSlotMinutes(slot);
+  if (Number.isNaN(mins)) return slot;
+  const d = new Date(2000, 0, 1, Math.floor(mins / 60), mins % 60);
+  return d.toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" });
+}
+
 export default function BookPage() {
+  const t = useT();
+  const locale = useLocale();
   const router = useRouter();
+
   const [selectedService, setSelectedService] = useState(PRIMARY_TOPIC);
   // Kept open once a specific topic is chosen, so the choice stays visible.
   const [moreOpenState, setMoreOpen] = useState(false);
@@ -83,6 +93,8 @@ export default function BookPage() {
   const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", phone: "", company: "", goalNotes: "" });
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim());
+  const topicName = (svc: { id: string }) => t(`pages.book.topic.${svc.id}.name`);
 
   const bookingPanelRef = useRef<HTMLDivElement>(null);
 
@@ -155,22 +167,22 @@ export default function BookPage() {
           </div>
         )}
 
-        <div className="pl-3">
+        <div className="pl-3 pr-6">
           <div className="flex items-start justify-between gap-2">
             <span
               className={`font-syne font-bold transition-colors duration-200 ${primary ? "text-base" : "text-sm"}`}
               style={{ color: isSelected ? svc.color : "#0D1B2A" }}
             >
-              {svc.name}
+              {topicName(svc)}
             </span>
             {svc.badge && !isSelected && (
               <span className="shrink-0 rounded-full bg-[#FEF0E3] px-2 py-0.5 text-xs font-bold text-[#F47C20]">
-                {svc.badge}
+                {t(`pages.book.topic.${svc.id}.badge`)}
               </span>
             )}
           </div>
           <p className={`font-dm leading-relaxed text-[#7A8FA6] ${primary ? "mt-1.5 text-sm" : "mt-1 text-xs"}`}>
-            {svc.description}
+            {t(`pages.book.topic.${svc.id}.description`)}
           </p>
         </div>
       </button>
@@ -211,13 +223,13 @@ export default function BookPage() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        setSubmitError(body?.error || "Something went wrong. Please try again.");
+        setSubmitError(body?.error || t("pages.book.err.generic"));
         setSubmitting(false);
         return;
       }
       const { appointmentId, checkoutUrl } = await res.json();
       if (!appointmentId && !checkoutUrl) {
-        setSubmitError("Booking could not be confirmed. Please try again.");
+        setSubmitError(t("pages.book.err.notConfirmed"));
         setSubmitting(false);
         return;
       }
@@ -227,7 +239,7 @@ export default function BookPage() {
         router.push(`/book/success?appointmentId=${appointmentId}${selectedService.price === 0 ? "&free=true" : ""}`);
       }
     } catch {
-      setSubmitError("Network error. Please check your connection and try again.");
+      setSubmitError(t("pages.book.err.network"));
       setSubmitting(false);
     }
   }
@@ -256,9 +268,9 @@ export default function BookPage() {
     <div className="pt-32 sm:pt-44 pb-20 min-h-screen bg-[#F4F7FB]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-10">
-          <span className="section-tag">Book a Consulting</span>
-          <h1 className="font-syne font-extrabold text-4xl text-[#0D1B2A] mt-2">Book a Consulting</h1>
-          <p className="font-dm text-[#3A4A5C] mt-2">Free, no obligation. Pick what you'd like to discuss and a time that suits you.</p>
+          <span className="section-tag">{t("pages.book.tag")}</span>
+          <h1 className="font-syne font-extrabold text-3xl sm:text-4xl text-[#0D1B2A] mt-2">{t("pages.book.title")}</h1>
+          <p className="font-dm text-[#3A4A5C] mt-2">{t("pages.book.subtitle")}</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -268,7 +280,7 @@ export default function BookPage() {
               visitors who already know what they want, rather than six
               equal-weight cards asking everyone to decide up front. */}
           <div className="lg:col-span-2 flex flex-col gap-3">
-            <h2 className="font-syne font-bold text-base text-[#0D1B2A]">What would you like to discuss?</h2>
+            <h2 className="font-syne font-bold text-base text-[#0D1B2A]">{t("pages.book.discussTitle")}</h2>
 
             {renderTopic(PRIMARY_TOPIC, true)}
 
@@ -278,9 +290,7 @@ export default function BookPage() {
               aria-expanded={moreOpen}
               className="flex items-center justify-between gap-2 rounded-xl border border-[#D2DCE8] bg-white px-4 py-3 text-left transition-colors hover:border-[#B9C7D8]"
             >
-              <span className="font-dm text-sm text-[#3A4A5C]">
-                Know what you need? <span className="font-semibold text-[#1B3A6B]">Pick a specific topic</span>
-              </span>
+              <span className="font-dm text-sm text-[#3A4A5C]" dangerouslySetInnerHTML={{ __html: t("pages.book.moreToggle") }} />
               <ChevronDown
                 size={16}
                 className="shrink-0 text-[#7A8FA6] transition-transform duration-200"
@@ -299,9 +309,9 @@ export default function BookPage() {
           <div ref={bookingPanelRef} className="lg:col-span-3 bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden shadow-sm">
             {/* Panel header */}
             <div className="bg-[#1B3A6B] p-5">
-              <div className="font-syne font-bold text-white text-base">{selectedService.name}</div>
+              <div className="font-syne font-bold text-white text-base">{topicName(selectedService)}</div>
               <div className="flex items-center gap-4 mt-1">
-                <span className="text-[#F47C20] font-syne font-bold text-sm">Free</span>
+                <span className="text-[#F47C20] font-syne font-bold text-sm">{t("pages.book.free")}</span>
               </div>
             </div>
 
@@ -311,12 +321,12 @@ export default function BookPage() {
                 <button
                   key={s}
                   onClick={() => step > s && setStep(s as 1 | 2 | 3)}
-                  className={`flex-1 py-3 text-xs font-dm font-medium transition-colors ${
+                  className={`flex-1 px-1 py-3 text-xs font-dm font-medium leading-tight transition-colors ${
                     step === s ? "text-[#F47C20] border-b-2 border-[#F47C20]" :
                     step > s ? "text-[#2251A3] cursor-pointer" : "text-[#7A8FA6]"
                   }`}
                 >
-                  {s === 1 ? "1 Date & Time" : s === 2 ? "2 Your Details" : "3 Confirm"}
+                  {t(`pages.book.step${s}`)}
                 </button>
               ))}
             </div>
@@ -328,17 +338,19 @@ export default function BookPage() {
                   {/* Calendar */}
                   <div className="mb-5">
                     <div className="flex items-center justify-between mb-3">
-                      <button onClick={() => setCurrentMonth(new Date(year, month - 1, 1))} className="p-1 hover:bg-[#F4F7FB] rounded-lg">
+                      <button onClick={() => setCurrentMonth(new Date(year, month - 1, 1))} aria-label={t("pages.book.prevMonth")} className="p-1 hover:bg-[#F4F7FB] rounded-lg">
                         <ChevronLeft size={18} className="text-[#3A4A5C]" />
                       </button>
-                      <span className="font-syne font-bold text-sm text-[#0D1B2A]">{MONTHS[month]} {year}</span>
-                      <button onClick={() => setCurrentMonth(new Date(year, month + 1, 1))} className="p-1 hover:bg-[#F4F7FB] rounded-lg">
+                      <span className="font-syne font-bold text-sm text-[#0D1B2A] capitalize">
+                        {new Date(year, month, 1).toLocaleDateString(locale, { month: "long", year: "numeric" })}
+                      </span>
+                      <button onClick={() => setCurrentMonth(new Date(year, month + 1, 1))} aria-label={t("pages.book.nextMonth")} className="p-1 hover:bg-[#F4F7FB] rounded-lg">
                         <ChevronRight size={18} className="text-[#3A4A5C]" />
                       </button>
                     </div>
                     <div className="grid grid-cols-7 mb-1">
-                      {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d => (
-                        <div key={d} className="text-center text-[#7A8FA6] text-xs font-dm font-medium py-1">{d}</div>
+                      {[0, 1, 2, 3, 4, 5, 6].map(d => (
+                        <div key={d} className="text-center text-[#7A8FA6] text-xs font-dm font-medium py-1">{t(`pages.book.wd.${d}`)}</div>
                       ))}
                     </div>
                     <div className="grid grid-cols-7 gap-0.5">
@@ -371,9 +383,9 @@ export default function BookPage() {
                   {/* Time Slots */}
                   {selectedDate && (
                     <div>
-                      <p className="font-dm text-xs text-[#7A8FA6] mb-2">Available times (ET):</p>
+                      <p className="font-dm text-xs text-[#7A8FA6] mb-2">{t("pages.book.availableTimes")}</p>
                       {isBlocked ? (
-                        <p className="text-sm text-[#7A8FA6] font-dm">This date is unavailable. Please select another day.</p>
+                        <p className="text-sm text-[#7A8FA6] font-dm">{t("pages.book.dateBlocked")}</p>
                       ) : (
                         <div className="grid grid-cols-3 gap-2">
                           {availSlots.map(slot => {
@@ -386,13 +398,13 @@ export default function BookPage() {
                                 key={slot}
                                 disabled={unavailable}
                                 onClick={() => setSelectedSlot(slot)}
-                                className={`py-2 px-3 rounded-lg text-sm font-dm font-medium transition-all ${
+                                className={`py-2 px-1 sm:px-3 rounded-lg text-sm font-dm font-medium transition-all ${
                                   selected ? "bg-[#1B3A6B] text-white" :
                                   unavailable ? "bg-[#F4F7FB] text-[#D2DCE8] cursor-not-allowed" :
                                   "border border-[#D2DCE8] text-[#3A4A5C] hover:border-[#2251A3] hover:bg-[#EBF0FA]"
                                 }`}
                               >
-                                {slot}
+                                {slotLabel(slot, locale)}
                               </button>
                             );
                           })}
@@ -407,7 +419,7 @@ export default function BookPage() {
                       onClick={() => setStep(2)}
                       className="btn-primary w-full justify-center disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      Next: Your Details →
+                      {t("pages.book.nextDetails")}
                     </button>
                   </div>
                 </div>
@@ -418,46 +430,50 @@ export default function BookPage() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-dm font-medium text-[#3A4A5C] mb-1">First Name *</label>
-                      <input className="input-base w-full text-sm" value={formData.firstName}
-                        onChange={e => setFormData(p => ({ ...p, firstName: e.target.value }))} placeholder="Jane" />
+                      <label htmlFor="bk-first" className="block text-xs font-dm font-medium text-[#3A4A5C] mb-1">{t("pages.book.firstName")}</label>
+                      <input id="bk-first" className="input-base w-full text-sm" value={formData.firstName}
+                        onChange={e => setFormData(p => ({ ...p, firstName: e.target.value }))} placeholder={t("pages.book.firstNamePh")} />
                     </div>
                     <div>
-                      <label className="block text-xs font-dm font-medium text-[#3A4A5C] mb-1">Last Name *</label>
-                      <input className="input-base w-full text-sm" value={formData.lastName}
-                        onChange={e => setFormData(p => ({ ...p, lastName: e.target.value }))} placeholder="Smith" />
+                      <label htmlFor="bk-last" className="block text-xs font-dm font-medium text-[#3A4A5C] mb-1">{t("pages.book.lastName")}</label>
+                      <input id="bk-last" className="input-base w-full text-sm" value={formData.lastName}
+                        onChange={e => setFormData(p => ({ ...p, lastName: e.target.value }))} placeholder={t("pages.book.lastNamePh")} />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-dm font-medium text-[#3A4A5C] mb-1">Email *</label>
-                    <input type="email" className="input-base w-full text-sm" value={formData.email}
-                      onChange={e => setFormData(p => ({ ...p, email: e.target.value }))} placeholder="jane@company.com" />
+                    <label htmlFor="bk-email" className="block text-xs font-dm font-medium text-[#3A4A5C] mb-1">{t("pages.book.email")}</label>
+                    <input id="bk-email" type="email" className="input-base w-full text-sm" value={formData.email}
+                      aria-invalid={!!formData.email && !emailOk}
+                      onChange={e => setFormData(p => ({ ...p, email: e.target.value }))} placeholder={t("pages.book.emailPh")} />
+                    {formData.email.trim() !== "" && !emailOk && (
+                      <p className="text-xs text-red-500 font-dm mt-1">{t("pages.book.emailInvalid")}</p>
+                    )}
                   </div>
                   <div>
-                    <label className="block text-xs font-dm font-medium text-[#3A4A5C] mb-1">Phone Number</label>
-                    <input type="tel" className="input-base w-full text-sm" value={formData.phone}
-                      onChange={e => setFormData(p => ({ ...p, phone: e.target.value }))} placeholder="+1 (555) 000-0000 (optional)" />
+                    <label htmlFor="bk-phone" className="block text-xs font-dm font-medium text-[#3A4A5C] mb-1">{t("pages.book.phone")}</label>
+                    <input id="bk-phone" type="tel" className="input-base w-full text-sm" value={formData.phone}
+                      onChange={e => setFormData(p => ({ ...p, phone: e.target.value }))} placeholder={t("pages.book.phonePh")} />
                   </div>
                   <div>
-                    <label className="block text-xs font-dm font-medium text-[#3A4A5C] mb-1">Company / Business</label>
-                    <input className="input-base w-full text-sm" value={formData.company}
-                      onChange={e => setFormData(p => ({ ...p, company: e.target.value }))} placeholder="Acme Inc. (optional)" />
+                    <label htmlFor="bk-company" className="block text-xs font-dm font-medium text-[#3A4A5C] mb-1">{t("pages.book.company")}</label>
+                    <input id="bk-company" className="input-base w-full text-sm" value={formData.company}
+                      onChange={e => setFormData(p => ({ ...p, company: e.target.value }))} placeholder={t("pages.book.companyPh")} />
                   </div>
                   <div>
-                    <label className="block text-xs font-dm font-medium text-[#3A4A5C] mb-1">What would you like to focus on?</label>
-                    <textarea rows={3} className="input-base w-full text-sm resize-none" value={formData.goalNotes}
+                    <label htmlFor="bk-focus" className="block text-xs font-dm font-medium text-[#3A4A5C] mb-1">{t("pages.book.focus")}</label>
+                    <textarea id="bk-focus" rows={3} className="input-base w-full text-sm resize-none" value={formData.goalNotes}
                       onChange={e => setFormData(p => ({ ...p, goalNotes: e.target.value }))}
-                      placeholder="Share your main goals or challenges for this session..." />
+                      placeholder={t("pages.book.focusPh")} />
                   </div>
 
                   <div className="flex gap-3">
-                    <button onClick={() => setStep(1)} className="btn-secondary flex-1 justify-center text-sm">← Back</button>
+                    <button onClick={() => setStep(1)} className="btn-secondary flex-1 justify-center text-sm">{t("pages.book.back")}</button>
                     <button
-                      disabled={!formData.firstName || !formData.lastName || !formData.email}
+                      disabled={!formData.firstName.trim() || !formData.lastName.trim() || !emailOk}
                       onClick={() => setStep(3)}
                       className="btn-primary flex-1 justify-center text-sm disabled:opacity-40"
                     >
-                      Next: Review →
+                      {t("pages.book.nextReview")}
                     </button>
                   </div>
                 </div>
@@ -467,44 +483,44 @@ export default function BookPage() {
               {step === 3 && (
                 <div className="space-y-4">
                   <div className="bg-[#F4F7FB] rounded-xl p-4 space-y-2.5">
-                    <div className="flex justify-between text-sm font-dm">
-                      <span className="text-[#7A8FA6]">Service</span>
-                      <span className="font-medium text-[#0D1B2A]">{selectedService.name}</span>
+                    <div className="flex justify-between gap-3 text-sm font-dm">
+                      <span className="text-[#7A8FA6]">{t("pages.book.review.service")}</span>
+                      <span className="font-medium text-[#0D1B2A] text-right">{topicName(selectedService)}</span>
                     </div>
-                    <div className="flex justify-between text-sm font-dm">
-                      <span className="text-[#7A8FA6]">Date & Time</span>
-                      <span className="font-medium text-[#0D1B2A]">
-                        {selectedDate?.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} · {selectedSlot} ET
+                    <div className="flex justify-between gap-3 text-sm font-dm">
+                      <span className="text-[#7A8FA6] shrink-0">{t("pages.book.review.dateTime")}</span>
+                      <span className="font-medium text-[#0D1B2A] text-right">
+                        {selectedDate?.toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" })} · {selectedSlot ? slotLabel(selectedSlot, locale) : ""} {t("pages.book.review.et")}
                       </span>
                     </div>
-                    <div className="flex justify-between text-sm font-dm">
-                      <span className="text-[#7A8FA6]">Name</span>
+                    <div className="flex justify-between gap-3 text-sm font-dm">
+                      <span className="text-[#7A8FA6]">{t("pages.book.review.name")}</span>
                       <span className="font-medium text-[#0D1B2A]">{formData.firstName} {formData.lastName}</span>
                     </div>
-                    <div className="flex justify-between text-sm font-dm">
-                      <span className="text-[#7A8FA6]">Email</span>
-                      <span className="font-medium text-[#0D1B2A]">{formData.email}</span>
+                    <div className="flex justify-between gap-3 text-sm font-dm">
+                      <span className="text-[#7A8FA6]">{t("pages.book.review.email")}</span>
+                      <span className="font-medium text-[#0D1B2A] min-w-0 break-all text-right">{formData.email}</span>
                     </div>
                     {formData.phone && (
-                      <div className="flex justify-between text-sm font-dm">
-                        <span className="text-[#7A8FA6]">Phone</span>
+                      <div className="flex justify-between gap-3 text-sm font-dm">
+                        <span className="text-[#7A8FA6]">{t("pages.book.review.phone")}</span>
                         <span className="font-medium text-[#0D1B2A]">{formData.phone}</span>
                       </div>
                     )}
                     <div className="border-t border-[#D2DCE8] pt-2 flex justify-between items-center">
-                      <span className="font-syne font-bold text-[#0D1B2A]">Cost</span>
-                      <span className="font-syne font-extrabold text-xl text-[#0F6E56]">Free</span>
+                      <span className="font-syne font-bold text-[#0D1B2A]">{t("pages.book.review.cost")}</span>
+                      <span className="font-syne font-extrabold text-xl text-[#0F6E56]">{t("pages.book.free")}</span>
                     </div>
                   </div>
 
                   <div className="flex gap-3">
-                    <button onClick={() => setStep(2)} className="btn-secondary flex-1 justify-center text-sm">← Back</button>
+                    <button onClick={() => setStep(2)} className="btn-secondary flex-1 justify-center text-sm">{t("pages.book.back")}</button>
                     <button
                       disabled={submitting}
                       onClick={handleSubmit}
                       className="btn-primary flex-1 justify-center text-sm disabled:opacity-60"
                     >
-                      {submitting ? "Processing..." : "Confirm Booking →"}
+                      {submitting ? t("pages.book.processing") : t("pages.book.confirm")}
                     </button>
                   </div>
 
@@ -513,7 +529,7 @@ export default function BookPage() {
                   )}
 
                   <p className="text-center text-xs text-[#7A8FA6] font-dm">
-                    No payment required — you'll get a confirmation email with the meeting link.
+                    {t("pages.book.noPayment")}
                   </p>
                 </div>
               )}

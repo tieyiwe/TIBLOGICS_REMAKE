@@ -6,6 +6,7 @@ import ProductCard, { SHOP_CARD_STYLES } from "./ProductCard";
 import Spotlight, { SPOTLIGHT_STYLES } from "./Spotlight";
 import BrandPromo from "./BrandPromo";
 import type { ShopProduct, ShopCollection } from "./types";
+import { useT } from "@/lib/i18n/client";
 
 const S = {
   darker: "#0C1112",
@@ -31,6 +32,7 @@ export default function StoreFront({
   rotatesInDays?: number;
   featuredCount?: number;
 }) {
+  const t = useT();
   const categories = useMemo(() => ["All", ...Array.from(new Set(products.map((p) => p.category)))], [products]);
   const [cat, setCat] = useState("All");
   const [collection, setCollection] = useState<string | null>(null);
@@ -69,14 +71,14 @@ export default function StoreFront({
         <div style={{ maxWidth: "760px", margin: "0 auto" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(244,124,76,.1)", border: "1px solid rgba(244,124,76,.3)", borderRadius: "30px", padding: "7px 16px", marginBottom: "24px" }}>
             <ShoppingBag size={15} color={S.amber} />
-            <span style={{ fontSize: ".8rem", color: S.amber, fontWeight: 600 }}>The TIBLOGICS Store</span>
+            <span style={{ fontSize: ".8rem", color: S.amber, fontWeight: 600 }}>{t("pages.store.hero.badge")}</span>
           </div>
           <h1 style={{ fontFamily: syne, fontWeight: 800, fontSize: "clamp(2.4rem,5vw,4rem)", lineHeight: 1.08, marginBottom: "18px" }}>
-            Premium tools.{" "}<br />
-            <span style={{ background: "linear-gradient(135deg,#F47C4C,#F9A738)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Instant access.</span>
+            {t("pages.store.hero.title")}{" "}<br />
+            <span style={{ background: "linear-gradient(135deg,#F47C4C,#F9A738)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t("pages.store.hero.titleAccent")}</span>
           </h1>
           <p style={{ color: "#B0C4CC", fontSize: "1.05rem", lineHeight: 1.7, maxWidth: "520px", margin: "0 auto" }}>
-            Curated templates, resources, and digital products — built by TIBLOGICS to move you forward faster.
+            {t("pages.store.hero.body")}
           </p>
         </div>
       </section>
@@ -85,9 +87,9 @@ export default function StoreFront({
       <section style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
         <div className="trust-strip">
           {[
-            { t: "Instant download", d: "Delivered the moment you pay" },
-            { t: "Yours to keep", d: "No subscription, no expiry" },
-            { t: "Secure checkout", d: "Card details never touch us" },
+            { t: t("pages.store.trust.instant"), d: t("pages.store.trust.instantNote") },
+            { t: t("pages.store.trust.keep"), d: t("pages.store.trust.keepNote") },
+            { t: t("pages.store.trust.secure"), d: t("pages.store.trust.secureNote") },
           ].map((x) => (
             <div key={x.t} style={{
               display: "flex", alignItems: "flex-start", gap: "10px",
@@ -115,7 +117,7 @@ export default function StoreFront({
       {/* Featured collections */}
       {featuredCollections.length > 0 && !collection && (
         <section style={{ maxWidth: "1200px", margin: "0 auto", padding: "8px 24px 8px" }}>
-          <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.15rem", marginBottom: "16px" }}>Browse by Collection</div>
+          <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.15rem", marginBottom: "16px" }}>{t("pages.store.collections.title")}</div>
           <div className="col-strip">
             {featuredCollections.map((c) => (
               <button key={c.slug} onClick={() => { setCollection(c.slug); setCat("All"); }} className="col-card"
@@ -140,7 +142,7 @@ export default function StoreFront({
       {/* Active collection header */}
       {activeCollection && (
         <section style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px 24px 0" }}>
-          <button onClick={() => setCollection(null)} style={{ background: "none", border: "none", color: S.muted, cursor: "pointer", fontSize: ".85rem", marginBottom: "10px", padding: 0 }}>← All products</button>
+          <button onClick={() => setCollection(null)} style={{ background: "none", border: "none", color: S.muted, cursor: "pointer", fontSize: ".85rem", marginBottom: "10px", padding: 0 }}>{t("pages.store.allProducts")}</button>
           <h2 style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.8rem" }}>{activeCollection.name}</h2>
           {activeCollection.description && <p style={{ color: S.muted, fontSize: ".92rem", marginTop: "6px", maxWidth: "560px" }}>{activeCollection.description}</p>}
         </section>
@@ -152,12 +154,12 @@ export default function StoreFront({
           {categories.map((c) => (
             <button key={c} onClick={() => setCat(c)}
               style={{ border: `1px solid ${cat === c ? S.orange : S.border}`, background: cat === c ? "rgba(244,124,76,.12)" : "transparent", color: cat === c ? S.orange : S.muted, borderRadius: "50px", padding: "7px 16px", fontSize: ".82rem", fontWeight: 600, cursor: "pointer", fontFamily: dm }}>
-              {c}
+              {c === "All" ? t("pages.store.category.all") : c}
             </button>
           ))}
         </div>
-        <input aria-label="Search products" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search products…"
-          style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: "50px", padding: "9px 18px", color: "#fff", fontSize: ".85rem", fontFamily: dm, minWidth: "200px", outline: "none" }} />
+        <input aria-label={t("pages.store.searchLabel")} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("pages.store.search")}
+          style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: "50px", padding: "9px 18px", color: "#fff", fontSize: ".85rem", fontFamily: dm, minWidth: "min(200px, 100%)", maxWidth: "100%", outline: "none" }} />
       </section>
 
       {/* Grid */}
@@ -166,10 +168,10 @@ export default function StoreFront({
           <div style={{ textAlign: "center", padding: "80px 0", color: S.muted }}>
             <ShoppingBag size={44} style={{ margin: "0 auto 18px", opacity: 0.4 }} />
             <p style={{ fontSize: "1.05rem", fontFamily: syne, fontWeight: 700, marginBottom: "6px", color: "#fff" }}>
-              {products.length === 0 ? "The shop is opening soon" : "No products match your search"}
+              {products.length === 0 ? t("pages.store.empty.soon") : t("pages.store.empty.noMatch")}
             </p>
             <p style={{ fontSize: ".9rem" }}>
-              {products.length === 0 ? "New products are on the way — check back shortly." : "Try a different category or search term."}
+              {products.length === 0 ? t("pages.store.empty.soonBody") : t("pages.store.empty.noMatchBody")}
             </p>
           </div>
         ) : (

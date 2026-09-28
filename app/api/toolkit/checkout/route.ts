@@ -5,6 +5,7 @@ import { getStudent } from "@/lib/learn/session";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { ensureToolkitTables } from "@/lib/toolkit/db";
 import { toolkitPlans, TOOLKIT_PRODUCT, type ToolkitPlan } from "@/lib/toolkit/config";
+import { getT } from "@/lib/i18n/server";
 
 // Starts a Toolkit Live or Compliance Guard subscription for the signed-in
 // account. The price comes only from server configuration.
@@ -12,24 +13,25 @@ import { toolkitPlans, TOOLKIT_PRODUCT, type ToolkitPlan } from "@/lib/toolkit/c
 const SITE = (process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com").replace(/\/$/, "");
 
 export async function POST(req: NextRequest) {
+  const t = await getT();
   const student = await getStudent();
-  if (!student) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!student) return NextResponse.json({ error: t("toolkit.api.signIn") }, { status: 401 });
   if (!(await checkRateLimit(`toolkit-checkout:${student.id}`, 10, 3_600_000))) {
-    return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
+    return NextResponse.json({ error: t("toolkit.api.tooManyAttempts") }, { status: 429 });
   }
 
   const { plan: planId } = await req.json().catch(() => ({}));
   const plans = toolkitPlans();
   const plan = plans[planId as ToolkitPlan];
-  if (!plan) return NextResponse.json({ error: "Choose a plan" }, { status: 400 });
-  if (!plan.amount) return NextResponse.json({ error: `${plan.name} is not on sale yet.` }, { status: 503 });
-  if (!process.env.STRIPE_SECRET_KEY) return NextResponse.json({ error: "Payments are not configured yet." }, { status: 503 });
+  if (!plan) return NextResponse.json({ error: t("toolkit.api.choosePlan") }, { status: 400 });
+  if (!plan.amount) return NextResponse.json({ error: t("toolkit.api.notOnSale", { plan: plan.name }) }, { status: 503 });
+  if (!process.env.STRIPE_SECRET_KEY) return NextResponse.json({ error: t("toolkit.api.paymentsOff") }, { status: 503 });
 
   await ensureToolkitTables();
   const existing = await prisma.toolkitSubscription.findUnique({ where: { studentId: student.id } });
   if (existing && ["active", "trialing", "past_due"].includes(existing.status)) {
     return NextResponse.json(
-      { error: "You already have a subscription. To switch plans, cancel it under Manage billing, then choose the other plan." },
+      { error: t("toolkit.api.alreadySubscribed") },
       { status: 409 },
     );
   }
@@ -64,6 +66,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url: session.url });
   } catch (err) {
     console.error("[toolkit/checkout]", err instanceof Error ? err.message : err);
-    return NextResponse.json({ error: "Could not start checkout. Please try again." }, { status: 502 });
+    return NextResponse.json({ error: t("toolkit.api.checkoutFailed") }, { status: 502 });
   }
 }

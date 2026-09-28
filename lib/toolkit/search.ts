@@ -1,4 +1,5 @@
 import { promptsFor, LIBRARY_VERTICALS, type LibraryPrompt } from "./library";
+import type { Locale } from "@/lib/i18n/config";
 
 // Keyword search over the prompt library.
 //
@@ -11,10 +12,25 @@ import { promptsFor, LIBRARY_VERTICALS, type LibraryPrompt } from "./library";
 //   - related words              chase → follow up, reminder
 //   - small typos                recieve → receive, lisitng → listing
 // Exact matches rank above close ones, and each result says which kind it is.
+//
+// In French and Swahili the search reads the translated text (where that
+// category is translated) as well as the English, folds accents
+// ("réservation" = "reservation"), skips each language's small words, and
+// its related-word groups include French and Swahili words, so "facture
+// impayée" or "malalamiko" find the right prompts even before a category's
+// translation is ready.
 
 const STOP = new Set(
   "a an and are as at be but by for from how i in is it me my of on or our so that the this to we with you your what when do can need want write help".split(" "),
 );
+const STOP_BY_LOCALE: Record<Exclude<Locale, "en">, Set<string>> = {
+  fr: new Set(
+    "le la les un une des du de et en au aux pour par sur avec dans est sont ce cet cette ces mon ma mes ton ta tes son sa ses notre nos votre vos leur leurs qui que quoi comment je tu il elle on nous vous ils elles se ne pas plus ou y faire ecrire aide aider besoin veux voudrais".split(" "),
+  ),
+  sw: new Set(
+    "na ya wa za la kwa katika ni kwenye kama au lakini hii hizi huyu hiyo ile yangu yako yake yetu yenu yao wangu wako wake wetu wenu wao changu chako cha vya ili pia sana tu je nini jinsi gani andika kuandika msaada nisaidie nataka ninahitaji".split(" "),
+  ),
+};
 
 /** Groups of words people use interchangeably for the same task. */
 const RELATED: string[][] = [
@@ -50,8 +66,45 @@ const RELATED: string[][] = [
   ["event", "gala", "fundraiser", "party"],
 ];
 
+/**
+ * The same groups in French and Swahili (without accents: text is folded
+ * before matching). Group n here extends group n above.
+ */
+const RELATED_ML: string[][] = [
+  ["relance", "relancer", "rappel", "rappeler", "suivi", "fuatilia", "ufuatiliaji", "kumbusha", "ukumbusho"],
+  ["courriel", "mail", "lettre", "reponse", "repondre", "barua", "ujumbe", "jibu", "kujibu"],
+  ["texto", "meseji"],
+  ["reseaux", "sociaux", "publication", "legende", "mitandao", "kijamii", "chapisho"],
+  ["clientele", "acheteur", "acheteuse", "mteja", "wateja", "mnunuzi", "wanunuzi", "mgeni", "wageni"],
+  ["prospection", "demande", "mtarajiwa", "watarajiwa"],
+  ["prix", "tarif", "tarifs", "cout", "devis", "estimation", "frais", "bei", "gharama", "makadirio", "nukuu"],
+  ["facture", "facturation", "paiement", "impaye", "impayee", "retard", "ankara", "malipo", "deni", "kuchelewa", "bili"],
+  ["plainte", "reclamation", "mecontent", "colere", "negatif", "difficile", "malalamiko", "lalamiko", "hasira", "mgumu", "wagumu"],
+  ["avis", "temoignage", "commentaire", "maoni", "ushuhuda"],
+  ["merci", "remerciement", "remercier", "asante", "shukrani", "kushukuru"],
+  ["donateur", "dons", "collecte", "soutien", "mfadhili", "wafadhili", "mchango", "michango", "uchangishaji"],
+  ["subvention", "bailleur", "fondation", "ruzuku", "pendekezo"],
+  ["benevole", "benevoles", "benevolat", "mjitolea", "kujitolea", "wajitolea"],
+  ["annonce", "bien", "propriete", "maison", "logement", "tangazo", "nyumba", "mali", "makazi"],
+  ["vendeur", "vendeuse", "muuzaji", "wauzaji"],
+  ["visite", "onyesho", "ziara"],
+  ["recrutement", "recruter", "embauche", "emploi", "poste", "candidat", "entretien", "ajira", "kuajiri", "kazi", "mwombaji", "waombaji", "mahojiano"],
+  ["personnel", "equipe", "salarie", "employe", "integration", "formation", "wafanyakazi", "mfanyakazi", "timu", "mafunzo"],
+  ["plat", "plats", "cuisine", "recette", "menyu", "chakula", "vyakula", "mapishi"],
+  ["reservation", "uhifadhi", "nafasi", "meza"],
+  ["rapport", "bilan", "resume", "ripoti", "muhtasari", "taarifa"],
+  ["campagne", "infolettre", "jarida", "kampeni"],
+  ["publicite", "pub", "slogan", "titre", "matangazo"],
+  ["reunion", "rendez-vous", "appel", "mkutano", "mikutano", "simu", "ajenda"],
+  ["impot", "impots", "fiscal", "fiscalite", "declaration", "taxe", "kodi"],
+  ["planification", "strategie", "mpango", "mipango", "mkakati"],
+  ["contrat", "accord", "conditions", "mkataba", "makubaliano", "masharti"],
+  ["excuse", "excuses", "desole", "erreur", "samahani", "radhi", "kosa"],
+  ["evenement", "soiree", "fete", "tukio", "matukio", "sherehe"],
+];
+
 /** Crude but effective English stemming: enough to join "invoicing" and "invoice". */
-function stem(w: string): string {
+function stemEn(w: string): string {
   if (w.length <= 4) return w;
   for (const suf of ["ational", "ization", "ations", "ation", "ments", "ment", "ings", "ing", "ers", "ies", "ied", "ed", "es", "er", "ly", "s"]) {
     if (w.endsWith(suf) && w.length - suf.length >= 3) {
@@ -62,8 +115,41 @@ function stem(w: string): string {
   return w;
 }
 
+/** The same idea for French: "factures", "facture" and "facturation" share a stem. */
+function stemFr(w: string): string {
+  if (w.length <= 4) return w;
+  for (const suf of ["issements", "issement", "ements", "ement", "ations", "ation", "atrices", "atrice", "ateurs", "ateur", "ances", "ance", "ences", "ence", "euses", "euse", "eurs", "eur", "ives", "ive", "ifs", "if", "ees", "ee", "ers", "er", "es", "e", "s", "x"]) {
+    if (w.endsWith(suf) && w.length - suf.length >= 3) return w.slice(0, -suf.length);
+  }
+  return w;
+}
+
+/** Stems a word can match under, in a search made in `locale`. Swahili words are matched as written. */
+function stemsOf(w: string, locale: Locale): string[] {
+  const en = stemEn(w);
+  if (locale === "fr") {
+    const fr = stemFr(w);
+    return fr === en ? [en] : [en, fr];
+  }
+  if (locale === "sw") return w === en ? [en] : [en, w];
+  return [en];
+}
+
+/** Lower case without accents: "Réservation" -> "reservation". Same length for accented letters. */
+function fold(text: string): string {
+  return text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").normalize("NFC");
+}
+
 function words(text: string): string[] {
-  return text.toLowerCase().replace(/[’']/g, "").split(/[^a-z0-9-]+/).flatMap((w) => (w.includes("-") ? [w, ...w.split("-")] : [w])).filter(Boolean);
+  return fold(text)
+    .replace(/œ/g, "oe")
+    .replace(/æ/g, "ae")
+    // French elision: "l'annonce" is "annonce", "d'un" is "un".
+    .replace(/(^|[^a-z])(?:qu|[ldjmnstc])['’]/g, "$1 ")
+    .replace(/[’']/g, "")
+    .split(/[^a-z0-9-]+/)
+    .flatMap((w) => (w.includes("-") ? [w, ...w.split("-")] : [w]))
+    .filter(Boolean);
 }
 
 /**
@@ -83,66 +169,121 @@ function distance(a: string, b: string): number {
   return d[a.length][b.length];
 }
 
-const RELATED_BY_STEM = new Map<string, Set<string>>();
-for (const group of RELATED) {
-  const stems = new Set(group.flatMap((g) => words(g)).map(stem));
-  for (const s of stems) {
-    const set = RELATED_BY_STEM.get(s) ?? new Set<string>();
-    stems.forEach((x) => x !== s && set.add(x));
-    RELATED_BY_STEM.set(s, set);
+function relatedMap(groups: string[][], stemsFor: (w: string) => string[]): Map<string, Set<string>> {
+  const map = new Map<string, Set<string>>();
+  for (const group of groups) {
+    const stems = new Set(group.flatMap((g) => words(g)).flatMap(stemsFor));
+    for (const s of stems) {
+      const set = map.get(s) ?? new Set<string>();
+      stems.forEach((x) => x !== s && set.add(x));
+      map.set(s, set);
+    }
   }
+  return map;
 }
+
+/** English search: the original groups and stemmer. */
+const RELATED_EN = relatedMap(RELATED, (w) => [stemEn(w)]);
+/** French and Swahili search: each group joined with its French and Swahili words. */
+const RELATED_MULTI = relatedMap(
+  RELATED.map((g, i) => [...g, ...(RELATED_ML[i] ?? [])]),
+  (w) => [...new Set([stemEn(w), stemFr(w), w])],
+);
 
 interface Doc {
   prompt: LibraryPrompt;
+  /** The prompt in the search language, when its category is translated. */
+  local: LibraryPrompt | null;
   label: string;
   /** stem → weight of the best field it appears in */
   stems: Map<string, number>;
   haystack: string;
+  titles: string;
+}
+
+interface Index {
+  locale: Locale;
+  docs: Doc[];
+  stop: Set<string>;
+  related: Map<string, Set<string>>;
+  /** Every stem in the library. */
+  vocab: Set<string>;
+  /** Every word as written, with how often it appears: typos are matched against these. */
+  wordFreq: Map<string, number>;
+  words: string[];
 }
 
 const FIELD_WEIGHTS: Array<[keyof LibraryPrompt, number]> = [
   ["title", 6], ["category", 3], ["useWhen", 3], ["proTip", 1], ["prompt", 1.5],
 ];
 
-const DOCS: Doc[] = LIBRARY_VERTICALS.flatMap((v) =>
-  promptsFor(v.id).map((p) => {
-    const stems = new Map<string, number>();
-    for (const [field, weight] of FIELD_WEIGHTS) {
-      for (const w of words(String(p[field]))) {
-        if (STOP.has(w)) continue;
-        const s = stem(w);
-        stems.set(s, Math.max(stems.get(s) ?? 0, weight));
+function buildIndex(locale: Locale, local?: Map<string, LibraryPrompt>, categoryLabel?: (category: string) => string): Index {
+  const stop = locale === "en" ? STOP : new Set([...STOP, ...STOP_BY_LOCALE[locale]]);
+  const docs: Doc[] = LIBRARY_VERTICALS.flatMap((v) =>
+    promptsFor(v.id).map((p) => {
+      const lp = local?.get(p.id) ?? null;
+      const cat = locale !== "en" && categoryLabel ? categoryLabel(p.category) : "";
+      const stems = new Map<string, number>();
+      const add = (text: string, weight: number) => {
+        for (const w of words(text)) {
+          if (stop.has(w)) continue;
+          for (const s of stemsOf(w, locale)) stems.set(s, Math.max(stems.get(s) ?? 0, weight));
+        }
+      };
+      for (const [field, weight] of FIELD_WEIGHTS) {
+        add(String(p[field]), weight);
+        if (lp && field !== "category") add(String(lp[field]), weight);
       }
-    }
-    return {
-      prompt: p,
-      label: v.label,
-      stems,
-      haystack: `${p.title} ${p.category} ${p.useWhen} ${p.prompt} ${p.proTip}`.toLowerCase(),
-    };
-  }),
-);
-
-/** Every stem in the library. */
-const VOCAB = new Set(DOCS.flatMap((d) => [...d.stems.keys()]));
-
-/** Every word as written, with how often it appears: typos are matched against these. */
-const WORD_FREQ = new Map<string, number>();
-for (const d of DOCS) {
-  for (const w of words(d.haystack)) if (w.length >= 3 && !STOP.has(w)) WORD_FREQ.set(w, (WORD_FREQ.get(w) ?? 0) + 1);
+      if (cat) add(cat, 3);
+      const localText = lp ? `${lp.title} ${cat} ${lp.useWhen} ${lp.prompt} ${lp.proTip}` : cat;
+      return {
+        prompt: p,
+        local: lp,
+        label: v.label,
+        stems,
+        haystack: fold(`${p.title} ${p.category} ${p.useWhen} ${p.prompt} ${p.proTip} ${localText}`),
+        titles: fold(lp ? `${p.title} ${lp.title}` : p.title),
+      };
+    }),
+  );
+  const wordFreq = new Map<string, number>();
+  for (const d of docs) {
+    for (const w of words(d.haystack)) if (w.length >= 3 && !stop.has(w)) wordFreq.set(w, (wordFreq.get(w) ?? 0) + 1);
+  }
+  return {
+    locale,
+    docs,
+    stop,
+    related: locale === "en" ? RELATED_EN : RELATED_MULTI,
+    vocab: new Set(docs.flatMap((d) => [...d.stems.keys()])),
+    wordFreq,
+    words: [...wordFreq.keys()],
+  };
 }
-const WORDS = [...WORD_FREQ.keys()];
+
+let enIndex: Index | null = null;
+const localeIndex = new Map<Locale, { size: number; index: Index }>();
+
+/** The index for a search language, rebuilt when more of the library has been translated. */
+function indexFor(locale: Locale, local?: Map<string, LibraryPrompt>, categoryLabel?: (category: string) => string): Index {
+  if (locale === "en") return (enIndex ??= buildIndex("en"));
+  const size = local?.size ?? 0;
+  const hit = localeIndex.get(locale);
+  if (hit && hit.size === size) return hit.index;
+  const index = buildIndex(locale, local, categoryLabel);
+  localeIndex.set(locale, { size, index });
+  return index;
+}
 
 /** Library words within typo range of `w`, closest and most common first. */
-function nearWords(w: string): string[] {
-  if (WORD_FREQ.has(w)) return [];
+function nearWords(ix: Index, w: string): string[] {
+  if (ix.wordFreq.has(w)) return [];
   const max = w.length >= 8 ? 2 : w.length >= 4 ? 1 : 0;
   if (!max) return [];
-  return WORDS.filter((x) => x[0] === w[0] && Math.abs(x.length - w.length) <= max)
+  return ix.words.filter((x) => x[0] === w[0] && Math.abs(x.length - w.length) <= max)
     .map((x) => ({ x, d: distance(x, w) }))
     .filter((c) => c.d <= max)
-    .sort((a, b) => a.d - b.d || (WORD_FREQ.get(b.x) ?? 0) - (WORD_FREQ.get(a.x) ?? 0))
+    .sort((a, b) => a.d - b.d || (ix.wordFreq.get(b.x) ?? 0) - (ix.wordFreq.get(a.x) ?? 0))
     .map((c) => c.x);
 }
 
@@ -150,6 +291,7 @@ export interface SearchHit {
   id: string;
   vertical: string;
   verticalLabel: string;
+  /** The English category name, which is also its id in the index. */
   category: string;
   title: string;
   useWhen: string;
@@ -169,9 +311,8 @@ export interface SearchResult {
   didYouMean: string | null;
 }
 
-function snippet(p: LibraryPrompt, terms: string[]): string {
-  const text = p.prompt;
-  const lower = text.toLowerCase();
+function snippet(text: string, terms: string[]): string {
+  const lower = fold(text);
   let at = -1;
   for (const t of terms) {
     const i = lower.indexOf(t);
@@ -182,20 +323,36 @@ function snippet(p: LibraryPrompt, terms: string[]): string {
   return (start > 0 ? "…" : "") + text.slice(start, start + 150).trim() + (start + 150 < text.length ? "…" : "");
 }
 
-export function searchPrompts(query: string, opts: { vertical?: string; limit?: number } = {}): SearchResult {
-  const raw = words(query).filter((w) => !STOP.has(w) && w.length > 1);
-  if (raw.length === 0) return { hits: [], unmatched: [], didYouMean: null };
-  const phrase = query.trim().toLowerCase();
+export interface SearchOptions {
+  vertical?: string;
+  limit?: number;
+  /** Search language. Default English. */
+  locale?: Locale;
+  /** Translated prompts by id (only those whose category is translated). */
+  translations?: Map<string, LibraryPrompt>;
+  /** Category name in the search language. */
+  categoryLabel?: (category: string) => string;
+}
 
-  // For each query word: its stem, related stems, and near-spellings from the library.
+export function searchPrompts(query: string, opts: SearchOptions = {}): SearchResult {
+  const locale = opts.locale ?? "en";
+  const ix = indexFor(locale, opts.translations, opts.categoryLabel);
+  const raw = words(query).filter((w) => !ix.stop.has(w) && w.length > 1);
+  if (raw.length === 0) return { hits: [], unmatched: [], didYouMean: null };
+  const phrase = fold(query.trim());
+
+  // For each query word: its stems, related stems, and near-spellings from the library.
   const terms = raw.map((w) => {
-    const s = stem(w);
-    const related = RELATED_BY_STEM.get(s) ?? new Set<string>();
-    const near = VOCAB.has(s) ? [] : nearWords(w);
-    return { word: w, stem: s, related, typos: new Set(near.map(stem)), near };
+    const stems = stemsOf(w, locale);
+    const related = new Set(stems.flatMap((s) => [...(ix.related.get(s) ?? [])]).filter((r) => !stems.includes(r)));
+    // A French or Swahili word we know (it is in a related-word group) is not
+    // a typo just because the English library does not contain it.
+    const known = stems.some((s) => ix.vocab.has(s)) || (locale !== "en" && related.size > 0);
+    const near = known ? [] : nearWords(ix, w);
+    return { word: w, stems, related, typos: new Set(near.flatMap((n) => stemsOf(n, locale))), near };
   });
 
-  const docs = opts.vertical ? DOCS.filter((d) => d.prompt.vertical === opts.vertical) : DOCS;
+  const docs = opts.vertical ? ix.docs.filter((d) => d.prompt.vertical === opts.vertical) : ix.docs;
   const scored: Array<{ d: Doc; score: number; exact: boolean; direct: number; matched: string[] }> = [];
 
   for (const d of docs) {
@@ -205,7 +362,7 @@ export function searchPrompts(query: string, opts: { vertical?: string; limit?: 
     let directHits = 0;
     const matched: string[] = [];
     for (const t of terms) {
-      const direct = d.stems.get(t.stem) ?? 0;
+      const direct = Math.max(0, ...t.stems.map((s) => d.stems.get(s) ?? 0));
       if (direct) {
         score += direct * 3 + 8;
         found++;
@@ -238,26 +395,29 @@ export function searchPrompts(query: string, opts: { vertical?: string; limit?: 
     if (terms.length > 1 && found < Math.ceil(terms.length * 0.6)) continue;
     if (found < terms.length) score *= found / terms.length;
     if (phrase.length > 3 && d.haystack.includes(phrase)) score += 10;
-    if (d.prompt.title.toLowerCase().includes(phrase)) score += 15;
+    if (d.titles.includes(phrase)) score += 15;
     scored.push({ d, score, exact: allExact && found === terms.length, direct: directHits, matched });
   }
 
   scored.sort((a, b) => Number(b.exact) - Number(a.exact) || b.direct - a.direct || b.score - a.score);
 
-  const hits = scored.slice(0, opts.limit ?? 60).map(({ d, exact, matched }) => ({
-    id: d.prompt.id,
-    vertical: d.prompt.vertical,
-    verticalLabel: d.label,
-    category: d.prompt.category,
-    title: d.prompt.title,
-    useWhen: d.prompt.useWhen,
-    match: exact ? ("exact" as const) : ("close" as const),
-    snippet: snippet(d.prompt, matched),
-    matched,
-  }));
+  const hits = scored.slice(0, opts.limit ?? 60).map(({ d, exact, matched }) => {
+    const shown = d.local ?? d.prompt;
+    return {
+      id: d.prompt.id,
+      vertical: d.prompt.vertical,
+      verticalLabel: d.label,
+      category: d.prompt.category,
+      title: shown.title,
+      useWhen: shown.useWhen,
+      match: exact ? ("exact" as const) : ("close" as const),
+      snippet: snippet(shown.prompt, matched),
+      matched,
+    };
+  });
 
   const unmatched = terms
-    .filter((t) => !scored.some((x) => x.d.stems.has(t.stem) || [...t.related, ...t.typos].some((r) => x.d.stems.has(r))))
+    .filter((t) => !scored.some((x) => t.stems.some((s) => x.d.stems.has(s)) || [...t.related, ...t.typos].some((r) => x.d.stems.has(r))))
     .map((t) => t.word);
 
   // Offer a spelling correction when a word is not in the library as typed.

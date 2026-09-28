@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import CertificateActions from "@/components/learn/CertificateActions";
+import { getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +19,11 @@ export async function generateMetadata({
     })
     .catch(() => null);
 
-  if (!cert) return { title: "Certificate not found | TIBLOGICS" };
+  const t = await getT();
+  if (!cert) return { title: t("learn.verify.notFoundMeta") };
   return {
-    title: `${cert.certificateName} — ${cert.recipientName} | TIBLOGICS`,
-    description: `Verify ${cert.recipientName}'s ${cert.certificateName} certificate from TIBLOGICS.`,
+    title: t("learn.verify.metaTitle", { cert: cert.certificateName, name: cert.recipientName }),
+    description: t("learn.verify.metaDescription", { cert: cert.certificateName, name: cert.recipientName }),
   };
 }
 
@@ -38,6 +40,7 @@ export default async function VerifyCertificatePage({
       include: { track: { select: { title: true, accentColor: true, estimatedHours: true } } },
     })
     .catch(() => null);
+  const t = await getT();
 
   // ── Not found ───────────────────────────────────────────────────────────
   if (!cert) {
@@ -47,16 +50,13 @@ export default async function VerifyCertificatePage({
           <span aria-hidden="true" className="text-4xl">
             🔍
           </span>
-          <h1 className="mt-4 text-xl font-black text-[var(--ink)]">No certificate found</h1>
-          <p className="mt-2 text-sm leading-relaxed text-[var(--ink2)]">
-            This verification code doesn't match any certificate we've issued. Check the code and
-            try again — codes are case-sensitive.
-          </p>
+          <h1 className="mt-4 text-xl font-black text-[var(--ink)]">{t("learn.cert.notFound")}</h1>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--ink2)]">{t("learn.verify.notFoundBody")}</p>
           <Link
             href="/learning-box"
             className="mt-6 inline-block rounded-full bg-[var(--ink)] px-6 py-2.5 text-sm font-bold text-white"
           >
-            Explore the Learning Box →
+            {t("learn.verify.explore")} →
           </Link>
         </div>
       </div>
@@ -71,10 +71,8 @@ export default async function VerifyCertificatePage({
           <span aria-hidden="true" className="text-4xl">
             ⚠️
           </span>
-          <h1 className="mt-4 text-xl font-black text-red-700">Certificate revoked</h1>
-          <p className="mt-2 text-sm leading-relaxed text-[var(--ink2)]">
-            This certificate was issued but has since been revoked and is no longer valid.
-          </p>
+          <h1 className="mt-4 text-xl font-black text-red-700">{t("learn.cert.revoked")}</h1>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--ink2)]">{t("learn.verify.revokedBody")}</p>
           <p className="mt-4 font-mono text-xs text-[var(--ink3)]">{cert.verificationId}</p>
         </div>
       </div>
@@ -82,6 +80,9 @@ export default async function VerifyCertificatePage({
   }
 
   // ── Valid ───────────────────────────────────────────────────────────────
+  // The certificate itself (#certificate, also what prints to PDF) stays in
+  // English: it is the legal document, and its name is the award's name. The
+  // page around it is translated.
   const issued = cert.issuedAt.toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
@@ -92,7 +93,7 @@ export default async function VerifyCertificatePage({
     <div className="bg-[var(--s2)] px-4 py-12 sm:py-16">
       <div className="mx-auto max-w-2xl">
         <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-center text-sm font-bold text-green-800">
-          ✓ Verified — this is a genuine TIBLOGICS certificate
+          ✓ {t("learn.cert.verified")}
         </div>
 
         {/* The certificate itself */}
@@ -157,22 +158,18 @@ export default async function VerifyCertificatePage({
         />
 
         <div className="mt-8 rounded-2xl border border-[var(--border)] bg-white p-6">
-          <h2 className="text-sm font-bold text-[var(--ink)]">What this certificate required</h2>
+          <h2 className="text-sm font-bold text-[var(--ink)]">{t("learn.cert.whatRequired")}</h2>
           <ul className="mt-3 space-y-2 text-sm leading-relaxed text-[var(--ink2)]">
-            <li>✓ A quick check completed after every lesson in the track</li>
-            <li>✓ A passing score on the quiz in every module</li>
-            <li>✓ A timed, randomized final exam sat under a server-enforced clock</li>
-            <li>✓ A capstone project reviewed and approved by a person, against a published rubric</li>
+            {[1, 2, 3, 4].map((n) => (
+              <li key={n}>✓ {t(`learn.verify.required.${n}`)}</li>
+            ))}
           </ul>
-          <p className="mt-4 text-xs text-[var(--ink3)]">
-            Anyone can verify this certificate at this URL. It stays valid permanently, whether or
-            not the holder remains a subscriber.
-          </p>
+          <p className="mt-4 text-xs text-[var(--ink3)]">{t("learn.verify.permanent")}</p>
         </div>
 
         <p className="mt-8 text-center text-sm text-[var(--ink3)]">
           <Link href="/learning-box" className="font-semibold text-[var(--blue2)] underline">
-            Explore the TIBLOGICS Learning Box →
+            {t("learn.verify.exploreBox")} →
           </Link>
         </p>
       </div>

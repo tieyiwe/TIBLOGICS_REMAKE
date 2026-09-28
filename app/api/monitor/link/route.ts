@@ -4,6 +4,7 @@ import { checkRateLimit, isValidEmail } from "@/lib/require-admin";
 import { ensureMonitorTables } from "@/lib/monitor/db";
 import { rotateMonitorLink } from "@/lib/monitor/token";
 import { sendMonitorLinkEmail } from "@/lib/monitor/email";
+import { getT } from "@/lib/i18n/server";
 
 // "Email me my dashboard link."
 //
@@ -12,18 +13,19 @@ import { sendMonitorLinkEmail } from "@/lib/monitor/email";
 // link, which is also how a subscriber revokes one they shared by mistake.
 
 export async function POST(req: NextRequest) {
+  const t = await getT();
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
   if (!(await checkRateLimit(`monitor-link:${ip}`, 5, 3_600_000))) {
-    return NextResponse.json({ error: "Too many requests. Try again later." }, { status: 429 });
+    return NextResponse.json({ error: t("tools.api.rateLimit") }, { status: 429 });
   }
 
   let email: unknown;
   try {
     ({ email } = await req.json());
   } catch {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    return NextResponse.json({ error: t("tools.api.invalidRequest") }, { status: 400 });
   }
-  if (!isValidEmail(email)) return NextResponse.json({ error: "Enter a valid email address" }, { status: 400 });
+  if (!isValidEmail(email)) return NextResponse.json({ error: t("tools.api.invalidEmail") }, { status: 400 });
   const clean = email.trim().toLowerCase();
 
   // Per address too, so one inbox cannot be flooded from many IPs.
@@ -42,5 +44,5 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, message: "If that address has a Readiness Monitor, a new link is on its way." });
+  return NextResponse.json({ ok: true, message: t("tools.monitor.api.linkSent") });
 }

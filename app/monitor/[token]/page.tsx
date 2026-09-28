@@ -5,16 +5,20 @@ import { AlertTriangle, ArrowDownRight, ArrowUpRight, CheckCircle2, Trophy, XCir
 import prisma from "@/lib/prisma";
 import { findMonitorByToken } from "@/lib/monitor/access";
 import {
-  AREAS, AREA_LABELS, changesBetween, competitorGaps, describeChange, rankOf, summarise,
-  type ScanRow, type SiteSummary,
+  AREAS, changesBetween, competitorGaps, rankOf, summarise,
+  type Change, type ScanRow, type SiteSummary,
 } from "@/lib/monitor/report";
 import { MANUAL_RUN_COOLDOWN_HOURS, STALE_RUN_MINUTES } from "@/lib/monitor/config";
+import { getLocale, getT, type T } from "@/lib/i18n/server";
+import type { Locale } from "@/lib/i18n/config";
+import { findingText, scanErrorText } from "@/lib/scanner/i18n";
 import MonitorControls from "./MonitorControls";
 import ScoreHistory from "./ScoreHistory";
 
 // A subscriber's dashboard. The URL is the credential, so it is kept out of
 // search engines and out of the Referer header sent to any site linked from
 // here — every competitor is linked from this page.
+// "Readiness Monitor" is a product name, the same in every language.
 export const metadata: Metadata = {
   title: "Readiness Monitor",
   robots: { index: false, follow: false },
@@ -30,14 +34,31 @@ function scoreColor(n: number) {
   return n >= 80 ? "#15803d" : n >= 60 ? "#B45309" : "#B91C1C";
 }
 
-function fmtDate(d: Date) {
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+function fmtDate(d: Date, locale: Locale) {
+  return d.toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+}
+
+/** A change since the last run, in the reader's language. */
+function describe(t: T, locale: Locale, c: Change): string {
+  if (c.kind === "fixed" || c.kind === "regressed") {
+    const text = c.finding ? findingText(t, locale, c.finding) : c.text;
+    return t(`tools.change.${c.kind}`, { text });
+  }
+  const dir = c.to > c.from ? "Up" : "Down";
+  return t(`tools.change.${c.isOwn ? "own" : "rival"}${dir}`, {
+    host: c.host,
+    area: t(`tools.areaInline.${c.area}`),
+    from: c.from,
+    to: c.to,
+  });
 }
 
 export default async function MonitorDashboard({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const sub = await findMonitorByToken(token);
   if (!sub) notFound();
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  const date = (d: Date) => fmtDate(d, locale);
 
   const scans = (await prisma.monitorScan.findMany({
     where: { subscriptionId: sub.id },
@@ -68,7 +89,7 @@ export default async function MonitorDashboard({ params }: { params: Promise<{ t
     : null;
 
   const history = [...runs].reverse().map((r) => ({
-    at: fmtDate(r.at),
+    at: r.at.toLocaleDateString(locale, { month: "short", day: "numeric", timeZone: "UTC" }),
     sites: summarise(r.scans).map((s) => ({ host: s.host, isOwn: s.isOwn, overall: s.scores?.overall ?? null })),
   }));
 
@@ -85,36 +106,34 @@ export default async function MonitorDashboard({ params }: { params: Promise<{ t
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         {sub.status === "pending" && (
-          <Notice tone="warn">Payment for this subscription was not completed, so nothing is being scanned.</Notice>
+          <Notice tone="warn">{t("tools.dash.pending")}</Notice>
         )}
         {sub.status === "past_due" && (
-          <Notice tone="warn">
-            Your last payment failed. Scans are paused until the card is updated. Use &ldquo;Manage billing&rdquo; below.
-          </Notice>
+          <Notice tone="warn">{t("tools.dash.pastDue")}</Notice>
         )}
         {sub.status === "canceled" && (
-          <Notice tone="info">This subscription has ended. Your past reports are still here.</Notice>
+          <Notice tone="info">{t("tools.dash.canceled")}</Notice>
         )}
-        {running && <Notice tone="info">A scan is running now. Refresh in a minute to see the results.</Notice>}
+        {running && <Notice tone="info">{t("tools.dash.running")}</Notice>}
 
         <section className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-          <div>
-            <h1 className="font-syne font-extrabold text-2xl md:text-3xl text-[#0D1B2A]">
+          <div className="min-w-0">
+            <h1 className="font-syne font-extrabold text-2xl md:text-3xl text-[#0D1B2A] break-words">
               {own ? own.host : sub.siteUrl}
             </h1>
             <p className="font-dm text-sm text-[#7A8FA6] mt-1">
-              {runs[0] ? `Last scanned ${fmtDate(runs[0].at)}` : "No scans yet"}
-              {sub.status === "active" && sub.nextRunAt ? ` · next scan ${fmtDate(sub.nextRunAt)}` : ""}
+              {runs[0] ? t("tools.dash.lastScanned", { date: date(runs[0].at) }) : t("tools.dash.noScans")}
+              {sub.status === "active" && sub.nextRunAt ? ` · ${t("tools.dash.nextScan", { date: date(sub.nextRunAt) })}` : ""}
             </p>
           </div>
           {rank && own?.scores && (
             <div className="flex items-center gap-3 bg-white border border-[#D2DCE8] rounded-2xl px-5 py-3">
-              <Trophy size={22} className={rank.rank === 1 ? "text-[#F47C20]" : "text-[#7A8FA6]"} />
+              <Trophy size={22} className={rank.rank === 1 ? "text-[#F47C20]" : "text-[#7A8FA6]"} aria-hidden />
               <div>
                 <p className="font-syne font-bold text-lg text-[#0D1B2A] leading-tight">
-                  #{rank.rank} of {rank.of}
+                  {t("tools.dash.rank", { rank: rank.rank, of: rank.of })}
                 </p>
-                <p className="font-dm text-xs text-[#7A8FA6]">on overall score</p>
+                <p className="font-dm text-xs text-[#7A8FA6]">{t("tools.dash.onOverall")}</p>
               </div>
             </div>
           )}
@@ -122,22 +141,20 @@ export default async function MonitorDashboard({ params }: { params: Promise<{ t
 
         {latest.length === 0 ? (
           <div className="bg-white border border-[#D2DCE8] rounded-2xl p-10 text-center font-dm text-sm text-[#7A8FA6]">
-            {sub.status === "active"
-              ? "Your first scan is queued and usually finishes within a few minutes of signing up."
-              : "There are no scans for this subscription."}
+            {sub.status === "active" ? t("tools.dash.queued") : t("tools.dash.noScansSub")}
           </div>
         ) : (
           <>
             {/* Side-by-side scores */}
             <section className="bg-white border border-[#D2DCE8] rounded-2xl p-5 md:p-6">
-              <h2 className="font-syne font-bold text-base text-[#0D1B2A]">You vs your competitors</h2>
+              <h2 className="font-syne font-bold text-base text-[#0D1B2A]">{t("tools.dash.vs")}</h2>
               <div className="mt-4 overflow-x-auto">
                 <table className="w-full min-w-[560px] font-dm text-sm">
                   <thead>
                     <tr className="text-xs uppercase tracking-wider text-[#7A8FA6]">
-                      <th className="text-left font-semibold py-2 pr-4">Site</th>
+                      <th className="text-left font-semibold py-2 pr-4">{t("tools.dash.site")}</th>
                       {AREAS.map((a) => (
-                        <th key={a} className="font-semibold py-2 px-2 text-center">{AREA_LABELS[a]}</th>
+                        <th key={a} className="font-semibold py-2 px-2 text-center">{t(`tools.area.${a}`)}</th>
                       ))}
                     </tr>
                   </thead>
@@ -150,7 +167,7 @@ export default async function MonitorDashboard({ params }: { params: Promise<{ t
                             <a href={s.url} target="_blank" rel="noopener noreferrer" className="font-medium text-[#0D1B2A] hover:underline">
                               {s.host}
                             </a>
-                            {s.isOwn && <span className="ml-2 text-xs font-semibold text-[#B8500A]">you</span>}
+                            {s.isOwn && <span className="ml-2 text-xs font-semibold text-[#B8500A]">{t("tools.dash.you")}</span>}
                           </td>
                           {s.scores ? (
                             AREAS.map((a) => (
@@ -168,7 +185,7 @@ export default async function MonitorDashboard({ params }: { params: Promise<{ t
                             ))
                           ) : (
                             <td colSpan={AREAS.length} className="py-3 px-2 text-xs text-[#B45309]">
-                              Could not scan: {s.error ?? "unknown error"}
+                              {t("tools.dash.couldNotScan", { error: scanErrorText(t, s.error) })}
                             </td>
                           )}
                         </tr>
@@ -181,13 +198,11 @@ export default async function MonitorDashboard({ params }: { params: Promise<{ t
 
             <div className="grid lg:grid-cols-2 gap-6">
               <section className="bg-white border border-[#D2DCE8] rounded-2xl p-5 md:p-6">
-                <h2 className="font-syne font-bold text-base text-[#0D1B2A]">Where competitors are ahead</h2>
-                <p className="font-dm text-xs text-[#7A8FA6] mt-0.5">Checks you fail that at least one competitor passes.</p>
+                <h2 className="font-syne font-bold text-base text-[#0D1B2A]">{t("tools.dash.ahead")}</h2>
+                <p className="font-dm text-xs text-[#7A8FA6] mt-0.5">{t("tools.dash.aheadSub")}</p>
                 {gaps.length === 0 ? (
                   <p className="font-dm text-sm text-[#3A4A5C] mt-4">
-                    {latest.some((s) => !s.isOwn)
-                      ? "None. Every check a competitor passes, you pass too."
-                      : "Add competitors below to see where they are ahead."}
+                    {latest.some((s) => !s.isOwn) ? t("tools.dash.aheadNone") : t("tools.dash.aheadAdd")}
                   </p>
                 ) : (
                   <ul className="mt-4 space-y-3">
@@ -199,8 +214,8 @@ export default async function MonitorDashboard({ params }: { params: Promise<{ t
                           <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
                         )}
                         <div className="font-dm text-sm">
-                          <p className="text-[#0D1B2A]">{g.yours}</p>
-                          <p className="text-xs text-[#7A8FA6] mt-0.5">Passing: {g.aheadHosts.join(", ")}</p>
+                          <p className="text-[#0D1B2A]">{g.finding ? findingText(t, locale, g.finding) : g.yours}</p>
+                          <p className="text-xs text-[#7A8FA6] mt-0.5 break-words">{t("tools.dash.passing", { hosts: g.aheadHosts.join(", ") })}</p>
                         </div>
                       </li>
                     ))}
@@ -209,11 +224,11 @@ export default async function MonitorDashboard({ params }: { params: Promise<{ t
               </section>
 
               <section className="bg-white border border-[#D2DCE8] rounded-2xl p-5 md:p-6">
-                <h2 className="font-syne font-bold text-base text-[#0D1B2A]">Since the last scan</h2>
+                <h2 className="font-syne font-bold text-base text-[#0D1B2A]">{t("tools.dash.since")}</h2>
                 {!previous ? (
-                  <p className="font-dm text-sm text-[#3A4A5C] mt-4">This is your first scan. Changes appear here from the next one.</p>
+                  <p className="font-dm text-sm text-[#3A4A5C] mt-4">{t("tools.dash.first")}</p>
                 ) : changes.length === 0 ? (
-                  <p className="font-dm text-sm text-[#3A4A5C] mt-4">No meaningful changes.</p>
+                  <p className="font-dm text-sm text-[#3A4A5C] mt-4">{t("tools.dash.noChanges")}</p>
                 ) : (
                   <ul className="mt-4 space-y-2">
                     {changes.map((c, i) => (
@@ -223,7 +238,7 @@ export default async function MonitorDashboard({ params }: { params: Promise<{ t
                         ) : (
                           <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
                         )}
-                        {describeChange(c)}
+                        {describe(t, locale, c)}
                       </li>
                     ))}
                   </ul>
@@ -234,9 +249,9 @@ export default async function MonitorDashboard({ params }: { params: Promise<{ t
             {history.length > 1 && <ScoreHistory history={history} />}
 
             <section className="bg-white border border-[#D2DCE8] rounded-2xl p-5 md:p-6">
-              <h2 className="font-syne font-bold text-base text-[#0D1B2A]">Your open issues ({ownIssues.length})</h2>
+              <h2 className="font-syne font-bold text-base text-[#0D1B2A]">{t("tools.dash.issues", { n: ownIssues.length })}</h2>
               {ownIssues.length === 0 ? (
-                <p className="font-dm text-sm text-[#3A4A5C] mt-4">Every check passes.</p>
+                <p className="font-dm text-sm text-[#3A4A5C] mt-4">{t("tools.dash.allPass")}</p>
               ) : (
                 <ul className="mt-4 grid md:grid-cols-2 gap-x-6 gap-y-3">
                   {ownIssues.map((f) => (
@@ -246,14 +261,14 @@ export default async function MonitorDashboard({ params }: { params: Promise<{ t
                       ) : (
                         <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
                       )}
-                      {f.text}
+                      {findingText(t, locale, f)}
                     </li>
                   ))}
                 </ul>
               )}
               <p className="font-dm text-sm text-[#7A8FA6] mt-5">
-                Want these fixed for you?{" "}
-                <Link href="/book" className="text-[#2251A3] underline">Book a call</Link>.
+                {t("tools.dash.wantFixed")}{" "}
+                <Link href="/book" className="text-[#2251A3] underline">{t("tools.common.bookCall")}</Link>.
               </p>
             </section>
           </>

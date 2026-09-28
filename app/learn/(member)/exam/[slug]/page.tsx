@@ -3,10 +3,19 @@ import { notFound, redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { getStudent } from "@/lib/learn/session";
 import { allModuleQuizzesPassed } from "@/lib/learn/assessments";
-import { formatMinutes } from "@/lib/learn/types";
 import ExamRunner from "@/components/learn/ExamRunner";
+import { getLocale, translatorFor, type T } from "@/lib/i18n/server";
+import { loadTrackSources, localizedTrack } from "@/lib/i18n/sources/learn";
+import { localizeExamInstructions } from "@/lib/i18n/sources/labs";
 
 export const dynamic = "force-dynamic";
+
+function minutes(t: T, mins: number): string {
+  if (mins < 60) return t("labs.time.min", { n: mins });
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m === 0 ? t(h === 1 ? "labs.time.hr.one" : "labs.time.hr.other", { n: h }) : t("labs.time.hrMin", { h, m });
+}
 
 export default async function ExamPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -33,7 +42,21 @@ export default async function ExamPage({ params }: { params: Promise<{ slug: str
     .catch(() => null);
 
   if (!track?.finalExam) notFound();
-  const exam = track.finalExam;
+  const locale = await getLocale();
+  const t = translatorFor(locale);
+
+  // Track, module and exam titles come with the track's translation; the
+  // instructions are their own unit. English meanwhile.
+  const [source] = await loadTrackSources({ id: track.id });
+  const trackText = source ? (await localizedTrack(source, locale)).text : null;
+  const instructions = await localizeExamInstructions(track.finalExam, locale);
+  const exam = {
+    ...track.finalExam,
+    title: trackText?.examTitle ?? track.finalExam.title,
+    instructionsMd: instructions.instructionsMd,
+  };
+  const trackTitle = trackText?.title ?? track.title;
+  const modules = source ? source.modules.map((m) => ({ id: m.id, title: trackText?.modules[m.id]?.title ?? m.title })) : [];
 
   const [unlocked, sessions, profile] = await Promise.all([
     allModuleQuizzesPassed(student.id, track.id),
@@ -58,15 +81,14 @@ export default async function ExamPage({ params }: { params: Promise<{ slug: str
       <div className="mx-auto max-w-2xl rounded-2xl border border-[var(--border)] bg-white p-8 text-center">
         <h1 className="text-xl font-black text-[var(--ink)]">{exam.title}</h1>
         <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-[var(--ink2)]">
-          The final exam unlocks once you've passed the quiz in every module. That's deliberate — it
-          means you arrive here already knowing the material, not hoping to guess your way through.
+          {t("labs.exam.lockedBody")}
         </p>
         <Link
           href={`/learn/track/${track.slug}`}
           className="mt-6 inline-block rounded-full px-6 py-2.5 text-sm font-bold text-white"
           style={{ background: track.accentColor }}
         >
-          Back to the track →
+          {t("labs.exam.backToTrack")}
         </Link>
       </div>
     );
@@ -84,7 +106,7 @@ export default async function ExamPage({ params }: { params: Promise<{ slug: str
     <div className="mx-auto max-w-3xl">
       <nav aria-label="Breadcrumb" className="mb-4 text-sm text-[var(--ink3)]">
         <Link href={`/learn/track/${track.slug}`} className="hover:text-[var(--ink)]">
-          {track.title}
+          {trackTitle}
         </Link>
       </nav>
 
@@ -113,18 +135,19 @@ export default async function ExamPage({ params }: { params: Promise<{ slug: str
         attemptsLeft={attemptsLeft}
         cooldownUntil={inCooldown ? cooldownUntil!.toISOString() : null}
         extendedTime={profile?.accessibilityMode ?? false}
+        modules={modules}
       />
 
       {finished.length > 0 && (
         <section className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6">
-          <h2 className="text-sm font-bold text-[var(--ink)]">Your attempts</h2>
+          <h2 className="text-sm font-bold text-[var(--ink)]">{t("labs.exam.yourAttempts")}</h2>
           <ul className="mt-3 divide-y divide-[var(--border)]">
             {finished.map((s) => (
               <li key={s.id} className="flex items-center justify-between gap-4 py-2.5 text-sm">
                 <span className="text-[var(--ink2)]">
-                  Attempt {s.attemptNumber}
+                  {t("labs.exam.attempt", { n: s.attemptNumber })}
                   {s.status === "expired" && (
-                    <span className="ml-2 text-xs text-[var(--ink3)]">(time expired)</span>
+                    <span className="ml-2 text-xs text-[var(--ink3)]">{t("labs.exam.timeExpired")}</span>
                   )}
                 </span>
                 <span className="font-bold" style={{ color: s.passed ? "#22A387" : "var(--ink2)" }}>
@@ -135,8 +158,7 @@ export default async function ExamPage({ params }: { params: Promise<{ slug: str
             ))}
           </ul>
           <p className="mt-3 text-xs text-[var(--ink3)]">
-            {formatMinutes(exam.timeLimitMinutes)} per attempt · {exam.passScore}% to pass ·{" "}
-            {exam.distinctionScore}%+ earns Distinction
+            {t("labs.exam.summary", { time: minutes(t, exam.timeLimitMinutes), pass: exam.passScore, dist: exam.distinctionScore })}
           </p>
         </section>
       )}

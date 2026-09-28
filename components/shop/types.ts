@@ -38,7 +38,18 @@ export interface CartLine {
   maxStock: number | null;
 }
 
-export function formatMoney(cents: number, currency = "USD"): string {
+/**
+ * Money for display. With a locale it is written the visitor's way (the
+ * currency itself never changes); without one it keeps the original "$12.00".
+ */
+export function formatMoney(cents: number, currency = "USD", locale?: string): string {
+  if (locale) {
+    try {
+      return new Intl.NumberFormat(locale, { style: "currency", currency: currency || "USD" }).format(cents / 100);
+    } catch {
+      /* unknown currency code: fall through */
+    }
+  }
   const symbol = currency === "USD" ? "$" : `${currency} `;
   return `${symbol}${(cents / 100).toFixed(2)}`;
 }

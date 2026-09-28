@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getT } from "@/lib/i18n/server";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import stripe from "@/lib/stripe";
@@ -13,19 +14,20 @@ function orderNumber() {
 }
 
 export async function POST(req: NextRequest) {
+  const t = await getT();
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
   if (!(await checkRateLimit(`shop-checkout:${ip}`, 10, 60_000))) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    return NextResponse.json({ error: t("pages.api.tooMany") }, { status: 429 });
   }
 
   if (!process.env.STRIPE_SECRET_KEY) {
-    return NextResponse.json({ error: "Payment not configured" }, { status: 503 });
+    return NextResponse.json({ error: t("pages.api.shop.notConfigured") }, { status: 503 });
   }
 
   try {
     const { items } = await req.json();
     if (!Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.shop.cartEmpty") }, { status: 400 });
     }
 
     // Normalise requested quantities by product id
@@ -36,7 +38,7 @@ export async function POST(req: NextRequest) {
       if (id) wanted.set(id, (wanted.get(id) ?? 0) + qty);
     }
     if (wanted.size === 0) {
-      return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.shop.cartEmpty") }, { status: 400 });
     }
 
     // Authoritative product data from DB (never trust client prices)
@@ -44,7 +46,7 @@ export async function POST(req: NextRequest) {
       where: { id: { in: [...wanted.keys()], }, published: true },
     });
     if (products.length === 0) {
-      return NextResponse.json({ error: "No available products in cart" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.shop.noProducts") }, { status: 400 });
     }
 
     const baseUrl = (
@@ -87,7 +89,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (lineItems.length === 0) {
-      return NextResponse.json({ error: "Items are out of stock" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.shop.outOfStock") }, { status: 400 });
     }
 
     const order = await prisma.order.create({
@@ -122,7 +124,7 @@ export async function POST(req: NextRequest) {
     // request parameters. Log it, return something a shopper can act on.
     console.error("[POST /api/shop/checkout]", err);
     return NextResponse.json(
-      { error: "Could not start checkout. Please try again or contact support." },
+      { error: t("pages.api.shop.checkoutFailed") },
       { status: 500 },
     );
   }

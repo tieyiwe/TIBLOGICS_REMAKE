@@ -1,3 +1,7 @@
+"use client";
+
+import { useT } from "@/lib/i18n/client";
+
 export default function ProgressRing({
   percent,
   color,
@@ -7,6 +11,7 @@ export default function ProgressRing({
   color: string;
   size?: number;
 }) {
+  const t = useT();
   const stroke = 5;
   const r = (size - stroke) / 2;
   const circumference = 2 * Math.PI * r;
@@ -18,7 +23,7 @@ export default function ProgressRing({
       className="relative shrink-0"
       style={{ width: size, height: size }}
       role="img"
-      aria-label={`${clamped}% complete`}
+      aria-label={t("learn.ring.label", { n: clamped })}
     >
       <svg width={size} height={size} className="-rotate-90">
         <circle

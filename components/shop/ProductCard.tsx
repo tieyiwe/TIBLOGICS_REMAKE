@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ShoppingBag, Check } from "lucide-react";
 import { useCart } from "./CartContext";
 import { formatMoney, type ShopProduct } from "./types";
+import { useLocale, useT } from "@/lib/i18n/client";
 
 const S = {
   card: "#1A2223",
@@ -15,6 +16,7 @@ const S = {
 const syne = "var(--font-syne), sans-serif";
 
 export function AddButton({ p }: { p: ShopProduct }) {
+  const t = useT();
   const { add } = useCart();
   const [added, setAdded] = useState(false);
   const soldOut = p.stock != null && p.stock <= 0;
@@ -32,6 +34,7 @@ export function AddButton({ p }: { p: ShopProduct }) {
     <button
       onClick={onAdd}
       disabled={soldOut}
+      aria-label={soldOut ? undefined : t("pages.store.card.addLabel", { name: p.name })}
       style={{
         border: "none",
         borderRadius: "50px",
@@ -49,12 +52,14 @@ export function AddButton({ p }: { p: ShopProduct }) {
         transition: "opacity .2s",
       }}
     >
-      {soldOut ? "Sold Out" : added ? (<><Check size={15} /> Added</>) : (<><ShoppingBag size={15} /> Add</>)}
+      {soldOut ? t("pages.store.card.soldOut") : added ? (<><Check size={15} /> {t("pages.store.card.added")}</>) : (<><ShoppingBag size={15} /> {t("pages.store.card.add")}</>)}
     </button>
   );
 }
 
 export default function ProductCard({ p }: { p: ShopProduct }) {
+  const t = useT();
+  const locale = useLocale();
   const onSale = p.onSale && p.compareAtPrice && p.compareAtPrice > p.price;
   const pct = onSale ? Math.round(((p.compareAtPrice! - p.price) / p.compareAtPrice!) * 100) : 0;
 
@@ -89,7 +94,7 @@ export default function ProductCard({ p }: { p: ShopProduct }) {
         )}
         {p.featured && !onSale && (
           <span style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(19,26,27,.8)", color: "#F9A738", fontFamily: syne, fontWeight: 700, fontSize: ".7rem", padding: "4px 10px", borderRadius: "20px", border: "1px solid rgba(249,167,56,.4)" }}>
-            ★ Featured
+            {t("pages.store.card.featured")}
           </span>
         )}
       </div>
@@ -99,8 +104,8 @@ export default function ProductCard({ p }: { p: ShopProduct }) {
         {p.tagline && <div style={{ color: S.muted, fontSize: ".82rem", lineHeight: 1.5, marginBottom: "14px" }}>{p.tagline}</div>}
         <div style={{ marginTop: "auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: "8px", flexWrap: "wrap" }}>
-            <span style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.25rem", color: "#fff" }}>{p.price === 0 ? "Free" : formatMoney(p.price, p.currency)}</span>
-            {onSale && <span style={{ color: S.muted, fontSize: ".85rem", textDecoration: "line-through" }}>{formatMoney(p.compareAtPrice!, p.currency)}</span>}
+            <span style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.25rem", color: "#fff" }}>{p.price === 0 ? t("pages.store.card.free") : formatMoney(p.price, p.currency, locale)}</span>
+            {onSale && <span style={{ color: S.muted, fontSize: ".85rem", textDecoration: "line-through" }}>{formatMoney(p.compareAtPrice!, p.currency, locale)}</span>}
           </div>
           <AddButton p={p} />
         </div>

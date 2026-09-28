@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getT } from "@/lib/i18n/server";
 import prisma from "@/lib/prisma";
 import { isValidEmail, checkRateLimit } from "@/lib/require-admin";
 import resend from "@/lib/resend";
@@ -32,15 +33,16 @@ async function notifyAdmin(email: string, firstName: string | null, source: stri
 }
 
 export async function POST(req: NextRequest) {
+  const t = await getT();
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
   if (!(await checkRateLimit(`newsletter:${ip}`, 5, 60_000))) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    return NextResponse.json({ error: t("pages.api.tooMany") }, { status: 429 });
   }
   try {
     const { email, firstName, source } = await req.json();
 
     if (!isValidEmail(email)) {
-      return NextResponse.json({ error: "Valid email required" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.invalidEmail") }, { status: 400 });
     }
     const cleanEmail = email.trim().toLowerCase();
     const cleanFirst = typeof firstName === "string" ? firstName.slice(0, 100).trim() : null;
@@ -53,9 +55,9 @@ export async function POST(req: NextRequest) {
           data: { active: true, unsubscribedAt: null, firstName: cleanFirst ?? existing.firstName },
         });
         notifyAdmin(cleanEmail, cleanFirst, typeof source === "string" ? source : "blog");
-        return NextResponse.json({ message: "Welcome back! You're re-subscribed." });
+        return NextResponse.json({ message: t("pages.api.news.welcomeBack") });
       }
-      return NextResponse.json({ message: "You're already subscribed!" });
+      return NextResponse.json({ message: t("pages.api.news.already") });
     }
 
     await prisma.newsletterSubscriber.create({
@@ -68,26 +70,27 @@ export async function POST(req: NextRequest) {
     });
 
     notifyAdmin(cleanEmail, cleanFirst, typeof source === "string" ? source : "blog");
-    return NextResponse.json({ message: "Subscribed! Welcome to the TIBLOGICS AI newsletter." });
+    return NextResponse.json({ message: t("pages.api.news.subscribed") });
   } catch (err) {
     console.error("Subscribe error:", err);
-    return NextResponse.json({ error: "Failed to subscribe" }, { status: 500 });
+    return NextResponse.json({ error: t("pages.api.news.failed") }, { status: 500 });
   }
 }
 
 export async function DELETE(req: NextRequest) {
+  const t = await getT();
   try {
     const { email } = await req.json();
     if (!isValidEmail(email)) {
-      return NextResponse.json({ error: "Valid email required" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.invalidEmail") }, { status: 400 });
     }
     await prisma.newsletterSubscriber.update({
       where: { email: email.trim().toLowerCase() },
       data: { active: false, unsubscribedAt: new Date() },
     });
-    return NextResponse.json({ message: "Unsubscribed successfully." });
+    return NextResponse.json({ message: t("pages.api.news.unsubscribed") });
   } catch {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ error: t("pages.api.news.notFound") }, { status: 404 });
   }
 }
 

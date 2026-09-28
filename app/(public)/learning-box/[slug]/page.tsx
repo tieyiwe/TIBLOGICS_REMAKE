@@ -5,11 +5,22 @@ import LevelBadge from "@/components/learn/LevelBadge";
 import Reveal from "@/components/learn/Reveal";
 import ModuleAccordion from "@/components/learn/ModuleAccordion";
 import StickyEnrollBar from "@/components/learn/StickyEnrollBar";
-import { getTrackBySlug } from "@/lib/learn/catalog";
-import { formatHours, formatMinutes, pacingHint } from "@/lib/learn/types";
-import { PLANS, formatPlanPrice } from "@/lib/payments/provider";
+import { getTrackBySlug, trackTime } from "@/lib/learn/catalog";
+import { fmtBreakdown, fmtMinutes, fmtPacing, fmtPrice, levelLabel, totalHours } from "@/lib/learn/format";
+import { PLANS } from "@/lib/payments/provider";
+import { getLocale, getT } from "@/lib/i18n/server";
+import { loadTrackSources, localizedTrack, trackText, type TrackText } from "@/lib/i18n/sources/learn";
+import type { Locale } from "@/lib/i18n/config";
 
 export const dynamic = "force-dynamic";
+
+/** The track's text in the visitor's language (English while pending). */
+async function textFor(slug: string, locale: Locale): Promise<{ text: TrackText | null; pending: boolean }> {
+  const [src] = await loadTrackSources({ slug });
+  if (!src) return { text: null, pending: false };
+  if (locale === "en") return { text: trackText(src), pending: false };
+  return localizedTrack(src, locale);
+}
 
 export async function generateMetadata({
   params,
@@ -17,11 +28,14 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const track = await getTrackBySlug(slug);
-  if (!track) return { title: "Track not found | TIBLOGICS Learn" };
+  const [track, t, locale] = await Promise.all([getTrackBySlug(slug), getT(), getLocale()]);
+  if (!track) return { title: t("learn.track.notFoundTitle") };
+  const { text } = await textFor(slug, locale);
+  const title = text?.title ?? track.title;
+  const tagline = text?.tagline ?? track.tagline;
   return {
-    title: `${track.title} | TIBLOGICS Learn`,
-    description: track.tagline ?? track.description.slice(0, 155),
+    title: t("learn.track.metaTitle", { title }),
+    description: tagline ?? (text?.description ?? track.description).slice(0, 155),
   };
 }
 
@@ -31,42 +45,84 @@ export default async function TrackLandingPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const track = await getTrackBySlug(slug);
+  const [track, t, locale] = await Promise.all([getTrackBySlug(slug), getT(), getLocale()]);
   if (!track) notFound();
+  const { text: loaded, pending } = await textFor(slug, locale);
 
-  const outcomes = Array.isArray(track.outcomes) ? (track.outcomes as string[]) : [];
+  const fallbackOutcomes = Array.isArray(track.outcomes) ? (track.outcomes as string[]) : [];
+  const text: TrackText = loaded ?? {
+    title: track.title,
+    tagline: track.tagline,
+    description: track.description,
+    audience: track.audience,
+    outcomes: fallbackOutcomes,
+    examTitle: track.finalExam?.title ?? null,
+    modules: {},
+    lessons: {},
+  };
+  const outcomes = text.outcomes;
   const lessonCount = track.modules.reduce((n, m) => n + m._count.lessons, 0);
   const comingSoon = track.status === "coming_soon";
+  const time = trackTime(track);
+  const hours = totalHours(time.lessonMinutes, time.handsOnMinutes, track.estimatedHours);
+  const breakdown = fmtBreakdown(t, locale, { ...time, estimatedHours: track.estimatedHours });
+  const pacing = fmtPacing(t, hours);
+  const exam = track.finalExam;
+  const firstQuiz = track.modules[0]?.quiz;
 
   const faqs = [
     {
-      q: "Do I need any background to take this?",
-      a: `This track is pitched at ${track.level} level. ${
-        track.audience ?? "If you're unsure, the catalog has a three-question check that suggests where to start."
-      }`,
+      q: t("learn.track.faq.background.q"),
+      a: `${t("learn.track.faq.background.a", { level: levelLabel(t, track.level) })} ${text.audience ?? t("learn.track.faq.background.unsure")}`,
     },
     {
-      q: "How long will it actually take?",
-      a: `About ${formatHours(track.estimatedHours)} of material. ${pacingHint(
-        track.estimatedHours,
-        track.estimatedWeeksAt3Hrs,
-      )}. There's no deadline — the pace is yours.`,
+      q: t("learn.track.faq.time.q"),
+      a: t("learn.track.faq.time.a", { breakdown, pacing }),
     },
     {
-      q: "What happens if I fail the final exam?",
-      a: track.finalExam
-        ? `You get ${track.finalExam.maxAttempts} attempts, with a short cooldown between them so you have time to review. Each attempt draws a fresh set of questions, and your results break down by module so you know exactly what to revisit.`
-        : "Exam details are published before you sit it.",
+      q: t("learn.track.faq.fail.q"),
+      a: exam ? t("learn.track.faq.fail.a", { n: exam.maxAttempts }) : t("learn.track.faq.fail.none"),
     },
     {
-      q: "Is the certificate actually worth anything?",
-      a: "That depends entirely on whether it's hard to get — so we made it hard. You must pass every module quiz, clear a timed final exam, and have a capstone project approved by a human reviewer against a published rubric. Each certificate carries a public verification link anyone can check.",
+      q: t("learn.track.faq.worth.q"),
+      a: t("learn.track.faq.worth.a"),
     },
     {
-      q: "What does it cost?",
-      a: `${formatPlanPrice(PLANS.monthly)}/month or ${formatPlanPrice(
-        PLANS.annual,
-      )}/year, and that includes every track on the platform — not just this one. Cancel anytime.`,
+      q: t("learn.track.faq.cost.q"),
+      a: t("learn.track.faq.cost.a", {
+        monthly: fmtPrice(PLANS.monthly.amount, locale),
+        annual: fmtPrice(PLANS.annual.amount, locale),
+      }),
+    },
+  ];
+
+  const count = (n: number, key: string) => t(`${key}.${n === 1 ? "one" : "other"}`, { n });
+
+  const gates = [
+    { t: t("learn.track.gate.checks.title"), d: t("learn.track.gate.checks.body") },
+    {
+      t: t("learn.track.gate.quiz.title"),
+      d: firstQuiz
+        ? t("learn.track.gate.quiz.body", { n: firstQuiz.questionsServed, score: firstQuiz.passScore })
+        : t("learn.track.gate.quiz.bodyGeneric"),
+    },
+    {
+      t: text.examTitle ?? t("learn.track.gate.exam.title"),
+      d: exam
+        ? t("learn.track.gate.exam.body", {
+            n: exam.questionsServed,
+            time: fmtMinutes(t, exam.timeLimitMinutes),
+            score: exam.passScore,
+            distinction: exam.distinctionScore,
+            attempts: exam.maxAttempts,
+          })
+        : t("learn.track.gate.exam.bodyGeneric"),
+    },
+    {
+      t: t("learn.track.gate.capstone.title"),
+      d: track.capstone
+        ? t("learn.track.gate.capstone.body", { score: track.capstone.passThreshold })
+        : t("learn.track.gate.capstone.bodyGeneric"),
     },
   ];
 
@@ -81,41 +137,40 @@ export default async function TrackLandingPage({
       >
         <div className="learn-hero mx-auto max-w-5xl">
           <Link href="/learning-box" className="text-sm text-white/50 hover:text-white/80">
-            ← All tracks
+            ← {t("learn.catalog.allTracks")}
           </Link>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <LevelBadge level={track.level} levelEnd={track.levelEnd} size="md" />
             {comingSoon && (
               <span className="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold text-white/80">
-                Coming soon
+                {t("learn.catalog.comingSoon")}
               </span>
             )}
           </div>
-          <h1 className="mt-4 max-w-3xl text-3xl font-black leading-tight sm:text-5xl">
-            {track.title}
-          </h1>
-          {track.tagline && (
-            <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg">
-              {track.tagline}
-            </p>
+          <h1 className="mt-4 max-w-3xl text-3xl font-black leading-tight sm:text-5xl">{text.title}</h1>
+          {text.tagline && (
+            <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg">{text.tagline}</p>
           )}
 
           <dl className="mt-8 flex flex-wrap gap-x-10 gap-y-4">
             {[
-              ["Length", formatHours(track.estimatedHours)],
-              ["Modules", String(track.modules.length)],
-              ["Lessons", String(lessonCount)],
-              ["Certificate", track.certificateName],
+              [t("learn.catalog.length"), breakdown],
+              [t("learn.catalog.modules"), String(track.modules.length)],
+              [t("learn.catalog.lessons"), String(lessonCount)],
+              [t("learn.catalog.certificate"), track.certificateName],
             ].map(([k, v]) => (
-              <div key={k}>
+              <div key={k} className="max-w-full">
                 <dt className="text-xs uppercase tracking-wide text-white/40">{k}</dt>
                 <dd className="mt-1 text-sm font-bold text-white">{v}</dd>
               </div>
             ))}
           </dl>
-          <p className="mt-4 text-sm text-white/50">
-            {pacingHint(track.estimatedHours, track.estimatedWeeksAt3Hrs)}
-          </p>
+          <p className="mt-4 text-sm text-white/50">{pacing}</p>
+          {pending && (
+            <p role="status" className="mt-4 text-xs text-white/60">
+              {t("common.translationPending")}
+            </p>
+          )}
         </div>
       </section>
 
@@ -123,7 +178,7 @@ export default async function TrackLandingPage({
         {/* Outcomes */}
         {outcomes.length > 0 && (
           <Reveal as="section" className="-mt-8 rounded-2xl border border-[var(--border)] bg-white p-7 shadow-sm">
-            <h2 className="text-xl font-bold text-[var(--ink)]">What you'll be able to do</h2>
+            <h2 className="text-xl font-bold text-[var(--ink)]">{t("learn.catalog.outcomes")}</h2>
             <ul className="mt-5 grid gap-3 sm:grid-cols-2">
               {outcomes.map((o) => (
                 <li key={o} className="flex gap-3 text-sm leading-relaxed text-[var(--ink2)]">
@@ -138,16 +193,14 @@ export default async function TrackLandingPage({
         )}
 
         {/* Description */}
-        {track.description && (
+        {text.description && (
           <Reveal as="section" className="mt-8 rounded-2xl border border-[var(--border)] bg-white p-7">
-            <h2 className="text-xl font-bold text-[var(--ink)]">About this track</h2>
-            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-[var(--ink2)]">
-              {track.description}
-            </p>
-            {track.audience && (
+            <h2 className="text-xl font-bold text-[var(--ink)]">{t("learn.catalog.about")}</h2>
+            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-[var(--ink2)]">{text.description}</p>
+            {text.audience && (
               <p className="mt-4 rounded-xl bg-[var(--s2)] p-4 text-sm text-[var(--ink2)]">
-                <strong className="text-[var(--ink)]">Who it's for: </strong>
-                {track.audience}
+                <strong className="text-[var(--ink)]">{t("learn.catalog.whoFor")} </strong>
+                {text.audience}
               </p>
             )}
           </Reveal>
@@ -155,26 +208,25 @@ export default async function TrackLandingPage({
 
         {/* Curriculum */}
         <Reveal as="section" className="mt-8">
-          <h2 className="text-xl font-bold text-[var(--ink)]">Curriculum</h2>
+          <h2 className="text-xl font-bold text-[var(--ink)]">{t("learn.catalog.curriculum")}</h2>
           <p className="mt-1 text-sm text-[var(--ink3)]">
-            {track.modules.length} modules · {lessonCount} lessons ·{" "}
-            {formatHours(track.estimatedHours)}
+            {count(track.modules.length, "learn.count.modules")} · {count(lessonCount, "learn.count.lessons")} · {breakdown}
           </p>
           <div className="mt-5">
             <ModuleAccordion
               modules={track.modules.map((m) => ({
                 id: m.id,
-                title: m.title,
-                summary: m.summary,
+                title: text.modules[m.id]?.title ?? m.title,
+                summary: text.modules[m.id]?.summary ?? m.summary,
                 estimatedMinutes: m.estimatedMinutes,
                 hasQuiz: !!m.quiz,
                 quizPassScore: m.quiz?.passScore ?? null,
                 lessons: m.lessons.map((l) => ({
                   id: l.id,
-                  title: l.title,
+                  title: text.lessons[l.id]?.title ?? l.title,
                   durationMinutes: l.durationMinutes,
                   isPreview: l.isPreview,
-                  objective: l.objective,
+                  objective: text.lessons[l.id]?.objective ?? l.objective,
                 })),
               }))}
               accentColor={track.accentColor}
@@ -184,37 +236,10 @@ export default async function TrackLandingPage({
 
         {/* How you're assessed */}
         <Reveal as="section" className="mt-8 rounded-2xl border border-[var(--border)] bg-white p-7">
-          <h2 className="text-xl font-bold text-[var(--ink)]">How you're assessed</h2>
-          <p className="mt-2 text-sm text-[var(--ink2)]">
-            Four gates stand between you and the certificate. All four must be cleared.
-          </p>
+          <h2 className="text-xl font-bold text-[var(--ink)]">{t("learn.catalog.howAssessed")}</h2>
+          <p className="mt-2 text-sm text-[var(--ink2)]">{t("learn.track.gatesIntro")}</p>
           <ol className="mt-6 space-y-4">
-            {[
-              {
-                t: "Quick checks after every lesson",
-                d: "2–3 questions, instant feedback with an explanation. These keep you honest as you go.",
-              },
-              {
-                t: "A quiz at the end of every module",
-                d: track.modules[0]?.quiz
-                  ? `${track.modules[0].quiz.questionsServed} questions drawn from a larger bank, ${track.modules[0].quiz.passScore}% to pass. Unlimited retakes with a different set each time.`
-                  : "Drawn from a larger bank, with unlimited retakes and a different set each time.",
-              },
-              {
-                t: track.finalExam?.title ?? "Timed final exam",
-                d: track.finalExam
-                  ? `${track.finalExam.questionsServed} questions in ${formatMinutes(
-                      track.finalExam.timeLimitMinutes,
-                    )}. ${track.finalExam.passScore}% to pass, ${track.finalExam.distinctionScore}%+ earns Distinction. Up to ${track.finalExam.maxAttempts} attempts, each with fresh questions. The clock runs on our server, so closing your laptop doesn't stop it.`
-                  : "A timed, randomized exam covering the whole track.",
-              },
-              {
-                t: "Capstone project, reviewed by a human",
-                d: track.capstone
-                  ? `A practical project scored against a published rubric, ${track.capstone.passThreshold}% to pass. A real reviewer reads it and writes you feedback.`
-                  : "A practical project scored against a published rubric by a real reviewer.",
-              },
-            ].map((s, i) => (
+            {gates.map((s, i) => (
               <li key={s.t} className="flex gap-4">
                 <span
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black text-white"
@@ -233,7 +258,7 @@ export default async function TrackLandingPage({
 
         {/* FAQ */}
         <Reveal as="section" className="mt-8 rounded-2xl border border-[var(--border)] bg-white p-7">
-          <h2 className="text-xl font-bold text-[var(--ink)]">Questions</h2>
+          <h2 className="text-xl font-bold text-[var(--ink)]">{t("learn.track.faqTitle")}</h2>
           <div className="mt-5 divide-y divide-[var(--border)]">
             {faqs.map((f) => (
               <details key={f.q} className="group py-4">
@@ -250,12 +275,7 @@ export default async function TrackLandingPage({
         </Reveal>
       </div>
 
-      <StickyEnrollBar
-        trackTitle={track.title}
-        accentColor={track.accentColor}
-        comingSoon={comingSoon}
-        trackSlug={track.slug}
-      />
+      <StickyEnrollBar trackTitle={text.title} accentColor={track.accentColor} comingSoon={comingSoon} trackSlug={track.slug} />
     </div>
   );
 }

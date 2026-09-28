@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getT } from "@/lib/i18n/server";
 import prisma from "@/lib/prisma";
 import resend from "@/lib/resend";
 import { sendTiweNotification } from "@/lib/resend";
@@ -78,6 +79,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const t = await getT();
   try {
     // Unauthenticated, and every accepted booking sends two emails — one of
     // them to an address the caller chooses. Without a cap this is both a slot
@@ -103,7 +105,7 @@ export async function POST(req: Request) {
     const knownIp = ip !== "unknown";
     if (!(await checkRateLimit(`appointments:req:${ip}`, knownIp ? 30 : 300, 10 * 60_000))) {
       return NextResponse.json(
-        { error: "Too many requests. Please try again in a few minutes." },
+        { error: t("pages.api.tooMany") },
         { status: 429 },
       );
     }
@@ -125,21 +127,21 @@ export async function POST(req: Request) {
 
     // Input validation
     if (!firstName || typeof firstName !== "string" || firstName.length > 100) {
-      return NextResponse.json({ error: "Invalid first name" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.invalidFirstName") }, { status: 400 });
     }
     if (!lastName || typeof lastName !== "string" || lastName.length > 100) {
-      return NextResponse.json({ error: "Invalid last name" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.invalidLastName") }, { status: 400 });
     }
     if (!isValidEmail(email)) {
-      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.invalidEmail") }, { status: 400 });
     }
-    for (const [label, value] of [
-      ["phone", phone],
-      ["company", company],
-      ["notes", goalNotes],
+    for (const [key, value] of [
+      ["pages.api.invalidPhone", phone],
+      ["pages.api.invalidCompany", company],
+      ["pages.api.invalidNotes", goalNotes],
     ] as const) {
       if (value != null && (typeof value !== "string" || value.length > 2000)) {
-        return NextResponse.json({ error: `Invalid ${label}` }, { status: 400 });
+        return NextResponse.json({ error: t(key) }, { status: 400 });
       }
     }
 
@@ -149,7 +151,7 @@ export async function POST(req: Request) {
     // put arbitrary text into the notification emails and the admin UI.
     const topic = findTopicByName(serviceType);
     if (!topic) {
-      return NextResponse.json({ error: "Unknown consultation topic" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.book.unknownTopic") }, { status: 400 });
     }
     const serviceDuration = topic.duration;
     const servicePrice = topic.price;
@@ -157,13 +159,13 @@ export async function POST(req: Request) {
 
     const bookingDate = parseBookingDate(date);
     if (!bookingDate) {
-      return NextResponse.json({ error: "Invalid date" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.book.invalidDate") }, { status: 400 });
     }
     // Yesterday's slots are not bookable. Compared against UTC midnight today,
     // matching how bookings are stored.
     const todayUtc = new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`);
     if (bookingDate < todayUtc) {
-      return NextResponse.json({ error: "That date has already passed" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.book.pastDate") }, { status: 400 });
     }
 
     // The form only ever offers configured days and slots, but nothing stopped
@@ -171,10 +173,10 @@ export async function POST(req: Request) {
     // one is there for.
     const availability = await getAvailability();
     if (typeof timeSlot !== "string" || !availability.slots.includes(timeSlot)) {
-      return NextResponse.json({ error: "That time is not offered" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.book.slotNotOffered") }, { status: 400 });
     }
     if (!availability.days.includes(bookingDayOfWeek(bookingDate))) {
-      return NextResponse.json({ error: "That day is not open for booking" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.book.dayClosed") }, { status: 400 });
     }
 
     const dayStart = bookingDate;
@@ -185,7 +187,7 @@ export async function POST(req: Request) {
       select: { id: true },
     });
     if (blocked) {
-      return NextResponse.json({ error: "That date is unavailable" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.book.dateUnavailable") }, { status: 400 });
     }
 
     // The form hides slots that /api/appointments/available reports as booked,
@@ -206,7 +208,7 @@ export async function POST(req: Request) {
     });
     if (taken) {
       return NextResponse.json(
-        { error: "That time has just been booked. Please pick another slot." },
+        { error: t("pages.api.book.slotTaken") },
         { status: 409 },
       );
     }
@@ -218,8 +220,7 @@ export async function POST(req: Request) {
     if (!(await checkRateLimit(`appointments:new:${bookingKey}`, 5, 60 * 60_000))) {
       return NextResponse.json(
         {
-          error:
-            "You've already booked several sessions. Reply to your confirmation email if you need another.",
+          error: t("pages.api.book.tooManyBookings"),
         },
         { status: 429 },
       );
@@ -376,7 +377,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("[POST /api/appointments]", error);
     return NextResponse.json(
-      { error: "Failed to create appointment" },
+      { error: t("pages.api.book.failed") },
       { status: 500 }
     );
   }
