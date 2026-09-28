@@ -7,6 +7,8 @@ import stripe from "@/lib/stripe";
 import { grantDownloadsForOrder } from "@/lib/shop/delivery";
 import { activateMonitor, syncMonitorSubscription } from "@/lib/monitor/billing";
 import { MONITOR_PRODUCT } from "@/lib/monitor/config";
+import { upsertToolkitSubscription } from "@/lib/toolkit/billing";
+import { TOOLKIT_PRODUCT } from "@/lib/toolkit/config";
 
 const SITE_URL = (
   process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
@@ -49,6 +51,9 @@ export async function POST(req: Request) {
       if (sub.metadata?.product === MONITOR_PRODUCT) {
         await syncMonitorSubscription(sub);
       }
+      if (sub.metadata?.product === TOOLKIT_PRODUCT && sub.metadata?.studentId) {
+        await upsertToolkitSubscription(sub);
+      }
     }
 
     if (event.type === "invoice.payment_failed") {
@@ -86,6 +91,15 @@ export async function POST(req: Request) {
           const full = await stripe.subscriptions.retrieve(subId);
           await upsertLearnSubscription(full, studentId);
           console.log(`[stripe/webhook] ✓ Learn subscription active for student ${studentId}`);
+        }
+      }
+
+      // ── Toolkit Live / Compliance Guard checkout ─────────────────────────
+      if (session.metadata?.product === TOOLKIT_PRODUCT && session.mode === "subscription") {
+        const studentId = session.metadata.studentId || session.client_reference_id;
+        const subId = typeof session.subscription === "string" ? session.subscription : null;
+        if (studentId && subId) {
+          await upsertToolkitSubscription(await stripe.subscriptions.retrieve(subId), studentId);
         }
       }
 

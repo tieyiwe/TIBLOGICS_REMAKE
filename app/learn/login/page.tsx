@@ -90,6 +90,17 @@ function LoginForm() {
   );
 }
 
+/** Keeps ?next= so someone who signs up from here lands where they were going. */
+function SignupLink() {
+  const next = useSearchParams().get("next");
+  const href = next ? `/learn/signup?next=${encodeURIComponent(safeNext(next))}` : "/learn/signup";
+  return (
+    <Link href={href} className="font-semibold text-[var(--blue2)] underline underline-offset-2">
+      Create an account
+    </Link>
+  );
+}
+
 export default function StudentLoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--s2)] px-4 py-12">
@@ -109,11 +120,17 @@ export default function StudentLoginPage() {
             </Suspense>
           </div>
 
-          <p className="mt-6 text-center text-sm text-[var(--ink2)]">
-            New here?{" "}
-            <Link href="/learn/signup" className="font-semibold text-[var(--blue2)] underline underline-offset-2">
-              Create an account
+          <p className="mt-4 text-center text-sm">
+            <Link href="/learn/forgot" className="text-[var(--blue2)] underline underline-offset-2">
+              Forgot your password?
             </Link>
+          </p>
+
+          <p className="mt-4 text-center text-sm text-[var(--ink2)]">
+            New here?{" "}
+            <Suspense fallback={<Link href="/learn/signup" className="font-semibold text-[var(--blue2)] underline underline-offset-2">Create an account</Link>}>
+              <SignupLink />
+            </Suspense>
           </p>
         </div>
 

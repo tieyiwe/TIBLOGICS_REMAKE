@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Search, Bot, Calculator, Radar } from "lucide-react";
+import { Search, Bot, Calculator, Radar, Wand2 } from "lucide-react";
 import SmartRecommendations from "@/components/public/SmartRecommendations";
 import { useEffect } from "react";
 import { trackPageVisit } from "@/lib/recommendations";
@@ -13,6 +13,15 @@ const ALL_TOOLS = [
     href: "/tools/scanner",
     color: "#2251A3",
     tag: "Free",
+    retired: false,
+  },
+  {
+    icon: Wand2,
+    name: "Toolkit Live + Compliance Guard",
+    desc: "Our industry prompt libraries, written with your business details, with every draft checked for Fair Housing, financial-advertising and FTC risks.",
+    href: "/tools/toolkit-live",
+    color: "#B8500A",
+    tag: "Paid",
     retired: false,
   },
   {
@@ -65,7 +74,7 @@ export default function ToolsPage() {
             No signup required. Get real insights about your business and AI costs in minutes.
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {tools.map((t) => (
             <Link
               key={t.name}

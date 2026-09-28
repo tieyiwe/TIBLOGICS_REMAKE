@@ -176,6 +176,57 @@ model MonitorScan {
   @@index([runId])
 }
 
+/// Toolkit Live / Compliance Guard subscription, one per TIBLOGICS account.
+/// Tables are created by lib/toolkit/db.ts on first use (no migrations).
+model ToolkitSubscription {
+  id                   String    @id @default(cuid())
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  studentId            String    @unique
+  /// toolkit (prompts + guard) | guard (Compliance Guard only)
+  plan                 String
+  /// active | trialing | past_due | canceled
+  status               String
+  stripeCustomerId     String?
+  stripeSubscriptionId String?   @unique
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+}
+
+/// What the tool knows about the customer's business, sent with every run.
+model ToolkitProfile {
+  studentId      String   @id
+  updatedAt      DateTime @updatedAt
+  businessName   String   @default("")
+  vertical       String   @default("general")
+  location       String   @default("")
+  audience       String   @default("")
+  offer          String   @default("")
+  voice          String   @default("")
+  differentiators String  @default("")
+  /// Licence numbers, brokerage, required disclosures: things that must appear.
+  compliance     String   @default("")
+}
+
+/// Every generation and check. Doubles as the usage meter.
+model ToolkitRun {
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  studentId    String
+  /// generate | check | deep-check
+  kind         String
+  promptId     String?
+  title        String
+  input        String   @db.Text
+  output       String   @db.Text
+  findings     Json?
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+
+  @@index([studentId, createdAt])
+  @@index([studentId, kind, createdAt])
+}
+
 model ToolUsage {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())

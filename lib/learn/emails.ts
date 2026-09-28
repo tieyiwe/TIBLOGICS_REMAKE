@@ -35,6 +35,10 @@ function shell(title: string, bodyHtml: string, cta?: { href: string; label: str
   </div>`;
 }
 
+/** Names and other account fields are typed by users; never put them in HTML raw. */
+const esc = (v: string) =>
+  v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
 const p = (t: string) => `<p style="font-size:14px;color:#5b6b72;line-height:1.7;margin:0 0 14px;">${t}</p>`;
 
 export async function sendStudentWelcomeEmail(s: { email: string; name: string }) {
@@ -42,7 +46,7 @@ export async function sendStudentWelcomeEmail(s: { email: string; name: string }
     to: s.email,
     subject: "Welcome to TIBLOGICS Learn 🎓",
     html: shell(
-      `Welcome, ${s.name.split(" ")[0]}!`,
+      `Welcome, ${esc(s.name.split(" ")[0])}!`,
       p("Your TIBLOGICS Learn account is ready. Browse the catalog, start a track, and work through practical lessons that end in a real, verifiable certificate.") +
       p("Every track gives you quick checks after each lesson, a quiz per module, a final exam, and a capstone reviewed by a human — so your certificate actually means something."),
       { href: `${SITE}/learning-box`, label: "Browse the catalog →" },
@@ -113,12 +117,26 @@ export async function sendCertificateEmail(s: {
     to: s.email,
     subject: `🏅 Your ${s.certificateName} certificate is ready`,
     html: shell(
-      `Congratulations, ${s.name.split(" ")[0]}!`,
+      `Congratulations, ${esc(s.name.split(" ")[0])}!`,
       p(`You've earned the <strong style="color:#131A1B;">${s.certificateName}</strong> certificate${s.distinction ? ` <strong style="color:#F47C20;">with Distinction</strong>` : ""}.`) +
       p("You passed every quick check and module quiz, cleared the final exam, and had your capstone approved by a human reviewer. That's the whole thing — well done.") +
       p(`Anyone can verify it at:<br/><a href="${verifyUrl}" style="color:#F47C20;">${verifyUrl}</a>`) +
       p(`<a href="${linkedIn}" style="color:#F47C20;font-weight:600;">Add it to your LinkedIn profile →</a>`),
       { href: verifyUrl, label: "View my certificate →" },
+    ),
+  });
+}
+
+/** Password reset. The link carries the raw token; only its hash is stored. */
+export async function sendPasswordResetEmail(s: { email: string; name: string; token: string }) {
+  await arfaMailer.emails.send({
+    to: s.email,
+    subject: "Reset your TIBLOGICS password",
+    html: shell(
+      `Reset your password, ${esc(s.name.split(" ")[0])}`,
+      p("Someone (hopefully you) asked to reset the password for your TIBLOGICS account. The link below works once and expires in one hour.") +
+      p("If you didn't ask for this, ignore this email. Your password stays the same."),
+      { href: `${SITE}/learn/reset?token=${encodeURIComponent(s.token)}`, label: "Choose a new password →" },
     ),
   });
 }

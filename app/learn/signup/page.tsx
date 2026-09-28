@@ -12,6 +12,10 @@ function SignupForm() {
   // Carried from the track landing page so the learner lands back on the
   // track they chose, rather than a generic dashboard.
   const track = params.get("track");
+  // Where to go after sign-up when arriving from somewhere other than Learn
+  // (the paid tools). Same-site paths only, as on the login page.
+  const rawNext = params.get("next");
+  const next = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") && !rawNext.startsWith("/\\") ? rawNext : null;
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,7 +39,12 @@ function SignupForm() {
       // Sign in immediately so the learner lands on the plan step already authenticated
       const signInRes = await signIn("student", { email, password, redirect: false });
       if (signInRes?.error) {
-        router.push("/learn/login");
+        router.push(next ? `/learn/login?next=${encodeURIComponent(next)}` : "/learn/login");
+        return;
+      }
+      if (next) {
+        router.push(next);
+        router.refresh();
         return;
       }
       router.push(track ? `/learn/subscribe?track=${encodeURIComponent(track)}` : "/learn/subscribe");
@@ -56,12 +65,16 @@ function SignupForm() {
 
         <div className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-7 shadow-sm">
           <h1 className="text-xl font-bold text-[var(--ink)]">Create your account</h1>
+          {next ? (
+            <p className="mt-1 text-sm text-[var(--ink3)]">One account for TIBLOGICS Learn and our tools.</p>
+          ) : (
           <p className="mt-1 text-sm text-[var(--ink3)]">
             {FOUNDING_PRICING && (
               <span className="mr-1 font-bold text-[var(--orange2)]">Founding rate ·</span>
             )}
             {formatPlanPrice(PLANS.monthly)}/month for every track. Cancel anytime.
           </p>
+          )}
 
           {track && (
             <p className="mt-4 rounded-lg bg-[var(--blue-light)] px-3 py-2.5 text-sm text-[var(--blue)]">
@@ -134,7 +147,7 @@ function SignupForm() {
 
           <p className="mt-6 text-center text-sm text-[var(--ink2)]">
             Already have an account?{" "}
-            <Link href="/learn/login" className="font-semibold text-[var(--blue2)] underline underline-offset-2">
+            <Link href={next ? `/learn/login?next=${encodeURIComponent(next)}` : "/learn/login"} className="font-semibold text-[var(--blue2)] underline underline-offset-2">
               Sign in
             </Link>
           </p>

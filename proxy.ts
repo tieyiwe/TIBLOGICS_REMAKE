@@ -42,12 +42,18 @@ export async function proxy(req: NextRequest) {
     const isPublic =
       pathname === "/learn/login" ||
       pathname === "/learn/signup" ||
-      pathname.startsWith("/learn/forgot");
+      pathname.startsWith("/learn/forgot") ||
+      // The emailed reset link is opened by someone who cannot sign in.
+      pathname.startsWith("/learn/reset");
 
     if (isPublic) {
       // Already signed in as a student → straight to the dashboard
-      if (token?.studentId && pathname !== "/learn/forgot") {
-        return NextResponse.redirect(new URL("/learn", req.url));
+      if (token?.studentId && !pathname.startsWith("/learn/forgot") && !pathname.startsWith("/learn/reset")) {
+        // Honour ?next= (same-site paths only), so a signed-in account sent
+        // here from the paid tools goes back to them rather than to Learn.
+        const next = req.nextUrl.searchParams.get("next");
+        const safe = next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : "/learn";
+        return NextResponse.redirect(new URL(safe, req.url));
       }
       return NextResponse.next();
     }

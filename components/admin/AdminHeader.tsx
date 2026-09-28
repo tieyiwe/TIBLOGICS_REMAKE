@@ -13,6 +13,7 @@ const pageTitles: Record<string, string> = {
   "/admin_pro/scanner-leads": "Scanner Leads",
   "/admin_pro/tools": "Tool Analytics",
   "/admin_pro/monitor": "Readiness Monitor",
+  "/admin_pro/toolkit": "Toolkit Live",
   "/admin_pro/revenue": "Revenue",
   "/admin_pro/settings": "Settings",
   "/admin_pro/content": "Content Manager",
