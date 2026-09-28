@@ -71,7 +71,13 @@ export default function ScenarioCharts() {
       </figure>
 
       <figure className="min-w-0">
-        <figcaption className="font-syne font-bold text-sm text-[#0D1B2A] mb-2">{t("calculator.charts.marginTitle")}</figcaption>
+        <figcaption className="mb-2">
+          <span className="font-syne font-bold text-sm text-[#0D1B2A]">{t("calculator.charts.marginTitle")}</span>
+          <span className="ml-3 inline-flex items-center gap-1.5 font-dm text-xs text-[#9A4A00]">
+            <svg width="22" height="6" aria-hidden><line x1="0" y1="3" x2="22" y2="3" stroke="#B8500A" strokeWidth="1.5" strokeDasharray="5 4" /></svg>
+            {t("calculator.charts.target", { pct: f.pct(inputs.targetMarginPct) })}
+          </span>
+        </figcaption>
         <div className="h-[300px]" role="img" aria-label={t("calculator.charts.marginAria")}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 16, right: 24, bottom: 8, left: 8 }}>
@@ -86,12 +92,7 @@ export default function ScenarioCharts() {
                 tickFormatter={(v: number) => `${v}%`}
                 label={{ value: t("calculator.charts.marginAxis"), angle: -90, position: "insideLeft", offset: 0, style: { ...AXIS, textAnchor: "middle" } }}
               />
-              <ReferenceLine
-                y={inputs.targetMarginPct}
-                stroke="#B8500A"
-                strokeDasharray="5 4"
-                label={{ value: t("calculator.charts.target", { pct: f.pct(inputs.targetMarginPct) }), position: "insideBottomRight", fill: "#9A4A00", fontSize: 11 }}
-              />
+              <ReferenceLine y={inputs.targetMarginPct} stroke="#B8500A" strokeDasharray="5 4" strokeWidth={1.5} />
               <ReferenceLine y={0} stroke="#9AA9BD" />
               <Tooltip
                 formatter={(v: number) => [f.pct(v), t("calculator.pricing.grossMargin")]}

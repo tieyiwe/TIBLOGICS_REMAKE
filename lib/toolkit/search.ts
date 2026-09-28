@@ -344,6 +344,11 @@ export function searchPrompts(query: string, opts: SearchOptions = {}): SearchRe
   // For each query word: its stems, related stems, and near-spellings from the library.
   const terms = raw.map((w) => {
     const stems = stemsOf(w, locale);
+    // Swahili words take prefixes and suffixes ("karibisha" in "kumkaribisha",
+    // "wakaribishe"), so a Swahili word also matches library words containing it.
+    if (locale === "sw" && w.length >= 4 && !ix.vocab.has(w)) {
+      for (const x of ix.words) if (x.length > w.length && x.includes(w) && !stems.includes(x)) stems.push(x);
+    }
     const related = new Set(stems.flatMap((s) => [...(ix.related.get(s) ?? [])]).filter((r) => !stems.includes(r)));
     // A French or Swahili word we know (it is in a related-word group) is not
     // a typo just because the English library does not contain it.

@@ -365,7 +365,7 @@ const messages: Messages = {
 
     "calculator.charts.costTitle": "Monthly cost breakdown",
     "calculator.charts.costAria": "Stacked bar chart of monthly costs by category for the launch, growth and scale scenarios. The same values are in the table above.",
-    "calculator.charts.costAxis": "US dollars per month",
+    "calculator.charts.costAxis": "USD per month",
     "calculator.charts.marginTitle": "Gross margin by scenario",
     "calculator.charts.marginAria": "Line chart of gross margin for the launch, growth and scale scenarios, with your target margin as a dashed line.",
     "calculator.charts.marginAxis": "Gross margin (%)",
@@ -490,7 +490,7 @@ const messages: Messages = {
     "calculator.hero.title": "Combien coûtera votre produit IA à créer, à faire tourner et à vendre ?",
     "calculator.hero.body":
       "Décrivez votre idée ou choisissez un point de départ. Vous obtenez les coûts mensuels de l'IA et de fonctionnement, une fourchette de budget de développement, le prix à facturer pour une marge saine, et où économiser. Chaque chiffre est modifiable.",
-    "calculator.hero.chipPrices": "Prix de l'API Claude au {date}",
+    "calculator.hero.chipPrices": "Prix de l'API Claude de {date}",
     "calculator.hero.chipEditable": "Toutes les hypothèses sont modifiables",
     "calculator.hero.chipHonest": "Des estimations, pas des devis",
 
@@ -843,7 +843,7 @@ const messages: Messages = {
 
     "calculator.charts.costTitle": "Répartition des coûts mensuels",
     "calculator.charts.costAria": "Histogramme empilé des coûts mensuels par catégorie pour les scénarios lancement, croissance et échelle. Les mêmes valeurs figurent dans le tableau ci-dessus.",
-    "calculator.charts.costAxis": "Dollars américains par mois",
+    "calculator.charts.costAxis": "USD par mois",
     "calculator.charts.marginTitle": "Marge brute par scénario",
     "calculator.charts.marginAria": "Courbe de la marge brute pour les scénarios lancement, croissance et échelle, avec votre marge cible en pointillés.",
     "calculator.charts.marginAxis": "Marge brute (%)",
@@ -876,7 +876,7 @@ const messages: Messages = {
     "calculator.rec.price.body": "À {price} par {unit}, vous atteindriez une marge brute de {target}, soit environ {amount} de chiffre d'affaires en plus par mois.",
 
     "calculator.summary.title": "Votre estimation",
-    "calculator.summary.pricesAsOf": "Prix au {date}",
+    "calculator.summary.pricesAsOf": "Prix de {date}",
     "calculator.summary.monthlyRunning": "Coût de fonctionnement mensuel",
     "calculator.summary.perUserLine": "{perUser} par utilisateur actif, {perInteraction} de coût IA par interaction",
     "calculator.summary.buildLabel": "Coût de développement (probable)",
@@ -884,7 +884,7 @@ const messages: Messages = {
     "calculator.summary.priceHint": "Pour une marge brute de {target}, facturez environ {price} par {unit}.",
     "calculator.summary.heading": "Estimation du coût d'un produit IA",
     "calculator.summary.product": "Produit",
-    "calculator.summary.disclaimer": "Estimations uniquement, fondées sur des hypothèses modifiables. Prix de l'IA au {date} ; les prix changent.",
+    "calculator.summary.disclaimer": "Estimations uniquement, fondées sur des hypothèses modifiables. Prix de l'IA de {date} ; les prix changent.",
     "calculator.summary.usage": "Utilisation : {users} utilisateurs actifs par mois, {per} interactions chacun ({total} par mois), modèle principal {model}.",
     "calculator.summary.running": "Coût de fonctionnement mensuel : {total} (IA {ai}), {perUser} par utilisateur actif, {perInteraction} de coût IA par interaction.",
     "calculator.summary.revenue": "Chiffre d'affaires : {revenue} par mois à {price} par {unit}. Marge brute {margin}, bénéfice mensuel {profit}.",
@@ -1321,7 +1321,7 @@ const messages: Messages = {
 
     "calculator.charts.costTitle": "Mgawanyo wa gharama za kila mwezi",
     "calculator.charts.costAria": "Chati ya nguzo zilizopangwa ya gharama za kila mwezi kwa kundi katika hali za uzinduzi, ukuaji na upanuzi. Thamani zile zile ziko kwenye jedwali hapo juu.",
-    "calculator.charts.costAxis": "Dola za Marekani kwa mwezi",
+    "calculator.charts.costAxis": "USD kwa mwezi",
     "calculator.charts.marginTitle": "Faida ghafi kwa kila hali",
     "calculator.charts.marginAria": "Chati ya mstari ya faida ghafi kwa hali za uzinduzi, ukuaji na upanuzi, na faida lengwa kama mstari wa vitone.",
     "calculator.charts.marginAxis": "Faida ghafi (%)",

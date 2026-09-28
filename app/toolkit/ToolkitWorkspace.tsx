@@ -568,12 +568,13 @@ function WriteTab(props: {
               </button>
             </div>
             {/* The instant rules read English. A draft in another language gets a pointer to the deep check instead of a misleading "nothing flagged". */}
-            <div className="mt-3">
-              {locale !== "en" && !deepDone && findings.length === 0 ? (
-                <p className="flex items-start gap-2 font-dm text-sm text-[#3A4A5C]"><AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" /> {t("toolkit.guard.draftNote")}</p>
-              ) : (
-                <FindingList findings={findings} checked />
+            <div className="mt-3 space-y-3">
+              {locale !== "en" && !deepDone && (
+                <p className="flex items-start gap-2 rounded-xl bg-[#F4F7FB] border border-[#D2DCE8] px-3 py-2 font-dm text-xs text-[#3A4A5C]">
+                  <AlertTriangle size={14} className="text-amber-600 shrink-0 mt-0.5" /> {t("toolkit.guard.draftNote")}
+                </p>
               )}
+              {(locale === "en" || deepDone || findings.length > 0) && <FindingList findings={findings} checked />}
             </div>
           </div>
         )}

@@ -26,9 +26,9 @@ export default function BuildSection() {
         <div>
           <div className="grid grid-cols-3 gap-2 text-center">
             {(["low", "likely", "high"] as const).map((k) => (
-              <div key={k} className={`rounded-xl p-3 ${k === "likely" ? "bg-[#1B3A6B] text-white" : "bg-[#F4F7FB] text-[#0D1B2A]"}`}>
+              <div key={k} className={`rounded-xl px-1.5 py-3 sm:p-3 ${k === "likely" ? "bg-[#1B3A6B] text-white" : "bg-[#F4F7FB] text-[#0D1B2A]"}`}>
                 <p className={`font-dm text-xs ${k === "likely" ? "text-white/80" : "text-[#5B6B7F]"}`}>{t(`calculator.range.${k}`)}</p>
-                <p className="font-syne font-bold text-base sm:text-xl mt-1 tabular-nums">{f.money0(b[k])}</p>
+                <p className="font-syne font-bold text-[13px] min-[400px]:text-base sm:text-xl mt-1 tabular-nums whitespace-nowrap">{f.money0(b[k])}</p>
               </div>
             ))}
           </div>
