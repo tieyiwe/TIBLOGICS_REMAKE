@@ -4,11 +4,18 @@ import Link from "next/link";
 const aiPills = ["AI Agents", "Automation", "Voice AI"] as const;
 const techPills = ["Web Dev", "Mobile", "Cybersecurity"] as const;
 
-const metrics = [
-  { number: "3×",   label: "Revenue Lift" },
-  { number: "68%",  label: "Cost Reduction" },
-  { number: "24/7", label: "AI Availability" },
-  { number: "14d",  label: "Deploy Time" },
+// This grid used to show "3× Revenue Lift", "68% Cost Reduction", "24/7" and
+// "14d Deploy Time". None of them had a source — they were placeholder figures
+// from when the site was first generated — and an unsourced number is worse
+// than none for the buyers this page is for. The grid now shows how an
+// engagement actually starts. Step 1 is what the booking system enforces
+// (Project Discovery: free, 30 minutes); steps 2–4 are the process the copy to
+// the left already describes.
+const steps = [
+  { n: "01", title: "A free 30-minute call", body: "No commitment. Tell us what is slowing the business down." },
+  { n: "02", title: "Map your workflows", body: "Where the hours actually go, not where they seem to." },
+  { n: "03", title: "Find what to automate", body: "And, just as usefully, what is not worth automating." },
+  { n: "04", title: "Design systems that scale", body: "Built around how your team already works." },
 ] as const;
 
 export default function AIBanner() {
@@ -64,29 +71,32 @@ export default function AIBanner() {
 
           {/* CTA */}
           <div>
+            {/* Was "Get Your AI Readiness Score" -> /tools/advisor, a tool marked
+                retired in production. The readiness scan now lives in the hero. */}
             <Link
-              href="/tools/advisor"
+              href="/book"
               className="bg-white text-[#1B3A6B] hover:bg-[#EBF0FA] rounded-lg px-5 py-2.5 font-semibold text-sm inline-flex items-center gap-2 transition-colors duration-200"
             >
-              Get Your AI Readiness Score →
+              Start with a free call →
             </Link>
           </div>
         </div>
 
-        {/* ── Right column — 2×2 metrics grid ── */}
-        <div className="grid grid-cols-2 gap-3">
-          {metrics.map((m) => (
-            <div
-              key={m.label}
-              className="border border-white/10 rounded-xl p-4 flex flex-col gap-1"
+        {/* ── Right column — how an engagement starts ── */}
+        <ol className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {steps.map((st) => (
+            <li
+              key={st.n}
+              className="border border-white/10 bg-white/[0.03] rounded-xl p-4 flex flex-col gap-1.5"
             >
-              <span className="font-syne font-extrabold text-3xl text-[#F47C20]">
-                {m.number}
+              <span className="font-dm text-xs font-semibold tracking-[0.18em] text-[#F47C20]">
+                {st.n}
               </span>
-              <span className="text-white/60 text-sm font-dm">{m.label}</span>
-            </div>
+              <span className="font-syne font-bold text-lg leading-snug text-white">{st.title}</span>
+              <span className="text-white/60 text-sm font-dm leading-relaxed">{st.body}</span>
+            </li>
           ))}
-        </div>
+        </ol>
 
       </div>
     </div>

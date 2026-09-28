@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Mail, Clock, MessageSquare, Handshake, Building2, User, Phone, Globe, MapPin, FileText } from "lucide-react";
 import { useState } from "react";
+import OpenTiboButton from "@/components/public/OpenTiboButton";
 
 function PartnershipModal({ onClose }: { onClose: () => void }) {
   const [form, setForm] = useState({
@@ -233,9 +234,9 @@ export default function ContactPage() {
               <div>
                 <p className="font-syne font-bold text-sm text-white">Talk to Echelon Now</p>
                 <p className="font-dm text-white/60 text-xs mt-1 mb-3">Chat with our AI specialist instantly — no wait time.</p>
-                <Link href="/tools/advisor" className="bg-[#F47C20] hover:bg-[#E05F00] text-white text-xs font-dm font-semibold px-3 py-1.5 rounded-lg inline-block transition-colors">
+                <OpenTiboButton className="bg-[#F47C20] hover:bg-[#E05F00] text-white text-xs font-dm font-semibold px-3 py-1.5 rounded-lg inline-block transition-colors">
                   Open Echelon →
-                </Link>
+                </OpenTiboButton>
               </div>
             </div>
           </div>

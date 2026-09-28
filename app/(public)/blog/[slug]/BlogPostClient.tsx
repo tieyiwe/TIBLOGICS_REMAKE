@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Clock, ArrowLeft, Share2, BookOpen, ExternalLink, Calendar, MessageCircle, X } from "lucide-react";
+import OpenTiboButton from "@/components/public/OpenTiboButton";
 
 interface BlogPost {
   id: string;
@@ -327,12 +328,10 @@ export default function BlogPostPage() {
               >
                 Book Free Meeting →
               </Link>
-              <Link
-                href="/tools/advisor"
-                className="border border-white/30 text-white hover:bg-white/10 font-dm font-medium px-5 py-2.5 rounded-xl text-sm transition-colors"
-              >
+              <OpenTiboButton
+                className="border border-white/30 text-white hover:bg-white/10 font-dm font-medium px-5 py-2.5 rounded-xl text-sm transition-colors">
                 Talk to Tibo
-              </Link>
+              </OpenTiboButton>
             </div>
           </div>
         </article>

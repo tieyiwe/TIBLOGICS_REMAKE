@@ -6,6 +6,7 @@ import { Bot, Zap, Brain, Globe, Shield, BarChart3, Smartphone, GraduationCap, C
 import SmartRecommendations from "@/components/public/SmartRecommendations";
 import VideoEmbed from "@/components/video/LazyVideoEmbed";
 import { trackPageVisit } from "@/lib/recommendations";
+import OpenTiboButton from "@/components/public/OpenTiboButton";
 
 // Split into what we lead with and what we round out with. Nine equal cards
 // asked every visitor to rank us themselves; three of these are already the
@@ -67,9 +68,9 @@ export default function ServicesPage() {
           </p>
           <div className="flex justify-center gap-3 mt-6">
             <Link href="/book" className="btn-primary">Book a Consulting</Link>
-            <Link href="/tools/advisor" className="bg-white text-[#1B3A6B] hover:bg-[#EBF0FA] font-semibold rounded-lg px-5 py-2.5 transition-colors inline-flex items-center gap-2">
+            <OpenTiboButton className="bg-white text-[#1B3A6B] hover:bg-[#EBF0FA] font-semibold rounded-lg px-5 py-2.5 transition-colors inline-flex items-center gap-2">
               Talk to Tibo
-            </Link>
+            </OpenTiboButton>
           </div>
         </div>
       </div>

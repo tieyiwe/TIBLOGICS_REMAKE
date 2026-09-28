@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CheckCircle2, Loader2, Sparkles, Send, ChevronDown } from "lucide-react";
+import OpenTiboButton from "@/components/public/OpenTiboButton";
 
 const SERVICES = [
   "AI Implementation & Agents",
@@ -175,9 +176,9 @@ Keep responses short and friendly.`;
             <button onClick={() => router.push("/ai-times")} className="btn-primary justify-center">
               Read Our Blog →
             </button>
-            <button onClick={() => router.push("/tools/advisor")} className="btn-secondary justify-center">
+            <OpenTiboButton className="btn-secondary justify-center">
               Chat with Tibo
-            </button>
+            </OpenTiboButton>
           </div>
         </div>
       </div>
