@@ -1,14 +1,16 @@
-"use client";
-import { Globe, Mail, Phone, BarChart2, TrendingUp } from "lucide-react";
+import Link from "next/link";
+import { Globe, Mail, Phone, BarChart2 } from "lucide-react";
 import MetricCard from "@/components/admin/MetricCard";
+import { requireAdminPage } from "../_lib/admin-page-auth";
+import { getScannerLeads } from "@/lib/admin/metrics";
 
-const leads = [
-  { id: "1", url: "caribbeanflavor.com", date: "Apr 16, 2026", overallScore: 48, aiScore: 22, seoScore: 45, perfScore: 58, uxScore: 41, email: "arnold@caribbeanflavor.com", bookedCall: true },
-  { id: "2", url: "dentalsmile.com", date: "Apr 15, 2026", overallScore: 61, aiScore: 18, seoScore: 72, perfScore: 55, uxScore: 56, email: null, bookedCall: false },
-  { id: "3", url: "techstartupdc.io", date: "Apr 14, 2026", overallScore: 74, aiScore: 45, seoScore: 80, perfScore: 70, uxScore: 72, email: "founder@techstartup.io", bookedCall: false },
-  { id: "4", url: "localrestaurant.com", date: "Apr 13, 2026", overallScore: 39, aiScore: 12, seoScore: 38, perfScore: 42, uxScore: 37, email: null, bookedCall: false },
-  { id: "5", url: "tiblogics.com", date: "Apr 12, 2026", overallScore: 91, aiScore: 95, seoScore: 91, perfScore: 82, uxScore: 88, email: null, bookedCall: false },
-];
+// Per-request and session-scoped: never cached or prerendered.
+export const dynamic = "force-dynamic";
+
+// This page listed five hardcoded "leads" (with an invented email address)
+// and computed its statistics from them. The scanner's real leads were in the
+// ScannerLead table the whole time and were never shown. It now reads them.
+
 
 function scoreColor(score: number): string {
   if (score >= 70) return "#16a34a";
@@ -42,12 +44,13 @@ function ScoreBar({ score, color }: { score: number; color: string }) {
   );
 }
 
-const totalScans = leads.length;
-const avgAiScore = Math.round(leads.reduce((s, l) => s + l.aiScore, 0) / leads.length);
-const emailCaptureRate = Math.round((leads.filter(l => l.email !== null).length / leads.length) * 100);
-const bookingConversion = Math.round((leads.filter(l => l.bookedCall).length / leads.length) * 100);
 
-export default function ScannerLeadsPage() {
+export default async function ScannerLeadsPage() {
+  await requireAdminPage();
+  const data = await getScannerLeads();
+  const pct = (n: number) => (data.total === 0 ? 0 : Math.round((n / data.total) * 100));
+  const leads = data.rows;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -58,10 +61,10 @@ export default function ScannerLeadsPage() {
 
       {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard label="Total Scans" value={totalScans} icon={Globe} iconColor="#2251A3" />
-        <MetricCard label="Avg AI Score" value={avgAiScore} suffix="/100" icon={BarChart2} iconColor="#7c3aed" />
-        <MetricCard label="Email Capture Rate" value={emailCaptureRate} suffix="%" icon={Mail} iconColor="#0F6E56" />
-        <MetricCard label="Booking Conversion" value={bookingConversion} suffix="%" icon={Phone} iconColor="#F47C20" />
+        <MetricCard label="Total Scans" value={data.total} icon={Globe} iconColor="#2251A3" />
+        <MetricCard label="Avg Overall Score" value={data.avgScore ?? "—"} suffix={data.avgScore == null ? "" : "/100"} icon={BarChart2} iconColor="#7c3aed" />
+        <MetricCard label="Email Capture Rate" value={pct(data.withEmail)} suffix="%" icon={Mail} iconColor="#0F6E56" />
+        <MetricCard label="Booking Conversion" value={pct(data.booked)} suffix="%" icon={Phone} iconColor="#F47C20" />
       </div>
 
       {/* Table */}
@@ -69,6 +72,11 @@ export default function ScannerLeadsPage() {
         <div className="px-5 py-4 border-b border-[#D2DCE8]">
           <h3 className="font-syne font-bold text-base text-[#0D1B2A]">Recent Scans</h3>
         </div>
+        {leads.length === 0 && (
+          <p className="px-5 py-10 text-center font-dm text-sm text-[#7A8FA6]">
+            No scans saved yet. Scans from the website scanner appear here once a visitor runs one and leaves their details.
+          </p>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -92,7 +100,9 @@ export default function ScannerLeadsPage() {
                       <span className="font-dm text-sm font-medium text-[#0D1B2A]">{lead.url}</span>
                     </div>
                   </td>
-                  <td className="px-5 py-4 font-dm text-sm text-[#7A8FA6]">{lead.date}</td>
+                  <td className="px-5 py-4 font-dm text-sm text-[#7A8FA6]">
+                    {lead.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </td>
                   <td className="px-5 py-4">
                     <ScoreCircle score={lead.overallScore} />
                   </td>
@@ -127,7 +137,7 @@ export default function ScannerLeadsPage() {
                     )}
                   </td>
                   <td className="px-5 py-4">
-                    {lead.bookedCall ? (
+                    {lead.bookedCallAt ? (
                       <span className="inline-flex items-center gap-1 bg-[#EBF0FA] text-[#2251A3] text-xs font-dm px-2 py-0.5 rounded-full">
                         Yes
                       </span>
@@ -136,9 +146,15 @@ export default function ScannerLeadsPage() {
                     )}
                   </td>
                   <td className="px-5 py-4">
-                    <button className="text-xs font-dm text-[#2251A3] hover:underline">
-                      View Report
-                    </button>
+                    {/* Was a "View Report" button with no handler. There is no
+                        stored-report page, so it re-runs the live scan. */}
+                    <Link
+                      href={`/tools/scanner?url=${encodeURIComponent(lead.url)}`}
+                      target="_blank"
+                      className="text-xs font-dm text-[#2251A3] hover:underline whitespace-nowrap"
+                    >
+                      Scan again ↗
+                    </Link>
                   </td>
                 </tr>
               ))}

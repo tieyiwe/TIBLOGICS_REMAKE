@@ -1,202 +1,114 @@
-"use client";
-import {
-  BarChart, Bar, LineChart, Line, XAxis, YAxis,
-  CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-} from "recharts";
 import { DollarSign, TrendingUp, Calendar, Repeat } from "lucide-react";
 import MetricCard from "@/components/admin/MetricCard";
+import RevenueChart from "@/components/admin/RevenueChart";
+import { requireAdminPage } from "../_lib/admin-page-auth";
+import { getRevenue } from "@/lib/admin/metrics";
 
-const allTime = 24700;
-const thisMonth = 5400;
-const lastMonth = 7900;
-const mrr = 549;
+// Per-request and session-scoped: never cached or prerendered.
+export const dynamic = "force-dynamic";
 
-const revenueByService = [
-  { service: "AI Strategy", revenue: 8910 },
-  { service: "AI Readiness Audit", revenue: 4970 },
-  { service: "Web Transformation", revenue: 5910 },
-  { service: "AI Agents", revenue: 2970 },
-  { service: "Discovery Call", revenue: 0 },
-];
+// This page used to be entirely hardcoded: "$24,700 all time", "$549 MRR", a
+// twelve-month curve and five paid appointments from five invented clients.
+// It now reads what was actually paid. Learn subscription revenue is shown as
+// an estimate, because subscriptions do not record each person's actual price.
 
-const monthlyTrend = [
-  { month: "May", revenue: 0 },
-  { month: "Jun", revenue: 0 },
-  { month: "Jul", revenue: 2970 },
-  { month: "Aug", revenue: 1970 },
-  { month: "Sep", revenue: 4910 },
-  { month: "Oct", revenue: 0 },
-  { month: "Nov", revenue: 0 },
-  { month: "Dec", revenue: 2400 },
-  { month: "Jan", revenue: 4900 },
-  { month: "Feb", revenue: 3200 },
-  { month: "Mar", revenue: 7900 },
-  { month: "Apr", revenue: 5400 },
-];
+const money = (cents: number) => `$${(cents / 100).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 
-const paidAppointments = [
-  { id: "1", date: "Apr 10, 2026", name: "Michael Torres", service: "AI Strategy Session", amount: 29700, status: "COMPLETED" },
-  { id: "2", date: "Apr 18, 2026", name: "Marcus Johnson", service: "AI Strategy Session", amount: 29700, status: "CONFIRMED" },
-  { id: "3", date: "Mar 28, 2026", name: "Priya Nair", service: "Website AI Transformation", amount: 19700, status: "COMPLETED" },
-  { id: "4", date: "Mar 15, 2026", name: "Fatou Balde", service: "AI Readiness Audit", amount: 49700, status: "COMPLETED" },
-  { id: "5", date: "Feb 20, 2026", name: "Carlos Mendez", service: "AI Strategy Session", amount: 29700, status: "COMPLETED" },
-];
+function pct(now: number, before: number): number | undefined {
+  return before === 0 ? undefined : Math.round(((now - before) / before) * 100);
+}
 
-const BAR_COLORS = ["#1B3A6B", "#2251A3", "#F47C20", "#0F6E56", "#7c3aed"];
+export default async function RevenuePage() {
+  await requireAdminPage();
+  const r = await getRevenue();
 
-export default function RevenuePage() {
+  const sources = [
+    { label: "Store", cents: r.allTime.store, color: "#1B3A6B" },
+    { label: "Events & training", cents: r.allTime.events, color: "#F47C20" },
+    { label: "Paid bookings", cents: r.allTime.bookings, color: "#0F6E56" },
+  ];
+  const maxSource = Math.max(1, ...sources.map((s) => s.cents));
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="font-syne font-bold text-2xl text-[#0D1B2A]">Revenue</h1>
-        <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">Financial overview and earnings history</p>
+        <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">
+          Money actually received: paid store orders, paid event registrations and paid bookings.
+        </p>
       </div>
 
-      {/* Top metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard label="Paid Revenue, All Time" value={money(r.allTime.total)} icon={DollarSign} iconColor="#1B3A6B" />
+        <MetricCard label="This Month" value={money(r.thisMonth.total)} change={pct(r.thisMonth.total, r.lastMonth.total)} icon={TrendingUp} iconColor="#F47C20" />
+        <MetricCard label="Last Month" value={money(r.lastMonth.total)} icon={Calendar} iconColor="#2251A3" />
         <MetricCard
-          label="Total Revenue All Time"
-          value={`$${(allTime / 100).toFixed(0)}`}
-          icon={DollarSign}
-          iconColor="#2251A3"
-        />
-        <MetricCard
-          label="This Month"
-          value={`$${(thisMonth / 100).toFixed(0)}`}
-          change={-32}
-          icon={TrendingUp}
-          iconColor="#F47C20"
-        />
-        <MetricCard
-          label="Last Month"
-          value={`$${(lastMonth / 100).toFixed(0)}`}
-          icon={Calendar}
+          label={`Est. Learn MRR (${r.mrr.activeSubscribers} active)`}
+          value={money(r.mrr.cents)}
+          icon={Repeat}
           iconColor="#0F6E56"
         />
-        <MetricCard
-          label="MRR"
-          value={`$${mrr}`}
-          icon={Repeat}
-          iconColor="#7c3aed"
-        />
       </div>
+      <p className="-mt-3 font-dm text-xs text-[#7A8FA6]">
+        Learn MRR is estimated from active subscriptions at today&apos;s plan prices. Founding rates and discounts are
+        not stored per subscriber, so check Stripe for the exact figure.
+      </p>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Revenue by Service */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="bg-white border border-[#D2DCE8] rounded-2xl p-6">
-          <h3 className="font-syne font-bold text-base text-[#0D1B2A] mb-4">Revenue by Service</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={revenueByService} barSize={28}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E8EFF8" vertical={false} />
-              <XAxis
-                dataKey="service"
-                tick={{ fill: "#7A8FA6", fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fill: "#7A8FA6", fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(v) => `$${(v / 100).toFixed(0)}`}
-              />
-              <Tooltip
-                formatter={(v: number) => [`$${(v / 100).toFixed(2)}`, "Revenue"]}
-                cursor={{ fill: "#F4F7FB" }}
-              />
-              <Bar dataKey="revenue" radius={[6, 6, 0, 0]}>
-                {revenueByService.map((_, i) => (
-                  <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <h3 className="font-syne font-bold text-base text-[#0D1B2A] mb-4">By Source, All Time</h3>
+          <ul className="space-y-4">
+            {sources.map((s) => (
+              <li key={s.label}>
+                <div className="flex justify-between font-dm text-sm">
+                  <span className="text-[#3A4A5C]">{s.label}</span>
+                  <span className="font-semibold text-[#0D1B2A]">{money(s.cents)}</span>
+                </div>
+                <div className="mt-1.5 h-2 rounded-full bg-[#F4F7FB] overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${(s.cents / maxSource) * 100}%`, background: s.color }} />
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
-
-        {/* Monthly Trend */}
-        <div className="bg-white border border-[#D2DCE8] rounded-2xl p-6">
-          <h3 className="font-syne font-bold text-base text-[#0D1B2A] mb-4">Monthly Trend</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={monthlyTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E8EFF8" />
-              <XAxis
-                dataKey="month"
-                tick={{ fill: "#7A8FA6", fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fill: "#7A8FA6", fontSize: 11 }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(v) => `$${(v / 100).toFixed(0)}`}
-              />
-              <Tooltip
-                formatter={(v: number) => [`$${(v / 100).toFixed(2)}`, "Revenue"]}
-              />
-              <Line
-                type="monotone"
-                dataKey="revenue"
-                stroke="#1B3A6B"
-                strokeWidth={2}
-                dot={{ fill: "#F47C20", strokeWidth: 0, r: 4 }}
-                activeDot={{ r: 6 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="lg:col-span-2">
+          <RevenueChart data={r.trend} title="Monthly Trend" subtitle="Last 12 months" />
         </div>
       </div>
 
-      {/* Paid Appointments Table */}
-      <div className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#D2DCE8]">
-          <h3 className="font-syne font-bold text-base text-[#0D1B2A]">Paid Appointments</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[#D2DCE8] bg-[#F4F7FB]">
-                <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Date</th>
-                <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Client</th>
-                <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Service</th>
-                <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Amount</th>
-                <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#F4F7FB]">
-              {paidAppointments.map(a => (
-                <tr key={a.id} className="hover:bg-[#F4F7FB]/60 transition-colors">
-                  <td className="px-5 py-4 font-dm text-sm text-[#7A8FA6]">{a.date}</td>
-                  <td className="px-5 py-4 font-dm text-sm font-medium text-[#0D1B2A]">{a.name}</td>
-                  <td className="px-5 py-4 font-dm text-sm text-[#0D1B2A]">{a.service}</td>
-                  <td className="px-5 py-4 font-dm text-sm font-bold text-[#0D1B2A]">
-                    ${(a.amount / 100).toFixed(0)}
-                  </td>
-                  <td className="px-5 py-4">
-                    <span className={`text-xs font-dm font-medium px-2 py-0.5 rounded-full ${
-                      a.status === "COMPLETED"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-[#EBF0FA] text-[#2251A3]"
-                    }`}>
-                      {a.status}
-                    </span>
-                  </td>
+      <div className="bg-white border border-[#D2DCE8] rounded-2xl p-6">
+        <h3 className="font-syne font-bold text-base text-[#0D1B2A]">Recent Paid Orders</h3>
+        {r.recentOrders.length === 0 ? (
+          <p className="py-8 text-center font-dm text-sm text-[#7A8FA6]">No paid store orders yet.</p>
+        ) : (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-sm font-dm">
+              <thead>
+                <tr className="border-b border-[#F4F7FB] text-left text-xs uppercase tracking-wider text-[#7A8FA6]">
+                  <th className="py-2 pr-4 font-semibold">Order</th>
+                  <th className="py-2 pr-4 font-semibold">Customer</th>
+                  <th className="py-2 pr-4 font-semibold">Items</th>
+                  <th className="py-2 pr-4 font-semibold">Date</th>
+                  <th className="py-2 text-right font-semibold">Amount</th>
                 </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="border-t-2 border-[#D2DCE8] bg-[#F4F7FB]">
-                <td colSpan={3} className="px-5 py-3 font-syne font-bold text-sm text-[#0D1B2A]">Total</td>
-                <td className="px-5 py-3 font-syne font-bold text-sm text-[#1B3A6B]">
-                  ${(paidAppointments.reduce((s, a) => s + a.amount, 0) / 100).toFixed(0)}
-                </td>
-                <td />
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {r.recentOrders.map((o) => {
+                  const items = Array.isArray(o.items) ? (o.items as Array<{ name?: string }>) : [];
+                  return (
+                    <tr key={o.id} className="border-b border-[#F4F7FB] last:border-0">
+                      <td className="py-3 pr-4 font-medium text-[#0D1B2A]">{o.orderNumber}</td>
+                      <td className="py-3 pr-4 text-[#3A4A5C]">{o.email}</td>
+                      <td className="py-3 pr-4 text-[#3A4A5C]">{items.map((i) => i.name).filter(Boolean).join(", ") || "—"}</td>
+                      <td className="py-3 pr-4 text-[#7A8FA6]">{o.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</td>
+                      <td className="py-3 text-right font-semibold text-[#0D1B2A]">{money(o.total)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -47,6 +47,7 @@ export async function GET() {
 
   const applications = await prisma.partnershipApplication.findMany({
     orderBy: { createdAt: "desc" },
+    take: 500,
   });
   return NextResponse.json(applications);
 }
