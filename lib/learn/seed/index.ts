@@ -2,6 +2,8 @@
 // duplicates a track, module, lesson, or question — safe to run on every
 // deploy. Learner progress is never touched.
 import { Prisma } from "@prisma/client";
+import { ensureLearnEditColumns } from "@/lib/learn/admin/columns";
+import { getTombstones } from "@/lib/learn/admin/tombstones";
 import prisma from "@/lib/prisma";
 import {
   assertDurationConsistency,
@@ -49,16 +51,20 @@ function validateBank(label: string, bank: SeedQuestion[], warnings: string[]) {
   });
 }
 
-export async function seedTrack(track: SeedTrack): Promise<SeedReport> {
+export async function seedTrack(track: SeedTrack, tombstones?: Set<string>): Promise<SeedReport> {
   const warnings: string[] = [];
+  const deleted = tombstones ?? (await getTombstones());
   assertDurationConsistency(track);
 
   const minutes = trackMinutes(track);
   const estimatedHours = track.estimatedHours ?? Math.round((minutes / 60) * 10) / 10;
 
+  // Anything staff have edited in the admin (editedAt set) is left exactly as
+  // they left it. Re-seeding fills in and refreshes seeded content only.
+  await ensureLearnEditColumns();
   const existing = await prisma.learnTrack.findUnique({
     where: { slug: track.slug },
-    select: { id: true },
+    select: { id: true, editedAt: true },
   });
 
   const trackData = {
@@ -80,7 +86,7 @@ export async function seedTrack(track: SeedTrack): Promise<SeedReport> {
   const row = await prisma.learnTrack.upsert({
     where: { slug: track.slug },
     create: { slug: track.slug, ...trackData },
-    update: trackData,
+    update: existing?.editedAt ? {} : trackData,
   });
 
   let lessonCount = 0;
@@ -98,19 +104,23 @@ export async function seedTrack(track: SeedTrack): Promise<SeedReport> {
   const [existingModules, existingLessons] = await Promise.all([
     prisma.learnModule.findMany({
       where: { trackId: row.id },
-      select: { id: true, sortOrder: true },
+      select: { id: true, sortOrder: true, editedAt: true },
     }),
     prisma.lesson.findMany({
       where: { module: { trackId: row.id } },
-      select: { id: true, moduleId: true, sortOrder: true },
+      select: { id: true, moduleId: true, sortOrder: true, editedAt: true },
     }),
   ]);
   const moduleIdByOrder = new Map(existingModules.map((m) => [m.sortOrder, m.id]));
   const lessonIdByModuleOrder = new Map(
     existingLessons.map((l) => [`${l.moduleId}:${l.sortOrder}`, l.id]),
   );
+  const editedModules = new Set(existingModules.filter((m) => m.editedAt).map((m) => m.id));
+  const editedLessons = new Set(existingLessons.filter((l) => l.editedAt).map((l) => l.id));
 
   for (const [mi, mod] of track.modules.entries()) {
+    // Deleted by staff in the admin: stays deleted.
+    if (deleted.has(`module:${track.slug}#${mi}`)) continue;
     // sortOrder is the stable identity of a module within a track
     const existingModuleId = moduleIdByOrder.get(mi);
 
@@ -121,7 +131,9 @@ export async function seedTrack(track: SeedTrack): Promise<SeedReport> {
     };
 
     const modRow = existingModuleId
-      ? await prisma.learnModule.update({ where: { id: existingModuleId }, data: modData })
+      ? editedModules.has(existingModuleId)
+        ? { id: existingModuleId }
+        : await prisma.learnModule.update({ where: { id: existingModuleId }, data: modData })
       : await prisma.learnModule.create({
           data: { trackId: row.id, sortOrder: mi, ...modData },
         });
@@ -129,6 +141,7 @@ export async function seedTrack(track: SeedTrack): Promise<SeedReport> {
     moduleIds[mi] = modRow.id;
 
     for (const [li, lesson] of mod.lessons.entries()) {
+      if (deleted.has(`lesson:${track.slug}#${mi}#${li}`)) continue;
       const existingLessonId = lessonIdByModuleOrder.get(`${modRow.id}:${li}`);
 
       const lessonData = {
@@ -142,6 +155,11 @@ export async function seedTrack(track: SeedTrack): Promise<SeedReport> {
         hasPractice: (lesson.resources?.length ?? 0) > 0,
       };
 
+      if (existingLessonId && editedLessons.has(existingLessonId)) {
+        // Edited in the admin: its text, resources and check stay as edited.
+        lessonCount++;
+        continue;
+      }
       const lessonRow = existingLessonId
         ? await prisma.lesson.update({ where: { id: existingLessonId }, data: lessonData })
         : await prisma.lesson.create({
@@ -182,6 +200,8 @@ export async function seedTrack(track: SeedTrack): Promise<SeedReport> {
           // Micro-check. Attempts reference the MicroCheck, not its questions,
           // so replacing the bank preserves learner history.
           if (!lesson.microCheck?.length) return;
+          const edited = await prisma.microCheck.findUnique({ where: { lessonId: lessonRow.id }, select: { editedAt: true } });
+          if (edited?.editedAt) return;
           const check = await prisma.microCheck.upsert({
             where: { lessonId: lessonRow.id },
             create: { lessonId: lessonRow.id, passScore: 67, questionsServed: 3 },
@@ -204,6 +224,11 @@ export async function seedTrack(track: SeedTrack): Promise<SeedReport> {
         );
       }
 
+      const editedQuiz = await prisma.quiz.findUnique({ where: { moduleId: modRow.id }, select: { editedAt: true } });
+      if (editedQuiz?.editedAt) {
+        quizQuestions += mod.quiz.length;
+        continue;
+      }
       const quiz = await prisma.quiz.upsert({
         where: { moduleId: modRow.id },
         create: { moduleId: modRow.id, passScore: 80, questionsServed: Math.min(8, mod.quiz.length) },
@@ -241,14 +266,15 @@ export async function seedTrack(track: SeedTrack): Promise<SeedReport> {
       instructionsMd: fe.instructionsMd,
     };
 
+    const editedExam = await prisma.finalExam.findUnique({ where: { trackId: row.id }, select: { editedAt: true } });
     const exam = await prisma.finalExam.upsert({
       where: { trackId: row.id },
       create: { trackId: row.id, ...examData },
-      update: examData,
+      update: editedExam?.editedAt ? {} : examData,
     });
 
-    await prisma.finalExamQuestion.deleteMany({ where: { finalExamId: exam.id } });
-    await prisma.finalExamQuestion.createMany({
+    if (!editedExam?.editedAt) await prisma.finalExamQuestion.deleteMany({ where: { finalExamId: exam.id } });
+    if (!editedExam?.editedAt) await prisma.finalExamQuestion.createMany({
       data: fe.questions.map((question) => ({
         finalExamId: exam.id,
         moduleId:
@@ -265,6 +291,7 @@ export async function seedTrack(track: SeedTrack): Promise<SeedReport> {
   // (which reference the Lab id) survive.
   let labCount = 0;
   for (const [li, lab] of (track.labs ?? []).entries()) {
+    if (deleted.has(`lab:${lab.slug}`)) continue;
     if (lab.objectives.length === 0) {
       warnings.push(`${track.slug}: lab "${lab.slug}" has no objectives — nothing to score against.`);
     }
@@ -285,10 +312,11 @@ export async function seedTrack(track: SeedTrack): Promise<SeedReport> {
       isPublished: lab.isPublished !== false,
     };
 
+    const editedLab = await prisma.lab.findUnique({ where: { slug: lab.slug }, select: { editedAt: true } });
     await prisma.lab.upsert({
       where: { slug: lab.slug },
       create: { slug: lab.slug, ...labData },
-      update: labData,
+      update: editedLab?.editedAt ? {} : labData,
     });
     labCount++;
   }
@@ -300,10 +328,11 @@ export async function seedTrack(track: SeedTrack): Promise<SeedReport> {
       rubric: track.capstone.rubric as unknown as Prisma.InputJsonValue,
       passThreshold: track.capstone.passThreshold ?? 70,
     };
+    const editedCap = await prisma.capstone.findUnique({ where: { trackId: row.id }, select: { editedAt: true } });
     await prisma.capstone.upsert({
       where: { trackId: row.id },
       create: { trackId: row.id, ...capData },
-      update: capData,
+      update: editedCap?.editedAt ? {} : capData,
     });
 
     const weight = track.capstone.rubric.reduce((n, r) => n + r.weight, 0);
@@ -329,8 +358,10 @@ export async function seedTrack(track: SeedTrack): Promise<SeedReport> {
 /** Seed every track. Returns one report per track. */
 export async function seedAll(): Promise<SeedReport[]> {
   const reports: SeedReport[] = [];
+  const deleted = await getTombstones();
   for (const track of TRACKS) {
-    reports.push(await seedTrack(track));
+    if (deleted.has(`track:${track.slug}`)) continue;
+    reports.push(await seedTrack(track, deleted));
   }
   return reports;
 }

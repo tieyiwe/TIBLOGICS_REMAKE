@@ -1,9 +1,13 @@
 import prisma from "@/lib/prisma";
 import LearnAdminClient from "./LearnAdminClient";
+import { requireAdminPage } from "../_lib/admin-page-auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function LearnAdminPage() {
+  // This page reads learner names, emails and submissions straight from the
+  // database, so it checks for a staff session itself like every other admin page.
+  await requireAdminPage();
   // Every query is guarded — before Sync Database runs, none of these tables
   // exist and the page must still render with its setup instructions.
   const [tracks, students, subs, submissions, certificates, waitlist, recentCerts] = await Promise.all([

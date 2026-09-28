@@ -195,17 +195,17 @@ model ToolkitSubscription {
 
 /// What the tool knows about the customer's business, sent with every run.
 model ToolkitProfile {
-  studentId      String   @id
-  updatedAt      DateTime @updatedAt
-  businessName   String   @default("")
-  vertical       String   @default("general")
-  location       String   @default("")
-  audience       String   @default("")
-  offer          String   @default("")
-  voice          String   @default("")
-  differentiators String  @default("")
+  studentId       String   @id
+  updatedAt       DateTime @updatedAt
+  businessName    String   @default("")
+  vertical        String   @default("general")
+  location        String   @default("")
+  audience        String   @default("")
+  offer           String   @default("")
+  voice           String   @default("")
+  differentiators String   @default("")
   /// Licence numbers, brokerage, required disclosures: things that must appear.
-  compliance     String   @default("")
+  compliance      String   @default("")
 }
 
 /// Every generation and check. Doubles as the usage meter.
@@ -230,31 +230,31 @@ model ToolkitRun {
 /// A paid Automation Blueprint: intake answers in, a written plan out.
 /// Created by lib/blueprint/db.ts on first use (no migrations).
 model Blueprint {
-  id              String    @id @default(cuid())
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  email           String
-  name            String
-  company         String
+  id                  String    @id @default(cuid())
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  email               String
+  name                String
+  company             String
   /// draft (checkout not finished) | paid | generating | ready | failed
-  status          String    @default("draft")
-  intake          Json
-  result          Json?
-  error           String?
-  attempts        Int       @default(0)
+  status              String    @default("draft")
+  intake              Json
+  result              Json?
+  error               String?
+  attempts            Int       @default(0)
   generationStartedAt DateTime?
-  stripeSessionId String?   @unique
-  amountPaid      Int       @default(0)
-  paidAt          DateTime?
-  readyAt         DateTime?
+  stripeSessionId     String?   @unique
+  amountPaid          Int       @default(0)
+  paidAt              DateTime?
+  readyAt             DateTime?
   /// Quoted when booking a build; the amount paid comes off the engagement.
-  creditCode      String    @unique
-  creditExpiresAt DateTime?
-  creditUsedAt    DateTime?
-  tokenSalt       String
-  tokenHash       String    @unique
-  inputTokens     Int       @default(0)
-  outputTokens    Int       @default(0)
+  creditCode          String    @unique
+  creditExpiresAt     DateTime?
+  creditUsedAt        DateTime?
+  tokenSalt           String
+  tokenHash           String    @unique
+  inputTokens         Int       @default(0)
+  outputTokens        Int       @default(0)
 
   @@index([status])
   @@index([email])
@@ -673,26 +673,28 @@ model Student {
 }
 
 model LearnTrack {
-  id                   String   @id @default(cuid())
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-  slug                 String   @unique
+  id                   String    @id @default(cuid())
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  slug                 String    @unique
   title                String
   titleFr              String?
   tagline              String?
-  description          String   @db.Text
-  descriptionFr        String?  @db.Text
-  level                String   @default("beginner") // starter|beginner|intermediate|advanced
+  description          String    @db.Text
+  descriptionFr        String?   @db.Text
+  level                String    @default("beginner") // starter|beginner|intermediate|advanced
   levelEnd             String? // set when the track spans levels
-  status               String   @default("draft") // draft|coming_soon|live
-  sortOrder            Int      @default(0)
-  accentColor          String   @default("#F47C4C")
+  status               String    @default("draft") // draft|coming_soon|live
+  sortOrder            Int       @default(0)
+  accentColor          String    @default("#F47C4C")
   heroImage            String?
-  outcomes             Json     @default("[]")
+  outcomes             Json      @default("[]")
   audience             String?
   certificateName      String
-  estimatedHours       Float    @default(0)
+  estimatedHours       Float     @default(0)
   estimatedWeeksAt3Hrs Int?
+  /// Set when staff edit this in the admin; the seed then leaves it alone.
+  editedAt             DateTime?
 
   modules      LearnModule[]
   finalExam    FinalExam?
@@ -712,6 +714,8 @@ model LearnModule {
   summary          String?
   sortOrder        Int
   estimatedMinutes Int        @default(0)
+  /// Set when staff edit this in the admin; the seed then leaves it alone.
+  editedAt         DateTime?
 
   lessons Lesson[]
   quiz    Quiz?
@@ -734,6 +738,8 @@ model Lesson {
   objective       String?
   isPreview       Boolean     @default(false)
   hasPractice     Boolean     @default(false)
+  /// Set when staff edit this in the admin; the seed then leaves it alone.
+  editedAt        DateTime?
 
   resources  LessonResource[]
   microCheck MicroCheck?
@@ -761,11 +767,13 @@ model LessonResource {
 
 // ── Tier 1: micro-checks (after every lesson) ──────────────────────────────
 model MicroCheck {
-  id              String @id @default(cuid())
-  lessonId        String @unique
-  lesson          Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  passScore       Int    @default(67)
-  questionsServed Int    @default(3)
+  id              String    @id @default(cuid())
+  lessonId        String    @unique
+  lesson          Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  passScore       Int       @default(67)
+  questionsServed Int       @default(3)
+  /// Set when staff edit this in the admin; the seed then leaves it alone.
+  editedAt        DateTime?
 
   questions MicroCheckQuestion[]
   attempts  MicroCheckAttempt[]
@@ -805,6 +813,8 @@ model Quiz {
   module          LearnModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   passScore       Int         @default(80)
   questionsServed Int         @default(8)
+  /// Set when staff edit this in the admin; the seed then leaves it alone.
+  editedAt        DateTime?
 
   questions QuizQuestion[]
   attempts  QuizAttempt[]
@@ -850,6 +860,8 @@ model FinalExam {
   maxAttempts      Int        @default(3)
   cooldownHours    Int        @default(24)
   instructionsMd   String     @db.Text
+  /// Set when staff edit this in the admin; the seed then leaves it alone.
+  editedAt         DateTime?
 
   questions FinalExamQuestion[]
   sessions  FinalExamSession[]
@@ -910,24 +922,26 @@ model Lab {
   lessonId  String?
   lesson    Lesson?      @relation(fields: [lessonId], references: [id], onDelete: SetNull)
 
-  slug             String  @unique
+  slug             String    @unique
   title            String
-  labType          String  @default("prompt") // prompt|critique|build
-  briefMd          String  @db.Text
-  scenarioMd       String? @db.Text
+  labType          String    @default("prompt") // prompt|critique|build
+  briefMd          String    @db.Text
+  scenarioMd       String?   @db.Text
   /**
    * Criteria the attempt is scored against. Shown to the learner up front.
    */
-  objectives       Json    @default("[]")
+  objectives       Json      @default("[]")
   /**
    * Type-specific settings (planted flaws, checklist steps, sandbox system prompt).
    */
-  config           Json    @default("{}")
-  passScore        Int     @default(70)
-  points           Int     @default(40)
-  estimatedMinutes Int     @default(20)
-  sortOrder        Int     @default(0)
-  isPublished      Boolean @default(true)
+  config           Json      @default("{}")
+  passScore        Int       @default(70)
+  points           Int       @default(40)
+  estimatedMinutes Int       @default(20)
+  sortOrder        Int       @default(0)
+  isPublished      Boolean   @default(true)
+  /// Set when staff edit this in the admin; the seed then leaves it alone.
+  editedAt         DateTime?
 
   attempts LabAttempt[]
 
@@ -974,6 +988,8 @@ model Capstone {
   briefMd       String     @db.Text
   rubric        Json
   passThreshold Int        @default(70)
+  /// Set when staff edit this in the admin; the seed then leaves it alone.
+  editedAt      DateTime?
 
   submissions CapstoneSubmission[]
 }

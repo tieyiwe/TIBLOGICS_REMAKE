@@ -176,7 +176,14 @@ export default function LearnAdminClient({
 
       {/* Tracks */}
       <section className="rounded-xl border border-[var(--border)] bg-white p-5">
-        <h2 className="text-sm font-bold text-[var(--ink)]">Tracks</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-sm font-bold text-[var(--ink)]">Tracks</h2>
+          <NewTrack />
+        </div>
+        <p className="mt-1 text-xs text-[var(--ink3)]">
+          Open a track to edit its lessons, videos, resources, quizzes, labs, final exam and capstone. Your edits are kept when the
+          built-in content is re-seeded.
+        </p>
         {tracks.length === 0 ? (
           <p className="mt-3 text-sm text-[var(--ink3)]">
             No tracks yet — run Seed Learning Box Content.
@@ -198,7 +205,9 @@ export default function LearnAdminClient({
               <tbody className="divide-y divide-[var(--border)]">
                 {tracks.map((t) => (
                   <tr key={t.id}>
-                    <td className="py-2.5 pr-4 font-medium text-[var(--ink)]">{t.title}</td>
+                    <td className="py-2.5 pr-4 font-medium text-[var(--ink)]">
+                      <Link href={`/admin_pro/learn/tracks/${t.id}`} className="hover:text-[var(--blue2)] hover:underline">{t.title}</Link>
+                    </td>
                     <td className="py-2.5 pr-4 capitalize text-[var(--ink2)]">{t.level}</td>
                     <td className="py-2.5 pr-4">
                       <span
@@ -216,7 +225,10 @@ export default function LearnAdminClient({
                     <td className="py-2.5 text-right text-[var(--ink2)]">{t.moduleCount}</td>
                     <td className="py-2.5 text-right text-[var(--ink2)]">{t.lessonCount}</td>
                     <td className="py-2.5 text-right text-[var(--ink2)]">{t.estimatedHours}</td>
-                    <td className="py-2.5 pl-4 text-right">
+                    <td className="py-2.5 pl-4 text-right whitespace-nowrap">
+                      <Link href={`/admin_pro/learn/tracks/${t.id}`} className="mr-3 text-xs font-semibold text-[var(--blue2)] underline">
+                        Edit content
+                      </Link>
                       <Link
                         href={`/learning-box/${t.slug}`}
                         target="_blank"
@@ -569,5 +581,55 @@ function CertificatesPanel({
         </div>
       )}
     </section>
+  );
+}
+
+/** Creates an empty draft track and opens it in the editor. */
+function NewTrack() {
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const slug = title.toLowerCase().replace(/[^a-z0-9\s-]/g, "").trim().replace(/\s+/g, "-").slice(0, 70);
+
+  async function create() {
+    setBusy(true);
+    setError(null);
+    const res = await fetch("/api/admin/learn/content", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ op: "track.create", title, slug }),
+    }).catch(() => null);
+    const d = res ? await res.json().catch(() => ({})) : {};
+    if (res?.ok && d.id) {
+      window.location.href = `/admin_pro/learn/tracks/${d.id}`;
+      return;
+    }
+    setError(d.error ?? "Could not create the track.");
+    setBusy(false);
+  }
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} className="rounded-lg bg-[var(--ink)] px-3 py-1.5 text-xs font-bold text-white">
+        + New track
+      </button>
+    );
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <input
+        autoFocus
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Track title"
+        className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm"
+      />
+      <button onClick={create} disabled={busy || title.trim().length < 3} className="rounded-lg bg-[var(--ink)] px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50">
+        {busy ? "Creating…" : "Create draft"}
+      </button>
+      <button onClick={() => setOpen(false)} className="text-xs text-[var(--ink3)] underline">Cancel</button>
+      {error && <p className="w-full text-xs text-red-600">{error}</p>}
+    </div>
   );
 }
