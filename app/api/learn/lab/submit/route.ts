@@ -4,12 +4,13 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { requireEntitledStudent } from "@/lib/learn/session";
 import { checkRateLimit } from "@/lib/require-admin";
+import { withinDailyAiBudget } from "@/lib/learn/ai-budget";
 import { awardPoints, getTotalPoints } from "@/lib/learn/points";
 import { checkLevelUp } from "@/lib/learn/milestones";
 import type { LabEvaluation } from "@/lib/learn/labs/types";
 import { evaluateBuild, evaluateCritique, evaluatePrompt, evaluateWorkbench } from "@/lib/learn/labs/evaluate";
 import { evaluateCode, MAX_CODE } from "@/lib/learn/labs/code";
-import { getLocale, translatorFor } from "@/lib/i18n/server";
+import { getLocale, getT, translatorFor } from "@/lib/i18n/server";
 import { localizeLab } from "@/lib/i18n/sources/labs";
 
 export const maxDuration = 120;
@@ -40,6 +41,9 @@ export async function POST(req: NextRequest) {
 
   if (!(await checkRateLimit(`lab-submit:${student.id}`, 30, 3_600_000))) {
     return NextResponse.json({ error: t("labs.api.submitRate") }, { status: 429 });
+  }
+  if (!(await withinDailyAiBudget(student.id))) {
+    return NextResponse.json({ error: (await getT())("common.aiDailyLimit") }, { status: 429 });
   }
 
   const parsed = Body.safeParse(await req.json().catch(() => ({})));

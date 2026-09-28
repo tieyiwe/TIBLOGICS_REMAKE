@@ -3,6 +3,7 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { requireEntitledStudent } from "@/lib/learn/session";
 import { checkRateLimit } from "@/lib/require-admin";
+import { withinDailyAiBudget } from "@/lib/learn/ai-budget";
 import { streamChat } from "@/lib/claude";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { replyInLanguage } from "@/lib/i18n/config";
@@ -38,6 +39,9 @@ export async function POST(req: NextRequest) {
   }
   if (!(await checkRateLimit(`practice-d:${student.id}`, DAILY, 86_400_000))) {
     return NextResponse.json({ error: t("learn.api.padDaily") }, { status: 429 });
+  }
+  if (!(await withinDailyAiBudget(student.id))) {
+    return NextResponse.json({ error: (await getT())("common.aiDailyLimit") }, { status: 429 });
   }
 
   const lesson = parsed.data.lessonId

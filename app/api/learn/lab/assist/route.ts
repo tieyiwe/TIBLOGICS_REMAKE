@@ -4,6 +4,8 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { requireEntitledStudent } from "@/lib/learn/session";
 import { checkRateLimit } from "@/lib/require-admin";
+import { withinDailyAiBudget } from "@/lib/learn/ai-budget";
+import { getT } from "@/lib/i18n/server";
 import { streamChat } from "@/lib/claude";
 import { parseConfig } from "@/lib/learn/labs/types";
 import { assistSystem, parseAssist, MAX_CODE } from "@/lib/learn/labs/code";
@@ -27,6 +29,9 @@ export async function POST(req: NextRequest) {
   const t = translatorFor(locale);
   if (!(await checkRateLimit(`lab-assist:${student.id}`, 30, 3_600_000))) {
     return NextResponse.json({ error: t("labs.api.assistRate") }, { status: 429 });
+  }
+  if (!(await withinDailyAiBudget(student.id))) {
+    return NextResponse.json({ error: (await getT())("common.aiDailyLimit") }, { status: 429 });
   }
   const parsed = bodyFor(t).safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? t("labs.api.invalid") }, { status: 400 });

@@ -4,6 +4,8 @@ import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { requireEntitledStudent } from "@/lib/learn/session";
 import { checkRateLimit } from "@/lib/require-admin";
+import { withinDailyAiBudget } from "@/lib/learn/ai-budget";
+import { getT } from "@/lib/i18n/server";
 import { streamChat } from "@/lib/claude";
 import { parseConfig } from "@/lib/learn/labs/types";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
@@ -34,6 +36,9 @@ export async function POST(req: NextRequest) {
   // 20 sandbox runs per student per hour
   if (!(await checkRateLimit(`lab-run:${student.id}`, 20, 3_600_000))) {
     return NextResponse.json({ error: t("labs.api.sandboxRate") }, { status: 429 });
+  }
+  if (!(await withinDailyAiBudget(student.id))) {
+    return NextResponse.json({ error: (await getT())("common.aiDailyLimit") }, { status: 429 });
   }
 
   const parsed = bodyFor(t).safeParse(await req.json().catch(() => ({})));

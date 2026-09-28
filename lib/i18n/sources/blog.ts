@@ -1,3 +1,4 @@
+import { sanitizeTranslatedHtml } from "../sanitize-html";
 import { createHash } from "crypto";
 import prisma from "@/lib/prisma";
 import { localized, translated, type Fields } from "@/lib/i18n/content";
@@ -96,24 +97,6 @@ export async function cachedPostSummaries(
   }
 }
 
-/**
- * Translations made by the earlier per-article translate button, stored in
- * AdminSettings as "tx:<slug>:<lang>". Used when the shared cache has nothing
- * yet, so articles already translated that way do not fall back to English.
- */
-async function legacyTranslation(slug: string, locale: Locale): Promise<PostFields | null> {
-  try {
-    const row = await prisma.adminSettings.findUnique({ where: { key: `tx:${slug}:${locale}` } });
-    if (!row?.value) return null;
-    const v = JSON.parse(row.value) as Partial<PostFields>;
-    if (typeof v.title === "string" && typeof v.excerpt === "string" && typeof v.content === "string" && v.content.trim()) {
-      return { title: v.title, excerpt: v.excerpt, content: v.content };
-    }
-  } catch {
-    /* unreadable: treat as absent */
-  }
-  return null;
-}
 
 /** An up-to-date cached translation of one post, or null. Never calls the model. */
 async function cachedPost(post: PostSource, locale: Locale): Promise<PostFields | null> {
@@ -132,10 +115,10 @@ async function cachedPost(post: PostSource, locale: Locale): Promise<PostFields 
   return null;
 }
 
-/** Title and excerpt for page metadata: cached or legacy translation, else English. No model call. */
+/** Title and excerpt for page metadata: the cached translation, else English. No model call. */
 export async function postMetaFor(post: PostSource, locale: Locale): Promise<{ title: string; excerpt: string }> {
   if (locale === "en") return { title: post.title, excerpt: post.excerpt };
-  const hit = (await cachedPost(post, locale)) ?? (await legacyTranslation(post.slug, locale));
+  const hit = await cachedPost(post, locale);
   return hit ? { title: hit.title, excerpt: hit.excerpt } : { title: post.title, excerpt: post.excerpt };
 }
 
@@ -145,11 +128,14 @@ export async function postMetaFor(post: PostSource, locale: Locale): Promise<{ t
  */
 export async function localizedPost(post: PostSource, locale: Locale): Promise<{ value: PostFields; pending: boolean }> {
   if (locale === "en") return { value: postFields(post), pending: false };
+  // Older "tx:<slug>:<lang>" translations are not used: they carry no link to
+  // the English they came from, so they could still show text from before an
+  // article was corrected. The translate job replaces them.
   const cached = await cachedPost(post, locale);
-  if (cached) return { value: cached, pending: false };
-  const legacy = await legacyTranslation(post.slug, locale);
-  if (legacy) return { value: legacy, pending: false };
-  return localized(postKey(post.slug), locale, postFields(post));
+  const out = cached ? { value: cached, pending: false } : await localized(postKey(post.slug), locale, postFields(post));
+  if (out.pending) return out;
+  // Model-written HTML is cleaned before it is rendered (see sanitize-html.ts).
+  return { value: { ...out.value, content: sanitizeTranslatedHtml(out.value.content) }, pending: false };
 }
 
 // ── Warm-up for the translate cron ───────────────────────────────────────────
