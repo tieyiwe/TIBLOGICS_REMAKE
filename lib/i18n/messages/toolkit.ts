@@ -42,7 +42,7 @@ const UI: Row[] = [
 
   // ── Write tab ──
   ["toolkit.write.industry", "Industry", "Secteur", "Sekta"],
-  ["toolkit.write.privacy", "Do not enter names or details that identify a patient, client, claimant or employee. Use placeholders and fill them in after.", "Ne saisissez aucun nom ni détail permettant d'identifier un patient, un client, un demandeur ou un salarié. Utilisez des espaces réservés et complétez-les ensuite.", "Usiweke majina au maelezo yanayomtambulisha mgonjwa, mteja, mdai au mfanyakazi. Tumia nafasi za kujaza baadaye, kisha uzijaze wewe mwenyewe."],
+  ["toolkit.write.privacy", "Do not enter names or details that identify a patient, client, claimant or employee. Use placeholders and fill them in after.", "Ne saisissez aucun nom ni détail permettant d'identifier un patient, un client, un demandeur ou un salarié. Utilisez des espaces réservés et complétez-les ensuite.", "Usiweke majina au maelezo yanayomtambulisha mgonjwa, mteja, mdai au mfanyakazi. Tumia nafasi za kujaza (placeholders) na uzijaze baadaye."],
   ["toolkit.write.category", "Category", "Catégorie", "Kategoria"],
   ["toolkit.write.allCategories", "All categories", "Toutes les catégories", "Kategoria zote"],
   ["toolkit.write.searchPlaceholder", "Search by keyword, e.g. late payment", "Rechercher par mot-clé, p. ex. retard de paiement", "Tafuta kwa neno, k.m. malipo yaliyochelewa"],

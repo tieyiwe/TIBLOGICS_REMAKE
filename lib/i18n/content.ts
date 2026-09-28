@@ -92,6 +92,10 @@ const inFlight = new Map<string, Promise<Fields | null>>();
 // is a paid model call). Page views wait out a cool-down; the cron job retries.
 const failedAt = new Map<string, number>();
 const RETRY_AFTER_MS = 15 * 60_000;
+// Page views may start only a few translations at once; a page that lists many
+// records (the prompt library, a course outline) must not fire a model call per
+// record in one go. The rest stay "pending" and the translate job fills them in.
+const MAX_QUEUED = 4;
 
 /**
  * Translated fields for `key` in `locale`, or null if not available yet.
@@ -124,6 +128,7 @@ export async function translated(
   const job = `${key}\0${locale}\0${hash}`;
   if (mode === "queue" && Date.now() - (failedAt.get(job) ?? 0) < RETRY_AFTER_MS) return null;
   let p = inFlight.get(job);
+  if (!p && mode === "queue" && inFlight.size >= MAX_QUEUED) return null;
   if (!p) {
     p = translateNow(fields, locale)
       .then(async (value) => {
