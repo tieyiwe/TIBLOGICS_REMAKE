@@ -227,6 +227,40 @@ model ToolkitRun {
   @@index([studentId, kind, createdAt])
 }
 
+/// A paid Automation Blueprint: intake answers in, a written plan out.
+/// Created by lib/blueprint/db.ts on first use (no migrations).
+model Blueprint {
+  id              String    @id @default(cuid())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  email           String
+  name            String
+  company         String
+  /// draft (checkout not finished) | paid | generating | ready | failed
+  status          String    @default("draft")
+  intake          Json
+  result          Json?
+  error           String?
+  attempts        Int       @default(0)
+  generationStartedAt DateTime?
+  stripeSessionId String?   @unique
+  amountPaid      Int       @default(0)
+  paidAt          DateTime?
+  readyAt         DateTime?
+  /// Quoted when booking a build; the amount paid comes off the engagement.
+  creditCode      String    @unique
+  creditExpiresAt DateTime?
+  creditUsedAt    DateTime?
+  tokenSalt       String
+  tokenHash       String    @unique
+  inputTokens     Int       @default(0)
+  outputTokens    Int       @default(0)
+
+  @@index([status])
+  @@index([email])
+  @@index([createdAt])
+}
+
 model ToolUsage {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())

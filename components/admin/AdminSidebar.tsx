@@ -18,6 +18,7 @@ import {
   Search,
   Radar,
   Wand2,
+  FileText,
   DollarSign,
   Settings,
   FileEdit,
@@ -84,6 +85,7 @@ const navItems: NavItem[] = [
   { label: "Tool Analytics", href: "/admin_pro/tools", icon: BarChart2 },
   { label: "Readiness Monitor", href: "/admin_pro/monitor", icon: Radar },
   { label: "Toolkit Live", href: "/admin_pro/toolkit", icon: Wand2 },
+  { label: "Automation Blueprints", href: "/admin_pro/blueprints", icon: FileText },
   { label: "Revenue", href: "/admin_pro/revenue", icon: DollarSign },
   {
     label: "Blog",
@@ -191,6 +193,7 @@ const NAV_PERMISSION_MAP: Record<string, string> = {
   "/admin_pro/tools":          "tools",
   "/admin_pro/monitor":        "tools",
   "/admin_pro/toolkit":        "tools",
+  "/admin_pro/blueprints":     "tools",
   "/admin_pro/revenue":        "revenue",
   "/admin_pro/blog":           "blog",
   "/admin_pro/newsletter":     "blog",

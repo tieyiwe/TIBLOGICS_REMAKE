@@ -9,15 +9,19 @@ import { PLANS } from "@/lib/payments/provider";
 // shown revenue that did not exist. Everything here is computed from records,
 // and anything that is an estimate says so.
 
-/** Money actually received, in cents, from each paid source. */
+/**
+ * Money actually received, in cents, from each paid source. Subscription
+ * products (Learn, Readiness Monitor, Toolkit Live) are not here: individual
+ * renewals are not recorded, so they are shown as estimates on their pages.
+ */
 const PAID_ORDER_STATUSES = ["paid", "fulfilled"];
 
 function monthStart(d: Date, offsetMonths = 0): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + offsetMonths, 1));
 }
 
-async function paidRevenueBetween(from: Date, to: Date): Promise<{ store: number; events: number; bookings: number; total: number }> {
-  const [orders, events, bookings] = await Promise.all([
+async function paidRevenueBetween(from: Date, to: Date): Promise<{ store: number; events: number; bookings: number; blueprints: number; total: number }> {
+  const [orders, events, bookings, blueprints] = await Promise.all([
     prisma.order.aggregate({
       _sum: { total: true },
       where: { status: { in: PAID_ORDER_STATUSES }, createdAt: { gte: from, lt: to } },
@@ -30,11 +34,17 @@ async function paidRevenueBetween(from: Date, to: Date): Promise<{ store: number
       _sum: { totalAmount: true },
       where: { paymentStatus: "paid", createdAt: { gte: from, lt: to } },
     }),
+    // One-time Automation Blueprints. The table is created on first sale, so
+    // its absence means nothing has been sold, not an error.
+    prisma.blueprint
+      .aggregate({ _sum: { amountPaid: true }, where: { paidAt: { gte: from, lt: to } } })
+      .catch(() => ({ _sum: { amountPaid: 0 } })),
   ]);
   const store = orders._sum.total ?? 0;
   const ev = events._sum.price ?? 0;
   const bk = bookings._sum.totalAmount ?? 0;
-  return { store, events: ev, bookings: bk, total: store + ev + bk };
+  const bp = blueprints._sum.amountPaid ?? 0;
+  return { store, events: ev, bookings: bk, blueprints: bp, total: store + ev + bk + bp };
 }
 
 /**

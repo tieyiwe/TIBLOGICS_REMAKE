@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Search, Bot, Calculator, Radar, Wand2 } from "lucide-react";
+import { Search, Bot, Calculator, Radar, Wand2, FileText } from "lucide-react";
 import SmartRecommendations from "@/components/public/SmartRecommendations";
 import { useEffect } from "react";
 import { trackPageVisit } from "@/lib/recommendations";
@@ -20,6 +20,15 @@ const ALL_TOOLS = [
     name: "Toolkit Live + Compliance Guard",
     desc: "Our industry prompt libraries, written with your business details, with every draft checked for Fair Housing, financial-advertising and FTC risks.",
     href: "/tools/toolkit-live",
+    color: "#B8500A",
+    tag: "Paid",
+    retired: false,
+  },
+  {
+    icon: FileText,
+    name: "Automation Blueprint",
+    desc: "A written plan for automating up to three of your repetitive processes, with a roadmap and hours saved. Credited if we build it.",
+    href: "/tools/automation-blueprint",
     color: "#B8500A",
     tag: "Paid",
     retired: false,

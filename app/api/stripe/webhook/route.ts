@@ -9,6 +9,8 @@ import { activateMonitor, syncMonitorSubscription } from "@/lib/monitor/billing"
 import { MONITOR_PRODUCT } from "@/lib/monitor/config";
 import { upsertToolkitSubscription } from "@/lib/toolkit/billing";
 import { TOOLKIT_PRODUCT } from "@/lib/toolkit/config";
+import { markBlueprintPaid } from "@/lib/blueprint/billing";
+import { BLUEPRINT_PRODUCT } from "@/lib/blueprint/config";
 
 const SITE_URL = (
   process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
@@ -92,6 +94,11 @@ export async function POST(req: Request) {
           await upsertLearnSubscription(full, studentId);
           console.log(`[stripe/webhook] ✓ Learn subscription active for student ${studentId}`);
         }
+      }
+
+      // ── Automation Blueprint (one-time) ──────────────────────────────────
+      if (session.metadata?.product === BLUEPRINT_PRODUCT && session.metadata.blueprintId) {
+        await markBlueprintPaid(session.metadata.blueprintId, session);
       }
 
       // ── Toolkit Live / Compliance Guard checkout ─────────────────────────
