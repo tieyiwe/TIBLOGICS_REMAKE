@@ -1,5 +1,6 @@
 export const maxDuration = 300;
 import { NextRequest, NextResponse } from "next/server";
+import { REFRESH_INTERVAL_MS } from "@/lib/blog/schedule";
 import { revalidatePath } from "next/cache";
 import { fetchSourceText } from "@/lib/blog/source-text";
 import Anthropic from "@anthropic-ai/sdk";
@@ -20,7 +21,6 @@ import { RETRACTIONS } from "@/lib/blog/content/retractions";
 
 const anthropic = new Anthropic();
 
-const REFRESH_INTERVAL_MS = 48 * 60 * 60 * 1000; // 48 hours
 
 // What counts as worth writing about.
 //

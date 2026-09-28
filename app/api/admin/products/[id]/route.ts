@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
 import { revalidateShop } from "@/lib/shop/revalidate";
+import { parseDeliveryFields } from "@/lib/shop/delivery-fields";
 
 // PATCH — update a product
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -32,6 +33,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (body.published != null) data.published = !!body.published;
     if (body.onSale != null) data.onSale = !!body.onSale;
     if (body.sku !== undefined) data.sku = body.sku ? String(body.sku).slice(0, 60) : null;
+
+    const current = await prisma.product.findUnique({
+      where: { id },
+      select: { deliveryType: true, fileKey: true, externalUrl: true, published: true, digital: true },
+    });
+    if (!current) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    const delivery = parseDeliveryFields(body, current);
+    if (!delivery.ok) return NextResponse.json({ error: delivery.error }, { status: 400 });
+    Object.assign(data, delivery.data);
 
     const product = await prisma.product.update({ where: { id }, data });
     revalidateShop(product.slug);

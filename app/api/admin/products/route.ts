@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
 import { revalidateShop } from "@/lib/shop/revalidate";
+import { parseDeliveryFields } from "@/lib/shop/delivery-fields";
 
 function slugify(name: string) {
   return name
@@ -43,6 +44,9 @@ export async function POST(req: NextRequest) {
     const price = Math.max(0, Math.round(Number(body.price) || 0));
     const compareAtPrice = body.compareAtPrice ? Math.max(0, Math.round(Number(body.compareAtPrice))) : null;
 
+    const delivery = parseDeliveryFields(body);
+    if (!delivery.ok) return NextResponse.json({ error: delivery.error }, { status: 400 });
+
     // Ensure a unique slug
     let base = slugify(body.slug || name) || `product-${Date.now()}`;
     // Every candidate (`base`, `base-1`, `base-2`, …) shares the `base` prefix,
@@ -76,6 +80,7 @@ export async function POST(req: NextRequest) {
         published: !!body.published,
         onSale: !!body.onSale,
         sku: body.sku ? String(body.sku).slice(0, 60) : null,
+        ...delivery.data,
       },
     });
 
