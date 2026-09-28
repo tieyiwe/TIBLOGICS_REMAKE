@@ -1,3 +1,429 @@
 import type { IndustryPack } from "./define";
 
-export const HR: IndustryPack = { id: "hr", label: "HR and recruiting", prompts: [] };
+// HR and recruiting. Job and HR text describes duties and skills, never
+// traits tied to age, sex, race, national origin, religion, disability or
+// family status. Legal questions go to an employment professional.
+
+const FAIR = "Use inclusive, bias-free language: describe duties and skills, not personal traits, and avoid age, gender or culture-coded wording.";
+const LEGAL = "Flag anything that depends on employment law in [STATE/COUNTRY] as [CHECK WITH EMPLOYMENT COUNSEL].";
+
+export const HR: IndustryPack = {
+  id: "hr",
+  label: "HR and recruiting",
+  prompts: [
+    // ── Job Ads & Hiring ──
+    {
+      c: "Job Ads & Hiring",
+      t: "Job Ad: Write a Job Posting That Attracts the Right People",
+      u: "You need a job ad that is clear, fair and attracts qualified applicants.",
+      p: `Act as an experienced recruiter. Write a job posting for [JOB TITLE] at [COMPANY], a [COMPANY DESCRIPTION]. Include: a 2-sentence summary of why the role matters, 6 key responsibilities [DUTIES], must-have requirements [REQUIREMENTS] (keep to true must-haves), nice-to-haves, pay range [RANGE] and benefits [BENEFITS], location and schedule [DETAILS], and how to apply. Under 450 words. ${FAIR}`,
+      tip: "Cut the must-haves to the ones you would truly reject someone for. Long lists put off strong candidates who do not tick every box.",
+    },
+    {
+      c: "Job Ads & Hiring",
+      t: "Review: Bias Check a Job Description",
+      u: "You want to check an existing job ad for wording that could put people off or create legal risk.",
+      p: `Review this job description for biased or exclusionary language: [PASTE JOB DESCRIPTION]. Flag gender-coded words, age-coded words (for example 'digital native', 'young team'), unnecessary requirements (degrees or years where skills would do), culture or nationality-coded phrases, and ableist language. For each, explain the issue and suggest a neutral alternative. Then give the rewritten description.`,
+      tip: "Research shows gender-coded wording measurably changes who applies. It is one of the easiest fixes in hiring.",
+    },
+    {
+      c: "Job Ads & Hiring",
+      t: "Scorecard: Hiring Scorecard for a Role",
+      u: "You want to agree what good looks like before interviewing.",
+      p: `Create a hiring scorecard for [JOB TITLE]. Include: the role's mission in one sentence, 4 to 6 outcomes expected in the first year [OUTCOMES], the competencies needed to achieve them, and for each competency a 1 to 5 rating scale with behavioural descriptions of a 1, 3 and 5. Add which interview stage assesses each competency.`,
+      tip: "Agree the scorecard with the hiring team before the first interview; it prevents 'gut feel' decisions later.",
+    },
+    {
+      c: "Job Ads & Hiring",
+      t: "Sourcing: Outreach Message to a Passive Candidate",
+      u: "You found a strong candidate who is not looking and want to reach out.",
+      p: `Write a LinkedIn message to a potential candidate for [JOB TITLE] at [COMPANY]. Mention something specific about their background [DETAIL], why the role could interest them [REASONS: SCOPE, GROWTH, MISSION, PAY RANGE], and a low-pressure ask for a 15-minute chat. Under 110 words, personal, no buzzwords.`,
+      tip: "Mention the pay range in the first message. Passive candidates reply far more when they know it is worth their time.",
+    },
+    {
+      c: "Job Ads & Hiring",
+      t: "Screening: Phone Screen Questions",
+      u: "You want a consistent first screening call for every applicant.",
+      p: `Create a 20-minute phone screen for [JOB TITLE]. Include: a short intro to the role and company, 6 questions tied to the must-have requirements [REQUIREMENTS], questions on logistics (availability, location, pay expectations), time for their questions, and next steps. Only job-related questions: nothing about age, family, health, religion, national origin or other protected characteristics. ${LEGAL}`,
+      tip: "Ask every candidate the same questions in the same order. It makes comparisons fair and defensible.",
+    },
+    {
+      c: "Job Ads & Hiring",
+      t: "Plan: Hiring Plan for a Growing Team",
+      u: "You need to hire several people this year and want a plan.",
+      p: `Create a hiring plan for [COMPANY] for the next [MONTHS] months. Roles needed: [ROLES WITH TARGET START DATES]. For each: priority, budget range [BUDGET], sourcing channels, time to hire estimate, interviewers, and onboarding owner. Add a timeline, risks (for example, too many hires in one month), and 4 metrics to track (time to hire, offer acceptance, source of hire, 90-day retention).`,
+      tip: "Stagger start dates. Onboarding three people in one week overloads the team and the new hires both.",
+    },
+    {
+      c: "Job Ads & Hiring",
+      t: "Referral: Employee Referral Program Announcement",
+      u: "You want more hires through employee referrals.",
+      p: `Write an announcement for an employee referral program at [COMPANY]. How it works [PROCESS], open roles [ROLES OR LINK], reward and when it is paid [REWARD, e.g. after 90 days], and tips on who to refer. Under 200 words, enthusiastic but clear. Add a note encouraging referrals from diverse networks to widen the talent pool.`,
+      tip: "Referrals tend to mirror the current team. Encourage referrals from different networks so the pool widens rather than narrows.",
+    },
+
+    // ── Interviews & Candidate Communication ──
+    {
+      c: "Interviews & Candidate Communication",
+      t: "Interview: Structured Behavioural Interview Questions",
+      u: "You want interview questions that predict performance, not charm.",
+      p: `Act as an interview design specialist. Create a structured interview for [JOB TITLE] based on these competencies: [COMPETENCIES]. For each competency: 2 behavioural questions ('Tell me about a time...'), follow-up probes, and a scoring guide describing weak, good and strong answers. 45 minutes total. Job-related questions only.`,
+      tip: "Score each answer right after it is given, before discussing with others; it reduces groupthink.",
+    },
+    {
+      c: "Interviews & Candidate Communication",
+      t: "Exercise: Work Sample Task for Candidates",
+      u: "You want to see how candidates actually do the work.",
+      p: `Design a work sample exercise for [JOB TITLE] that takes no more than [TIME, e.g. 60 minutes]. It should reflect real work [TYPICAL TASK], include clear instructions and what to submit, and come with a scoring rubric tied to the scorecard [COMPETENCIES]. Note that it should be paid or kept short, and that it will not be used in our business.`,
+      tip: "Keep take-home tasks short or pay for them. Long unpaid tasks drive away the best candidates.",
+    },
+    {
+      c: "Interviews & Candidate Communication",
+      t: "Email: Interview Invitation",
+      u: "You want candidates to arrive prepared and relaxed.",
+      p: `Write an interview invitation for [CANDIDATE PLACEHOLDER] for [JOB TITLE] at [COMPANY]. Include: date and time [DATE AND TIME], format and location or link [DETAILS], who they will meet and their roles [INTERVIEWERS], what to expect (length, format, any exercise), how to request accommodations, and a contact for questions. Warm, under 180 words.`,
+      tip: "Offering accommodations in every invitation is both inclusive and, under the ADA, good practice.",
+    },
+    {
+      c: "Interviews & Candidate Communication",
+      t: "Email: Rejection That Leaves a Good Impression",
+      u: "You need to decline candidates respectfully.",
+      p: `Write 3 rejection emails for [JOB TITLE] at [COMPANY]: after application review, after a first interview, and after a final interview (with an offer of brief feedback [IF WE OFFER IT]). Each under 120 words, respectful, clear that the decision is final, and without detailed reasons that could be misread. Thank them sincerely.`,
+      tip: "Candidates who are rejected well often reapply or refer others. Never leave people without an answer.",
+    },
+    {
+      c: "Interviews & Candidate Communication",
+      t: "Offer: Offer Letter First Draft",
+      u: "You are making an offer and need a clear offer letter.",
+      p: `Draft an offer letter for [JOB TITLE] at [COMPANY]. Details: start date [DATE], pay [PAY AND FREQUENCY], exempt or non-exempt status [STATUS], schedule [HOURS], benefits summary [BENEFITS], location or remote terms, contingencies [BACKGROUND CHECK, REFERENCES], at-will statement if applicable, and deadline to accept [DATE]. Warm opening, clear terms. ${LEGAL}`,
+      tip: "Call with the offer first, then send the letter. The call is where you hear concerns early.",
+    },
+    {
+      c: "Interviews & Candidate Communication",
+      t: "Script: Negotiating a Job Offer",
+      u: "A candidate has come back asking for more and you want to handle it well.",
+      p: `Write a guide for responding to a candidate who asked for [REQUEST, e.g. higher salary, sign-on bonus, remote days] after an offer for [JOB TITLE]. Our constraints: [BUDGET, BANDS, POLICIES]. Include questions to understand what matters most to them, options within our limits, how to say no to parts of the request, and how to close. Respectful, fair to existing staff pay equity.`,
+      tip: "Check pay equity with current team members before agreeing to a higher number; it avoids problems later.",
+    },
+    {
+      c: "Interviews & Candidate Communication",
+      t: "Guide: Interviewer Training One-Pager",
+      u: "Managers interview inconsistently and sometimes ask risky questions.",
+      p: `Create a one-page interviewer guide for managers at [COMPANY]: how to use the scorecard, structured questions, taking notes on evidence (not impressions), common biases (halo effect, similarity bias) and how to reduce them, and questions never to ask (age, family plans, religion, health, national origin, arrest record depending on local law). ${LEGAL}`,
+      tip: "A 30-minute training with this one-pager prevents most risky interview questions.",
+    },
+    {
+      c: "Interviews & Candidate Communication",
+      t: "Debrief: Hiring Decision Meeting Agenda",
+      u: "You want interview debriefs based on evidence.",
+      p: `Create a 30-minute hiring debrief agenda for [JOB TITLE]. Steps: each interviewer submits scores before the meeting, discussion competency by competency with evidence, concerns and how to test them (references), decision, and next steps. Add a rule that the most senior person speaks last, and a simple decision record template.`,
+      tip: "Have the most senior person speak last. Otherwise everyone else anchors on their view.",
+    },
+
+    // ── Onboarding ──
+    {
+      c: "Onboarding",
+      t: "Plan: 30-60-90 Day Onboarding Plan",
+      u: "A new hire starts soon and you want them productive and engaged.",
+      p: `Create a 30-60-90 day onboarding plan for a new [JOB TITLE] at [COMPANY]. For each phase: goals, key relationships to build [PEOPLE BY ROLE], training and tools [TOOLS], first projects [PROJECTS], and check-in questions. Include a first-week schedule and what success looks like at day 90.`,
+      tip: "Give the new hire a small real win in the first two weeks; it sets their confidence for months.",
+    },
+    {
+      c: "Onboarding",
+      t: "Email: Welcome Email Before Day One",
+      u: "You want the new hire excited and prepared for the first day.",
+      p: `Write a welcome email to a new hire starting as [JOB TITLE] on [DATE]. Include: where and when to arrive [LOCATION, TIME] or how to log in if remote, who will meet them [NAME AND ROLE], what the first day looks like, what to bring [DOCUMENTS FOR I-9 OR LOCAL EQUIVALENT], dress or setup notes, and a warm welcome from the team. Under 250 words.`,
+      tip: "Send it a week before. First-day nerves drop sharply when people know exactly where to go.",
+    },
+    {
+      c: "Onboarding",
+      t: "Checklist: HR Onboarding Checklist",
+      u: "You want every new hire's paperwork and setup handled correctly.",
+      p: `Create an onboarding checklist for [COMPANY] in [STATE/COUNTRY]: before day one (offer signed, background check, equipment, accounts), day one (I-9 or local right-to-work verification within deadlines, tax forms, benefits enrollment window, policies acknowledged), first week, and first month. Owner and deadline for each item. ${LEGAL}`,
+      tip: "Missed I-9 deadlines are a common, costly compliance error. Put them on the checklist with dates.",
+    },
+    {
+      c: "Onboarding",
+      t: "Buddy: Buddy Program Guide",
+      u: "You want new hires to have someone to ask the questions they will not ask a manager.",
+      p: `Create a buddy program guide for [COMPANY]: who can be a buddy, what the buddy does in weeks 1 to 4 (daily check-ins, introductions, lunch, showing unwritten rules), what the buddy does not do, time commitment, and 5 conversation starters. Include a short feedback form for both sides at 30 days.`,
+      tip: "Choose buddies from a different team. New hires ask them the questions they would never ask their own manager.",
+    },
+    {
+      c: "Onboarding",
+      t: "Guide: Manager's First Week Checklist for a New Hire",
+      u: "Managers forget key onboarding steps.",
+      p: `Write a checklist for managers welcoming a new [JOB TITLE]: before day one (workspace, access, agenda, team announcement), day one (welcome, expectations, first task), first week (daily check-ins, introductions [KEY PEOPLE], clear 30-day goals), and end of week one (feedback conversation questions). One page.`,
+      tip: "A clear first-week agenda from the manager is the strongest predictor of how supported new hires feel.",
+    },
+    {
+      c: "Onboarding",
+      t: "Survey: New Hire Experience Survey",
+      u: "You want to know how onboarding really went.",
+      p: `Create short new hire surveys for day 30 and day 90 at [COMPANY]. Each under 8 questions: clarity of role, support from manager and team, tools and training, whether the job matches what was described, and one open question. Add how to use the results and who follows up.`,
+      tip: "The 'does the job match what we told you' question is the early warning for regretted turnover.",
+    },
+    {
+      c: "Onboarding",
+      t: "Remote: Remote Onboarding Plan",
+      u: "Your new hire is fully remote and you want them connected.",
+      p: `Create a remote onboarding plan for a [JOB TITLE] at [COMPANY]. Include: equipment shipped before day one, a day-one video welcome, scheduled 1:1 introductions [KEY ROLES], documentation to read, a virtual buddy, team rituals to join, overlap hours [TIME ZONES], and check-ins at weeks 1, 2 and 4.`,
+      tip: "Schedule short 1:1 intros with 8 to 10 colleagues in the first two weeks. Remote hires rarely get these by chance.",
+    },
+
+    // ── Policies & Handbooks ──
+    {
+      c: "Policies & Handbooks",
+      t: "Policy: Draft a Plain-Language Workplace Policy",
+      u: "You need a new policy and want it clear enough that people actually follow it.",
+      p: `Draft a plain-language [POLICY TOPIC, e.g. remote work, time off, expenses] policy for [COMPANY] with [NUMBER] employees in [STATE/COUNTRY]. Sections: purpose, who it applies to, the rules, how to request or report, manager responsibilities, and exceptions. Under 600 words, friendly but clear. ${LEGAL}`,
+      tip: "Include one or two worked examples in the policy; they answer most of the questions people would otherwise ask HR.",
+    },
+    {
+      c: "Policies & Handbooks",
+      t: "Handbook: Employee Handbook Outline",
+      u: "You are writing or updating an employee handbook.",
+      p: `Create an employee handbook outline for [COMPANY] ([INDUSTRY], [NUMBER] employees, [STATE/COUNTRY]). Sections typically needed: welcome and values, employment basics, pay and hours, time off, benefits, conduct, anti-harassment and equal opportunity, safety, technology and privacy, leaving the company, and acknowledgement. For each, list what to cover. ${LEGAL}`,
+      tip: "Review the handbook every year; employment laws on leave and pay change frequently.",
+    },
+    {
+      c: "Policies & Handbooks",
+      t: "Policy: AI Use Policy for Employees",
+      u: "Employees are using AI tools and you need clear rules.",
+      p: `Draft an AI use policy for employees at [COMPANY]. Cover: approved tools [TOOLS], what data must never be entered (customer data, personal data, confidential information), checking AI output for accuracy, disclosure when AI is used in customer-facing work [IF REQUIRED], use of AI in hiring or employee decisions (human review required), and where to ask questions. Under 600 words.`,
+      tip: "Using AI to screen candidates is regulated in some places (for example New York City). Check before automating hiring decisions.",
+    },
+    {
+      c: "Policies & Handbooks",
+      t: "Explainer: Benefits Summary for Employees",
+      u: "Employees do not understand their benefits.",
+      p: `Write a plain-language benefits summary for employees at [COMPANY]. Benefits: [LIST WITH KEY DETAILS: HEALTH, DENTAL, RETIREMENT MATCH, PTO, LEAVE, PERKS]. For each: what it is, what it costs the employee, how to use it, and who to contact. Under 600 words with headings. Use only the details I provide.`,
+      tip: "Employees undervalue benefits they do not understand; a clear summary is a retention tool.",
+    },
+    {
+      c: "Policies & Handbooks",
+      t: "Policy: Anti-Harassment Policy Review",
+      u: "You want to check your anti-harassment policy covers what it should.",
+      p: `Review this anti-harassment policy: [PASTE POLICY]. Check it covers: protected characteristics under [STATE/COUNTRY] law, examples of prohibited conduct, multiple reporting channels (not only the manager), investigation process, anti-retaliation, confidentiality limits, and training. List gaps and suggest wording. ${LEGAL}`,
+      tip: "Multiple reporting channels matter; a policy that only allows reporting to one's manager fails when the manager is the problem.",
+    },
+    {
+      c: "Policies & Handbooks",
+      t: "FAQ: Leave Policy FAQ",
+      u: "Employees keep asking the same questions about leave.",
+      p: `Write 10 FAQs about leave at [COMPANY] based on our policy [PASTE POLICY SUMMARY]: vacation, sick leave, parental leave, bereavement, jury duty, and how to request. Plain language, 2 to 4 sentences each. Mark anything that depends on law in [STATE/COUNTRY] (for example FMLA eligibility) as [CHECK WITH HR].`,
+      tip: "Publish the FAQ on your intranet and link it in every leave request form.",
+    },
+    {
+      c: "Policies & Handbooks",
+      t: "Announcement: Policy Change Communication",
+      u: "A policy is changing and you want to communicate it clearly and fairly.",
+      p: `Write an announcement to employees at [COMPANY] about a change to [POLICY]. What is changing [CHANGE], effective date [DATE], why [REASON], who is affected, what employees need to do, and where to ask questions [CONTACT]. Put the change and date first. Under 250 words, honest and respectful. Add talking points for managers.`,
+      tip: "Brief managers a day before the announcement so they can answer questions consistently.",
+    },
+
+    // ── Performance & Feedback ──
+    {
+      c: "Performance & Feedback",
+      t: "Review: Write a Fair Performance Review",
+      u: "You have notes on an employee's year and need a balanced review.",
+      p: `Help me write a performance review for a [JOB TITLE]. My notes: [PASTE NOTES WITH SPECIFIC EXAMPLES]. Goals for the period [GOALS] and results [RESULTS]. Structure: summary, strengths with examples, areas to develop with examples, goals for next period, and support offered. Use specific, behaviour-based language, not personality labels. Balanced and fair.`,
+      tip: "Every comment should be backed by an example. 'Great communicator' means little; the example is what the employee remembers.",
+    },
+    {
+      c: "Performance & Feedback",
+      t: "Goals: Write Clear Goals for an Employee",
+      u: "Goals are vague and hard to measure.",
+      p: `Turn these into 4 clear goals for a [JOB TITLE] for [PERIOD]: [WHAT I WANT THEM TO ACHIEVE]. Each goal: specific outcome, how it will be measured, target date, and how it connects to team priorities [PRIORITIES]. Add one development goal for their growth.`,
+      tip: "Agree goals with the employee rather than handing them over; commitment follows involvement.",
+    },
+    {
+      c: "Performance & Feedback",
+      t: "Script: Giving Constructive Feedback",
+      u: "You need to give feedback that changes behaviour without damaging the relationship.",
+      p: `Help me prepare feedback for a team member about [ISSUE]. Specific examples: [EXAMPLES]. Impact: [IMPACT]. Use a clear structure (situation, behaviour, impact, request), include how to open the conversation, questions to hear their side, and how to agree next steps. Write it as talking points, respectful and direct.`,
+      tip: "Give feedback within days of the event. Feedback saved for the annual review rarely changes anything.",
+    },
+    {
+      c: "Performance & Feedback",
+      t: "Plan: Performance Improvement Plan",
+      u: "An employee is not meeting expectations and needs a formal improvement plan.",
+      p: `Draft a performance improvement plan for a [JOB TITLE]. Performance gaps with examples [GAPS]. Expectations [EXPECTATIONS]. Support offered [TRAINING, COACHING, RESOURCES]. Duration [WEEKS] with check-in dates. Measurable success criteria. Consequences stated factually [CONSEQUENCE PER POLICY]. Fair, specific and respectful. ${LEGAL}`,
+      tip: "A PIP should be a genuine chance to succeed. Specific support and weekly check-ins are what make it fair and defensible.",
+    },
+    {
+      c: "Performance & Feedback",
+      t: "One-on-One: Meeting Template and Questions",
+      u: "Your one-on-ones have become status updates.",
+      p: `Create a one-on-one meeting template for managers at [COMPANY]: employee's agenda first, wins, blockers, feedback both ways, growth and career, and actions. Add 15 rotating questions that go beyond status (for example 'What is one thing that would make your work easier?'). 30 minutes.`,
+      tip: "Let the employee set most of the agenda. It becomes their meeting, and they bring the real issues.",
+    },
+    {
+      c: "Performance & Feedback",
+      t: "Recognition: Writing Meaningful Recognition",
+      u: "You want recognition that feels genuine, not generic.",
+      p: `Write 3 short recognition messages for [EMPLOYEE ROLE] who [ACHIEVEMENT]. One for a team channel, one private note from their manager, and one for a company newsletter. Mention the specific action, its impact [IMPACT], and the value it reflects [VALUE]. Under 80 words each.`,
+      tip: "Specific beats frequent. One detailed thank-you outweighs ten 'great job' messages.",
+    },
+    {
+      c: "Performance & Feedback",
+      t: "Calibration: Performance Calibration Meeting Guide",
+      u: "Managers rate differently and you want consistency across teams.",
+      p: `Create a guide for a performance calibration meeting at [COMPANY]: preparation (ratings and evidence submitted in advance), rating definitions [SCALE], discussion order, questions to challenge ratings with evidence, checks for bias (recency, similarity, demographic patterns in ratings), and how decisions are recorded. 90 minutes.`,
+      tip: "Look at rating patterns by group after calibration; unexplained gaps are worth a second look.",
+    },
+
+    // ── Employee Communication & Engagement ──
+    {
+      c: "Employee Communication & Engagement",
+      t: "Survey: Engagement Survey Questions",
+      u: "You want to measure engagement and find what to fix.",
+      p: `Design an employee engagement survey for [COMPANY] with 15 questions on a 1 to 5 scale plus 2 open questions. Cover: role clarity, manager support, growth, recognition, workload, belonging, and confidence in leadership. Keep it anonymous and under 10 minutes. Add how to share results and act on them within 30 days.`,
+      tip: "Share results and one action within a month. Surveys with no visible action lower engagement.",
+    },
+    {
+      c: "Employee Communication & Engagement",
+      t: "Newsletter: Internal Company Newsletter",
+      u: "You want an internal update people actually read.",
+      p: `Write a monthly internal newsletter for [COMPANY]. Sections: message from leadership [KEY POINTS], wins and milestones [WINS], welcome to new starters [NAMES AND ROLES WITH CONSENT], upcoming dates, a spotlight on one team [TEAM], and one useful reminder [REMINDER]. Under 500 words, warm and human.`,
+      tip: "Team spotlights written by the team itself get read more than leadership updates.",
+    },
+    {
+      c: "Employee Communication & Engagement",
+      t: "Town Hall: All-Hands Meeting Agenda and Script",
+      u: "You are running an all-hands meeting and want it clear and engaging.",
+      p: `Plan a [LENGTH] all-hands meeting for [COMPANY]. Topics: [TOPICS]. Include: agenda with timings, key messages for each topic, how to handle difficult questions honestly, an anonymous Q&A option, and a follow-up email summary template.`,
+      tip: "Take anonymous questions in advance and answer the hardest one first; it builds more trust than anything else you say.",
+    },
+    {
+      c: "Employee Communication & Engagement",
+      t: "Change: Communicating an Organisational Change",
+      u: "A restructure or big change is coming and you need to communicate it well.",
+      p: `Create a communication plan for [CHANGE] at [COMPANY]. Include: sequence (who hears first: leaders, affected people, everyone), key messages (what, why, what it means for people, what happens next), FAQ draft, manager talking points, timeline, and how to gather reactions. Honest and humane.`,
+      tip: "Affected people should hear first and in person, never in an all-staff email.",
+    },
+    {
+      c: "Employee Communication & Engagement",
+      t: "Wellbeing: Mental Health and Wellbeing Resources Message",
+      u: "You want employees to know what support exists.",
+      p: `Write a message to employees at [COMPANY] about wellbeing support: [RESOURCES, e.g. EAP, mental health days, benefits]. Explain how to access each confidentially, that using them will not affect their job, and who to talk to. Warm, stigma-free, under 250 words. Include crisis contacts (988 in the US) [OR LOCAL EQUIVALENT].`,
+      tip: "Remind people about the EAP regularly, not only in crises; most employees forget they have one.",
+    },
+    {
+      c: "Employee Communication & Engagement",
+      t: "Stay Interview: Questions to Keep Great People",
+      u: "You want to understand why your best people stay and what might make them leave.",
+      p: `Create a stay interview guide for managers at [COMPANY]: 10 questions (for example 'What keeps you here?', 'What might tempt you away?', 'What would you change about your role?'), how to open the conversation so it feels safe, how to take notes, and how to follow up with at least one action. 30 minutes.`,
+      tip: "Stay interviews reveal what exit interviews reveal too late. Do them with top performers first.",
+    },
+    {
+      c: "Employee Communication & Engagement",
+      t: "DEI: Inclusive Meeting and Team Practices",
+      u: "You want day-to-day practices that help everyone contribute.",
+      p: `Create a practical guide for managers at [COMPANY] on inclusive team practices: running meetings so everyone contributes, scheduling across time zones and caring responsibilities, fair assignment of high-visibility work, inclusive social events, and handling offhand comments. Give 3 concrete actions per area.`,
+      tip: "Rotating who leads meetings and who gets visible projects does more than any one-off training.",
+    },
+
+    // ── Difficult Conversations & Offboarding ──
+    {
+      c: "Difficult Conversations & Offboarding",
+      t: "Investigation: Workplace Complaint Investigation Plan",
+      u: "An employee raised a complaint and you need a fair investigation.",
+      p: `Create an investigation plan for a complaint about [TYPE OF CONCERN, e.g. harassment, misconduct]. Include: immediate steps (interim measures, anti-retaliation reminder), investigator selection, interview order and question outlines for complainant, respondent and witnesses (open, non-leading), evidence to gather, documentation, timeline, and findings report structure. No names; use roles. ${LEGAL}`,
+      tip: "Serious or senior-level complaints often warrant an external investigator. Decide early.",
+    },
+    {
+      c: "Difficult Conversations & Offboarding",
+      t: "Script: Termination Meeting Script",
+      u: "You have to let someone go and want to do it respectfully and clearly.",
+      p: `Write a termination meeting guide for a [JOB TITLE] being dismissed for [REASON CATEGORY, e.g. performance after PIP, role elimination]. Include: who attends, a short, clear opening that states the decision in the first minute, what to say and not say, final pay and benefits information [DETAILS], return of property, next steps, and how to end with dignity. 10 to 15 minutes. ${LEGAL}`,
+      tip: "State the decision in the first minute. Long preambles make the conversation crueller, not kinder.",
+    },
+    {
+      c: "Difficult Conversations & Offboarding",
+      t: "Layoff: Layoff Communication Plan",
+      u: "You need to reduce headcount and want to do it humanely.",
+      p: `Create a layoff communication plan for [COMPANY] affecting [NUMBER] people. Include: sequence and timing (affected people first, same day for all), notification meeting script, what affected people receive in writing (severance, benefits, references, outplacement [DETAILS]), message to remaining staff, manager talking points, and external questions. Check notice requirements such as the WARN Act. ${LEGAL}`,
+      tip: "How you treat people leaving is watched closely by those staying. It shapes trust for years.",
+    },
+    {
+      c: "Difficult Conversations & Offboarding",
+      t: "Exit: Exit Interview Questions",
+      u: "People are leaving and you want honest reasons.",
+      p: `Create an exit interview guide for [COMPANY]: 10 questions on reasons for leaving, manager relationship, growth, pay and workload, what would have kept them, and what we should keep doing. Include how to make it feel safe, who should conduct it (not their manager), and how to analyse themes quarterly.`,
+      tip: "Look for themes across several exits; single interviews can mislead.",
+    },
+    {
+      c: "Difficult Conversations & Offboarding",
+      t: "Checklist: Offboarding Checklist",
+      u: "You want departures handled smoothly and securely.",
+      p: `Create an offboarding checklist for [COMPANY] in [STATE/COUNTRY]: resignation acknowledgement, final pay timing rules [CHECK STATE LAW], benefits and COBRA or local equivalent notices, knowledge handover, access removal on the last day, equipment return, exit interview, and announcement to the team. Owner and timing for each. ${LEGAL}`,
+      tip: "Remove system access at the end of the last day, every time. It is one of the most common security gaps.",
+    },
+    {
+      c: "Difficult Conversations & Offboarding",
+      t: "Script: Addressing a Conflict Between Two Employees",
+      u: "Two team members are in conflict and it is affecting the team.",
+      p: `Create a plan for resolving a conflict between two employees over [ISSUE]. Include: separate conversations first (questions to ask each), when a joint meeting is appropriate, a facilitation structure for the joint meeting, agreements to capture, follow-up check-ins, and when to escalate (for example if harassment is alleged). Neutral and fair.`,
+      tip: "Meet each person separately first. Joint meetings before that often make conflicts worse.",
+    },
+    {
+      c: "Difficult Conversations & Offboarding",
+      t: "Email: Responding to a Resignation",
+      u: "A valued employee resigned and you want to respond well.",
+      p: `Write a response to a resignation from [ROLE] with last day [DATE]. Thank them sincerely, confirm the last day, outline next steps (handover, exit interview, final pay [TIMING]), and leave the door open. Warm and professional, under 150 words. Add talking points for telling the team.`,
+      tip: "Boomerang employees are common. How you handle a resignation decides whether they come back.",
+    },
+
+    // ── HR Operations, Compliance & Analytics ──
+    {
+      c: "HR Operations, Compliance & Analytics",
+      t: "Checklist: HR Compliance Calendar",
+      u: "You want to stay on top of recurring HR compliance deadlines.",
+      p: `Create an annual HR compliance calendar for a [NUMBER]-employee company in [STATE/COUNTRY]: required postings, filings (for example EEO-1 if applicable, ACA reporting, OSHA logs), benefits open enrollment, policy reviews, required training (for example harassment prevention where mandated), and pay transparency updates. Month by month with owners. ${LEGAL}`,
+      tip: "Put every deadline in a shared calendar with two reminders and two owners.",
+    },
+    {
+      c: "HR Operations, Compliance & Analytics",
+      t: "Analysis: Turnover Analysis",
+      u: "Turnover is rising and you need to understand why.",
+      p: `Analyse turnover at [COMPANY] from this data: [HEADCOUNT, LEAVERS BY MONTH, TEAM, TENURE, REASON, VOLUNTARY OR NOT]. Calculate overall and voluntary turnover rates, 90-day and first-year turnover, and patterns by team and tenure. Suggest likely causes and 5 actions. Show calculations and do not invent data.`,
+      tip: "Early turnover (first 90 days) usually points to hiring or onboarding, not pay.",
+    },
+    {
+      c: "HR Operations, Compliance & Analytics",
+      t: "Pay: Salary Band Framework",
+      u: "Pay decisions are inconsistent and you want salary bands.",
+      p: `Help me build salary bands for [COMPANY] with roles [ROLES AND LEVELS]. Market data I have: [DATA SOURCES AND FIGURES]. Produce: a leveling framework (what distinguishes each level), band minimum, midpoint and maximum with the spread logic, how to place current employees, and how to handle people outside the band. Show calculations; do not invent market data.`,
+      tip: "Publish how bands work, even if not the numbers. Clarity about the process builds trust.",
+    },
+    {
+      c: "HR Operations, Compliance & Analytics",
+      t: "Audit: Pay Equity Review Plan",
+      u: "You want to check for unexplained pay gaps.",
+      p: `Create a pay equity review plan for [COMPANY]: data needed (role, level, pay, tenure, performance, location, demographic data where lawfully held), how to group comparable roles, how to identify gaps not explained by legitimate factors, how to fix gaps and budget for it, and how to document the review. Recommend doing it under legal privilege where appropriate. ${LEGAL}`,
+      tip: "Run the review before setting raises, so fixes can be built into the normal cycle.",
+    },
+    {
+      c: "HR Operations, Compliance & Analytics",
+      t: "Report: HR Metrics Dashboard for Leadership",
+      u: "Leadership wants a monthly people report.",
+      p: `Design a monthly HR dashboard for [COMPANY]'s leadership: headcount and hires, turnover (voluntary and 90-day), time to hire, offer acceptance rate, absence, engagement score [IF MEASURED], and diversity data [IF LAWFULLY COLLECTED]. For each: definition, formula, target, and what action to consider when it moves. Then write the narrative for this month's figures: [FIGURES].`,
+      tip: "Five metrics with a story beat twenty metrics nobody reads.",
+    },
+    {
+      c: "HR Operations, Compliance & Analytics",
+      t: "Training: Manager Training Program Outline",
+      u: "Managers were promoted for their skills, not their management, and need training.",
+      p: `Design a 6-session training program for new managers at [COMPANY]: role of a manager, one-on-ones and feedback, goal setting, handling performance issues, hiring and interviewing fairly, and employment law basics [STATE/COUNTRY]. Each session: objectives, 60-minute outline, practice activity, and a take-away tool.`,
+      tip: "Practice beats slides. Role-play the hard conversations in every session.",
+    },
+    {
+      c: "HR Operations, Compliance & Analytics",
+      t: "Power Prompt: Build a People Strategy for the Year",
+      u: "You want an HR plan tied to where the business is going.",
+      p: `Act as a seasoned HR director. Company: [SIZE, INDUSTRY, GROWTH PLANS, CURRENT CHALLENGES]. Build a 12-month people strategy: hiring plan, onboarding, performance and development, pay and benefits, engagement and retention, compliance, and HR systems. For each area: current gap, priority actions, owner, budget estimate, and metric. Finish with the top 5 priorities for the next 90 days.`,
+      tip: "Tie every HR priority to a business goal. It is how HR gets budget and attention.",
+    },
+  ],
+};
