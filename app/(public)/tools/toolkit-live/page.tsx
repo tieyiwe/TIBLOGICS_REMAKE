@@ -76,7 +76,7 @@ export default async function ToolkitLivePage({ searchParams }: { searchParams: 
               <Sparkles size={13} /> Toolkit Live
             </span>
             <h1 className="font-syne font-extrabold text-4xl md:text-6xl text-white mt-4 leading-[1.05]">
-              Powerful prompts, built the way top performers work.
+              Powerful prompts, built the way top performers in your field work.
             </h1>
             <p className="font-dm text-lg text-white/80 mt-5">
               {LIBRARY_SIZE} ready-to-run prompts for real estate, finance, nonprofits, agencies and restaurants. They are
