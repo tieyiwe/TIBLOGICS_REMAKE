@@ -135,10 +135,10 @@ export default async function LearnDashboard() {
               <Link
                 key={track.id}
                 href={`/learn/track/${track.slug}`}
-                className="flex items-center gap-4 rounded-2xl border border-[var(--border)] bg-white p-5 transition-shadow hover:shadow-md"
+                className="flex min-w-0 items-center gap-4 rounded-2xl border border-[var(--border)] bg-white p-5 transition-shadow hover:shadow-md"
               >
                 <ProgressRing percent={progress.percent} color={track.accentColor} />
-                <span className="min-w-0">
+                <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-bold text-[var(--ink)]">
                     {track.title}
                   </span>

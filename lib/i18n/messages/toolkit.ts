@@ -146,7 +146,7 @@ const UI: Row[] = [
   ["toolkit.api.checkoutFailed", "Could not start checkout. Please try again.", "Impossible de lancer le paiement. Veuillez réessayer.", "Imeshindwa kuanza malipo. Tafadhali jaribu tena."],
   ["toolkit.api.invalid", "Invalid request", "Requête invalide", "Ombi si sahihi"],
   ["toolkit.api.invalidField", "Invalid {field}", "{field} : valeur invalide", "{field}: thamani si sahihi"],
-  ["toolkit.api.fieldTooLong", "{field} is too long (max {n} characters)", "{field} : texte trop long ({n} caractères maximum)", "{field}: maandishi ni marefu mno (herufi {n} zaidi)"],
+  ["toolkit.api.fieldTooLong", "{field} is too long (max {n} characters)", "{field} : texte trop long ({n} caractères maximum)", "{field}: maandishi ni marefu mno (isizidi herufi {n})"],
   ["toolkit.api.unknownIndustry", "Unknown industry", "Secteur inconnu", "Sekta haijulikani"],
 
   // ── Industries (profile and Compliance Guard menus) ──
