@@ -7,7 +7,7 @@ const Body = z.object({
   accessibilityMode: z.boolean().optional(),
   leaderboardOptIn: z.boolean().optional(),
   name: z.string().trim().min(1).max(100).optional(),
-  locale: z.enum(["en", "fr"]).optional(),
+  locale: z.enum(["en", "fr", "sw"]).optional(),
 });
 
 export async function PATCH(req: NextRequest) {

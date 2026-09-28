@@ -8,6 +8,7 @@ import { awardPoints, getTotalPoints } from "@/lib/learn/points";
 import { checkLevelUp } from "@/lib/learn/milestones";
 import { parseConfig, parseObjectives, type LabEvaluation } from "@/lib/learn/labs/types";
 import { evaluateBuild, evaluateCritique, evaluatePrompt, evaluateWorkbench } from "@/lib/learn/labs/evaluate";
+import { evaluateCode, MAX_CODE } from "@/lib/learn/labs/code";
 
 export const maxDuration = 120;
 
@@ -23,6 +24,10 @@ const Body = z.object({
   reflection: z.string().max(10000).nullable().optional(),
   // workbench labs: fieldId -> the learner's work
   answers: z.record(z.string().max(60), z.string().max(6000)).optional(),
+  // code labs
+  code: z.string().max(MAX_CODE).optional(),
+  checkResults: z.array(z.object({ id: z.string().max(80), pass: z.boolean(), message: z.string().max(400).optional() })).max(30).optional(),
+  commits: z.array(z.object({ message: z.string().max(200), at: z.string().max(40) })).max(60).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -37,7 +42,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid request" }, { status: 400 });
   }
-  const { labId, prompt, selections, checked, artifactUrl, reflection, answers } = parsed.data;
+  const { labId, prompt, selections, checked, artifactUrl, reflection, answers, code, checkResults, commits } = parsed.data;
 
   try {
     const lab = await prisma.lab.findUnique({ where: { id: labId } });
@@ -74,6 +79,27 @@ export async function POST(req: NextRequest) {
         objectives,
         lab.passScore,
       );
+    } else if (config.kind === "code") {
+      if (!code?.trim()) return NextResponse.json({ error: "There is no code to submit yet." }, { status: 400 });
+      const work: Record<string, string> = {};
+      for (const f of config.fields ?? []) work[f.id] = (answers?.[f.id] ?? "").trim();
+      const missing = (config.fields ?? []).filter((f) => !work[f.id]);
+      if (missing.length) {
+        return NextResponse.json({ error: `Fill in every written part (missing: ${missing.map((f) => f.label).join(", ")}).` }, { status: 400 });
+      }
+      const transcript = Array.isArray(attempt?.transcript) ? (attempt!.transcript as Array<{ prompt?: string }>) : [];
+      submission = { code, checkResults: checkResults ?? [], commits: commits ?? [], answers: work };
+      evaluation = await evaluateCode({
+        brief: lab.briefMd,
+        config,
+        code,
+        checks: checkResults ?? [],
+        commits: commits ?? [],
+        requests: transcript.map((t) => String(t.prompt ?? "")),
+        answers: work,
+        objectives,
+        passScore: lab.passScore,
+      });
     } else if (config.kind === "workbench") {
       // Only the lab's own fields are kept, so a crafted request cannot smuggle
       // extra text into what the grader reads.

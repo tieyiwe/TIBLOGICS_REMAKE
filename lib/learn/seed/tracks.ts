@@ -4,24 +4,29 @@ import { TRACK_1_CAPSTONE, TRACK_1_FINAL_EXAM, TRACK_1_MODULES_3_TO_7 } from "./
 import { TRACK_1_LABS } from "./labs-track-1";
 import { TRACK_1_MODULE_8, TRACK_1_MODULE_8_EXAM } from "./track-1-module-8";
 import { TRACK_1_MODULE_8_LABS } from "./labs-track-1-module-8";
+import { TRACK_1_MODULE_9, TRACK_1_MODULE_9_EXAM } from "./track-1-module-9";
+import { TRACK_1_MODULE_9_LABS } from "./labs-track-1-module-9";
 import { AI_PRACTITIONER } from "./track-2";
 import { AI_SYSTEMS_EXPERT } from "./track-3";
+import { VIBE_CODING_ENGINEER } from "./track-4";
+import { AI_FOR_PARENTS } from "./track-parents";
+import { AI_FORWARD_PROFESSIONAL } from "./track-ai-forward";
 
 // Track 1 (Level 1 · Basic) is assembled from its content files. Module 8,
 // "Seeing the Whole System", is appended rather than inserted so the existing
 // labs' and exam questions' 1-based module numbers stay valid.
 const AI_FOUNDATIONS: SeedTrack = {
   ...TRACK_1,
-  // 12h of lessons plus Module 8's 70 minutes.
-  estimatedHours: 13,
-  estimatedWeeksAt3Hrs: 5,
-  modules: [...TRACK_1.modules, ...TRACK_1_MODULES_3_TO_7, ...TRACK_1_MODULE_8],
+  // 12h of lessons, Module 8's 70 minutes and Module 9 (AI Fluency)'s 85.
+  estimatedHours: 14.5,
+  estimatedWeeksAt3Hrs: 6,
+  modules: [...TRACK_1.modules, ...TRACK_1_MODULES_3_TO_7, ...TRACK_1_MODULE_8, ...TRACK_1_MODULE_9],
   finalExam: {
     ...TRACK_1_FINAL_EXAM,
-    questions: [...TRACK_1_FINAL_EXAM.questions, ...TRACK_1_MODULE_8_EXAM],
+    questions: [...TRACK_1_FINAL_EXAM.questions, ...TRACK_1_MODULE_8_EXAM, ...TRACK_1_MODULE_9_EXAM],
   },
   capstone: TRACK_1_CAPSTONE,
-  labs: [...TRACK_1_LABS, ...TRACK_1_MODULE_8_LABS],
+  labs: [...TRACK_1_LABS, ...TRACK_1_MODULE_8_LABS, ...TRACK_1_MODULE_9_LABS],
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -179,6 +184,9 @@ export const TRACKS: SeedTrack[] = [
   AI_FOUNDATIONS,
   AI_PRACTITIONER,
   AI_SYSTEMS_EXPERT,
+  VIBE_CODING_ENGINEER,
+  AI_FOR_PARENTS,
+  AI_FORWARD_PROFESSIONAL,
   AI_FOR_BUSINESS,
   PROMPT_ENGINEERING,
   AI_AUTOMATION,

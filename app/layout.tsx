@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Lora, Plus_Jakarta_Sans, Cormorant_Garamond, Cinzel } from "next/font/google";
 import "./globals.css";
+import { getLocale } from "@/lib/i18n/server";
+import { dictionary } from "@/lib/i18n/messages";
+import { I18nProvider } from "@/lib/i18n/client";
 
 const syne = Lora({
   subsets: ["latin"],
@@ -177,7 +180,7 @@ const jsonLd = {
       name: SITE_NAME,
       description: DEFAULT_DESC,
       publisher: { "@id": `${SITE_URL}/#organization` },
-      inLanguage: ["en-US", "fr"],
+      inLanguage: ["en-US", "fr", "sw"],
       potentialAction: {
         "@type": "SearchAction",
         target: { "@type": "EntryPoint", urlTemplate: `${SITE_URL}/ai-times?search={search_term_string}` },
@@ -227,9 +230,10 @@ const jsonLd = {
   ],
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
   return (
-    <html lang="en" className={`${syne.variable} ${dmSans.variable} ${display.variable} ${masthead.variable}`} suppressHydrationWarning>
+    <html lang={locale} className={`${syne.variable} ${dmSans.variable} ${display.variable} ${masthead.variable}`} suppressHydrationWarning>
       <head>
         {/* Resource hints */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -253,7 +257,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Geo targeting */}
         <meta name="geo.region" content="US" />
         <meta name="geo.placename" content="United States" />
-        <meta name="language" content="en, fr" />
+        <meta name="language" content="en, fr, sw" />
 
         {/* Structured data */}
         <script
@@ -262,7 +266,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           suppressHydrationWarning
         />
       </head>
-      <body className="font-dm antialiased">{children}</body>
+      <body className="font-dm antialiased">
+        <I18nProvider locale={locale} dict={dictionary(locale)}>{children}</I18nProvider>
+      </body>
     </html>
   );
 }

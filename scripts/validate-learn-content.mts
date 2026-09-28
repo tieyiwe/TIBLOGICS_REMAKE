@@ -125,7 +125,7 @@ function checkLabs(labs: any[], where: string) {
     if (!lab.slug || !/^[a-z0-9-]+$/.test(lab.slug)) err(`${at}: slug must be kebab-case`);
     if (slugs.has(lab.slug)) err(`${at}: duplicate slug`);
     slugs.add(lab.slug);
-    if (!["prompt", "critique", "build", "workbench"].includes(lab.labType)) err(`${at}: unknown labType`);
+    if (!["prompt", "critique", "build", "workbench", "code"].includes(lab.labType)) err(`${at}: unknown labType`);
     if (lab.config?.kind !== lab.labType) err(`${at}: config.kind must equal labType`);
     if (!lab.moduleNumber) err(`${at}: needs moduleNumber`);
     if (!Array.isArray(lab.objectives) || lab.objectives.length < 2) err(`${at}: needs at least 2 objectives`);
@@ -148,6 +148,17 @@ function checkLabs(labs: any[], where: string) {
     if (lab.labType === "workbench") {
       if (!Array.isArray(c.fields) || c.fields.length < 3 || c.fields.length > 6) err(`${at}: workbench needs 3-6 fields`);
       (c.fields ?? []).forEach((f: any) => { if (!f.id || !f.label || !f.prompt) err(`${at}: field needs id, label and prompt`); });
+      (lab.objectives ?? []).forEach((o: any) => { if (!o.guidance || o.guidance.length < 40) err(`${at}: objective "${o.id}" needs grading guidance (40+ chars) for the evaluator`); });
+    }
+    if (lab.labType === "code") {
+      if (typeof c.starterCode !== "string") err(`${at}: code lab needs starterCode`);
+      if (!Array.isArray(c.checks) || c.checks.length < 3) err(`${at}: code lab needs at least 3 automated checks`);
+      const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+      (c.checks ?? []).forEach((k: any) => {
+        if (!k.id || !k.label || !k.code) return err(`${at}: every check needs id, label and code`);
+        try { new AsyncFunction("doc", "win", k.code); } catch (e) { err(`${at}: check "${k.id}" is not valid JavaScript: ${(e as Error).message}`); }
+      });
+      if ((c.fields ?? []).length > 3) err(`${at}: code lab takes at most 3 written fields`);
       (lab.objectives ?? []).forEach((o: any) => { if (!o.guidance || o.guidance.length < 40) err(`${at}: objective "${o.id}" needs grading guidance (40+ chars) for the evaluator`); });
     }
     if (lab.labType === "prompt") {

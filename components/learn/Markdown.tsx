@@ -1,4 +1,6 @@
 import React from "react";
+import TryBlock from "./TryBlock";
+import Playground from "./Playground";
 
 // Minimal markdown renderer for admin-authored lesson bodies.
 // Returns React nodes rather than HTML strings — there is no
@@ -68,6 +70,23 @@ function renderInline(text: string, keyPrefix: string): Inline[] {
   }
   if (last < text.length) nodes.push(text.slice(last));
   return nodes;
+}
+
+/**
+ * Fenced blocks. ```try, ```text and ```prompt become runnable prompts that
+ * load into the lesson's practice pad; ```playground becomes a live code
+ * editor with a preview. Anything else is shown as code.
+ */
+function codeBlock(block: { lang: string; lines: string[] }, key: string): React.ReactNode {
+  const lang = block.lang.trim().toLowerCase();
+  const text = block.lines.join("\n");
+  if (lang === "try" || lang === "text" || lang === "prompt") return <TryBlock key={key} text={text} />;
+  if (lang === "playground") return <Playground key={key} code={text} />;
+  return (
+    <pre key={key} className="mb-4 overflow-x-auto rounded-xl bg-[var(--ink)] p-4 text-[13px] leading-relaxed text-white">
+      <code>{text}</code>
+    </pre>
+  );
 }
 
 export default function Markdown({ source }: { source: string }) {
@@ -182,14 +201,7 @@ export default function Markdown({ source }: { source: string }) {
     // Fenced code blocks take precedence over everything
     if (code) {
       if (line.trim().startsWith("```")) {
-        blocks.push(
-          <pre
-            key={`c${k++}`}
-            className="mb-4 overflow-x-auto rounded-xl bg-[var(--ink)] p-4 text-[13px] leading-relaxed text-white"
-          >
-            <code>{code.lines.join("\n")}</code>
-          </pre>,
-        );
+        blocks.push(codeBlock(code, `c${k++}`));
         code = null;
       } else {
         code.lines.push(raw);
@@ -275,13 +287,7 @@ export default function Markdown({ source }: { source: string }) {
   }
 
   // Close anything still open at EOF
-  if (code) {
-    blocks.push(
-      <pre key={`c${k++}`} className="mb-4 overflow-x-auto rounded-xl bg-[var(--ink)] p-4 text-[13px] text-white">
-        <code>{code.lines.join("\n")}</code>
-      </pre>,
-    );
-  }
+  if (code) blocks.push(codeBlock(code, `c${k++}`));
   flushAll();
 
   return <div className="max-w-none">{blocks}</div>;

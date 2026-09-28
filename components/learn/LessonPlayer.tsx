@@ -6,6 +6,7 @@ import { useState } from "react";
 import LessonVideo from "./LessonVideo";
 import MicroCheck from "./MicroCheck";
 import PracticePanel from "./PracticePanel";
+import PracticePad from "./PracticePad";
 import Markdown from "./Markdown";
 import { formatMinutes } from "@/lib/learn/types";
 
@@ -133,6 +134,11 @@ export default function LessonPlayer({
             <PracticePanel resources={resources} accentColor={accentColor} />
           </div>
         )}
+
+        {/* Built-in AI practice pad: every lesson is hands-on */}
+        <div className="mt-6">
+          <PracticePad lessonId={lesson.id} bodyMd={lesson.bodyMd} accentColor={accentColor} />
+        </div>
 
         {/* Quick check */}
         {microCheck && (

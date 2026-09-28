@@ -118,9 +118,10 @@ export default function HeroScanner() {
 
         <div className="relative">
           <div className="flex items-center gap-2 text-[11px] font-dm font-semibold uppercase tracking-[0.18em] text-[#F47C20]">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-[#F47C20] opacity-75 motion-safe:animate-ping" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#F47C20]" />
+            {/* Green "live" pulse with an orange ring, so it reads as on-air rather than as a brand accent. */}
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-70 motion-safe:animate-ping" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#22C55E] ring-2 ring-[#F47C20]" />
             </span>
             Live website scan
           </div>

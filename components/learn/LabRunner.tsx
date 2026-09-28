@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import Markdown from "./Markdown";
+import CodeStudio, { type StudioCheck, type StudioSubmission } from "./CodeStudio";
 import { LAB_TYPE_META, type LabObjective, type LabType } from "@/lib/learn/labs/types";
 
 interface Breakdown {
@@ -45,6 +46,9 @@ export interface LabView {
   requireArtifact?: boolean;
   artifactLabel?: string;
   fields?: Array<{ id: string; label: string; prompt: string; placeholder?: string; minWords?: number }>;
+  // code labs
+  starterCode?: string;
+  checks?: StudioCheck[];
 }
 
 export default function LabRunner({
@@ -166,11 +170,11 @@ export default function LabRunner({
     }
   }
 
-  async function submit() {
+  async function submit(extra?: StudioSubmission) {
     setBusy(true);
     setError("");
     try {
-      const body: Record<string, unknown> = { labId: lab.id };
+      const body: Record<string, unknown> = { labId: lab.id, ...(extra ?? {}) };
       if (lab.labType === "prompt") body.prompt = prompt;
       if (lab.labType === "critique") body.selections = [...selected];
       if (lab.labType === "workbench") body.answers = answers;
@@ -188,9 +192,9 @@ export default function LabRunner({
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Could not score your lab");
       setResult(data);
-      if (lab.labType === "workbench") {
+      if (lab.labType === "workbench" || lab.labType === "code") {
         try {
-          window.localStorage.removeItem(draftKey);
+          window.localStorage.removeItem(lab.labType === "code" ? `tiblogics:code-lab:${lab.id}` : draftKey);
         } catch {
           /* nothing to clear */
         }
@@ -357,6 +361,22 @@ export default function LabRunner({
             </section>
           )}
 
+          {/* CODE STUDIO */}
+          {lab.labType === "code" && (
+            <CodeStudio
+              labId={lab.id}
+              starterCode={lab.starterCode ?? ""}
+              checks={lab.checks ?? []}
+              fields={lab.fields ?? []}
+              maxRuns={lab.maxRuns ?? 12}
+              initialCode={(priorAttempt?.submission?.code as string) || undefined}
+              initialRuns={priorAttempt?.status === "in_progress" ? priorAttempt.runCount : 0}
+              accentColor={accentColor}
+              busy={busy}
+              onSubmit={(s) => submit(s)}
+            />
+          )}
+
           {/* PROMPT LAB */}
           {lab.labType === "prompt" && (
             <section className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
@@ -370,6 +390,13 @@ export default function LabRunner({
                 Write your prompt, run it against a real model, and refine it. You're graded on the
                 prompt — not on how good the model's answer happened to be.
               </p>
+
+              {lab.contextMd && (
+                <details className="mt-4 rounded-xl bg-[var(--s2)] p-4" open>
+                  <summary className="cursor-pointer text-sm font-semibold text-[var(--ink)]">Material the AI receives with your prompt</summary>
+                  <div className="mt-2 max-h-72 overflow-auto"><Markdown source={lab.contextMd} /></div>
+                </details>
+              )}
 
               <textarea
                 rows={8}
@@ -389,7 +416,7 @@ export default function LabRunner({
                   {busy ? "Running…" : runsUsed >= maxRuns ? "No runs left" : "▶ Run in sandbox"}
                 </button>
                 <button
-                  onClick={submit}
+                  onClick={() => submit()}
                   disabled={busy || !prompt.trim()}
                   className="rounded-full px-6 py-2.5 text-sm font-bold text-white disabled:opacity-40"
                   style={{ background: accentColor }}
@@ -464,7 +491,7 @@ export default function LabRunner({
                   ))}
                 </ul>
                 <button
-                  onClick={submit}
+                  onClick={() => submit()}
                   disabled={busy || selected.size === 0}
                   className="mt-5 w-full rounded-full py-3.5 text-sm font-bold text-white disabled:opacity-40"
                   style={{ background: accentColor }}
@@ -517,7 +544,7 @@ export default function LabRunner({
               </ol>
 
               <button
-                onClick={submit}
+                onClick={() => submit()}
                 disabled={busy || (lab.fields ?? []).some((f) => !(answers[f.id] ?? "").trim())}
                 className="mt-6 w-full rounded-full py-3.5 text-sm font-bold text-white disabled:opacity-40"
                 style={{ background: accentColor }}
@@ -604,7 +631,7 @@ export default function LabRunner({
               </div>
 
               <button
-                onClick={submit}
+                onClick={() => submit()}
                 disabled={busy}
                 className="mt-5 w-full rounded-full py-3.5 text-sm font-bold text-white disabled:opacity-40"
                 style={{ background: accentColor }}

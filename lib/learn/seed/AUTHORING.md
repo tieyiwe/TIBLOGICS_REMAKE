@@ -145,3 +145,41 @@ Four lab types. Pick the one that best proves the skill.
 - `briefMd` 300+ words: what to produce, in what form, what "good" looks like.
 - Rubric of 4–6 criteria, weights summing to exactly 100. One criterion must
   assess the systems view at that level.
+
+## Interactive blocks inside lessons
+
+Every lesson page has a built-in **AI practice pad** under the lesson, so the
+learner can do the `## Try it now` task without leaving the platform. Make
+lessons hands-on with two special fenced blocks (inside a TypeScript template
+literal, write the fence as \`\`\`):
+
+- ` ```try ` : a prompt the learner can run. It renders with a **Try it**
+  button that loads it into the practice pad, where they can edit it and run
+  it against a real model. Use `[BRACKETS]` for the parts they should change.
+  Use it for every worked prompt example you want them to feel, not just read.
+  Plain ` ```text ` blocks also get a "Try it" button.
+- ` ```playground ` : a complete single-file HTML page (inline CSS and JS)
+  shown in an editable code box with a live preview. For coding lessons: let
+  the learner change a line and watch what happens. Keep it under about 60
+  lines and self-contained (no external scripts or network calls).
+
+## Code Studio labs (`labType: "code"`)
+
+Built in the browser: an editor, a live preview, an AI pair programmer and
+automated checks (see `CodeLabConfig` in lib/learn/labs/types.ts).
+
+- `starterCode`: the file they start from. A skeleton to build on, or
+  working-but-buggy code to fix.
+- `checks`: 3-8 automated checks. Each `code` is the body of an async
+  function `(doc, win)` run against the live preview; return `true` to pass,
+  or a short string saying what is wrong. Select elements by id, and state the
+  ids the learner must use in the brief. Simulate input with `el.value = ...`
+  plus `el.dispatchEvent(new win.Event("input", { bubbles: true }))` or
+  `el.click()`, then `await new Promise(r => setTimeout(r, 50))`.
+- `fields`: 0-3 written parts (a spec, a test plan, a review of what the AI
+  changed). Same shape as workbench fields.
+- Objectives need `guidance` (40+ characters). One objective should be about
+  **how** they worked with the AI (small steps, reviewing changes), not only
+  the result.
+- Provide a reference solution in the track's `solutions.ts` so the checks can
+  be verified to pass on a correct build and fail on the starter code.

@@ -65,6 +65,9 @@ export default async function LabPage({ params }: { params: Promise<{ slug: stri
         }
       : {}),
     ...(config.kind === "workbench" ? { fields: config.fields } : {}),
+    ...(config.kind === "code"
+      ? { starterCode: config.starterCode, checks: config.checks, fields: config.fields ?? [], maxRuns: config.maxRuns }
+      : {}),
     ...(config.kind === "build"
       ? {
           steps: config.steps,

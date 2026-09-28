@@ -3,7 +3,7 @@
 // Three lab kinds share one attempt model. Each has a different evaluator,
 // but all return the same shape so the UI and points path stay uniform.
 
-export const LAB_TYPES = ["prompt", "critique", "build", "workbench"] as const;
+export const LAB_TYPES = ["prompt", "critique", "build", "workbench", "code"] as const;
 export type LabType = (typeof LAB_TYPES)[number];
 
 export const LAB_TYPE_META: Record<
@@ -29,6 +29,11 @@ export const LAB_TYPE_META: Record<
     label: "Workbench lab",
     icon: "🧩",
     blurb: "Do the work right here, step by step, and get it graded against the criteria.",
+  },
+  code: {
+    label: "Code Studio",
+    icon: "💻",
+    blurb: "Build a working app in the browser with an AI pair programmer, a live preview and automated checks.",
   },
 };
 
@@ -105,7 +110,37 @@ export interface WorkbenchLabConfig {
   }>;
 }
 
-export type LabConfig = PromptLabConfig | CritiqueLabConfig | BuildLabConfig | WorkbenchLabConfig;
+/**
+ * Code Studio: a single-file web app (HTML with inline CSS and JavaScript)
+ * built in the browser. The learner has an editor, a live preview in a
+ * sandboxed iframe, an AI pair programmer, and automated checks.
+ *
+ * Checks run in the learner's browser against the preview. Each `code` is the
+ * BODY of an async function called with `(doc, win)`: the preview's document
+ * and window. It returns true to pass, or false or a string (the reason) to
+ * fail; a thrown error also fails. Checks may simulate input, e.g.
+ *   const a = doc.querySelector("#amount"); a.value = "50";
+ *   a.dispatchEvent(new win.Event("input", { bubbles: true }));
+ *   await new Promise(r => setTimeout(r, 50));
+ *   return doc.querySelector("#total").textContent.includes("57.50");
+ *
+ * Grading combines the checks (reported by the browser) with an assessor
+ * reading the final code, the learner's notes and how they worked with the AI.
+ */
+export interface CodeLabConfig {
+  kind: "code";
+  /** The file the editor opens with. May be a near-empty skeleton or buggy code to fix. */
+  starterCode: string;
+  checks: Array<{ id: string; label: string; code: string; hint?: string }>;
+  /** Extra guidance for the AI pair programmer in this lab. */
+  assistantNotes?: string;
+  /** AI pair-programmer requests per attempt. Default 12. */
+  maxRuns?: number;
+  /** Written parts alongside the code: a spec, a review, a test plan. 0-3 fields. */
+  fields?: WorkbenchLabConfig["fields"];
+}
+
+export type LabConfig = PromptLabConfig | CritiqueLabConfig | BuildLabConfig | WorkbenchLabConfig | CodeLabConfig;
 
 // ── Evaluation result ───────────────────────────────────────────────────────
 
@@ -154,6 +189,19 @@ export function parseConfig(labType: string, raw: unknown): LabConfig {
     case "workbench":
       return {
         kind: "workbench",
+        fields: Array.isArray(obj.fields)
+          ? (obj.fields as WorkbenchLabConfig["fields"]).filter((f) => f && f.id && f.label)
+          : [],
+      };
+    case "code":
+      return {
+        kind: "code",
+        starterCode: String(obj.starterCode ?? ""),
+        checks: Array.isArray(obj.checks)
+          ? (obj.checks as CodeLabConfig["checks"]).filter((c) => c && c.id && c.code)
+          : [],
+        assistantNotes: obj.assistantNotes ? String(obj.assistantNotes) : undefined,
+        maxRuns: Number(obj.maxRuns) || 12,
         fields: Array.isArray(obj.fields)
           ? (obj.fields as WorkbenchLabConfig["fields"]).filter((f) => f && f.id && f.label)
           : [],
