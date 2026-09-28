@@ -78,6 +78,7 @@ export default function Markdown({ source }: { source: string }) {
   let list: { ordered: boolean; items: string[] } | null = null;
   let code: { lang: string; lines: string[] } | null = null;
   let quote: string[] = [];
+  let table: string[] = [];
   let k = 0;
 
   const flushParagraph = () => {
@@ -121,7 +122,55 @@ export default function Markdown({ source }: { source: string }) {
     quote = [];
   };
 
+  // GitHub-style tables: a header row, a |---| separator, then body rows. The
+  // new certificate tracks use them for templates and comparisons; without
+  // this they rendered as one run-on paragraph of pipes.
+  const cells = (row: string) =>
+    row.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
+  const isSeparator = (row: string) => /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?$/.test(row.trim());
+  const flushTable = () => {
+    if (table.length === 0) return;
+    const rows = table;
+    table = [];
+    // Not a real table (no separator on line 2): keep the text as a paragraph.
+    if (rows.length < 2 || !isSeparator(rows[1])) {
+      paragraph.push(...rows.map((r) => r.trim()));
+      flushParagraph();
+      return;
+    }
+    const head = cells(rows[0]);
+    const body = rows.slice(2).map(cells);
+    const key = `t${k++}`;
+    blocks.push(
+      <div key={key} className="mb-5 overflow-x-auto rounded-xl border border-[var(--border)]">
+        <table className="w-full border-collapse text-left text-[14px] leading-relaxed">
+          <thead className="bg-[var(--s2)]">
+            <tr>
+              {head.map((c, ci) => (
+                <th key={ci} scope="col" className="border-b border-[var(--border)] px-3 py-2 font-bold text-[var(--ink)]">
+                  {renderInline(c, `${key}-h${ci}`)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {body.map((r, ri) => (
+              <tr key={ri} className="align-top even:bg-[var(--s2)]/40">
+                {head.map((_, ci) => (
+                  <td key={ci} className="border-t border-[var(--border)] px-3 py-2 text-[var(--ink2)]">
+                    {renderInline(r[ci] ?? "", `${key}-${ri}-${ci}`)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>,
+    );
+  };
+
   const flushAll = () => {
+    flushTable();
     flushParagraph();
     flushList();
     flushQuote();
@@ -157,6 +206,16 @@ export default function Markdown({ source }: { source: string }) {
       flushAll();
       continue;
     }
+
+    // Table rows
+    if (line.trim().startsWith("|")) {
+      flushParagraph();
+      flushList();
+      flushQuote();
+      table.push(line);
+      continue;
+    }
+    if (table.length) flushTable();
 
     // Headings
     const h = /^(#{1,4})\s+(.*)$/.exec(line);

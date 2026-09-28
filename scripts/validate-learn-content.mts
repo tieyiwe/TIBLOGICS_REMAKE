@@ -14,6 +14,26 @@
 
 import { pathToFileURL } from "url";
 import path from "path";
+import { register } from "node:module";
+
+// Content files import each other without extensions ("../balance",
+// "./track-3"), as TypeScript and Next.js expect. Node's own resolver does not
+// add ".ts", so a whole track could not be loaded here. This hook retries an
+// unresolved relative import with ".ts" and "/index.ts".
+register(
+  "data:text/javascript," +
+    encodeURIComponent(`
+      export async function resolve(spec, ctx, next) {
+        try { return await next(spec, ctx); }
+        catch (e) {
+          if (!spec.startsWith(".") && !spec.startsWith("/")) throw e;
+          for (const s of [spec + ".ts", spec + "/index.ts"]) {
+            try { return await next(s, ctx); } catch {}
+          }
+          throw e;
+        }
+      }`),
+);
 
 type Q = { question: string; options: string[]; correctIndex: number; explanation: string; difficulty?: number; moduleNumber?: number };
 

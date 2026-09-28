@@ -4,6 +4,8 @@ import { TRACK_1_CAPSTONE, TRACK_1_FINAL_EXAM, TRACK_1_MODULES_3_TO_7 } from "./
 import { TRACK_1_LABS } from "./labs-track-1";
 import { TRACK_1_MODULE_8, TRACK_1_MODULE_8_EXAM } from "./track-1-module-8";
 import { TRACK_1_MODULE_8_LABS } from "./labs-track-1-module-8";
+import { AI_PRACTITIONER } from "./track-2";
+import { AI_SYSTEMS_EXPERT } from "./track-3";
 
 // Track 1 (Level 1 · Basic) is assembled from its content files. Module 8,
 // "Seeing the Whole System", is appended rather than inserted so the existing
@@ -23,11 +25,13 @@ const AI_FOUNDATIONS: SeedTrack = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// TRACKS 2-5 — structure, outcomes, curriculum outline and assessment config.
-// These publish as `coming_soon`: the catalog shows them with a working
-// waitlist, and the landing page shows a real curriculum, but no lesson
-// bodies or question banks exist yet. Filling those in is a content task,
-// not an engineering one — the schema and UI already support everything.
+// RETIRED OUTLINES — kept as `draft`, which hides them from the catalog and
+// their landing pages. They were four "coming soon" tracks with a curriculum
+// outline and no lessons. Their ground (business operations, prompt
+// engineering, automation, strategy) is now taught properly inside Level 2 ·
+// Intermediate (track-2/) and Level 3 · Expert (track-3/). Kept rather than
+// deleted so their slugs, and any waitlist sign-ups against them, stay
+// meaningful if one is revived as a specialist track.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const AI_FOR_BUSINESS: SeedTrack = {
@@ -41,8 +45,8 @@ You'll learn to audit your own processes, identify where AI creates measurable v
 Assumes you're comfortable using AI tools day to day — if you're not, take AI Foundations first.`,
   level: "beginner",
   levelEnd: "intermediate",
-  status: "coming_soon",
-  sortOrder: 2,
+  status: "draft",
+  sortOrder: 10,
   accentColor: "#3B82F6",
   certificateName: "TIBLOGICS Certified — AI for Business Operations",
   audience: "Managers, operations leads and business owners deciding where AI fits in their organisation.",
@@ -76,8 +80,8 @@ This track covers structured prompting, context management, evaluation, and buil
 
 Assumes daily comfort with AI tools.`,
   level: "intermediate",
-  status: "coming_soon",
-  sortOrder: 3,
+  status: "draft",
+  sortOrder: 11,
   accentColor: "#F9A738",
   certificateName: "TIBLOGICS Certified — Practical Prompt Engineering",
   audience: "Regular AI users who need consistent, dependable output rather than occasional good results.",
@@ -111,8 +115,8 @@ This track covers no-code automation platforms, connecting AI to email, document
 
 No programming required, but you should be comfortable with spreadsheets and web tools.`,
   level: "intermediate",
-  status: "coming_soon",
-  sortOrder: 4,
+  status: "draft",
+  sortOrder: 12,
   accentColor: "#8B5CF6",
   certificateName: "TIBLOGICS Certified — AI Automation",
   audience: "Operators and analysts who want AI working inside their systems, not just in a chat window.",
@@ -146,8 +150,8 @@ Covers portfolio thinking, capability building, risk and regulation, ethical fra
 
 Assumes senior operational experience and working familiarity with AI capabilities.`,
   level: "advanced",
-  status: "coming_soon",
-  sortOrder: 5,
+  status: "draft",
+  sortOrder: 13,
   accentColor: "#EF4444",
   certificateName: "TIBLOGICS Certified — AI Strategy and Leadership",
   audience: "Directors, heads of function and founders accountable for organisational AI decisions.",
@@ -173,6 +177,8 @@ Assumes senior operational experience and working familiarity with AI capabiliti
 
 export const TRACKS: SeedTrack[] = [
   AI_FOUNDATIONS,
+  AI_PRACTITIONER,
+  AI_SYSTEMS_EXPERT,
   AI_FOR_BUSINESS,
   PROMPT_ENGINEERING,
   AI_AUTOMATION,

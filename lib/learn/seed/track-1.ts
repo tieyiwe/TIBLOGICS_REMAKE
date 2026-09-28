@@ -23,7 +23,7 @@ No coding. No maths. No prior experience of any kind.`,
   status: "live",
   sortOrder: 1,
   accentColor: "#22A387",
-  certificateName: "TIBLOGICS Certified — AI Foundations",
+  certificateName: "TIBLOGICS Certified AI Foundations",
   audience:
     "Anyone who uses a phone and email but has never seriously used an AI tool. Especially useful if you've been told you 'should be using AI' and don't know where to begin.",
   outcomes: [

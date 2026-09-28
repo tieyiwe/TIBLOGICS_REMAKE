@@ -22,18 +22,22 @@ const QUESTIONS = [
     prompt: "What are you hoping to get out of this?",
     options: [
       { label: "Understand what AI actually is, without hype", level: "starter" },
-      { label: "Use AI tools well in my current job", level: "beginner" },
-      { label: "Bring AI into how my team or business runs", level: "intermediate" },
-      { label: "Design and ship AI systems myself", level: "advanced" },
+      { label: "Start using AI tools safely for everyday tasks", level: "beginner" },
+      { label: "Use AI reliably for real work in my job", level: "intermediate" },
+      { label: "Lead how AI is used across my team or organisation", level: "advanced" },
     ],
   },
+  // This used to ask how much time you have each week. Time says nothing about
+  // which level fits — an hour a week does not make someone a beginner — so it
+  // asks how you use AI now instead.
   {
-    id: "time",
-    prompt: "How much time can you give it each week?",
+    id: "usage",
+    prompt: "How do you use AI tools today?",
     options: [
-      { label: "An hour or two", level: "starter" },
-      { label: "About three hours", level: "beginner" },
-      { label: "Five or more hours", level: "intermediate" },
+      { label: "I haven't really used them yet", level: "starter" },
+      { label: "Now and then, for quick questions", level: "beginner" },
+      { label: "Most days, as part of my work", level: "intermediate" },
+      { label: "I've built prompts, automations or agents with them", level: "advanced" },
     ],
   },
 ] as const;
@@ -100,11 +104,11 @@ export default function WhereToStart({
             Not sure where to start?
           </span>
           <span className="mt-1 block text-sm text-[var(--ink2)]">
-            Answer three quick questions and we'll point you to the right track.
+            Answer three quick questions and we'll point you to the right level.
           </span>
         </span>
         <span className="shrink-0 rounded-full bg-[var(--ink)] px-4 py-2 text-sm font-bold text-white">
-          Find my track →
+          Find my level →
         </span>
       </button>
     );
