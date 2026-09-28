@@ -1,5 +1,6 @@
 export const maxDuration = 300;
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
 import { pickCoverImage } from "@/lib/blog-images";
@@ -13,6 +14,7 @@ import { streamChat, CLAUDE_FAST_MODEL } from "@/lib/claude";
 import resend from "@/lib/resend";
 import { assignCoverImage } from "@/lib/blog-cover";
 import { requireAdmin, secretEquals } from "@/lib/require-admin";
+import { CURATED_ARTICLES, renderSources } from "@/lib/blog/content/curated";
 
 const anthropic = new Anthropic();
 
@@ -754,6 +756,77 @@ async function sendOverdueAlert(lastRefresh: Date | null) {
   } catch { /* don't crash the refresh if email fails */ }
 }
 
+
+
+/** Rebuild the AI Times listing and home-page surfaces on the next request. */
+function revalidateAiTimes() {
+  try {
+    revalidatePath("/ai-times");
+    revalidatePath("/");
+  } catch {
+    // Outside a request context (e.g. a script) there is nothing to revalidate.
+  }
+}
+
+/**
+ * Publish any researched article from lib/blog/content/curated.ts that is not
+ * in the database yet.
+ *
+ * Runs on every authorised call, before the 48-hour gate, so a newly added
+ * article goes out on the next cron run rather than waiting for the schedule.
+ * Idempotent by slug: an article that exists is skipped, never duplicated or
+ * re-dated. Each gets a cover no other post uses, and its sources appended.
+ */
+async function publishCurated(): Promise<string[]> {
+  if (CURATED_ARTICLES.length === 0) return [];
+  const existing = await prisma.blogPost.findMany({
+    where: { slug: { in: CURATED_ARTICLES.map((a) => a.slug) } },
+    select: { slug: true },
+  });
+  const have = new Set(existing.map((e) => e.slug));
+  const missing = CURATED_ARTICLES.filter((a) => !have.has(a.slug));
+  if (missing.length === 0) return [];
+
+  const usedPhotoIds = await getUsedCoverPhotoIds();
+  const published: string[] = [];
+  for (const a of missing) {
+    try {
+      const cover = pickCoverImage(a.slug, usedPhotoIds);
+      usedPhotoIds.add(cover.photoId);
+      const meta = CATEGORY_META[a.category] ?? CATEGORY_META["industry"];
+      const content = a.content + renderSources(a.sources);
+      await prisma.blogPost.create({
+        data: {
+          slug: a.slug,
+          title: a.title,
+          excerpt: a.excerpt,
+          content,
+          category: a.category,
+          tags: a.tags,
+          coverEmoji: meta.emoji,
+          coverGradient: meta.gradient,
+          coverImage: cover.url,
+          // Written by an AI from checked sources, and labelled as such.
+          author: "Echelon by TIBLOGICS",
+          readingTime: Math.max(1, Math.ceil(content.replace(/<[^>]*>/g, " ").split(/\s+/).length / 200)),
+          featured: a.featured ?? false,
+          published: true,
+          aiGenerated: true,
+          sourceUrl: a.sources[0]?.url,
+          sourceTitle: a.sources[0]?.label,
+        },
+      });
+      published.push(a.slug);
+      for (const lang of ["fr", "sw"] as const) {
+        translatePostContent(a.slug, { title: a.title, excerpt: a.excerpt, content }, lang).catch(() => {});
+      }
+    } catch (err) {
+      console.error("[auto-refresh] curated publish failed", a.slug, err instanceof Error ? err.message : err);
+    }
+  }
+  return published;
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const checkOnly = searchParams.get("check") === "true";
@@ -818,6 +891,18 @@ export async function GET(req: NextRequest) {
     });
   }
 
+  // Researched articles go out on any authorised call, independent of the
+  // 48-hour schedule below.
+  let curatedPublished: string[] = [];
+  try {
+    curatedPublished = await publishCurated();
+  } catch (err) {
+    console.error("[auto-refresh] curated publishing skipped", err instanceof Error ? err.message : err);
+  }
+  // The listing is cached for 60s and only rebuilds on the request after that,
+  // so without this a new article appeared for the second visitor, not the first.
+  if (curatedPublished.length > 0) revalidateAiTimes();
+
   // Idempotency lock — prevent duplicate runs from concurrent clicks or tabs.
   // Uses the DB so it works across multiple server instances.
   const LOCK_KEY = "blog_refresh_lock";
@@ -870,9 +955,14 @@ export async function GET(req: NextRequest) {
   }
 
   if (!needsRefresh) {
+    // Release the lock taken above. This return used to leave it in place, so
+    // for five minutes after a no-op run every call — including an admin's
+    // "refresh now" — was told a refresh was already in progress.
+    await prisma.adminSettings.delete({ where: { key: LOCK_KEY } }).catch(() => {});
     return NextResponse.json({
       message: "Content is up to date, and nothing major is breaking",
-      postsAdded: 0,
+      postsAdded: curatedPublished.length,
+      curatedPublished,
     });
   }
 
@@ -1223,5 +1313,6 @@ export async function GET(req: NextRequest) {
     prisma.adminSettings.delete({ where: { key: LOCK_KEY } }).catch(() => { /* ignore */ }),
   ]);
 
-  return NextResponse.json({ message: `Added ${postsAdded} new posts`, postsAdded, imagesPatched, tipsPatched, translationsPatched });
+  if (postsAdded > 0) revalidateAiTimes();
+  return NextResponse.json({ message: `Added ${postsAdded + curatedPublished.length} new posts`, postsAdded: postsAdded + curatedPublished.length, curatedPublished, imagesPatched, tipsPatched, translationsPatched });
 }

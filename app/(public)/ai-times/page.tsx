@@ -124,9 +124,14 @@ async function seedIfEmpty(): Promise<void> {
 }
 
 export default async function BlogPage() {
+  // No try/catch around the reads, deliberately. This page is cached for 60
+  // seconds, and the old catch turned a database error into an empty page
+  // that was then cached and served as if AI Times had no articles — the same
+  // failure /store had. Letting it throw fails the build loudly when there is
+  // no database, and on a revalidation Next keeps the last good page.
   let initialPosts: BlogPost[] = [];
 
-  try {
+  {
     const count = await prisma.blogPost.count({ where: { published: true } });
 
     if (count === 0) {
@@ -160,9 +165,6 @@ export default async function BlogPage() {
       coverImage: p.coverImage ?? undefined,
       createdAt: p.createdAt.toISOString(),
     }));
-  } catch (err) {
-    console.error("[AI Times SSR]", err);
-    // Return page with empty posts; client will show the empty state gracefully.
   }
 
   return <BlogPageClient initialPosts={initialPosts} />;
