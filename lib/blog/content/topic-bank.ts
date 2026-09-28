@@ -6,28 +6,13 @@
 // data out changes nothing at runtime; it just makes the route readable.
 
 export const CATEGORY_TOPIC_BANK: Record<string, string[]> = {
-  "breaking": [
-    "OpenAI Releases o3: What the New Reasoning Model Means for Business AI",
-    "Google Gemini 2.0 Flash Reshapes What Fast AI Means for Businesses",
-    "Anthropic Raises Series E: Why the Investment Signals AI's Next Chapter",
-    "Meta Open-Sources Llama 4: How Free Frontier AI Changes the Cost of Building",
-    "The EU AI Act Is Fully in Force: Your Business Compliance Checklist",
-    "Microsoft Copilot Studio Gets Agentic Capabilities: What's Now Possible",
-    "Apple Intelligence Expands to More Devices: Business Workflows That Benefit",
-    "Nvidia's Blackwell Architecture Explained: Why It Matters for AI Pricing",
-    "OpenAI Launches Projects and Memory: The Upgrade That Changes How You Use ChatGPT",
-    "Sam Altman Predicts AGI Within 5 Years: What It Means If He's Right",
-    "Google Announces AI-Powered Search Overhaul: The New Visibility Rules for Businesses",
-    "DeepSeek R2 Arrives: Another Model That Outperforms at a Fraction of the Cost",
-    "OpenAI's Operator Agent Browses the Web Autonomously: First Business Applications",
-    "The US AI Executive Order: New Rules Every Business Deploying AI Must Know",
-    "Perplexity AI Launches Business Tier: Is the Research Assistant Now Enterprise-Ready?",
-    "AI Trading Algorithms Now Control 70% of Market Volume: What It Means for Investors",
-    "Federal Reserve Uses AI for Economic Forecasting: The New Playbook for Rate Decisions",
-    "S&P 500 AI Index Outperforms Benchmarks by 40%: The Sectors Leading the Rally",
-    "Wall Street's AI Arms Race: How Goldman, JPMorgan, and BlackRock Are Restructuring Around AI",
-    "AI-Driven Recession Predictions: What the Models Are Saying That Economists Are Missing",
-  ],
+  // Deliberately empty. Breaking news has to come from a real, current source
+  // (the agent pulls those from Hacker News and DEV.to). This pool used to hold
+  // twenty pre-written "breaking" headlines — o3, Gemini 2.0 Flash, Llama 4 —
+  // which the agent published as today's news whenever real news ran short, a
+  // year or more after the fact, and some stated market figures ("AI trading
+  // now controls 70% of volume") with nothing behind them.
+  "breaking": [],
   "ai-business": [
     "How to Build an AI-Powered Lead Qualification System Without a CRM Upgrade",
     "AI for Accounts Receivable: Cutting Payment Delays and Chasing Invoices Automatically",
@@ -57,7 +42,7 @@ export const CATEGORY_TOPIC_BANK: Record<string, string[]> = {
     "The Anti-Hallucination Checklist: Verifying AI Output Before You Use It",
     "How to Introduce AI Tools to a Skeptical Team Without Losing Buy-In",
     "Building a Prompt Library Your Whole Team Can Use and Trust",
-    "How to Use AI to Speed Up Your Weekly Reporting by 80 Percent",
+    "How to Use AI to Speed Up Your Weekly Reporting",
     "Getting Consistent AI Results: The Role Task Context Constraint Framework",
     "How to Automate Your Most Time-Consuming Business Task This Week",
     "AI Output Editing: The Fast Workflow That Makes AI Writing Sound Human",
@@ -79,22 +64,27 @@ export const CATEGORY_TOPIC_BANK: Record<string, string[]> = {
     "Google NotebookLM for Business: Building a Queryable Knowledge Base for Free",
     "Voice AI for Business: Tools That Handle Calls and Meetings Intelligently",
   ],
+  // Playbooks, not case studies. These were fifteen success stories with the
+  // result already in the headline ("Reduced No-Shows by 60 Percent"), so the
+  // agent had to invent a company and results to fit each one, and published
+  // them under the TIBLOGICS name. Real case studies need a real client; until
+  // there is one, the category explains how to approach the problem honestly.
   "case-studies": [
-    "How a Physical Therapy Clinic Reduced No-Shows by 60 Percent With AI Scheduling",
-    "How a Real Estate Agency Qualified 10x More Leads Using an AI Pre-Screener",
-    "A Trucking Company Cut Fuel Costs 18 Percent Using AI Route Optimization",
-    "How an E-Commerce Brand Doubled Email Revenue With AI Personalization",
-    "A Construction Firm Reduced Bid Preparation Time by 70 Percent With AI",
-    "How a Dental Practice Automated Patient Communications and Grew 40 Percent",
-    "A Law Firm Automated Contract Review and Recovered 60 Attorney Hours Per Month",
-    "How a Caribbean Logistics Business Handled 78 Percent of Inquiries With an AI Agent",
-    "A Training Company Used AI Tutoring and Improved Student Pass Rates by 35 Percent",
-    "How an HR Consulting Firm Automated Compliance Reporting and Won New Retainers",
-    "A Gym Chain Reduced Member Churn by 22 Percent Using AI Engagement Predictions",
-    "How a Caribbean Logistics Operator Scaled Throughput 40 Percent Without New Hires",
-    "A Financial Advisory Firm Used AI to Prepare Reports 4x Faster With Higher Quality",
-    "How a Boutique Hotel Increased Direct Bookings Using AI Personalized Offers",
-    "A Tech Recruiting Firm Cut Time-to-Hire by 50 Percent With AI Resume Screening",
+    "AI Scheduling for Clinics: What It Can Realistically Do About No-Shows",
+    "Using an AI Pre-Screener to Qualify Real Estate Leads: A Practical Playbook",
+    "AI Route Optimization for Small Trucking Fleets: Where the Savings Come From",
+    "AI Personalization for E-Commerce Email: What to Test First",
+    "Speeding Up Construction Bid Preparation With AI: A Step-by-Step Approach",
+    "Automating Patient Communications in a Dental Practice: What to Automate and What Not To",
+    "AI-Assisted Contract Review for Small Law Firms: A Safe Way to Start",
+    "Handling Customer Inquiries With an AI Agent: A Playbook for Logistics Businesses",
+    "AI Tutoring for Training Companies: How to Measure Whether It Actually Helps",
+    "Automating Compliance Reporting in HR Consulting: Where AI Fits",
+    "Predicting Member Churn With AI: What a Gym Needs Before It Starts",
+    "Scaling Logistics Operations Without New Hires: Where AI Agents Help",
+    "Preparing Client Reports With AI in Financial Advice: Keeping Quality and Compliance",
+    "AI-Personalized Offers for Boutique Hotels: A Guide to Direct Bookings",
+    "AI Resume Screening in Recruiting: Faster Hiring Without Unfair Filters",
   ],
   "industry": [
     "The State of AI Adoption in Professional Services: 2026 Benchmarks",
