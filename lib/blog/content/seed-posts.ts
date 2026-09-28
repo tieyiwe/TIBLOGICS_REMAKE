@@ -1,3 +1,4 @@
+import { withCorrection } from "./corrected-merge";
 // Extracted from app/api/blog/auto-refresh/route.ts.
 //
 // That route was 3,258 lines, of which 2,546 were this content. The logic it
@@ -5,7 +6,7 @@
 // a thousand lines of article prose sitting in the middle of it. Moving the
 // data out changes nothing at runtime; it just makes the route readable.
 
-export const SEED_POSTS = [
+const RAW_SEED_POSTS = [
   {
     title: "5 Ways AI Is Helping Small Businesses Cut Costs Without Cutting Corners",
     excerpt: "AI isn't just for enterprise — small businesses that move first are already seeing real savings.",
@@ -388,96 +389,36 @@ For a logistics company: an agent tracks shipments, updates clients, escalates d
 
   {
     title: "How a Small Law Firm Reduced Contract Review Time by 80% With AI",
-    excerpt: "A three-attorney firm was spending 40% of billable hours on contract review. AI cut that to under 10% — without changing what clients paid.",
+    excerpt: "",
     category: "case-studies",
     tags: ["legal", "ai", "contract review", "law firm", "case study"],
     coverEmoji: "📊",
     coverGradient: "from-[#F47C20] to-yellow-500",
     coverImage: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?auto=format&fit=crop&w=800&q=80",
     featured: false,
-    content: `<p>A three-attorney immigration and business law firm was facing a problem that many small practices know well: a disproportionate amount of time spent on contract review — reading, flagging issues, comparing drafts, and summarizing key terms for clients. The work was necessary and billable, but it was also repetitive, time-intensive, and not the highest-value use of attorney judgment.</p>
-
-<h2>The Problem</h2>
-<p>The firm handled a mix of business formation, vendor agreements, employment contracts, and real estate transactions. Contract review for a single commercial lease agreement could take three to four hours — reading each clause carefully, cross-referencing against standard terms, identifying non-standard provisions, and preparing a client summary.</p>
-<p>Multiply that across the firm's typical monthly volume and a significant portion of attorney hours — time billed at a premium rate — was going to work that followed a highly predictable pattern. The founding partner estimated that 40% of her billable time fell into this category.</p>
-
-<h2>The Implementation</h2>
-<p>The firm implemented an AI contract review system that could ingest PDF and Word agreements and produce a structured analysis: clause-by-clause summary, flagged non-standard provisions, missing standard protections, comparison against the firm's preferred baseline language, and a plain-English client summary.</p>
-<p>The setup process took two weeks — primarily uploading and tagging reference contracts so the AI understood the firm's typical standards for each agreement type. Attorneys then spent several sessions reviewing AI outputs against their own assessments to calibrate where the system was reliable and where human judgment remained essential.</p>
-
-<h2>The Results</h2>
-<p>Within 60 days, the workflow had stabilized. Contract review time dropped dramatically. A commercial lease that previously took three to four hours now took 30–45 minutes: the AI produced its analysis in minutes, the attorney reviewed and refined it, and the client summary was nearly complete before the attorney began their own assessment.</p>
-<p>Across the firm's monthly volume, this translated to roughly 60 recovered attorney hours per month — time reallocated to higher-complexity work, client development, and business growth activities that had previously been crowded out.</p>
-
-<h2>What Didn't Change</h2>
-<p>Client billing remained consistent. The firm chose not to reduce fees for AI-assisted reviews — and clients saw no reason they should, since the quality of analysis was equal or better and turnaround was faster. The AI handled pattern recognition; attorney judgment handled everything that required experience, context, and strategy.</p>
-
-<h2>What This Means for Small Businesses</h2>
-<p>Professional service firms — legal, accounting, consulting — often assume AI isn't applicable to their work because it requires judgment. The reality is that much of the time consumed in professional services is pattern-matching and documentation, not judgment. AI handles the former extremely well, freeing professionals to apply the latter where it matters.</p>
-
-<p><strong>Practical takeaway:</strong> Identify the highest-volume, most-repetitive analytical task in your professional service workflow. That's almost always the best starting point for AI augmentation — and the time savings there fund everything else.</p>`,
+    content: "", // corrected text: lib/blog/content/corrected.ts,
   },
   {
     title: "How One Restaurant Chain Eliminated Its No-Show Problem With AI",
-    excerpt: "A regional restaurant group was losing thousands monthly to no-shows and last-minute cancellations. An AI reminder and confirmation system changed that within 30 days.",
+    excerpt: "",
     category: "case-studies",
     tags: ["restaurant", "hospitality", "ai", "no-show", "reservations", "case study"],
     coverEmoji: "📊",
     coverGradient: "from-[#F47C20] to-yellow-500",
     coverImage: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=800&q=80",
     featured: false,
-    content: `<p>A regional restaurant group operating four locations was experiencing a consistent and costly problem: reservation no-shows running at 22% of bookings on weekends, and last-minute cancellations that left tables empty with no time to fill them. The front-of-house team was spending hours each week chasing confirmations by phone — and still not catching most of the no-shows in time to rebook the tables.</p>
-
-<h2>The Problem in Numbers</h2>
-<p>At an average table of four guests with a $55 per-person check, each no-show table represented roughly $220 in lost revenue. Across four locations and a weekend with 40–50 reservations per night, even a 22% no-show rate produced significant weekly losses — not counting the operational cost of staffing and prepping for guests who never arrived.</p>
-
-<h2>The Implementation</h2>
-<p>The group implemented an AI-powered reservation management system integrated with their existing booking platform. The system handled confirmation sequences automatically: an initial confirmation email immediately after booking, a reminder with one-click confirmation or cancellation 72 hours before the reservation, a final reminder 24 hours out, and an SMS nudge two hours before the reservation time.</p>
-<p>For guests who didn't confirm, the system sent a second confirmation request and — for high-demand time slots — automatically opened the reservation to the waitlist if no confirmation was received by 4pm the day before.</p>
-<p>The system also tracked cancellation patterns by day, time, and party size, giving management data to adjust overbooking strategy intelligently — accounting for expected cancellations without over-cramming the dining room.</p>
-
-<h2>The Results</h2>
-<p>Within 30 days, the no-show rate dropped from 22% to 6%. Waitlist fill of cancelled slots increased from roughly 20% to 68% for prime-time weekend reservations. The front-of-house team went from making 80–100 confirmation calls per week to making fewer than 10 — and only for large-party reservations that warranted a personal touch.</p>
-<p>Revenue recovery from reduced no-shows, combined with improved waitlist utilization, more than paid for the system within the first month.</p>
-
-<h2>The Unexpected Benefit</h2>
-<p>Guest satisfaction scores improved slightly — not because of the AI directly, but because servers were less stressed managing unknown table counts and the dining room ran more smoothly. The operational certainty the system provided had a downstream effect on service quality.</p>
-
-<h2>What This Means for Small Businesses</h2>
-<p>Any service business that runs on appointments or reservations — restaurants, clinics, salons, studios, contractors — faces the same no-show economics. The math is consistent: automated confirmation and reminder systems pay for themselves quickly, and the operational calm they create has benefits beyond the revenue recovery.</p>
-
-<p><strong>Practical takeaway:</strong> Calculate what a 10-percentage-point reduction in no-shows would mean for your monthly revenue. If that number is meaningful, it's worth evaluating an AI reminder system this week — most integrate with existing booking tools with minimal setup.</p>`,
+    content: "", // corrected text: lib/blog/content/corrected.ts,
   },
   {
     title: "How a Diaspora Shipping Operator Scaled Without New Hires Using AI Agents",
-    excerpt: "A Caribbean and West African shipping business was drowning in customer inquiries. An AI agent now handles 80% of them — while the team focuses on operations.",
+    excerpt: "",
     category: "case-studies",
     tags: ["shipping", "diaspora", "ai agents", "customer service", "logistics", "case study"],
     coverEmoji: "📊",
     coverGradient: "from-[#F47C20] to-yellow-500",
     coverImage: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80",
     featured: false,
-    content: `<p>A diaspora shipping operator serving Caribbean and West African communities in the United States had grown its customer base steadily over three years. The problem was that customer inquiry volume had grown with it — and the team of five, including two handling customer communications full time, was struggling to keep up. Peak periods before major holidays meant 200+ inquiries per day through WhatsApp, email, and phone. Response times slipped. Customers followed up multiple times. Staff morale suffered.</p>
-
-<h2>The Problem</h2>
-<p>The inquiries fell into predictable categories: shipment status, estimated delivery windows, pricing for specific routes, pickup location hours, documentation requirements for certain goods, and complaints about delays. About 80% of the questions were variations on the same 15 topics. The other 20% required actual human judgment — investigating delays, handling damage claims, managing exceptions.</p>
-<p>The team's challenge was that they couldn't get to the 20% that required them because the 80% that didn't was consuming their entire day.</p>
-
-<h2>The Implementation</h2>
-<p>The company deployed an AI customer service agent integrated with their WhatsApp Business account and website chat. The agent was trained on the company's shipping routes, pricing structure, documentation requirements, processing timelines, and pickup location information. It could look up shipment status in real time by connecting to their internal tracking system.</p>
-<p>For anything outside its training — claims, complaints, special requests — it captured the details, created a ticket, and transferred the conversation to a human with a summary of what had been discussed. No inquiry was dropped or lost.</p>
-
-<h2>The Results</h2>
-<p>The AI agent handled 78% of all incoming inquiries without human involvement within the first 60 days. Average response time dropped from hours to under two minutes. The two team members who had been managing customer communications full time shifted to exception handling, quality review, and business development — work that had previously been impossible to prioritize.</p>
-<p>Customer satisfaction scores, tracked through post-interaction surveys, improved — primarily because response times improved and because the AI was consistent: it gave the same accurate answer every time, whereas human response quality varied based on who answered and when.</p>
-
-<h2>Scaling Without Hiring</h2>
-<p>In the following quarter, shipment volume grew 35%. The team handled it without adding staff. The AI agent scaled with the volume; the humans scaled their focus toward higher-value work. What would have required two additional hires was handled entirely by the system already in place.</p>
-
-<h2>What This Means for Small Businesses</h2>
-<p>For any business where customer communication volume is a growth bottleneck — where the team that should be running operations is instead answering the same questions all day — an AI customer service agent is among the highest-ROI investments available. The technology is accessible, the integration with WhatsApp and email is straightforward, and the payback period is typically measured in weeks.</p>
-
-<p><strong>Practical takeaway:</strong> Track your team's incoming inquiries for one week. Categorize each one. If more than 60% fall into fewer than 20 question types, you have a strong case for an AI agent — and clear training material to build it from.</p>`,
+    content: "", // corrected text: lib/blog/content/corrected.ts,
   },
 
   {
@@ -791,14 +732,14 @@ For a logistics company: an agent tracks shipments, updates clients, escalates d
   },
   {
     title: "How a Caribbean Event Company Doubled Bookings Using an AI Scheduling Agent",
-    excerpt: "A Caribbean event company struggling with booking friction deployed an AI scheduling agent — and doubled confirmed bookings in 90 days.",
+    excerpt: "",
     category: "case-studies",
     tags: ["case study", "scheduling ai", "event management", "caribbean business", "ai automation"],
     coverEmoji: "📅",
     coverGradient: "from-[#F47C20] to-yellow-500",
     coverImage: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=800&q=80",
     featured: false,
-    content: `<h2>The Challenge: A Booking Process That Was Costing Sales</h2><p>Sunshine Events, a mid-sized event planning and venue management company operating across Trinidad and Tobago, had a problem that's painfully common among growing service businesses: their booking process was slow, manual, and inconsistent. Potential clients who reached out for corporate events or private functions often waited one to three business days for a response. By the time a team member followed up, the prospect had either moved on or lost momentum.</p><p>The owner knew she was losing bookings — she just couldn't quantify how many. Her team of four was already stretched managing active events. Adding more staff felt premature.</p><h2>The Solution: An AI Scheduling Agent Integrated With Their Calendar</h2><p>The team implemented an AI scheduling agent connected to the company's WhatsApp Business line — the primary channel where event inquiries arrived. The agent was designed to:</p><ul><li>Respond instantly to new inquiries, any time of day or night</li><li>Ask qualifying questions about event type, expected attendance, preferred dates, and budget range</li><li>Check real-time calendar availability and propose three available time slots for a discovery call</li><li>Send a confirmation message once a slot was chosen</li><li>Automatically notify a team member with the prospect's details and the scheduled call time</li></ul><p>The entire conversation — from first message to confirmed appointment — took less than five minutes in most cases.</p><h2>The Results After 90 Days</h2><ul><li><strong>Response time dropped from an average of 18 hours to under 2 minutes</strong> for initial inquiry acknowledgment</li><li><strong>Confirmed bookings increased by 104%</strong> compared to the same period the previous year</li><li><strong>No-show rates for discovery calls dropped by 35%</strong>, attributed to automated reminder messages</li><li><strong>Team time saved:</strong> approximately 12 hours per week redirected to active event coordination</li></ul><h2>What Made This Work</h2><p>The success was not just about the technology — it was about designing the system around a specific, well-defined problem. The team resisted the temptation to have the AI do too much. It handles qualification and scheduling. Humans handle discovery calls, proposals, and relationship-building.</p><p><strong>Practical takeaway:</strong> Identify the single point in your sales or service process where the most leads drop off. An AI scheduling agent targeted at exactly that gap — nothing more, nothing less — can produce dramatic results with relatively simple implementation.</p>`,
+    content: "", // corrected text: lib/blog/content/corrected.ts,
   },
   {
     title: "The Hidden AI Economy: How Data Annotation Is Creating Jobs Across Sub-Saharan Africa",
@@ -870,14 +811,14 @@ For a logistics company: an agent tracks shipments, updates clients, escalates d
   },
   {
     title: "How a 3-Person Marketing Agency Scaled to 4x More Clients Using AI — Without Hiring",
-    excerpt: "A small agency was capped at 8 clients by bandwidth. AI workflows pushed that ceiling to 32 — without a single new hire.",
+    excerpt: "",
     category: "case-studies",
     tags: ["marketing agency", "ai automation", "scaling", "content creation", "case study"],
     coverEmoji: "📊",
     coverGradient: "from-[#F47C20] to-yellow-500",
     coverImage: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=800&q=80",
     featured: false,
-    content: `<h2>The Bandwidth Problem Every Small Agency Knows</h2><p>A three-person digital marketing agency in Atlanta had built a solid reputation for results-driven content and social media management. Their problem was a common one: they were good enough to attract more clients than they could serve. At 8 active clients, the team was at capacity — every new inquiry was either declined or pushed to a waitlist that rarely converted.</p><p>The founders had two options: hire and dilute margins, or find a way to do more without adding headcount. They chose the latter — and over eight months, rebuilt their entire delivery workflow around AI.</p><h2>Where the Hours Were Going</h2><p>Before making any changes, the team tracked exactly how their time was spent for two weeks. The breakdown was instructive:</p><ul><li>38% — Content drafting (blog posts, social captions, email newsletters)</li><li>22% — Research (industry trends, client sector news, competitor monitoring)</li><li>18% — Client reporting (pulling analytics, writing commentary, formatting deliverables)</li><li>12% — Scheduling and approvals (coordination, calendar management, revisions)</li><li>10% — Strategy and creative direction (the work they actually wanted to do)</li></ul><p>The first four categories — 90% of their time — were candidates for AI augmentation. The 10% that required their actual expertise was the work their clients valued most.</p><h2>The Implementation: What They Built</h2><p><strong>Content production:</strong> Every content request now starts with an AI first draft. The team built a custom prompt library for each client — capturing brand voice, topic restrictions, audience profiles, and formatting preferences. AI produces first drafts; a team member edits, approves, and refines. Draft time dropped from 90 minutes per piece to 20.</p><p><strong>Research automation:</strong> A weekly AI research digest replaced manual monitoring. An automated workflow summarizes industry news for each client's sector every Monday morning, reducing research time from four hours weekly to thirty minutes of review.</p><p><strong>Reporting:</strong> A templated AI reporting workflow pulls analytics from connected platforms and generates a narrative first draft of each monthly client report. Reports that took three hours now take forty minutes.</p><p><strong>Scheduling:</strong> An AI scheduling assistant handles all coordination — meeting requests, revision round management, approval workflows — with minimal manual involvement.</p><h2>The Results</h2><p>Eight months after starting, the agency was serving 32 active clients with the same three-person team. Revenue had grown by 280%. Profit margins improved because headcount costs hadn't scaled with revenue. The team was working fewer evenings and weekends than before, because AI had absorbed the volume work that previously spilled into off-hours.</p><p>Client quality also improved — with more capacity, the agency could be selective about which clients they took on, preferring retainer relationships over one-off projects.</p><h2>What This Means for Small Businesses</h2><p>The pattern this agency followed — map where your time goes, identify the high-volume routine tasks, build AI workflows around those specifically — is transferable to almost any service business. The technology is accessible; the hard work is the mapping and the discipline to actually change the workflow.</p><p><strong>Practical takeaway:</strong> Track your team's time for two weeks at the task level, not the project level. The output will tell you exactly where AI can give you the most hours back. Start with the category that represents the highest percentage of time on work you could template.</p>`,
+    content: "", // corrected text: lib/blog/content/corrected.ts,
   },
   {
     title: "The Language Gap in AI: Why Models That Don't Speak Your Language Are Costing Businesses",
@@ -949,13 +890,16 @@ For a logistics company: an agent tracks shipments, updates clients, escalates d
   },
   {
     title: "How a West African Fintech Used AI to Cut Customer Verification From 3 Days to 8 Minutes",
-    excerpt: "A Lagos-based fintech was losing customers to KYC delays. An AI-powered verification system changed the conversion math entirely.",
+    excerpt: "",
     category: "case-studies",
     tags: ["fintech", "africa", "kyc", "ai automation", "customer onboarding", "case study"],
     coverEmoji: "📊",
     coverGradient: "from-[#F47C20] to-yellow-500",
     coverImage: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=800&q=80",
     featured: false,
-    content: `<h2>The Problem: Losing Customers at the Door</h2><p>A Lagos-based digital lending platform was experiencing a conversion crisis that its founders initially attributed to product-market fit. Users downloaded the app, started the registration process — and left. The drop-off rate at the KYC (Know Your Customer) verification step was 67%. Of every three users who attempted to verify their identity, two abandoned before completing the process.</p><p>The culprit wasn't the product. It was the wait. Manual document review by the compliance team took an average of three business days. In a market where users could get a competitor's decision in minutes, three days was too long. Most users who waited never came back.</p><h2>The AI-Powered Verification System</h2><p>The company implemented an AI document verification and biometric matching system that automated the KYC process for standard cases. The system handled four tasks that previously required human review:</p><ul><li><strong>Document authenticity check:</strong> AI analyzed uploaded ID documents for tampering, expiry, and format consistency against a database of valid Nigerian government ID formats</li><li><strong>Data extraction:</strong> Name, date of birth, ID number, and address were extracted automatically and matched against the application data the user had entered</li><li><strong>Biometric matching:</strong> Selfie-to-ID photo comparison using facial recognition to confirm the applicant was the document holder</li><li><strong>Risk scoring:</strong> A risk model assessed each application against fraud indicators and flagged high-risk cases for human review while clearing standard cases automatically</li></ul><p>Standard cases — approximately 74% of all applications — were approved or declined with a verified decision in under 10 minutes. High-risk flagged cases went to the compliance team with the AI analysis already completed, reducing their review time from 45 minutes to 12 minutes per case.</p><h2>The Results</h2><p>Within 90 days of deployment, the KYC drop-off rate fell from 67% to 18%. The time-to-decision for standard applications dropped from an average of 3 business days to 8 minutes. Fraud rates in the approved cohort remained stable — the AI system caught comparable patterns to manual review while processing volumes the team could never have handled manually.</p><p>The business impact was significant: the same marketing spend that was previously generating one approved customer for every three who attempted verification was now generating more than two. Customer acquisition cost dropped by 43% without touching the marketing budget.</p><h2>What Made This Implementation Work</h2><p>Two decisions were critical. First, the team resisted the temptation to automate everything. Human review remained mandatory for flagged cases, which maintained compliance integrity and caught edge cases the model hadn't seen before — feeding back into model improvements over time.</p><p>Second, the system was designed for Nigerian market conditions from the start — trained on Nigerian ID formats, tuned for the photo quality typically produced by mid-range Android cameras common in the market, and optimized for low-bandwidth connectivity. A generic global KYC solution would have had significantly worse performance on the same population.</p><h2>What This Means for Small Businesses</h2><p>Any business with an identity verification or document review step in its customer acquisition flow should evaluate whether AI can compress that timeline. The conversion math is straightforward: shorter wait times mean higher completion rates. For fintech, healthcare, legal services, and any regulated industry with compliance gates, this is among the clearest ROI cases for AI implementation available.</p><p><strong>Practical takeaway:</strong> Calculate the drop-off rate at every step of your customer acquisition process. If a single step has a drop-off above 30%, it deserves a friction audit. For compliance or verification steps, AI automation is likely the fastest path to meaningful conversion improvement.</p>`,
+    content: "", // corrected text: lib/blog/content/corrected.ts,
   },
 ];
+
+// Articles listed in corrected.ts are served in their corrected form.
+export const SEED_POSTS = RAW_SEED_POSTS.map(withCorrection);

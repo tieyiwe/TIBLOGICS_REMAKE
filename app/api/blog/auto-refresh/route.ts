@@ -18,6 +18,7 @@ import { assignCoverImage } from "@/lib/blog-cover";
 import { requireAdmin, secretEquals } from "@/lib/require-admin";
 import { CURATED_ARTICLES, renderSources } from "@/lib/blog/content/curated";
 import { RETRACTIONS } from "@/lib/blog/content/retractions";
+import { applyCorrections } from "@/lib/blog/content/apply-corrections";
 
 const anthropic = new Anthropic();
 
@@ -953,9 +954,20 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Rewrite pre-written articles that were corrected (lib/blog/content/corrected.ts).
+  let corrected: string[] = [];
+  try {
+    corrected = await applyCorrections();
+    for (const slug of corrected) {
+      try { revalidatePath(`/ai-times/${slug}`); } catch { /* no request context */ }
+    }
+  } catch (err) {
+    console.error("[auto-refresh] corrections skipped", err instanceof Error ? err.message : err);
+  }
+
   // The listing is cached for 60s and only rebuilds on the request after that,
   // so without this a new article appeared for the second visitor, not the first.
-  if (curatedPublished.length > 0 || retracted > 0) revalidateAiTimes();
+  if (curatedPublished.length > 0 || retracted > 0 || corrected.length > 0) revalidateAiTimes();
 
   // Idempotency lock — prevent duplicate runs from concurrent clicks or tabs.
   // Uses the DB so it works across multiple server instances.
@@ -1369,5 +1381,5 @@ export async function GET(req: NextRequest) {
   ]);
 
   if (postsAdded > 0) revalidateAiTimes();
-  return NextResponse.json({ message: `Added ${postsAdded + curatedPublished.length} new posts`, postsAdded: postsAdded + curatedPublished.length, curatedPublished, retracted, imagesPatched, tipsPatched, translationsPatched });
+  return NextResponse.json({ message: `Added ${postsAdded + curatedPublished.length} new posts`, postsAdded: postsAdded + curatedPublished.length, curatedPublished, retracted, corrected: corrected.length, imagesPatched, tipsPatched, translationsPatched });
 }

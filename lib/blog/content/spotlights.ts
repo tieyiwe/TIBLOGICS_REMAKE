@@ -1,3 +1,4 @@
+import { withCorrection } from "./corrected-merge";
 // Extracted from app/api/blog/auto-refresh/route.ts.
 //
 // That route was 3,258 lines, of which 2,546 were this content. The logic it
@@ -5,10 +6,10 @@
 // a thousand lines of article prose sitting in the middle of it. Moving the
 // data out changes nothing at runtime; it just makes the route readable.
 
-export const EDITORIAL_SPOTLIGHTS = [
+const RAW_EDITORIAL_SPOTLIGHTS = [
   {
     title: "Claude Agents Now Dream: What Developers Need to Know — and How to Upgrade Your Builds",
-    excerpt: "Anthropic's Dreaming feature lets Claude agents reason continuously in the background between interactions. Here's what changed, why it matters, and how to bring your existing client builds up to the new standard.",
+    excerpt: "",
     category: "tips",
     tags: ["claude", "ai agents", "anthropic", "developers", "agent sdk", "dreaming", "background processing"],
     coverEmoji: "🤖",
@@ -16,36 +17,7 @@ export const EDITORIAL_SPOTLIGHTS = [
     coverImage: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=800&q=80",
     author: "Tieyiwe Bass · Founder, TIBLOGICS",
     featured: false,
-    content: `<p>Claude just got significantly more capable in a way that most end users won't immediately notice — but every developer building agents should understand immediately. Anthropic's Dreaming feature gives Claude agents the ability to reason in the background between interactions: processing context, planning multi-step actions, and arriving at responses that reflect deeper preparation rather than reactive generation. If you've built agents for clients, some of those builds are already behind the curve. Here's what changed and exactly what to do about it.</p>
-
-<h2>What the Dreaming Feature Actually Does</h2>
-<p>Traditional Claude agents operate on a simple call-and-response model: user sends a message, the agent generates a reply. The model's "thinking" is bounded by that single request window. Dreaming changes the architecture. Agents can now run background reasoning loops — processing incoming context, evaluating queued tasks, updating their working memory, and preparing structured responses — even when no immediate user prompt is active.</p>
-<p>Think of it like the difference between a consultant who reads your brief for the first time during the meeting versus one who spent the night studying your files, mapping dependencies, and arriving with a prepared game plan. The underlying model is the same; what changes is the depth of preparation brought to each interaction.</p>
-<p>In practice this means: faster and more coherent multi-step reasoning, better retention of context across long conversations, improved performance on tasks that require planning before acting, and more reliable tool-use chains where previous steps inform subsequent ones.</p>
-
-<h2>Why This Is a Bigger Deal Than It Sounds</h2>
-<p>The agents most businesses are running today were designed around the old constraint — that each response is generated fresh with only the context explicitly passed in. That shaped decisions about prompt design, memory architecture, tool invocation order, and how much reasoning to expect in a single turn. Dreaming removes some of those constraints entirely.</p>
-<p>Agents that were built to decompose complex tasks across multiple user turns (because a single turn couldn't handle the reasoning depth) can now do that reasoning within a single extended session. Agents that relied on explicit "think step by step" prompting to force deliberate reasoning get that quality natively. And agents that struggled with long-running workflows — where maintaining coherent context across 20+ tool calls was brittle — are now meaningfully more reliable.</p>
-<p>The clients who hired you to build those agents aren't getting that improvement automatically. The upgrade is available, but it requires intentional configuration and prompt restructuring.</p>
-
-<h2>Developer Tips: How to Upgrade Existing Client Agents</h2>
-<p>If you've built Claude-powered agents for clients — whether customer service bots, business process agents, data analysis assistants, or anything else — this is a practical checklist for bringing those builds up to the Dreaming standard.</p>
-
-<ul>
-<li><strong>Enable extended thinking in your API calls.</strong> Dreaming runs on top of Claude's extended thinking capability. Make sure your API calls include <code>"thinking": {"type": "enabled", "budget_tokens": 10000}</code> (or higher for complex agents). Agents built without this won't use background reasoning even if the model supports it.</li>
-<li><strong>Restructure prompts that were written around single-turn limitations.</strong> If you built prompts with explicit "break this into steps and ask me before proceeding" logic to work around depth limits, test removing that scaffolding. Dreaming handles multi-step planning natively — over-structured prompts can actually constrain it.</li>
-<li><strong>Revisit memory and context injection.</strong> If your agent summaries context explicitly at each turn because you didn't trust cross-turn retention, audit whether that's still necessary. Background reasoning improves context coherence; your injected summaries may now be redundant or even confusing.</li>
-<li><strong>Upgrade your tool-use ordering logic.</strong> Agents that called tools in rigid sequences to manage reasoning quality can now be more flexible. Dreaming allows the agent to decide the optimal tool invocation order based on background planning — let it.</li>
-<li><strong>Test long-horizon tasks end-to-end.</strong> The biggest gains show up in workflows that span many steps. Set up an evaluation run of your agent's hardest scenarios and compare against your pre-Dreaming baseline. You may find tasks that previously required human check-ins now complete cleanly.</li>
-<li><strong>Update client-facing documentation.</strong> If you gave clients expectations about what their agent could and couldn't do based on the old architecture, those expectations deserve a revision call. Under-selling a meaningfully upgraded tool is a missed opportunity for the relationship.</li>
-</ul>
-
-<h2>Making This the New Standard for All Future Builds</h2>
-<p>The developers who move fastest here aren't just upgrading old work — they're rebuilding their default starting point. Every new agent you build from this point forward should be designed with Dreaming enabled and assumed, not bolted on later.</p>
-<p>Concretely, that means: your base system prompt template should be written for a reasoning-capable model (no artificial step decomposition). Your API wrapper or agent initialization function should include extended thinking configuration by default. Your evaluation framework should include long-horizon test cases, not just single-turn response quality. And your client onboarding conversations should set expectations around what an agent built on this architecture can do — because the bar is meaningfully higher.</p>
-<p>The agents being built today with Dreaming as a baseline assumption will perform substantially better than the previous generation. Clients who see that difference will notice. The ones who stay on older builds won't know what they're missing — until a competitor's agent shows them.</p>
-
-<p><strong>Practical takeaway:</strong> Audit every active client agent you've built and enable extended thinking with a meaningful token budget. Then schedule a brief call with each client to walk them through what the upgrade unlocks. It costs you an afternoon and it's the kind of proactive value delivery that turns one-time builds into long-term relationships.</p>`,
+    content: "", // corrected text: lib/blog/content/corrected.ts,
   },
   {
     title: "The OpenAI Exodus: Why the Architects of Modern AI Are Walking Out",
@@ -110,7 +82,7 @@ export const EDITORIAL_SPOTLIGHTS = [
   },
   {
     title: "Elon Musk vs. OpenAI: The Verdict Is In — and Its Implications Go Far Beyond the Courtroom",
-    excerpt: "After months of legal wrangling, the Musk vs. OpenAI lawsuit has reached a conclusion. Here's what the ruling means for AI governance, nonprofit accountability, and the future of frontier AI development.",
+    excerpt: "",
     category: "breaking",
     tags: ["openai", "elon musk", "lawsuit", "ai governance", "regulation", "legal", "nonprofit"],
     coverEmoji: "⚡",
@@ -118,24 +90,7 @@ export const EDITORIAL_SPOTLIGHTS = [
     coverImage: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=800&q=80",
     author: "TIBLOGICS Editorial",
     featured: true,
-    content: `<p>The legal battle between Elon Musk and OpenAI — one of the most closely watched disputes in the history of artificial intelligence — has reached its verdict. The case, which Musk originally filed in early 2024 and refiled in late 2024 after an initial dismissal, accused OpenAI of abandoning its founding nonprofit mission by pivoting aggressively toward commercial operation and accepting billions in investment from Microsoft. The verdict lands at a pivotal moment: as frontier AI capabilities accelerate and the commercial stakes climb into the hundreds of billions, the question of who controls these systems — and under what obligations — has never mattered more.</p>
-
-<h2>What the Lawsuit Was Actually About</h2>
-<p>Musk's core argument was not simply a business dispute. It was a governance argument: that OpenAI was founded as a nonprofit with a specific mission to develop AI for the benefit of humanity, that Musk contributed early funding and talent under that promise, and that the organization's shift to a for-profit structure represented a fundamental breach. The lawsuit cited internal documents suggesting that OpenAI's leadership understood the tension between their mission and their commercial trajectory — and chose commercial growth anyway.</p>
-<p>OpenAI's counterargument was that its hybrid capped-profit structure preserved the nonprofit's control and that the transition was both legally sound and necessary to fund the compute-intensive research required to develop safe, frontier AI. They also noted that Musk himself had sought control of the company before leaving its board.</p>
-
-<h2>The Ruling and Its Immediate Impact</h2>
-<p>The court's decision hinged on the legal interpretation of OpenAI's founding commitments — whether they constituted binding obligations enforceable against the organization's current structure. The ruling has set a precedent that will shape how AI organizations structure their governance, disclose their mission drift, and navigate the tension between fundraising necessity and founding purpose.</p>
-<p>Regardless of which side prevailed on specific counts, the proceedings forced OpenAI to surface internal communications and governance documents that have permanently changed how the public, regulators, and investors understand the organization's decision-making. That transparency alone is a consequential outcome.</p>
-
-<h2>What This Means for AI Governance Broadly</h2>
-<p>The deeper significance is precedent. This case established — for the first time in a major legal forum — that the governance structures of AI labs are subject to judicial scrutiny. Policymakers in the EU, UK, and US have been watching closely. Expect the verdict to accelerate ongoing legislative efforts to require AI organizations above certain capability or valuation thresholds to demonstrate binding accountability structures, not just mission statements.</p>
-<p>For other AI organizations structured as public benefit corporations, B-corps, or hybrid nonprofits, the ruling is a signal to revisit how their governance documents are written and what commitments those documents create.</p>
-
-<h2>What This Means for Small Businesses</h2>
-<p>For businesses that rely on OpenAI's APIs — GPT-4o, Assistants, Whisper, image generation — the case outcome doesn't change your day-to-day access. OpenAI's commercial operations continue. What does change is the accountability framework around the models you're building on: expect more rigorous usage policy enforcement, greater regulatory reporting requirements, and potentially slower feature rollouts as legal and compliance reviews become more thorough.</p>
-
-<p><strong>Practical takeaway:</strong> Don't build critical business infrastructure on a single AI vendor. The Musk vs. OpenAI saga is a reminder that the governance, ownership, and mission of AI companies can shift dramatically. Diversify across providers — Claude, Gemini, and open-weight models like Llama offer viable alternatives — and architect systems that can switch models without full rewrites.</p>`,
+    content: "", // corrected text: lib/blog/content/corrected.ts,
   },
   {
     title: "OpenAI's GPT-5 Is Here: What Actually Changed and What Small Businesses Should Care About",
@@ -227,7 +182,7 @@ export const EDITORIAL_SPOTLIGHTS = [
   },
   {
     title: "AI Agents Are Taking Over Workflows: 5 Real Deployments That Are Saving Businesses Thousands Per Month",
-    excerpt: "AI agents have moved from demos to production. Here are five real deployment patterns that businesses are using right now to automate workflows that previously required dedicated staff.",
+    excerpt: "",
     category: "case-studies",
     tags: ["ai agents", "automation", "workflow", "case study", "roi", "n8n", "small business"],
     coverEmoji: "📊",
@@ -235,27 +190,7 @@ export const EDITORIAL_SPOTLIGHTS = [
     coverImage: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80",
     author: "TIBLOGICS Editorial",
     featured: false,
-    content: `<p>The conversation about AI agents has finally caught up with reality. A year ago, "agentic AI" meant impressive demos — agents solving coding challenges, browsing the web, completing toy tasks in controlled environments. Today, businesses are running agents in production across sales, operations, customer service, and finance workflows that previously required dedicated staff time. The numbers are real and the patterns are clear enough to replicate.</p>
-
-<h2>1. Lead Qualification Agent: Replacing 20 Hours of SDR Time Per Week</h2>
-<p>A B2B SaaS company deployed an agent that monitors new trial signups, enriches their profiles via LinkedIn and company data APIs, scores them against ideal customer profile criteria, drafts personalized outreach emails, and queues them for human review before sending. The agent handles 200–400 new leads per month. Previously, two sales development reps spent roughly 10 hours each per week on the same workflow. The agent runs overnight. Human review takes 20 minutes in the morning. Cost reduction: approximately $6,000/month in labor reallocation.</p>
-
-<h2>2. Contract Review Agent: 3-Hour Process Down to 12 Minutes</h2>
-<p>A consulting firm built an agent that ingests vendor and client contracts, extracts key terms (liability caps, payment terms, IP ownership, termination clauses), flags non-standard provisions against a company playbook, and produces a structured summary with risk scores. A review that previously required a paralegal and 2–3 hours now produces a reliable first-pass in 12 minutes. The human attorney spends 15 minutes on final review instead of 3 hours. The agent processes 40–60 contracts monthly.</p>
-
-<h2>3. Customer Support Tier-1 Agent: 70% Deflection Rate</h2>
-<p>An e-commerce company deployed an agent across email, chat, and their helpdesk platform. The agent handles return requests (connecting directly to their OMS to initiate returns), order status inquiries, product questions (drawing from a live product database), and basic account management. Tier-1 deflection rate reached 70% within six weeks. Average resolution time for deflected tickets dropped from 4.2 hours to under 2 minutes. Human agents now focus exclusively on complex issues requiring judgment and empathy.</p>
-
-<h2>4. Financial Reporting Agent: Monthly Close Accelerated by 4 Days</h2>
-<p>A 40-person professional services firm built an agent that pulls data from their accounting software, project management platform, and billing system on the 1st of each month, reconciles outstanding invoices, categorizes expenses, flags anomalies for review, and generates the management reporting package. The finance manager still reviews and signs off — but the data collection and initial analysis that previously took 4–5 days now takes 45 minutes. The monthly close moved from day 10 to day 5.</p>
-
-<h2>5. Content Operations Agent: One Person Managing Five Channels</h2>
-<p>A marketing agency built an agent pipeline that takes a weekly editorial brief, generates long-form content drafts, adapts them for LinkedIn, Twitter/X, email newsletter, and the blog, schedules publishing across platforms, and compiles performance metrics into a weekly summary. One content manager now oversees five channels that previously required three people. The agent handles the volume; the human handles strategy, editing, and judgment calls.</p>
-
-<h2>What This Means for Small Businesses</h2>
-<p>The common thread across these deployments: agents work best on high-volume, well-defined workflows where the steps are clear and the data sources are accessible via API. They fail on workflows requiring genuine judgment, relationship navigation, or handling truly novel situations. The successful deployments treat agents as autonomous first-pass processors with humans reviewing and approving at key checkpoints.</p>
-
-<p><strong>Practical takeaway:</strong> Identify your highest-volume repeatable workflow — the one that consumes the most of someone's week doing steps that don't require genuine human judgment. That's your first agent deployment candidate. Start with one workflow, run it in parallel with your current process for two weeks, measure the quality gap, and iterate.</p>`,
+    content: "", // corrected text: lib/blog/content/corrected.ts,
   },
   {
     title: "Google Gemini 2.5 vs. Claude 3.7 vs. GPT-5: An Honest Comparison for Builders",
@@ -314,7 +249,7 @@ export const EDITORIAL_SPOTLIGHTS = [
   },
   {
     title: "The Real ROI of AI Automation for Small Businesses: Numbers From Actual Deployments",
-    excerpt: "Forget the vendor case studies. Here's what actual small businesses are spending on AI automation, what they're getting back, and how long it's actually taking to see returns.",
+    excerpt: "",
     category: "ai-business",
     tags: ["roi", "automation", "small business", "cost savings", "ai implementation", "case study"],
     coverEmoji: "💼",
@@ -322,24 +257,7 @@ export const EDITORIAL_SPOTLIGHTS = [
     coverImage: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80",
     author: "TIBLOGICS Editorial",
     featured: false,
-    content: `<p>AI vendors publish case studies claiming 10x productivity gains and cost reductions measured in millions. Small business owners read them with appropriate skepticism: those numbers come from enterprise deployments with dedicated implementation teams, extensive customization budgets, and a selection bias toward success stories. What does AI automation actually cost and deliver for a business with 5–50 employees? Here's what we've seen across actual deployments.</p>
-
-<h2>The Realistic Cost Structure</h2>
-<p>For a small business starting with AI automation, the cost structure has three components: tooling subscriptions, implementation time, and ongoing API costs. Tooling subscriptions (n8n Cloud, Make, or similar automation platforms) run $20–$200/month depending on volume and features. AI API costs depend heavily on use case — a customer service chatbot handling 500 conversations/month might cost $50–$150/month in API fees; a document processing workflow might cost $30–$80/month. Implementation time — the hours to design, build, test, and deploy a workflow — is the biggest variable. Simple workflows take 4–8 hours. Complex multi-step agent workflows take 20–60 hours.</p>
-<p>Assuming you hire someone to build it: expect $800–$6,000 in one-time implementation cost for a meaningful automation, plus $50–$300/month in ongoing operational costs.</p>
-
-<h2>What Comes Back: Real Deployment Numbers</h2>
-<p>A 12-person accounting firm automated client onboarding (document collection, welcome sequence, initial data entry into their practice management software). Implementation: 18 hours, $2,200. Monthly operational cost: $85. Time saved: 6 hours per new client, 8–10 new clients per month = 50–60 hours/month at a $35 effective hourly cost = $1,750–$2,100/month in recaptured staff time. Payback: 5–6 weeks.</p>
-<p>A 7-person marketing agency automated weekly reporting (pulling analytics from Google, Meta, and LinkedIn, generating client report drafts). Implementation: 12 hours, $1,400. Monthly operational cost: $60. Time saved: 3 hours per client per month, 12 clients = 36 hours/month at $45 blended rate = $1,620/month recaptured. Payback: under 4 weeks.</p>
-<p>A 25-person e-commerce brand automated customer review management (responding to reviews, flagging negative ones, routing to customer service, synthesizing feedback trends for the product team). Implementation: 30 hours, $3,800. Monthly operational cost: $120. Hours saved: 2 hours/day, 5 days/week = ~40 hours/month. Payback: 8–10 weeks.</p>
-
-<h2>Where Automation Underdelivers</h2>
-<p>The workflows that most frequently underdeliver are those that seem mechanical but actually require contextual judgment. Customer complaint handling that involves any significant emotional complexity, sales conversations with high-value prospects, and quality control for creative work all tend to require more human oversight than initial estimates projected. The automation creates scaffolding; the human still does the high-judgment work.</p>
-
-<h2>What This Means for Small Businesses</h2>
-<p>The real ROI of AI automation is fastest when you target workflows with three characteristics: high frequency (happening daily or multiple times per week), clear success criteria (easy to tell when the output is correct), and significant current time cost. Anything outside that profile takes longer to see returns.</p>
-
-<p><strong>Practical takeaway:</strong> List every recurring task your team does more than 3 times per week. Rank by time cost. Pick the top item that has clear success criteria. That's your first automation — and based on the numbers above, you should see full payback within 60 days if you implement it correctly.</p>`,
+    content: "", // corrected text: lib/blog/content/corrected.ts,
   },
   {
     title: "10 Prompt Engineering Techniques That Actually Work in Production (And 3 That Don't)",
@@ -790,7 +708,7 @@ export const EDITORIAL_SPOTLIGHTS = [
   },
   {
     title: "AI for E-Commerce: The 6 Deployments That Are Actually Moving Revenue",
-    excerpt: "Beyond chatbots and product recommendations, here are the AI deployments that e-commerce brands are seeing real revenue impact from — with numbers from actual implementations.",
+    excerpt: "",
     category: "case-studies",
     tags: ["e-commerce", "ai", "retail", "product recommendations", "personalization", "conversion", "revenue"],
     coverEmoji: "📊",
@@ -798,27 +716,7 @@ export const EDITORIAL_SPOTLIGHTS = [
     coverImage: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1200&q=80",
     author: "TIBLOGICS Editorial",
     featured: false,
-    content: `<p>E-commerce AI deployments split into two categories: the ones that generate impressive demos and the ones that actually move revenue metrics. The demo category — AI chatbots that answer product questions, personalisation engines that show "customers also viewed" — has been around long enough that the novelty has worn off and the real-world impact numbers are available. Here are the six deployment patterns where the revenue data is consistently compelling.</p>
-
-<h2>1. Dynamic Pricing with Demand Prediction: 8–15% Revenue Lift</h2>
-<p>AI-driven dynamic pricing that adjusts prices based on real-time demand signals, inventory levels, competitor pricing, and historical purchase patterns consistently delivers 8–15% revenue lift in well-implemented deployments. The key word is "well-implemented" — naive dynamic pricing that discounts too aggressively erodes margins, while pricing that feels manipulative to consumers damages trust. The successful implementations use AI to optimise price at the product and segment level while maintaining guardrails that preserve brand positioning and margin floors.</p>
-
-<h2>2. Personalised Email Sequencing: 25–40% Higher Email Revenue</h2>
-<p>AI-generated personalised email sequences — not just subject line testing, but entirely different content, offers, and timing based on individual purchase history, browsing behaviour, and predicted lifetime value — are delivering 25–40% higher email-attributed revenue compared to segmented batch-and-blast campaigns. The models that perform best combine purchase data with browsing session data to identify where a customer is in their consideration process and send content that matches that stage, rather than sending the same promotional email to all subscribers.</p>
-
-<h2>3. AI-Generated Product Descriptions at Scale: 15–30% SEO Traffic Increase</h2>
-<p>Brands with large catalogues — thousands or tens of thousands of SKUs — have historically produced thin, duplicate, or template-filled product descriptions because manual copywriting doesn't scale. AI-generated product descriptions that incorporate unique details about each SKU, relevant keywords, and brand voice consistently deliver 15–30% organic traffic increases when replacing placeholder or thin content. The quality threshold matters: AI descriptions that simply reformulate the product specs don't move the needle. Descriptions that add genuine context, use cases, and benefit language do.</p>
-
-<h2>4. Intelligent Search That Understands Intent: 20–35% Search Conversion Rate Improvement</h2>
-<p>Traditional e-commerce search fails on natural language queries, synonyms, and intent-based searches. A customer searching "something to wear to a beach wedding in June" on a fashion site gets no results from a keyword-matching engine. AI-powered semantic search that understands intent rather than matching keywords consistently improves search conversion rates by 20–35% — and, critically, reduces the bounce rate from failed searches, which is where most e-commerce sites quietly lose a large portion of their traffic.</p>
-
-<h2>5. Returns Reduction Through Better Size and Fit Guidance: 10–25% Returns Reduction</h2>
-<p>Returns cost e-commerce brands an average of 15–30% of revenue, and size and fit is the leading cause for apparel. AI systems that analyse a customer's purchase and return history to provide personalised size recommendations — "based on your past purchases, you typically need a size up in this brand's tops" — reduce return rates by 10–25% in implementations with sufficient data. The payback on this investment is among the fastest of any AI deployment in e-commerce given how directly it attacks a major cost line.</p>
-
-<h2>6. Abandoned Cart Recovery with AI-Generated Personalised Outreach: 30–50% Recovery Rate Improvement</h2>
-<p>Standard abandoned cart emails achieve 5–15% recovery rates. AI-personalised recovery sequences — where the message content, timing, offer (if any), and channel (email, SMS, push) are determined by a model trained on what has historically recovered similar customers — consistently outperform standard sequences by 30–50%. The model identifies which abandoned customers respond to urgency messaging, which respond to social proof, which respond to a small discount, and which are already past the recovery window — and routes each accordingly.</p>
-
-<p><strong>Practical takeaway:</strong> Rank these six deployments by the revenue problem they solve most directly for your specific business. If returns are your biggest cost, start there. If email performance is your biggest opportunity, start there. Pick one, implement it properly, measure the impact, and use the results to justify the next investment.</p>`,
+    content: "", // corrected text: lib/blog/content/corrected.ts,
   },
   {
     title: "Anthropic's Claude 4: What Changed, What It Means for Builders, and the Honest Capability Assessment",
@@ -884,3 +782,6 @@ export const EDITORIAL_SPOTLIGHTS = [
 <p><strong>Practical takeaway:</strong> Open Make.com or n8n right now. Identify the workflow from this list that solves your most painful time sink. You have everything you need to deploy it this week.</p>`,
   },
 ];
+
+// Articles listed in corrected.ts are served in their corrected form.
+export const EDITORIAL_SPOTLIGHTS = RAW_EDITORIAL_SPOTLIGHTS.map(withCorrection);
