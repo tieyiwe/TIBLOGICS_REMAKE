@@ -11,6 +11,7 @@
 //   node scripts/cron.mjs exams
 //   node scripts/cron.mjs monitor
 //   node scripts/cron.mjs blueprints
+//   node scripts/cron.mjs translate
 //   node scripts/cron.mjs all
 //
 // Needs two environment variables:
@@ -30,6 +31,9 @@ const JOBS = {
   monitor: { path: "/api/cron/monitor-scans", suggested: "hourly" },
   // Automation Blueprints whose first write-up did not finish.
   blueprints: { path: "/api/cron/blueprints", suggested: "every 15 minutes" },
+  // French and Swahili pre-translation of courses, labs, prompts and articles.
+  // Bounded per run (TRANSLATE_BATCH, default 20 model calls); free once done.
+  translate: { path: "/api/cron/translate", suggested: "hourly" },
 };
 
 /**
@@ -83,7 +87,7 @@ for (const name of names) {
     const res = await fetch(url, {
       headers: { authorization: `Bearer ${secret}` },
       // A news run generates several articles; give it room.
-      signal: AbortSignal.timeout(name === "news" ? 600_000 : name === "monitor" || name === "blueprints" ? 330_000 : 120_000),
+      signal: AbortSignal.timeout(name === "news" ? 600_000 : name === "monitor" || name === "blueprints" || name === "translate" ? 330_000 : 120_000),
     });
     const body = await res.text();
     const secs = ((Date.now() - started) / 1000).toFixed(1);
