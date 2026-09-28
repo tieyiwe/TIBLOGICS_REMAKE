@@ -15,6 +15,7 @@ const pageTitles: Record<string, string> = {
   "/admin_pro/monitor": "Readiness Monitor",
   "/admin_pro/toolkit": "Toolkit Live",
   "/admin_pro/blueprints": "Automation Blueprints",
+  "/admin_pro/test-access": "Test access",
   "/admin_pro/revenue": "Revenue",
   "/admin_pro/settings": "Settings",
   "/admin_pro/content": "Content Manager",

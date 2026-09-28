@@ -2,6 +2,7 @@
 // Run: npx tsx --tsconfig tsconfig.json scripts/validate-toolkit-prompts.mts
 import { EXTRA_FOR_EXISTING, NEW_INDUSTRIES } from "../lib/toolkit/prompts";
 import type { PromptDraft } from "../lib/toolkit/prompts/define";
+import base from "../lib/toolkit/library.json";
 
 const BANNED = /[—–―‘’“”…→• ]/;
 let errors = 0;
@@ -28,7 +29,12 @@ function check(group: string, list: PromptDraft[]) {
   console.log(`${group}: ${list.length} prompts, ${cats.size} categories (${[...cats.values()].join("/")})`);
 }
 
-for (const [v, list] of Object.entries(EXTRA_FOR_EXISTING)) check(`${v} (added)`, list);
+for (const [v, list] of Object.entries(EXTRA_FOR_EXISTING)) {
+  check(`${v} (added)`, list);
+  // Additions must land in the toolkit's existing categories.
+  const known = new Set((base as { prompts: Array<{ vertical: string; category: string }> }).prompts.filter((p) => p.vertical === v).map((p) => p.category));
+  for (const d of list) if (!known.has(d.c)) fail(`${v} "${d.t}"`, `unknown category "${d.c}"`);
+}
 for (const pack of NEW_INDUSTRIES) check(pack.id, pack.prompts);
 if (errors) {
   console.error(`\n${errors} problem(s).`);

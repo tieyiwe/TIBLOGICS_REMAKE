@@ -79,7 +79,7 @@ export default async function ToolkitLivePage({ searchParams }: { searchParams: 
               Powerful prompts, built the way top performers in your field work.
             </h1>
             <p className="font-dm text-lg text-white/80 mt-5">
-              {LIBRARY_SIZE} ready-to-run prompts for real estate, finance, nonprofits, agencies and restaurants. They are
+              {LIBRARY_SIZE} ready-to-run prompts for 12 fields, from real estate, medical practices and law firms to social work, HR, trades and e-commerce. They are
               filled in with your business details, written in your voice, and checked for compliance before you hit send.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
@@ -159,7 +159,7 @@ export default async function ToolkitLivePage({ searchParams }: { searchParams: 
                 <ul className="mt-4 space-y-2 font-dm text-sm text-[#3A4A5C]">
                   {(id === "toolkit"
                     ? [`All ${LIBRARY_SIZE} prompts across ${LIBRARY_VERTICALS.length} industries`, "Remembers your business, voice and required disclosures", "Compliance Guard on every draft", `${p.monthlyRuns} AI runs a month`]
-                    : ["Instant rule check on any text, unlimited", "Deep AI review for context the rules miss", "Real estate, finance, nonprofit, agency and restaurant rules", `${p.monthlyRuns} deep checks a month`]
+                    : ["Instant rule check on any text, unlimited", "Deep AI review for context the rules miss", "Rules for 12 fields, including medical, legal, insurance and HR", `${p.monthlyRuns} deep checks a month`]
                   ).map((t) => (
                     <li key={t} className="flex gap-2"><Check size={16} className="text-green-600 shrink-0 mt-0.5" />{t}</li>
                   ))}

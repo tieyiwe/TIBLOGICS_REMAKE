@@ -14,7 +14,8 @@ export interface ToolkitAccess {
   hasBilling: boolean;
 }
 
-const ENTITLED = new Set(["active", "trialing", "past_due"]);
+// "comped" is free access granted from the admin Test access page.
+const ENTITLED = new Set(["active", "trialing", "past_due", "comped"]);
 
 export async function getToolkitAccess(): Promise<ToolkitAccess | null> {
   const student = await getStudent();

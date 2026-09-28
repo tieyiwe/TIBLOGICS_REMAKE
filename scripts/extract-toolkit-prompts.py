@@ -70,7 +70,14 @@ def toc_ranges(text):
             name = before[-2].strip() + " " + name
         name = re.sub(r"^Category \d+:\s*", "", name)
         out.append((int(m.group(1)), name))
-    return sorted(set(out))
+    # Finance-style TOC: "Category 1: Client Emails (#1–#12)" on one line.
+    for m in re.finditer(r"(?m)^(?:Category \d+:\s*)?([A-Z][^\n(]{3,80}?)\s*\(#(\d+)\s*[–-]\s*#?\d+\)", text):
+        out.append((int(m.group(2)), m.group(1).strip()))
+    # One name per starting number; the first (TOC) occurrence wins.
+    seen = {}
+    for start, name in out:
+        seen.setdefault(start, name)
+    return sorted(seen.items())
 
 def parse(vertical, label, path):
     text = clean("\n".join(p.extract_text() or "" for p in PdfReader(path).pages))

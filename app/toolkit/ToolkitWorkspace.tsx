@@ -73,6 +73,13 @@ const INDUSTRIES: Array<[string, string]> = [
   ["nonprofit", "Nonprofit"],
   ["agency", "Marketing agency"],
   ["restaurant", "Restaurant"],
+  ["social-work", "Social work"],
+  ["medical", "Medical practice"],
+  ["legal", "Law firm"],
+  ["insurance", "Insurance agency"],
+  ["home-services", "Home services and trades"],
+  ["ecommerce", "E-commerce and retail"],
+  ["hr", "HR and recruiting"],
   ["general", "General business"],
 ];
 
@@ -369,6 +376,11 @@ function WriteTab(props: {
         <select className={input} value={vertical} onChange={(e) => setVertical(e.target.value)} aria-label="Industry">
           {props.verticals.map((v) => <option key={v.id} value={v.id}>{v.label} ({v.count})</option>)}
         </select>
+        {["medical", "social-work", "legal", "hr", "insurance"].includes(vertical) && (
+          <p className="mt-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 font-dm text-xs text-amber-900">
+            Do not enter names or details that identify a patient, client, claimant or employee. Use placeholders and fill them in after.
+          </p>
+        )}
         <select className={`${input} mt-2`} value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Category">
           <option value="all">All categories</option>
           {categories.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -481,12 +493,17 @@ function WriteTab(props: {
             </div>
             {selected.fields.length > 0 && (
               <div className="grid sm:grid-cols-2 gap-3 mt-5">
-                {selected.fields.map((f) => (
-                  <label key={f} className="block">
-                    <span className="font-dm text-xs font-semibold text-[#3A4A5C]">{f.charAt(0) + f.slice(1).toLowerCase()}</span>
-                    <input className={`${input} mt-1`} value={fields[f] ?? ""} onChange={(e) => setFields((prev) => ({ ...prev, [f]: e.target.value }))} placeholder="From your profile, or leave blank" />
-                  </label>
-                ))}
+                {selected.fields.map((f) => {
+                  // "[AUDIENCE, e.g. first-time buyers]" shows as a label plus an example.
+                  const [name, ...rest] = f.split(/,\s*e\.g\.\s*/i);
+                  const example = rest.join(", ");
+                  return (
+                    <label key={f} className="block">
+                      <span className="font-dm text-xs font-semibold text-[#3A4A5C]">{name.charAt(0) + name.slice(1).toLowerCase()}</span>
+                      <input className={`${input} mt-1`} value={fields[f] ?? ""} onChange={(e) => setFields((prev) => ({ ...prev, [f]: e.target.value }))} placeholder={example ? `e.g. ${example}` : "From your profile, or leave blank"} />
+                    </label>
+                  );
+                })}
               </div>
             )}
             <label className="block mt-4">

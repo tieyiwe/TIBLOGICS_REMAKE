@@ -13,7 +13,7 @@ const emptyProc = (): Proc => ({ name: "", steps: "", timesPer: "", per: "week",
 const PER = { day: 21.7, week: 4.33, month: 1 };
 const DRAFT_KEY = "tiblogics-blueprint-draft";
 
-export default function BlueprintForm({ price, creditDays }: { price: string | null; creditDays: number }) {
+export default function BlueprintForm({ price, creditDays, testMode = false }: { price: string | null; creditDays: number; testMode?: boolean }) {
   const [f, setF] = useState({ name: "", email: "", company: "", industry: "", teamSize: "2-5", tools: "", goals: "", budget: "not-sure" });
   const [procs, setProcs] = useState<Proc[]>([emptyProc()]);
   const [busy, setBusy] = useState(false);
@@ -45,15 +45,18 @@ export default function BlueprintForm({ price, creditDays }: { price: string | n
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const res = await fetch("/api/blueprint/start", {
+    // Test mode (admin only, checked again by the API) skips checkout and
+    // writes the blueprint for free.
+    const res = await fetch(testMode ? "/api/admin/test-access" : "/api/blueprint/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...f, processes: procs }),
+      body: JSON.stringify(testMode ? { tool: "blueprint", intake: { ...f, processes: procs } } : { ...f, processes: procs }),
     }).catch(() => null);
     const d = res ? await res.json().catch(() => ({})) : {};
-    if (res?.ok && d.url) {
+    const next = d.url ?? d.link;
+    if (res?.ok && next) {
       try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
-      window.location.href = d.url;
+      window.location.href = next;
       return;
     }
     setError(d.error ?? "Something went wrong. Please try again.");
@@ -74,7 +77,7 @@ export default function BlueprintForm({ price, creditDays }: { price: string | n
     setLinkMsg(d.message ?? d.error ?? "Please try again.");
   }
 
-  if (!price) {
+  if (!price && !testMode) {
     return (
       <div className="max-w-xl bg-white border border-[#D2DCE8] rounded-2xl p-6">
         <p className="font-syne font-bold text-xl text-[#0D1B2A]">Opening soon</p>
@@ -94,6 +97,11 @@ export default function BlueprintForm({ price, creditDays }: { price: string | n
   return (
     <div className="grid lg:grid-cols-[1fr_320px] gap-8 items-start">
       <form onSubmit={submit} className="space-y-6">
+        {testMode && (
+          <p className="rounded-2xl border border-amber-200 bg-amber-50 p-4 font-dm text-sm text-amber-900">
+            <strong>Admin test mode.</strong> No checkout. The blueprint is written for free and opens when you submit.
+          </p>
+        )}
         <section className="bg-white border border-[#D2DCE8] rounded-2xl p-5 md:p-6">
           <h2 className="font-syne font-bold text-lg text-[#0D1B2A]">About your business</h2>
           <div className="grid sm:grid-cols-2 gap-4 mt-4">
@@ -157,13 +165,15 @@ export default function BlueprintForm({ price, creditDays }: { price: string | n
         {error && <p className="font-dm text-sm text-red-600">{error}</p>}
         <button type="submit" disabled={busy} className="btn-primary w-full sm:w-auto justify-center disabled:opacity-60">
           {busy ? <Loader2 size={16} className="animate-spin" /> : <Lock size={15} />}
-          {busy ? "Starting checkout…" : `Continue to secure checkout · ${price}`}
+          {testMode
+            ? busy ? "Creating..." : "Create free test blueprint"
+            : busy ? "Starting checkout..." : `Continue to secure checkout · ${price}`}
         </button>
       </form>
 
       <aside className="space-y-4 lg:sticky lg:top-32">
         <div className="bg-white border border-[#D2DCE8] rounded-2xl p-5">
-          <p className="font-syne font-extrabold text-3xl text-[#0D1B2A]">{price}</p>
+          <p className="font-syne font-extrabold text-3xl text-[#0D1B2A]">{testMode ? "Free (test)" : price}</p>
           <p className="font-dm text-sm text-[#7A8FA6]">One time. No subscription.</p>
           <ul className="mt-4 space-y-2 font-dm text-sm text-[#3A4A5C]">
             <li>· Delivered by private link, usually within minutes</li>

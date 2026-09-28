@@ -175,7 +175,9 @@ export default async function BlueprintPage({ params }: { params: Promise<{ toke
             <h2 className="font-syne font-bold text-lg">Want us to build it?</h2>
             <p className="font-dm text-sm text-white/70 mt-1">
               Quote <strong className="text-white">{bp.creditCode}</strong> when you book.
-              {bp.creditUsedAt
+              {bp.amountPaid === 0
+                ? " This was a complimentary blueprint, so there is no credit to apply."
+                : bp.creditUsedAt
                 ? " This credit has already been applied to a project."
                 : bp.creditExpiresAt && bp.creditExpiresAt > new Date()
                 ? ` The ${formatMoney(bp.amountPaid)} you paid comes off the project if you start before ${bp.creditExpiresAt.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}.`

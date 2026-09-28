@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ClipboardList, Workflow, CalendarRange, BadgeDollarSign } from "lucide-react";
 import { blueprintPrice, creditDays, formatMoney } from "@/lib/blueprint/config";
 import BlueprintForm from "./BlueprintForm";
+import { ownerSession } from "@/lib/admin/test-access";
 
 export const metadata: Metadata = {
   title: "Automation Blueprint: a written plan for automating your busywork",
@@ -19,9 +20,11 @@ const WHAT = [
   { icon: BadgeDollarSign, title: "Credited if we build it", body: "Hire TIBLOGICS to build any part of the plan and what you paid comes off the project." },
 ];
 
-export default async function AutomationBlueprintPage({ searchParams }: { searchParams: Promise<{ paid?: string; canceled?: string }> }) {
+export default async function AutomationBlueprintPage({ searchParams }: { searchParams: Promise<{ paid?: string; canceled?: string; test?: string }> }) {
   const sp = await searchParams;
   const price = blueprintPrice();
+  // ?test=1 from the admin Test access page; ignored for everyone else.
+  const testMode = sp.test === "1" && !!(await ownerSession());
 
   return (
     <div className="pt-32 sm:pt-44 pb-20 min-h-screen bg-[#F4F7FB]">
@@ -60,7 +63,7 @@ export default async function AutomationBlueprintPage({ searchParams }: { search
         </div>
 
         <div className="mt-12">
-          <BlueprintForm price={price ? formatMoney(price) : null} creditDays={creditDays()} />
+          <BlueprintForm price={price ? formatMoney(price) : null} creditDays={creditDays()} testMode={testMode} />
         </div>
       </div>
     </div>
