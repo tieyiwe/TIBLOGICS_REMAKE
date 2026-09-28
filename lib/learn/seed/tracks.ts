@@ -11,6 +11,7 @@ import { AI_SYSTEMS_EXPERT } from "./track-3";
 import { VIBE_CODING_ENGINEER } from "./track-4";
 import { AI_FOR_PARENTS } from "./track-parents";
 import { AI_FORWARD_PROFESSIONAL } from "./track-ai-forward";
+import { AI_SMALL_BUSINESS } from "./track-smb";
 
 // Track 1 (Level 1 · Basic) is assembled from its content files. Module 8,
 // "Seeing the Whole System", is appended rather than inserted so the existing
@@ -187,6 +188,7 @@ export const TRACKS: SeedTrack[] = [
   VIBE_CODING_ENGINEER,
   AI_FOR_PARENTS,
   AI_FORWARD_PROFESSIONAL,
+  AI_SMALL_BUSINESS,
   AI_FOR_BUSINESS,
   PROMPT_ENGINEERING,
   AI_AUTOMATION,

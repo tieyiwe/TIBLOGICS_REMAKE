@@ -88,6 +88,10 @@ async function translateNow(fields: Fields, locale: Locale): Promise<Fields> {
 }
 
 const inFlight = new Map<string, Promise<Fields | null>>();
+// A translation that just failed is not retried on every page view (each try
+// is a paid model call). Page views wait out a cool-down; the cron job retries.
+const failedAt = new Map<string, number>();
+const RETRY_AFTER_MS = 15 * 60_000;
 
 /**
  * Translated fields for `key` in `locale`, or null if not available yet.
@@ -118,6 +122,7 @@ export async function translated(
   if (!process.env.ANTHROPIC_API_KEY) return null;
 
   const job = `${key}\0${locale}\0${hash}`;
+  if (mode === "queue" && Date.now() - (failedAt.get(job) ?? 0) < RETRY_AFTER_MS) return null;
   let p = inFlight.get(job);
   if (!p) {
     p = translateNow(fields, locale)
@@ -135,6 +140,8 @@ export async function translated(
       })
       .catch((err) => {
         console.error("[i18n] translation failed", key, locale, err instanceof Error ? err.message : err);
+        if (failedAt.size > 5000) failedAt.clear();
+        failedAt.set(job, Date.now());
         return null;
       })
       .finally(() => inFlight.delete(job));

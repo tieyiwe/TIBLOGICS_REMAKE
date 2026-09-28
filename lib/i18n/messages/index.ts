@@ -8,8 +8,9 @@ import learn from "./learn";
 import labs from "./labs";
 import toolkit from "./toolkit";
 import calculator from "./calculator";
+import pages from "./pages";
 
-const ALL: Messages[] = [common, home, site, tools, learn, labs, toolkit, calculator];
+const ALL: Messages[] = [common, home, site, tools, learn, labs, toolkit, calculator, pages];
 
 const cache = new Map<Locale, Record<string, string>>();
 
