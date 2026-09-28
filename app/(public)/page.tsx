@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Hero from "@/components/public/Hero";
 import AIBanner from "@/components/public/AIBanner";
-import { Bot, Zap, Brain } from "lucide-react";
+import { Bot, Zap, Brain, BookOpen, HeartPulse, Package, GraduationCap } from "lucide-react";
 
 export const metadata: Metadata = {
   // The layout template appends " | TIBLOGICS", so naming the brand here
@@ -54,10 +54,12 @@ const featuredServices = [
 ];
 
 const featuredProducts = [
-  { name: "InStory", desc: "AI-powered K-8 learning stories built for schools.", emoji: "📚", color: "#2251A3", tag: "EdTech" },
-  { name: "CareFlow AI", desc: "AI voice assistant for healthcare — check-ins, appointment booking, and patient support.", emoji: "❤️", color: "#0F6E56", tag: "HealthTech" },
-  { name: "ShipFrica", desc: "White-label shipping SaaS for African diaspora logistics.", emoji: "📦", color: "#F47C20", tag: "Logistics" },
-  { name: "AI Academy", desc: "90+ lessons across 3 AI courses on Skool.", emoji: "🎓", color: "#7c3aed", tag: "EdTech" },
+  // Icons rather than emoji: emoji render differently on every platform and are
+  // the quickest way for a page to read as a template.
+  { name: "InStory", desc: "AI-powered K-8 learning stories built for schools.", icon: BookOpen, color: "#2251A3", tag: "EdTech" },
+  { name: "CareFlow AI", desc: "AI voice assistant for healthcare: check-ins, appointment booking, and patient support.", icon: HeartPulse, color: "#0F6E56", tag: "HealthTech" },
+  { name: "ShipFrica", desc: "White-label shipping SaaS for African diaspora logistics.", icon: Package, color: "#F47C20", tag: "Logistics" },
+  { name: "AI Academy", desc: "90+ lessons across 3 AI courses on Skool.", icon: GraduationCap, color: "#7c3aed", tag: "EdTech" },
 ];
 
 export default function HomePage() {
@@ -143,10 +145,10 @@ export default function HomePage() {
                 className="bg-white border border-[#D2DCE8] rounded-2xl p-5 flex flex-col gap-2 hover:shadow-[0_4px_24px_rgba(27,58,107,0.12)] hover:-translate-y-0.5 transition-all duration-200"
               >
                 <div
-                  className="w-11 h-11 rounded-full flex items-center justify-center text-xl flex-shrink-0"
-                  style={{ backgroundColor: p.color + "26" }}
+                  className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: p.color + "1A" }}
                 >
-                  {p.emoji}
+                  <p.icon size={21} style={{ color: p.color }} />
                 </div>
                 <span className="section-tag">{p.tag}</span>
                 <h3 className="font-syne font-bold text-base text-[#0D1B2A]">{p.name}</h3>

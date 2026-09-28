@@ -454,9 +454,26 @@ export default function ScannerPage() {
 
   async function handleScan(e: React.FormEvent) {
     e.preventDefault();
-    if (!url.trim()) return;
+    await runScan(url);
+  }
 
-    let normalizedUrl = url.trim();
+  // The home page hero runs a quick scan and links here for the full report
+  // as /tools/scanner?url=… — pick that up and run it, so the visitor lands on
+  // their result rather than on an empty form they have to fill in again.
+  useEffect(() => {
+    const handed = new URLSearchParams(window.location.search).get("url");
+    if (handed && handed.length < 500) {
+      setUrl(handed);
+      void runScan(handed);
+    }
+    // Runs once on arrival; runScan is stable enough for that purpose.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function runScan(rawUrl: string) {
+    if (!rawUrl.trim()) return;
+
+    let normalizedUrl = rawUrl.trim();
     if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
       normalizedUrl = "https://" + normalizedUrl;
     }

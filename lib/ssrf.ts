@@ -139,7 +139,10 @@ export async function checkTargetUrl(
   // keeps it, so file: and gopher: are rejected as schemes rather than being
   // turned into the nonsense "https://file:///etc/passwd" and failing later
   // for the wrong reason.
-  const hasScheme = /^[a-z][a-z0-9+.-]*:/i.test(trimmed);
+  // `host:port` is not a scheme. Without this, "mysite.com:8443" and
+  // "localhost:5000" were read as the schemes "mysite.com" and "localhost" and
+  // refused with the wrong message. A colon followed by digits is a port.
+  const hasScheme = /^[a-z][a-z0-9+.-]*:(?!\d)/i.test(trimmed);
   if (hasScheme && !/^https?:\/\//i.test(trimmed)) {
     return { ok: false, reason: "scheme" };
   }
