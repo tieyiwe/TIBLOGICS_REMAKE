@@ -593,7 +593,10 @@ export default function EchelonFloat() {
                       : "bg-white border border-[#E8EFF8] text-[#0D1B2A] rounded-tl-sm shadow-sm"
                   }`}
                   dangerouslySetInnerHTML={{
+                    // Escape first: the text is typed by the visitor or written by
+                    // the model, and only **bold** and line breaks are markup.
                     __html: msg.content
+                      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
                       .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
                       .replace(/\n/g, "<br/>"),
                   }}

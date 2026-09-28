@@ -61,14 +61,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Context required" }, { status: 400 });
     }
 
-    const userMessage = `Visitor context:
+    // Anonymous and paid per token: the context is capped so one request
+    // cannot carry an arbitrarily large prompt.
+    const userMessage = (`Visitor context:
 - Pages visited: ${context.pagesVisited?.join(", ") || "homepage only"}
 - Tools used: ${context.toolsUsed?.join(", ") || "none yet"}
 - Current page: ${context.currentPage || "unknown"}
 - Session duration: ${context.sessionDuration || 0} seconds
 - Industry hint: ${context.industryHint || "unknown"}
 - Search query: ${context.searchQuery || "none"}
-- Referrer: ${context.referrer || "direct"}
+- Referrer: ${context.referrer || "direct"}`).slice(0, 4000) + `
 
 Generate 3 highly personalized recommendations for this visitor.`;
 
@@ -90,6 +92,13 @@ Generate 3 highly personalized recommendations for this visitor.`;
     }
 
     const recommendations = JSON.parse(jsonMatch[0]);
+    // The links come from model output shaped partly by visitor context, and
+    // the page renders them as hrefs: keep only same-site paths.
+    if (Array.isArray(recommendations?.recommendations)) {
+      recommendations.recommendations = recommendations.recommendations.filter(
+        (r: { href?: unknown }) => typeof r?.href === "string" && r.href.startsWith("/") && !r.href.startsWith("//") && !r.href.startsWith("/\\"),
+      );
+    }
     return NextResponse.json(recommendations);
   } catch (err) {
     console.error("Recommendation engine error:", err);

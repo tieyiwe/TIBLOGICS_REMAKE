@@ -100,7 +100,7 @@ export async function sendCapstoneStatusEmail(s: {
     (s.score != null ? p(t("learn.email.capstone.score", { score: `<strong style="color:#131A1B;">${s.score}%</strong>` })) : "") +
     (s.notes ? `<div style="background:#F4F7FB;border-left:3px solid #F47C20;border-radius:8px;padding:14px 16px;margin:16px 0;">
         <div style="font-size:12px;color:#8A9BA0;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">${t("learn.email.capstone.notes")}</div>
-        <div style="font-size:14px;color:#131A1B;line-height:1.7;white-space:pre-wrap;">${s.notes}</div>
+        <div style="font-size:14px;color:#131A1B;line-height:1.7;white-space:pre-wrap;">${esc(s.notes)}</div>
       </div>` : "");
 
   await arfaMailer.emails.send({

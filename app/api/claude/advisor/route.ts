@@ -3,6 +3,7 @@ export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { replyInLanguage } from "@/lib/i18n/config";
+import { boundChatMessages } from "@/lib/chat-bounds";
 
 const ADVISOR_SYSTEM_PROMPT = `You are Tibo, the AI Project Advisor for TIBLOGICS, an AI implementation and digital solutions agency.
 
@@ -35,7 +36,8 @@ export async function POST(req: NextRequest) {
       ? ADVISOR_SYSTEM_PROMPT
       : `${ADVISOR_SYSTEM_PROMPT}\n\n${replyInLanguage(locale)} Keep the PROSPECT_PROFILE line's markers and field names (PROSPECT_PROFILE, name:, biz:, industry:, challenge:, budget:, solutions:) exactly as specified; write the values in that language.`;
   try {
-    const { messages } = await req.json();
+    const messages = boundChatMessages((await req.json().catch(() => ({})))?.messages);
+    if (!messages) return NextResponse.json({ error: t("tools.api.invalidRequest") }, { status: 400 });
 
     const anthropic = (await import("@/lib/claude")).default;
     const { CLAUDE_MODEL } = await import("@/lib/claude");

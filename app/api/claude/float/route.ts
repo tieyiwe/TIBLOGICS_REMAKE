@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/claude";
 import { getLocale } from "@/lib/i18n/server";
 import { replyInLanguage } from "@/lib/i18n/config";
+import { boundChatMessages } from "@/lib/chat-bounds";
 
 const FLOAT_SYSTEM_PROMPT = `You are Tibo, the AI assistant for TIBLOGICS — an AI implementation and digital solutions agency serving businesses and individual builders across North America and Francophone Africa.
 
@@ -101,8 +102,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { messages } = await req.json();
-    if (!messages || !Array.isArray(messages)) {
+    const messages = boundChatMessages((await req.json())?.messages);
+    if (!messages) {
       return NextResponse.json({ error: "Invalid messages" }, { status: 400 });
     }
 
