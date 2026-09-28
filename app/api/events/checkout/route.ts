@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import stripe from "@/lib/stripe";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
+  // Public; each call creates a Stripe checkout session.
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? req.headers.get("x-real-ip") ?? "unknown";
+  if (!(await checkRateLimit(`event-checkout:${ip}`, ip === "unknown" ? 200 : 20, 60 * 60_000))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const priceId = process.env.STRIPE_EVENT_PRICE_ID;
   if (!priceId) {
     return NextResponse.json({ error: "Payment not configured" }, { status: 503 });

@@ -1,3 +1,4 @@
+import { randomInt } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import stripe from "@/lib/stripe";
@@ -10,7 +11,9 @@ function generateConfirmationNumber(): string {
   const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let rand = "";
-  for (let i = 0; i < 6; i++) rand += chars[Math.floor(Math.random() * chars.length)];
+  // crypto.randomInt, not Math.random: the number is what a registrant uses
+  // to cancel, so it should not be predictable from numbers already issued.
+  for (let i = 0; i < 6; i++) rand += chars[randomInt(chars.length)];
   return `ARFA-${ymd}-${rand}`;
 }
 

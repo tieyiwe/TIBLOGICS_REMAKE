@@ -58,6 +58,7 @@ export default function GetStartedPage() {
   const [tiboAssisted, setTiboAssisted] = useState(false);
   const [aiSummary, setAiSummary] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -146,13 +147,23 @@ Keep responses short and friendly.`;
     e.preventDefault();
     if (!validate()) return;
     setSubmitting(true);
+    setSubmitError("");
     try {
       const res = await fetch("/api/service-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, tiboAssisted, aiSummary: tiboAssisted ? aiSummary : null }),
       });
-      if (res.ok) setSubmitted(true);
+      if (res.ok) {
+        setSubmitted(true);
+      } else {
+        // A failure used to do nothing at all: the button stopped spinning
+        // and the visitor could not tell whether the request had gone.
+        const data = await res.json().catch(() => ({}));
+        setSubmitError(data?.error || "Something went wrong sending your request. Please try again.");
+      }
+    } catch {
+      setSubmitError("We couldn't reach the server. Check your connection and try again.");
     } finally {
       setSubmitting(false);
     }
@@ -277,6 +288,11 @@ Keep responses short and friendly.`;
             >
               {submitting ? <><Loader2 size={18} className="animate-spin" /> Submitting…</> : "Submit Project Request →"}
             </button>
+            {submitError && (
+              <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-dm text-red-700">
+                {submitError}
+              </p>
+            )}
             <p className="text-center font-dm text-xs text-[#7A8FA6]">
               You'll receive a confirmation email. Our team responds within 1–2 business days.
             </p>

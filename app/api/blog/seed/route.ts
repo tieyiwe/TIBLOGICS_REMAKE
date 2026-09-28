@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAdmin } from "@/lib/require-admin";
 
 // Pre-written seed articles — no Claude API required.
 // One article per category so the blog is never empty on first production load.
@@ -82,6 +83,11 @@ function slugify(title: string): string {
 }
 
 export async function POST() {
+  // Staff only. It was public, so anyone could re-insert the pre-written
+  // starter articles, including ones since retracted as fabricated.
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   try {
     // Titles and slugs in one pass — the slug set replaces the per-seed
     // findUnique loop that used to probe for a free slug.

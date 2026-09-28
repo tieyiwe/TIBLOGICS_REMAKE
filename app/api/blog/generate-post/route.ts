@@ -2,6 +2,7 @@ export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
+import { requireAdmin } from "@/lib/require-admin";
 import { assignCoverImage } from "@/lib/blog-cover";
 
 const CATEGORY_MAP: Record<string, { emoji: string; gradient: string }> = {
@@ -16,6 +17,12 @@ const CATEGORY_MAP: Record<string, { emoji: string; gradient: string }> = {
 const VALID_CATEGORIES = new Set(Object.keys(CATEGORY_MAP));
 
 export async function POST(req: NextRequest) {
+  // Staff only. This was public: anyone could send a title and it would write
+  // an article with a paid model and publish it live on AI Times under the
+  // TIBLOGICS name. Its only real caller is the admin News Agent page.
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   try {
     const body = await req.json();
     const { title, sourceUrl, source } = body;

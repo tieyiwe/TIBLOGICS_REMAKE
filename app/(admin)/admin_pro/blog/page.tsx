@@ -120,7 +120,7 @@ export default function BlogAdminPage() {
     setRepairing(true);
     setRepairResult(null);
     try {
-      const res = await fetch("/api/blog/repair-posts");
+      const res = await fetch("/api/blog/repair-posts", { method: "POST" });
       const data = await res.json();
       setRepairResult(data.message ?? "Done");
       await loadData();

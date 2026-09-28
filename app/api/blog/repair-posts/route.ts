@@ -2,6 +2,7 @@ export const maxDuration = 300;
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
+import { requireAdmin } from "@/lib/require-admin";
 
 const VALID_CATEGORIES = new Set([
   "breaking", "ai-business", "tips", "tools", "case-studies", "industry",
@@ -46,7 +47,13 @@ category must be exactly one of: breaking, ai-business, tips, tools, case-studie
   return parsed as { excerpt: string; content: string; category: string; tags: string[] };
 }
 
-export async function GET() {
+// POST, staff only. This was a public GET that rewrites article content with a paid model: anyone could
+// trigger it, and so could anything that merely fetches a URL (a crawler, a
+// link preview, a browser prefetch). A destructive action must never be a GET.
+export async function POST() {
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   try {
     // Find posts with thin content (placeholder fallback or very short)
     const allPosts = await prisma.blogPost.findMany({
