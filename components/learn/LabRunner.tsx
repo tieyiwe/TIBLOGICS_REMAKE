@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Markdown from "./Markdown";
 import { LAB_TYPE_META, type LabObjective, type LabType } from "@/lib/learn/labs/types";
 
@@ -44,6 +44,7 @@ export interface LabView {
   steps?: Array<{ id: string; label: string; detail?: string }>;
   requireArtifact?: boolean;
   artifactLabel?: string;
+  fields?: Array<{ id: string; label: string; prompt: string; placeholder?: string; minWords?: number }>;
 }
 
 export default function LabRunner({
@@ -111,6 +112,39 @@ export default function LabRunner({
     (priorAttempt?.submission?.reflection as string) ?? "",
   );
 
+  // ── workbench lab ───────────────────────────────────────────────────────
+  // Drafts are kept in the browser as well, so a long piece of work survives a
+  // refresh or a closed tab before it is submitted. Per-viewer convenience
+  // only; the submitted version is what the server stores.
+  const draftKey = `tiblogics:lab-draft:${lab.id}`;
+  const [answers, setAnswers] = useState<Record<string, string>>(
+    () => (priorAttempt?.submission?.answers as Record<string, string>) ?? {},
+  );
+  // Loaded after mount, not in the initial state: the server cannot see the
+  // browser's storage, so reading it during the first render made the server
+  // and client HTML disagree (React hydration error #418).
+  useEffect(() => {
+    if (lab.labType !== "workbench") return;
+    try {
+      const saved = window.localStorage.getItem(draftKey);
+      if (saved) setAnswers((a) => ({ ...a, ...JSON.parse(saved) }));
+    } catch {
+      // Storage unavailable or corrupt: start from the submitted version.
+    }
+  }, [draftKey, lab.labType]);
+  function setAnswer(id: string, value: string) {
+    setAnswers((a) => {
+      const next = { ...a, [id]: value };
+      try {
+        window.localStorage.setItem(draftKey, JSON.stringify(next));
+      } catch {
+        // Storage unavailable (private mode, blocked): the draft just isn't kept.
+      }
+      return next;
+    });
+  }
+  const wordCount = (t: string) => t.trim().split(/\s+/).filter(Boolean).length;
+
   async function runSandbox() {
     if (!prompt.trim() || busy) return;
     setBusy(true);
@@ -139,6 +173,7 @@ export default function LabRunner({
       const body: Record<string, unknown> = { labId: lab.id };
       if (lab.labType === "prompt") body.prompt = prompt;
       if (lab.labType === "critique") body.selections = [...selected];
+      if (lab.labType === "workbench") body.answers = answers;
       if (lab.labType === "build") {
         body.checked = [...checked];
         body.artifactUrl = artifactUrl || null;
@@ -153,6 +188,13 @@ export default function LabRunner({
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "Could not score your lab");
       setResult(data);
+      if (lab.labType === "workbench") {
+        try {
+          window.localStorage.removeItem(draftKey);
+        } catch {
+          /* nothing to clear */
+        }
+      }
       router.refresh();
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
@@ -434,6 +476,60 @@ export default function LabRunner({
           )}
 
           {/* BUILD LAB */}
+          {lab.labType === "workbench" && (
+            <section className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
+              <h2 className="text-base font-bold text-[var(--ink)]">Your work</h2>
+              <p className="mt-1 text-sm text-[var(--ink2)]">
+                Work through each part here. It is assessed against the criteria above, so be
+                specific: name the real steps, people and consequences. Drafts are kept in this
+                browser until you submit.
+              </p>
+              <ol className="mt-5 space-y-6">
+                {(lab.fields ?? []).map((f, i) => {
+                  const n = wordCount(answers[f.id] ?? "");
+                  const min = f.minWords ?? 30;
+                  return (
+                    <li key={f.id}>
+                      <label htmlFor={`wb-${f.id}`} className="flex items-baseline gap-2 text-sm font-semibold text-[var(--ink)]">
+                        <span
+                          className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                          style={{ background: accentColor }}
+                        >
+                          {i + 1}
+                        </span>
+                        {f.label}
+                      </label>
+                      <p className="ml-8 mt-1 text-sm leading-relaxed text-[var(--ink2)]">{f.prompt}</p>
+                      <textarea
+                        id={`wb-${f.id}`}
+                        rows={6}
+                        value={answers[f.id] ?? ""}
+                        onChange={(e) => setAnswer(f.id, e.target.value)}
+                        placeholder={f.placeholder}
+                        className="ml-8 mt-2 w-[calc(100%-2rem)] rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm leading-relaxed outline-none focus:border-[var(--blue3)] focus:ring-2 focus:ring-[var(--blue3)]/20"
+                      />
+                      <p className={`ml-8 mt-1 text-right text-xs ${n >= min ? "text-[#0F6E56]" : "text-[var(--ink3)]"}`}>
+                        {n} words{n < min ? ` · aim for ${min}+` : " ✓"}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ol>
+
+              <button
+                onClick={submit}
+                disabled={busy || (lab.fields ?? []).some((f) => !(answers[f.id] ?? "").trim())}
+                className="mt-6 w-full rounded-full py-3.5 text-sm font-bold text-white disabled:opacity-40"
+                style={{ background: accentColor }}
+              >
+                {busy ? "Assessing your work…" : "Submit for assessment"}
+              </button>
+              {(lab.fields ?? []).some((f) => !(answers[f.id] ?? "").trim()) && (
+                <p className="mt-2 text-center text-xs text-[var(--ink3)]">Every part needs an answer before you can submit.</p>
+              )}
+            </section>
+          )}
+
           {lab.labType === "build" && (
             <section className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
               <h2 className="text-base font-bold text-[var(--ink)]">Steps</h2>

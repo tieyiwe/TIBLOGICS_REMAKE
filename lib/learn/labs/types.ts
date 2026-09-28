@@ -3,7 +3,7 @@
 // Three lab kinds share one attempt model. Each has a different evaluator,
 // but all return the same shape so the UI and points path stay uniform.
 
-export const LAB_TYPES = ["prompt", "critique", "build"] as const;
+export const LAB_TYPES = ["prompt", "critique", "build", "workbench"] as const;
 export type LabType = (typeof LAB_TYPES)[number];
 
 export const LAB_TYPE_META: Record<
@@ -24,6 +24,11 @@ export const LAB_TYPE_META: Record<
     label: "Build lab",
     icon: "🧱",
     blurb: "Do the task for real, then show your work.",
+  },
+  workbench: {
+    label: "Workbench lab",
+    icon: "🧩",
+    blurb: "Do the work right here, step by step, and get it graded against the criteria.",
   },
 };
 
@@ -78,7 +83,29 @@ export interface BuildLabConfig {
   artifactLabel?: string;
 }
 
-export type LabConfig = PromptLabConfig | CritiqueLabConfig | BuildLabConfig;
+/**
+ * Work done on the page, in structured fields, and graded against the lab's
+ * objectives.
+ *
+ * Build labs are self-attested — a checklist and a link to work done in
+ * another tool — so they cannot show that someone can actually do the thing.
+ * A workbench lab can: the learner maps the system, writes the plan or designs
+ * the evaluation here, and it is marked against each objective's guidance.
+ */
+export interface WorkbenchLabConfig {
+  kind: "workbench";
+  fields: Array<{
+    id: string;
+    label: string;
+    /** What to write in this field. */
+    prompt: string;
+    placeholder?: string;
+    /** Below this, the field reads as not attempted. Default 30. */
+    minWords?: number;
+  }>;
+}
+
+export type LabConfig = PromptLabConfig | CritiqueLabConfig | BuildLabConfig | WorkbenchLabConfig;
 
 // ── Evaluation result ───────────────────────────────────────────────────────
 
@@ -122,6 +149,13 @@ export function parseConfig(labType: string, raw: unknown): LabConfig {
         flaws: Array.isArray(obj.flaws) ? (obj.flaws as CritiqueFlaw[]) : [],
         candidates: Array.isArray(obj.candidates)
           ? (obj.candidates as CritiqueLabConfig["candidates"])
+          : [],
+      };
+    case "workbench":
+      return {
+        kind: "workbench",
+        fields: Array.isArray(obj.fields)
+          ? (obj.fields as WorkbenchLabConfig["fields"]).filter((f) => f && f.id && f.label)
           : [],
       };
     case "build":

@@ -63,14 +63,14 @@ export interface SeedFinalExam {
 export interface SeedLab {
   slug: string;
   title: string;
-  labType: "prompt" | "critique" | "build";
+  labType: "prompt" | "critique" | "build" | "workbench";
   /** 1-based module this lab belongs to. */
   moduleNumber?: number;
   briefMd: string;
   scenarioMd?: string;
   objectives: Array<{ id: string; label: string; weight: number; guidance?: string }>;
   /** Type-specific config — see lib/learn/labs/types.ts */
-  config: Record<string, unknown> & { kind: "prompt" | "critique" | "build" };
+  config: Record<string, unknown> & { kind: "prompt" | "critique" | "build" | "workbench" };
   passScore?: number;
   points?: number;
   estimatedMinutes?: number;

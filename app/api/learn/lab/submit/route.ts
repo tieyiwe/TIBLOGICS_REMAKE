@@ -7,7 +7,7 @@ import { checkRateLimit } from "@/lib/require-admin";
 import { awardPoints, getTotalPoints } from "@/lib/learn/points";
 import { checkLevelUp } from "@/lib/learn/milestones";
 import { parseConfig, parseObjectives, type LabEvaluation } from "@/lib/learn/labs/types";
-import { evaluateBuild, evaluateCritique, evaluatePrompt } from "@/lib/learn/labs/evaluate";
+import { evaluateBuild, evaluateCritique, evaluatePrompt, evaluateWorkbench } from "@/lib/learn/labs/evaluate";
 
 export const maxDuration = 120;
 
@@ -21,6 +21,8 @@ const Body = z.object({
   checked: z.array(z.string()).max(50).optional(),
   artifactUrl: z.string().max(500).nullable().optional(),
   reflection: z.string().max(10000).nullable().optional(),
+  // workbench labs: fieldId -> the learner's work
+  answers: z.record(z.string().max(60), z.string().max(6000)).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -35,7 +37,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid request" }, { status: 400 });
   }
-  const { labId, prompt, selections, checked, artifactUrl, reflection } = parsed.data;
+  const { labId, prompt, selections, checked, artifactUrl, reflection, answers } = parsed.data;
 
   try {
     const lab = await prisma.lab.findUnique({ where: { id: labId } });
@@ -72,6 +74,20 @@ export async function POST(req: NextRequest) {
         objectives,
         lab.passScore,
       );
+    } else if (config.kind === "workbench") {
+      // Only the lab's own fields are kept, so a crafted request cannot smuggle
+      // extra text into what the grader reads.
+      const work: Record<string, string> = {};
+      for (const f of config.fields) work[f.id] = (answers?.[f.id] ?? "").trim();
+      const empty = config.fields.filter((f) => !work[f.id]);
+      if (empty.length > 0) {
+        return NextResponse.json(
+          { error: `Fill in every part before submitting (missing: ${empty.map((f) => f.label).join(", ")}).` },
+          { status: 400 },
+        );
+      }
+      submission = { answers: work };
+      evaluation = await evaluateWorkbench(lab.briefMd, lab.scenarioMd, config, work, objectives, lab.passScore);
     } else {
       // Prompt lab — grade the latest prompt against the response it produced
       const text = (prompt ?? (attempt?.submission as { prompt?: string } | null)?.prompt ?? "").trim();

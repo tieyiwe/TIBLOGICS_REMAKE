@@ -2,14 +2,24 @@ import type { SeedTrack } from "./types";
 import { TRACK_1 } from "./track-1";
 import { TRACK_1_CAPSTONE, TRACK_1_FINAL_EXAM, TRACK_1_MODULES_3_TO_7 } from "./track-1-part2";
 import { TRACK_1_LABS } from "./labs-track-1";
+import { TRACK_1_MODULE_8, TRACK_1_MODULE_8_EXAM } from "./track-1-module-8";
+import { TRACK_1_MODULE_8_LABS } from "./labs-track-1-module-8";
 
-// Track 1 is assembled from its two content files.
+// Track 1 (Level 1 · Basic) is assembled from its content files. Module 8,
+// "Seeing the Whole System", is appended rather than inserted so the existing
+// labs' and exam questions' 1-based module numbers stay valid.
 const AI_FOUNDATIONS: SeedTrack = {
   ...TRACK_1,
-  modules: [...TRACK_1.modules, ...TRACK_1_MODULES_3_TO_7],
-  finalExam: TRACK_1_FINAL_EXAM,
+  // 12h of lessons plus Module 8's 70 minutes.
+  estimatedHours: 13,
+  estimatedWeeksAt3Hrs: 5,
+  modules: [...TRACK_1.modules, ...TRACK_1_MODULES_3_TO_7, ...TRACK_1_MODULE_8],
+  finalExam: {
+    ...TRACK_1_FINAL_EXAM,
+    questions: [...TRACK_1_FINAL_EXAM.questions, ...TRACK_1_MODULE_8_EXAM],
+  },
   capstone: TRACK_1_CAPSTONE,
-  labs: TRACK_1_LABS,
+  labs: [...TRACK_1_LABS, ...TRACK_1_MODULE_8_LABS],
 };
 
 // ═══════════════════════════════════════════════════════════════════════════

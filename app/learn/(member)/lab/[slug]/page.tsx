@@ -64,6 +64,7 @@ export default async function LabPage({ params }: { params: Promise<{ slug: stri
           candidates: config.candidates.map((c) => ({ id: c.id, text: c.text })),
         }
       : {}),
+    ...(config.kind === "workbench" ? { fields: config.fields } : {}),
     ...(config.kind === "build"
       ? {
           steps: config.steps,
