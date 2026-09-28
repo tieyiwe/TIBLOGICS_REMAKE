@@ -1,7 +1,7 @@
 import { tri } from "./_tri";
 
 export default tri({
-  "pages.events.meta.title": ["Events & Training | TIBLOGICS", "Événements et formations | TIBLOGICS", "Matukio na Mafunzo | TIBLOGICS"],
+  "pages.events.meta.title": ["Events & Training", "Événements et formations", "Matukio na Mafunzo"],
   "pages.events.meta.description": [
     "Join live AI training cohorts, workshops, and industry events hosted by TIBLOGICS: hands-on learning for builders, businesses, and professionals in North America and Africa.",
     "Rejoignez les cohortes de formation IA en direct, les ateliers et les événements organisés par TIBLOGICS : un apprentissage pratique pour les créateurs, les entreprises et les professionnels d'Amérique du Nord et d'Afrique.",

@@ -1,7 +1,7 @@
 import { tri } from "./_tri";
 
 export default tri({
-  "pages.products.meta.title": ["Startups & Products | TIBLOGICS", "Startups et produits | TIBLOGICS", "Startups na Bidhaa | TIBLOGICS"],
+  "pages.products.meta.title": ["Startups & Products", "Startups et produits", "Startups na Bidhaa"],
   "pages.products.meta.description": [
     "TIBLOGICS builds AI-first startups across education, health, logistics, business intelligence and more, and partners with founders who have an idea worth building.",
     "TIBLOGICS crée des startups fondées sur l'IA dans l'éducation, la santé, la logistique, l'informatique décisionnelle et bien d'autres domaines, et s'associe aux fondateurs qui ont une idée qui mérite d'être construite.",

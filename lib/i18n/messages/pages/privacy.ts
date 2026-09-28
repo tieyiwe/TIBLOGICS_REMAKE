@@ -5,7 +5,7 @@ import { tri } from "./_tri";
 const MAIL = '<a href="mailto:info@tiblogics.com" class="text-[#2251A3] hover:underline">info@tiblogics.com</a>';
 
 export default tri({
-  "pages.privacy.meta.title": ["Privacy Policy | TIBLOGICS", "Politique de confidentialité | TIBLOGICS", "Sera ya Faragha | TIBLOGICS"],
+  "pages.privacy.meta.title": ["Privacy Policy", "Politique de confidentialité", "Sera ya Faragha"],
   "pages.privacy.meta.description": [
     "How TIBLOGICS collects, uses, and protects your personal information.",
     "Comment TIBLOGICS collecte, utilise et protège vos informations personnelles.",

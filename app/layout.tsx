@@ -92,7 +92,7 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: SITE_NAME,
       title,
       description,
-      images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: t("site.meta.ogImageAlt") }],
+      images: [{ url: `${SITE_URL}/opengraph-image?v=2`, width: 1200, height: 630, alt: t("site.meta.ogImageAlt") }],
     },
     twitter: {
       card: "summary_large_image",
@@ -100,7 +100,7 @@ export async function generateMetadata(): Promise<Metadata> {
       description,
       creator: "@tiblogics",
       site: "@tiblogics",
-      images: [`${SITE_URL}/opengraph-image`],
+      images: [`${SITE_URL}/opengraph-image?v=2`],
     },
     icons: {
       icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
@@ -130,7 +130,7 @@ const jsonLd = {
         width: 512, height: 512,
         caption: "TIBLOGICS",
       },
-      image: `${SITE_URL}/opengraph-image?v=1`,
+      image: `${SITE_URL}/opengraph-image?v=2`,
       description: DEFAULT_DESC,
       email: "ai@tiblogics.com",
       contactPoint: [
@@ -207,7 +207,7 @@ const jsonLd = {
       description: DEFAULT_DESC,
       isPartOf: { "@id": `${SITE_URL}/#website` },
       about: { "@id": `${SITE_URL}/#organization` },
-      primaryImageOfPage: { "@type": "ImageObject", url: `${SITE_URL}/opengraph-image?v=1` },
+      primaryImageOfPage: { "@type": "ImageObject", url: `${SITE_URL}/opengraph-image?v=2` },
       breadcrumb: {
         "@type": "BreadcrumbList",
         itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: SITE_URL }],

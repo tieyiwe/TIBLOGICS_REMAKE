@@ -154,7 +154,7 @@ export default async function MonitorDashboard({ params }: { params: Promise<{ t
                     <tr className="text-xs uppercase tracking-wider text-[#7A8FA6]">
                       <th className="text-left font-semibold py-2 pr-4">{t("tools.dash.site")}</th>
                       {AREAS.map((a) => (
-                        <th key={a} className="font-semibold py-2 px-2 text-center">{t(`tools.area.${a}`)}</th>
+                        <th key={a} className="font-semibold py-2 px-2 text-center whitespace-nowrap">{t(`tools.area.${a}`)}</th>
                       ))}
                     </tr>
                   </thead>
@@ -167,7 +167,7 @@ export default async function MonitorDashboard({ params }: { params: Promise<{ t
                             <a href={s.url} target="_blank" rel="noopener noreferrer" className="font-medium text-[#0D1B2A] hover:underline">
                               {s.host}
                             </a>
-                            {s.isOwn && <span className="ml-2 text-xs font-semibold text-[#B8500A]">{t("tools.dash.you")}</span>}
+                            {s.isOwn && <span className="ml-2 text-xs font-semibold text-[#B8500A] whitespace-nowrap">{t("tools.dash.you")}</span>}
                           </td>
                           {s.scores ? (
                             AREAS.map((a) => (

@@ -21,7 +21,7 @@ export default tri({
   "pages.legal.email": ["Email:", "E-mail :", "Email:"],
   "pages.legal.website": ["Website:", "Site web :", "Tovuti:"],
 
-  "pages.terms.meta.title": ["Terms of Service | TIBLOGICS", "Conditions d'utilisation | TIBLOGICS", "Masharti ya Huduma | TIBLOGICS"],
+  "pages.terms.meta.title": ["Terms of Service", "Conditions d'utilisation", "Masharti ya Huduma"],
   "pages.terms.meta.description": [
     "Terms and conditions governing use of TIBLOGICS services.",
     "Conditions générales régissant l'utilisation des services de TIBLOGICS.",

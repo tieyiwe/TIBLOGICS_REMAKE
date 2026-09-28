@@ -1,7 +1,7 @@
 import { tri } from "./_tri";
 
 export default tri({
-  "pages.store.meta.title": ["Store | TIBLOGICS", "Boutique | TIBLOGICS", "Duka | TIBLOGICS"],
+  "pages.store.meta.title": ["Store", "Boutique", "Duka"],
   "pages.store.meta.description": [
     "Premium tools, templates, and resources from TIBLOGICS. Instant access, built to move you forward.",
     "Des outils, modèles et ressources premium signés TIBLOGICS. Accès immédiat, conçus pour vous faire avancer.",
