@@ -1,6 +1,8 @@
 import prisma from "@/lib/prisma";
 import BlogPageClient, { type BlogPost } from "./BlogPageClient";
 import { SEED_POSTS } from "@/lib/blog/content/seed-posts";
+import { getLocale } from "@/lib/i18n/server";
+import { cachedPostSummaries } from "@/lib/i18n/sources/blog";
 
 // Cache the full page HTML for 60 seconds; regenerate in the background after.
 export const revalidate = 60;
@@ -105,5 +107,11 @@ export default async function BlogPage() {
     }));
   }
 
-  return <BlogPageClient initialPosts={initialPosts} />;
+  // Titles and excerpts already translated into the visitor's language, read
+  // from the cache in one query. Posts without one stay in English; nothing
+  // here asks the model for a translation.
+  const locale = await getLocale();
+  const translations = await cachedPostSummaries(locale, initialPosts.map((p) => p.slug));
+
+  return <BlogPageClient initialPosts={initialPosts} translations={translations} />;
 }

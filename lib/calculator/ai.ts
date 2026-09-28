@@ -139,7 +139,7 @@ const AI_LIMITS: Record<string, [number, number]> = {
 
 function cleanText(v: string | undefined, max = 400): string {
   if (!v) return "";
-  return v.replace(/—|–/g, ", ").replace(/\s+/g, " ").trim().slice(0, max);
+  return v.replace(/[\u2014\u2013]/g, ", ").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
 /** Extract the first JSON object from a model reply, tolerating code fences and chatter. */

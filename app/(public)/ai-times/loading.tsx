@@ -1,4 +1,7 @@
-export default function BlogLoading() {
+import { getT } from "@/lib/i18n/server";
+
+export default async function BlogLoading() {
+  const t = await getT();
   return (
     <div className="pt-32 sm:pt-44 pb-20 min-h-screen bg-[#F4F7FB]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -6,16 +9,16 @@ export default function BlogLoading() {
         <div className="text-center py-12">
           <span className="section-tag">TIBLOGICS</span>
           <h1
-            className="text-5xl md:text-7xl text-[#0D1B2A] mt-3 tracking-widest font-bold"
+            className="text-4xl sm:text-5xl md:text-7xl text-[#0D1B2A] mt-3 tracking-widest font-bold"
             style={{ fontFamily: "var(--font-masthead)" }}
           >
             AI TIMES
           </h1>
           <p className="font-syne font-bold text-[#F47C20] text-xl md:text-2xl mt-2 tracking-wide">
-            The #1 AI Digestible Knowledge
+            {t("pages.aiTimes.tagline")}
           </p>
           <p className="font-dm text-[#3A4A5C] text-base mt-2 max-w-xl mx-auto">
-            Practical AI knowledge for businesses, builders, and curious minds.
+            {t("pages.aiTimes.intro")}
           </p>
         </div>
 

@@ -224,7 +224,7 @@ export default function ToolkitWorkspace(props: {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2.5 font-dm text-sm font-semibold whitespace-nowrap border-b-2 -mb-px ${tab === t.id ? "border-[#B8500A] text-[#0D1B2A]" : "border-transparent text-[#7A8FA6] hover:text-[#0D1B2A]"}`}
+            className={`shrink-0 flex items-center gap-2 px-4 py-2.5 font-dm text-sm font-semibold whitespace-nowrap border-b-2 -mb-px ${tab === t.id ? "border-[#B8500A] text-[#0D1B2A]" : "border-transparent text-[#7A8FA6] hover:text-[#0D1B2A]"}`}
           >
             <t.icon size={15} /> {t.label}
           </button>

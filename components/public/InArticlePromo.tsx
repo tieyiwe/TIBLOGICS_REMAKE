@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { useT } from "@/lib/i18n/client";
 
 /**
  * A TIBLOGICS promo placed inside the article body, where readers actually
@@ -14,47 +15,17 @@ import { ArrowRight } from "lucide-react";
  */
 
 type Promo = {
-  label: string;
-  title: string;
-  body: string;
-  cta: string;
+  /** Dictionary id: pages.promo.<id>.title / .body / .cta */
+  id: "build" | "readiness" | "learn" | "toolkit";
   href: string;
   color: string;
 };
 
-const PROMOS: Record<string, Promo> = {
-  build: {
-    label: "From TIBLOGICS",
-    title: "We build the systems you just read about",
-    body: "AI agents, workflow automation and the integration work behind them — for companies that want this running, not theorised about.",
-    cta: "Book a free 30-minute call",
-    href: "/book",
-    color: "#F47C20",
-  },
-  readiness: {
-    label: "From TIBLOGICS",
-    title: "Where would AI actually help you?",
-    body: "Run the free readiness scan. It takes a few minutes and tells you which parts of your operation are worth automating — and which are not.",
-    cta: "Run the free scan",
-    href: "/tools/scanner",
-    color: "#2251A3",
-  },
-  learn: {
-    label: "From TIBLOGICS",
-    title: "Learn this properly, not from threads",
-    body: "The Learning Box runs structured AI tracks that end in a certificate you can defend — quizzes, a timed exam and a capstone reviewed by a human.",
-    cta: "See the tracks",
-    href: "/learning-box",
-    color: "#0F6E56",
-  },
-  toolkit: {
-    label: "From TIBLOGICS",
-    title: "Skip the blank page",
-    body: "Our AI toolkits are prompt libraries built for one industry at a time — the prompts we actually use on client work, ready to run.",
-    cta: "Browse the store",
-    href: "/store",
-    color: "#7c3aed",
-  },
+const PROMOS: Record<Promo["id"], Promo> = {
+  build: { id: "build", href: "/book", color: "#F47C20" },
+  readiness: { id: "readiness", href: "/tools/scanner", color: "#2251A3" },
+  learn: { id: "learn", href: "/learning-box", color: "#0F6E56" },
+  toolkit: { id: "toolkit", href: "/store", color: "#7c3aed" },
 };
 
 /** Deterministic so the server and client agree and the page stays cacheable. */
@@ -73,31 +44,32 @@ export default function InArticlePromo({
   category: string;
   tags: string[];
 }) {
+  const t = useT();
   const p = pickPromo(category, tags);
 
   return (
     <aside
-      aria-label="Advertisement from TIBLOGICS"
+      aria-label={t("pages.promo.ariaLabel")}
       className="my-9 overflow-hidden rounded-2xl border border-[#D2DCE8] bg-[#F4F7FB]"
     >
       <div className="h-1 w-full" style={{ backgroundColor: p.color }} />
-      <div className="p-6">
+      <div className="p-5 sm:p-6">
         <span
           className="font-dm text-[11px] font-bold uppercase tracking-[0.12em]"
           style={{ color: p.color }}
         >
-          {p.label}
+          {t("pages.promo.label")}
         </span>
         <h3 className="font-syne font-bold text-lg text-[#0D1B2A] mt-1.5 leading-snug">
-          {p.title}
+          {t(`pages.promo.${p.id}.title`)}
         </h3>
-        <p className="font-dm text-sm text-[#7A8FA6] leading-relaxed mt-2">{p.body}</p>
+        <p className="font-dm text-sm text-[#7A8FA6] leading-relaxed mt-2">{t(`pages.promo.${p.id}.body`)}</p>
         <Link
           href={p.href}
           className="mt-4 inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 font-dm text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
           style={{ backgroundColor: p.color }}
         >
-          {p.cta} <ArrowRight size={14} />
+          {t(`pages.promo.${p.id}.cta`)} <ArrowRight size={14} className="shrink-0" />
         </Link>
       </div>
     </aside>

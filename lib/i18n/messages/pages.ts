@@ -9,13 +9,14 @@ import terms from "./pages/terms";
 import products from "./pages/products";
 import events from "./pages/events";
 import store from "./pages/store";
+import aitimes from "./pages/aitimes";
 
 // Namespace "pages". Keys are "pages.something". See lib/i18n/README.md.
 //
 // The public content pages (about, services, contact, book, legal, products,
 // events, store, AI Times) have a lot of copy, so each area
 // lives in its own file under ./pages and is merged here.
-const PARTS: Messages[] = [about, services, contact, api, book, privacy, terms, products, events, store];
+const PARTS: Messages[] = [about, services, contact, api, book, privacy, terms, products, events, store, aitimes];
 
 const messages: Messages = { en: {}, fr: {}, sw: {} };
 for (const part of PARTS) {

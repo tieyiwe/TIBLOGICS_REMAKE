@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Search, Clock, Zap, RefreshCw, Send } from "lucide-react";
 import { trackPageVisit } from "@/lib/recommendations";
 import SmartRecommendations from "@/components/public/SmartRecommendations";
+import { useLocale, useT } from "@/lib/i18n/client";
 
 export interface BlogPost {
   id: string;
@@ -31,15 +32,10 @@ interface BreakingNews {
   source?: string;
 }
 
-const CATEGORIES = [
-  { id: "all", label: "All" },
-  { id: "breaking", label: "⚡ Breaking" },
-  { id: "ai-business", label: "💼 AI for Business" },
-  { id: "tips", label: "💡 Tips & Tricks" },
-  { id: "tools", label: "🔧 Tools" },
-  { id: "case-studies", label: "📊 Case Studies" },
-  { id: "industry", label: "🌐 Industry" },
-];
+const CATEGORIES = ["all", "breaking", "ai-business", "tips", "tools", "case-studies", "industry"];
+
+type T = (key: string, vars?: Record<string, string | number>) => string;
+type Summaries = Record<string, { title: string; excerpt: string }>;
 
 const GRADIENT_MAP: Record<string, string> = {
   "from-red-600 to-orange-500": "bg-gradient-to-br from-red-600 to-orange-500",
@@ -54,18 +50,36 @@ function gradientClass(g: string): string {
   return GRADIENT_MAP[g] ?? "bg-gradient-to-br from-[#1B3A6B] to-[#2251A3]";
 }
 
-function timeAgo(dateStr: string): string {
+function timeAgo(dateStr: string, locale: string, t: T): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const h = Math.floor(diff / 3600000);
   const d = Math.floor(h / 24);
-  if (h < 1) return "Just now";
-  if (h < 24) return `${h}h ago`;
-  if (d < 7) return `${d}d ago`;
-  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  if (h < 1) return t("pages.aiTimes.justNow");
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "always", style: "narrow" });
+  if (h < 24) return rtf.format(-h, "hour");
+  if (d < 7) return rtf.format(-d, "day");
+  return new Date(dateStr).toLocaleDateString(locale, { month: "short", day: "numeric" });
 }
 
-export default function BlogPageClient({ initialPosts }: { initialPosts: BlogPost[] }) {
-  const [posts, setPosts] = useState<BlogPost[]>(initialPosts);
+export default function BlogPageClient({
+  initialPosts,
+  translations = {},
+}: {
+  initialPosts: BlogPost[];
+  /** Cached titles/excerpts in the visitor's language, by slug. */
+  translations?: Summaries;
+}) {
+  const t = useT();
+  const locale = useLocale();
+  // Show a post's translated title and excerpt when the server found one.
+  // Applies to posts fetched later (category, search) too, since they come
+  // from the same set.
+  const tr = useCallback(
+    (p: BlogPost): BlogPost => (translations[p.slug] ? { ...p, ...translations[p.slug] } : p),
+    [translations],
+  );
+  const [rawPosts, setPosts] = useState<BlogPost[]>(initialPosts);
+  const posts = rawPosts.map(tr);
   const [breaking, setBreaking] = useState<BreakingNews | null>(null);
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
@@ -112,7 +126,8 @@ export default function BlogPageClient({ initialPosts }: { initialPosts: BlogPos
   useEffect(() => {
     fetch("/api/blog/breaking-news")
       .then((r) => r.json())
-      .then((d) => setBreaking(d.news));
+      .then((d) => setBreaking(d.news))
+      .catch(() => {});
   }, []);
 
   const showFeatured = category === "all" && !search;
@@ -135,7 +150,7 @@ export default function BlogPageClient({ initialPosts }: { initialPosts: BlogPos
       {breaking && (
         <div className="bg-red-600 text-white py-2.5 px-4 flex items-center gap-3">
           <span className="flex-shrink-0 bg-white text-red-600 text-xs font-extrabold font-syne px-2 py-0.5 rounded flex items-center gap-1">
-            <Zap size={11} /> BREAKING
+            <Zap size={11} /> {t("pages.aiTimes.breaking")}
           </span>
           <p className="text-sm font-dm font-medium truncate flex-1">{breaking.headline}</p>
           {breaking.sourceUrl && (
@@ -145,7 +160,7 @@ export default function BlogPageClient({ initialPosts }: { initialPosts: BlogPos
               rel="noopener noreferrer"
               className="flex-shrink-0 text-white/80 text-xs underline hover:text-white"
             >
-              Source →
+              {t("pages.aiTimes.source")}
             </a>
           )}
         </div>
@@ -156,16 +171,16 @@ export default function BlogPageClient({ initialPosts }: { initialPosts: BlogPos
         <div className="text-center py-12">
           <span className="section-tag">TIBLOGICS</span>
           <h1
-            className="text-5xl md:text-7xl text-[#0D1B2A] mt-3 tracking-widest font-bold"
+            className="text-4xl sm:text-5xl md:text-7xl text-[#0D1B2A] mt-3 tracking-widest font-bold"
             style={{ fontFamily: "var(--font-masthead)" }}
           >
             AI TIMES
           </h1>
           <p className="font-syne font-bold text-[#F47C20] text-xl md:text-2xl mt-2 tracking-wide">
-            The #1 AI Digestible Knowledge
+            {t("pages.aiTimes.tagline")}
           </p>
           <p className="font-dm text-[#3A4A5C] text-base mt-2 max-w-xl mx-auto">
-            Practical AI knowledge for businesses, builders, and curious minds.
+            {t("pages.aiTimes.intro")}
           </p>
         </div>
 
@@ -175,8 +190,8 @@ export default function BlogPageClient({ initialPosts }: { initialPosts: BlogPos
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            aria-label="Search articles"
-            placeholder="Search posts…"
+            aria-label={t("pages.aiTimes.searchLabel")}
+            placeholder={t("pages.aiTimes.searchPlaceholder")}
             className="w-full pl-11 pr-4 py-3 bg-white border border-[#D2DCE8] rounded-2xl text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3] shadow-sm"
           />
         </div>
@@ -185,15 +200,15 @@ export default function BlogPageClient({ initialPosts }: { initialPosts: BlogPos
         <div className="flex gap-2 overflow-x-auto pb-2 mb-8 scrollbar-hide">
           {CATEGORIES.map((cat) => (
             <button
-              key={cat.id}
-              onClick={() => setCategory(cat.id)}
+              key={cat}
+              onClick={() => setCategory(cat)}
               className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-dm font-medium transition-all duration-200 ${
-                category === cat.id
+                category === cat
                   ? "bg-[#1B3A6B] text-white shadow-sm"
                   : "bg-[#EBF0FA] border border-[#D2DCE8] text-[#3A4A5C] hover:bg-[#1B3A6B] hover:border-[#1B3A6B] hover:text-white"
               }`}
             >
-              {cat.label}
+              {t(`pages.aiTimes.cat.${cat}`)}
             </button>
           ))}
         </div>
@@ -214,9 +229,9 @@ export default function BlogPageClient({ initialPosts }: { initialPosts: BlogPos
         ) : posts.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-5xl mb-4">📰</p>
-            <h3 className="font-syne font-bold text-xl text-[#0D1B2A] mb-2">No posts yet</h3>
+            <h3 className="font-syne font-bold text-xl text-[#0D1B2A] mb-2">{t("pages.aiTimes.empty.title")}</h3>
             <p className="font-dm text-[#7A8FA6] text-sm max-w-xs mx-auto">
-              Content will auto-populate when the blog refreshes. Check back soon!
+              {t("pages.aiTimes.empty.body")}
             </p>
           </div>
         ) : (
@@ -241,9 +256,9 @@ export default function BlogPageClient({ initialPosts }: { initialPosts: BlogPos
                         </div>
                         <div className="p-6 flex flex-col flex-1 justify-between">
                           <div>
-                            <div className="flex items-center gap-2 mb-3">
+                            <div className="flex flex-wrap items-center gap-2 mb-3">
                               <span className="bg-[#F47C20] text-white text-xs font-extrabold font-syne px-2.5 py-1 rounded-full uppercase tracking-wide">
-                                Featured
+                                {t("pages.aiTimes.featured")}
                               </span>
                               <CategoryBadge category={fp.category} />
                             </div>
@@ -254,11 +269,11 @@ export default function BlogPageClient({ initialPosts }: { initialPosts: BlogPos
                               {fp.excerpt}
                             </p>
                           </div>
-                          <div className="flex items-center gap-3 text-xs font-dm text-[#7A8FA6] mt-4">
-                            <span className="flex items-center gap-1"><Clock size={12} /> {fp.readingTime} min read</span>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-dm text-[#7A8FA6] mt-4">
+                            <span className="flex items-center gap-1"><Clock size={12} /> {t("pages.aiTimes.minRead", { n: fp.readingTime })}</span>
                             <span>·</span>
-                            <span>{timeAgo(fp.createdAt)}</span>
-                            {fp.aiGenerated && <><span>·</span><span className="text-[#2251A3]">AI Curated</span></>}
+                            <span>{timeAgo(fp.createdAt, locale, t)}</span>
+                            {fp.aiGenerated && <><span>·</span><span className="text-[#2251A3]">{t("pages.aiTimes.aiCurated")}</span></>}
                           </div>
                         </div>
                       </div>
@@ -285,14 +300,14 @@ export default function BlogPageClient({ initialPosts }: { initialPosts: BlogPos
               <div className="mt-10 text-center">
                 <div className="flex items-center gap-4 mb-6">
                   <div className="flex-1 h-px bg-[#D2DCE8]" />
-                  <span className="font-dm text-sm text-[#7A8FA6]">{hiddenCount} more article{hiddenCount !== 1 ? "s" : ""}</span>
+                  <span className="font-dm text-sm text-[#7A8FA6]">{hiddenCount === 1 ? t("pages.aiTimes.moreOne") : t("pages.aiTimes.moreMany", { n: hiddenCount })}</span>
                   <div className="flex-1 h-px bg-[#D2DCE8]" />
                 </div>
                 <button
                   onClick={() => setVisibleCount((c) => c + 9)}
                   className="inline-flex items-center gap-2 bg-white border border-[#D2DCE8] hover:border-[#2251A3] hover:text-[#2251A3] text-[#3A4A5C] font-dm font-medium text-sm px-8 py-3 rounded-2xl shadow-sm transition-all duration-200"
                 >
-                  Load {Math.min(9, hiddenCount)} More Articles ↓
+                  {t("pages.aiTimes.loadMore", { n: Math.min(9, hiddenCount) })}
                 </button>
               </div>
             )}
@@ -313,22 +328,18 @@ export default function BlogPageClient({ initialPosts }: { initialPosts: BlogPos
 }
 
 function CategoryBadge({ category }: { category: string }) {
-  const labels: Record<string, string> = {
-    "breaking": "⚡ Breaking",
-    "ai-business": "💼 AI for Business",
-    "tips": "💡 Tips",
-    "tools": "🔧 Tools",
-    "case-studies": "📊 Case Study",
-    "industry": "🌐 Industry",
-  };
+  const t = useT();
+  const label = t(`pages.aiTimes.badge.${category}`);
   return (
     <span className="bg-[#EBF0FA] text-[#2251A3] text-xs font-medium font-dm px-2.5 py-1 rounded-full">
-      {labels[category] ?? category}
+      {label.startsWith("pages.") ? category : label}
     </span>
   );
 }
 
 function PostCard({ post }: { post: BlogPost }) {
+  const t = useT();
+  const locale = useLocale();
   const [imgFailed, setImgFailed] = useState(false);
   return (
     <Link href={`/ai-times/${post.slug}`} className="group">
@@ -360,9 +371,9 @@ function PostCard({ post }: { post: BlogPost }) {
           </p>
           <div className="flex items-center gap-2 mt-4 text-xs font-dm text-[#7A8FA6]">
             <Clock size={11} />
-            <span>{post.readingTime} min</span>
+            <span>{t("pages.aiTimes.min", { n: post.readingTime })}</span>
             <span>·</span>
-            <span>{timeAgo(post.createdAt)}</span>
+            <span>{timeAgo(post.createdAt, locale, t)}</span>
           </div>
         </div>
       </article>
@@ -371,20 +382,27 @@ function PostCard({ post }: { post: BlogPost }) {
 }
 
 function NewsletterSignup() {
+  const t = useT();
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email) return;
     setStatus("loading");
+    setErrorMsg("");
     try {
       const res = await fetch("/api/newsletter/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, firstName: firstName || undefined, source: "blog_page" }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setErrorMsg(typeof data?.error === "string" ? data.error : "");
+      }
       setStatus(res.ok ? "success" : "error");
     } catch {
       setStatus("error");
@@ -392,36 +410,38 @@ function NewsletterSignup() {
   }
 
   return (
-    <div className="bg-gradient-to-br from-[#1B3A6B] to-[#2251A3] rounded-3xl p-10 text-center">
+    <div className="bg-gradient-to-br from-[#1B3A6B] to-[#2251A3] rounded-3xl px-5 py-10 sm:p-10 text-center">
       <span className="inline-block bg-[#F47C20]/20 text-[#F47C20] text-xs font-dm font-semibold px-3 py-1 rounded-full mb-4 uppercase tracking-wide">
-        Free Newsletter
+        {t("pages.newsletter.badge")}
       </span>
       <h2 className="font-syne font-extrabold text-2xl md:text-3xl text-white mb-3">
-        AI insights delivered to your inbox.
+        {t("pages.newsletter.title")}
       </h2>
       <p className="font-dm text-white/70 text-base max-w-lg mx-auto mb-7">
-        Weekly tips on AI best practices, readiness strategies, and mistakes to avoid — curated for small businesses by Echelon.
+        {t("pages.newsletter.body")}
       </p>
       {status === "success" ? (
         <div className="inline-flex items-center gap-2 bg-white/10 text-white font-dm text-sm px-6 py-3 rounded-2xl">
-          You&rsquo;re subscribed! Welcome aboard.
+          {t("pages.newsletter.success")}
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
           <input
             type="text"
-            placeholder="First name (optional)"
+            placeholder={t("pages.newsletter.firstName")}
+            aria-label={t("pages.newsletter.firstName")}
             value={firstName}
             onChange={e => setFirstName(e.target.value)}
-            className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 font-dm text-sm focus:outline-none focus:border-white/50"
+            className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 font-dm text-sm focus:outline-none focus:border-white/50"
           />
           <input
             type="email"
-            placeholder="Your email"
+            placeholder={t("pages.newsletter.email")}
+            aria-label={t("pages.newsletter.email")}
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
-            className="flex-[2] px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 font-dm text-sm focus:outline-none focus:border-white/50"
+            className="flex-[2] min-w-0 px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 font-dm text-sm focus:outline-none focus:border-white/50"
           />
           <button type="submit" disabled={status === "loading"}
             className="flex items-center justify-center gap-2 bg-[#F47C20] hover:bg-[#D85A30] text-white font-dm font-semibold px-5 py-3 rounded-xl transition-colors disabled:opacity-70 flex-shrink-0"
@@ -429,28 +449,29 @@ function NewsletterSignup() {
             {status === "loading" ? (
               <RefreshCw size={15} className="animate-spin" />
             ) : (
-              <><Send size={14} /> Subscribe</>
+              <><Send size={14} /> {t("pages.newsletter.subscribe")}</>
             )}
           </button>
         </form>
       )}
       {status === "error" && (
-        <p className="text-red-300 text-xs font-dm mt-3">Something went wrong. Please try again.</p>
+        <p className="text-red-300 text-xs font-dm mt-3">{errorMsg || t("pages.newsletter.error")}</p>
       )}
-      <p className="text-white/40 text-xs font-dm mt-4">No spam. Unsubscribe anytime.</p>
+      <p className="text-white/40 text-xs font-dm mt-4">{t("pages.newsletter.noSpam")}</p>
     </div>
   );
 }
 
 function TipsSpotlight({ posts }: { posts: BlogPost[] }) {
+  const t = useT();
   if (posts.length === 0) return null;
   return (
     <div className="mb-10">
       <div className="flex items-center gap-2 mb-4">
         <span className="text-xl">💡</span>
-        <h2 className="font-syne font-bold text-lg text-[#0D1B2A]">Tips & Tricks Spotlight</h2>
-        <Link href="#" onClick={() => {}} className="ml-auto text-xs text-[#2251A3] font-dm hover:underline">
-          View all tips →
+        <h2 className="font-syne font-bold text-lg text-[#0D1B2A]">{t("pages.aiTimes.tips.title")}</h2>
+        <Link href="#" onClick={() => {}} className="ml-auto shrink-0 text-xs text-[#2251A3] font-dm hover:underline">
+          {t("pages.aiTimes.tips.viewAll")}
         </Link>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -460,7 +481,7 @@ function TipsSpotlight({ posts }: { posts: BlogPost[] }) {
               {p.title}
             </p>
             <p className="font-dm text-xs text-[#7A8FA6] line-clamp-2">{p.excerpt}</p>
-            <p className="text-xs text-purple-500 font-dm mt-3">{p.readingTime} min read →</p>
+            <p className="text-xs text-purple-500 font-dm mt-3">{t("pages.aiTimes.tips.read", { n: p.readingTime })}</p>
           </Link>
         ))}
       </div>

@@ -3,8 +3,9 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import fs from "fs";
 import path from "path";
-import Anthropic from "@anthropic-ai/sdk";
 import BlogPostClient from "./BlogPostClient";
+import { getLocale, getT } from "@/lib/i18n/server";
+import { cachedPostSummaries, localizedPost, postMetaFor } from "@/lib/i18n/sources/blog";
 
 export const revalidate = 3600;
 
@@ -27,59 +28,6 @@ const SITE_URL = (process.env.NEXTAUTH_URL || "https://tiblogics.com").replace(/
 const FALLBACK_IMAGE = `${SITE_URL}/og-image.png`;
 
 const LOCALE_MAP: Record<string, string> = { en: "en_US", fr: "fr_FR", sw: "sw_KE" };
-const LANG_LABEL: Record<string, string> = { fr: "Français", sw: "Kiswahili" };
-const LANG_NAMES: Record<string, string> = { fr: "French", sw: "Swahili" };
-
-// Translate only title+excerpt for OG metadata. Uses a separate DB key (tx-meta:)
-// so it doesn't collide with the full article translation cache (tx:).
-async function translateMeta(
-  prisma: import("@prisma/client").PrismaClient,
-  slug: string,
-  lang: "fr" | "sw",
-  title: string,
-  excerpt: string
-): Promise<{ title: string; excerpt: string }> {
-  const metaKey = `tx-meta:${slug}:${lang}`;
-
-  // Check meta-only cache first
-  try {
-    const cached = await prisma.adminSettings.findUnique({ where: { key: metaKey } });
-    if (cached?.value) {
-      const parsed = JSON.parse(cached.value);
-      if (parsed.title && parsed.excerpt) return parsed;
-    }
-  } catch { /* cache miss */ }
-
-  const langName = LANG_NAMES[lang];
-  const prompt = `Translate the title and excerpt below into ${langName}.
-Return ONLY a raw JSON object with exactly two keys: "title" and "excerpt". No markdown, no explanation.
-
-TITLE: ${title}
-
-EXCERPT: ${excerpt.slice(0, 300)}`;
-
-  const haiku = new Anthropic().messages;
-  const response = await haiku.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 512,
-    messages: [{ role: "user", content: prompt }],
-  });
-
-  const raw = response.content[0].type === "text" ? response.content[0].text.trim() : "";
-  const jsonStr = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "");
-  const tx: { title?: string; excerpt?: string } = JSON.parse(jsonStr);
-
-  if (!tx.title || !tx.excerpt) throw new Error("incomplete translation");
-
-  // Cache so the next social crawl for this slug+lang is instant
-  prisma.adminSettings.upsert({
-    where: { key: metaKey },
-    create: { key: metaKey, value: JSON.stringify(tx) },
-    update: { value: JSON.stringify(tx) },
-  }).catch(() => {});
-
-  return { title: tx.title, excerpt: tx.excerpt };
-}
 
 const CATEGORY_OG_FALLBACK: Record<string, string> = {
   "breaking":     "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&h=630&q=80",
@@ -123,90 +71,49 @@ function toOgImage(coverImage: string | null, category?: string | null): string 
   }
 }
 
-// No searchParams here, deliberately.
-//
-// Reading them made this page dynamic at request time while it is declared
-// static (generateStaticParams + revalidate), and Next then refuses to render
-// any slug that did not exist at build time — a 500 on every article the news
-// agent publishes after a deploy, which is all of them.
-//
-// The cost is that ?lang=fr|sw social previews carry the English title. The
-// page body still translates, the canonical URL was already English-only, and
-// query-string languages were never going to be indexed separately anyway.
+// No searchParams here, deliberately: the language comes from the visitor's
+// setting (cookie or browser), not a query string. The canonical URL is the
+// same for every language.
 export async function generateMetadata(
   { params }: { params: Promise<{ slug: string }> }
 ): Promise<Metadata> {
+  const t = await getT();
   try {
     const { slug } = await params;
-    const lang = "en" as const;
+    const locale = await getLocale();
 
     const { prisma } = await import("@/lib/prisma");
-    const [post, txCache] = await Promise.all([
-      // findFirst with published, not findUnique: an unpublished (e.g. retracted)
-      // article must not keep its title and summary in search metadata.
-      prisma.blogPost.findFirst({
-        where: { slug, published: true },
-        select: { title: true, excerpt: true, coverImage: true, tags: true, author: true, category: true, createdAt: true },
-      }),
-      lang !== "en"
-        ? prisma.adminSettings.findUnique({ where: { key: `tx:${slug}:${lang}` } })
-        : Promise.resolve(null),
-    ]);
+    // findFirst with published, not findUnique: an unpublished (e.g. retracted)
+    // article must not keep its title and summary in search metadata.
+    const post = await prisma.blogPost.findFirst({
+      where: { slug, published: true },
+      select: { slug: true, title: true, excerpt: true, content: true, coverImage: true, tags: true, author: true, category: true, createdAt: true },
+    });
 
-    if (!post) return { title: "Post Not Found | AI Times" };
+    if (!post) return { title: t("pages.article.metaNotFound") };
 
-    // Use translated title/description if available and language is not English
-    let title = post.title;
-    let description = post.excerpt.slice(0, 200);
-    if (lang !== "en") {
-      if (txCache?.value) {
-        // Full article translation already cached — use it
-        try {
-          const tx = JSON.parse(txCache.value);
-          if (tx.title) title = tx.title;
-          if (tx.excerpt) description = tx.excerpt.slice(0, 200);
-        } catch { /* fall back to English */ }
-      } else {
-        // No cache yet — generate a quick title+excerpt translation so social previews
-        // show the correct language even before any human has visited the page.
-        try {
-          const meta = await translateMeta(prisma, slug, lang as "fr" | "sw", post.title, post.excerpt);
-          title = meta.title;
-          description = meta.excerpt.slice(0, 200);
-        } catch { /* fall back to English title/description */ }
-      }
-    }
+    // Translated title and summary when the cache already has them; never
+    // waits on the model, so crawlers get an answer straight away.
+    const meta = await postMetaFor(post, locale);
+    const title = meta.title;
+    const description = meta.excerpt.slice(0, 200);
 
-    const pageUrl = lang === "en"
-      ? `${SITE_URL}/ai-times/${slug}`
-      : `${SITE_URL}/ai-times/${slug}?lang=${lang}`;
-    const canonicalUrl = `${SITE_URL}/ai-times/${slug}`; // canonical always points to English
+    const canonicalUrl = `${SITE_URL}/ai-times/${slug}`;
     const ogImage = toOgImage(post.coverImage, post.category);
-    const locale = LOCALE_MAP[lang] ?? "en_US";
-    const siteName = lang !== "en"
-      ? `AI Times | TIBLOGICS (${LANG_LABEL[lang]})`
-      : "AI Times | TIBLOGICS";
 
     return {
-      title: `${title} | AI Times by TIBLOGICS`,
+      title: t("pages.article.metaTitle", { title }),
       description,
       keywords: post.tags,
-      alternates: {
-        canonical: canonicalUrl,
-        languages: {
-          "en": `${SITE_URL}/ai-times/${slug}`,
-          "fr": `${SITE_URL}/ai-times/${slug}?lang=fr`,
-          "sw": `${SITE_URL}/ai-times/${slug}?lang=sw`,
-        },
-      },
+      alternates: { canonical: canonicalUrl },
       authors: [{ name: post.author }],
       openGraph: {
         title,
         description,
         type: "article",
-        url: pageUrl,
-        siteName,
-        locale,
+        url: canonicalUrl,
+        siteName: "AI Times | TIBLOGICS",
+        locale: LOCALE_MAP[locale] ?? "en_US",
         publishedTime: post.createdAt.toISOString(),
         authors: [post.author],
         section: post.category,
@@ -223,7 +130,7 @@ export async function generateMetadata(
       },
     };
   } catch {
-    return { title: "AI Times | TIBLOGICS" };
+    return { title: t("pages.aiTimes.meta.title") };
   }
 }
 
@@ -233,23 +140,38 @@ export default async function BlogPostPage(
   const { slug } = await params;
   const SITE_URL_LOCAL = (process.env.NEXTAUTH_URL || "https://tiblogics.com").replace(/\/$/, "");
 
+  const locale = await getLocale();
+
   let jsonLd: object | null = null;
   let heroCoverUrl: string | null = null;
-  let preloadedTranslations: Record<string, { title: string; excerpt: string; content: string }> = {};
+  // The article in the visitor's language, when it is not English.
+  let translation: { title: string; excerpt: string; content: string } | null = null;
+  let pending = false;
+  let relatedTitles: Record<string, string> = {};
   let postLookupRan = false;
   try {
     const { prisma } = await import("@/lib/prisma");
-    const [post, frCache, swCache] = await Promise.all([
-      prisma.blogPost.findFirst({
-        where: { slug, published: true },
-        select: { title: true, excerpt: true, coverImage: true, category: true, author: true, createdAt: true, updatedAt: true, tags: true },
-      }),
-      prisma.adminSettings.findUnique({ where: { key: `tx:${slug}:fr` } }),
-      prisma.adminSettings.findUnique({ where: { key: `tx:${slug}:sw` } }),
-    ]);
+    const post = await prisma.blogPost.findFirst({
+      where: { slug, published: true },
+      select: { slug: true, title: true, excerpt: true, content: true, coverImage: true, category: true, author: true, createdAt: true, updatedAt: true, tags: true },
+    });
     postLookupRan = true;
-    if (frCache?.value) preloadedTranslations.fr = JSON.parse(frCache.value);
-    if (swCache?.value) preloadedTranslations.sw = JSON.parse(swCache.value);
+    if (post && locale !== "en") {
+      // Cached translation, or English plus a notice while one is made.
+      const localizedResult = await localizedPost(post, locale);
+      translation = localizedResult.value;
+      pending = localizedResult.pending;
+
+      // Titles for the "more from this category" cards, from the cache only.
+      const related = await prisma.blogPost.findMany({
+        where: { published: true, category: post.category, NOT: { slug } },
+        orderBy: { createdAt: "desc" },
+        take: 4,
+        select: { slug: true },
+      });
+      const summaries = await cachedPostSummaries(locale, related.map((r) => r.slug));
+      relatedTitles = Object.fromEntries(Object.entries(summaries).map(([k, v]) => [k, v.title]));
+    }
     if (post) {
       heroCoverUrl = post.coverImage ?? null;
       const ogImage = toOgImage(post.coverImage, post.category);
@@ -302,7 +224,7 @@ export default async function BlogPostPage(
         />
       )}
       <Suspense fallback={null}>
-        <BlogPostClient preloadedTranslations={preloadedTranslations} />
+        <BlogPostClient translation={pending ? null : translation} pending={pending} relatedTitles={relatedTitles} />
       </Suspense>
     </>
   );

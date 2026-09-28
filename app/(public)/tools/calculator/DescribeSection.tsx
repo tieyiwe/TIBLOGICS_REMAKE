@@ -126,8 +126,8 @@ export default function DescribeSection({
                 <dl className="mt-2 space-y-1.5">
                   {RATIONALE_KEYS.filter((k) => rationale?.[k]).map((k) => (
                     <div key={k} className="font-dm text-sm text-[#3A4A5C]">
-                      <dt className="inline font-semibold text-[#1B3A6B]">{t(`calculator.ai.group.${k}`)}: </dt>
-                      <dd className="inline">{rationale?.[k]}</dd>
+                      <dt className="font-semibold text-[#1B3A6B] text-xs uppercase tracking-wide">{t(`calculator.ai.group.${k}`)}</dt>
+                      <dd>{rationale?.[k]}</dd>
                     </div>
                   ))}
                 </dl>

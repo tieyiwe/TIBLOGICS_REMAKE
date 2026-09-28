@@ -2,6 +2,8 @@ import { checkRateLimit } from "@/lib/rate-limit";
 export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/claude";
+import { replyInLanguage } from "@/lib/i18n/config";
+import { getLocale, translatorFor } from "@/lib/i18n/server";
 
 const RECOMMENDATION_SYSTEM_PROMPT = `You are a personalization engine for TIBLOGICS, an AI implementation and digital solutions agency. Your job is to analyze a visitor's behavior on the site and return highly relevant, personalized service and tool recommendations.
 
@@ -46,6 +48,8 @@ Based on the user context provided, return a JSON object with exactly this struc
 Return exactly 3 recommendations, ranked by relevance. Be specific and contextual — if they visited the scanner, recommend the audit. If they're in healthcare, mention CareFlow AI. If they're interested in cost, recommend the calculator. Never be generic.`;
 
 export async function POST(req: NextRequest) {
+  const locale = await getLocale();
+  const t = translatorFor(locale);
   const ip = req.headers.get("x-forwarded-for") ?? "unknown";
   if (!(await checkRateLimit(`recommendations:${ip}`, 30, 3_600_000))) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
@@ -68,9 +72,14 @@ export async function POST(req: NextRequest) {
 
 Generate 3 highly personalized recommendations for this visitor.`;
 
+    // headline, reason, name and tagline are shown to the visitor, so they
+    // come back in the visitor's language; keys, "type" and "href" stay as-is.
+    const languageRule = locale === "en"
+      ? ""
+      : `\n\n${replyInLanguage(locale)} Translate only the values of "headline", "reason", "name" and "tagline"; keep every JSON key, "type" and "href" exactly as specified.`;
     const text = await streamChat(
       [{ role: "user", content: userMessage }],
-      RECOMMENDATION_SYSTEM_PROMPT,
+      RECOMMENDATION_SYSTEM_PROMPT + languageRule,
       512
     );
 
@@ -86,12 +95,12 @@ Generate 3 highly personalized recommendations for this visitor.`;
     console.error("Recommendation engine error:", err);
     // Return sensible fallback recommendations
     return NextResponse.json({
-      headline: "Start with a free AI assessment",
-      reason: "Most visitors find our free tools and discovery call the perfect starting point.",
+      headline: t("pages.recs.fallback.headline"),
+      reason: t("pages.recs.fallback.reason"),
       recommendations: [
-        { type: "tool", name: "Website AI Scanner", tagline: "See your AI readiness score in 30 seconds — free.", href: "/tools/scanner", priority: 1 },
-        { type: "tool", name: "AI Project Advisor", tagline: "Chat with Echelon to get a custom AI roadmap for your business.", href: "/tools/advisor", priority: 2 },
-        { type: "session", name: "Project Discovery Meeting", tagline: "30-minute free meeting to explore what AI can do for you.", href: "/book", priority: 3 },
+        { type: "tool", name: t("pages.recs.fallback.scanner"), tagline: t("pages.recs.fallback.scannerTagline"), href: "/tools/scanner", priority: 1 },
+        { type: "tool", name: t("pages.recs.fallback.advisor"), tagline: t("pages.recs.fallback.advisorTagline"), href: "/tools/advisor", priority: 2 },
+        { type: "session", name: t("pages.recs.fallback.discovery"), tagline: t("pages.recs.fallback.discoveryTagline"), href: "/book", priority: 3 },
       ],
     });
   }
