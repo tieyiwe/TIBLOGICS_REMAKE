@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { Suspense } from "react";
+import { notFound } from "next/navigation";
 import fs from "fs";
 import path from "path";
 import Anthropic from "@anthropic-ai/sdk";
@@ -141,8 +142,10 @@ export async function generateMetadata(
 
     const { prisma } = await import("@/lib/prisma");
     const [post, txCache] = await Promise.all([
-      prisma.blogPost.findUnique({
-        where: { slug },
+      // findFirst with published, not findUnique: an unpublished (e.g. retracted)
+      // article must not keep its title and summary in search metadata.
+      prisma.blogPost.findFirst({
+        where: { slug, published: true },
         select: { title: true, excerpt: true, coverImage: true, tags: true, author: true, category: true, createdAt: true },
       }),
       lang !== "en"
@@ -233,16 +236,18 @@ export default async function BlogPostPage(
   let jsonLd: object | null = null;
   let heroCoverUrl: string | null = null;
   let preloadedTranslations: Record<string, { title: string; excerpt: string; content: string }> = {};
+  let postLookupRan = false;
   try {
     const { prisma } = await import("@/lib/prisma");
     const [post, frCache, swCache] = await Promise.all([
-      prisma.blogPost.findUnique({
-        where: { slug },
+      prisma.blogPost.findFirst({
+        where: { slug, published: true },
         select: { title: true, excerpt: true, coverImage: true, category: true, author: true, createdAt: true, updatedAt: true, tags: true },
       }),
       prisma.adminSettings.findUnique({ where: { key: `tx:${slug}:fr` } }),
       prisma.adminSettings.findUnique({ where: { key: `tx:${slug}:sw` } }),
     ]);
+    postLookupRan = true;
     if (frCache?.value) preloadedTranslations.fr = JSON.parse(frCache.value);
     if (swCache?.value) preloadedTranslations.sw = JSON.parse(swCache.value);
     if (post) {
@@ -270,6 +275,13 @@ export default async function BlogPostPage(
       };
     }
   } catch { /* non-blocking */ }
+
+  // Missing or unpublished: a real 404. This page used to render its shell
+  // with a 200 whatever the post's state, so a retracted article kept its
+  // title and summary in the structured data for search engines to index.
+  // Only when the lookup actually ran and found nothing — a database error
+  // above leaves jsonLd null too, and should not be reported as "not found".
+  if (!jsonLd && postLookupRan) notFound();
 
   return (
     <>

@@ -673,34 +673,6 @@ export const EDITORIAL_SPOTLIGHTS = [
 <p><strong>Practical takeaway:</strong> Start a free trial of Cursor this week and run it alongside whatever you currently use for 10 days. The productivity difference for most developers is immediately obvious. Add Claude Code for one complex task — a refactor you've been putting off, a debugging session on a gnarly production issue — and let the results speak for themselves.</p>`,
   },
   {
-    title: "DeepSeek R2 Just Landed. Here's What It Actually Means for the Global AI Race.",
-    excerpt: "China's DeepSeek released its most capable model yet at a fraction of Western competitors' costs. The geopolitical, commercial, and technical implications are bigger than most headlines suggest.",
-    category: "breaking",
-    tags: ["deepseek", "china ai", "llm", "ai competition", "open source", "geopolitics"],
-    coverEmoji: "⚡",
-    coverGradient: "from-red-600 to-orange-500",
-    coverImage: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80",
-    author: "TIBLOGICS Editorial",
-    featured: false,
-    content: `<p>DeepSeek's R2 model has arrived, and the reaction from the Western AI industry follows the now-familiar pattern: initial dismissal, then benchmarks, then a quiet recalibration of competitive assumptions. What DeepSeek has built — again — is a frontier-capable model at infrastructure costs that Western labs struggle to match even with billion-dollar compute budgets. The reasons matter as much as the results.</p>
-
-<h2>What R2 Actually Achieves</h2>
-<p>R2 reaches parity with or surpasses GPT-5 and Claude 3.7 on a substantial range of coding, mathematics, and reasoning benchmarks. This alone would be significant. What makes it remarkable is the architecture: DeepSeek has continued refining their mixture-of-experts approach to activate dramatically fewer parameters per inference call than equivalent dense models. The practical result is that R2 delivers frontier-level outputs at roughly 20–30% of the inference cost of comparable Western models.</p>
-<p>The training efficiency numbers are equally striking. DeepSeek has published enough methodology detail to make clear that R2 was trained on a fraction of the compute that Anthropic, OpenAI, and Google deploy. Whether through architectural innovation, data curation quality, or both, they are achieving more with less — and doing so repeatedly, not as a one-off.</p>
-
-<h2>The Export Control Problem</h2>
-<p>US export controls on advanced AI chips were explicitly designed to slow Chinese AI development by restricting access to Nvidia H100s and their successors. DeepSeek's successive models suggest those controls, while creating real friction, have not achieved their strategic objective. DeepSeek appears to have responded to chip constraints with architectural innovation — designing models that extract more capability from the hardware they do have access to rather than competing on raw compute scale.</p>
-<p>This has significant policy implications. If the strategic assumption behind export controls was that China could not develop frontier AI without Western silicon, that assumption is under serious pressure. The policy debate in Washington and Brussels is already shifting from "prevent Chinese AI development" to "ensure Western AI remains competitive despite Chinese AI development."</p>
-
-<h2>What This Means for Businesses Using AI APIs</h2>
-<p>R2 is available via API at pricing that undercuts the major Western providers significantly. For cost-sensitive, high-volume applications — content generation, document processing, classification at scale — R2 is a serious commercial option. The quality-to-cost ratio is genuinely competitive.</p>
-<p>The considerations that give enterprise buyers pause: data residency (requests processed in China), IP exposure (terms of service and enforcement are subject to Chinese law), and vendor lock-in risk (a geopolitically motivated service interruption is a non-zero risk). For applications with sensitive data or regulatory requirements, these aren't theoretical concerns. For lower-stakes, high-volume applications, R2 is worth evaluating on pure economics.</p>
-
-<h2>The Bigger Picture</h2>
-<p>The AI race is no longer a Western competition with an emerging Chinese challenger. It is a genuinely bilateral contest between two well-resourced, technically sophisticated ecosystems pursuing different architectural approaches. Western labs have more total compute. Chinese labs appear to have more architectural efficiency innovation. The next 18 months will test which advantage compounds faster.</p>
-<p><strong>Practical takeaway:</strong> Evaluate R2 for high-volume, non-sensitive workloads where cost is the primary constraint. Do not deploy it for any application processing sensitive customer data, proprietary IP, or regulated information until data residency and legal risk questions are resolved for your specific jurisdiction.</p>`,
-  },
-  {
     title: "How to Build and Sell an AI SaaS Product in 90 Days: The Realistic Playbook",
     excerpt: "The barrier to launching an AI-powered SaaS product has never been lower. Here's the honest, step-by-step process for going from idea to paying customers in three months — without a technical co-founder.",
     category: "ai-business",

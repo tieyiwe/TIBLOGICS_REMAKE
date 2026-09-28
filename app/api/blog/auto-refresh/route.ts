@@ -16,6 +16,7 @@ import resend from "@/lib/resend";
 import { assignCoverImage } from "@/lib/blog-cover";
 import { requireAdmin, secretEquals } from "@/lib/require-admin";
 import { CURATED_ARTICLES, renderSources } from "@/lib/blog/content/curated";
+import { RETRACTIONS } from "@/lib/blog/content/retractions";
 
 const anthropic = new Anthropic();
 
@@ -931,9 +932,30 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.error("[auto-refresh] curated publishing skipped", err instanceof Error ? err.message : err);
   }
+  // Take down anything on the retraction list (unpublish, never delete).
+  let retracted = 0;
+  if (RETRACTIONS.length > 0) {
+    try {
+      const where = { published: true, title: { in: RETRACTIONS.map((r) => r.title) } };
+      const live = await prisma.blogPost.findMany({ where, select: { slug: true } });
+      if (live.length > 0) {
+        const res = await prisma.blogPost.updateMany({ where, data: { published: false, featured: false } });
+        retracted = res.count;
+        // By exact path. The pattern form, revalidatePath("/ai-times/[slug]",
+        // "page"), did not clear these in testing: the retracted page kept
+        // serving its cached title and share tags on repeated requests.
+        for (const { slug } of live) {
+          try { revalidatePath(`/ai-times/${slug}`); } catch { /* no request context */ }
+        }
+      }
+    } catch (err) {
+      console.error("[auto-refresh] retractions skipped", err instanceof Error ? err.message : err);
+    }
+  }
+
   // The listing is cached for 60s and only rebuilds on the request after that,
   // so without this a new article appeared for the second visitor, not the first.
-  if (curatedPublished.length > 0) revalidateAiTimes();
+  if (curatedPublished.length > 0 || retracted > 0) revalidateAiTimes();
 
   // Idempotency lock — prevent duplicate runs from concurrent clicks or tabs.
   // Uses the DB so it works across multiple server instances.
@@ -995,6 +1017,7 @@ export async function GET(req: NextRequest) {
       message: "Content is up to date, and nothing major is breaking",
       postsAdded: curatedPublished.length,
       curatedPublished,
+      retracted,
     });
   }
 
@@ -1346,5 +1369,5 @@ export async function GET(req: NextRequest) {
   ]);
 
   if (postsAdded > 0) revalidateAiTimes();
-  return NextResponse.json({ message: `Added ${postsAdded + curatedPublished.length} new posts`, postsAdded: postsAdded + curatedPublished.length, curatedPublished, imagesPatched, tipsPatched, translationsPatched });
+  return NextResponse.json({ message: `Added ${postsAdded + curatedPublished.length} new posts`, postsAdded: postsAdded + curatedPublished.length, curatedPublished, retracted, imagesPatched, tipsPatched, translationsPatched });
 }
