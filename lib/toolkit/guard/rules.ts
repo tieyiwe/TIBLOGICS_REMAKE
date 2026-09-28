@@ -18,7 +18,10 @@
 //   Restaurant   – FDA gluten-free labeling rule (21 CFR 101.91); FDA/USDA
 //                  claim rules; state alcohol-promotion law
 
-export type Vertical = "realtor" | "finance" | "nonprofit" | "agency" | "restaurant" | "general";
+export type Vertical =
+  | "realtor" | "finance" | "nonprofit" | "agency" | "restaurant"
+  | "social-work" | "medical" | "legal" | "insurance" | "home-services" | "ecommerce" | "hr"
+  | "general";
 export type Severity = "high" | "medium" | "low";
 
 export interface GuardRule {
@@ -238,7 +241,7 @@ export const RULES: GuardRule[] = [
   // ── Agency: FTC endorsements, claims, email ──────────────────────────────
   {
     id: "ag-fake-reviews",
-    verticals: ["agency", "restaurant", "general"],
+    verticals: ["agency", "restaurant", "general", "medical", "legal", "insurance", "home-services", "ecommerce"],
     severity: "high",
     pattern: w(["write (?:\\d+ |some |a few |several )?(?:fake |sample )?(?:customer |google |yelp |amazon )?reviews? (?:for|as|from)", "(?:fake|made[- ]up|invented) (?:reviews?|testimonials?)", "reviews? from (?:customers|people) who (?:didn't|did not|never)", "pretend to be a (?:customer|guest|client)"]),
     why: "Writing reviews or testimonials that do not come from real customers is prohibited, with civil penalties per violation.",
@@ -346,6 +349,227 @@ export const RULES: GuardRule[] = [
     basis: "Platform review policies (Google, Yelp); general privacy expectations",
     fix: "Keep public replies general and move specifics to a private message or phone call.",
   },
+
+  // ── Medical practices ────────────────────────────────────────────────────
+  {
+    id: "md-guarantee",
+    verticals: ["medical"],
+    severity: "high",
+    pattern: w(["guaranteed (?:results|cure|recovery|outcome|relief)", "100% (?:effective|safe|success)", "cures?", "painless", "pain[- ]free", "no side effects", "risk[- ]free (?:procedure|treatment|surgery)", "permanent(?:ly)? (?:cure|fix|results)"]),
+    why: "Promises about treatment outcomes or safety are treated as misleading, and outcomes vary by patient.",
+    basis: "FTC Act §5 (health claims); state medical board advertising rules; AMA Code of Medical Ethics on advertising",
+    fix: "Describe what the treatment involves and who it may help: \"many patients find…\", \"results vary; we'll discuss what to expect.\"",
+  },
+  {
+    id: "md-phi",
+    verticals: ["medical", "social-work"],
+    severity: "high",
+    pattern: /\b(?:date of birth|DOB|MRN|medical record (?:number|no\.?)|SSN|social security (?:number|no\.?))\b|\b\d{3}-\d{2}-\d{4}\b|\b(?:0?[1-9]|1[0-2])\/(?:0?[1-9]|[12]\d|3[01])\/(?:19|20)\d{2}\b/gi,
+    why: "Looks like an identifier (date of birth, record or social security number). Identifiable health or client information should not go into marketing, social media or shared drafts.",
+    basis: "HIPAA Privacy Rule (45 CFR 164.514 de-identification); NASW Code of Ethics 1.07 (confidentiality)",
+    fix: "Remove identifiers. Refer to \"a patient\" or \"a client\", and use a secure, approved system for anything identifiable.",
+  },
+  {
+    id: "md-testimonial",
+    verticals: ["medical"],
+    severity: "medium",
+    pattern: w(["patient testimonials?", "before (?:and|&) after (?:photos?|pictures?|results)", "our patient \\w+ (?:said|says)", "real patient results?"]),
+    why: "Patient stories and before-and-after images need written authorization and should not suggest typical results.",
+    basis: "HIPAA marketing authorization (45 CFR 164.508(a)(3)); FTC Endorsement Guides (typical results)",
+    fix: "Use only with the patient's written authorization, and add \"Individual results vary.\"",
+  },
+  {
+    id: "md-superlative",
+    verticals: ["medical"],
+    severity: "low",
+    pattern: w(["best (?:doctor|surgeon|dentist|clinic|practice|care) in", "top (?:doctor|surgeon|dentist) in", "#1 (?:doctor|clinic|practice)", "most experienced (?:doctor|surgeon)"]),
+    why: "Comparative claims about physicians must be verifiable; many state boards treat unverifiable superlatives as misleading.",
+    basis: "State medical board advertising rules; FTC Act §5",
+    fix: "Use facts: years in practice, board certification, number of procedures performed (if you track it).",
+  },
+
+  // ── Social work ──────────────────────────────────────────────────────────
+  {
+    id: "sw-identifiers",
+    verticals: ["social-work"],
+    severity: "high",
+    pattern: w(["(?:client|family|child|youth)'?s? (?:full )?name is", "case (?:number|no\\.?) ?#?\\d+", "lives at \\d+", "(?:her|his|their) address is"]),
+    why: "Client-identifying details in drafts, reports shared beyond need, or outreach break confidentiality.",
+    basis: "NASW Code of Ethics 1.07 (privacy and confidentiality); HIPAA and 42 CFR Part 2 where applicable",
+    fix: "Use initials or \"the client\" in drafts, and keep identifiers in your agency's secure record system.",
+  },
+  {
+    id: "sw-judgemental",
+    verticals: ["social-work"],
+    severity: "medium",
+    pattern: w(["non[- ]?compliant", "manipulative", "attention[- ]seeking", "refused to cooperate", "in denial", "drug addict", "addict", "alcoholic", "junkie", "the mentally ill", "suffers from", "victim of (?:her|his|their) own"]),
+    why: "Labelling or stigmatising language can bias readers of a record or report and undermine the client's dignity.",
+    basis: "NASW Code of Ethics 1.01 and 1.12 (dignity; derogatory language); person-first documentation practice",
+    fix: "Describe behaviour and context factually: \"did not attend three scheduled visits\", \"person with a substance use disorder\".",
+  },
+  {
+    id: "sw-promise",
+    verticals: ["social-work"],
+    severity: "medium",
+    pattern: w(["I promise (?:you|that)", "(?:will|guarantee to) keep (?:this|everything) (?:secret|confidential) no matter", "you will (?:definitely|certainly) get", "guaranteed (?:housing|placement|approval|benefits)"]),
+    why: "Promising outcomes or absolute confidentiality is not something a social worker can guarantee (mandated reporting, eligibility decisions made by others).",
+    basis: "NASW Code of Ethics 1.07(e) (limits of confidentiality) and 1.03 (informed consent)",
+    fix: "Be clear about limits: \"What you tell me is private, except when someone's safety is at risk.\" \"I'll help you apply; the agency makes the decision.\"",
+  },
+
+  // ── Law firms ────────────────────────────────────────────────────────────
+  {
+    id: "lg-guarantee",
+    verticals: ["legal"],
+    severity: "high",
+    pattern: w(["(?:we|I) (?:will|guarantee to) win", "guaranteed (?:win|results|outcome|settlement|verdict)", "you will (?:win|get compensation)", "no[- ]risk (?:case|lawsuit)", "100% success"]),
+    why: "Lawyers may not promise or imply results they cannot guarantee.",
+    basis: "ABA Model Rule 7.1 (false or misleading communications) and comment [3]; state bar advertising rules",
+    fix: "Describe the process and experience instead, and include your state's past-results disclaimer where required.",
+  },
+  {
+    id: "lg-specialist",
+    verticals: ["legal"],
+    severity: "medium",
+    pattern: w(["specialist in", "specializ(?:e|es|ing) in", "certified specialist", "expert in (?:\\w+ )?law", "leading (?:attorney|lawyer|firm)", "best (?:attorney|lawyer|law firm)", "top[- ]rated (?:attorney|lawyer)"]),
+    why: "\"Specialist\" and similar terms are restricted to lawyers certified by an approved body in many states, and superlatives must be verifiable.",
+    basis: "ABA Model Rule 7.2(c) (certified specialist) and Rule 7.1; state bar rules",
+    fix: "Say \"focuses on\" or \"practises in\", and use \"certified specialist\" only with the certifying organisation named.",
+  },
+  {
+    id: "lg-past-results",
+    verticals: ["legal"],
+    severity: "medium",
+    pattern: /\b(?:won|recovered|secured|obtained)\s+(?:over\s+|more than\s+)?\$\s?\d[\d,.]*\s*(?:k|m|million|billion|thousand)?/gi,
+    why: "Past results can create unjustified expectations; many states require a disclaimer next to them.",
+    basis: "ABA Model Rule 7.1 comment [3]; state bar rules (e.g. \"prior results do not guarantee a similar outcome\")",
+    fix: "Add your state's required disclaimer next to the figure, or describe the case without the amount.",
+  },
+  {
+    id: "lg-solicitation",
+    verticals: ["legal"],
+    severity: "medium",
+    pattern: w(["(?:we|I) saw (?:that )?you (?:were|had) (?:in|an) (?:accident|crash)", "following your (?:accident|arrest|injury)", "call us now before", "act now or lose"]),
+    why: "Targeted outreach to people known to need legal help is restricted, and some states require waiting periods or labels.",
+    basis: "ABA Model Rule 7.3 (solicitation of clients); state rules on targeted mail (e.g. \"Advertising Material\" labels)",
+    fix: "Check your state's solicitation rules before sending, and keep outreach general rather than referencing the person's event.",
+  },
+
+  // ── Insurance agencies ───────────────────────────────────────────────────
+  {
+    id: "in-guarantee",
+    verticals: ["insurance"],
+    severity: "high",
+    pattern: w(["guaranteed (?:approval|acceptance|lowest (?:rate|price|premium)|savings)", "lowest rates? guaranteed", "everything is covered", "covers everything", "fully covered", "no exclusions", "you(?:'re| are) always covered"]),
+    why: "Overstating coverage or guaranteeing price or approval misrepresents the policy.",
+    basis: "State unfair trade practices acts (NAIC Model Unfair Trade Practices Act §4: misrepresentation and false advertising)",
+    fix: "Describe what the policy can cover, and point to the policy terms: \"coverage depends on your policy; exclusions apply.\"",
+  },
+  {
+    id: "in-free",
+    verticals: ["insurance"],
+    severity: "medium",
+    pattern: w(["free (?:insurance|coverage|policy|gift card|gift) (?:for|when|if)", "sign up and (?:get|receive) (?:a )?\\$\\d+", "cash back (?:for|when) (?:you )?(?:buy|sign)"]),
+    why: "Giving value to induce a purchase can be illegal rebating or an inducement under state insurance law.",
+    basis: "State anti-rebating and inducement statutes (NAIC Model Act §4.H); state insurance department rules",
+    fix: "Check your state's rebating rules before offering anything of value; describe the policy's benefits instead.",
+  },
+  {
+    id: "in-savings",
+    verticals: ["insurance"],
+    severity: "low",
+    pattern: /\bsave (?:up to |an average of )?\$?\d[\d,]*%?/gi,
+    why: "Savings figures need a documented basis and usually a disclosure of how they were calculated.",
+    basis: "State insurance advertising regulations; FTC Act §5",
+    fix: "Keep a record of how the figure was calculated and add the basis, or say \"you may be able to save.\"",
+  },
+
+  // ── Home services and trades ─────────────────────────────────────────────
+  {
+    id: "hs-licensed",
+    verticals: ["home-services"],
+    severity: "medium",
+    pattern: w(["licensed,? (?:bonded,? )?(?:and )?insured", "fully licensed", "licensed and insured", "certified (?:technicians?|installers?)"]),
+    why: "Only accurate if every licence and policy is current for the work and area advertised; many states also require the licence number in ads.",
+    basis: "State contractor licensing laws (e.g. California B&P Code 7030.5 licence number in ads); FTC Act §5",
+    fix: "Keep it only if true today, and add your licence number where your state requires it.",
+  },
+  {
+    id: "hs-lowest",
+    verticals: ["home-services", "ecommerce"],
+    severity: "medium",
+    pattern: w(["lowest prices? (?:in town|guaranteed|anywhere)", "we(?:'ll| will) beat any (?:price|quote)", "cheapest in", "price match guarantee"]),
+    why: "Price guarantees must be honoured exactly as stated, with any conditions clearly disclosed.",
+    basis: "FTC Guides Against Deceptive Pricing (16 CFR 233); state consumer protection law",
+    fix: "State the conditions right next to the promise, or describe your pricing honestly: \"upfront, written quotes.\"",
+  },
+  {
+    id: "hs-warranty",
+    verticals: ["home-services"],
+    severity: "low",
+    pattern: w(["lifetime (?:warranty|guarantee)", "(?:full|complete) warranty", "guaranteed for life", "100% satisfaction guaranteed"]),
+    why: "Warranty claims must match the written warranty, including what \"lifetime\" means and what is excluded.",
+    basis: "Magnuson-Moss Warranty Act; FTC Guides for the Advertising of Warranties (16 CFR 239)",
+    fix: "Say what the warranty covers and for how long, and make the written terms available.",
+  },
+
+  // ── E-commerce and retail ────────────────────────────────────────────────
+  {
+    id: "ec-made-in-usa",
+    verticals: ["ecommerce"],
+    severity: "high",
+    pattern: w(["made in (?:the )?(?:usa|u\\.s\\.a\\.|u\\.s\\.|america)", "american[- ]made", "proudly made in"]),
+    why: "An unqualified Made in USA claim requires that all or virtually all of the product is made in the US.",
+    basis: "FTC Made in USA Labeling Rule (16 CFR 323)",
+    fix: "Use it only if it is all or virtually all US-made; otherwise qualify it: \"Assembled in the USA from imported parts.\"",
+  },
+  {
+    id: "ec-was-price",
+    verticals: ["ecommerce"],
+    severity: "medium",
+    pattern: w(["was \\$\\d+", "compare at \\$\\d+", "regular(?:ly)? \\$\\d+", "\\d+% off (?:the )?(?:regular|original) price", "retail value \\$\\d+"]),
+    why: "A reference price must be one you actually charged, for a reasonable period, recently.",
+    basis: "FTC Guides Against Deceptive Pricing (16 CFR 233.1); state reference-pricing laws",
+    fix: "Only show a former price you genuinely charged; keep the dates and records.",
+  },
+  {
+    id: "ec-eco",
+    verticals: ["ecommerce"],
+    severity: "medium",
+    pattern: w(["eco[- ]friendly", "environmentally friendly", "sustainable", "green product", "carbon neutral", "biodegradable", "non[- ]toxic", "all[- ]natural", "chemical[- ]free"]),
+    why: "Broad environmental and \"natural\" claims need specific, substantiated support.",
+    basis: "FTC Green Guides (16 CFR 260); FTC Act §5",
+    fix: "Be specific and provable: \"packaging is 80% recycled cardboard\", not \"eco-friendly\".",
+  },
+
+  // ── HR and recruiting ────────────────────────────────────────────────────
+  {
+    id: "hr-age",
+    verticals: ["hr"],
+    severity: "high",
+    pattern: w(["young (?:and )?(?:energetic|dynamic|team|person|professional)", "recent (?:college )?grad(?:uate)?s? only", "digital natives?", "(?:up to|no more than|maximum of) \\d+ years(?:' | of )experience", "under \\d{2}", "over \\d{2} need not apply", "overqualified", "junior(?:ish)? (?:and )?young"]),
+    why: "Wording that signals a preference for younger workers can be evidence of age discrimination.",
+    basis: "Age Discrimination in Employment Act (29 U.S.C. 623(e)); EEOC guidance on job advertisements",
+    fix: "Describe the skills and duties: \"comfortable learning new software\", \"entry-level role\".",
+  },
+  {
+    id: "hr-protected",
+    verticals: ["hr"],
+    severity: "high",
+    pattern: w(["(?:salesman|salesmen|waitress|foreman|chairman|handyman)", "native (?:english )?speakers?", "must be a (?:us|u\\.s\\.) citizen", "(?:male|female|men|women) (?:only|preferred|candidates)", "no (?:pregnant|mothers|kids)", "able[- ]bodied", "must be (?:christian|single|married)", "clean[- ]cut"]),
+    why: "Language that suggests a preference based on sex, national origin, citizenship, disability, religion or family status can be discriminatory.",
+    basis: "Title VII (42 U.S.C. 2000e-3(b)); ADA; IRCA citizenship discrimination (8 U.S.C. 1324b); EEOC guidance",
+    fix: "Use neutral job titles, state the language level the job actually needs (\"fluent written English\"), and list duties, not traits.",
+  },
+  {
+    id: "hr-salary",
+    verticals: ["hr"],
+    severity: "low",
+    pattern: w(["competitive (?:salary|pay|compensation)", "salary (?:is )?negotiable", "pay depends on experience", "doe"]),
+    why: "A growing number of states and cities require a good-faith pay range in job postings.",
+    basis: "Pay transparency laws (e.g. Colorado, California, Washington, New York, Illinois)",
+    fix: "Add the pay range for the role, and benefits, where the law requires it (and it attracts more applicants).",
+  },
 ];
 
 export const VERTICAL_LABELS: Record<Vertical, string> = {
@@ -354,6 +578,13 @@ export const VERTICAL_LABELS: Record<Vertical, string> = {
   nonprofit: "Nonprofit",
   agency: "Marketing agency",
   restaurant: "Restaurant",
+  "social-work": "Social work",
+  medical: "Medical practice",
+  legal: "Law firm",
+  insurance: "Insurance agency",
+  "home-services": "Home services and trades",
+  ecommerce: "E-commerce and retail",
+  hr: "HR and recruiting",
   general: "General business",
 };
 

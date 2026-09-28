@@ -45,6 +45,22 @@ interface Profile {
   compliance: string;
 }
 
+interface SearchHit {
+  id: string;
+  vertical: string;
+  verticalLabel: string;
+  category: string;
+  title: string;
+  useWhen: string;
+  match: "exact" | "close";
+  snippet: string;
+}
+interface SearchResult {
+  hits: SearchHit[];
+  unmatched: string[];
+  didYouMean: string | null;
+}
+
 interface FullPrompt extends IndexEntry {
   prompt: string;
   proTip: string;
@@ -227,6 +243,34 @@ function WriteTab(props: {
   const [vertical, setVertical] = useState(start);
   const [category, setCategory] = useState("all");
   const [q, setQ] = useState("");
+  const [allIndustries, setAllIndustries] = useState(false);
+  const [search, setSearch] = useState<SearchResult | null>(null);
+  const [searching, setSearching] = useState(false);
+
+  // Keyword search runs on the server (it reads the prompt text itself),
+  // shortly after typing stops.
+  const needle = q.trim();
+  useEffect(() => {
+    if (needle.length < 2) {
+      setSearch(null);
+      return;
+    }
+    let cancelled = false;
+    setSearching(true);
+    const t = setTimeout(async () => {
+      const params = new URLSearchParams({ q: needle, ...(allIndustries ? {} : { vertical }) });
+      const res = await fetch(`/api/toolkit/search?${params}`).catch(() => null);
+      const d = res?.ok ? ((await res.json().catch(() => null)) as SearchResult | null) : null;
+      if (!cancelled) {
+        setSearch(d);
+        setSearching(false);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [needle, vertical, allIndustries]);
   const [selected, setSelected] = useState<FullPrompt | null>(null);
   const [loadingPrompt, setLoadingPrompt] = useState(false);
   const [fields, setFields] = useState<Record<string, string>>({});
@@ -271,15 +315,14 @@ function WriteTab(props: {
     : "";
 
   const categories = useMemo(() => [...new Set(props.index.filter((p) => p.vertical === vertical).map((p) => p.category))], [props.index, vertical]);
-  const list = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    return props.index.filter(
-      (p) =>
-        p.vertical === vertical &&
-        (category === "all" || p.category === category) &&
-        (!needle || p.title.toLowerCase().includes(needle) || p.useWhen.toLowerCase().includes(needle)),
-    );
-  }, [props.index, vertical, category, q]);
+  const list = useMemo(
+    () => props.index.filter((p) => p.vertical === vertical && (category === "all" || p.category === category)),
+    [props.index, vertical, category],
+  );
+  const labelOf = (v: string) => props.verticals.find((x) => x.id === v)?.label ?? v;
+  const hits = (search?.hits ?? []).filter((h) => category === "all" || allIndustries || h.category === category);
+  const exactHits = hits.filter((h) => h.match === "exact");
+  const closeHits = hits.filter((h) => h.match === "close");
 
   useEffect(() => setCategory("all"), [vertical]);
 
@@ -332,8 +375,60 @@ function WriteTab(props: {
         </select>
         <div className="relative mt-2">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7A8FA6]" />
-          <input className={`${input} pl-8`} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search prompts" />
+          <input className={`${input} pl-8`} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by keyword, e.g. late payment" />
         </div>
+        <label className="mt-2 flex items-center gap-2 font-dm text-xs text-[#3A4A5C]">
+          <input type="checkbox" checked={allIndustries} onChange={(e) => setAllIndustries(e.target.checked)} className="accent-[#F47C20]" />
+          Search all industries
+        </label>
+
+        {needle.length >= 2 ? (
+          <div className="mt-3 max-h-[60vh] overflow-y-auto -mx-1">
+            {searching && !search && <p className="px-2.5 py-2 font-dm text-sm text-[#7A8FA6]">Searching…</p>}
+            {search?.didYouMean && (
+              <p className="px-2.5 pb-2 font-dm text-xs text-[#3A4A5C]">
+                Did you mean{" "}
+                <button onClick={() => setQ(search.didYouMean!)} className="font-semibold text-[#2251A3] underline">{search.didYouMean}</button>?
+              </p>
+            )}
+            {search && hits.length === 0 && (
+              <p className="px-2.5 py-2 font-dm text-sm text-[#7A8FA6]">
+                Nothing matches &ldquo;{needle}&rdquo;{allIndustries ? "" : " in this industry"}.{" "}
+                {!allIndustries && <button onClick={() => setAllIndustries(true)} className="text-[#2251A3] underline">Search all industries</button>}
+              </p>
+            )}
+            {[["Best matches", exactHits], ["Close matches", closeHits]].map(([heading, group]) =>
+              (group as SearchHit[]).length === 0 ? null : (
+                <div key={heading as string}>
+                  <p className="px-2.5 pt-2 pb-1 font-dm text-[11px] font-bold uppercase tracking-wider text-[#7A8FA6]">
+                    {heading as string} ({(group as SearchHit[]).length})
+                  </p>
+                  <ul>
+                    {(group as SearchHit[]).map((h) => (
+                      <li key={h.id} className={`flex items-start gap-1 rounded-lg ${selected?.id === h.id ? "bg-[#FEF6EE]" : "hover:bg-[#F4F7FB]"}`}>
+                        <button onClick={() => open(h.id)} className="flex-1 min-w-0 text-left px-2.5 py-2 font-dm">
+                          <span className={`block text-sm ${selected?.id === h.id ? "font-semibold text-[#0D1B2A]" : "text-[#0D1B2A]"}`}>{h.title}</span>
+                          <span className="block text-[11px] text-[#7A8FA6] mt-0.5">
+                            {allIndustries ? `${labelOf(h.vertical)} · ` : ""}{h.category}
+                          </span>
+                          <span className="block text-xs text-[#3A4A5C] mt-0.5 line-clamp-2">{h.snippet}</span>
+                        </button>
+                        <button
+                          onClick={() => quickCopy(h.id)}
+                          title="Copy this prompt"
+                          aria-label={`Copy the prompt: ${h.title}`}
+                          className="shrink-0 mt-1.5 mr-1 rounded-md p-1.5 text-[#7A8FA6] hover:bg-white hover:text-[#B8500A]"
+                        >
+                          {copiedId === h.id ? <Check size={14} className="text-green-600" /> : <ClipboardCopy size={14} />}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ),
+            )}
+          </div>
+        ) : (
         <ul className="mt-3 max-h-[60vh] overflow-y-auto -mx-1">
           {list.map((p) => (
             <li key={p.id} className={`group flex items-start gap-1 rounded-lg ${selected?.id === p.id ? "bg-[#FEF6EE]" : "hover:bg-[#F4F7FB]"}`}>
@@ -353,8 +448,8 @@ function WriteTab(props: {
               </button>
             </li>
           ))}
-          {list.length === 0 && <li className="px-2.5 py-2 font-dm text-sm text-[#7A8FA6]">No prompts match.</li>}
         </ul>
+        )}
       </aside>
 
       <section className="space-y-5 min-w-0">
