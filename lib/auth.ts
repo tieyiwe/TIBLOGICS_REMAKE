@@ -2,7 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import { checkRateLimit, clearRateLimit } from "@/lib/rate-limit";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { timingSafeEqual } from "crypto";
+import { randomBytes, timingSafeEqual } from "crypto";
 
 // tieyiwebass@gmail.com is the Owner — the super account above all admins
 export const OWNER_EMAIL = "tieyiwebass@gmail.com";
@@ -45,6 +45,24 @@ function loginSucceeded(key: string): void {
   // Not awaited: the login should not wait on a bookkeeping delete, and a
   // failure only means the caller keeps a few counted attempts.
   void clearRateLimit(`login:${key}`);
+}
+
+type Db = Awaited<typeof import("@/lib/prisma")>["prisma"];
+
+/**
+ * The owner's password: the ADMIN_PASSWORD secret (master credential) or the
+ * bcrypt hash saved by the admin "Change Password" screen. Used by the staff
+ * login and, for the owner's email only, by the Learning Box login, so one
+ * set of credentials opens both.
+ */
+async function ownerPasswordValid(prisma: Db, password: string): Promise<boolean> {
+  if (process.env.ADMIN_PASSWORD && secretEquals(password, process.env.ADMIN_PASSWORD)) return true;
+  try {
+    const stored = await prisma.adminSettings.findUnique({ where: { key: "admin_password_hash" } });
+    return !!stored?.value && (await bcrypt.compare(password, stored.value));
+  } catch {
+    return false;
+  }
 }
 
 export const authOptions: NextAuthOptions = {
@@ -178,13 +196,24 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          const student = await prisma.student.findUnique({
-            where: { email: credentials.email.toLowerCase().trim() },
-          });
-          if (!student) return null;
+          const email = credentials.email.toLowerCase().trim();
+          let student = await prisma.student.findUnique({ where: { email } });
 
-          const valid = await bcrypt.compare(credentials.password, student.passwordHash);
-          if (!valid) return null;
+          let valid = !!student && (await bcrypt.compare(credentials.password, student.passwordHash));
+          // The owner can use the admin password here too. If the owner has no
+          // learner account yet, one is created (its own password is random, so
+          // only the admin credential opens it until they set one).
+          if (!valid && email === OWNER_EMAIL.toLowerCase() && (await ownerPasswordValid(prisma, credentials.password))) {
+            student ??= await prisma.student.create({
+              data: {
+                email,
+                name: process.env.ADMIN_NAME ?? "Tieyiwe",
+                passwordHash: await bcrypt.hash(randomBytes(32).toString("hex"), 12),
+              },
+            });
+            valid = true;
+          }
+          if (!student || !valid) return null;
 
           await prisma.student
             .update({ where: { id: student.id }, data: { lastLoginAt: new Date() } })
