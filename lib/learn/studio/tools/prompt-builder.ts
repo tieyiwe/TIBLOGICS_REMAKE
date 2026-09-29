@@ -5,8 +5,14 @@ import type { StudioToolMeta } from "../types";
 // lib/i18n/messages/studio-prompt-builder.ts.
 export const promptBuilder: StudioToolMeta = {
   id: "prompt-builder",
-  icon: "🧪",
-  tracks: [],
-  challenges: [],
-  ready: false,
+  icon: "🧱",
+  tracks: ["practical-prompt-engineering", "ai-foundations", "ai-practitioner", "ai-forward-professional", "ai-small-business"],
+  challenges: [
+    { id: "client-email", difficulty: 1 },
+    { id: "policy-summary", difficulty: 1 },
+    { id: "pilot-plan", difficulty: 2 },
+    { id: "spreadsheet", difficulty: 2 },
+    { id: "four-day-week", difficulty: 3 },
+  ],
+  ready: true,
 };

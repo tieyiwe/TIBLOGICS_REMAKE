@@ -6,7 +6,19 @@ import type { StudioToolMeta } from "../types";
 export const testBench: StudioToolMeta = {
   id: "test-bench",
   icon: "🧪",
-  tracks: [],
-  challenges: [],
-  ready: false,
+  tracks: [
+    "practical-prompt-engineering",
+    "ai-foundations",
+    "ai-practitioner",
+    "ai-forward-professional",
+    "ai-small-business",
+    "ai-systems-expert",
+    "vibe-coding-engineer",
+  ],
+  challenges: [
+    { id: "pick-best", difficulty: 1 },
+    { id: "catch-planted", difficulty: 2 },
+    { id: "expose-weak", difficulty: 3 },
+  ],
+  ready: true,
 };
