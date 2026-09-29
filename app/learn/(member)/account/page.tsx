@@ -6,6 +6,7 @@ import BillingPortalButton from "@/components/learn/BillingPortalButton";
 import type { Metadata } from "next";
 import { fmtDate } from "@/lib/learn/format";
 import { getLocale, getT } from "@/lib/i18n/server";
+import { ensureLeaderboardColumn } from "@/lib/learn/leaderboard";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export default async function AccountPage() {
   const { student, entitlement } = await getLearnContext();
   if (!student) redirect("/learn/login");
 
+  await ensureLeaderboardColumn().catch(() => {});
   const profile = await prisma.student
     .findUnique({
       where: { id: student.id },

@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { requireStudent } from "@/lib/learn/session";
 import { getT } from "@/lib/i18n/server";
 import { LOCALE_COOKIE } from "@/lib/i18n/config";
+import { ensureLeaderboardColumn } from "@/lib/learn/leaderboard";
 
 const Body = z.object({
   accessibilityMode: z.boolean().optional(),
@@ -26,6 +27,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   try {
+    await ensureLeaderboardColumn();
     await prisma.student.update({ where: { id: student.id }, data });
     const res = NextResponse.json({ ok: true });
     // Keep this browser's language in step with the account's.

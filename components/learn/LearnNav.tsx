@@ -14,6 +14,7 @@ const LINK_KEYS = [
   { href: "/learn", key: "learn.nav.dashboard" },
   { href: "/learn/tracks", key: "learn.nav.myTracks" },
   { href: "/learn/certificates", key: "learn.nav.certificates" },
+  { href: "/learn/leaderboard", key: "game.nav.leaderboard" },
   { href: "/learn/account", key: "learn.nav.account" },
 ];
 

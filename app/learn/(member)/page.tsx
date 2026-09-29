@@ -9,6 +9,10 @@ import ProgressRing from "@/components/learn/ProgressRing";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTracks } from "@/lib/i18n/sources/learn";
 import type { Metadata } from "next";
+import { computeBadges, type BadgeStatus } from "@/lib/learn/badges";
+import { rankIcon } from "@/lib/learn/badge-defs";
+import DailyPanel from "@/components/learn/game/DailyPanel";
+import BadgeShelf from "@/components/learn/game/BadgeShelf";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -21,7 +25,11 @@ export default async function LearnDashboard() {
   const student = await getStudent();
   if (!student) redirect("/learn/login");
 
-  const [rawTracks, total, streak, certificates, t, locale] = await Promise.all([
+  // Gamification reads are independent of everything else here and of each
+  // other, so they join the same batch; each falls back to "nothing yet" so a
+  // failure never takes the dashboard down with it.
+  const since = new Date(Date.now() - 8 * 86_400_000);
+  const [rawTracks, total, streak, certificates, t, locale, badges, recentLessons, recentXp] = await Promise.all([
     getAllTrackProgress(student.id),
     getTotalPoints(student.id),
     computeStreak(student.id),
@@ -34,6 +42,16 @@ export default async function LearnDashboard() {
       .catch(() => []),
     getT(),
     getLocale(),
+    computeBadges(student.id).catch((err): BadgeStatus[] | null => {
+      console.error("[dashboard] badges", err);
+      return null;
+    }),
+    prisma.lessonProgress
+      .findMany({ where: { studentId: student.id, completedAt: { gte: since } }, select: { completedAt: true } })
+      .catch(() => []),
+    prisma.pointsLedger
+      .findMany({ where: { studentId: student.id, createdAt: { gte: since } }, select: { createdAt: true } })
+      .catch(() => []),
   ]);
 
   // Track titles in the learner's language (cached translations; any not
@@ -63,10 +81,15 @@ export default async function LearnDashboard() {
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
           <div className="rounded-2xl border border-[var(--border)] bg-white p-5">
             <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink3)]">{t("learn.dash.points")}</p>
-            <p className="mt-1 text-2xl font-black text-[var(--ink)]">{fmtNumber(total, locale)}</p>
+            <p className="mt-1 flex items-center gap-2 text-2xl font-black text-[var(--ink)]">
+              <span aria-hidden="true" className="text-xl">{rankIcon(level.index)}</span>
+              {t("game.xp", { n: fmtNumber(total, locale) })}
+            </p>
             <p className="mt-2 text-xs text-[var(--ink2)]">
-              <strong>{rankName(t, level.index)}</strong>
-              {level.next != null && ` · ${t("learn.dash.toNextLevel", { n: fmtNumber(level.pointsToNext, locale) })}`}
+              <strong>{t("game.rank.current", { rank: rankName(t, level.index) })}</strong>
+              {level.next != null
+                ? ` · ${t("game.rank.toNext", { n: fmtNumber(level.pointsToNext, locale), rank: rankName(t, level.index + 1) })}`
+                : ` · ${t("game.rank.max")}`}
             </p>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--s3)]">
               <div
@@ -100,6 +123,19 @@ export default async function LearnDashboard() {
             </p>
           </div>
         </div>
+      </section>
+
+      {/* Daily goal + last 7 days */}
+      <section aria-label={t("game.daily.section")}>
+        <DailyPanel
+          lessonTimes={recentLessons.map((r) => r.completedAt.toISOString())}
+          activityTimes={recentXp.map((r) => r.createdAt.toISOString())}
+        />
+        <p className="mt-2 text-right text-xs">
+          <Link href="/learn/leaderboard" className="font-semibold text-[var(--blue2)] underline">
+            {t("game.board.link")} →
+          </Link>
+        </p>
       </section>
 
       {/* Continue learning */}
@@ -156,6 +192,9 @@ export default async function LearnDashboard() {
           </div>
         )}
       </section>
+
+      {/* Badges */}
+      {badges && <BadgeShelf badges={badges} />}
 
       {/* Certificate shelf */}
       {certificates.length > 0 && (

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Markdown from "./Markdown";
 import { TRY_EVENT } from "./TryBlock";
 import { useT } from "@/lib/i18n/client";
+import { bumpPractice } from "@/lib/learn/game-client";
 
 // Built-in AI practice pad under every lesson. "Try it" buttons in the lesson
 // load their prompt here, so the learner practises without leaving the page.
@@ -78,7 +79,11 @@ export default function PracticePad({
       body: JSON.stringify({ lessonId, prompt }),
     }).catch(() => null);
     const d = res ? await res.json().catch(() => ({})) : {};
-    if (res?.ok && d.response) setRuns((r) => [{ prompt, response: d.response }, ...r].slice(0, 5));
+    if (res?.ok && d.response) {
+      setRuns((r) => [{ prompt, response: d.response }, ...r].slice(0, 5));
+      // Counts toward the daily goal only: no points, no extra model call.
+      bumpPractice();
+    }
     else setError(d.error ?? t("learn.error.tryAgain"));
     setBusy(false);
   }

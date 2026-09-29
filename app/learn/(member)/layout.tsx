@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import LearnNav from "@/components/learn/LearnNav";
 import GraceBanner from "@/components/learn/GraceBanner";
+import GameCelebrations from "@/components/learn/game/GameCelebrations";
 import { getLearnContext } from "@/lib/learn/session";
 import { getTotalPoints, levelFor } from "@/lib/learn/points";
 
@@ -29,6 +30,7 @@ export default async function MemberLayout({ children }: { children: React.React
       />
       {entitlement.inGrace && <GraceBanner graceUntil={entitlement.graceUntil} />}
       <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+      <GameCelebrations />
     </div>
   );
 }

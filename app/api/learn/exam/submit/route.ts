@@ -7,6 +7,7 @@ import { finaliseExamSession } from "@/lib/learn/exam-scoring";
 import { presentQuestion, type GradedQuestion } from "@/lib/learn/assessments";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { localizeQuestions } from "@/lib/i18n/sources/labs";
+import { gameDelta, gameSnapshot } from "@/lib/learn/badges";
 
 // Re-validates against the SERVER clock. A submission after expiry is scored
 // on the answers saved up to expiry and marked `expired` — a network failure
@@ -50,8 +51,11 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const before = await gameSnapshot(student.id);
     const result = await finaliseExamSession(sessionId, isLate);
     if (!result) return NextResponse.json({ error: t("labs.api.examScoreFailed") }, { status: 500 });
+    const awarded = (result as { pointsAwarded?: number }).pointsAwarded ?? 0;
+    const game = awarded > 0 ? gameDelta(before, await gameSnapshot(student.id)) : gameDelta(null, null);
 
     // Scoring above is on indexes and knows nothing of language. The review
     // texts are swapped for the learner's language here: the same question,
@@ -81,8 +85,10 @@ export async function POST(req: NextRequest) {
       distinctionScore: (result as { distinctionScore?: number }).distinctionScore,
       perModuleScores: (result as { perModuleScores?: Record<string, number> }).perModuleScores ?? {},
       graded,
-      pointsAwarded: (result as { pointsAwarded?: number }).pointsAwarded ?? 0,
+      pointsAwarded: awarded,
       expired: isLate,
+      newBadges: game.newBadges,
+      levelUp: game.levelUp,
     });
   } catch (err) {
     console.error("[POST /api/learn/exam/submit]", err);

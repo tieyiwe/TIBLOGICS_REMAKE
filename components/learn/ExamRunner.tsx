@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Markdown from "./Markdown";
 import { useLocale, useT } from "@/lib/i18n/client";
+import { celebrate } from "@/lib/learn/game-client";
 
 interface Question {
   id: string;
@@ -184,6 +185,7 @@ export default function ExamRunner({
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? t("labs.exam.submitError"));
       setResult(data);
+      celebrate({ points: data.pointsAwarded, reason: "exam", newBadges: data.newBadges, levelUp: data.levelUp });
       setPhase("results");
       router.refresh();
       window.scrollTo({ top: 0 });

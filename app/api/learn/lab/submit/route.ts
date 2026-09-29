@@ -12,6 +12,7 @@ import { evaluateBuild, evaluateCritique, evaluatePrompt, evaluateWorkbench } fr
 import { evaluateCode, MAX_CODE } from "@/lib/learn/labs/code";
 import { getLocale, getT, translatorFor } from "@/lib/i18n/server";
 import { localizeLab } from "@/lib/i18n/sources/labs";
+import { gameDelta, gameSnapshot } from "@/lib/learn/badges";
 
 export const maxDuration = 120;
 
@@ -163,6 +164,15 @@ export async function POST(req: NextRequest) {
       breakdown: evaluation.breakdown as unknown as Prisma.InputJsonValue,
     };
 
+    // Badges read passed attempts, so the "before" badge set must be taken
+    // before this attempt is saved. Only a first pass can change it.
+    const firstPass =
+      evaluation.passed &&
+      !(await prisma.pointsLedger
+        .findFirst({ where: { studentId: student.id, source: "lab_pass", refId: lab.id }, select: { id: true } })
+        .catch(() => null));
+    const before = firstPass ? await gameSnapshot(student.id) : null;
+
     const saved = attempt
       ? await prisma.labAttempt.update({ where: { id: attempt.id }, data })
       : await prisma.labAttempt.create({
@@ -172,10 +182,14 @@ export async function POST(req: NextRequest) {
     // Points on first pass only — the ledger keeps this idempotent, so a
     // retake for practice never double-awards.
     let pointsAwarded = 0;
+    let game = gameDelta(null, null);
     if (evaluation.passed) {
       const totalBefore = await getTotalPoints(student.id);
       pointsAwarded = await awardPoints(student.id, "lab_pass", lab.id, lab.points);
-      if (pointsAwarded > 0) checkLevelUp(student.id, totalBefore, totalBefore + pointsAwarded);
+      if (pointsAwarded > 0) {
+        checkLevelUp(student.id, totalBefore, totalBefore + pointsAwarded);
+        game = gameDelta(before, await gameSnapshot(student.id));
+      }
     }
 
     return NextResponse.json({
@@ -187,6 +201,8 @@ export async function POST(req: NextRequest) {
       feedbackMd: evaluation.feedbackMd,
       breakdown: evaluation.breakdown,
       pointsAwarded,
+      newBadges: game.newBadges,
+      levelUp: game.levelUp,
       // Critique labs reveal the full answer key after submission
       flaws: config.kind === "critique" ? config.flaws : undefined,
     });

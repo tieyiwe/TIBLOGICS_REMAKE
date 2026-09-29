@@ -10,6 +10,9 @@ import { handsOnMinutes } from "@/lib/learn/catalog";
 import { fmtBreakdown, fmtMinutes } from "@/lib/learn/format";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTrack, trackText } from "@/lib/i18n/sources/learn";
+import { POINT_VALUES } from "@/lib/learn/points";
+import { moduleStars } from "@/lib/learn/badge-defs";
+import QuestMap, { type QuestFinal, type QuestModule, type StageState } from "@/components/learn/game/QuestMap";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +36,10 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
         modules: {
           orderBy: { sortOrder: "asc" },
           include: {
-            lessons: { orderBy: { sortOrder: "asc" }, select: { id: true, title: true, durationMinutes: true } },
+            lessons: {
+              orderBy: { sortOrder: "asc" },
+              select: { id: true, title: true, durationMinutes: true, microCheck: { select: { id: true } } },
+            },
             quiz: { select: { id: true, passScore: true } },
           },
         },
@@ -44,7 +50,7 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
           orderBy: { sortOrder: "asc" },
           select: {
             id: true, slug: true, title: true, labType: true,
-            estimatedMinutes: true, points: true, moduleId: true,
+            estimatedMinutes: true, points: true, moduleId: true, lesson: { select: { moduleId: true } },
           },
         },
       },
@@ -100,6 +106,22 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
   const doneIds = new Set(done.map((d) => d.lessonId));
   const passedQuizIds = new Set(quizPasses.map((q) => q.quizId));
 
+  const quest = await buildQuest({
+    studentId: student.id,
+    track,
+    titles: { modules: text?.modules ?? {}, exam: text?.examTitle ?? track.finalExam?.title ?? "" },
+    doneIds,
+    passedQuizIds,
+    passedLabIds,
+    nextLessonId: progress.nextLessonId,
+    gates,
+    capstoneTitle: t("learn.trackHome.capstone"),
+  }).catch((err) => {
+    // The map is a bonus: without it the page still has everything below.
+    console.error("[track] quest map", err);
+    return null;
+  });
+
   const GATES = [
     { key: "microChecks", label: t("learn.gates.microChecks"), ok: gates.microChecks },
     { key: "quizzes", label: t("learn.gates.quizzes"), ok: gates.quizzes },
@@ -134,6 +156,8 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
           </Link>
         )}
       </header>
+
+      {quest && <QuestMap {...quest} accent={track.accentColor} />}
 
       {/* Certificate gates */}
       <section className="rounded-2xl border border-[var(--border)] bg-white p-6">
@@ -330,4 +354,125 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
       </section>
     </div>
   );
+}
+
+// ── Quest map data ─────────────────────────────────────────────────────────
+
+interface QuestTrack {
+  id: string;
+  slug: string;
+  modules: Array<{
+    id: string;
+    title: string;
+    lessons: Array<{ id: string; microCheck: { id: string } | null }>;
+    quiz: { id: string } | null;
+  }>;
+  labs: Array<{ id: string; slug: string; points: number; moduleId: string | null; lesson: { moduleId: string } | null }>;
+  finalExam: { id: string } | null;
+  capstone: { id: string } | null;
+}
+
+async function buildQuest({
+  studentId,
+  track,
+  titles,
+  doneIds,
+  passedQuizIds,
+  passedLabIds,
+  nextLessonId,
+  gates,
+  capstoneTitle,
+}: {
+  studentId: string;
+  track: QuestTrack;
+  titles: { modules: Record<string, { title?: string } | undefined>; exam: string };
+  doneIds: Set<string>;
+  passedQuizIds: Set<string>;
+  passedLabIds: Set<string>;
+  nextLessonId: string | null;
+  gates: { exam: boolean; capstone: boolean };
+  capstoneTitle: string;
+}): Promise<{ modules: QuestModule[]; finals: QuestFinal[]; xp: { earned: number; available: number } }> {
+  const labModule = (l: QuestTrack["labs"][number]) => l.moduleId ?? l.lesson?.moduleId ?? null;
+
+  // Every ledger reference that belongs to this track, for "track XP".
+  const lessonIds = track.modules.flatMap((m) => m.lessons.map((l) => l.id));
+  const microIds = track.modules.flatMap((m) => m.lessons.map((l) => l.microCheck?.id).filter(Boolean) as string[]);
+  const quizIds = track.modules.map((m) => m.quiz?.id).filter(Boolean) as string[];
+  const refs = [...lessonIds, ...microIds, ...quizIds, ...track.labs.map((l) => l.id), track.id];
+  if (track.finalExam) refs.push(track.finalExam.id);
+  const earnedRows = await prisma.pointsLedger.findMany({
+    where: { studentId, refId: { in: refs }, source: { not: "streak_bonus" } },
+    select: { points: true },
+  });
+  const earned = earnedRows.reduce((n, r) => n + r.points, 0);
+  const available =
+    lessonIds.length * POINT_VALUES.lesson_complete +
+    microIds.length * POINT_VALUES.micro_check_pass +
+    quizIds.length * POINT_VALUES.quiz_perfect +
+    track.labs.reduce((n, l) => n + l.points, 0) +
+    (track.finalExam ? POINT_VALUES.final_exam_distinction : 0) +
+    (track.capstone ? POINT_VALUES.capstone_pass : 0) +
+    POINT_VALUES.track_complete;
+
+  // Modules and their stars.
+  const raw = track.modules.map((m) => {
+    const labs = track.labs.filter((l) => labModule(l) === m.id);
+    const lessonsDone = m.lessons.filter((l) => doneIds.has(l.id)).length;
+    const quizPassed = m.quiz ? passedQuizIds.has(m.quiz.id) : false;
+    const passedLab = labs.find((l) => passedLabIds.has(l.id));
+    const stars = moduleStars({
+      lessonsTotal: m.lessons.length,
+      lessonsDone,
+      hasQuiz: !!m.quiz,
+      quizPassed,
+      hasLab: labs.length > 0,
+      labPassed: !!passedLab,
+    });
+    // Link to the next thing to do in this module.
+    const nextLesson = m.lessons.find((l) => !doneIds.has(l.id));
+    const href = nextLesson
+      ? `/learn/lesson/${nextLesson.id}`
+      : m.quiz && !quizPassed
+      ? `/learn/quiz/${m.quiz.id}`
+      : labs.length > 0 && !passedLab
+      ? `/learn/lab/${labs[0].slug}`
+      : m.lessons[0]
+      ? `/learn/lesson/${m.lessons[0].id}`
+      : `/learn/track/${track.slug}`;
+    return {
+      id: m.id,
+      title: titles.modules[m.id]?.title ?? m.title,
+      href,
+      lessonsDone,
+      lessonsTotal: m.lessons.length,
+      stars,
+      hasNext: !!nextLessonId && m.lessons.some((l) => l.id === nextLessonId),
+    };
+  });
+
+  // "You are here": the module holding the next lesson, else the first
+  // module still short of three stars, else the exam, else the capstone.
+  let currentIdx = raw.findIndex((m) => m.hasNext);
+  if (currentIdx < 0) currentIdx = raw.findIndex((m) => m.stars.count < 3);
+
+  const modules: QuestModule[] = raw.map((m, i) => {
+    const state: StageState =
+      i === currentIdx ? "current" : m.stars.count === 3 ? "complete" : m.lessonsDone > 0 || m.stars.count > 0 ? "started" : "future";
+    return { id: m.id, title: m.title, href: m.href, lessonsDone: m.lessonsDone, lessonsTotal: m.lessonsTotal, stars: m.stars, state };
+  });
+
+  const finals: QuestFinal[] = [];
+  let hereTaken = currentIdx >= 0;
+  if (track.finalExam) {
+    const state: StageState = gates.exam ? "complete" : !hereTaken ? "current" : "future";
+    if (state === "current") hereTaken = true;
+    finals.push({ kind: "exam", title: titles.exam, href: `/learn/exam/${track.slug}`, state });
+  }
+  if (track.capstone) {
+    const state: StageState = gates.capstone ? "complete" : !hereTaken ? "current" : "future";
+    finals.push({ kind: "capstone", title: capstoneTitle, href: `/learn/capstone/${track.slug}`, state });
+  }
+
+  return { modules, finals, xp: { earned, available } };
 }

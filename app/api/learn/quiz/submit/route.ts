@@ -8,6 +8,7 @@ import { awardPoints, getTotalPoints } from "@/lib/learn/points";
 import { checkLevelUp, notifyMilestone } from "@/lib/learn/milestones";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { localizeQuestions } from "@/lib/i18n/sources/labs";
+import { gameDelta, gameSnapshot } from "@/lib/learn/badges";
 
 // Scores micro-checks (mode: "micro") and module quizzes (mode: "quiz").
 // Correct answers are read here and NOWHERE else — the client never receives
@@ -67,11 +68,14 @@ export async function POST(req: NextRequest) {
 
       // +5 only for a first-attempt pass (idempotent via ledger constraint)
       let pointsAwarded = 0;
+      let game = gameDelta(null, null);
       if (passed && priorAttempts === 0) {
+        const before = await gameSnapshot(student.id);
         pointsAwarded = await awardPoints(student.id, "micro_check_pass", id);
+        if (pointsAwarded > 0) game = gameDelta(before, await gameSnapshot(student.id));
       }
 
-      return NextResponse.json({ score, passed, passScore: check.passScore, graded, pointsAwarded });
+      return NextResponse.json({ score, passed, passScore: check.passScore, graded, pointsAwarded, ...game });
     }
 
     // ── Module quiz ────────────────────────────────────────────────────────
@@ -109,15 +113,17 @@ export async function POST(req: NextRequest) {
 
     // Only the FIRST pass awards points. Perfect first attempt → +75 instead of +50.
     let pointsAwarded = 0;
+    let game = gameDelta(null, null);
     if (passed && !alreadyPassed) {
       // The track lookup for the milestone email is independent of the points
       // total, so it rides along instead of waiting for the award to finish.
-      const [totalBefore, mod] = await Promise.all([
+      const [totalBefore, mod, before] = await Promise.all([
         getTotalPoints(student.id),
         // First pass on this module is a genuine milestone worth an email
         prisma.quiz
           .findUnique({ where: { id }, select: { module: { select: { trackId: true } } } })
           .catch(() => null),
+        gameSnapshot(student.id),
       ]);
       const perfectFirstTry = score === 100 && priorAttempts === 0;
       pointsAwarded = perfectFirstTry
@@ -131,9 +137,10 @@ export async function POST(req: NextRequest) {
         points: pointsAwarded,
       });
       checkLevelUp(student.id, totalBefore, totalBefore + pointsAwarded);
+      if (pointsAwarded > 0) game = gameDelta(before, await gameSnapshot(student.id));
     }
 
-    return NextResponse.json({ score, passed, passScore: quiz.passScore, graded, pointsAwarded });
+    return NextResponse.json({ score, passed, passScore: quiz.passScore, graded, pointsAwarded, ...game });
   } catch (err) {
     console.error("[POST /api/learn/quiz/submit]", err);
     return NextResponse.json({ error: t("labs.api.scoreSubmissionFailed") }, { status: 500 });

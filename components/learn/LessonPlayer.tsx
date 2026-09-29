@@ -10,6 +10,7 @@ import PracticePad from "./PracticePad";
 import Markdown from "./Markdown";
 import { fmtMinutes } from "@/lib/learn/format";
 import { useT } from "@/lib/i18n/client";
+import { celebrate } from "@/lib/learn/game-client";
 
 interface LessonView {
   id: string;
@@ -88,6 +89,7 @@ export default function LessonPlayer({
       if (res.ok) {
         setDone(true);
         if (data.pointsAwarded > 0) setToast(t("learn.lesson.pointsToast", { n: data.pointsAwarded }));
+        celebrate({ points: data.pointsAwarded, reason: "lesson", newBadges: data.newBadges, levelUp: data.levelUp });
         router.refresh();
       }
     } finally {

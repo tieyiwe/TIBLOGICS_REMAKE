@@ -7,6 +7,7 @@ import Markdown from "./Markdown";
 import CodeStudio, { type StudioCheck, type StudioSubmission } from "./CodeStudio";
 import { LAB_TYPE_META, type LabObjective, type LabType } from "@/lib/learn/labs/types";
 import { useT } from "@/lib/i18n/client";
+import { bumpPractice, celebrate } from "@/lib/learn/game-client";
 
 interface Breakdown {
   objectiveId: string;
@@ -203,6 +204,8 @@ export default function LabRunner({
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? t("labs.error.score"));
       setResult(data);
+      bumpPractice();
+      celebrate({ points: data.pointsAwarded, reason: "lab", newBadges: data.newBadges, levelUp: data.levelUp });
       if (lab.labType === "workbench" || lab.labType === "code") {
         try {
           window.localStorage.removeItem(lab.labType === "code" ? `tiblogics:code-lab:${lab.id}` : draftKey);

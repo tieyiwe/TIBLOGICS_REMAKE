@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useT } from "@/lib/i18n/client";
+import { bumpPractice, celebrate } from "@/lib/learn/game-client";
+import ResultFlair from "./game/ResultFlair";
 
 interface Question {
   id: string;
@@ -81,6 +83,13 @@ export default function QuizRunner({
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? t("labs.quiz.scoreError"));
       setResult(data);
+      bumpPractice();
+      celebrate({
+        points: data.pointsAwarded,
+        reason: data.score === 100 ? "quizPerfect" : "quiz",
+        newBadges: data.newBadges,
+        levelUp: data.levelUp,
+      });
       router.refresh();
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
@@ -152,6 +161,7 @@ export default function QuizRunner({
               {t("labs.points", { n: result.pointsAwarded })}
             </p>
           )}
+          <ResultFlair score={result.score} passScore={passScore} graded={result.graded} />
         </div>
 
         <ol className="mt-8 space-y-6">

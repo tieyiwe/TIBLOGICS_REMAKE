@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useT } from "@/lib/i18n/client";
+import { bumpPractice, celebrate } from "@/lib/learn/game-client";
+import ResultFlair from "./game/ResultFlair";
 
 interface Question {
   id: string;
@@ -69,6 +71,8 @@ export default function MicroCheck({
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? t("labs.micro.scoreError"));
       setResult(data);
+      bumpPractice();
+      celebrate({ points: data.pointsAwarded, reason: "micro", newBadges: data.newBadges, levelUp: data.levelUp });
     } catch (err) {
       setError(err instanceof Error ? err.message : t("labs.error.generic"));
     } finally {
@@ -114,6 +118,7 @@ export default function MicroCheck({
             )}
           </p>
         </div>
+        <ResultFlair score={result.score} passScore={passScore} graded={result.graded} compact />
 
         <ol className="mt-5 space-y-5">
           {result.graded.map((g, i) => (
