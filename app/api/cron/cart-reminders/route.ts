@@ -5,7 +5,7 @@ import { sendCartReminderEmail } from "@/lib/resend";
 
 // Sends abandoned-cart reminder emails.
 // Scheduled via vercel.json cron (Authorization: Bearer CRON_SECRET) or an
-// external scheduler (?secret=CRON_SECRET). Sends up to 2 reminders per cart:
+// external scheduler (Authorization: Bearer CRON_SECRET). Sends up to 2 reminders per cart:
 //   - 1st: cart idle > 1 hour
 //   - 2nd: cart idle > 1 hour AND last reminder > 22 hours ago
 const MAX_REMINDERS = 2;
@@ -24,8 +24,8 @@ export async function GET(req: NextRequest) {
   }
   const authHeader = req.headers.get("authorization");
   const bearer = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  // Constant-time: the secret arrives in a query string an attacker can vary.
-  if (!secretEquals(bearer, cronSecret) && !secretEquals(searchParams.get("secret"), cronSecret)) {
+  // Header only: a secret in the URL ends up in access logs. Constant-time compare.
+  if (!secretEquals(bearer, cronSecret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

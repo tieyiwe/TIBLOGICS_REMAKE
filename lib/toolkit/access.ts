@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { OWNER_EMAIL } from "@/lib/auth";
 import { getStudent, type StudentSession } from "@/lib/learn/session";
 import { ensureToolkitTables } from "./db";
 import { toolkitPlans, type PlanInfo, type ToolkitPlan } from "./config";
@@ -24,10 +25,12 @@ export async function getToolkitAccess(): Promise<ToolkitAccess | null> {
   const sub = await prisma.toolkitSubscription.findUnique({ where: { studentId: student.id } });
   const plans = toolkitPlans();
   const entitled = !!sub && ENTITLED.has(sub.status);
+  // The site owner's own learner account always has the full plan, for testing.
+  const owner = !entitled && student.email.toLowerCase() === OWNER_EMAIL.toLowerCase();
   return {
     student,
-    plan: entitled ? plans[sub!.plan as ToolkitPlan] ?? null : null,
-    status: sub?.status ?? null,
+    plan: entitled ? plans[sub!.plan as ToolkitPlan] ?? null : owner ? plans.toolkit : null,
+    status: owner ? "comped" : sub?.status ?? null,
     cancelAtPeriodEnd: sub?.cancelAtPeriodEnd ?? false,
     currentPeriodEnd: sub?.currentPeriodEnd ?? null,
     hasBilling: !!sub?.stripeCustomerId,

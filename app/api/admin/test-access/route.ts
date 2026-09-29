@@ -23,10 +23,36 @@ export async function POST(req: NextRequest) {
   if (!(await ownerSession())) return NextResponse.json({ error: "Only the owner or an admin can do this." }, { status: 403 });
   const body = (await req.json().catch(() => ({}))) as Body;
 
+  if (body.tool === "learn") return learn(body);
   if (body.tool === "toolkit") return toolkit(body);
   if (body.tool === "monitor") return monitor(body);
   if (body.tool === "blueprint") return blueprint(body);
   return NextResponse.json({ error: "Unknown tool" }, { status: 400 });
+}
+
+/** Free Learning Box access for a TIBLOGICS account (every track, lab and exam). */
+async function learn(body: Body) {
+  if (!isValidEmail(body.email)) return NextResponse.json({ error: "Enter a valid email" }, { status: 400 });
+  const email = body.email.trim().toLowerCase();
+  const student = await prisma.student.findFirst({ where: { email: { equals: email, mode: "insensitive" } }, select: { id: true } });
+  if (!student) {
+    return NextResponse.json({ error: "No TIBLOGICS account uses that email. Create one at /learn/signup first, then grant access." }, { status: 404 });
+  }
+  const existing = await prisma.learnSubscription.findUnique({ where: { studentId: student.id } });
+  if (body.action === "revoke") {
+    if (existing?.status !== COMP_STATUS) return NextResponse.json({ error: "That account has no free access to revoke." }, { status: 409 });
+    await prisma.learnSubscription.update({ where: { studentId: student.id }, data: { status: "canceled" } });
+    return NextResponse.json({ ok: true });
+  }
+  if (existing?.stripeSubscriptionId && ["active", "trialing", "past_due"].includes(existing.status)) {
+    return NextResponse.json({ error: "That account already has a paid subscription." }, { status: 409 });
+  }
+  await prisma.learnSubscription.upsert({
+    where: { studentId: student.id },
+    create: { studentId: student.id, status: COMP_STATUS },
+    update: { status: COMP_STATUS, graceUntil: null, cancelAtPeriodEnd: false },
+  });
+  return NextResponse.json({ ok: true });
 }
 
 async function toolkit(body: Body) {

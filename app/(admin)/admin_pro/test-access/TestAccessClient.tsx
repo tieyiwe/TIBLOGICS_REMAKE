@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Wand2, Radar, FileText, Loader2 } from "lucide-react";
+import { Wand2, Radar, FileText, GraduationCap, Loader2 } from "lucide-react";
 
 const input =
   "w-full px-3.5 py-2.5 border border-[#D2DCE8] rounded-xl text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3] bg-white";
@@ -11,6 +11,7 @@ const btn = "inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1B3A6B] 
 
 interface Props {
   canGrant: boolean;
+  learn: string[];
   toolkit: { email: string; plan: string }[];
   monitors: { id: string; email: string; siteUrl: string; createdAt: string }[];
 }
@@ -25,11 +26,12 @@ async function call(body: object): Promise<{ ok: boolean; error?: string; link?:
   return res?.ok ? { ok: true, link: d.link } : { ok: false, error: d.error ?? "Something went wrong." };
 }
 
-export default function TestAccessClient({ canGrant, toolkit, monitors }: Props) {
+export default function TestAccessClient({ canGrant, learn, toolkit, monitors }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<Record<string, string>>({});
   const [tkEmail, setTkEmail] = useState("");
+  const [lbEmail, setLbEmail] = useState("");
   const [tkPlan, setTkPlan] = useState("toolkit");
   const [mon, setMon] = useState({ email: "", siteUrl: "", competitors: "" });
   const [monLink, setMonLink] = useState<string | null>(null);
@@ -55,6 +57,47 @@ export default function TestAccessClient({ canGrant, toolkit, monitors }: Props)
           Use every paid tool free, to check and test it. Nothing here charges a card or counts as revenue.
         </p>
       </div>
+
+      <section className={card}>
+        <div className="flex items-center gap-2">
+          <GraduationCap size={18} className="text-[#2251A3]" />
+          <h2 className="font-syne font-bold text-lg text-[#0D1B2A]">Learning Box</h2>
+        </div>
+        <p className="font-dm text-sm text-[#3A4A5C]">
+          Free access to every track, lesson, lab and exam for a TIBLOGICS account (create it at{" "}
+          <Link href="/learn/signup" className="underline" target="_blank">/learn/signup</Link> first). Your own learner account
+          with the owner email always has free access and does not need to be listed here.
+        </p>
+        <form
+          className="flex flex-col sm:flex-row gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            run("learn", { tool: "learn", email: lbEmail }, "Free access granted. Sign in to that account at /learn.");
+          }}
+        >
+          <input className={input} type="email" required placeholder="Learner account email" value={lbEmail} onChange={(e) => setLbEmail(e.target.value)} />
+          <button className={btn} disabled={busy === "learn"}>
+            {busy === "learn" && <Loader2 size={14} className="animate-spin" />} Grant
+          </button>
+        </form>
+        {msg.learn && <p className="font-dm text-sm text-[#1B3A6B]">{msg.learn}</p>}
+        {learn.length > 0 && (
+          <ul className="divide-y divide-[#F4F7FB] border border-[#F4F7FB] rounded-xl">
+            {learn.map((em) => (
+              <li key={em} className="flex items-center justify-between px-4 py-2.5 font-dm text-sm">
+                <span>{em}</span>
+                <button
+                  className="text-red-600 text-xs font-semibold"
+                  disabled={busy === `lb-${em}`}
+                  onClick={() => run(`lb-${em}`, { tool: "learn", action: "revoke", email: em }, "Revoked.")}
+                >
+                  Revoke
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className={card}>
         <div className="flex items-center gap-2">

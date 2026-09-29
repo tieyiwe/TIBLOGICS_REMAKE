@@ -888,7 +888,7 @@ export async function GET(req: NextRequest) {
     // vary freely, which is the case a byte-by-byte compare leaks.
     const isCron =
       !!cronSecret &&
-      (secretEquals(bearer, cronSecret) || secretEquals(searchParams.get("secret"), cronSecret));
+      secretEquals(bearer, cronSecret);
 
     if (!isCron) {
       const staffErr = await requireAdmin();

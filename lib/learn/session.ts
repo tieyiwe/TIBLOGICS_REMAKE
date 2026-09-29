@@ -2,7 +2,7 @@
 // with server-side authorization, since this app uses NextAuth + Prisma.
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
-import { authOptions } from "@/lib/auth";
+import { authOptions, OWNER_EMAIL } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getT } from "@/lib/i18n/server";
 
@@ -57,19 +57,29 @@ const NONE: Entitlement = {
   graceUntil: null, currentPeriodEnd: null, cancelAtPeriodEnd: false,
 };
 
+const COMPED: Entitlement = { ...NONE, entitled: true, status: "comped" };
+
 /**
- * Entitled = active | trialing, or past_due still inside the 7-day grace
- * window (read-only, banner shown).
+ * Entitled = active | trialing | comped, or past_due still inside the 7-day
+ * grace window (read-only, banner shown).
+ *
+ * "comped" is free access granted from Admin → Test access. The site owner's
+ * own learner account (OWNER_EMAIL) is always entitled, so every track can be
+ * tested without paying; a paid subscription on it still takes precedence.
  */
 export async function getEntitlement(studentId: string | null | undefined): Promise<Entitlement> {
   if (!studentId) return NONE;
   const sub = await prisma.learnSubscription.findUnique({ where: { studentId } }).catch(() => null);
-  if (!sub) return NONE;
+  if (!sub || sub.status === "canceled") {
+    const s = await prisma.student.findUnique({ where: { id: studentId }, select: { email: true } }).catch(() => null);
+    if (s?.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) return COMPED;
+    if (!sub) return NONE;
+  }
 
   const now = Date.now();
   const inGrace =
     sub.status === "past_due" && !!sub.graceUntil && sub.graceUntil.getTime() > now;
-  const entitled = sub.status === "active" || sub.status === "trialing" || inGrace;
+  const entitled = sub.status === "active" || sub.status === "trialing" || sub.status === "comped" || inGrace;
 
   return {
     entitled,

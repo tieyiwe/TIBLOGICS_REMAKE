@@ -20,8 +20,8 @@ export async function GET(req: NextRequest) {
   }
   const authHeader = req.headers.get("authorization");
   const bearer = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  const q = new URL(req.url).searchParams.get("secret");
-  if (!secretEquals(bearer, cronSecret) && !secretEquals(q, cronSecret)) {
+  // Header only: a secret in the URL ends up in access logs.
+  if (!secretEquals(bearer, cronSecret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

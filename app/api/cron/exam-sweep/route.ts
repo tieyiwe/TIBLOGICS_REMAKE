@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const presented =
-    req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? searchParams.get("secret") ?? "";
+    req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
 
   // Constant-time comparison so the secret can't be recovered by timing.
   const a = Buffer.from(presented);

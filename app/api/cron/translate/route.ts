@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
   if (!cronSecret) return NextResponse.json({ error: "Not configured" }, { status: 503 });
   const bearer = req.headers.get("authorization")?.replace(/^Bearer /, "") ?? null;
-  if (!secretEquals(bearer, cronSecret) && !secretEquals(new URL(req.url).searchParams.get("secret"), cronSecret)) {
+  if (!secretEquals(bearer, cronSecret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   if (!process.env.ANTHROPIC_API_KEY) return NextResponse.json({ error: "ANTHROPIC_API_KEY is not set" }, { status: 503 });

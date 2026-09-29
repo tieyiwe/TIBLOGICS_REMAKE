@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import { timingSafeEqual } from "crypto";
 
 // tieyiwebass@gmail.com is the Owner — the super account above all admins
-const OWNER_EMAIL = "tieyiwebass@gmail.com";
+export const OWNER_EMAIL = "tieyiwebass@gmail.com";
 
 // These two helpers are duplicated from lib/require-admin.ts rather than
 // imported: that module imports `authOptions` from here, and a cycle through

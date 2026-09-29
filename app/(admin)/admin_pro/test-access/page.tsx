@@ -12,13 +12,14 @@ export default async function TestAccessPage() {
   const session = await requireAdminPage();
   await Promise.all([ensureToolkitTables(), ensureMonitorTables()]);
 
-  const [comps, monitors] = await Promise.all([
+  const [comps, monitors, learnComps] = await Promise.all([
     prisma.toolkitSubscription.findMany({ where: { status: COMP_STATUS }, orderBy: { updatedAt: "desc" } }),
     prisma.monitorSubscription.findMany({
       where: { status: "active", stripeSubscriptionId: null },
       orderBy: { createdAt: "desc" },
       select: { id: true, email: true, siteUrl: true, createdAt: true },
     }),
+    prisma.learnSubscription.findMany({ where: { status: COMP_STATUS }, select: { student: { select: { email: true } } } }),
   ]);
   const students = await prisma.student.findMany({
     where: { id: { in: comps.map((c) => c.studentId) } },
@@ -29,6 +30,7 @@ export default async function TestAccessPage() {
   return (
     <TestAccessClient
       canGrant={!!(session.user.isOwner || session.user.isAdmin)}
+      learn={learnComps.map((l) => l.student.email)}
       toolkit={comps.map((c) => ({ email: emailOf.get(c.studentId) ?? "(deleted account)", plan: c.plan }))}
       monitors={monitors.map((m) => ({ id: m.id, email: m.email, siteUrl: m.siteUrl, createdAt: m.createdAt.toISOString() }))}
     />
