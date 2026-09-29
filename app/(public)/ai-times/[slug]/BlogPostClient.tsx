@@ -3,10 +3,69 @@
 import InArticlePromo, { splitForPromo } from "@/components/public/InArticlePromo";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { Clock, ArrowLeft, Share2, BookOpen, ExternalLink, Calendar, MessageCircle, X, TrendingUp, Flame } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { Clock, ArrowLeft, Share2, BookOpen, ExternalLink, Calendar, MessageCircle, X, TrendingUp, Flame, Languages, Loader2 } from "lucide-react";
 import OpenTiboButton from "@/components/public/OpenTiboButton";
-import { useLocale, useT } from "@/lib/i18n/client";
+import { useLocale, useSetLocale, useT } from "@/lib/i18n/client";
+import { LOCALES, LOCALE_NAMES, type Locale } from "@/lib/i18n/config";
+
+/**
+ * English / Français / Kiswahili buttons at the top of an article. They switch
+ * the visitor's language (the same setting as the site switcher), so the
+ * article and the page around it change together. While a translation is
+ * being made, the page quietly refreshes until it is ready.
+ */
+function ArticleLanguageBar({ pending }: { pending: boolean }) {
+  const t = useT();
+  const locale = useLocale();
+  const setLocale = useSetLocale();
+  const router = useRouter();
+  const [switching, setSwitching] = useState<Locale | null>(null);
+
+  useEffect(() => setSwitching(null), [locale]);
+
+  // Poll for the translation: every 6 seconds, for up to 2 minutes.
+  useEffect(() => {
+    if (!pending) return;
+    let n = 0;
+    const id = setInterval(() => {
+      n += 1;
+      if (n > 20) return clearInterval(id);
+      router.refresh();
+    }, 6000);
+    return () => clearInterval(id);
+  }, [pending, router]);
+
+  return (
+    <div className="mb-5 flex flex-wrap items-center gap-2" role="group" aria-label={t("common.language")}>
+      <Languages size={15} className="text-[#7A8FA6]" aria-hidden="true" />
+      {LOCALES.map((l) => {
+        const active = l === locale;
+        return (
+          <button
+            key={l}
+            type="button"
+            aria-pressed={active}
+            onClick={() => {
+              if (active) return;
+              setSwitching(l);
+              setLocale(l);
+            }}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-dm text-xs font-semibold transition-colors ${
+              active
+                ? "border-[#1B3A6B] bg-[#1B3A6B] text-white"
+                : "border-[#D2DCE8] bg-white text-[#3A4A5C] hover:border-[#2251A3] hover:text-[#2251A3]"
+            }`}
+          >
+            {switching === l && <Loader2 size={12} className="animate-spin" />}
+            {LOCALE_NAMES[l]}
+          </button>
+        );
+      })}
+      {pending && <Loader2 size={14} className="animate-spin text-[#F47C20]" aria-hidden="true" />}
+    </div>
+  );
+}
 
 interface BlogPost {
   id: string;
@@ -325,6 +384,8 @@ export default function BlogPostPage({
                 </span>
               )}
             </div>
+
+            <ArticleLanguageBar pending={pending} />
 
             {pending && (
               <p role="status" className="mb-5 rounded-xl border border-[#F47C20]/30 bg-[#FEF0E3] px-4 py-3 font-dm text-sm text-[#7A3E0E]">
