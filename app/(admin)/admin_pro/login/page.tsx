@@ -25,6 +25,11 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
+  // Set when the proxy sent a signed-in learner here from an admin page.
+  const [fromLearner, setFromLearner] = useState(false);
+  useEffect(() => {
+    setFromLearner(new URLSearchParams(window.location.search).get("switch") === "learner");
+  }, []);
 
   // Setup state
   const [newPassword, setNewPassword] = useState("");
@@ -218,6 +223,11 @@ export default function AdminLoginPage() {
 
         {mode === "login" && (
           <>
+            {fromLearner && (
+              <p role="status" className="mb-4 rounded-lg border border-[#F47C20]/30 bg-[#FEF0E3] px-3 py-2.5 text-sm text-[#7A3E0E]">
+                You are signed in to your Learning Box account. Sign in with your admin password to switch to the admin dashboard.
+              </p>
+            )}
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-1.5">
                 <label htmlFor="email" className="block text-sm font-medium text-[#3A4A5C]">

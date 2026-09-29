@@ -14,8 +14,12 @@ export async function proxy(req: NextRequest) {
     const isPublic =
       pathname === "/admin_pro/login" || pathname.startsWith("/admin_pro/accept-invite");
 
-    // Signed-in admin hitting the login page → dashboard
-    if (pathname === "/admin_pro/login" && token) {
+    const isStaffToken = !!(token && (token.isOwner || token.isAdmin || token.collaboratorId) && !token.studentId);
+
+    // Signed-in STAFF hitting the login page → dashboard. A learner session
+    // (Learning Box students share this NextAuth instance) must still reach the
+    // login page, or someone signed in to /learn could never switch to admin.
+    if (pathname === "/admin_pro/login" && isStaffToken) {
       return NextResponse.redirect(new URL("/admin_pro", req.url));
     }
     if (isPublic) return NextResponse.next();
@@ -30,9 +34,13 @@ export async function proxy(req: NextRequest) {
     // "has a token" does not mean "is staff". Without this, a signed-in
     // learner could open the admin dashboard. Send them to their own area
     // rather than the admin login, which they could never satisfy anyway.
-    const isStaff = !!(token.isOwner || token.isAdmin || token.collaboratorId);
-    if (token.studentId || !isStaff) {
-      return NextResponse.redirect(new URL("/learn", req.url));
+    if (!isStaffToken) {
+      // Signed in, but as a learner: offer the admin login (signing in there
+      // replaces the learner session) instead of bouncing to /learn.
+      const url = new URL("/admin_pro/login", req.url);
+      url.searchParams.set("callbackUrl", pathname + search);
+      url.searchParams.set("switch", "learner");
+      return NextResponse.redirect(url);
     }
     return NextResponse.next();
   }
