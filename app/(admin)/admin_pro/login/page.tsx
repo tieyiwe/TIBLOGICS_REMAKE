@@ -105,8 +105,10 @@ export default function AdminLoginPage() {
       redirect: false,
     });
     setLoginLoading(false);
-    if (result?.error) {
-      setLoginError("Invalid email or password. Please try again.");
+    if (result?.error === "TooManyAttempts") {
+      setLoginError("Too many sign-in attempts. Wait 15 minutes, then try again with your admin password.");
+    } else if (result?.error) {
+      setLoginError("Invalid email or password. Use your admin password (the ADMIN_PASSWORD secret), not your Learning Box password.");
     } else if (result?.url) {
       window.location.href = result.url;
     }

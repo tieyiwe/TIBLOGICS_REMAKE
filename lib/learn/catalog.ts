@@ -1,5 +1,6 @@
 // Public catalog queries. Safe for unauthenticated visitors — never returns
 // question banks or answers.
+import { ensureLearnEditColumns } from "@/lib/learn/admin/columns";
 import prisma from "@/lib/prisma";
 
 export interface CatalogTrack {
@@ -93,6 +94,7 @@ function normalise(t: {
 
 /** Every track that should appear publicly (live + coming soon). */
 export async function getCatalog(): Promise<CatalogTrack[]> {
+  await ensureLearnEditColumns().catch(() => {});
   const tracks = await prisma.learnTrack
     .findMany({
       where: { status: { in: ["live", "coming_soon"] } },
@@ -117,6 +119,7 @@ export async function getCatalog(): Promise<CatalogTrack[]> {
 
 /** Full track detail for the landing page, including the module outline. */
 export async function getTrackBySlug(slug: string) {
+  await ensureLearnEditColumns().catch(() => {});
   const track = await prisma.learnTrack
     .findUnique({
       where: { slug },

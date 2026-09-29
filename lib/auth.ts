@@ -60,7 +60,9 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null;
 
         const throttleKey = `staff:${credentials.email.toLowerCase().trim()}`;
-        if (!(await loginAllowed(throttleKey))) return null;
+        // Thrown, not `return null`, so the login page can say "wait 15
+        // minutes" instead of a misleading "wrong password".
+        if (!(await loginAllowed(throttleKey))) throw new Error("TooManyAttempts");
 
         // Lazy import so a Prisma binary failure doesn't crash the auth module at load time
         let prisma: Awaited<typeof import("@/lib/prisma")>["prisma"];

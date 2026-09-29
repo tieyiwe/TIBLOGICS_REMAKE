@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions, OWNER_EMAIL } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { ensureLearnEditColumns } from "@/lib/learn/admin/columns";
 import { getT } from "@/lib/i18n/server";
 
 export interface StudentSession {
@@ -24,6 +25,12 @@ export interface StudentSession {
  * it can only ever deny access, never grant it.
  */
 export async function getStudent(): Promise<StudentSession | null> {
+  // The content editor added `editedAt` columns to the Learn tables. A database
+  // that has not been seeded or edited since would lack them, and every query
+  // that reads whole rows (the lesson page, quizzes, labs) would fail and show
+  // a 404. Creating them here, once per process, covers every learner page and
+  // API before they query. Failure is logged, not fatal.
+  await ensureLearnEditColumns().catch((err) => console.error("[learn] editedAt columns", err));
   let studentId: string | undefined;
   try {
     const session = await getServerSession(authOptions);
