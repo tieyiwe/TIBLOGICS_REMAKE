@@ -12,6 +12,7 @@ import { VIBE_CODING_ENGINEER } from "./track-4";
 import { AI_FOR_PARENTS } from "./track-parents";
 import { AI_FORWARD_PROFESSIONAL } from "./track-ai-forward";
 import { AI_SMALL_BUSINESS } from "./track-smb";
+import { PROMPT_SPECIALIST } from "./track-prompt";
 
 // Track 1 (Level 1 · Basic) is assembled from its content files. Module 8,
 // "Seeing the Whole System", is appended rather than inserted so the existing
@@ -38,6 +39,10 @@ const AI_FOUNDATIONS: SeedTrack = {
 // Intermediate (track-2/) and Level 3 · Expert (track-3/). Kept rather than
 // deleted so their slugs, and any waitlist sign-ups against them, stay
 // meaningful if one is revived as a specialist track.
+//
+// Practical Prompt Engineering (slug "practical-prompt-engineering") has been
+// revived that way: it is now the live specialist track in track-prompt/, on
+// the same slug, so only three outlines remain here.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const AI_FOR_BUSINESS: SeedTrack = {
@@ -73,41 +78,6 @@ Assumes you're comfortable using AI tools day to day — if you're not, take AI 
     { title: "Governance and Policy", summary: "Data handling, approval processes, and writing a policy people actually follow.", lessons: [] },
     { title: "Vendors and Build-vs-Buy", summary: "Evaluating claims, briefing suppliers, and knowing when to build.", lessons: [] },
     { title: "Change and Adoption", summary: "Why good tools fail, and what makes adoption stick.", lessons: [] },
-  ],
-};
-
-const PROMPT_ENGINEERING: SeedTrack = {
-  slug: "practical-prompt-engineering",
-  title: "Practical Prompt Engineering",
-  tagline: "Move from getting decent results to getting reliable, repeatable ones.",
-  description: `The gap between a casual user and a skilled one is reliability. Anyone can get a good answer occasionally; the skill is getting a good answer every time, on work that matters.
-
-This track covers structured prompting, context management, evaluation, and building prompts that hold up when the input varies. You'll finish able to design, test and document a prompt that someone else can depend on.
-
-Assumes daily comfort with AI tools.`,
-  level: "intermediate",
-  status: "draft",
-  sortOrder: 11,
-  accentColor: "#F9A738",
-  certificateName: "TIBLOGICS Certified — Practical Prompt Engineering",
-  audience: "Regular AI users who need consistent, dependable output rather than occasional good results.",
-  outcomes: [
-    "Design structured prompts that hold up across varied inputs",
-    "Manage context deliberately in long and complex tasks",
-    "Build a test set and evaluate prompt performance objectively",
-    "Diagnose why a prompt fails and fix it systematically",
-    "Document prompts so colleagues can reuse them reliably",
-    "Know when prompting is the wrong solution",
-  ],
-  estimatedHours: 20,
-  estimatedWeeksAt3Hrs: 7,
-  modules: [
-    { title: "Structure and Specificity", summary: "The anatomy of a prompt that works on the first try.", lessons: [] },
-    { title: "Context Management", summary: "What to include, what to leave out, and handling long inputs.", lessons: [] },
-    { title: "Examples and Formatting", summary: "Few-shot prompting, output schemas, and constraining shape.", lessons: [] },
-    { title: "Evaluation", summary: "Building a test set and measuring whether a prompt actually improved.", lessons: [] },
-    { title: "Debugging Failures", summary: "Systematic diagnosis when output degrades.", lessons: [] },
-    { title: "Documenting and Sharing", summary: "Making a prompt something a colleague can depend on.", lessons: [] },
   ],
 };
 
@@ -190,7 +160,7 @@ export const TRACKS: SeedTrack[] = [
   AI_FORWARD_PROFESSIONAL,
   AI_SMALL_BUSINESS,
   AI_FOR_BUSINESS,
-  PROMPT_ENGINEERING,
+  PROMPT_SPECIALIST,
   AI_AUTOMATION,
   AI_STRATEGY,
 ];

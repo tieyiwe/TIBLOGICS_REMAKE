@@ -667,6 +667,9 @@ model Student {
   points        PointsLedger[]
   certificates  LearnCertificate[]
   labAttempts   LabAttempt[]
+  reviewCards   ReviewCard[]
+  reflections   LessonReflection[]
+  portfolio     PortfolioSettings?
 
   @@index([email])
 }
@@ -740,10 +743,11 @@ model Lesson {
   /// Set when staff edit this in the admin; the seed then leaves it alone.
   editedAt        DateTime?
 
-  resources  LessonResource[]
-  microCheck MicroCheck?
-  progress   LessonProgress[]
-  labs       Lab[]
+  resources   LessonResource[]
+  microCheck  MicroCheck?
+  progress    LessonProgress[]
+  labs        Lab[]
+  reflections LessonReflection[]
 
   @@index([moduleId])
 }
@@ -1282,4 +1286,56 @@ model EventRegistration {
   @@index([eventSlug])
   @@index([email])
   @@index([createdAt])
+}
+
+// ── The TIBLOGICS Learn method (lib/learn/method) ───────────────────────────
+// Created at runtime with CREATE TABLE IF NOT EXISTS (lib/learn/method/db.ts);
+// keep the two in step.
+
+/// Daily Review: one Leitner card per (learner, question). questionId is a
+/// MicroCheckQuestion or QuizQuestion id (kind says which; sourceId is the
+/// micro-check or quiz it belongs to).
+model ReviewCard {
+  id         String    @id @default(cuid())
+  studentId  String
+  student    Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  questionId String
+  kind       String // micro|quiz
+  sourceId   String
+  trackId    String
+  box        Int       @default(1)
+  dueAt      DateTime  @default(now())
+  lastSeenAt DateTime?
+  streak     Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  @@unique([studentId, questionId])
+  @@index([studentId, dueAt])
+}
+
+/// The Learning Loop's Reflect step: private to the learner.
+model LessonReflection {
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lessonId  String
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  text      String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([studentId, lessonId])
+  @@index([studentId])
+}
+
+/// Proof-of-Skill Portfolio sharing settings.
+model PortfolioSettings {
+  studentId   String   @id
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  isPublic    Boolean  @default(false)
+  slug        String   @unique
+  includeWork Boolean  @default(false)
+  /// Sections the learner chose not to share: labs|studio|capstone|certificates|badges
+  hidden      String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

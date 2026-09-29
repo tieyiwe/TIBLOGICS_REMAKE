@@ -6,6 +6,10 @@ import LessonPlayer from "@/components/learn/LessonPlayer";
 import type { Metadata } from "next";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { LESSON_SOURCE, loadTrackSources, localizedLesson, localizedTrack } from "@/lib/i18n/sources/learn";
+import { loadLoopState } from "@/lib/learn/method/loop";
+import { POINT_VALUES } from "@/lib/learn/points";
+import LearningLoop from "@/components/learn/method/LearningLoop";
+import LessonReflection from "@/components/learn/method/LessonReflection";
 
 export const dynamic = "force-dynamic";
 
@@ -80,6 +84,15 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
   const doneIds = new Set(completed.map((c) => c.lessonId));
   const isDone = doneIds.has(lesson.id);
 
+  // The Learning Loop (Understand, Try, Play, Apply, Reflect). Never blocks
+  // the lesson: if it cannot be worked out, the strip is simply not shown.
+  const loop = await loadLoopState(student.id, { id: lesson.id, moduleId: lesson.moduleId, sourceMd: lesson.bodyMd }, locale, isDone).catch(
+    (err) => {
+      console.error("[lesson] learning loop", err);
+      return null;
+    },
+  );
+
   // Flatten for prev/next
   const flat = modules.flatMap((m) => m.lessons.map((l) => l.id));
   const idx = flat.indexOf(lesson.id);
@@ -149,6 +162,29 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
         nextId={nextId}
         trackSlug={lesson.module.track.slug}
         accentColor={lesson.module.track.accentColor}
+        loop={
+          loop && (
+            <LearningLoop
+              lessonId={lesson.id}
+              understand={loop.understand}
+              play={loop.play}
+              apply={loop.apply}
+              reflect={loop.reflect}
+              accentColor={lesson.module.track.accentColor}
+            />
+          )
+        }
+        footer={
+          loop && (
+            <LessonReflection
+              lessonId={lesson.id}
+              initialText={loop.reflection?.text ?? ""}
+              initialUpdatedAt={loop.reflection?.updatedAt ?? null}
+              xp={POINT_VALUES.reflection}
+              accentColor={lesson.module.track.accentColor}
+            />
+          )
+        }
       />
     </div>
   );

@@ -20,8 +20,9 @@ import studioArena from "./studio-prompt-arena";
 import studioCritic from "./studio-critic-mode";
 import studioBench from "./studio-test-bench";
 import game from "./game";
+import method from "./method";
 
-const ALL: Messages[] = [common, home, site, tools, learn, labs, toolkit, calculator, pages, game, studio, studioAutomation, studioLoops, studioPrompt, studioSorter, studioRisk, studioWireframe, studioArena, studioCritic, studioBench];
+const ALL: Messages[] = [common, home, site, tools, learn, labs, toolkit, calculator, pages, game, studio, studioAutomation, studioLoops, studioPrompt, studioSorter, studioRisk, studioWireframe, studioArena, studioCritic, studioBench, method];
 
 const cache = new Map<Locale, Record<string, string>>();
 

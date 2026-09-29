@@ -8,6 +8,7 @@
 import prisma from "@/lib/prisma";
 import { BADGES, moduleStars, type GameDelta } from "./badge-defs";
 import { getTotalPoints, levelFor } from "./points";
+import { ensureMethodTables } from "./method/db";
 
 export interface BadgeStatus {
   id: string;
@@ -40,7 +41,7 @@ function longestStreak(dates: Date[]): number {
 }
 
 export async function computeBadges(studentId: string): Promise<BadgeStatus[]> {
-  const [lessons, quizPasses, labPasses, ledger, certs] = await Promise.all([
+  const [lessons, quizPasses, labPasses, ledger, certs, topBoxCards] = await Promise.all([
     prisma.lessonProgress.findMany({
       where: { studentId },
       select: { lessonId: true, completedAt: true, lesson: { select: { moduleId: true, module: { select: { trackId: true } } } } },
@@ -59,13 +60,18 @@ export async function computeBadges(studentId: string): Promise<BadgeStatus[]> {
       },
     }),
     prisma.pointsLedger.findMany({
-      where: { studentId, source: { in: ["quiz_perfect", "final_exam_distinction", "studio_challenge", "studio_perfect"] } },
+      where: { studentId, source: { in: ["quiz_perfect", "final_exam_distinction", "studio_challenge", "studio_perfect", "daily_review"] } },
       select: { source: true },
     }),
     prisma.learnCertificate.findMany({
       where: { studentId, revoked: false },
       select: { trackId: true, distinction: true },
     }),
+    // Daily Review cards in the top Leitner box. The table is created on
+    // first use; if it cannot be, the badge just shows no progress.
+    ensureMethodTables()
+      .then(() => prisma.reviewCard.count({ where: { studentId, box: 5 } }))
+      .catch(() => 0),
   ]);
 
   const trackIds = [...new Set(lessons.map((l) => l.lesson.module.trackId))];
@@ -149,6 +155,8 @@ export async function computeBadges(studentId: string): Promise<BadgeStatus[]> {
     polymath: completedTracks.size,
     studio_builder: ledger.filter((l) => l.source === "studio_challenge").length,
     studio_master: ledger.filter((l) => l.source === "studio_perfect").length,
+    memory_keeper: ledger.filter((l) => l.source === "daily_review").length,
+    long_term_learner: topBoxCards,
   };
 
   return BADGES.map((b) => {

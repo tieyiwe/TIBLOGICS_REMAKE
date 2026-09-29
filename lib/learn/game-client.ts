@@ -5,7 +5,7 @@
 
 export const GAME_EVENT = "tib:game";
 
-export type XpReason = "lesson" | "micro" | "quiz" | "quizPerfect" | "lab" | "exam" | "studio";
+export type XpReason = "lesson" | "micro" | "quiz" | "quizPerfect" | "lab" | "exam" | "studio" | "review" | "reflection";
 
 export interface GameEventDetail {
   points?: number;

@@ -13,7 +13,9 @@ import { useLocale, useSetLocale, useT } from "@/lib/i18n/client";
 const LINK_KEYS = [
   { href: "/learn", key: "learn.nav.dashboard" },
   { href: "/learn/tracks", key: "learn.nav.myTracks" },
+  { href: "/learn/review", key: "method.nav.review" },
   { href: "/learn/certificates", key: "learn.nav.certificates" },
+  { href: "/learn/portfolio", key: "method.nav.portfolio" },
   { href: "/learn/studio", key: "studio.nav" },
   { href: "/learn/leaderboard", key: "game.nav.leaderboard" },
   { href: "/learn/account", key: "learn.nav.account" },

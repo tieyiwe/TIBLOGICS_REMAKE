@@ -123,17 +123,15 @@ function Workbench({
     setResult(null);
   }
   function move(key: string, dir: -1 | 1) {
-    setBlocks((bs) => {
-      const i = bs.findIndex((b) => b.key === key);
-      const j = i + dir;
-      if (i < 0 || j < 0 || j >= bs.length) return bs;
-      const out = [...bs];
-      [out[i], out[j]] = [out[j], out[i]];
-      setAnnounce(t(`${NS}.moved`, { block: t(`${NS}.blk.${out[j].type}.name`), n: j + 1 }));
-      return out;
-    });
+    const i = blocks.findIndex((b) => b.key === key);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= blocks.length) return;
+    const out = [...blocks];
+    [out[i], out[j]] = [out[j], out[i]];
+    setBlocks(out);
+    setAnnounce(t(`${NS}.moved`, { block: t(`${NS}.blk.${out[j].type}.name`), n: j + 1 }));
   }
-  function useExample(key: string, type: BlockType) {
+  function fillExample(key: string, type: BlockType) {
     if (!sc) return;
     update(key, t(`${NS}.sc.${sc.id}.${type}`));
   }
@@ -237,7 +235,7 @@ function Workbench({
                   onChange={(v) => update(b.key, v)}
                   onRemove={() => remove(b.key)}
                   onMove={(d) => move(b.key, d)}
-                  onExample={() => useExample(b.key, b.type)}
+                  onExample={() => fillExample(b.key, b.type)}
                 />
               ))}
             </Reorder.Group>
@@ -352,7 +350,7 @@ function BlockCard({
       value={block}
       dragListener={false}
       dragControls={controls}
-      layout={reduce ? false : "position"}
+      layout={reduce ? undefined : "position"}
       className="list-none rounded-2xl border-2 border-[var(--border)] bg-white p-2.5 shadow-sm"
     >
       <div className="flex items-center gap-1">

@@ -35,6 +35,9 @@ export const BADGES: BadgeDef[] = [
   { id: "polymath", icon: "🌍", target: 2 },
   { id: "studio_builder", icon: "🧪", target: 5 },
   { id: "studio_master", icon: "🏗️", target: 10 },
+  // The TIBLOGICS Learn method: Daily Review (spaced retrieval practice).
+  { id: "memory_keeper", icon: "🗝️", target: 7 },
+  { id: "long_term_learner", icon: "🏛️", tier: "gold", target: 50 },
 ];
 
 export const BADGE_BY_ID = new Map(BADGES.map((b) => [b.id, b]));

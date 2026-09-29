@@ -55,6 +55,8 @@ export default function LessonPlayer({
   nextId,
   trackSlug,
   accentColor,
+  loop,
+  footer,
 }: {
   lesson: LessonView;
   resources: ResourceView[];
@@ -68,6 +70,10 @@ export default function LessonPlayer({
   nextId: string | null;
   trackSlug: string;
   accentColor: string;
+  /** The Learning Loop strip, shown under the header. */
+  loop?: React.ReactNode;
+  /** Shown at the end of the lesson, after the quick check (the reflection). */
+  footer?: React.ReactNode;
 }) {
   const t = useT();
   const router = useRouter();
@@ -120,6 +126,7 @@ export default function LessonPlayer({
               {lesson.objective}
             </p>
           )}
+          {loop}
         </header>
 
         {lesson.videoUrl && (
@@ -156,6 +163,8 @@ export default function LessonPlayer({
             />
           </div>
         )}
+
+        {footer && <div className="mt-6">{footer}</div>}
 
         {/* Complete + navigation */}
         <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-[var(--border)] pt-6">

@@ -35,6 +35,10 @@ export const POINT_SOURCES = [
   "lab_pass",
   "studio_challenge",
   "studio_perfect",
+  // The TIBLOGICS Learn method: once per day for finishing Daily Review
+  // (refId: the learner's local date), once per lesson for a reflection.
+  "daily_review",
+  "reflection",
 ] as const;
 export type PointSource = (typeof POINT_SOURCES)[number];
 

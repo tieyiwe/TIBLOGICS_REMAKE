@@ -5,6 +5,7 @@ import Markdown from "./Markdown";
 import { TRY_EVENT } from "./TryBlock";
 import { useT } from "@/lib/i18n/client";
 import { bumpPractice } from "@/lib/learn/game-client";
+import { markLoop } from "@/lib/learn/method/loop-client";
 
 // Built-in AI practice pad under every lesson. "Try it" buttons in the lesson
 // load their prompt here, so the learner practises without leaving the page.
@@ -83,6 +84,7 @@ export default function PracticePad({
       setRuns((r) => [{ prompt, response: d.response }, ...r].slice(0, 5));
       // Counts toward the daily goal only: no points, no extra model call.
       bumpPractice();
+      markLoop(lessonId, "try");
     }
     else setError(d.error ?? t("learn.error.tryAgain"));
     setBusy(false);

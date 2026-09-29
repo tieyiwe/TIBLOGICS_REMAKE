@@ -54,8 +54,8 @@ const PLACEHOLDER = /\[[^\]]*\]/g;
 // language the Studio is shown in.
 const STRUCTURE = /(bullet|table|list|heading|section|paragraph|subject line|json|column|step|numbered|puces?|tableau|liste|titre|rubrique|paragraphe|objet|colonne|[ée]tapes?|num[ée]rot|vitone|jedwali|orodha|kichwa|sehemu|aya|safu|hatua)/i;
 const MEASURABLE = /\d|\b(under|at most|no more than|maximum|exactly|moins de|au plus|au maximum|exactement|chini ya|isiyozidi|zisizozidi|hasa)\b/i;
-const VERIFY = /(assum|uncertain|unsure|confiden|source|verify|check|hypoth[eè]s|incertain|v[ée]rifi|sources?|dhana|uhakika|chanzo|thibitisha|kagua)/i;
-const SYSTEMS = /(loop|second-order|downstream|stakeholder|affected|trade-off|knock-on|boucle|second ordre|en aval|parties prenantes|concern[ée]s|touch[ée]s|compromis|mzunguko|athari za pili|wanaoathirika|wadau|athari za baadaye)/i;
+const VERIFY = /(assum|uncertain|unsure|confiden|confian|certain|source|verify|check|hypoth[eè]s|incertain|v[ée]rifi|sources?|dhana|uhakika|chanzo|thibitisha|kagua)/i;
+const SYSTEMS = /(loop|second-order|downstream|stakeholder|affect|trade-off|knock-on|boucle|second ordre|en aval|parties prenantes|concern[ée]|touch[ée]|cascade|compromis|mzunguko|mizunguko|athari za pili|wanaoathirika|wadau|athari za baadaye)/i;
 
 export function placeholders(text: string): number {
   return (text.match(PLACEHOLDER) ?? []).length;

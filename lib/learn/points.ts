@@ -20,6 +20,10 @@ export const POINT_VALUES: Record<PointSource, number> = {
   // bonus the first time it is completed with all three stars.
   studio_challenge: 15,
   studio_perfect: 10,
+  // The Learning Method: finishing the day's Daily Review (once per day) and a
+  // lesson reflection of 15 words or more (once per lesson).
+  daily_review: 15,
+  reflection: 5,
 };
 
 export const LEVELS = [
@@ -74,25 +78,37 @@ export async function getTotalPoints(studentId: string): Promise<number> {
 
 /**
  * Consecutive days (ending today or yesterday) with at least one completed
- * lesson. Awards a +25 bonus once per completed 7-day run.
+ * lesson or a finished Daily Review. Awards a +25 bonus once per completed 7-day run.
  */
 export async function computeStreak(studentId: string): Promise<number> {
-  const rows = await prisma.lessonProgress
-    .findMany({
-      where: { studentId },
-      select: { completedAt: true },
-      orderBy: { completedAt: "desc" },
-      take: 400,
-    })
-    .catch(() => []);
-  if (rows.length === 0) return 0;
+  // A finished Daily Review keeps the streak alive too (its ledger row is
+  // written once per day, when the review is finished).
+  const [rows, reviews] = await Promise.all([
+    prisma.lessonProgress
+      .findMany({
+        where: { studentId },
+        select: { completedAt: true },
+        orderBy: { completedAt: "desc" },
+        take: 400,
+      })
+      .catch(() => []),
+    prisma.pointsLedger
+      .findMany({
+        where: { studentId, source: "daily_review" },
+        select: { createdAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 400,
+      })
+      .catch(() => []),
+  ]);
+  if (rows.length === 0 && reviews.length === 0) return 0;
 
   const dayKey = (d: Date) => {
     const x = new Date(d);
     x.setHours(0, 0, 0, 0);
     return x.getTime();
   };
-  const days = new Set(rows.map((r) => dayKey(r.completedAt)));
+  const days = new Set([...rows.map((r) => dayKey(r.completedAt)), ...reviews.map((r) => dayKey(r.createdAt))]);
   const DAY = 86_400_000;
 
   const today = dayKey(new Date());

@@ -13,6 +13,7 @@ import { computeBadges, type BadgeStatus } from "@/lib/learn/badges";
 import { rankIcon } from "@/lib/learn/badge-defs";
 import DailyPanel from "@/components/learn/game/DailyPanel";
 import BadgeShelf from "@/components/learn/game/BadgeShelf";
+import MethodDashboardCards from "@/components/learn/method/MethodDashboardCards";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -137,6 +138,9 @@ export default async function LearnDashboard() {
           </Link>
         </p>
       </section>
+
+      {/* Daily Review + Portfolio (the TIBLOGICS Learn method) */}
+      <MethodDashboardCards studentId={student.id} />
 
       {/* Continue learning */}
       {continueWith && continueWith.progress.nextLessonId && (
