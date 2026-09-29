@@ -33,6 +33,8 @@ export const POINT_SOURCES = [
   "streak_bonus",
   "track_complete",
   "lab_pass",
+  "studio_challenge",
+  "studio_perfect",
 ] as const;
 export type PointSource = (typeof POINT_SOURCES)[number];
 

@@ -12,6 +12,7 @@ import { getLocale, getT } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTrack, trackText } from "@/lib/i18n/sources/learn";
 import { POINT_VALUES } from "@/lib/learn/points";
 import { moduleStars } from "@/lib/learn/badge-defs";
+import { toolsForTrack } from "@/lib/learn/studio/catalog";
 import QuestMap, { type QuestFinal, type QuestModule, type StageState } from "@/components/learn/game/QuestMap";
 
 export const dynamic = "force-dynamic";
@@ -158,6 +159,22 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
       </header>
 
       {quest && <QuestMap {...quest} accent={track.accentColor} />}
+
+      {toolsForTrack(track.slug).length > 0 && (
+        <Link
+          href={`/learn/studio?track=${track.slug}`}
+          className="flex items-center justify-between gap-4 rounded-2xl border-2 bg-white p-5 transition-shadow hover:shadow-md"
+          style={{ borderColor: track.accentColor }}
+        >
+          <span>
+            <span className="block text-base font-bold text-[var(--ink)]">🧪 {t("studio.trackCta")}</span>
+            <span className="mt-1 block text-sm text-[var(--ink2)]">{t("studio.trackCtaBody")}</span>
+          </span>
+          <span className="flex shrink-0 gap-1 text-2xl" aria-hidden="true">
+            {toolsForTrack(track.slug).slice(0, 4).map((x) => <span key={x.id}>{x.icon}</span>)}
+          </span>
+        </Link>
+      )}
 
       {/* Certificate gates */}
       <section className="rounded-2xl border border-[var(--border)] bg-white p-6">

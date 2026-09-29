@@ -33,6 +33,8 @@ export const BADGES: BadgeDef[] = [
   { id: "distinction", icon: "🏅", target: 1 },
   { id: "track_explorer", icon: "🧭", target: 3 },
   { id: "polymath", icon: "🌍", target: 2 },
+  { id: "studio_builder", icon: "🧪", target: 5 },
+  { id: "studio_master", icon: "🏗️", target: 10 },
 ];
 
 export const BADGE_BY_ID = new Map(BADGES.map((b) => [b.id, b]));

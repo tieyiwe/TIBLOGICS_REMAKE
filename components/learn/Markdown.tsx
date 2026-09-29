@@ -1,6 +1,7 @@
 import React from "react";
 import TryBlock from "./TryBlock";
 import Playground from "./Playground";
+import StudioEmbed from "./studio/StudioEmbed";
 
 // Minimal markdown renderer for admin-authored lesson bodies.
 // Returns React nodes rather than HTML strings — there is no
@@ -82,6 +83,7 @@ function codeBlock(block: { lang: string; lines: string[] }, key: string): React
   const text = block.lines.join("\n");
   if (lang === "try" || lang === "text" || lang === "prompt") return <TryBlock key={key} text={text} />;
   if (lang === "playground") return <Playground key={key} code={text} />;
+  if (lang === "studio") return <StudioEmbed key={key} spec={text} />;
   return (
     <pre key={key} className="mb-4 overflow-x-auto rounded-xl bg-[var(--ink)] p-4 text-[13px] leading-relaxed text-white">
       <code>{text}</code>

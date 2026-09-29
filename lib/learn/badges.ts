@@ -59,7 +59,7 @@ export async function computeBadges(studentId: string): Promise<BadgeStatus[]> {
       },
     }),
     prisma.pointsLedger.findMany({
-      where: { studentId, source: { in: ["quiz_perfect", "final_exam_distinction"] } },
+      where: { studentId, source: { in: ["quiz_perfect", "final_exam_distinction", "studio_challenge", "studio_perfect"] } },
       select: { source: true },
     }),
     prisma.learnCertificate.findMany({
@@ -147,6 +147,8 @@ export async function computeBadges(studentId: string): Promise<BadgeStatus[]> {
     distinction: sources.has("final_exam_distinction") || certs.some((c) => c.distinction) ? 1 : 0,
     track_explorer: trackIds.length,
     polymath: completedTracks.size,
+    studio_builder: ledger.filter((l) => l.source === "studio_challenge").length,
+    studio_master: ledger.filter((l) => l.source === "studio_perfect").length,
   };
 
   return BADGES.map((b) => {

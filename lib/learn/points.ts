@@ -16,6 +16,10 @@ export const POINT_VALUES: Record<PointSource, number> = {
   streak_bonus: 25,
   // Labs carry a per-lab value, passed to awardPoints as an override.
   lab_pass: 40,
+  // Learning Studio micro-tools: first completion of a challenge, plus a
+  // bonus the first time it is completed with all three stars.
+  studio_challenge: 15,
+  studio_perfect: 10,
 };
 
 export const LEVELS = [

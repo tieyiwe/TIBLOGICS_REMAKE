@@ -183,3 +183,26 @@ automated checks (see `CodeLabConfig` in lib/learn/labs/types.ts).
   the result.
 - Provide a reference solution in the track's `solutions.ts` so the checks can
   be verified to pass on a correct build and fail on the starter code.
+
+## Learning Studio tools (```studio blocks)
+
+Interactive micro-tools that run in the browser with no AI calls (so they
+cost nothing), with challenges, stars and points. Embed one in a lesson with
+a fenced block whose language is `studio` and whose body is the tool id,
+optionally with a challenge id:
+
+    ```studio
+    automation-builder:support-triage
+    ```
+
+Tools: automation-builder, loop-mapper, prompt-builder, prompt-arena,
+critic-mode, test-bench, task-sorter, spot-the-risk, wireframe-builder
+(see lib/learn/studio/catalog.ts for which are ready and their challenge
+ids). Put the block where the learner should practise the idea just taught,
+with one sentence before it saying what to do.
+
+Free accounts: where a lab or project is best done in a real assistant, the
+free tiers of Claude (https://claude.ai) and ChatGPT (https://chatgpt.com)
+may be listed as `resources` with `resourceType: "account_signup"`,
+`isFree: true`. Remind learners not to paste confidential data, and that
+free-tier limits and features change.
