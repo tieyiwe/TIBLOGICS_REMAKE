@@ -1,7 +1,7 @@
 import type { Messages } from "./types";
 
 // Namespace "studio.wireframe-builder". Keys are "studio.wireframe-builder.something". See lib/i18n/README.md.
-const messages: Messages = {
+const base: Messages = {
   en: {
     "studio.wireframe-builder.name": "App Wireframe Builder",
     "studio.wireframe-builder.desc": "Lay out app screens from simple blocks, link them up and click through a live preview. Get a build-ready spec with user stories, Given/When/Then criteria and a prompt to paste into an AI app builder.",
@@ -551,6 +551,187 @@ const messages: Messages = {
     "studio.wireframe-builder.spec.prompt.rule3": "Kila kidhibiti kitumike kwa kibodi, kiwe na urefu wa angalau 44px na lebo inayoonekana.",
     "studio.wireframe-builder.spec.prompt.rule4": "Jenga skrini hizi tu. Niulize kabla ya kuongeza kitu kingine.",
   },
+};
+
+// Studio frame: guide steps and tips per challenge, and the live panel.
+const enFrame: Record<string, string> = {
+  level: "Level {n}",
+  goTo: "Go to \"{name}\"",
+  "live.title": "Your app, live: tap through it",
+  "guide.star1": "Tick every item on the checklist:",
+  "guide.star2": "Every input, button, error and empty state has its own label.",
+  "guide.star3": "Every button and error says what happens (a note, or a link for buttons).",
+
+  "guide.free.s1": "Rename the first screen in Screen settings (tap an empty spot of the phone first) and give your app a name.",
+  "guide.free.s2": "Tap blocks in \"Add a block\" to add them to the phone. Drag them to reorder.",
+  "guide.free.s3": "Tap a block on the phone to set its label, its note and the screen it goes to.",
+  "guide.free.s4": "Add more screens with \"+ Screen\" and link buttons, cards or a header's back arrow to them.",
+  "guide.free.s5": "Tap through the app in the Live panel while the user stories and Given/When/Then build up.",
+  "guide.free.s6": "Copy the prompt and paste it into an AI app builder.",
+  "guide.free.tip1": "Error messages and empty states are what make a sketch feel like a real app.",
+
+  "guide.todo-empty.s1": "Tap Input in \"Add a block\", then tap it on the phone and set its label, for example New task.",
+  "guide.todo-empty.s2": "Add a Button labelled Add, and in \"What happens when tapped?\" write what it does (adds the task and clears the input).",
+  "guide.todo-empty.s3": "Add a List and label it, for example My tasks.",
+  "guide.todo-empty.s4": "Add an Empty state on the same screen, for example: No tasks yet. Add your first one!",
+  "guide.todo-empty.s5": "Watch the Live panel: the preview and the user stories grow with every block.",
+  "guide.todo-empty.s6": "Press Check my design.",
+  "guide.todo-empty.tip1": "A new block goes right below the selected one. Tap an empty spot of the phone to add at the end.",
+
+  "guide.bill-splitter.s1": "Add two Inputs and label them Bill total and Number of people.",
+  "guide.bill-splitter.s2": "Select an input, then tap Error message so it lands right below it. Label it, for example Enter a number above 0.",
+  "guide.bill-splitter.s3": "In the error's \"When does it show?\", write when it appears (the field is empty or not a number).",
+  "guide.bill-splitter.s4": "Add a Button labelled Split and say what happens when it is tapped.",
+  "guide.bill-splitter.s5": "Add a Text or a Card for the result, for example Each person pays ...",
+  "guide.bill-splitter.s6": "Check the Given/When/Then in the Live panel, then press Check my design.",
+  "guide.bill-splitter.tip1": "An error only counts when it sits directly above or below an input.",
+
+  "guide.login-forgot.s1": "On Log in, add two Inputs (Email and Password), then select Password and add an Error message right below it.",
+  "guide.login-forgot.s2": "Add a Button Log in and write what happens when it is tapped.",
+  "guide.login-forgot.s3": "Tap \"+ Screen\" and rename the new screen Forgot password in Screen settings.",
+  "guide.login-forgot.s4": "Back on Log in, add a Text or Button Forgot password? and set \"Goes to screen\" to Forgot password.",
+  "guide.login-forgot.s5": "On Forgot password, add an Input (Email) and a Header whose \"Back arrow goes to\" is Log in.",
+  "guide.login-forgot.s6": "Tap through both screens in the live preview, then press Check my design.",
+  "guide.login-forgot.tip1": "Every screen you can reach needs a way back, or users get stuck.",
+
+  "guide.shop-product.s1": "Add an Image, a Header (the product name) and a Text (price and details).",
+  "guide.shop-product.s2": "Tap \"+ Screen\" and rename the new screen Cart.",
+  "guide.shop-product.s3": "On Product, add a Button Add to cart and set \"Goes to screen\" to Cart.",
+  "guide.shop-product.s4": "On Cart, add a List or a Card for the items.",
+  "guide.shop-product.s5": "Add a Header on Cart whose \"Back arrow goes to\" is Product.",
+  "guide.shop-product.s6": "Try it in the live preview, then press Check my design.",
+  "guide.shop-product.tip1": "Label your inputs, buttons, errors and empty states to earn star 2.",
+
+  "guide.salon-booking.s1": "On Services, add a List of services (or at least two Cards).",
+  "guide.salon-booking.s2": "Add two more screens with \"+ Screen\" and name them Book and Confirmed.",
+  "guide.salon-booking.s3": "On Services, add a Button Book now linked to Book.",
+  "guide.salon-booking.s4": "On Book, add two Inputs (name and time), an Error message right below one, and a Button Confirm linked to Confirmed.",
+  "guide.salon-booking.s5": "Give Book and Confirmed a Header whose back arrow goes to the screen before.",
+  "guide.salon-booking.s6": "Click through all three screens in the live preview, then press Check my design.",
+  "guide.salon-booking.tip1": "Buttons with a link already say what happens, so they count for star 3.",
+};
+
+const frFrame: Record<string, string> = {
+  level: "Niveau {n}",
+  goTo: "Aller à « {name} »",
+  "live.title": "Votre app, en direct : parcourez-la",
+  "guide.star1": "Cochez chaque élément de la liste :",
+  "guide.star2": "Chaque champ, bouton, erreur et état vide a son propre libellé.",
+  "guide.star3": "Chaque bouton et chaque erreur dit ce qui se passe (une note, ou un lien pour les boutons).",
+
+  "guide.free.s1": "Renommez le premier écran dans Réglages de l'écran (touchez d'abord un espace vide du téléphone) et donnez un nom à votre app.",
+  "guide.free.s2": "Touchez des blocs dans « Ajouter un bloc » pour les placer sur le téléphone. Glissez-les pour les réordonner.",
+  "guide.free.s3": "Touchez un bloc sur le téléphone pour régler son libellé, sa note et l'écran vers lequel il mène.",
+  "guide.free.s4": "Ajoutez des écrans avec « + Écran » et reliez-y des boutons, des cartes ou la flèche retour d'un en-tête.",
+  "guide.free.s5": "Parcourez l'app dans le panneau En direct pendant que les récits utilisateur et les Étant donné/Quand/Alors se construisent.",
+  "guide.free.s6": "Copiez le prompt et collez-le dans un générateur d'apps IA.",
+  "guide.free.tip1": "Les messages d'erreur et les états vides donnent à une maquette l'air d'une vraie app.",
+
+  "guide.todo-empty.s1": "Touchez Champ dans « Ajouter un bloc », puis touchez-le sur le téléphone et donnez-lui un libellé, par exemple Nouvelle tâche.",
+  "guide.todo-empty.s2": "Ajoutez un Bouton libellé Ajouter, et dans « Que se passe-t-il au toucher ? » écrivez ce qu'il fait (ajoute la tâche et vide le champ).",
+  "guide.todo-empty.s3": "Ajoutez une Liste et donnez-lui un libellé, par exemple Mes tâches.",
+  "guide.todo-empty.s4": "Ajoutez un État vide sur le même écran, par exemple : Aucune tâche pour l'instant. Ajoutez la première !",
+  "guide.todo-empty.s5": "Regardez le panneau En direct : l'aperçu et les récits utilisateur grandissent à chaque bloc.",
+  "guide.todo-empty.s6": "Appuyez sur Vérifier ma maquette.",
+  "guide.todo-empty.tip1": "Un nouveau bloc se place juste sous le bloc sélectionné. Touchez un espace vide du téléphone pour ajouter à la fin.",
+
+  "guide.bill-splitter.s1": "Ajoutez deux Champs et donnez-leur les libellés Montant de l'addition et Nombre de personnes.",
+  "guide.bill-splitter.s2": "Sélectionnez un champ, puis touchez Message d'erreur pour qu'il arrive juste en dessous. Donnez-lui un libellé, par exemple Entrez un nombre supérieur à 0.",
+  "guide.bill-splitter.s3": "Dans « Quand s'affiche-t-il ? » de l'erreur, écrivez quand elle apparaît (le champ est vide ou n'est pas un nombre).",
+  "guide.bill-splitter.s4": "Ajoutez un Bouton libellé Partager et dites ce qui se passe quand on le touche.",
+  "guide.bill-splitter.s5": "Ajoutez un Texte ou une Carte pour le résultat, par exemple Chacun paie ...",
+  "guide.bill-splitter.s6": "Vérifiez les Étant donné/Quand/Alors dans le panneau En direct, puis appuyez sur Vérifier ma maquette.",
+  "guide.bill-splitter.tip1": "Une erreur ne compte que si elle est juste au-dessus ou au-dessous d'un champ.",
+
+  "guide.login-forgot.s1": "Sur Connexion, ajoutez deux Champs (E-mail et Mot de passe), puis sélectionnez Mot de passe et ajoutez un Message d'erreur juste en dessous.",
+  "guide.login-forgot.s2": "Ajoutez un Bouton Se connecter et écrivez ce qui se passe quand on le touche.",
+  "guide.login-forgot.s3": "Touchez « + Écran » et renommez le nouvel écran Mot de passe oublié dans Réglages de l'écran.",
+  "guide.login-forgot.s4": "De retour sur Connexion, ajoutez un Texte ou un Bouton Mot de passe oublié ? et réglez « Mène à l'écran » sur Mot de passe oublié.",
+  "guide.login-forgot.s5": "Sur Mot de passe oublié, ajoutez un Champ (E-mail) et un En-tête dont « La flèche retour mène à » Connexion.",
+  "guide.login-forgot.s6": "Parcourez les deux écrans dans l'aperçu en direct, puis appuyez sur Vérifier ma maquette.",
+  "guide.login-forgot.tip1": "Chaque écran accessible a besoin d'un chemin retour, sinon l'utilisateur reste bloqué.",
+
+  "guide.shop-product.s1": "Ajoutez une Image, un En-tête (le nom du produit) et un Texte (prix et détails).",
+  "guide.shop-product.s2": "Touchez « + Écran » et renommez le nouvel écran Panier.",
+  "guide.shop-product.s3": "Sur Produit, ajoutez un Bouton Ajouter au panier et réglez « Mène à l'écran » sur Panier.",
+  "guide.shop-product.s4": "Sur Panier, ajoutez une Liste ou une Carte pour les articles.",
+  "guide.shop-product.s5": "Ajoutez sur Panier un En-tête dont « La flèche retour mène à » Produit.",
+  "guide.shop-product.s6": "Essayez dans l'aperçu en direct, puis appuyez sur Vérifier ma maquette.",
+  "guide.shop-product.tip1": "Donnez un libellé à vos champs, boutons, erreurs et états vides pour gagner la 2e étoile.",
+
+  "guide.salon-booking.s1": "Sur Prestations, ajoutez une Liste des prestations (ou au moins deux Cartes).",
+  "guide.salon-booking.s2": "Ajoutez deux écrans avec « + Écran » et nommez-les Réserver et Confirmé.",
+  "guide.salon-booking.s3": "Sur Prestations, ajoutez un Bouton Réserver relié à Réserver.",
+  "guide.salon-booking.s4": "Sur Réserver, ajoutez deux Champs (nom et heure), un Message d'erreur juste sous l'un d'eux, et un Bouton Confirmer relié à Confirmé.",
+  "guide.salon-booking.s5": "Donnez à Réserver et Confirmé un En-tête dont la flèche retour mène à l'écran précédent.",
+  "guide.salon-booking.s6": "Parcourez les trois écrans dans l'aperçu en direct, puis appuyez sur Vérifier ma maquette.",
+  "guide.salon-booking.tip1": "Un bouton relié à un écran dit déjà ce qui se passe : il compte pour la 3e étoile.",
+};
+
+const swFrame: Record<string, string> = {
+  level: "Ngazi {n}",
+  goTo: "Nenda kwa \"{name}\"",
+  "live.title": "App yako, moja kwa moja: ipitie",
+  "guide.star1": "Weka alama kwenye kila kipengele cha orodha:",
+  "guide.star2": "Kila sehemu ya kuingiza, kitufe, kosa na hali tupu ina lebo yake.",
+  "guide.star3": "Kila kitufe na kila kosa linasema kinachotokea (maelezo, au kiungo kwa vitufe).",
+
+  "guide.free.s1": "Badilisha jina la skrini ya kwanza kwenye Mipangilio ya skrini (gusa kwanza sehemu tupu ya simu) na upe app yako jina.",
+  "guide.free.s2": "Gusa vipande kwenye \"Ongeza kipande\" kuviweka kwenye simu. Viburute kubadilisha mpangilio.",
+  "guide.free.s3": "Gusa kipande kwenye simu kuweka lebo yake, maelezo yake na skrini kinakoelekea.",
+  "guide.free.s4": "Ongeza skrini kwa \"+ Skrini\" na uunganishe vitufe, kadi au mshale wa kurudi wa kichwa nazo.",
+  "guide.free.s5": "Pitia app kwenye paneli ya Moja kwa moja huku hadithi za mtumiaji na Ikiwa/Wakati/Basi zikijengeka.",
+  "guide.free.s6": "Nakili prompt uibandike kwenye kijenzi cha app cha AI.",
+  "guide.free.tip1": "Ujumbe wa makosa na hali tupu ndivyo vinavyofanya mchoro uonekane kama app halisi.",
+
+  "guide.todo-empty.s1": "Gusa Sehemu ya kuingiza kwenye \"Ongeza kipande\", kisha iguse kwenye simu uweke lebo yake, kwa mfano Kazi mpya.",
+  "guide.todo-empty.s2": "Ongeza Kitufe chenye lebo Ongeza, na kwenye \"Nini kinatokea kikiguswa?\" andika kinachofanya (kinaongeza kazi na kusafisha sehemu).",
+  "guide.todo-empty.s3": "Ongeza Orodha uipe lebo, kwa mfano Kazi zangu.",
+  "guide.todo-empty.s4": "Ongeza Hali tupu kwenye skrini hiyo hiyo, kwa mfano: Bado hakuna kazi. Ongeza ya kwanza!",
+  "guide.todo-empty.s5": "Tazama paneli ya Moja kwa moja: onyesho na hadithi za mtumiaji zinakua kwa kila kipande.",
+  "guide.todo-empty.s6": "Bonyeza Kagua mchoro wangu.",
+  "guide.todo-empty.tip1": "Kipande kipya kinawekwa chini ya kile kilichochaguliwa. Gusa sehemu tupu ya simu kuongeza mwishoni.",
+
+  "guide.bill-splitter.s1": "Ongeza Sehemu mbili za kuingiza uzipe lebo Jumla ya bili na Idadi ya watu.",
+  "guide.bill-splitter.s2": "Chagua sehemu moja, kisha gusa Ujumbe wa kosa ili uwekwe chini yake moja kwa moja. Upe lebo, kwa mfano Weka namba zaidi ya 0.",
+  "guide.bill-splitter.s3": "Kwenye \"Kinaonekana lini?\" ya kosa, andika linapotokea (sehemu ni tupu au si namba).",
+  "guide.bill-splitter.s4": "Ongeza Kitufe chenye lebo Gawanya na useme kinachotokea kikiguswa.",
+  "guide.bill-splitter.s5": "Ongeza Maandishi au Kadi kwa matokeo, kwa mfano Kila mtu analipa ...",
+  "guide.bill-splitter.s6": "Kagua Ikiwa/Wakati/Basi kwenye paneli ya Moja kwa moja, kisha bonyeza Kagua mchoro wangu.",
+  "guide.bill-splitter.tip1": "Kosa linahesabika tu likiwa juu au chini ya sehemu ya kuingiza moja kwa moja.",
+
+  "guide.login-forgot.s1": "Kwenye Ingia, ongeza Sehemu mbili za kuingiza (Email na Nenosiri), kisha chagua Nenosiri uongeze Ujumbe wa kosa chini yake moja kwa moja.",
+  "guide.login-forgot.s2": "Ongeza Kitufe Ingia na uandike kinachotokea kikiguswa.",
+  "guide.login-forgot.s3": "Gusa \"+ Skrini\" na ubadilishe jina la skrini mpya kuwa Nimesahau nenosiri kwenye Mipangilio ya skrini.",
+  "guide.login-forgot.s4": "Ukirudi kwenye Ingia, ongeza Maandishi au Kitufe Umesahau nenosiri? na uweke \"Inaenda skrini\" kuwa Nimesahau nenosiri.",
+  "guide.login-forgot.s5": "Kwenye Nimesahau nenosiri, ongeza Sehemu ya kuingiza (Email) na Kichwa ambacho \"Mshale wa kurudi unaenda\" Ingia.",
+  "guide.login-forgot.s6": "Pitia skrini zote mbili kwenye onyesho la moja kwa moja, kisha bonyeza Kagua mchoro wangu.",
+  "guide.login-forgot.tip1": "Kila skrini inayofikiwa inahitaji njia ya kurudi, la sivyo mtumiaji anakwama.",
+
+  "guide.shop-product.s1": "Ongeza Picha, Kichwa (jina la bidhaa) na Maandishi (bei na maelezo).",
+  "guide.shop-product.s2": "Gusa \"+ Skrini\" na ubadilishe jina la skrini mpya kuwa Kikapu.",
+  "guide.shop-product.s3": "Kwenye Bidhaa, ongeza Kitufe Weka kikapuni na uweke \"Inaenda skrini\" kuwa Kikapu.",
+  "guide.shop-product.s4": "Kwenye Kikapu, ongeza Orodha au Kadi ya bidhaa.",
+  "guide.shop-product.s5": "Ongeza Kichwa kwenye Kikapu ambacho \"Mshale wa kurudi unaenda\" Bidhaa.",
+  "guide.shop-product.s6": "Ijaribu kwenye onyesho la moja kwa moja, kisha bonyeza Kagua mchoro wangu.",
+  "guide.shop-product.tip1": "Weka lebo kwenye sehemu za kuingiza, vitufe, makosa na hali tupu upate nyota ya 2.",
+
+  "guide.salon-booking.s1": "Kwenye Huduma, ongeza Orodha ya huduma (au angalau Kadi mbili).",
+  "guide.salon-booking.s2": "Ongeza skrini mbili kwa \"+ Skrini\" uziite Weka nafasi na Imethibitishwa.",
+  "guide.salon-booking.s3": "Kwenye Huduma, ongeza Kitufe Weka nafasi sasa kilichounganishwa na Weka nafasi.",
+  "guide.salon-booking.s4": "Kwenye Weka nafasi, ongeza Sehemu mbili za kuingiza (jina na muda), Ujumbe wa kosa chini ya mojawapo, na Kitufe Thibitisha kilichounganishwa na Imethibitishwa.",
+  "guide.salon-booking.s5": "Zipe Weka nafasi na Imethibitishwa Kichwa ambacho mshale wake wa kurudi unaenda skrini iliyotangulia.",
+  "guide.salon-booking.s6": "Pitia skrini zote tatu kwenye onyesho la moja kwa moja, kisha bonyeza Kagua mchoro wangu.",
+  "guide.salon-booking.tip1": "Kitufe chenye kiungo tayari kinasema kinachotokea, kwa hivyo kinahesabika kwa nyota ya 3.",
+};
+
+const NSP = "studio.wireframe-builder";
+const withNs = (m: Record<string, string>) => Object.fromEntries(Object.entries(m).map(([k, v]) => [`${NSP}.${k}`, v]));
+
+const messages: Messages = {
+  en: { ...base.en, ...withNs(enFrame) },
+  fr: { ...base.fr, ...withNs(frFrame) },
+  sw: { ...base.sw, ...withNs(swFrame) },
 };
 
 export default messages;

@@ -160,7 +160,7 @@ function Workbench({
   const live = (
     <div className="space-y-3">
       <Meter total={liveScore.total} byDim={liveScore.byDim} target={sc?.target[0]} />
-      <LiveReply scenarioId={sc?.id ?? null} blocks={liveBlocks} total={liveScore.total} />
+      <LiveReply scenarioId={sc?.id ?? null} naive={sc ? t(`${NS}.sc.${sc.id}.naive`) : ""} blocks={liveBlocks} total={liveScore.total} />
       {tips.length > 0 && (
         <div className="rounded-2xl border border-[var(--border)] bg-white p-3">
           <p className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">
@@ -323,18 +323,21 @@ type Source = BlockType | "base";
  * fragments for the scenario. It starts vague and gains tone, facts,
  * structure, flagged assumptions and knock-on effects as blocks are filled in.
  */
-function LiveReply({ scenarioId, blocks, total }: { scenarioId: string | null; blocks: Block[]; total: number }) {
+function LiveReply({ scenarioId, naive, blocks, total }: { scenarioId: string | null; naive: string; blocks: Block[]; total: number }) {
   const t = useT();
   const reduce = useReducedMotion();
   const L = (part: string) => t(`${NS}.live.${scenarioId ?? "free"}.${part}`);
   const has = (type: BlockType) => isFilledIn(blocks, type);
+  // The scenario's naive one-liner is the "before": it still gets the generic answer.
+  const taskText = blocks.find((b) => b.type === "task")?.text.trim() ?? "";
+  const onTopic = has("task") && taskText !== naive.trim();
   const holes = blocks.filter((b) => placeholders(b.text) > 0).map((b) => t(`${NS}.blk.${b.type}.name`));
 
   const parts: Array<{ id: string; src: Source; text: string }> = [];
   if (has("format")) parts.push({ id: "format", src: "format", text: L("format") });
   if (has("role")) parts.push({ id: "role", src: "role", text: L("role") });
   if (has("audience")) parts.push({ id: "audience", src: "audience", text: L("audience") });
-  if (!has("task")) parts.push({ id: "vague", src: "base", text: L("vague") });
+  if (!onTopic) parts.push({ id: "vague", src: "base", text: L("vague") });
   else if (has("context")) parts.push({ id: "context", src: "context", text: L("context") });
   else parts.push({ id: "task", src: "task", text: L("task") });
   if (has("examples")) parts.push({ id: "examples", src: "examples", text: L("examples") });
@@ -343,7 +346,7 @@ function LiveReply({ scenarioId, blocks, total }: { scenarioId: string | null; b
   if (has("systems")) parts.push({ id: "systems", src: "systems", text: L("systems") });
   const fresh = useFresh(parts.map((p) => p.id));
 
-  const stage = total >= 80 ? "ready" : total >= 55 ? "tailored" : has("task") ? "onTopic" : "generic";
+  const stage = total >= 80 ? "ready" : total >= 55 ? "tailored" : onTopic ? "onTopic" : "generic";
   const stageColor = { ready: "bg-green-100 text-green-800", tailored: "bg-[#FFF6EE] text-[#B8500A]", onTopic: "bg-amber-50 text-amber-800", generic: "bg-red-50 text-red-700" }[stage];
 
   return (
@@ -497,7 +500,7 @@ function Meter({ total, byDim, target }: { total: number; byDim: Record<string, 
       <p className="mt-1 text-xs font-semibold" style={{ color }}>
         {label}
       </p>
-      <ul className="mt-2 space-y-1.5">
+      <ul className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5">
         {DIMENSIONS.map((d) => (
           <li key={d}>
             <div className="flex justify-between text-xs text-[var(--ink2)]">

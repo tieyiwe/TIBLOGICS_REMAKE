@@ -5,7 +5,7 @@
 // (progress) or earlier in this session. Free play is always open.
 // Shared by Task Sorter and Spot the Risk.
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, Lock } from "lucide-react";
 import { STUDIO_BY_ID, isUnlocked, previousChallenge } from "@/lib/learn/studio/catalog";
 import { ACCENT, Btn } from "./kit";
@@ -64,9 +64,18 @@ export function DeckBar({
   t: (k: string, v?: Record<string, string | number>) => string;
 }) {
   const [hint, setHint] = useState<string | null>(null);
+  const row = useRef<HTMLDivElement>(null);
+  // Keep the active deck in view in the scrolling row (without scrolling the page).
+  useEffect(() => {
+    const el = row.current;
+    const chip = el?.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (!el || !chip) return;
+    const left = chip.offsetLeft - el.offsetLeft;
+    if (left < el.scrollLeft || left + chip.offsetWidth > el.scrollLeft + el.clientWidth) el.scrollLeft = Math.max(0, left - 16);
+  }, [active]);
   return (
     <div>
-      <div role="toolbar" aria-label={label} className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:flex-wrap lg:overflow-visible">
+      <div ref={row} role="toolbar" aria-label={label} className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]">
         {items.map((it) => {
           const locked = !it.free && isLocked(it.id);
           const p = progress[it.id];

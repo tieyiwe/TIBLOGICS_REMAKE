@@ -34,6 +34,9 @@ export default function TaskSorter({ challengeId, embedded, onComplete, progress
   const layout = useStudioLayout();
   // Page and full-screen overlay: bigger card and targets that use the height.
   const wide = layout !== "embedded" && !embedded;
+  // Full-screen overlay: the workspace fills the visible height (a viewport
+  // calc rather than h-full, because the frame's grid row grows with the guide).
+  const fill = layout === "overlay";
   const k = (s: string, v?: Record<string, string | number>) => t(`${NS}.${s}`, v);
   const locks = useDeckLocks(TOOL, progress);
 
@@ -291,7 +294,7 @@ export default function TaskSorter({ challengeId, embedded, onComplete, progress
     const card = cards[idx];
     const done = Object.keys(answers).length;
     body = (
-      <div data-ts-root className={`flex flex-col rounded-2xl bg-[var(--s2)] p-3 sm:p-5 ${embedded ? "" : "min-h-[480px]"} ${wide ? "lg:h-full" : ""}`}>
+      <div data-ts-root className={`flex flex-col rounded-2xl bg-[var(--s2)] p-3 sm:p-5 ${embedded ? "" : "min-h-[480px]"} ${fill ? "lg:min-h-[calc(100vh-170px)]" : ""}`}>
         {header}
         <div className="mb-3 grid grid-cols-3 gap-2 text-center text-xs" aria-live="off">
           <div className="rounded-xl bg-white px-2 py-1.5">
@@ -320,7 +323,7 @@ export default function TaskSorter({ challengeId, embedded, onComplete, progress
         </div>
         <p className="mb-2 text-center text-xs text-[var(--ink3)]">{k("cardOf", { n: Math.min(idx + 1, cards.length), total: cards.length })}</p>
 
-        <div className={`relative flex items-center justify-center ${wide ? "min-h-[200px] lg:flex-1" : "min-h-[150px]"}`}>
+        <div className={`relative flex items-center justify-center ${wide ? "min-h-[200px]" : "min-h-[150px]"} ${fill ? "lg:flex-1" : ""}`}>
           <AnimatePresence mode="popLayout">
             {card && !answers[card.id] && (
               <motion.div

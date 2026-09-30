@@ -69,13 +69,16 @@ export function useUnlocks(toolId: string, progress: Record<string, { done: bool
   return useMemo(() => {
     const done = (id: string) => !!progress[id]?.done || session.has(id);
     const list = STUDIO_BY_ID.get(toolId)?.challenges ?? [];
+    // A challenge already done stays open (progress from before challenges
+    // were ordered), even if the one before it isn't done.
+    const open = (id: string) => done(id) || isUnlocked(toolId, id, done);
     return {
       done,
-      locked: (id: string) => list.some((c) => c.id === id) && !isUnlocked(toolId, id, done),
+      locked: (id: string) => list.some((c) => c.id === id) && !open(id),
       /** The previous challenge id when `id` is locked, else null. */
       lockedBy: (id: string) => {
         const i = list.findIndex((c) => c.id === id);
-        return i > 0 && !isUnlocked(toolId, id, done) ? list[i - 1].id : null;
+        return i > 0 && !open(id) ? list[i - 1].id : null;
       },
       /** The first challenge not done yet (always open), or the last one. */
       firstOpen: () => list.find((c) => !done(c.id))?.id ?? list[list.length - 1]?.id ?? null,

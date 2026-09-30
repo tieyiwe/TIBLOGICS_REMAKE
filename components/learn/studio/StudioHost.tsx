@@ -43,7 +43,8 @@ export default function StudioHost({
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setFull(false);
+      // A tool can claim Escape (closing its own picker) with preventDefault.
+      if (e.key === "Escape" && !e.defaultPrevented) setFull(false);
     };
     window.addEventListener("keydown", onKey);
     return () => {
@@ -137,7 +138,7 @@ export default function StudioHost({
           </div>
         )}
         {!embedded && !full && <div className="mb-3 flex justify-end">{toggle}</div>}
-        <div className={full ? "flex-1 overflow-auto p-3 sm:p-5" : embedded ? "p-3 sm:p-4" : ""}>
+        <div className={full ? "flex min-h-0 flex-1 flex-col overflow-auto p-3 sm:p-5 lg:overflow-hidden" : embedded ? "p-3 sm:p-4" : ""}>
           <Tool challengeId={challengeId} embedded={embedded && !full} onComplete={onComplete} progress={progress} />
         </div>
         {status !== "idle" && (

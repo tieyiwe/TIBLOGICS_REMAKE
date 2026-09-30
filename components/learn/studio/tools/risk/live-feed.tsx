@@ -6,6 +6,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import type { Locale } from "@/lib/i18n/config";
+import { useStudioLayout } from "../../StudioFrame";
 import { tx } from "../sorter/l3";
 import { KIND_ICON, RISK_ICON, RISK_TYPES, type RiskCard, type RiskType } from "./decks";
 
@@ -61,9 +62,11 @@ export default function LiveFeed({
   k: (s: string, v?: Record<string, string | number>) => string;
   reduce: boolean;
 }) {
+  // The side-by-side page view gives the live column less room than the overlay.
+  const narrow = useStudioLayout() === "page";
   if (!active) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 p-4 text-center text-sm text-[var(--ink3)]" data-live="feed-empty">
+      <div className="flex flex-col items-center gap-3 px-4 py-12 text-center text-sm text-[var(--ink3)]" data-live="feed-empty">
         <span className="text-4xl" aria-hidden="true">📡</span>
         <p className="max-w-xs">{k("live.empty")}</p>
       </div>
@@ -104,7 +107,7 @@ export default function LiveFeed({
       k("live.lives"),
       <span key="h" aria-label={k("livesLabel", { n: lives })}>
         {Array.from({ length: maxLives }, (_, i) => (
-          <span key={i} aria-hidden="true" className={i < lives ? "" : "opacity-25 grayscale"}>
+          <span key={i} aria-hidden="true" className={`text-sm ${i < lives ? "" : "opacity-25 grayscale"}`}>
             ❤️
           </span>
         ))}
@@ -120,9 +123,9 @@ export default function LiveFeed({
       {/* Dashboard */}
       <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {stats.map(([label, value, id]) => (
-          <div key={id} className="rounded-xl bg-[var(--s2)] px-2 py-1.5 text-center" data-live-stat={id}>
+          <div key={id} className="rounded-xl bg-[var(--s2)] px-1 py-1.5 text-center" data-live-stat={id}>
             <dt className="text-[11px] text-[var(--ink3)]">{label}</dt>
-            <dd className="text-base font-black text-[var(--ink)]">{value}</dd>
+            <dd className="whitespace-nowrap text-base font-black text-[var(--ink)]">{value}</dd>
           </div>
         ))}
       </dl>
@@ -133,7 +136,7 @@ export default function LiveFeed({
           <p className="text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">{k("live.heat")}</p>
           {falseAlarms > 0 && <p className="text-[11px] text-amber-700">{k("live.falseAlarms", { n: falseAlarms })}</p>}
         </div>
-        <ul className="grid grid-cols-3 gap-1.5 sm:grid-cols-6" data-live-heat>
+        <ul className={`grid grid-cols-3 gap-1.5 sm:grid-cols-6 ${narrow ? "lg:grid-cols-3" : ""}`} data-live-heat>
           {heat.map(({ r, seen, missed }) => {
             const rate = seen ? missed / seen : -1;
             const bg = rate < 0 ? "#EEF2F7" : rate === 0 ? "#BBF7D0" : rate < 0.34 ? "#FDE68A" : rate < 0.67 ? "#FDBA74" : "#FCA5A5";
@@ -147,7 +150,7 @@ export default function LiveFeed({
                 data-missed={missed}
               >
                 <span className="block text-base" aria-hidden="true">{RISK_ICON[r]}</span>
-                <span className="block truncate text-[10px] font-semibold text-[var(--ink)]">{k(`type.${r}`)}</span>
+                <span className="block text-[10px] font-semibold leading-tight text-[var(--ink)]">{k(`type.${r}`)}</span>
                 <span className="block text-[10px] text-[var(--ink2)]">{seen ? k("live.heatCell", { missed, seen }) : "·"}</span>
               </li>
             );

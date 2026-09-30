@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { BookOpen, Hammer, Radio } from "lucide-react";
 import { useT } from "@/lib/i18n/client";
 
@@ -30,6 +30,19 @@ export interface StudioGuide {
 }
 
 type Tab = "build" | "live" | "guide";
+
+/** True on screens 1024px and wider (after mount; tabs are the first paint). */
+function useIsWide(): boolean {
+  const [wide, setWide] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const on = () => setWide(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return wide;
+}
 
 /** The pulsing green "LIVE" light (green dot with an orange ring). */
 export function LiveDot({ label }: { label: string }) {
@@ -109,7 +122,11 @@ export default function StudioFrame({
   const layout = useStudioLayout();
   const [tab, setTab] = useState<Tab>("build");
   const [guideOpen, setGuideOpen] = useState(true);
-  const wide = layout !== "embedded";
+  // Side by side only on wide screens outside lesson embeds. Exactly ONE
+  // layout is rendered, so a tool's refs, ids and drag targets exist once.
+  const bigScreen = useIsWide();
+  const wide = layout !== "embedded" && bigScreen;
+  const overlay = layout === "overlay";
 
   const livePanel = (
     <section aria-label={t("studio.frame.live")} className="flex h-full min-h-[240px] flex-col overflow-hidden rounded-2xl border border-[#D2DCE8] bg-[#0D1B2A]">
@@ -149,31 +166,31 @@ export default function StudioFrame({
   );
 
   return (
-    <div className="space-y-3">
+    <div className={overlay && wide ? "flex h-full min-h-0 flex-col gap-3" : "space-y-3"}>
       {toolbar}
 
-      {/* Tabs: phones always, lesson embeds on every width */}
-      <div className={wide ? "lg:hidden" : ""}>
-        {tabBar}
-        <div className="mt-3">
-          {tab === "build" && <div>{children}</div>}
-          {tab === "live" && <div className="h-[min(70vh,560px)]">{livePanel}</div>}
-          {tab === "guide" && (
-            <div className="rounded-2xl border border-[#D2DCE8] bg-white p-4">
-              <GuideBody guide={guide} />
-            </div>
-          )}
+      {!wide && (
+        <div>
+          {tabBar}
+          <div className="mt-3">
+            {tab === "build" && <div>{children}</div>}
+            {tab === "live" && <div className="h-[min(70vh,560px)]">{livePanel}</div>}
+            {tab === "guide" && (
+              <div className="rounded-2xl border border-[#D2DCE8] bg-white p-4">
+                <GuideBody guide={guide} />
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Side by side on wide screens (Studio page and full-screen overlay) */}
       {wide && (
         <div
-          className={`hidden gap-4 lg:grid ${
-            guideOpen ? "lg:grid-cols-[260px_minmax(0,1.35fr)_minmax(0,1fr)]" : "lg:grid-cols-[44px_minmax(0,1.35fr)_minmax(0,1fr)]"
-          } ${layout === "overlay" ? "lg:h-[calc(100vh-140px)]" : "lg:min-h-[620px]"}`}
+          className={`grid gap-4 ${
+            guideOpen ? "grid-cols-[260px_minmax(0,1.35fr)_minmax(0,1fr)]" : "grid-cols-[44px_minmax(0,1.35fr)_minmax(0,1fr)]"
+          } ${overlay ? "min-h-0 flex-1 grid-rows-[minmax(0,1fr)]" : "min-h-[620px]"}`}
         >
-          <aside className="overflow-auto rounded-2xl border border-[#D2DCE8] bg-white">
+          <aside className="min-h-0 overflow-auto rounded-2xl border border-[#D2DCE8] bg-white">
             <button
               type="button"
               onClick={() => setGuideOpen((o) => !o)}
@@ -190,8 +207,8 @@ export default function StudioFrame({
               </div>
             )}
           </aside>
-          <div className="min-w-0 overflow-auto">{children}</div>
-          <div className="min-w-0">{livePanel}</div>
+          <div className="min-h-0 min-w-0 overflow-auto">{children}</div>
+          <div className="min-h-0 min-w-0">{livePanel}</div>
         </div>
       )}
     </div>

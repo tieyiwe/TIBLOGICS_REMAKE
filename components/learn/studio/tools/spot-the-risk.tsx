@@ -31,6 +31,9 @@ export default function SpotTheRisk({ challengeId, embedded, onComplete, progres
   const layout = useStudioLayout();
   // Page and full-screen overlay: bigger card and targets that use the height.
   const wide = layout !== "embedded" && !embedded;
+  // Full-screen overlay: the workspace fills the visible height (a viewport
+  // calc rather than h-full, because the frame's grid row grows with the guide).
+  const fill = layout === "overlay";
   const k = (s: string, v?: Record<string, string | number>) => t(`${NS}.${s}`, v);
   const locks = useDeckLocks(TOOL, progress);
 
@@ -350,7 +353,7 @@ export default function SpotTheRisk({ challengeId, embedded, onComplete, progres
     const pct = limit ? left / limit : 0;
     const tilt = Math.max(-1, Math.min(1, dragX / 120));
     return framed(
-      <div className={`flex flex-col rounded-2xl bg-[var(--s2)] p-3 sm:p-5 ${embedded ? "" : "min-h-[480px]"} ${wide ? "lg:h-full" : ""}`}>
+      <div className={`flex flex-col rounded-2xl bg-[var(--s2)] p-3 sm:p-5 ${embedded ? "" : "min-h-[480px]"} ${fill ? "lg:min-h-[calc(100vh-170px)]" : ""}`}>
         {header}
         <div className="mb-2 flex items-center justify-between gap-2 text-sm">
           <span aria-label={k("livesLabel", { n: lives })} className="text-lg tracking-wider">
@@ -380,7 +383,7 @@ export default function SpotTheRisk({ challengeId, embedded, onComplete, progres
           />
         </div>
 
-        <div className={`relative ${wide ? "flex flex-col justify-center lg:flex-1" : ""}`}>
+        <div className={`relative ${fill ? "flex flex-col justify-center lg:flex-1" : ""}`}>
           <AnimatePresence mode="popLayout">
             <motion.div
               key={card.id}
@@ -410,7 +413,7 @@ export default function SpotTheRisk({ challengeId, embedded, onComplete, progres
               aria-live="polite"
               data-card={card.id}
             >
-              {cardBody(card)}
+              {cardBody(card, picking)}
               <p className="mt-3 text-center text-[11px] text-[var(--ink3)]">↔ {k("swipeHint")}</p>
             </motion.div>
           </AnimatePresence>

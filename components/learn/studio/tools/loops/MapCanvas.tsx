@@ -145,7 +145,7 @@ export default function MapCanvas({
     <svg
       ref={svgRef}
       viewBox={`0 0 ${W} ${H}`}
-      className={`block w-full min-w-[600px] select-none rounded-xl bg-white ${fill ? "h-full" : "h-auto"}`}
+      className={`block w-full min-w-[460px] select-none rounded-xl bg-white ${fill ? "h-full" : "h-auto"}`}
       style={{ touchAction: "pan-x pan-y" }}
       role="group"
       aria-label={ariaLabel}

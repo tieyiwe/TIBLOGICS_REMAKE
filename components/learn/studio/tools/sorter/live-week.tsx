@@ -57,10 +57,10 @@ export default function LiveWeek({
 
   if (!active) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 p-4 text-center text-sm text-[var(--ink3)]" data-live="week-empty">
+      <div className="flex flex-col items-center gap-3 px-4 py-12 text-center text-sm text-[var(--ink3)]" data-live="week-empty">
         <span className="text-4xl" aria-hidden="true">📅</span>
         <p className="max-w-xs">{k("live.empty")}</p>
-        <div className="flex gap-2" aria-hidden="true">
+        <div className="flex flex-wrap justify-center gap-2" aria-hidden="true">
           {BUCKETS.map((b) => (
             <span key={b} className="rounded-full px-2.5 py-1 text-xs font-semibold text-white" style={{ background: EDGE[b] }}>
               {ICON[b]} {k(`bucket.${b}`)}

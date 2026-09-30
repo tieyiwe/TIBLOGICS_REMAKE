@@ -426,10 +426,10 @@ export default function AutomationBuilder({ challengeId, embedded, onComplete, p
         </section>
 
         {/* Canvas (fills the height the frame gives it) and settings */}
-        <div className={`flex-1 ${side ? "grid grid-cols-[minmax(0,1fr)_300px] items-stretch gap-3" : ""}`}>
+        <div className={`${layout === "overlay" ? "flex-1" : ""} ${side ? "grid grid-cols-[minmax(0,1fr)_300px] items-stretch gap-3" : ""}`}>
           <div
             className={`h-full overflow-auto rounded-2xl border border-[#D2DCE8] bg-[var(--s2)] p-3 [background-image:radial-gradient(#D2DCE8_1px,transparent_1px)] [background-size:16px_16px] sm:p-4 ${
-              layout === "overlay" ? "min-h-[440px]" : "min-h-[400px]"
+              layout === "overlay" ? "min-h-[440px]" : "min-h-[380px]"
             }`}
             aria-label={t(`${P}.builder`)}
             role="group"
