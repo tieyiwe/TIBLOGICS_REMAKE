@@ -165,6 +165,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
         loop={
           loop && (
             <LearningLoop
+              key="learning-loop"
               lessonId={lesson.id}
               understand={loop.understand}
               play={loop.play}
@@ -177,6 +178,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
         footer={
           loop && (
             <LessonReflection
+              key="reflection"
               lessonId={lesson.id}
               initialText={loop.reflection?.text ?? ""}
               initialUpdatedAt={loop.reflection?.updatedAt ?? null}

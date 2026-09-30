@@ -782,6 +782,12 @@ Acceptance criteria are not paperwork. They are the checklist you run after ever
 
 They also help with hand-off, the failure point from Module 1. Someone taking over your app can read the criteria and know what "working" means without asking you.
 
+Try it on a small app: lay out the to-do screen below and watch the tool turn it into user stories and Given/When/Then criteria.
+
+\`\`\`studio
+wireframe-builder:todo-empty
+\`\`\`
+
 ## Let the AI find the gaps
 
 \`\`\`try
@@ -1061,6 +1067,12 @@ Check the third example yourself: 80 plus 10% is 88, divided by 4 is 22.00. Work
 - **Definition of done** makes "finished" a checklist rather than a feeling.
 
 The spec also connects back to your system map. The context section is the users row; the constraints and non-goals often come straight from the data and hosting rows.
+
+Sketch a login flow below, link the screens together, and copy the prompt the tool writes from your wireframe.
+
+\`\`\`studio
+wireframe-builder:login-forgot
+\`\`\`
 
 ## From vague idea to spec
 

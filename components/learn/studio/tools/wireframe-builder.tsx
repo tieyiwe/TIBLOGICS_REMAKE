@@ -233,7 +233,7 @@ export default function WireframeBuilder({ challengeId, embedded, onComplete, pr
   );
 
   const checklist = checks && challenge && (
-    <section className="rounded-2xl border-2 border-[var(--border)] bg-white p-3 sm:p-4" aria-labelledby="wf-goal">
+    <section className="rounded-2xl border-2 border-[#D2DCE8] bg-white p-3 sm:p-4" aria-labelledby="wf-goal">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 id="wf-goal" className="font-black text-[var(--ink)]">
@@ -314,10 +314,10 @@ export default function WireframeBuilder({ challengeId, embedded, onComplete, pr
             📱 {s.name}
           </button>
         ))}
-        <button type="button" onClick={addScreen} disabled={design.screens.length >= 8} className="min-h-[40px] rounded-xl border-2 border-dashed border-[var(--border)] px-3 py-1.5 text-sm font-semibold text-[var(--ink2)] hover:border-[#F47C20] disabled:opacity-50">
+        <button type="button" onClick={addScreen} disabled={design.screens.length >= 8} className="min-h-[40px] rounded-xl border-2 border-dashed border-[#D2DCE8] px-3 py-1.5 text-sm font-semibold text-[var(--ink2)] hover:border-[#F47C20] disabled:opacity-50">
           + {k("addScreen")}
         </button>
-        <div className="ml-auto flex overflow-hidden rounded-xl border-2 border-[var(--border)]" role="group" aria-label={k("mode")}>
+        <div className="ml-auto flex overflow-hidden rounded-xl border-2 border-[#D2DCE8]" role="group" aria-label={k("mode")}>
           {(["edit", "preview"] as const).map((v) => (
             <button
               key={v}
@@ -352,7 +352,7 @@ export default function WireframeBuilder({ challengeId, embedded, onComplete, pr
                     e.dataTransfer.setData("text/plain", type);
                   }}
                   onClick={() => addComp(type)}
-                  className="min-h-[40px] rounded-xl border-2 border-[var(--border)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--ink)] hover:border-[#F47C20] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F47C20]"
+                  className="min-h-[40px] rounded-xl border-2 border-[#D2DCE8] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--ink)] hover:border-[#F47C20] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F47C20]"
                   aria-label={k("addX", { x: k(`comp.${type}`) })}
                 >
                   <span aria-hidden="true">{CICON[type]}</span> {k(`comp.${type}`)}
@@ -416,7 +416,7 @@ export default function WireframeBuilder({ challengeId, embedded, onComplete, pr
                     }}
                     aria-pressed={sel === c.id}
                     aria-label={`${i + 1}. ${k(`comp.${c.type}`)}: ${labelOf(c, t)}`}
-                    className={`relative rounded-xl p-0.5 text-left outline-none transition focus-visible:ring-2 focus-visible:ring-[#2251A3] motion-reduce:transition-none ${c.half ? "col-span-1" : "col-span-2"} ${sel === c.id ? "ring-2 ring-[#F47C20] ring-offset-1" : "hover:ring-1 hover:ring-[var(--border)]"}`}
+                    className={`relative rounded-xl p-0.5 text-left outline-none transition focus-visible:ring-2 focus-visible:ring-[#2251A3] motion-reduce:transition-none ${c.half ? "col-span-1" : "col-span-2"} ${sel === c.id ? "ring-2 ring-[#F47C20] ring-offset-1" : "hover:ring-1 hover:ring-[#D2DCE8]"}`}
                   >
                     <Mock c={c} label={labelOf(c, t)} targetName={screenName(c.link)} />
                     {c.note.trim() && c.type !== "input" && (
@@ -431,7 +431,7 @@ export default function WireframeBuilder({ challengeId, embedded, onComplete, pr
             )}
 
             {/* Inspector */}
-            <aside className="rounded-2xl border-2 border-[var(--border)] bg-white p-3" aria-label={k("inspector")}>
+            <aside className="rounded-2xl border-2 border-[#D2DCE8] bg-white p-3" aria-label={k("inspector")}>
               {selComp ? (
                 <div className="space-y-3">
                   <p className="font-bold text-[var(--ink)]">
@@ -444,7 +444,7 @@ export default function WireframeBuilder({ challengeId, embedded, onComplete, pr
                       maxLength={120}
                       onChange={(e) => patchComp(selComp.id, { label: e.target.value })}
                       placeholder={k(`comp.${selComp.type}.default`)}
-                      className="mt-1 w-full rounded-xl border-2 border-[var(--border)] px-2.5 py-2 text-sm text-[var(--ink)] focus:border-[#F47C20] focus:outline-none"
+                      className="mt-1 w-full rounded-xl border-2 border-[#D2DCE8] px-2.5 py-2 text-sm text-[var(--ink)] focus:border-[#F47C20] focus:outline-none"
                     />
                   </label>
                   {selComp.type === "tabs" && <p className="text-[11px] text-[var(--ink3)]">{k("field.tabsHint")}</p>}
@@ -456,7 +456,7 @@ export default function WireframeBuilder({ challengeId, embedded, onComplete, pr
                       rows={2}
                       onChange={(e) => patchComp(selComp.id, { note: e.target.value })}
                       placeholder={k(`field.notePh.${selComp.type === "button" || selComp.type === "error" || selComp.type === "input" ? selComp.type : "other"}`)}
-                      className="mt-1 w-full rounded-xl border-2 border-[var(--border)] px-2.5 py-2 text-sm text-[var(--ink)] focus:border-[#F47C20] focus:outline-none"
+                      className="mt-1 w-full rounded-xl border-2 border-[#D2DCE8] px-2.5 py-2 text-sm text-[var(--ink)] focus:border-[#F47C20] focus:outline-none"
                     />
                   </label>
                   {LINKABLE.includes(selComp.type) && (
@@ -465,7 +465,7 @@ export default function WireframeBuilder({ challengeId, embedded, onComplete, pr
                       <select
                         value={selComp.link ?? ""}
                         onChange={(e) => patchComp(selComp.id, { link: e.target.value || null })}
-                        className="mt-1 w-full rounded-xl border-2 border-[var(--border)] bg-white px-2 py-2 text-sm text-[var(--ink)]"
+                        className="mt-1 w-full rounded-xl border-2 border-[#D2DCE8] bg-white px-2 py-2 text-sm text-[var(--ink)]"
                       >
                         <option value="">{k("field.noLink")}</option>
                         {design.screens
@@ -508,7 +508,7 @@ export default function WireframeBuilder({ challengeId, embedded, onComplete, pr
                       value={screen.name}
                       maxLength={40}
                       onChange={(e) => update((d) => ({ ...d, screens: d.screens.map((s) => (s.id === screen.id ? { ...s, name: e.target.value } : s)) }))}
-                      className="mt-1 w-full rounded-xl border-2 border-[var(--border)] px-2.5 py-2 text-sm text-[var(--ink)] focus:border-[#F47C20] focus:outline-none"
+                      className="mt-1 w-full rounded-xl border-2 border-[#D2DCE8] px-2.5 py-2 text-sm text-[var(--ink)] focus:border-[#F47C20] focus:outline-none"
                     />
                   </label>
                   <label className="block text-xs font-semibold text-[var(--ink2)]">
@@ -518,7 +518,7 @@ export default function WireframeBuilder({ challengeId, embedded, onComplete, pr
                       maxLength={60}
                       placeholder={appFallback}
                       onChange={(e) => update((d) => ({ ...d, app: e.target.value }))}
-                      className="mt-1 w-full rounded-xl border-2 border-[var(--border)] px-2.5 py-2 text-sm text-[var(--ink)] focus:border-[#F47C20] focus:outline-none"
+                      className="mt-1 w-full rounded-xl border-2 border-[#D2DCE8] px-2.5 py-2 text-sm text-[var(--ink)] focus:border-[#F47C20] focus:outline-none"
                     />
                   </label>
                   {design.screens.length > 1 && (

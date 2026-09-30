@@ -2,7 +2,7 @@
 // a person is about to do or share. Keep facts general and accurate, with no
 // invented statistics. Names, numbers and codes in cards are made up.
 
-import { l3, type L3 } from "../sorter/kit";
+import { l3, type L3 } from "../sorter/l3";
 
 export type RiskType = "privacy" | "security" | "fact" | "bias" | "child" | "legal";
 export const RISK_TYPES: RiskType[] = ["privacy", "security", "fact", "bias", "child", "legal"];

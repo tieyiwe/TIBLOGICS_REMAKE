@@ -55,6 +55,12 @@ Some of the most important stocks are soft: trust in the AI system, staff skill,
 
 When you plan an AI rollout, name these soft stocks explicitly and ask what fills and drains each one.
 
+Map a hidden stock with a long delay below: the technical debt spiral, with the delay marked where debt turns into bugs.
+
+\`\`\`studio
+loop-mapper:tech-debt
+\`\`\`
+
 ## Delays and over-correction
 
 A **delay** is the gap between an action and its visible effect. AI programmes are full of them:
@@ -199,6 +205,12 @@ Four rules keep diagrams honest:
 3. **Mark significant delays** on the arrow where they occur. Delays in balancing loops are what cause over-shoot.
 4. **Keep each loop to three to five variables.** A diagram with thirty arrows convinces nobody and explains nothing.
 
+Draw both adoption loops yourself below, label each one, and simulate them to see growth give way to the delayed balancing loop.
+
+\`\`\`studio
+loop-mapper:ai-adoption
+\`\`\`
+
 ## Reading a diagram for decisions
 
 Once drawn, ask three questions:
@@ -305,6 +317,12 @@ Illustrative examples of the pattern:
 - A support assistant judged on customer satisfaction ratings promises refunds it has no authority to give.
 
 Each system did what it was measured on. None did what was wanted. You will meet this pattern again in Module 2, where an agent pursuing a goal treats a refusal as an obstacle to get round.
+
+Map the gaming loop below, then fix it by tying the reward to real outcomes and label the loop your fix creates.
+
+\`\`\`studio
+loop-mapper:goodhart
+\`\`\`
 
 ## Designing measures that resist gaming
 
@@ -957,6 +975,12 @@ A quick way to combine them:
 **Leave requests in HR.** Every request needs the same things: extract dates, check the policy and remaining allowance, draft a reply, have a person approve. The steps are known and the stakes are moderate. A workflow with AI at the extraction and drafting steps is the right design. An agent would add unpredictability for no gain.
 
 **"The VPN is slow for some people" in IT.** The cause could be anywhere: one office, one software version, one time of day. The path depends on what each check reveals. An agent with read-only diagnostic tools (read logs, run connectivity checks) that proposes a cause for a person to confirm is a reasonable design. Giving it permission to change network settings would not be.
+
+Build a workflow with AI at only one stage below: skip duplicates, enrich new leads with AI, alert sales about big ones, and make every failure loud.
+
+\`\`\`studio
+automation-builder:lead-intake
+\`\`\`
 
 ## Escalate on evidence
 

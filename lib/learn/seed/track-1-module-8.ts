@@ -180,6 +180,12 @@ A **balancing loop** pushes things back towards a target, like a thermostat. Whe
 
 Balancing loops keep things stable. They only work if someone, or something, notices the gap between where things are and where they should be.
 
+Draw your first loop below: link customers and good reviews, choose + or − for each arrow, and decide whether the loop is reinforcing or balancing.
+
+\`\`\`studio
+loop-mapper:reviews-loop
+\`\`\`
+
 ## Delays make loops tricky
 
 A **delay** is a gap in time between an action and its effect. Delays cause a lot of mistakes because people act, see no change, and act again.
@@ -187,6 +193,12 @@ A **delay** is a gap in time between an action and its effect. Delays cause a lo
 The classic example is a shower with a slow boiler. You turn the tap to hot, nothing happens, so you turn it further. Then it arrives scalding, so you swing it back to cold. The delay makes you overshoot in both directions.
 
 With AI, delays show up as problems that take weeks to surface. An error in an AI-drafted document might not be spotted until a customer or a colleague acts on it. By then, the same error may have been copied into several other documents.
+
+Now add the balancing loop that limits that growth, and mark the delay, in the map below.
+
+\`\`\`studio
+loop-mapper:capacity-limit
+\`\`\`
 
 ## Knock-on effects of using AI
 

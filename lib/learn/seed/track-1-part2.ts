@@ -278,6 +278,12 @@ No malice is required. This is a straightforward consequence of learning from us
 
 **When you're using it to avoid thinking you should do.** If a task is how you develop judgement in your field, outsourcing it costs you the skill. Students feel this most sharply, but it applies to everyone.
 
+Try sorting real tasks: decide below which ones to automate, which to do with AI's help and which to keep human.
+
+\`\`\`studio
+task-sorter:office
+\`\`\`
+
 ## The test worth remembering
 
 *If this output is wrong and I don't notice, what happens?*
@@ -991,6 +997,12 @@ Blunt, but it works, and you can apply it in two seconds.
 - Client names with commercial details
 - Anything identifying a specific person in a sensitive context
 
+Test yourself: decide below whether each message is safe to paste into a chatbot, and name the risk when it is not.
+
+\`\`\`studio
+spot-the-risk:privacy
+\`\`\`
+
 ## The redaction habit
 
 You usually don't need the sensitive parts. Replace names with roles: "Client A", "the finance director". Round or fuzz figures. Strip identifiers.
@@ -1595,6 +1607,12 @@ Learn them, but don't rely on them. Anything based on current-generation flaws e
 The most damaging effect isn't people believing fakes. It's people disbelieving *real* things — "that's probably AI" as a way to dismiss genuine evidence.
 
 That's called the liar's dividend, and it's already happening. Reflexive scepticism is as much a failure mode as credulity.
+
+Practise on examples: call each message or video below Safe or Risky, then read why.
+
+\`\`\`studio
+spot-the-risk:scams
+\`\`\`
 
 ## What to actually do
 

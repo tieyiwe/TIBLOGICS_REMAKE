@@ -184,7 +184,7 @@ const messages: Messages = {
 
     // ── Public page ───────────────────────────────────────────────────────
     "method.public.metaTitle": "{name}: TIBLOGICS Learn portfolio",
-    "method.public.metaDescription": "{name}'s proof of skill from TIBLOGICS Learn: {labs} labs passed, {certs} certificates, {badges} badges.",
+    "method.public.metaDescription": "{name}'s proof of skill from TIBLOGICS Learn. Labs passed: {labs}. Certificates: {certs}. Badges: {badges}.",
     "method.public.eyebrow": "TIBLOGICS Learn portfolio",
     "method.public.title": "{name}'s proof of skill",
     "method.public.intro": "Every item below comes from TIBLOGICS Learn records: labs graded against published criteria, Studio challenges completed, and certificates anyone can verify.",
@@ -387,7 +387,7 @@ const messages: Messages = {
     "method.share.publicNow": "Votre portfolio est public.",
 
     "method.public.metaTitle": `{name}${NB}: portfolio TIBLOGICS Learn`,
-    "method.public.metaDescription": `Les compétences prouvées de {name} sur TIBLOGICS Learn${NB}: {labs} ateliers réussis, {certs} certificats, {badges} badges.`,
+    "method.public.metaDescription": `Les compétences prouvées de {name} sur TIBLOGICS Learn. Ateliers réussis${NB}: {labs}. Certificats${NB}: {certs}. Badges${NB}: {badges}.`,
     "method.public.eyebrow": "Portfolio TIBLOGICS Learn",
     "method.public.title": "Les compétences prouvées de {name}",
     "method.public.intro": `Chaque élément ci-dessous provient des dossiers de TIBLOGICS Learn${NB}: ateliers notés selon des critères publiés, défis du Studio terminés et certificats vérifiables par tous.`,
@@ -588,7 +588,7 @@ const messages: Messages = {
     "method.share.publicNow": "Portfolio yako ni ya umma.",
 
     "method.public.metaTitle": "{name}: portfolio ya TIBLOGICS Learn",
-    "method.public.metaDescription": "Ushahidi wa ujuzi wa {name} kutoka TIBLOGICS Learn: maabara {labs} yamefaulu, vyeti {certs}, beji {badges}.",
+    "method.public.metaDescription": "Ushahidi wa ujuzi wa {name} kutoka TIBLOGICS Learn. Maabara yaliyofaulu: {labs}. Vyeti: {certs}. Beji: {badges}.",
     "method.public.eyebrow": "Portfolio ya TIBLOGICS Learn",
     "method.public.title": "Ushahidi wa ujuzi wa {name}",
     "method.public.intro": "Kila kipengele hapa chini kinatoka kwenye kumbukumbu za TIBLOGICS Learn: maabara yaliyopimwa kwa vigezo vilivyochapishwa, changamoto za Studio zilizokamilika, na vyeti ambavyo yeyote anaweza kuthibitisha.",

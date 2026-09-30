@@ -277,9 +277,10 @@ export default function TaskSorter({ challengeId, embedded, onComplete, progress
                 animate={{ y: 0, opacity: 1, scale: 1 }}
                 exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.8 }}
                 transition={{ duration: reduce ? 0 : 0.2 }}
-                className="w-full max-w-md cursor-grab touch-none select-none rounded-2xl border-2 border-[var(--border)] bg-white p-5 text-center shadow-md active:cursor-grabbing"
+                className="w-full max-w-md cursor-grab touch-none select-none rounded-2xl border-2 border-[#D2DCE8] bg-white p-5 text-center shadow-md active:cursor-grabbing"
                 role="group"
                 aria-label={tx(card.task, locale)}
+                data-card={card.id}
               >
                 <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink3)]">{k("taskLabel")}</p>
                 <p className="mt-2 text-lg font-bold leading-snug text-[var(--ink)]">{tx(card.task, locale)}</p>
@@ -330,7 +331,7 @@ export default function TaskSorter({ challengeId, embedded, onComplete, progress
               </span>
               <span className="mt-1 text-sm font-bold leading-tight text-[var(--ink)]">{k(`bucket.${b}`)}</span>
               <span className="mt-0.5 hidden text-[11px] leading-tight text-[var(--ink2)] sm:block">{k(`bucket.${b}.hint`)}</span>
-              <kbd className="mt-1 hidden rounded border border-[var(--border)] bg-white px-1 text-[10px] text-[var(--ink3)] sm:inline">{i + 1}</kbd>
+              <kbd className="mt-1 hidden rounded border border-[#D2DCE8] bg-white px-1 text-[10px] text-[var(--ink3)] sm:inline">{i + 1}</kbd>
             </button>
           ))}
         </div>

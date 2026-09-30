@@ -49,7 +49,7 @@ function NodeView(p: CanvasProps & { node: FlowNode; depth: number }) {
   return (
     <div>
       <div
-        className={`relative w-full max-w-[280px] rounded-2xl border-2 bg-white shadow-sm transition-shadow ${
+        className={`relative ${p.stacked ? "w-full max-w-[280px]" : "w-[250px]"} rounded-2xl border-2 bg-white shadow-sm transition-shadow ${
           selected ? "border-[#F47C20] shadow-md" : onTrail ? "border-[#F5B400]" : "border-[#D2DCE8]"
         }`}
       >
@@ -110,7 +110,7 @@ function NodeView(p: CanvasProps & { node: FlowNode; depth: number }) {
       {branches.length > 1 && (
         <div className={`mt-3 flex gap-3 ${p.stacked ? "flex-col" : "flex-row items-start"}`}>
           {branches.map((s) => (
-            <div key={s} className={`${p.stacked ? "ml-3 border-l-2 pl-3" : "min-w-[230px] flex-1 border-t-2 pt-2"}`} style={{ borderColor: slotColor(s) }}>
+            <div key={s} className={`${p.stacked ? "ml-3 border-l-2 pl-3" : "shrink-0 border-t-2 pt-2"}`} style={{ borderColor: slotColor(s) }}>
               <SlotView {...p} parent={node} slot={s} depth={p.depth + 1} labelled />
             </div>
           ))}
@@ -172,7 +172,7 @@ function EmptySlot(p: CanvasProps & { parentId: string | null; slot: SlotName | 
           if (dragOk) place(p.dragKind!);
         }}
         aria-expanded={kinds.length > 1 ? open : undefined}
-        className={`flex w-full max-w-[280px] items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed px-3 py-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F47C20] ${
+        className={`flex ${p.stacked ? "w-full max-w-[280px]" : "w-[250px]"} items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed px-3 py-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F47C20] ${
           over || armedOk || dragOk
             ? "ab-slot-hot border-[#F47C20] bg-[#FEF0E3] text-[#C45A0A]"
             : "border-[#B8C4D3] bg-[var(--s2)] text-[var(--ink3)] hover:border-[#F47C20] hover:text-[#C45A0A]"
@@ -186,7 +186,7 @@ function EmptySlot(p: CanvasProps & { parentId: string | null; slot: SlotName | 
             : t(`${P}.addStep`)}
       </button>
       {open && (
-        <div className="mt-2 grid max-w-[280px] grid-cols-2 gap-1.5 rounded-2xl border border-[#D2DCE8] bg-white p-2 shadow-md" role="menu" aria-label={t(`${P}.chooseStep`)}>
+        <div className="mt-2 grid w-full max-w-[250px] grid-cols-2 gap-1.5 rounded-2xl border border-[#D2DCE8] bg-white p-2 shadow-md" role="menu" aria-label={t(`${P}.chooseStep`)}>
           {kinds.map((k) => {
             const s = KIND_STYLE[k];
             const Icon = s.icon;

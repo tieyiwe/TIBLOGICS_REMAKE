@@ -327,6 +327,12 @@ Balancing loops often come with a **delay**, and delays cause overshoot. Complai
 
 The trust story above is both: a reinforcing loop of lighter checking while things go well, then a sharp correction when something slips.
 
+Map one of these loops yourself below: link AI drafting to the review queue and the rework cycle, label the loop, then add a limit that balances it.
+
+\`\`\`studio
+loop-mapper:review-bottleneck
+\`\`\`
+
 ## Designing against the knock-ons
 
 You cannot remove second-order effects, but you can plan for them.

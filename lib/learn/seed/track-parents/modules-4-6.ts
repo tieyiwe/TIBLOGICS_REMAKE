@@ -64,6 +64,12 @@ The second version gets an equally good answer and gives away nothing. Practise 
 
 Many AI tools now accept photos. Uploading a worksheet can be fine if it has no names on it. Uploading a picture of your child, their friends or your home is different. Once an image leaves your device, you have limited control over where it goes. Agree a family rule: **photos of people only with a parent's say-so**, and cover names and school logos on anything you upload.
 
+Test your instincts together: play the Kids online deck below and decide whether each AI reply, message or setting is safe or risky.
+
+\`\`\`studio
+spot-the-risk:kids
+\`\`\`
+
 ## Try it now
 
 Sit with your child for ten minutes and turn the never-share list into a game. Use the prompt below in the practice pad, changing the parts in brackets.
@@ -163,6 +169,12 @@ Second, **if it happens to them, they are not in trouble and it is not their fau
 Sextortion is when someone pressures a person into sharing intimate images and then threatens to share them unless they pay money or send more. Criminals often pose as a young person of a similar age, build trust quickly, and then turn threatening. With AI, some do not even need a real image: they can fake one and threaten anyway.
 
 The pressure is designed to make a teenager feel trapped and ashamed so they will not tell anyone. Your job, long before anything happens, is to make telling you feel possible. Say it plainly: "If anyone ever threatens you with a photo, real or fake, come to me. You will not be in trouble. We will deal with it together."
+
+Practise spotting the warning signs: call each message below Safe or Risky before the timer runs out, then read why.
+
+\`\`\`studio
+spot-the-risk:scams
+\`\`\`
 
 ## If something happens: what to do
 

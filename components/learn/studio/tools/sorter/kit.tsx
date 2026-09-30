@@ -3,15 +3,7 @@
 // Small shared pieces for the Task Sorter, Spot the Risk and Wireframe
 // Builder Studio tools: per-locale text, stars and the challenge picker.
 
-import type { Locale } from "@/lib/i18n/config";
-
-/** Game content in the three site languages. */
-export type L3 = { en: string; fr: string; sw: string };
-
-export const tx = (l: L3, locale: Locale): string => l[locale] || l.en;
-
-/** Build an L3 from a [en, fr, sw] tuple (keeps data files compact). */
-export const l3 = (t: readonly [string, string, string]): L3 => ({ en: t[0], fr: t[1], sw: t[2] });
+export { tx, l3, type L3 } from "./l3";
 
 export const ACCENT = "#F47C20";
 
@@ -37,7 +29,7 @@ export function Stars({ n, size = "text-base", label }: { n: number; size?: stri
   return (
     <span className={`inline-flex gap-0.5 ${size}`} role="img" aria-label={label ?? `${n}/3`}>
       {[1, 2, 3].map((i) => (
-        <span key={i} aria-hidden="true" style={{ color: i <= n ? ACCENT : "var(--border)" }}>
+        <span key={i} aria-hidden="true" style={{ color: i <= n ? ACCENT : "#D2DCE8" }}>
           ★
         </span>
       ))}
@@ -78,7 +70,7 @@ export function ChallengePicker({
               <button
                 type="button"
                 onClick={() => onPick(it.id)}
-                className="group flex h-full w-full items-start gap-3 rounded-2xl border-2 border-[var(--border)] bg-white p-3 text-left transition hover:-translate-y-0.5 hover:border-[#F47C20] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F47C20] motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+                className="group flex h-full w-full items-start gap-3 rounded-2xl border-2 border-[#D2DCE8] bg-white p-3 text-left transition hover:-translate-y-0.5 hover:border-[#F47C20] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F47C20] motion-reduce:transition-none motion-reduce:hover:translate-y-0"
               >
                 <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--s2)] text-2xl">
                   {it.icon}
@@ -133,7 +125,7 @@ export function Btn({
       ? "bg-[#F47C20] text-white shadow-sm hover:brightness-105"
       : kind === "soft"
         ? "bg-[var(--s2)] text-[var(--ink)] hover:bg-[#FDE7D5]"
-        : "border-2 border-[var(--border)] bg-white text-[var(--ink)] hover:border-[#F47C20]";
+        : "border-2 border-[#D2DCE8] bg-white text-[var(--ink)] hover:border-[#F47C20]";
   return (
     <button type={type} onClick={onClick} disabled={disabled} aria-label={ariaLabel} className={`${base} ${look} ${className}`}>
       {children}

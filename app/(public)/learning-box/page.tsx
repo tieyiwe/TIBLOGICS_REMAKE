@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import LevelPicker from "@/components/learn/LevelPicker";
 import Reveal from "@/components/learn/Reveal";
+import HowItWorks from "@/components/learn/method/HowItWorks";
 import { getCatalog } from "@/lib/learn/catalog";
 import { fmtPrice } from "@/lib/learn/format";
 import { PLANS, FOUNDING_PRICING } from "@/lib/payments/provider";
@@ -122,6 +123,9 @@ export default async function LearningBoxPage() {
           </ul>
         </div>
       </section>
+
+      {/* How TIBLOGICS Learn works: the Learning Loop, Daily Review, Portfolio */}
+      <HowItWorks />
 
       {tracks.length === 0 && (
         <section className="mx-auto max-w-6xl px-4 pt-14">

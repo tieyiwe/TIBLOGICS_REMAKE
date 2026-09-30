@@ -3,7 +3,7 @@
 // misplaced, and an illustrative "hours per week" used only for the playful
 // week summary (not a measurement).
 
-import { l3, type L3 } from "./kit";
+import { l3, type L3 } from "./l3";
 
 export type Bucket = "automate" | "augment" | "human";
 export const BUCKETS: Bucket[] = ["automate", "augment", "human"];

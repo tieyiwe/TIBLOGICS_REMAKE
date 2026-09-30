@@ -1210,6 +1210,12 @@ Do not assume a package exists. If you are unsure, say so.
 
 Then open the pages yourself. The AI's answer is a lead to check, not proof.
 
+Now spot the unsafe patterns from this module at speed: hard-coded keys, injection, XSS and made-up packages. Call each snippet below Safe or Risky.
+
+\`\`\`studio
+spot-the-risk:code
+\`\`\`
+
 ## Lockfiles and updates
 
 When you install packages, your package manager writes a **lockfile** (for example \`package-lock.json\` for npm). It records the exact version of every package, including the packages your packages depend on. Commit it to Git. It means your laptop, your colleague's laptop and your live server all install the same code, and a surprise new version cannot slip in unnoticed.

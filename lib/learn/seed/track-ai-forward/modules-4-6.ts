@@ -35,6 +35,12 @@ Most conversations about AI at work are framed as "will it replace this or not?"
 
 The middle group is usually the largest and the most valuable. People who only look for things to automate miss most of the benefit.
 
+Warm up before you write your own list: sort the deck of real office tasks below, then compare your choices with the reasons given.
+
+\`\`\`studio
+task-sorter:office
+\`\`\`
+
 ## How to build your inventory
 
 Keep it simple. A table in a document or spreadsheet is enough.
@@ -164,6 +170,12 @@ One rule applies to all of them: only use tools your organisation has approved f
 **Sales.** Imagine an account manager who uses AI to research a prospect's public information before a call, draft a tailored follow-up and summarise a long request for proposal. **Caution:** check what the customer contract says about sharing their information with third-party tools. Never let AI invent claims about your product's capabilities; every promise in a proposal must be one your organisation can keep.
 
 **Human resources.** Imagine an HR adviser who uses AI to draft a job advert, turn a policy into a clear FAQ or prepare for a difficult conversation by rehearsing it. **Caution:** employee records are personal data. Using AI to screen, rank or assess people is a high-stakes use that many regulators treat with particular care (the EU AI Act, for example, puts many employment uses in its high-risk tier). Keep decisions about people with people, and check the current rules before any tool touches them.
+
+Try a field deck: sort the healthcare admin tasks below, or switch to the teacher, social worker or sales deck to match your own field.
+
+\`\`\`studio
+task-sorter:healthcare
+\`\`\`
 
 ## The pattern underneath
 
@@ -400,6 +412,12 @@ I need help with a task but must not share confidential details. Here is my situ
 [DESCRIBE THE TASK USING PLACEHOLDERS SUCH AS CLIENT A, [DATE], [AMOUNT]]
 
 Help me with the task using only these placeholders. If you need more information, ask me for it in general terms rather than asking for names, figures or identifying details.
+\`\`\`
+
+Practise the first two questions at speed: call each card below Safe or Risky and read the explanation for anything you miss.
+
+\`\`\`studio
+spot-the-risk:workplace
 \`\`\`
 
 ## 3. Have I checked what matters?

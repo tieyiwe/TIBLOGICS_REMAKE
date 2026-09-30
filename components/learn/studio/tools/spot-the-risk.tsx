@@ -319,9 +319,10 @@ export default function SpotTheRisk({ challengeId, embedded, onComplete, progres
               transition={{ duration: reduce ? 0 : 0.25 }}
               className="relative touch-pan-y select-none rounded-2xl border-2 bg-white p-4 shadow-md sm:p-5"
               style={{
-                borderColor: flash ? (flash.ok ? "#1F8A55" : "#E11D48") : tilt < -0.3 ? "#1F8A55" : tilt > 0.3 ? "#E11D48" : "var(--border)",
+                borderColor: flash ? (flash.ok ? "#1F8A55" : "#E11D48") : tilt < -0.3 ? "#1F8A55" : tilt > 0.3 ? "#E11D48" : "#D2DCE8",
               }}
               aria-live="polite"
+              data-card={card.id}
             >
               {cardBody(card)}
               <p className="mt-3 text-center text-[11px] text-[var(--ink3)]">↔ {k("swipeHint")}</p>
@@ -356,7 +357,7 @@ export default function SpotTheRisk({ challengeId, embedded, onComplete, progres
                   key={r}
                   type="button"
                   onClick={() => resolve("risky", r)}
-                  className="min-h-[44px] rounded-xl border-2 border-[var(--border)] bg-[var(--s2)] px-2 py-2 text-sm font-semibold text-[var(--ink)] hover:border-[#F47C20] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F47C20]"
+                  className="min-h-[44px] rounded-xl border-2 border-[#D2DCE8] bg-[var(--s2)] px-2 py-2 text-sm font-semibold text-[var(--ink)] hover:border-[#F47C20] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F47C20]"
                   aria-keyshortcuts={String(i + 1)}
                 >
                   <span aria-hidden="true">{RISK_ICON[r]}</span> {k(`type.${r}`)}

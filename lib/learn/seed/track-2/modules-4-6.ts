@@ -753,6 +753,12 @@ Poor first candidates are rare tasks (setup costs more than it saves), tasks wit
 
 Also look at where the bottleneck is. Automating a step that is not the constraint will not speed up the whole workflow, and it may pile more work in front of the step that is. If three people wait on one reviewer, automating the drafting just makes the queue longer.
 
+Before you write your own, practise the shape in the builder below: route urgent support emails to a person, let routine ones run automatically, then press Play and watch where each email lands.
+
+\`\`\`studio
+automation-builder:support-triage
+\`\`\`
+
 ## Try it now
 
 Pick one repetitive task from your workflow map.
@@ -1026,6 +1032,12 @@ Escalate to: [named person or role], via [channel], within [time]
 
 A named owner matters. "Someone will pick it up" means nobody will.
 
+Try all four patterns in one flow below: let AI answer simple questions, send refunds and unsure cases to a person, and check the stars you earn.
+
+\`\`\`studio
+automation-builder:faq-autoreply
+\`\`\`
+
 ## The systems view: design the human step as part of the system
 
 Every human step is a place where work can queue. If approvals pile up, people start approving without reading, and the loop becomes a rubber stamp. Watch the size and age of the approval queue as a signal, the same way you watched the review bottleneck in Module 4.
@@ -1156,6 +1168,12 @@ The log lets you answer "what happened to this customer's email?" in minutes rat
 - an item has waited for approval longer than your limit
 
 Keep alerts few and meaningful. If people receive ten alerts a day and nine are noise, they will ignore the tenth.
+
+Build the weekly report below, then switch on the injected failures and make sure every failure alerts someone instead of failing silently.
+
+\`\`\`studio
+automation-builder:weekly-report
+\`\`\`
 
 ## The systems view: automation moves load, it does not remove it
 

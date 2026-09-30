@@ -73,7 +73,7 @@ export default function LearnNav({
           <span className="ml-1 text-xs font-semibold text-[var(--ink3)]">Learn</span>
         </Link>
 
-        <nav aria-label={t("learn.nav.label")} className="ml-4 hidden gap-1 sm:flex">
+        <nav aria-label={t("learn.nav.label")} className="ml-1 hidden min-w-0 overflow-x-auto xl:flex">
           {LINKS.map((l) => {
             const active = l.href === "/learn" ? pathname === "/learn" : pathname.startsWith(l.href);
             return (
@@ -81,7 +81,7 @@ export default function LearnNav({
                 key={l.href}
                 href={l.href}
                 aria-current={active ? "page" : undefined}
-                className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                className={`whitespace-nowrap rounded-lg px-2 py-2 text-[13px] font-semibold transition-colors ${
                   active ? "bg-[var(--s2)] text-[var(--ink)]" : "text-[var(--ink3)] hover:text-[var(--ink)]"
                 }`}
               >
@@ -131,7 +131,7 @@ export default function LearnNav({
       </div>
 
       {open && (
-        <div role="menu" className="border-t border-[var(--border)] bg-white px-4 py-3 sm:hidden">
+        <div role="menu" className="border-t border-[var(--border)] bg-white px-4 py-3 xl:hidden">
           {LINKS.map((l) => (
             <Link
               key={l.href}
@@ -159,7 +159,7 @@ export default function LearnNav({
       )}
 
       {open && (
-        <div className="absolute right-4 top-full mt-1 hidden w-60 rounded-xl border border-[var(--border)] bg-white p-2 shadow-lg sm:block">
+        <div className="absolute right-4 top-full mt-1 hidden w-60 rounded-xl border border-[var(--border)] bg-white p-2 shadow-lg xl:block">
           <p className="px-3 py-2 text-xs text-[var(--ink3)]">
             {t("learn.nav.signedInAs")}
             <br />

@@ -332,6 +332,12 @@ Three cheap ways to stop silent failure:
 
 Then write a short note for each automation: what it does, where it lives, who owns it and how to switch it off. Without that note, the person who built it becomes the new bottleneck.
 
+Put a human checkpoint and an alert into a real flow below: let AI answer simple customer questions, make sure a person approves every refund, then press Play to test it.
+
+\`\`\`studio
+automation-builder:faq-autoreply
+\`\`\`
+
 ## Second-order effects
 
 Automations change how customers experience you, not only how much time you save. Imagine an automated sequence that emails a customer every three days until they book. If it does not stop when they book by phone, they get chased for something they have already bought. That feels careless, and it can lose the customer you just won.
@@ -1084,6 +1090,12 @@ Rules: polite throughout, under 120 words each, no threats beyond the step I hav
 Before any reminder goes out, check that the invoice really is unpaid. Payments cross in the post, and customers sometimes pay a different way. Check too whether the invoice is in dispute; chasing a customer who has raised a genuine complaint makes things worse.
 
 Automated reminders are tempting, and many invoicing tools offer them. If you use them, make sure the sequence stops automatically when payment is recorded, exclude any invoice marked as disputed, and read the first few that go out. An automated "final reminder" to a customer who paid yesterday damages trust you took years to build.
+
+Build the polite ladder as an automation below, and make sure it never chases a customer who has already paid.
+
+\`\`\`studio
+automation-builder:invoice-chaser
+\`\`\`
 
 ## Preparing for a supplier negotiation
 
