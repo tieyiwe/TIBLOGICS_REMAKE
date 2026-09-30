@@ -1,3 +1,4 @@
+import { translateArticleSoon } from "@/lib/i18n/sources/blog";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
@@ -38,6 +39,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         published: typeof body.published === "boolean" ? body.published : undefined,
       },
     });
+    // An edit changes the English, so the stored translations are redone now.
+    translateArticleSoon(post);
     return NextResponse.json({ post });
   } catch {
     return NextResponse.json({ error: "Failed to update" }, { status: 500 });

@@ -6,6 +6,7 @@ import path from "path";
 import BlogPostClient from "./BlogPostClient";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { cachedPostSummaries, localizedPost, postMetaFor } from "@/lib/i18n/sources/blog";
+import { isLocale } from "@/lib/i18n/config";
 
 export const revalidate = 3600;
 
@@ -135,12 +136,16 @@ export async function generateMetadata(
 }
 
 export default async function BlogPostPage(
-  { params }: { params: Promise<{ slug: string }> }
+  { params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ lang?: string }> }
 ) {
   const { slug } = await params;
+  // The article's own language buttons set ?lang= and switch only the article;
+  // the rest of the page stays in the visitor's site language.
+  const { lang } = await searchParams;
   const SITE_URL_LOCAL = (process.env.NEXTAUTH_URL || "https://tiblogics.com").replace(/\/$/, "");
 
-  const locale = await getLocale();
+  const siteLocale = await getLocale();
+  const locale = isLocale(lang) ? lang : siteLocale;
 
   let jsonLd: object | null = null;
   let heroCoverUrl: string | null = null;
@@ -224,7 +229,7 @@ export default async function BlogPostPage(
         />
       )}
       <Suspense fallback={null}>
-        <BlogPostClient translation={pending ? null : translation} pending={pending} relatedTitles={relatedTitles} />
+        <BlogPostClient translation={pending ? null : translation} pending={pending} relatedTitles={relatedTitles} articleLocale={locale} />
       </Suspense>
     </>
   );

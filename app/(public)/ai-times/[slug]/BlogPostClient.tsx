@@ -6,25 +6,23 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Clock, ArrowLeft, Share2, BookOpen, ExternalLink, Calendar, MessageCircle, X, TrendingUp, Flame, Languages, Loader2 } from "lucide-react";
 import OpenTiboButton from "@/components/public/OpenTiboButton";
-import { useLocale, useSetLocale, useT } from "@/lib/i18n/client";
+import { useLocale, useT } from "@/lib/i18n/client";
 import { LOCALES, LOCALE_NAMES, type Locale } from "@/lib/i18n/config";
 
 /**
  * English / Français / Kiswahili buttons at the top of an article. They switch
- * the visitor's language (the same setting as the site switcher), so the
- * article and the page around it change together. While a translation is
- * being made, the page quietly refreshes until it is ready.
+ * ONLY the article (via ?lang=, so a shared link keeps the language); menus
+ * and the rest of the site stay in the visitor's own language. Translations
+ * are made when the article is published, so the switch is instant.
  */
-function ArticleLanguageBar({ pending }: { pending: boolean }) {
+function ArticleLanguageBar({ pending, articleLocale }: { pending: boolean; articleLocale: Locale }) {
   const t = useT();
-  const locale = useLocale();
-  const setLocale = useSetLocale();
   const router = useRouter();
   const [switching, setSwitching] = useState<Locale | null>(null);
 
-  useEffect(() => setSwitching(null), [locale]);
+  useEffect(() => setSwitching(null), [articleLocale]);
 
-  // Poll for the translation: every 6 seconds, for up to 2 minutes.
+  // Only if an article was never translated (rare): refresh until it is.
   useEffect(() => {
     if (!pending) return;
     let n = 0;
@@ -40,7 +38,7 @@ function ArticleLanguageBar({ pending }: { pending: boolean }) {
     <div className="mb-5 flex flex-wrap items-center gap-2" role="group" aria-label={t("common.language")}>
       <Languages size={15} className="text-[#7A8FA6]" aria-hidden="true" />
       {LOCALES.map((l) => {
-        const active = l === locale;
+        const active = l === articleLocale;
         return (
           <button
             key={l}
@@ -49,7 +47,9 @@ function ArticleLanguageBar({ pending }: { pending: boolean }) {
             onClick={() => {
               if (active) return;
               setSwitching(l);
-              setLocale(l);
+              const url = new URL(window.location.href);
+              url.searchParams.set("lang", l);
+              router.replace(url.pathname + url.search, { scroll: false });
             }}
             className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-dm text-xs font-semibold transition-colors ${
               active
@@ -163,7 +163,9 @@ export default function BlogPostPage({
   translation = null,
   pending = false,
   relatedTitles = {},
+  articleLocale,
 }: {
+  articleLocale: Locale;
   /** The article in the visitor's language, from the server; null for English or while pending. */
   translation?: Translation | null;
   /** True while the translation is being made: English is shown with a notice. */
@@ -385,7 +387,7 @@ export default function BlogPostPage({
               )}
             </div>
 
-            <ArticleLanguageBar pending={pending} />
+            <ArticleLanguageBar pending={pending} articleLocale={articleLocale} />
 
             {pending && (
               <p role="status" className="mb-5 rounded-xl border border-[#F47C20]/30 bg-[#FEF0E3] px-4 py-3 font-dm text-sm text-[#7A3E0E]">

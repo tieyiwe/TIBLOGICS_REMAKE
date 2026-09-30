@@ -175,3 +175,64 @@ export async function warm(locale: Locale, budget: { left: number }): Promise<nu
   }
   return done;
 }
+
+// ── Translate on publish ─────────────────────────────────────────────────────
+//
+// Articles are translated when they are published or edited, not when a
+// reader first asks for them, so a French or Swahili reader gets the stored
+// translation instantly. These run in the background (the long-running server
+// keeps working after the response) and never overlap.
+
+let articleJob: Promise<void> | null = null;
+
+/**
+ * Translate every published article that has no up-to-date French or
+ * Swahili translation, newest first. Safe to call often: a second call while
+ * one is running just waits for it, and up-to-date articles cost nothing.
+ */
+export function translateArticlesSoon(maxCalls = 80): Promise<void> {
+  if (!process.env.ANTHROPIC_API_KEY) return Promise.resolve();
+  articleJob ??= (async () => {
+    try {
+      const budget = { left: maxCalls };
+      for (const locale of ["fr", "sw"] as const) {
+        if (budget.left <= 0) break;
+        await warm(locale, budget);
+      }
+    } catch (err) {
+      console.error("[i18n] article translation job failed", err instanceof Error ? err.message : err);
+    } finally {
+      articleJob = null;
+    }
+  })();
+  return articleJob;
+}
+
+/** Translate one article into French and Swahili now (background). */
+export function translateArticleSoon(post: PostSource & { published?: boolean }): void {
+  if (!process.env.ANTHROPIC_API_KEY || post.published === false) return;
+  for (const locale of ["fr", "sw"] as const) {
+    void translated(postKey(post.slug), locale, postFields(post), "wait").catch(() => {});
+  }
+}
+
+/** How many published articles have an up-to-date translation, per language. */
+export async function articleTranslationStatus(): Promise<{ total: number; fr: number; sw: number; running: boolean }> {
+  const posts = await prisma.blogPost.findMany({
+    where: { published: true },
+    select: { slug: true, title: true, excerpt: true, content: true },
+  });
+  await ensureTable();
+  const rows = await prisma.$queryRawUnsafe<Array<{ key: string; locale: string; hash: string }>>(
+    `SELECT "key", "locale", "hash" FROM "ContentTranslation" WHERE "locale" IN ('fr','sw') AND "key" = ANY($1::text[])`,
+    posts.map((p) => postKey(p.slug)),
+  );
+  const have = new Map(rows.map((r) => [`${r.locale}:${r.key}`, r.hash]));
+  let fr = 0, sw = 0;
+  for (const p of posts) {
+    const h = hashOf(postFields(p));
+    if (have.get(`fr:${postKey(p.slug)}`) === h) fr++;
+    if (have.get(`sw:${postKey(p.slug)}`) === h) sw++;
+  }
+  return { total: posts.length, fr, sw, running: !!articleJob };
+}

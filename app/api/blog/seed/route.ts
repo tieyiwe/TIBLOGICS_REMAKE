@@ -1,3 +1,4 @@
+import { translateArticlesSoon } from "@/lib/i18n/sources/blog";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
@@ -73,6 +74,7 @@ export async function POST() {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[/api/blog/seed]", msg);
     // Surface the real error so we can diagnose
+    void translateArticlesSoon();
     return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   }
 }

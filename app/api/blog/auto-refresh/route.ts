@@ -1,4 +1,6 @@
 export const maxDuration = 300;
+import { postFields, postKey, translateArticlesSoon } from "@/lib/i18n/sources/blog";
+import { translated } from "@/lib/i18n/content";
 import { NextRequest, NextResponse } from "next/server";
 import { REFRESH_INTERVAL_MS } from "@/lib/blog/schedule";
 import { revalidatePath } from "next/cache";
@@ -408,80 +410,25 @@ Return ONLY a JSON array:
   }
 }
 
+/**
+ * Translate an article into French or Swahili and store it where the article
+ * page reads it (lib/i18n/sources/blog.ts, the shared ContentTranslation
+ * cache), so readers get it instantly. Replaces the old "tx:" copies, which
+ * the page no longer reads and which cut long articles off at 6,000
+ * characters.
+ */
 async function translatePostContent(
   slug: string,
   post: { title: string; excerpt: string; content: string },
   language: "fr" | "sw"
 ): Promise<void> {
-  const cacheKey = `tx:${slug}:${language}`;
-  const existing = await prisma.adminSettings.findUnique({ where: { key: cacheKey } });
-  if (existing) return;
-  const langNames = { fr: "French", sw: "Swahili" };
-  const prompt = `Translate the following article into ${langNames[language]}.
-
-Rules:
-- For the "content" field (HTML): preserve ALL HTML tags, attributes, and inline styles exactly. Only translate the visible text inside tags.
-- For "title" and "excerpt": translate directly.
-- Return ONLY a valid JSON object with exactly these three keys: title, excerpt, content.
-- No markdown fences, no explanation, just raw JSON.
-
----
-TITLE:
-${post.title}
-
-EXCERPT:
-${post.excerpt}
-
-CONTENT (HTML – preserve all tags and attributes):
-${post.content.slice(0, 6000)}`;
-  const response = await anthropic.messages.create({
-    model: CLAUDE_FAST_MODEL,
-    max_tokens: 8192,
-    messages: [{ role: "user", content: prompt }],
-  });
-  const raw = response.content[0].type === "text" ? response.content[0].text.trim() : "";
-  const jsonStr = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "");
-  const translated = JSON.parse(jsonStr);
-  await prisma.adminSettings.upsert({
-    where: { key: cacheKey },
-    create: { key: cacheKey, value: JSON.stringify(translated) },
-    update: { value: JSON.stringify(translated) },
-  });
+  await translated(postKey(slug), language, postFields(post), "wait");
 }
 
+/** Articles without an up-to-date translation are handled by the shared job. */
 async function patchMissingTranslations(limit = 2): Promise<number> {
-  let patched = 0;
-  try {
-    const articles = await prisma.blogPost.findMany({
-      select: { slug: true, title: true, excerpt: true, content: true },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-    });
-    // One query for every cache key across all 50 candidates, instead of up to
-    // two findUniques per article.
-    const cached = new Set(
-      (
-        await prisma.adminSettings.findMany({
-          where: {
-            key: { in: articles.flatMap((a) => [`tx:${a.slug}:fr`, `tx:${a.slug}:sw`]) },
-          },
-          select: { key: true },
-        })
-      ).map((r) => r.key),
-    );
-    for (const article of articles) {
-      if (patched >= limit) break;
-      const needsAny = (["fr", "sw"] as const).some(
-        (lang) => !cached.has(`tx:${article.slug}:${lang}`),
-      );
-      if (!needsAny) continue;
-      for (const lang of ["fr", "sw"] as const) {
-        try { await translatePostContent(article.slug, article, lang); } catch { /* skip */ }
-      }
-      patched++;
-    }
-  } catch { /* ignore */ }
-  return patched;
+  await translateArticlesSoon(limit * 2).catch(() => {});
+  return 0;
 }
 
 async function patchMissingTips(limit = 3): Promise<number> {
@@ -1381,5 +1328,8 @@ export async function GET(req: NextRequest) {
   ]);
 
   if (postsAdded > 0) revalidateAiTimes();
+  // New, corrected or updated articles are translated now, in the background,
+  // so readers never wait for a translation.
+  void translateArticlesSoon();
   return NextResponse.json({ message: `Added ${postsAdded + curatedPublished.length} new posts`, postsAdded: postsAdded + curatedPublished.length, curatedPublished, retracted, corrected: corrected.length, imagesPatched, tipsPatched, translationsPatched });
 }

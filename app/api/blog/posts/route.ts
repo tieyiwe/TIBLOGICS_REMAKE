@@ -1,3 +1,4 @@
+import { translateArticleSoon } from "@/lib/i18n/sources/blog";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
@@ -109,6 +110,8 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Stored in French and Swahili straight away, not on first view.
+    translateArticleSoon(post);
     return NextResponse.json({ post }, { status: 201 });
   } catch (err) {
     console.error("Blog POST error:", err);

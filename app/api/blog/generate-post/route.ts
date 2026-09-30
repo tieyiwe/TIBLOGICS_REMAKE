@@ -1,4 +1,5 @@
 export const maxDuration = 120;
+import { translateArticleSoon } from "@/lib/i18n/sources/blog";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
@@ -141,6 +142,7 @@ category must be one of: breaking, ai-business, tips, tools, case-studies, indus
         sourceTitle: source ? source.slice(0, 200) : null,
       },
     });
+    translateArticleSoon(post);
 
     return NextResponse.json({ post }, { status: 201 });
   } catch (err) {

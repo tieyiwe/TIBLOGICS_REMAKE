@@ -1,5 +1,6 @@
 "use client";
 
+import ArticleTranslations from "./ArticleTranslations";
 import { useState, useEffect, useMemo, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -207,6 +208,7 @@ export default function BlogClient(initial: {
 
   return (
     <div className="space-y-6">
+      <ArticleTranslations />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

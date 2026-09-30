@@ -15,11 +15,12 @@ import { warm as warmBlog } from "@/lib/i18n/sources/blog";
 export const maxDuration = 300;
 
 const LOCALES: Locale[] = ["fr", "sw"];
+// Articles first: they are public and read by anyone who switches language.
 const SOURCES = [
+  ["blog", warmBlog],
   ["learn", warmLearn],
   ["labs", warmLabs],
   ["toolkit", warmToolkit],
-  ["blog", warmBlog],
 ] as const;
 
 export async function GET(req: NextRequest) {
