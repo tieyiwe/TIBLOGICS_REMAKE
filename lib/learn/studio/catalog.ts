@@ -36,3 +36,19 @@ export function isValidChallenge(toolId: string, challengeId: string): boolean {
   const t = STUDIO_BY_ID.get(toolId);
   return !!t && t.ready && t.challenges.some((c) => c.id === challengeId);
 }
+
+/**
+ * Challenges unlock in order within a tool: the one before must be done
+ * first. Returns the previous challenge id, or null for the first one.
+ */
+export function previousChallenge(toolId: string, challengeId: string): string | null {
+  const list = STUDIO_BY_ID.get(toolId)?.challenges ?? [];
+  const i = list.findIndex((c) => c.id === challengeId);
+  return i > 0 ? list[i - 1].id : null;
+}
+
+/** Whether a challenge is open, given the learner's completed challenge ids for the tool. */
+export function isUnlocked(toolId: string, challengeId: string, done: (id: string) => boolean): boolean {
+  const prev = previousChallenge(toolId, challengeId);
+  return !prev || done(prev);
+}

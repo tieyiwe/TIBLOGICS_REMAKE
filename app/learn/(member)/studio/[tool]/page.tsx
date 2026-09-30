@@ -30,7 +30,7 @@ export default async function StudioToolPage({
   const challenge = c && meta.challenges.some((x) => x.id === c) ? c : null;
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-[1600px]">
       <Link href="/learn/studio" className="text-sm text-[var(--ink3)] hover:text-[var(--ink)]">← {t("studio.back")}</Link>
       <h1 className="mt-3 text-2xl font-black text-[var(--ink)]">
         <span aria-hidden="true">{meta.icon}</span> {t(`studio.${tool}.name`)}
