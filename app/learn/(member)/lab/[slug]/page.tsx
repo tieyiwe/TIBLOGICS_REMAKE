@@ -5,6 +5,8 @@ import LabRunner, { type LabView } from "@/components/learn/LabRunner";
 import { type LabType } from "@/lib/learn/labs/types";
 import { evaluateBuild, evaluateCritique } from "@/lib/learn/labs/evaluate";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
+import { firstUnfinishedLesson, labModuleId, moduleLessonsComplete } from "@/lib/learn/progress";
+import ModuleLocked from "@/components/learn/ModuleLocked";
 import { localizeLab } from "@/lib/i18n/sources/labs";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +32,27 @@ export default async function LabPage({ params }: { params: Promise<{ slug: stri
     .catch(() => null);
 
   if (!lab || !lab.isPublished) notFound();
+
+  // A module's lab opens once the module's lessons are done.
+  const lockModuleId = await labModuleId(lab.id);
+  if (lockModuleId && !(await moduleLessonsComplete(student.id, lockModuleId))) {
+    const t0 = translatorFor(await getLocale());
+    const [mod, total, done, next] = await Promise.all([
+      prisma.learnModule.findUnique({ where: { id: lockModuleId }, select: { title: true } }),
+      prisma.lesson.count({ where: { moduleId: lockModuleId } }),
+      prisma.lessonProgress.count({ where: { studentId: student.id, lesson: { moduleId: lockModuleId } } }),
+      firstUnfinishedLesson(student.id, lockModuleId),
+    ]);
+    return (
+      <ModuleLocked
+        title={t0("labs.locked.title")}
+        body={t0("labs.locked.body", { module: mod?.title ?? "", done, total })}
+        cta={t0("labs.locked.cta")}
+        href={next ? `/learn/lesson/${next}` : null}
+        accentColor={lab.track.accentColor}
+      />
+    );
+  }
 
   const attempt = await prisma.labAttempt
     .findFirst({

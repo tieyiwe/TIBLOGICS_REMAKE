@@ -1,3 +1,6 @@
+import { firstUnfinishedLesson, moduleLessonsComplete } from "@/lib/learn/progress";
+import ModuleLocked from "@/components/learn/ModuleLocked";
+import { translatorFor } from "@/lib/i18n/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
@@ -39,6 +42,25 @@ export default async function QuizPage({ params }: { params: Promise<{ id: strin
   const text = source ? (await localizedTrack(source, locale)).text : null;
   const trackTitle = text?.title ?? quiz.module.track.title;
   const moduleTitle = text?.modules[quiz.module.id]?.title ?? quiz.module.title;
+
+  // A module quiz opens once the module's lessons are done.
+  if (!(await moduleLessonsComplete(student.id, quiz.module.id))) {
+    const t0 = translatorFor(locale);
+    const [total, done, next] = await Promise.all([
+      prisma.lesson.count({ where: { moduleId: quiz.module.id } }),
+      prisma.lessonProgress.count({ where: { studentId: student.id, lesson: { moduleId: quiz.module.id } } }),
+      firstUnfinishedLesson(student.id, quiz.module.id),
+    ]);
+    return (
+      <ModuleLocked
+        title={t0("labs.locked.title")}
+        body={t0("labs.locked.body", { module: moduleTitle, done, total })}
+        cta={t0("labs.locked.cta")}
+        href={next ? `/learn/lesson/${next}` : null}
+        accentColor={quiz.module.track.accentColor}
+      />
+    );
+  }
 
   const best = await prisma.quizAttempt
     .findFirst({

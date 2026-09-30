@@ -105,3 +105,30 @@ export async function getAllTrackProgress(studentId: string) {
 export async function getTrackGates(studentId: string, trackId: string) {
   return certificationStatus(studentId, trackId);
 }
+
+/**
+ * Whether every lesson in a module is complete. Module quizzes and labs stay
+ * locked until then, so the practice follows the teaching. Lessons themselves
+ * are never locked: learners may read ahead.
+ */
+export async function moduleLessonsComplete(studentId: string, moduleId: string | null | undefined): Promise<boolean> {
+  if (!moduleId) return true;
+  const [total, done] = await Promise.all([
+    prisma.lesson.count({ where: { moduleId } }),
+    prisma.lessonProgress.count({ where: { studentId, lesson: { moduleId } } }),
+  ]);
+  return done >= total;
+}
+
+/** The module a lab belongs to: its own module, or its lesson's module. */
+export async function labModuleId(labId: string): Promise<string | null> {
+  const lab = await prisma.lab.findUnique({ where: { id: labId }, select: { moduleId: true, lesson: { select: { moduleId: true } } } }).catch(() => null);
+  return lab?.moduleId ?? lab?.lesson?.moduleId ?? null;
+}
+
+/** The first unfinished lesson of a module, to send a learner to. */
+export async function firstUnfinishedLesson(studentId: string, moduleId: string): Promise<string | null> {
+  const lessons = await prisma.lesson.findMany({ where: { moduleId }, orderBy: { sortOrder: "asc" }, select: { id: true } });
+  const done = new Set((await prisma.lessonProgress.findMany({ where: { studentId, lesson: { moduleId } }, select: { lessonId: true } })).map((p) => p.lessonId));
+  return lessons.find((l) => !done.has(l.id))?.id ?? null;
+}

@@ -5,6 +5,10 @@ import type { Messages } from "./types";
 // text the lab graders write. Keys are "labs.something". See lib/i18n/README.md.
 const messages: Messages = {
   en: {
+    "labs.api.finishLessonsFirst": "Finish every lesson in this module first. The quiz and lab open when the module's lessons are done.",
+    "labs.locked.title": "Finish the module's lessons first",
+    "labs.locked.body": "This opens once every lesson in \"{module}\" is complete, so you practise what the lessons teach. You have {done} of {total} done.",
+    "labs.locked.cta": "Continue with the next lesson",
     // ── Lab types (LAB_TYPE_META, translated at render time) ──────────────
     "labs.type.prompt.label": "Prompt lab",
     "labs.type.prompt.blurb": "Write a prompt, run it against a real model, and get coached on the prompt itself.",
@@ -345,6 +349,10 @@ const messages: Messages = {
   },
 
   fr: {
+    "labs.api.finishLessonsFirst": "Terminez d'abord toutes les leçons de ce module. Le quiz et l'atelier s'ouvrent une fois les leçons terminées.",
+    "labs.locked.title": "Terminez d'abord les leçons du module",
+    "labs.locked.body": "Cette activité s'ouvre quand toutes les leçons de « {module} » sont terminées, pour que vous pratiquiez ce que les leçons enseignent. Vous en avez terminé {done} sur {total}.",
+    "labs.locked.cta": "Continuer avec la leçon suivante",
     "labs.type.prompt.label": "Atelier de prompt",
     "labs.type.prompt.blurb": "Rédigez un prompt, exécutez-le sur un vrai modèle et recevez un accompagnement sur le prompt lui-même.",
     "labs.type.critique.label": "Atelier critique",
@@ -675,6 +683,10 @@ const messages: Messages = {
   },
 
   sw: {
+    "labs.api.finishLessonsFirst": "Maliza kwanza masomo yote ya moduli hii. Jaribio na maabara hufunguka masomo ya moduli yakikamilika.",
+    "labs.locked.title": "Maliza kwanza masomo ya moduli",
+    "labs.locked.body": "Hii hufunguka masomo yote ya \"{module}\" yakikamilika, ili ufanye mazoezi ya kile masomo yanachofundisha. Umekamilisha {done} kati ya {total}.",
+    "labs.locked.cta": "Endelea na somo linalofuata",
     "labs.type.prompt.label": "Maabara ya prompt",
     "labs.type.prompt.blurb": "Andika prompt, iendeshe kwenye modeli halisi, kisha upate ushauri kuhusu prompt yenyewe.",
     "labs.type.critique.label": "Maabara ya uchambuzi",

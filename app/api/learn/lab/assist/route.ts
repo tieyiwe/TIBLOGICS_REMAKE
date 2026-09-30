@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
+import { labModuleId, moduleLessonsComplete } from "@/lib/learn/progress";
 import { requireEntitledStudent } from "@/lib/learn/session";
 import { checkRateLimit } from "@/lib/require-admin";
 import { withinDailyAiBudget } from "@/lib/learn/ai-budget";
@@ -36,6 +37,10 @@ export async function POST(req: NextRequest) {
   const parsed = bodyFor(t).safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? t("labs.api.invalid") }, { status: 400 });
   const { labId, code, request } = parsed.data;
+  // A module's lab opens once the module's lessons are done.
+  if (!(await moduleLessonsComplete(student.id, await labModuleId(labId)))) {
+    return NextResponse.json({ error: (await getT())("labs.api.finishLessonsFirst"), locked: true }, { status: 403 });
+  }
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: t("labs.api.assistOff") }, { status: 503 });
   }
