@@ -50,5 +50,5 @@ export function previousChallenge(toolId: string, challengeId: string): string |
 /** Whether a challenge is open, given the learner's completed challenge ids for the tool. */
 export function isUnlocked(toolId: string, challengeId: string, done: (id: string) => boolean): boolean {
   const prev = previousChallenge(toolId, challengeId);
-  return !prev || done(prev);
+  return !prev || done(prev) || done(challengeId);
 }

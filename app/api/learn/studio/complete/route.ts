@@ -35,10 +35,14 @@ export async function POST(req: NextRequest) {
   const ref = `${toolId}:${challengeId}`;
 
   // Challenges unlock in order: the previous one must already be done.
+  // A challenge the learner has already completed stays open.
   const prev = previousChallenge(toolId, challengeId);
   if (prev) {
-    const done = await prisma.pointsLedger.count({ where: { studentId: student.id, source: "studio_challenge", refId: `${toolId}:${prev}` } });
-    if (done === 0) return NextResponse.json({ error: t("studio.lockedApi"), locked: true }, { status: 409 });
+    const rows = await prisma.pointsLedger.findMany({
+      where: { studentId: student.id, source: "studio_challenge", refId: { in: [`${toolId}:${prev}`, ref] } },
+      select: { refId: true },
+    });
+    if (rows.length === 0) return NextResponse.json({ error: t("studio.lockedApi"), locked: true }, { status: 409 });
   }
 
   const [totalBefore, snapBefore] = await Promise.all([getTotalPoints(student.id), gameSnapshot(student.id)]);

@@ -121,9 +121,19 @@ export function ChallengeBar({
   free: { id: string; label: string };
 }) {
   const [notice, setNotice] = useState("");
+  // Keep the open challenge visible in the scrolling bar (phones, long lists).
+  const navRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const nav = navRef.current;
+    const btn = nav?.querySelector<HTMLElement>('[aria-current="true"]');
+    if (!nav || !btn) return;
+    if (btn.offsetLeft < nav.scrollLeft || btn.offsetLeft + btn.offsetWidth > nav.scrollLeft + nav.clientWidth) {
+      nav.scrollLeft = Math.max(0, btn.offsetLeft - 8);
+    }
+  }, [current]);
   return (
     <div>
-      <nav aria-label={label} className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+      <nav ref={navRef} aria-label={label} className="relative -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         {items.map((c, i) => {
           const active = current === c.id;
           const prev = lockedBy(c.id);
