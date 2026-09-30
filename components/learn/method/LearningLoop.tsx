@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/i18n/client";
 import { GAME_EVENT, type GameEventDetail } from "@/lib/learn/game-client";
 import { LOOP_EVENT, readLoop, type LoopEventDetail, type LoopStep } from "@/lib/learn/method/loop-client";
@@ -24,7 +24,7 @@ export default function LearningLoop({ lessonId, understand, play, apply, reflec
   const t = useT();
   const [local, setLocal] = useState<Partial<Record<LoopStep, boolean>>>({});
   const [whyOpen, setWhyOpen] = useState(false);
-  const whyId = useId();
+  const whyId = `loop-why-${lessonId}`;
   const whyBtn = useRef<HTMLButtonElement>(null);
   const whyBox = useRef<HTMLDivElement>(null);
 
@@ -162,7 +162,7 @@ export default function LearningLoop({ lessonId, understand, play, apply, reflec
           id={whyId}
           role="region"
           aria-label={t("method.loop.why")}
-          className="absolute left-2 right-2 top-12 z-20 rounded-xl border border-[var(--border)] bg-white p-4 text-sm leading-relaxed text-[var(--ink2)] shadow-lg sm:left-auto sm:w-96"
+          className="mt-3 rounded-xl border border-[var(--border)] bg-white p-4 text-sm leading-relaxed text-[var(--ink2)] shadow-lg sm:absolute sm:right-2 sm:top-12 sm:z-20 sm:mt-0 sm:w-96"
         >
           <p className="font-semibold text-[var(--ink)]">{t("method.loop.why.intro")}</p>
           <ul className="mt-2 space-y-1.5">

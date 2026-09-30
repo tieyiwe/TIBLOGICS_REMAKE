@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n/client";
 
 // Sharing settings for the learner's portfolio: public or not, whether work
@@ -25,7 +25,8 @@ export default function PortfolioShare({
   initial: { isPublic: boolean; slug: string | null; includeWork: boolean; hidden: string[] };
 }) {
   const t = useT();
-  const ids = useId();
+  // One share panel per page: fixed ids (useId drifted between server and client here).
+  const ids = "pf-share";
   const [isPublic, setIsPublic] = useState(initial.isPublic);
   const [includeWork, setIncludeWork] = useState(initial.includeWork);
   const [hidden, setHidden] = useState<Set<string>>(new Set(initial.hidden));
