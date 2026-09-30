@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { ArrowLeftRight, CheckCircle2, Hourglass, MousePointer2, Plus, RotateCcw, Spline, Trash2, XCircle } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useT } from "@/lib/i18n/client";
@@ -105,6 +105,20 @@ export default function LoopMapper({ challengeId, onComplete, progress }: Studio
   const [linkForm, setLinkForm] = useState<{ from: string; to: string; pol: "1" | "-1" }>({ from: "", to: "", pol: "1" });
   const [confirmReset, setConfirmReset] = useState(false);
   const [notice, setNotice] = useState("");
+
+  // Escape clears the selection, and claims the key so full screen stays open.
+  const selRef = useRef(selection);
+  selRef.current = selection;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selRef.current) {
+        e.preventDefault();
+        setSelection(null);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const labelOfKey = useCallback((k: string) => t(`${P}.v.${k}`), [t]);
   const labelOf = useCallback((v: Variable) => (v.key ? labelOfKey(v.key) : v.label ?? "?"), [labelOfKey]);
@@ -429,7 +443,7 @@ export default function LoopMapper({ challengeId, onComplete, progress }: Studio
   );
 
   const overlay = layout === "overlay";
-  const workspace = (w: number) => (
+  const workspace = (w: number, h: number) => (
     <div className="flex min-h-full flex-col gap-3" aria-label={t(`${P}.workspace`)} role="region">
       {/* Title and tools */}
       <div className="flex flex-wrap items-center gap-2">
@@ -510,7 +524,10 @@ export default function LoopMapper({ challengeId, onComplete, progress }: Studio
       </p>
 
       {/* The map: fills the overlay's height, keeps its shape elsewhere */}
-      <div className={`overflow-x-auto overscroll-x-contain rounded-xl border border-[#D2DCE8] bg-white ${overlay ? "h-[max(380px,calc(100vh-420px))]" : ""}`}>
+      <div
+        className="overflow-x-auto overscroll-x-contain rounded-xl border border-[#D2DCE8] bg-white"
+        style={overlay && h > 0 ? { height: Math.max(380, h - 250) } : undefined}
+      >
         <MapCanvas
           vars={map.vars}
           links={map.links}
@@ -521,7 +538,7 @@ export default function LoopMapper({ challengeId, onComplete, progress }: Studio
           highlight={hl}
           loopTag={loopTag}
           reduceMotion={reduce}
-          fill={overlay}
+          fill={overlay && h > 0}
           ariaLabel={t(`${P}.canvas`, { v: map.vars.length, l: map.links.length })}
           varAria={(v) => t(`${P}.varAria`, { v: labelOf(v) })}
           linkAria={(l) =>
@@ -647,7 +664,7 @@ export default function LoopMapper({ challengeId, onComplete, progress }: Studio
         />
       }
     >
-      <Measure className="h-full">{workspace}</Measure>
+      <Measure className="h-full">{(w, h) => workspace(w, h)}</Measure>
     </StudioFrame>
   );
 }

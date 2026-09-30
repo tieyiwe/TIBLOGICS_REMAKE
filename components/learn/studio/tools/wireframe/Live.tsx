@@ -107,7 +107,7 @@ export default function WireframeLive({
           📱 {pv.name}
         </span>
       </div>
-      <Phone label={k("previewLabel", { screen: pv.name })} minH={tall ? "min-h-[520px]" : "min-h-[400px]"}>
+      <Phone label={k("previewLabel", { screen: pv.name })} minHeight={tall ? 520 : 400}>
         <div className="grid auto-rows-min grid-cols-2 gap-2">
           {pv.comps.map((c) => {
             const body = <Mock c={c} label={labelOf(c, t)} preview activeTab={pv.name} onTab={goTab} />;

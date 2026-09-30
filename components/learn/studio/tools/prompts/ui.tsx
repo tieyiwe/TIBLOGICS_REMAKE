@@ -184,12 +184,19 @@ export function ChallengeBar({ ns, flow, compact }: { ns: string; flow: Challeng
   const t = useT();
   const [hint, setHint] = useState<string | null>(null);
   const cur = flow.challenges.find((c) => c.id === flow.current) ?? null;
+  // On phones the pills scroll sideways: keep the current one in view (without scrolling the page).
+  const listRef = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    const ul = listRef.current;
+    const el = ul?.querySelector<HTMLElement>('[aria-current="step"]');
+    if (ul && el && ul.scrollWidth > ul.clientWidth) ul.scrollLeft = Math.max(0, el.offsetLeft - ul.offsetLeft - 8);
+  }, [flow.current]);
   const pill =
-    "inline-flex min-h-[40px] shrink-0 items-center gap-1.5 rounded-full border-2 px-3 py-1.5 text-xs font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F47C20] motion-reduce:transition-none";
+    "inline-flex min-h-[40px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border-2 px-3 py-1.5 text-xs font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F47C20] motion-reduce:transition-none";
   return (
     <div className="rounded-2xl border border-[#D2DCE8] bg-white p-2.5 sm:p-3">
       <nav aria-label={t(`${UI}.challengeNav`)}>
-        <ul className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
+        <ul ref={listRef} className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
           {flow.challenges.map((c, i) => {
             const locked = flow.isLocked(c.id);
             const on = c.id === flow.current;
@@ -197,7 +204,7 @@ export function ChallengeBar({ ns, flow, compact }: { ns: string; flow: Challeng
             const prev = flow.prevOf(c.id);
             const title = t(`${ns}.ch.${c.id}.title`);
             return (
-              <li key={c.id}>
+              <li key={c.id} className="shrink-0">
                 <button
                   type="button"
                   aria-current={on ? "step" : undefined}
@@ -232,7 +239,7 @@ export function ChallengeBar({ ns, flow, compact }: { ns: string; flow: Challeng
             );
           })}
           {flow.freePlay && (
-            <li>
+            <li className="shrink-0">
               <button
                 type="button"
                 aria-current={flow.current === null ? "step" : undefined}

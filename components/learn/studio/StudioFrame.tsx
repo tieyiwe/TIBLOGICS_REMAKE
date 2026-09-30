@@ -208,7 +208,8 @@ export default function StudioFrame({
             )}
           </aside>
           <div className="min-h-0 min-w-0 overflow-auto">{children}</div>
-          <div className="min-h-0 min-w-0">{livePanel}</div>
+          {/* On the page the Live panel stays in view while the learner scrolls their work. */}
+          <div className={`min-h-0 min-w-0 ${overlay ? "" : "sticky top-20 h-[calc(100vh-6rem)] self-start"}`}>{livePanel}</div>
         </div>
       )}
     </div>

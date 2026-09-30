@@ -6,7 +6,7 @@ import { AlertTriangle, ArrowDown, ArrowUp, Check as CheckIcon, FlaskConical, Mi
 import { useT } from "@/lib/i18n/client";
 import { testBench } from "@/lib/learn/studio/tools/test-bench";
 import type { StudioToolProps } from "@/lib/learn/studio/types";
-import StudioFrame, { type StudioGuide } from "../StudioFrame";
+import StudioFrame, { useStudioLayout, type StudioGuide } from "../StudioFrame";
 import {
   CASES,
   CASE_EMOJI,
@@ -94,6 +94,7 @@ function Bench({
 }) {
   const t = useT();
   const reduce = useReducedMotion();
+  const layout = useStudioLayout();
   const T = (s: string, v?: Record<string, string | number>) => t(`${NS}.task.${task.id}.${s}`, v);
 
   const maxCases = challengeId === "expose-weak" ? 4 : CASES.length;
@@ -552,7 +553,7 @@ function Bench({
           )}
         </section>
 
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className={`grid grid-cols-1 gap-4 ${layout === "overlay" ? "xl:grid-cols-2" : "2xl:grid-cols-2"}`}>
           <section aria-labelledby="tb-cases">
             <h3 id="tb-cases" className="text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">{t(`${NS}.step.cases`)}</h3>
             <p className="mb-1.5 text-xs text-[var(--ink3)]">{maxCases < CASES.length ? t(`${NS}.casesMax`, { n: maxCases }) : t(`${NS}.casesHelp`)}</p>

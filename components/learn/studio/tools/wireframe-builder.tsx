@@ -314,8 +314,8 @@ export default function WireframeBuilder({ challengeId, onComplete, progress }: 
     </section>
   );
 
-  const canvas = (
-    <Phone label={k("canvasLabel", { screen: screen.name })} minH={overlay ? "min-h-[max(420px,calc(100vh-430px))]" : "min-h-[440px]"}>
+  const canvas = (h: number) => (
+    <Phone label={k("canvasLabel", { screen: screen.name })} minHeight={overlay && h > 0 ? Math.max(440, h - 300) : 440}>
       <div
         className="grid min-h-[400px] auto-rows-min grid-cols-2 gap-2"
         onDragOver={(e) => e.preventDefault()}
@@ -476,7 +476,7 @@ export default function WireframeBuilder({ challengeId, onComplete, progress }: 
     </aside>
   );
 
-  const workspace = (w: number) => (
+  const workspace = (w: number, h: number) => (
     <div className="flex min-h-full flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         {!challenge && <h2 className="min-w-0 font-black text-[var(--ink)]">🧪 {k("free.name")}</h2>}
@@ -539,7 +539,7 @@ export default function WireframeBuilder({ challengeId, onComplete, progress }: 
       </div>
 
       <div className={`flex-1 ${w >= 600 ? "grid grid-cols-[minmax(0,1fr)_minmax(220px,260px)] items-start gap-4" : "space-y-4"}`}>
-        {canvas}
+        {canvas(h)}
         {inspector}
       </div>
     </div>
@@ -552,7 +552,7 @@ export default function WireframeBuilder({ challengeId, onComplete, progress }: 
       liveTitle={k("live.title")}
       live={<WireframeLive t={t} design={liveDesign} screenId={screen.id} appFallback={appFallback} reduce={reduce} tall={overlay} />}
     >
-      <Measure className="h-full">{workspace}</Measure>
+      <Measure className="h-full">{(w, h) => workspace(w, h)}</Measure>
     </StudioFrame>
   );
 }

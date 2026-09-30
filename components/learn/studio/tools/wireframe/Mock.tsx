@@ -6,11 +6,13 @@ import type { ReactNode } from "react";
 import { tabItems, type Comp } from "./model";
 
 /** The phone outline used by the editor and the live preview. */
-export function Phone({ children, label, minH = "min-h-[420px]", className = "" }: { children: ReactNode; label: string; minH?: string; className?: string }) {
+export function Phone({ children, label, minHeight = 420, className = "" }: { children: ReactNode; label: string; minHeight?: number; className?: string }) {
   return (
     <div className={`mx-auto w-full max-w-[340px] rounded-[28px] border-[6px] border-[#0D1B2A] bg-[#0D1B2A] shadow-lg ${className}`} aria-label={label} role="region">
       <div className="mx-auto my-1 h-1.5 w-16 rounded-full bg-white/30" aria-hidden="true" />
-      <div className={`${minH} rounded-[20px] bg-white bg-[radial-gradient(circle,#D2DCE8_1px,transparent_1px)] bg-[length:16px_16px] p-2.5`}>{children}</div>
+      <div className="rounded-[20px] bg-white bg-[radial-gradient(circle,#D2DCE8_1px,transparent_1px)] bg-[length:16px_16px] p-2.5" style={{ minHeight }}>
+        {children}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Play, RotateCcw, SkipForward, Undo2, X, Zap, Bug } from "lucide-react";
 import { useLocale, useT } from "@/lib/i18n/client";
 import type { StudioToolProps } from "@/lib/learn/studio/types";
@@ -124,6 +124,7 @@ export default function AutomationBuilder({ challengeId, embedded, onComplete, p
   const [sim, setSim] = useState<Sim | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const clearRun = () => {
     setSim(null);
@@ -146,9 +147,16 @@ export default function AutomationBuilder({ challengeId, embedded, onComplete, p
     clearRun();
   };
 
+  // Escape drops an armed step. It claims the key (preventDefault) so a
+  // full-screen Studio stays open.
+  const armedRef = useRef(armed);
+  armedRef.current = armed;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setArmed(null);
+      if (e.key === "Escape" && armedRef.current) {
+        e.preventDefault();
+        setArmed(null);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -270,12 +278,8 @@ export default function AutomationBuilder({ challengeId, embedded, onComplete, p
     return () => window.clearTimeout(id);
   }, [sim, finish]);
 
-  // Bring the results into view (the frame may render the workspace twice,
-  // one copy hidden, so pick the visible one).
   useEffect(() => {
-    if (!outcome || embedded) return;
-    const el = Array.from(document.querySelectorAll<HTMLElement>("[data-ab-results]")).find((x) => x.offsetParent !== null);
-    el?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
+    if (outcome && !embedded) resultsRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
   }, [outcome, embedded, reduceMotion]);
 
   const { tokens, trail } = useMemo(() => {
@@ -299,7 +303,15 @@ export default function AutomationBuilder({ challengeId, embedded, onComplete, p
   // ── Toolbar, guide ────────────────────────────────────────────────────────
   const titleOf = (id: string) => t(`${P}.ch.${id}.title`);
   const toolbar = (
-    <ChallengeBar
+    <>
+      <style>{`
+        @keyframes abPop { 0% { transform: scale(.3); opacity: 0 } 70% { transform: scale(1.15) } 100% { transform: scale(1); opacity: 1 } }
+        @keyframes abGlow { 0%,100% { box-shadow: 0 0 0 0 rgba(244,124,32,.35) } 50% { box-shadow: 0 0 0 5px rgba(244,124,32,0) } }
+        .ab-token { animation: abPop .35s ease-out both }
+        .ab-slot-hot { animation: abGlow 1.2s ease-in-out infinite }
+        @media (prefers-reduced-motion: reduce) { .ab-token, .ab-slot-hot { animation: none } }
+      `}</style>
+      <ChallengeBar
       t={t}
       label={t("studio.challenges")}
       items={CHALLENGES.map((c) => ({ id: c.id, title: titleOf(c.id), difficulty: c.difficulty, stars: bestFor(c.id) }))}
@@ -309,7 +321,8 @@ export default function AutomationBuilder({ challengeId, embedded, onComplete, p
       titleOf={titleOf}
       levelLabel={(n) => t(`${P}.level`, { n })}
       free={{ id: SANDBOX, label: t("studio.sandbox") }}
-    />
+      />
+    </>
   );
 
   const lockedBy = isSandbox ? null : unlocks.lockedBy(mode);
@@ -534,7 +547,7 @@ export default function AutomationBuilder({ challengeId, embedded, onComplete, p
           )}
         </section>
 
-        <div data-ab-results="">
+        <div ref={resultsRef}>
           {sim && !sim.playing && outcome && (
             <Results
               t={t}
@@ -554,22 +567,13 @@ export default function AutomationBuilder({ challengeId, embedded, onComplete, p
   };
 
   return (
-    <div className="ab-root">
-      <style>{`
-        @keyframes abPop { 0% { transform: scale(.3); opacity: 0 } 70% { transform: scale(1.15) } 100% { transform: scale(1); opacity: 1 } }
-        @keyframes abGlow { 0%,100% { box-shadow: 0 0 0 0 rgba(244,124,32,.35) } 50% { box-shadow: 0 0 0 5px rgba(244,124,32,0) } }
-        .ab-token { animation: abPop .35s ease-out both }
-        .ab-slot-hot { animation: abGlow 1.2s ease-in-out infinite }
-        @media (prefers-reduced-motion: reduce) { .ab-token, .ab-slot-hot { animation: none } }
-      `}</style>
-      <StudioFrame
-        toolbar={toolbar}
-        guide={guide}
-        liveTitle={t(`${P}.live.title`)}
-        live={<AutomationLive t={t} flow={live.flow} ch={live.ch} reduceMotion={reduceMotion} />}
-      >
-        <Measure className="h-full">{workspace}</Measure>
-      </StudioFrame>
-    </div>
+    <StudioFrame
+      toolbar={toolbar}
+      guide={guide}
+      liveTitle={t(`${P}.live.title`)}
+      live={<AutomationLive t={t} flow={live.flow} ch={live.ch} reduceMotion={reduceMotion} />}
+    >
+      <Measure className="h-full">{(w) => workspace(w)}</Measure>
+    </StudioFrame>
   );
 }

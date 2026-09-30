@@ -19,31 +19,33 @@ export function useDebounced<V>(value: V, ms = 300): V {
   return v;
 }
 
-/** Width of an element, kept up to date (0 while hidden). */
-export function useElementWidth(ref: RefObject<HTMLElement | null>): number {
-  const [w, setW] = useState(0);
+/** Size of an element, kept up to date (0 while hidden). */
+export function useElementSize(ref: RefObject<HTMLElement | null>): { w: number; h: number } {
+  const [size, setSize] = useState({ w: 0, h: 0 });
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    setW(el.clientWidth);
-    const ro = new ResizeObserver(() => setW(el.clientWidth));
+    const read = () => setSize((s) => (s.w === el.clientWidth && s.h === el.clientHeight ? s : { w: el.clientWidth, h: el.clientHeight }));
+    read();
+    const ro = new ResizeObserver(read);
     ro.observe(el);
     return () => ro.disconnect();
   }, [ref]);
-  return w;
+  return size;
 }
 
 /**
- * Renders children with the element's own width, so a workspace can pick its
- * layout from the space it really has (the Studio frame gives it a column of
- * varying width: page, full-screen overlay, lesson embed, phone).
+ * Renders children with the element's own size, so a workspace can pick its
+ * layout from the space it really has (the Studio frame gives it a cell of
+ * varying size: page, full-screen overlay, lesson embed, phone). With
+ * className "h-full" the height is the cell's height in full screen.
  */
-export function Measure({ className, children }: { className?: string; children: (width: number) => ReactNode }) {
+export function Measure({ className, children }: { className?: string; children: (width: number, height: number) => ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
-  const w = useElementWidth(ref);
+  const { w, h } = useElementSize(ref);
   return (
     <div ref={ref} className={className}>
-      {children(w)}
+      {children(w, h)}
     </div>
   );
 }
