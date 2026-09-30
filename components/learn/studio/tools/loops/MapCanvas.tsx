@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type KeyboardEvent, type PointerEvent } from "react";
+import { useId, useRef, type KeyboardEvent, type PointerEvent } from "react";
 import { H, W, type Link, type Loop, type Variable } from "./model";
 
 export type Selection = { type: "var" | "link"; id: string } | null;
@@ -57,6 +57,7 @@ export default function MapCanvas({
   onTapLink,
   onTapEmpty,
   onMoveVar,
+  fill = false,
 }: {
   vars: Variable[];
   links: Link[];
@@ -74,7 +75,12 @@ export default function MapCanvas({
   onTapLink: (id: string) => void;
   onTapEmpty: () => void;
   onMoveVar: (id: string, x: number, y: number) => void;
+  /** Fill the parent's height (keeps the aspect ratio, centred). */
+  fill?: boolean;
 }) {
+  // Unique ids: the Studio frame can mount the workspace twice (one copy hidden).
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const ref = (name: string) => `${name}-${uid}`;
   const svgRef = useRef<SVGSVGElement>(null);
   const drag = useRef<{ id: string; ox: number; oy: number; sx: number; sy: number; moved: boolean; pointer: number } | null>(null);
   const byId = new Map(vars.map((v) => [v.id, v]));
@@ -139,7 +145,7 @@ export default function MapCanvas({
     <svg
       ref={svgRef}
       viewBox={`0 0 ${W} ${H}`}
-      className="block h-auto w-full min-w-[600px] select-none rounded-xl bg-white"
+      className={`block w-full min-w-[600px] select-none rounded-xl bg-white ${fill ? "h-full" : "h-auto"}`}
       style={{ touchAction: "pan-x pan-y" }}
       role="group"
       aria-label={ariaLabel}
@@ -151,7 +157,7 @@ export default function MapCanvas({
       }}
     >
       <defs>
-        <pattern id="lm-dots" width="20" height="20" patternUnits="userSpaceOnUse">
+        <pattern id={ref("lm-dots")} width="20" height="20" patternUnits="userSpaceOnUse">
           <circle cx="1" cy="1" r="1" fill="#D2DCE8" />
         </pattern>
         {[
@@ -159,12 +165,12 @@ export default function MapCanvas({
           ["lm-arrow-hl", "#F47C20"],
           ["lm-arrow-sel", "#0D1B2A"],
         ].map(([id, fill]) => (
-          <marker key={id} id={id} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <marker key={id} id={ref(id)} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
             <path d="M0,0 L10,5 L0,10 z" fill={fill} />
           </marker>
         ))}
       </defs>
-      <rect data-bg="1" x="0" y="0" width={W} height={H} fill="url(#lm-dots)" />
+      <rect data-bg="1" x="0" y="0" width={W} height={H} fill={`url(#${ref("lm-dots")})`} />
 
       {/* Loop markers */}
       {loops.map((lp) => {
@@ -223,7 +229,7 @@ export default function MapCanvas({
               fill="none"
               stroke={stroke}
               strokeWidth={sel || hl ? 3 : 2}
-              markerEnd={`url(#${sel ? "lm-arrow-sel" : hl ? "lm-arrow-hl" : "lm-arrow"})`}
+              markerEnd={`url(#${ref(sel ? "lm-arrow-sel" : hl ? "lm-arrow-hl" : "lm-arrow")})`}
             />
             {l.delay && (
               <g stroke={stroke} strokeWidth="2.5" strokeLinecap="round">

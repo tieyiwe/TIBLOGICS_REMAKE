@@ -1,17 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Play, RotateCcw, SkipForward, Undo2, X, Zap, Bug } from "lucide-react";
 import { useLocale, useT } from "@/lib/i18n/client";
 import type { StudioToolProps } from "@/lib/learn/studio/types";
+import StudioFrame, { useStudioLayout, type StudioGuide } from "../StudioFrame";
 import Canvas from "./automation/Canvas";
 import Settings from "./automation/Settings";
-import Results, { CheckList, RiskList } from "./automation/Results";
+import Results, { CheckList } from "./automation/Results";
+import AutomationLive from "./automation/Live";
 import { CHALLENGES, CHALLENGE_BY_ID, type AutomationChallenge } from "./automation/challenges";
 import { findRisks, OUTCOME_EMOJI, runAll, type Run } from "./automation/engine";
 import { findNode, isFlowNode, newId, removeNode, setSlot, updateNode, type FlowNode, type NodeKind, type SlotName } from "./automation/model";
-import { Difficulty, fieldValueText, KIND_STYLE, P, Stars, useMediaQuery, type T } from "./automation/ui";
+import { KIND_STYLE, P, useMediaQuery, type T } from "./automation/ui";
+import { ChallengeBar, keyList, LockedNotice, Measure, useDebounced, useUnlocks } from "./automation/kit";
 
+const TOOL = "automation-builder";
 const SANDBOX = "sandbox";
 const STAGGER = 2;
 const TICK_MS = 420;
@@ -83,9 +87,8 @@ export default function AutomationBuilder({ challengeId, embedded, onComplete, p
   const t = useT() as T;
   const locale = useLocale();
   const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
-  const wide = useMediaQuery("(min-width: 1024px)");
-  const narrow = !useMediaQuery("(min-width: 640px)");
-  const sidePanel = wide && !embedded;
+  const layout = useStudioLayout();
+  const unlocks = useUnlocks(TOOL, progress);
 
   const [best, setBest] = useState<Record<string, number>>(() => load(BEST_KEY, {}));
   const bestFor = useCallback(
@@ -95,7 +98,7 @@ export default function AutomationBuilder({ challengeId, embedded, onComplete, p
 
   const [mode, setMode] = useState<string>(() => {
     if (challengeId && CHALLENGE_BY_ID.has(challengeId)) return challengeId;
-    return CHALLENGES.find((c) => !progress[c.id]?.done)?.id ?? CHALLENGES[0].id;
+    return unlocks.firstOpen() ?? CHALLENGES[0].id;
   });
   const [sandboxSet, setSandboxSet] = useState(CHALLENGES[0].id);
   const isSandbox = mode === SANDBOX;
@@ -121,7 +124,6 @@ export default function AutomationBuilder({ challengeId, embedded, onComplete, p
   const [sim, setSim] = useState<Sim | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
-  const resultsRef = useRef<HTMLDivElement>(null);
 
   const clearRun = () => {
     setSim(null);
@@ -208,11 +210,16 @@ export default function AutomationBuilder({ challengeId, embedded, onComplete, p
       if (!isSandbox) {
         checks = ch.checks.map((f) => f({ flow, clean, stress, events: ch.events }));
         stars = starsFrom(checks);
-        if (stars > bestFor(ch.id)) {
-          improved = true;
-          const nb = { ...best, [ch.id]: stars };
-          setBest(nb);
-          save(BEST_KEY, nb);
+        // Report when it beats the best, or when the server doesn't know yet
+        // (a best kept only in this browser must still unlock the next level).
+        if (stars > 0 && (stars > bestFor(ch.id) || !unlocks.done(ch.id))) {
+          improved = stars > bestFor(ch.id);
+          if (improved) {
+            const nb = { ...best, [ch.id]: stars };
+            setBest(nb);
+            save(BEST_KEY, nb);
+          }
+          unlocks.markDone(ch.id);
           onComplete({ challengeId: ch.id, stars: stars as 1 | 2 | 3 });
         }
       }
@@ -233,7 +240,7 @@ export default function AutomationBuilder({ challengeId, embedded, onComplete, p
                     : `ch.${ch.id}.why`;
       setOutcome({ stars, checks, improved, tip: `${P}.${tip}` });
     },
-    [ch, flow, isSandbox, best, bestFor, onComplete, risks],
+    [ch, flow, isSandbox, best, bestFor, onComplete, risks, unlocks],
   );
 
   const play = () => {
@@ -263,8 +270,12 @@ export default function AutomationBuilder({ challengeId, embedded, onComplete, p
     return () => window.clearTimeout(id);
   }, [sim, finish]);
 
+  // Bring the results into view (the frame may render the workspace twice,
+  // one copy hidden, so pick the visible one).
   useEffect(() => {
-    if (outcome && !embedded) resultsRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
+    if (!outcome || embedded) return;
+    const el = Array.from(document.querySelectorAll<HTMLElement>("[data-ab-results]")).find((x) => x.offsetParent !== null);
+    el?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
   }, [outcome, embedded, reduceMotion]);
 
   const { tokens, trail } = useMemo(() => {
@@ -282,142 +293,100 @@ export default function AutomationBuilder({ challengeId, embedded, onComplete, p
     return { tokens, trail };
   }, [sim]);
 
-  // ── Render ───────────────────────────────────────────────────────────────
-  return (
-    <div className="ab-root space-y-4">
-      <style>{`
-        @keyframes abPop { 0% { transform: scale(.3); opacity: 0 } 70% { transform: scale(1.15) } 100% { transform: scale(1); opacity: 1 } }
-        @keyframes abGlow { 0%,100% { box-shadow: 0 0 0 0 rgba(244,124,32,.35) } 50% { box-shadow: 0 0 0 5px rgba(244,124,32,0) } }
-        .ab-token { animation: abPop .35s ease-out both }
-        .ab-slot-hot { animation: abGlow 1.2s ease-in-out infinite }
-        @media (prefers-reduced-motion: reduce) { .ab-token, .ab-slot-hot { animation: none } }
-      `}</style>
+  // ── Live panel input (debounced so it follows the build, not every keystroke)
+  const live = useDebounced(useMemo(() => ({ flow, ch }), [flow, ch]), 300);
 
-      {/* Challenge picker */}
-      <nav aria-label={t("studio.challenges")} className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-        {CHALLENGES.map((c, i) => {
-          const active = mode === c.id;
-          const s = bestFor(c.id);
-          return (
+  // ── Toolbar, guide ────────────────────────────────────────────────────────
+  const titleOf = (id: string) => t(`${P}.ch.${id}.title`);
+  const toolbar = (
+    <ChallengeBar
+      t={t}
+      label={t("studio.challenges")}
+      items={CHALLENGES.map((c) => ({ id: c.id, title: titleOf(c.id), difficulty: c.difficulty, stars: bestFor(c.id) }))}
+      current={mode}
+      onPick={switchMode}
+      lockedBy={unlocks.lockedBy}
+      titleOf={titleOf}
+      levelLabel={(n) => t(`${P}.level`, { n })}
+      free={{ id: SANDBOX, label: t("studio.sandbox") }}
+    />
+  );
+
+  const lockedBy = isSandbox ? null : unlocks.lockedBy(mode);
+  if (lockedBy) {
+    const open = unlocks.firstOpen() ?? CHALLENGES[0].id;
+    return (
+      <div className="space-y-3">
+        {toolbar}
+        <LockedNotice t={t} title={titleOf(mode)} prevTitle={titleOf(lockedBy)} goLabel={t(`${P}.goTo`, { name: titleOf(open) })} onGo={() => switchMode(open)} />
+      </div>
+    );
+  }
+
+  const guide: StudioGuide = isSandbox
+    ? { goal: t(`${P}.sandboxBody`), steps: keyList(t, `${P}.guide.sandbox.s`), tips: keyList(t, `${P}.guide.sandbox.tip`) }
+    : {
+        goal: t(`${P}.ch.${ch.id}.goal`),
+        steps: keyList(t, `${P}.guide.${ch.id}.s`),
+        stars: [t(`${P}.ch.${ch.id}.t1`), t(`${P}.ch.${ch.id}.t2`), t(`${P}.ch.${ch.id}.t3`)],
+        tips: [...keyList(t, `${P}.guide.${ch.id}.tip`), t(`${P}.checksNote`)],
+      };
+
+  // ── Workspace ─────────────────────────────────────────────────────────────
+  const workspace = (w: number) => {
+    const side = w >= 820;
+    const stacked = w > 0 && w < 520;
+    return (
+      <div className="flex min-h-full flex-col gap-3">
+        {/* Title and edit controls */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="min-w-0 text-base font-black leading-snug text-[var(--ink)]">
+            {isSandbox ? `🧪 ${t(`${P}.sandboxTitle`)}` : titleOf(ch.id)}
+          </h2>
+          <div className="flex gap-1.5">
             <button
-              key={c.id}
               type="button"
-              onClick={() => switchMode(c.id)}
-              aria-current={active ? "true" : undefined}
-              className={`flex min-w-[150px] shrink-0 flex-col items-start rounded-2xl border-2 px-3 py-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F47C20] ${
-                active ? "border-[#F47C20] bg-[#FEF0E3]" : "border-[#D2DCE8] bg-white hover:border-[#F47C20]"
+              onClick={undo}
+              disabled={!past.length}
+              className="inline-flex items-center gap-1 rounded-lg border border-[#D2DCE8] bg-white px-2 py-1 text-xs font-semibold text-[var(--ink2)] hover:bg-[var(--s2)] disabled:opacity-40"
+            >
+              <Undo2 size={13} aria-hidden="true" /> {t(`${P}.undo`)}
+            </button>
+            <button
+              type="button"
+              onClick={reset}
+              onBlur={() => setConfirmReset(false)}
+              className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-semibold ${
+                confirmReset ? "border-red-300 bg-red-50 text-red-700" : "border-[#D2DCE8] bg-white text-[var(--ink2)] hover:bg-[var(--s2)]"
               }`}
             >
-              <span className="flex w-full items-center justify-between gap-2 text-[11px] font-bold text-[var(--ink3)]">
-                <span>{t(`${P}.level`, { n: i + 1 })}</span>
-                <Difficulty d={c.difficulty} label={t(`studio.difficulty.${c.difficulty}`)} />
-              </span>
-              <span className="mt-0.5 text-sm font-bold leading-snug text-[var(--ink)]">{t(`${P}.ch.${c.id}.title`)}</span>
-              <span className="mt-1">
-                <Stars n={s} size={13} label={t(`${P}.starsN`, { n: s })} />
-              </span>
+              <RotateCcw size={13} aria-hidden="true" /> {confirmReset ? t(`${P}.resetSure`) : t(`${P}.reset`)}
             </button>
-          );
-        })}
-        <button
-          type="button"
-          onClick={() => switchMode(SANDBOX)}
-          aria-current={isSandbox ? "true" : undefined}
-          className={`flex min-w-[130px] shrink-0 flex-col items-start justify-center rounded-2xl border-2 border-dashed px-3 py-2 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F47C20] ${
-            isSandbox ? "border-[#2251A3] bg-[#EBF0FA]" : "border-[#B8C4D3] bg-white hover:border-[#2251A3]"
-          }`}
-        >
-          <span className="text-lg" aria-hidden="true">🧪</span>
-          <span className="text-sm font-bold text-[var(--ink)]">{t("studio.sandbox")}</span>
-        </button>
-      </nav>
-
-      {/* Goal */}
-      <section className="rounded-2xl border border-[#D2DCE8] bg-white p-4 shadow-sm">
-        {isSandbox ? (
-          <>
-            <h2 className="text-lg font-black text-[var(--ink)]">🧪 {t(`${P}.sandboxTitle`)}</h2>
-            <p className="mt-1 text-sm text-[var(--ink2)]">{t(`${P}.sandboxBody`)}</p>
-            <label className="mt-3 block text-xs font-bold text-[var(--ink2)]">
-              {t(`${P}.sandboxEvents`)}
-              <select
-                value={sandboxSet}
-                onChange={(e) => {
-                  setSandboxSet(e.target.value);
-                  clearRun();
-                }}
-                className="mt-1 block w-full max-w-sm rounded-lg border border-[#D2DCE8] bg-white px-2.5 py-2 text-sm font-normal text-[var(--ink)]"
-              >
-                {CHALLENGES.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {t(`${P}.eventsOf.${c.id}`)} ({t(`${P}.trigger.${c.trigger}`)})
-                  </option>
-                ))}
-              </select>
-            </label>
-          </>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-[#C45A0A]">{t(`${P}.goal`)}</p>
-              <h2 className="mt-0.5 text-lg font-black leading-snug text-[var(--ink)]">{t(`${P}.ch.${ch.id}.title`)}</h2>
-              <p className="mt-1 text-sm leading-relaxed text-[var(--ink2)]">{t(`${P}.ch.${ch.id}.goal`)}</p>
-            </div>
-            <div className="rounded-xl bg-[var(--s2)] p-3">
-              <CheckList t={t} challengeId={ch.id} checks={outcome?.checks ?? null} />
-              <p className="mt-2 text-[11px] leading-snug text-[var(--ink3)]">{t(`${P}.checksNote`)}</p>
-            </div>
           </div>
+        </div>
+        {isSandbox && (
+          <label className="block text-xs font-bold text-[var(--ink2)]">
+            {t(`${P}.sandboxEvents`)}
+            <select
+              value={sandboxSet}
+              onChange={(e) => {
+                setSandboxSet(e.target.value);
+                clearRun();
+              }}
+              className="mt-1 block w-full max-w-sm rounded-lg border border-[#D2DCE8] bg-white px-2.5 py-2 text-sm font-normal text-[var(--ink)]"
+            >
+              {CHALLENGES.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {t(`${P}.eventsOf.${c.id}`)} ({t(`${P}.trigger.${c.trigger}`)})
+                </option>
+              ))}
+            </select>
+          </label>
         )}
-        <details className="mt-3 rounded-xl border border-[#D2DCE8] px-3 py-2">
-          <summary className="cursor-pointer text-sm font-semibold text-[var(--ink)]">
-            {t(`${P}.sampleEvents`, { n: ch.events.length, trigger: t(`${P}.trigger.${ch.trigger}`) })}
-          </summary>
-          <ul className="mt-2 space-y-1.5">
-            {ch.events.map((e) => (
-              <li key={e.id} className="text-xs text-[var(--ink2)]">
-                <span aria-hidden="true">{e.emoji}</span> <strong className="text-[var(--ink)]">{t(`${P}.ev.${e.id}`)}</strong>
-                <span className="ml-1 inline-flex flex-wrap gap-1 align-middle">
-                  {ch.fields.map((f) => (
-                    <span key={f.name} className="rounded-full bg-[var(--s2)] px-1.5 py-0.5 text-[10px]">
-                      {t(`${P}.field.${f.name}`)}: {f.fromAi ? "🤖 ?" : fieldValueText(t, f, e.fields[f.name])}
-                    </span>
-                  ))}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </details>
-      </section>
 
-      {/* Builder */}
-      <div className={sidePanel ? "grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]" : ""}>
-        <section className="rounded-2xl border border-[#D2DCE8] bg-white p-3 shadow-sm sm:p-4" aria-label={t(`${P}.builder`)}>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-sm font-bold text-[var(--ink)]">{t(`${P}.palette`)}</h3>
-            <div className="flex gap-1.5">
-              <button
-                type="button"
-                onClick={undo}
-                disabled={!past.length}
-                className="inline-flex items-center gap-1 rounded-lg border border-[#D2DCE8] px-2 py-1 text-xs font-semibold text-[var(--ink2)] hover:bg-[var(--s2)] disabled:opacity-40"
-              >
-                <Undo2 size={13} aria-hidden="true" /> {t(`${P}.undo`)}
-              </button>
-              <button
-                type="button"
-                onClick={reset}
-                onBlur={() => setConfirmReset(false)}
-                className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-semibold ${
-                  confirmReset ? "border-red-300 bg-red-50 text-red-700" : "border-[#D2DCE8] text-[var(--ink2)] hover:bg-[var(--s2)]"
-                }`}
-              >
-                <RotateCcw size={13} aria-hidden="true" /> {confirmReset ? t(`${P}.resetSure`) : t(`${P}.reset`)}
-              </button>
-            </div>
-          </div>
-          <p className="mt-1 text-xs text-[var(--ink3)]">{t(`${P}.paletteHint`)}</p>
-          <div className="mt-2 flex flex-wrap gap-1.5" role="toolbar" aria-label={t(`${P}.palette`)}>
+        {/* Palette */}
+        <section className="rounded-2xl border border-[#D2DCE8] bg-white p-3 shadow-sm" aria-label={t(`${P}.palette`)}>
+          <div className="flex flex-wrap gap-1.5" role="toolbar" aria-label={t(`${P}.palette`)}>
             {PALETTE.map((k) => {
               const s = KIND_STYLE[k];
               const Icon = s.icon;
@@ -445,6 +414,7 @@ export default function AutomationBuilder({ challengeId, embedded, onComplete, p
               );
             })}
           </div>
+          <p className="mt-1.5 text-xs text-[var(--ink3)]">{t(`${P}.paletteHint`)}</p>
           {armed && (
             <div className="mt-2 flex items-center justify-between gap-2 rounded-xl bg-[#FEF0E3] px-3 py-2 text-xs font-semibold text-[#C45A0A]" role="status">
               <span>{t(`${P}.armed`, { step: t(`${P}.kind.${armed}`) })}</span>
@@ -453,8 +423,17 @@ export default function AutomationBuilder({ challengeId, embedded, onComplete, p
               </button>
             </div>
           )}
+        </section>
 
-          <div className="mt-4 rounded-xl bg-[var(--s2)] p-3 [background-image:radial-gradient(#D2DCE8_1px,transparent_1px)] [background-size:16px_16px] sm:p-4">
+        {/* Canvas (fills the height the frame gives it) and settings */}
+        <div className={`flex-1 ${side ? "grid grid-cols-[minmax(0,1fr)_300px] items-stretch gap-3" : ""}`}>
+          <div
+            className={`h-full overflow-auto rounded-2xl border border-[#D2DCE8] bg-[var(--s2)] p-3 [background-image:radial-gradient(#D2DCE8_1px,transparent_1px)] [background-size:16px_16px] sm:p-4 ${
+              layout === "overlay" ? "min-h-[440px]" : "min-h-[400px]"
+            }`}
+            aria-label={t(`${P}.builder`)}
+            role="group"
+          >
             {mode in flows ? (
               <Canvas
                 t={t}
@@ -469,105 +448,128 @@ export default function AutomationBuilder({ challengeId, embedded, onComplete, p
                 trail={trail}
                 armed={armed}
                 dragKind={dragKind}
-                stacked={narrow}
-                inlineSettings={sidePanel ? undefined : settings}
+                stacked={stacked}
+                inlineSettings={side ? undefined : settings}
               />
             ) : (
               <div className="h-24 animate-pulse rounded-xl bg-white" />
             )}
           </div>
+          {side && (
+            <aside className="min-w-0">
+              <div className="sticky top-0">
+                {settings ?? (
+                  <div className="rounded-2xl border border-dashed border-[#B8C4D3] bg-white p-4 text-sm text-[var(--ink3)]">{t(`${P}.noSelection`)}</div>
+                )}
+              </div>
+            </aside>
+          )}
+        </div>
+
+        {/* Explicit run: scores the stars */}
+        <section className="rounded-2xl border border-[#D2DCE8] bg-white p-3 shadow-sm sm:p-4" aria-label={t(`${P}.simulator`)}>
+          <div className="flex flex-wrap items-center gap-3">
+            {sim?.playing ? (
+              <button type="button" onClick={skip} className="inline-flex items-center gap-2 rounded-xl bg-[var(--ink)] px-4 py-2.5 text-sm font-bold text-white">
+                <SkipForward size={16} aria-hidden="true" /> {t(`${P}.skip`)}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={play}
+                disabled={!flow}
+                className="inline-flex items-center gap-2 rounded-xl bg-[#F47C20] px-5 py-2.5 text-sm font-black text-white shadow transition-transform hover:-translate-y-0.5 hover:bg-[#E05F00] disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F47C20] focus-visible:ring-offset-2"
+              >
+                <Play size={16} aria-hidden="true" /> {sim ? t(`${P}.playAgain`) : t(`${P}.play`, { n: ch.events.length })}
+              </button>
+            )}
+            <fieldset className="flex flex-wrap gap-2">
+              <legend className="sr-only">{t(`${P}.inject`)}</legend>
+              <label className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-xs font-semibold ${injectAi ? "border-red-300 bg-red-50 text-red-700" : "border-[#D2DCE8] text-[var(--ink2)]"}`}>
+                <input type="checkbox" className="h-3.5 w-3.5 accent-red-600" checked={injectAi} onChange={(e) => { setInjectAi(e.target.checked); clearRun(); }} />
+                <Bug size={13} aria-hidden="true" /> {t(`${P}.injectAi`)}
+              </label>
+              <label className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-xs font-semibold ${injectApi ? "border-red-300 bg-red-50 text-red-700" : "border-[#D2DCE8] text-[var(--ink2)]"}`}>
+                <input type="checkbox" className="h-3.5 w-3.5 accent-red-600" checked={injectApi} onChange={(e) => { setInjectApi(e.target.checked); clearRun(); }} />
+                <Zap size={13} aria-hidden="true" /> {t(`${P}.injectApi`)}
+              </label>
+            </fieldset>
+          </div>
+          <p className="mt-2 text-xs text-[var(--ink3)]">{t(`${P}.injectHint`)}</p>
+
+          {sim && (
+            <ol className="mt-3 flex flex-wrap gap-1.5" aria-label={t(`${P}.lane`)}>
+              {sim.run.traces.map((tr, i) => {
+                const pos = sim.tick - i * STAGGER;
+                const doneHere = pos >= tr.path.length;
+                const state = pos < 0 ? "wait" : doneHere ? "done" : "move";
+                return (
+                  <li
+                    key={tr.eventId}
+                    className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold transition-colors ${
+                      state === "wait" ? "bg-[var(--s2)] text-[var(--ink3)]" : state === "move" ? "bg-[#FEF0E3] text-[#C45A0A]" : "bg-[#EEF7F2] text-[var(--ink)]"
+                    }`}
+                    title={t(`${P}.ev.${tr.eventId}`)}
+                  >
+                    <span aria-hidden="true">{ch.events[i].emoji}</span>
+                    <span className="sr-only">{t(`${P}.ev.${tr.eventId}`)}:</span>
+                    {state === "done" ? (
+                      <span>
+                        <span aria-hidden="true">{OUTCOME_EMOJI[tr.outcome]}</span>
+                        <span className="sr-only">{t(`${P}.out.${tr.outcome}`)}</span>
+                      </span>
+                    ) : (
+                      <span>{state === "move" ? "…" : i + 1}</span>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+
+          {!isSandbox && outcome?.checks && (
+            <div className="mt-3 rounded-xl bg-[var(--s2)] p-3">
+              <CheckList t={t} challengeId={ch.id} checks={outcome.checks} />
+            </div>
+          )}
         </section>
 
-        {sidePanel && (
-          <aside className="space-y-4 lg:sticky lg:top-4">
-            {settings ?? (
-              <div className="rounded-2xl border border-dashed border-[#B8C4D3] bg-white p-4 text-sm text-[var(--ink3)]">{t(`${P}.noSelection`)}</div>
-            )}
-          </aside>
-        )}
-      </div>
-
-      {/* Simulator */}
-      <section className="rounded-2xl border border-[#D2DCE8] bg-white p-4 shadow-sm" aria-label={t(`${P}.simulator`)}>
-        <div className="flex flex-wrap items-center gap-3">
-          {sim?.playing ? (
-            <button type="button" onClick={skip} className="inline-flex items-center gap-2 rounded-xl bg-[var(--ink)] px-4 py-2.5 text-sm font-bold text-white">
-              <SkipForward size={16} aria-hidden="true" /> {t(`${P}.skip`)}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={play}
-              disabled={!flow}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#F47C20] px-5 py-2.5 text-sm font-black text-white shadow transition-transform hover:-translate-y-0.5 hover:bg-[#E05F00] disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F47C20] focus-visible:ring-offset-2"
-            >
-              <Play size={16} aria-hidden="true" /> {sim ? t(`${P}.playAgain`) : t(`${P}.play`, { n: ch.events.length })}
-            </button>
+        <div data-ab-results="">
+          {sim && !sim.playing && outcome && (
+            <Results
+              t={t}
+              locale={locale}
+              run={sim.run}
+              events={ch.events}
+              manualMin={ch.manualMin}
+              monthly={ch.monthly}
+              stars={outcome.stars}
+              improved={outcome.improved}
+              tipKey={outcome.tip}
+            />
           )}
-          <fieldset className="flex flex-wrap gap-2">
-            <legend className="sr-only">{t(`${P}.inject`)}</legend>
-            <label className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-xs font-semibold ${injectAi ? "border-red-300 bg-red-50 text-red-700" : "border-[#D2DCE8] text-[var(--ink2)]"}`}>
-              <input type="checkbox" className="h-3.5 w-3.5 accent-red-600" checked={injectAi} onChange={(e) => { setInjectAi(e.target.checked); clearRun(); }} />
-              <Bug size={13} aria-hidden="true" /> {t(`${P}.injectAi`)}
-            </label>
-            <label className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-xs font-semibold ${injectApi ? "border-red-300 bg-red-50 text-red-700" : "border-[#D2DCE8] text-[var(--ink2)]"}`}>
-              <input type="checkbox" className="h-3.5 w-3.5 accent-red-600" checked={injectApi} onChange={(e) => { setInjectApi(e.target.checked); clearRun(); }} />
-              <Zap size={13} aria-hidden="true" /> {t(`${P}.injectApi`)}
-            </label>
-          </fieldset>
         </div>
-        <p className="mt-2 text-xs text-[var(--ink3)]">{t(`${P}.injectHint`)}</p>
-
-        {sim && (
-          <ol className="mt-3 flex flex-wrap gap-1.5" aria-label={t(`${P}.lane`)}>
-            {sim.run.traces.map((tr, i) => {
-              const pos = sim.tick - i * STAGGER;
-              const doneHere = pos >= tr.path.length;
-              const state = pos < 0 ? "wait" : doneHere ? "done" : "move";
-              return (
-                <li
-                  key={tr.eventId}
-                  className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold transition-colors ${
-                    state === "wait" ? "bg-[var(--s2)] text-[var(--ink3)]" : state === "move" ? "bg-[#FEF0E3] text-[#C45A0A]" : "bg-[#EEF7F2] text-[var(--ink)]"
-                  }`}
-                  title={t(`${P}.ev.${tr.eventId}`)}
-                >
-                  <span aria-hidden="true">{ch.events[i].emoji}</span>
-                  <span className="sr-only">{t(`${P}.ev.${tr.eventId}`)}:</span>
-                  {state === "done" ? (
-                    <span>
-                      <span aria-hidden="true">{OUTCOME_EMOJI[tr.outcome]}</span>
-                      <span className="sr-only">{t(`${P}.out.${tr.outcome}`)}</span>
-                    </span>
-                  ) : (
-                    <span>{state === "move" ? "…" : i + 1}</span>
-                  )}
-                </li>
-              );
-            })}
-          </ol>
-        )}
-
-        <div className="mt-4">
-          <RiskList t={t} risks={risks} />
-        </div>
-      </section>
-
-      <div ref={resultsRef}>
-        {sim && !sim.playing && outcome && (
-          <Results
-            t={t}
-            locale={locale}
-            run={sim.run}
-            events={ch.events}
-            manualMin={ch.manualMin}
-            monthly={ch.monthly}
-            stars={outcome.stars}
-            improved={outcome.improved}
-            tipKey={outcome.tip}
-          />
-        )}
       </div>
+    );
+  };
+
+  return (
+    <div className="ab-root">
+      <style>{`
+        @keyframes abPop { 0% { transform: scale(.3); opacity: 0 } 70% { transform: scale(1.15) } 100% { transform: scale(1); opacity: 1 } }
+        @keyframes abGlow { 0%,100% { box-shadow: 0 0 0 0 rgba(244,124,32,.35) } 50% { box-shadow: 0 0 0 5px rgba(244,124,32,0) } }
+        .ab-token { animation: abPop .35s ease-out both }
+        .ab-slot-hot { animation: abGlow 1.2s ease-in-out infinite }
+        @media (prefers-reduced-motion: reduce) { .ab-token, .ab-slot-hot { animation: none } }
+      `}</style>
+      <StudioFrame
+        toolbar={toolbar}
+        guide={guide}
+        liveTitle={t(`${P}.live.title`)}
+        live={<AutomationLive t={t} flow={live.flow} ch={live.ch} reduceMotion={reduceMotion} />}
+      >
+        <Measure className="h-full">{workspace}</Measure>
+      </StudioFrame>
     </div>
   );
 }

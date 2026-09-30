@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Check, Copy, ExternalLink, RotateCcw, Star } from "lucide-react";
+import { Check, Copy, ExternalLink, Lock, RotateCcw, Star } from "lucide-react";
 import { useT } from "@/lib/i18n/client";
-import type { StudioChallengeMeta } from "@/lib/learn/studio/types";
+import { isUnlocked, previousChallenge } from "@/lib/learn/studio/catalog";
+import type { StudioChallengeMeta, StudioResult } from "@/lib/learn/studio/types";
 
 // Shared building blocks for the four prompt-engineering Studio tools
 // (prompt-builder, prompt-arena, critic-mode, test-bench). Shared text lives in
@@ -82,100 +83,220 @@ export function TryForReal({ prompt, intro }: { prompt: string; intro?: string }
   );
 }
 
-/** Grid of challenge cards, plus an optional free-play card. */
-export function ChallengePicker({
-  ns,
-  challenges,
-  progress,
-  onPick,
-  freePlay,
-  compact,
-}: {
-  ns: string;
+/** A value that settles `ms` after its last change (the live panels use it). Pass stable values (state or memoised). */
+export function useDebounced<T>(value: T, ms = 300): T {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setV(value), ms);
+    return () => clearTimeout(id);
+  }, [value, ms]);
+  return v;
+}
+
+/** Ids that just appeared in `ids` (not on first render). Cleared after `ms`. Drives the "new" highlights. */
+export function useFresh(ids: string[], ms = 2600): string[] {
+  const sig = ids.join("|");
+  const prev = useRef<string[] | null>(null);
+  const [fresh, setFresh] = useState<string[]>([]);
+  useEffect(() => {
+    const now = sig ? sig.split("|") : [];
+    const before = prev.current;
+    prev.current = now;
+    if (!before) return;
+    const added = now.filter((x) => !before.includes(x));
+    setFresh(added);
+    if (!added.length) return;
+    const id = setTimeout(() => setFresh([]), ms);
+    return () => clearTimeout(id);
+  }, [sig, ms]);
+  return fresh;
+}
+
+export interface ChallengeFlow {
+  toolId: string;
   challenges: StudioChallengeMeta[];
+  /** The challenge on screen, or null for free play. */
+  current: string | null;
+  pick: (id: string | null) => void;
+  isDone: (id: string) => boolean;
+  isPerfect: (id: string) => boolean;
+  isLocked: (id: string) => boolean;
+  prevOf: (id: string) => string | null;
+  /** The first challenge not done yet (always unlocked). */
+  frontier: string | null;
+  freePlay: boolean;
+  /** Wraps the host's onComplete and unlocks the next challenge for this session. */
+  complete: (r: StudioResult) => void;
+}
+
+/**
+ * Challenge order for a tool: challenges unlock one after the other (the
+ * server refuses to save a locked one), free play is always open. Without a
+ * deep link the tool opens on the first challenge not done yet.
+ */
+export function useChallengeFlow({
+  toolId,
+  challenges,
+  challengeId,
+  progress,
+  freePlay,
+  onComplete,
+}: {
+  toolId: string;
+  challenges: StudioChallengeMeta[];
+  challengeId: string | null;
   progress: Progress;
-  onPick: (id: string | null) => void;
-  freePlay?: boolean;
-  compact?: boolean;
-}) {
+  freePlay: boolean;
+  onComplete: (r: StudioResult) => void;
+}): ChallengeFlow {
+  const [session, setSession] = useState<Record<string, { perfect: boolean }>>({});
+  const isDone = useCallback((id: string) => !!progress[id]?.done || !!session[id], [progress, session]);
+  const isPerfect = useCallback((id: string) => !!progress[id]?.perfect || !!session[id]?.perfect, [progress, session]);
+  const firstOpen = challenges.find((c) => !isDone(c.id))?.id ?? null;
+  const frontier = firstOpen ?? (freePlay ? null : challenges[0]?.id ?? null);
+  const valid = challengeId && challenges.some((c) => c.id === challengeId) ? challengeId : null;
+  // Chosen once, so finishing a challenge does not jump away from its result.
+  const [current, setCurrent] = useState<string | null>(() => valid ?? frontier);
+  const complete = useCallback(
+    (r: StudioResult) => {
+      setSession((s) => ({ ...s, [r.challengeId]: { perfect: (s[r.challengeId]?.perfect ?? false) || r.stars === 3 } }));
+      onComplete(r);
+    },
+    [onComplete],
+  );
+  return {
+    toolId,
+    challenges,
+    current,
+    pick: setCurrent,
+    isDone,
+    isPerfect,
+    isLocked: (id) => !isUnlocked(toolId, id, isDone),
+    prevOf: (id) => previousChallenge(toolId, id),
+    frontier: firstOpen ?? challenges[0]?.id ?? null,
+    freePlay,
+    complete,
+  };
+}
+
+/** The toolbar: challenges in order (locked ones dimmed with a lock), plus free play. */
+export function ChallengeBar({ ns, flow, compact }: { ns: string; flow: ChallengeFlow; compact?: boolean }) {
   const t = useT();
+  const [hint, setHint] = useState<string | null>(null);
+  const cur = flow.challenges.find((c) => c.id === flow.current) ?? null;
+  const pill =
+    "inline-flex min-h-[40px] shrink-0 items-center gap-1.5 rounded-full border-2 px-3 py-1.5 text-xs font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F47C20] motion-reduce:transition-none";
   return (
-    <div>
-      <h2 className="mb-2 text-sm font-black uppercase tracking-wide text-[var(--ink3)]">{t("studio.challenges")}</h2>
-      <ul className={`grid gap-3 ${compact ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
-        {challenges.map((c) => {
-          const p = progress[c.id];
-          return (
-            <li key={c.id}>
+    <div className="rounded-2xl border border-[#D2DCE8] bg-white p-2.5 sm:p-3">
+      <nav aria-label={t(`${UI}.challengeNav`)}>
+        <ul className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
+          {flow.challenges.map((c, i) => {
+            const locked = flow.isLocked(c.id);
+            const on = c.id === flow.current;
+            const done = flow.isDone(c.id);
+            const prev = flow.prevOf(c.id);
+            const title = t(`${ns}.ch.${c.id}.title`);
+            return (
+              <li key={c.id}>
+                <button
+                  type="button"
+                  aria-current={on ? "step" : undefined}
+                  aria-disabled={locked || undefined}
+                  aria-label={locked ? `${title}: ${t("studio.locked")}` : undefined}
+                  title={locked && prev ? t("studio.lockedHint", { prev: t(`${ns}.ch.${prev}.title`) }) : t(`studio.difficulty.${c.difficulty}`)}
+                  onClick={() => {
+                    if (locked) {
+                      setHint(c.id);
+                      return;
+                    }
+                    setHint(null);
+                    flow.pick(c.id);
+                  }}
+                  className={`${pill} ${
+                    locked
+                      ? "cursor-not-allowed border-dashed border-[#D2DCE8] bg-[var(--s2)] text-[var(--ink3)] opacity-60"
+                      : on
+                        ? "border-[#1B3A6B] bg-[#1B3A6B] text-white"
+                        : "border-[#D2DCE8] bg-white text-[var(--ink)] hover:border-[#F47C20]"
+                  }`}
+                >
+                  {locked ? <Lock className="h-3.5 w-3.5" aria-hidden="true" /> : <span className="tabular-nums opacity-70">{i + 1}.</span>}
+                  <span className={compact ? "max-w-[9rem] truncate" : ""}>{title}</span>
+                  {!locked && done && (flow.isPerfect(c.id) ? (
+                    <span aria-label={t("studio.perfect")} className={on ? "text-[#F9A738]" : "text-[#F47C20]"}>★★★</span>
+                  ) : (
+                    <Check className={`h-3.5 w-3.5 ${on ? "text-green-300" : "text-green-600"}`} aria-label={t("studio.done")} />
+                  ))}
+                </button>
+              </li>
+            );
+          })}
+          {flow.freePlay && (
+            <li>
               <button
                 type="button"
-                onClick={() => onPick(c.id)}
-                className="flex h-full w-full flex-col rounded-2xl border-2 border-[var(--border)] bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-[#F47C20] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F47C20] motion-reduce:transform-none motion-reduce:transition-none"
+                aria-current={flow.current === null ? "step" : undefined}
+                onClick={() => {
+                  setHint(null);
+                  flow.pick(null);
+                }}
+                className={`${pill} ${flow.current === null ? "border-[#1B3A6B] bg-[#1B3A6B] text-white" : "border-dashed border-[#D2DCE8] bg-white text-[var(--ink)] hover:border-[#F47C20]"}`}
               >
-                <span className="flex w-full items-center justify-between gap-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink3)]">
-                    <span aria-hidden="true">{"●".repeat(c.difficulty)}{"○".repeat(3 - c.difficulty)}</span> {t(`studio.difficulty.${c.difficulty}`)}
-                  </span>
-                  {p?.done && <Stars n={p.perfect ? 3 : 1} size={14} label={p.perfect ? t("studio.perfect") : t("studio.done")} />}
-                </span>
-                <span className="mt-1.5 font-bold text-[var(--ink)]">{t(`${ns}.ch.${c.id}.title`)}</span>
-                <span className="mt-1 text-sm text-[var(--ink2)]">{t(`${ns}.ch.${c.id}.brief`)}</span>
+                <span aria-hidden="true">🎨</span> {t("studio.sandbox")}
               </button>
             </li>
-          );
-        })}
-        {freePlay && (
-          <li>
-            <button
-              type="button"
-              onClick={() => onPick(null)}
-              className="flex h-full w-full flex-col rounded-2xl border-2 border-dashed border-[var(--border)] bg-[var(--s2)] p-4 text-left hover:border-[#F47C20] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F47C20]"
-            >
-              <span className="font-bold text-[var(--ink)]">
-                <span aria-hidden="true">🎨</span> {t("studio.sandbox")}
-              </span>
-              <span className="mt-1 text-sm text-[var(--ink2)]">{t(`${ns}.freePlayBody`)}</span>
-            </button>
-          </li>
+          )}
+        </ul>
+      </nav>
+      {hint && flow.prevOf(hint) && (
+        <p role="status" className="mt-2 flex items-center gap-1.5 rounded-xl bg-[var(--s2)] px-3 py-2 text-xs font-semibold text-[var(--ink2)]">
+          <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          {t("studio.lockedHint", { prev: t(`${ns}.ch.${flow.prevOf(hint)}.title`) })}
+        </p>
+      )}
+      <p className="mt-2 text-sm text-[var(--ink2)]">
+        {cur ? (
+          <>
+            <span className="mr-1.5 text-[11px] font-bold uppercase tracking-wide text-[var(--ink3)]">
+              <span aria-hidden="true">{"●".repeat(cur.difficulty)}{"○".repeat(3 - cur.difficulty)}</span> {t(`studio.difficulty.${cur.difficulty}`)}
+            </span>
+            {t(`${ns}.ch.${cur.id}.brief`)}
+          </>
+        ) : (
+          t(`${ns}.freePlayBody`)
         )}
-      </ul>
+      </p>
     </div>
   );
 }
 
-/** Header strip above a running challenge: back link, title, difficulty. */
-export function ChallengeHeader({
-  ns,
-  challenge,
-  onBack,
-  right,
-}: {
-  ns: string;
-  challenge: StudioChallengeMeta | null;
-  onBack: () => void;
-  right?: ReactNode;
-}) {
+/** Shown instead of the workspace when a deep link points at a locked challenge. */
+export function LockedNotice({ ns, flow, id }: { ns: string; flow: ChallengeFlow; id: string }) {
   const t = useT();
+  const prev = flow.prevOf(id);
+  const target = flow.frontier;
   return (
-    <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
-      <div className="min-w-0">
-        <button type="button" onClick={onBack} className="text-xs font-semibold text-[var(--blue2)] underline">
-          ← {t(`${UI}.allChallenges`)}
+    <div role="status" className="rounded-2xl border-2 border-dashed border-[#D2DCE8] bg-white p-6 text-center">
+      <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--s2)] text-[var(--ink3)]">
+        <Lock className="h-6 w-6" aria-hidden="true" />
+      </span>
+      <p className="mt-2 text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">{t("studio.locked")}</p>
+      <p className="mt-1 text-lg font-black text-[var(--ink)]">{t(`${ns}.ch.${id}.title`)}</p>
+      {prev && <p className="mx-auto mt-1 max-w-md text-sm text-[var(--ink2)]">{t("studio.lockedHint", { prev: t(`${ns}.ch.${prev}.title`) })}</p>}
+      {target && target !== id && (
+        <button type="button" onClick={() => flow.pick(target)} className={`${BTN_PRIMARY} mt-4`}>
+          {t(`${UI}.goTo`, { title: t(`${ns}.ch.${target}.title`) })} →
         </button>
-        <h2 className="mt-1 text-lg font-black leading-tight text-[var(--ink)]">
-          {challenge ? t(`${ns}.ch.${challenge.id}.title`) : t("studio.sandbox")}
-        </h2>
-        {challenge && (
-          <p className="mt-0.5 text-[11px] font-bold uppercase tracking-wide text-[var(--ink3)]">
-            {t(`studio.difficulty.${challenge.difficulty}`)}
-          </p>
-        )}
-      </div>
-      {right}
+      )}
     </div>
   );
 }
 
+/** A small "new" badge for things that just appeared in a live panel. */
+export function NewBadge() {
+  const t = useT();
+  return <span className="ml-1 inline-block rounded-full bg-[#22C55E] px-1.5 py-px align-middle text-[9px] font-black uppercase tracking-wide text-white">{t(`${UI}.new`)}</span>;
+}
 /** The end-of-challenge card. */
 export function ResultCard({
   stars,

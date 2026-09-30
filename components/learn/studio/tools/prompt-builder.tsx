@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { Reorder, useDragControls, useReducedMotion } from "framer-motion";
 import { ArrowDown, ArrowUp, CheckCircle2, Circle, GripVertical, Lightbulb, Plus, Sparkles, X } from "lucide-react";
 import { useT } from "@/lib/i18n/client";
 import { promptBuilder } from "@/lib/learn/studio/tools/prompt-builder";
 import type { StudioToolProps } from "@/lib/learn/studio/types";
+import StudioFrame, { type StudioGuide } from "../StudioFrame";
 import {
   BLOCK_EMOJI,
   BLOCK_TYPES,
@@ -21,12 +22,16 @@ import {
 import {
   BTN_PRIMARY,
   BTN_SECONDARY,
-  ChallengeHeader,
-  ChallengePicker,
-  CopyButton,
+  ChallengeBar,
+  Illustrative,
+  LockedNotice,
+  NewBadge,
   ResultCard,
   TryForReal,
   nextChallenge,
+  useChallengeFlow,
+  useDebounced,
+  useFresh,
 } from "./prompts/ui";
 
 const NS = "studio.prompt-builder";
@@ -34,62 +39,37 @@ let seq = 0;
 const newKey = () => `b${++seq}`;
 
 export default function PromptBuilder({ challengeId, embedded, onComplete, progress }: StudioToolProps) {
-  const t = useT();
-  const [mode, setMode] = useState<"picker" | "play">(challengeId ? "play" : "picker");
-  const [current, setCurrent] = useState<string | null>(challengeId);
-
-  function start(id: string | null) {
-    setCurrent(id);
-    setMode("play");
-  }
-
-  if (mode === "picker") {
+  const flow = useChallengeFlow({ toolId: promptBuilder.id, challenges: promptBuilder.challenges, challengeId, progress, freePlay: true, onComplete });
+  const toolbar = <ChallengeBar ns={NS} flow={flow} compact={embedded} />;
+  if (flow.current && flow.isLocked(flow.current)) {
     return (
-      <div className="space-y-4">
-        <Intro />
-        <ChallengePicker ns={NS} challenges={promptBuilder.challenges} progress={progress} onPick={start} freePlay compact={embedded} />
+      <div className="space-y-3">
+        {toolbar}
+        <LockedNotice ns={NS} flow={flow} id={flow.current} />
       </div>
     );
   }
-  return (
-    <Workbench
-      key={current ?? "free"}
-      scenarioId={current}
-      embedded={!!embedded}
-      onBack={() => setMode("picker")}
-      onNext={(id) => start(id)}
-      onComplete={onComplete}
-      t={t}
-    />
-  );
+  return <Workbench key={flow.current ?? "free"} scenarioId={flow.current} toolbar={toolbar} onNext={(id) => flow.pick(id)} onComplete={flow.complete} />;
 }
 
-function Intro() {
-  const t = useT();
-  return (
-    <div className="rounded-2xl bg-[var(--s2)] p-4">
-      <p className="text-sm text-[var(--ink2)]">{t(`${NS}.intro`)}</p>
-    </div>
-  );
-}
+const isFilledIn = (blocks: Block[], type: BlockType) => {
+  const b = blocks.find((x) => x.type === type);
+  return !!b && b.text.trim().length > 0 && placeholders(b.text) === 0;
+};
 
 function Workbench({
   scenarioId,
-  embedded,
-  onBack,
+  toolbar,
   onNext,
   onComplete,
-  t,
 }: {
   scenarioId: string | null;
-  embedded: boolean;
-  onBack: () => void;
+  toolbar: ReactNode;
   onNext: (id: string) => void;
   onComplete: StudioToolProps["onComplete"];
-  t: ReturnType<typeof useT>;
 }) {
+  const t = useT();
   const sc = SCENARIOS.find((s) => s.id === scenarioId) ?? null;
-  const meta = promptBuilder.challenges.find((c) => c.id === scenarioId) ?? null;
   const [blocks, setBlocks] = useState<Block[]>(() =>
     sc ? [{ key: newKey(), type: "task", text: t(`${NS}.sc.${sc.id}.naive`) }] : [],
   );
@@ -102,11 +82,11 @@ function Workbench({
   const s = useMemo(() => score(blocks), [blocks]);
   const prompt = assemble(blocks);
   const used = new Set(blocks.map((b) => b.type));
-  const isFilled = (type: BlockType) => {
-    const b = blocks.find((x) => x.type === type);
-    return !!b && b.text.trim().length > 0 && placeholders(b.text) === 0;
-  };
-  const missing = sc ? sc.required.filter((r) => !isFilled(r)) : [];
+  const missing = sc ? sc.required.filter((r) => !isFilledIn(blocks, r)) : [];
+
+  // The live panel follows the blocks ~300ms after the learner stops typing.
+  const liveBlocks = useDebounced(blocks, 300);
+  const liveScore = useMemo(() => score(liveBlocks), [liveBlocks]);
 
   function add(type: BlockType) {
     if (used.has(type)) return;
@@ -150,172 +130,264 @@ function Workbench({
     onComplete({ challengeId: sc.id, stars: stars as 1 | 2 | 3 });
   }
 
-  const tips = s.criteria
+  const tips = liveScore.criteria
     .filter((c) => c.earned < c.points)
     .sort((a, b) => b.points - b.earned - (a.points - a.earned))
     .slice(0, 3);
   const next = nextChallenge(promptBuilder.challenges, scenarioId);
+  const G = `${NS}.guide`;
 
-  return (
-    <div>
-      <ChallengeHeader ns={NS} challenge={meta} onBack={onBack} />
-      <p className="sr-only" aria-live="polite">{announce}</p>
+  const guide: StudioGuide = sc
+    ? {
+        goal: t(`${G}.goal.${sc.id}`),
+        steps: [
+          t(`${G}.step.read`),
+          t(`${G}.step.add`, { list: sc.required.map((r) => t(`${NS}.blk.${r}.name`)).join(", ") }),
+          t(`${G}.step.fill`),
+          t(`${G}.step.watch`),
+          t(`${G}.step.tips`, { n: sc.target[0] }),
+          t(`${G}.step.check`),
+        ],
+        stars: [t(`${G}.star1`, { n: sc.target[0] }), t(`${G}.star2`, { n: sc.target[1] }), t(`${G}.star3`, { n: sc.target[2] })],
+        tips: [t(`${G}.tip.${sc.id}`), t(`${G}.tip.reorder`)],
+      }
+    : {
+        goal: t(`${G}.goal.free`),
+        steps: [1, 2, 3, 4, 5].map((i) => t(`${G}.free.step${i}`)),
+        tips: [t(`${G}.tip.free`), t(`${G}.tip.reorder`)],
+      };
 
-      {sc ? (
-        <div className="mb-4 rounded-2xl border-2 border-[#F47C20]/40 bg-[#FFF6EE] p-4">
-          <p className="text-sm text-[var(--ink)]">{t(`${NS}.sc.${sc.id}.situation`)}</p>
-          <p className="mt-2 text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">{t(`${NS}.required`)}</p>
-          <ul className="mt-1 flex flex-wrap gap-1.5">
-            {sc.required.map((r) => (
-              <li key={r} className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-[var(--ink)]">
-                {isFilled(r) ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600" aria-hidden="true" /> : <Circle className="h-3.5 w-3.5 text-[var(--ink3)]" aria-hidden="true" />}
-                {t(`${NS}.blk.${r}.name`)}
-                <span className="sr-only">{isFilled(r) ? t(`${NS}.filled`) : t(`${NS}.notFilled`)}</span>
+  const live = (
+    <div className="space-y-3">
+      <Meter total={liveScore.total} byDim={liveScore.byDim} target={sc?.target[0]} />
+      <LiveReply scenarioId={sc?.id ?? null} blocks={liveBlocks} total={liveScore.total} />
+      {tips.length > 0 && (
+        <div className="rounded-2xl border border-[var(--border)] bg-white p-3">
+          <p className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">
+            <Lightbulb className="h-3.5 w-3.5 text-[#F47C20]" aria-hidden="true" /> {t(`${NS}.tips`)}
+          </p>
+          <ul className="mt-1.5 space-y-1.5 text-sm text-[var(--ink2)]">
+            {tips.map((c) => (
+              <li key={c.id}>
+                <span className="font-semibold text-[var(--ink)]">+{c.points - c.earned}</span> {t(`${NS}.tip.${c.id}`)}
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-xs text-[var(--ink2)]">{t(`${NS}.targetLine`, { a: sc.target[0], b: sc.target[1], c: sc.target[2] })}</p>
         </div>
-      ) : (
-        <p className="mb-4 rounded-2xl bg-[var(--s2)] p-4 text-sm text-[var(--ink2)]">{t(`${NS}.freePlayIntro`)}</p>
       )}
-
-      <div className={`grid gap-4 ${embedded ? "" : "lg:grid-cols-[1fr_340px]"}`}>
-        <div className="min-w-0 space-y-3">
-          {/* Palette */}
-          <div>
-            <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">{t(`${NS}.palette`)}</p>
-            <div className="flex flex-wrap gap-1.5">
-              {BLOCK_TYPES.map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  draggable={!used.has(type)}
-                  onDragStart={(e) => e.dataTransfer.setData("text/x-block", type)}
-                  disabled={used.has(type)}
-                  onClick={() => add(type)}
-                  title={t(`${NS}.blk.${type}.hint`)}
-                  aria-label={t(`${NS}.addBlock`, { block: t(`${NS}.blk.${type}.name`) })}
-                  className="inline-flex min-h-[40px] items-center gap-1 rounded-xl border-2 border-[var(--border)] bg-white px-2.5 py-1.5 text-xs font-bold text-[var(--ink)] hover:border-[#F47C20] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F47C20] disabled:opacity-40"
-                >
-                  <span aria-hidden="true">{BLOCK_EMOJI[type]}</span>
-                  {t(`${NS}.blk.${type}.name`)}
-                  {!used.has(type) && <Plus className="h-3 w-3" aria-hidden="true" />}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Blocks */}
-          <div
-            ref={listRef}
-            onDragOver={(e) => {
-              if (e.dataTransfer.types.includes("text/x-block")) {
-                e.preventDefault();
-                setDragOver(true);
-              }
-            }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={(e) => {
-              const type = e.dataTransfer.getData("text/x-block") as BlockType;
-              setDragOver(false);
-              if (BLOCK_TYPES.includes(type)) add(type);
-            }}
-            className={`min-h-[120px] rounded-2xl border-2 border-dashed p-2 ${dragOver ? "border-[#F47C20] bg-[#FFF6EE]" : "border-[var(--border)]"}`}
-          >
-            {blocks.length === 0 && <p className="p-6 text-center text-sm text-[var(--ink3)]">{t(`${NS}.empty`)}</p>}
-            <Reorder.Group axis="y" values={blocks} onReorder={setBlocks} className="space-y-2" aria-label={t(`${NS}.yourPrompt`)}>
-              {blocks.map((b, i) => (
-                <BlockCard
-                  key={b.key}
-                  block={b}
-                  index={i}
-                  count={blocks.length}
-                  hasExample={!!sc}
-                  onChange={(v) => update(b.key, v)}
-                  onRemove={() => remove(b.key)}
-                  onMove={(d) => move(b.key, d)}
-                  onExample={() => fillExample(b.key, b.type)}
-                />
-              ))}
-            </Reorder.Group>
-          </div>
-        </div>
-
-        {/* Meter + preview */}
-        <div className="min-w-0 space-y-3">
-          <Meter total={s.total} byDim={s.byDim} target={sc?.target[0]} />
-          {tips.length > 0 && (
-            <div className="rounded-2xl border border-[var(--border)] bg-white p-3">
-              <p className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">
-                <Lightbulb className="h-3.5 w-3.5 text-[#F47C20]" aria-hidden="true" /> {t(`${NS}.tips`)}
-              </p>
-              <ul className="mt-1.5 space-y-1.5 text-sm text-[var(--ink2)]">
-                {tips.map((c) => (
-                  <li key={c.id}>
-                    <span className="font-semibold text-[var(--ink)]">+{c.points - c.earned}</span> {t(`${NS}.tip.${c.id}`)}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          <details className="rounded-2xl border border-[var(--border)] bg-white p-3 text-sm">
-            <summary className="cursor-pointer text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">{t(`${NS}.howScored`)}</summary>
-            <p className="mt-2 text-xs text-[var(--ink2)]">{t(`${NS}.howScoredBody`)}</p>
-            <ul className="mt-2 space-y-1 text-xs">
-              {s.criteria.map((c) => (
-                <li key={c.id} className="flex justify-between gap-2">
-                  <span className={c.earned === c.points ? "text-[var(--ink)]" : "text-[var(--ink3)]"}>
-                    {c.earned === c.points ? "✓" : "·"} {t(`${NS}.crit.${c.id}`)}
-                  </span>
-                  <span className="shrink-0 tabular-nums text-[var(--ink3)]">
-                    {c.earned}/{c.points}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </details>
-
-          <div className="rounded-2xl border border-[var(--border)] bg-white p-3">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">{t(`${NS}.preview`)}</p>
-              <CopyButton text={prompt} />
-            </div>
-            <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap text-xs leading-relaxed text-[var(--ink)]">{prompt || t(`${NS}.previewEmpty`)}</pre>
-          </div>
-
-          {sc && !result && (
-            <button type="button" onClick={check} className={`${BTN_PRIMARY} w-full`}>
-              <Sparkles className="h-4 w-4" aria-hidden="true" /> {t(`${NS}.check`)}
-            </button>
-          )}
-          {feedback && (
-            <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
-              {feedback}
-            </p>
-          )}
-          {result && sc && (
-            <ResultCard
-              stars={result.stars}
-              body={
-                <>
-                  <p>{t(`${NS}.resultScore`, { score: s.total })}</p>
-                  <p className="mt-1">{t(`${NS}.sc.${sc.id}.lesson`)}</p>
-                </>
-              }
-              onRetry={() => setResult(null)}
-              onNext={next ? () => onNext(next) : undefined}
-            />
-          )}
-          <TryForReal prompt={prompt || t(`${NS}.previewEmpty`)} intro={t(`${NS}.realIntro`)} />
-          {!sc && (
-            <button type="button" onClick={() => setBlocks([])} className={`${BTN_SECONDARY} w-full`}>
-              {t(`${NS}.clear`)}
-            </button>
-          )}
-        </div>
-      </div>
     </div>
+  );
+
+  return (
+    <StudioFrame toolbar={toolbar} guide={guide} live={live} liveTitle={t(`${NS}.live.title`)}>
+      <div className="space-y-3">
+        <p className="sr-only" aria-live="polite">{announce}</p>
+
+        {sc ? (
+          <div className="rounded-2xl border-2 border-[#F47C20]/40 bg-[#FFF6EE] p-4">
+            <p className="text-sm text-[var(--ink)]">{t(`${NS}.sc.${sc.id}.situation`)}</p>
+            <p className="mt-2 text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">{t(`${NS}.required`)}</p>
+            <ul className="mt-1 flex flex-wrap gap-1.5">
+              {sc.required.map((r) => {
+                const ok = isFilledIn(blocks, r);
+                return (
+                  <li key={r} className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-[var(--ink)]">
+                    {ok ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600" aria-hidden="true" /> : <Circle className="h-3.5 w-3.5 text-[var(--ink3)]" aria-hidden="true" />}
+                    {t(`${NS}.blk.${r}.name`)}
+                    <span className="sr-only">{ok ? t(`${NS}.filled`) : t(`${NS}.notFilled`)}</span>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="mt-2 text-xs text-[var(--ink2)]">{t(`${NS}.targetLine`, { a: sc.target[0], b: sc.target[1], c: sc.target[2] })}</p>
+          </div>
+        ) : (
+          <p className="rounded-2xl bg-[var(--s2)] p-4 text-sm text-[var(--ink2)]">{t(`${NS}.freePlayIntro`)}</p>
+        )}
+
+        {/* Palette */}
+        <div>
+          <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">{t(`${NS}.palette`)}</p>
+          <div className="flex flex-wrap gap-1.5">
+            {BLOCK_TYPES.map((type) => (
+              <button
+                key={type}
+                type="button"
+                draggable={!used.has(type)}
+                onDragStart={(e) => e.dataTransfer.setData("text/x-block", type)}
+                disabled={used.has(type)}
+                onClick={() => add(type)}
+                title={t(`${NS}.blk.${type}.hint`)}
+                aria-label={t(`${NS}.addBlock`, { block: t(`${NS}.blk.${type}.name`) })}
+                className="inline-flex min-h-[40px] items-center gap-1 rounded-xl border-2 border-[var(--border)] bg-white px-2.5 py-1.5 text-xs font-bold text-[var(--ink)] hover:border-[#F47C20] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F47C20] disabled:opacity-40"
+              >
+                <span aria-hidden="true">{BLOCK_EMOJI[type]}</span>
+                {t(`${NS}.blk.${type}.name`)}
+                {!used.has(type) && <Plus className="h-3 w-3" aria-hidden="true" />}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Blocks */}
+        <div
+          ref={listRef}
+          onDragOver={(e) => {
+            if (e.dataTransfer.types.includes("text/x-block")) {
+              e.preventDefault();
+              setDragOver(true);
+            }
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => {
+            const type = e.dataTransfer.getData("text/x-block") as BlockType;
+            setDragOver(false);
+            if (BLOCK_TYPES.includes(type)) add(type);
+          }}
+          className={`min-h-[120px] rounded-2xl border-2 border-dashed p-2 ${dragOver ? "border-[#F47C20] bg-[#FFF6EE]" : "border-[var(--border)]"}`}
+        >
+          {blocks.length === 0 && <p className="p-6 text-center text-sm text-[var(--ink3)]">{t(`${NS}.empty`)}</p>}
+          <Reorder.Group axis="y" values={blocks} onReorder={setBlocks} className="space-y-2" aria-label={t(`${NS}.yourPrompt`)}>
+            {blocks.map((b, i) => (
+              <BlockCard
+                key={b.key}
+                block={b}
+                index={i}
+                count={blocks.length}
+                hasExample={!!sc}
+                onChange={(v) => update(b.key, v)}
+                onRemove={() => remove(b.key)}
+                onMove={(d) => move(b.key, d)}
+                onExample={() => fillExample(b.key, b.type)}
+              />
+            ))}
+          </Reorder.Group>
+        </div>
+
+        {sc && !result && (
+          <button type="button" onClick={check} className={`${BTN_PRIMARY} w-full`}>
+            <Sparkles className="h-4 w-4" aria-hidden="true" /> {t(`${NS}.check`)}
+          </button>
+        )}
+        {feedback && (
+          <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
+            {feedback}
+          </p>
+        )}
+        {result && sc && (
+          <ResultCard
+            stars={result.stars}
+            body={
+              <>
+                <p>{t(`${NS}.resultScore`, { score: s.total })}</p>
+                <p className="mt-1">{t(`${NS}.sc.${sc.id}.lesson`)}</p>
+              </>
+            }
+            onRetry={() => setResult(null)}
+            onNext={next ? () => onNext(next) : undefined}
+          />
+        )}
+
+        <details className="rounded-2xl border border-[var(--border)] bg-white p-3 text-sm">
+          <summary className="cursor-pointer text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">{t(`${NS}.howScored`)}</summary>
+          <p className="mt-2 text-xs text-[var(--ink2)]">{t(`${NS}.howScoredBody`)}</p>
+          <ul className="mt-2 space-y-1 text-xs">
+            {s.criteria.map((c) => (
+              <li key={c.id} className="flex justify-between gap-2">
+                <span className={c.earned === c.points ? "text-[var(--ink)]" : "text-[var(--ink3)]"}>
+                  {c.earned === c.points ? "✓" : "·"} {t(`${NS}.crit.${c.id}`)}
+                </span>
+                <span className="shrink-0 tabular-nums text-[var(--ink3)]">
+                  {c.earned}/{c.points}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </details>
+
+        <TryForReal prompt={prompt || t(`${NS}.previewEmpty`)} intro={t(`${NS}.realIntro`)} />
+        {!sc && (
+          <button type="button" onClick={() => setBlocks([])} className={`${BTN_SECONDARY} w-full`}>
+            {t(`${NS}.clear`)}
+          </button>
+        )}
+      </div>
+    </StudioFrame>
+  );
+}
+
+type Source = BlockType | "base";
+
+/**
+ * "What the AI would likely give you": a reply composed from pre-written
+ * fragments for the scenario. It starts vague and gains tone, facts,
+ * structure, flagged assumptions and knock-on effects as blocks are filled in.
+ */
+function LiveReply({ scenarioId, blocks, total }: { scenarioId: string | null; blocks: Block[]; total: number }) {
+  const t = useT();
+  const reduce = useReducedMotion();
+  const L = (part: string) => t(`${NS}.live.${scenarioId ?? "free"}.${part}`);
+  const has = (type: BlockType) => isFilledIn(blocks, type);
+  const holes = blocks.filter((b) => placeholders(b.text) > 0).map((b) => t(`${NS}.blk.${b.type}.name`));
+
+  const parts: Array<{ id: string; src: Source; text: string }> = [];
+  if (has("format")) parts.push({ id: "format", src: "format", text: L("format") });
+  if (has("role")) parts.push({ id: "role", src: "role", text: L("role") });
+  if (has("audience")) parts.push({ id: "audience", src: "audience", text: L("audience") });
+  if (!has("task")) parts.push({ id: "vague", src: "base", text: L("vague") });
+  else if (has("context")) parts.push({ id: "context", src: "context", text: L("context") });
+  else parts.push({ id: "task", src: "task", text: L("task") });
+  if (has("examples")) parts.push({ id: "examples", src: "examples", text: L("examples") });
+  if (has("constraints")) parts.push({ id: "constraints", src: "constraints", text: L("constraints") });
+  if (has("checks")) parts.push({ id: "checks", src: "checks", text: L("checks") });
+  if (has("systems")) parts.push({ id: "systems", src: "systems", text: L("systems") });
+  const fresh = useFresh(parts.map((p) => p.id));
+
+  const stage = total >= 80 ? "ready" : total >= 55 ? "tailored" : has("task") ? "onTopic" : "generic";
+  const stageColor = { ready: "bg-green-100 text-green-800", tailored: "bg-[#FFF6EE] text-[#B8500A]", onTopic: "bg-amber-50 text-amber-800", generic: "bg-red-50 text-red-700" }[stage];
+
+  return (
+    <section aria-label={t(`${NS}.live.replyLabel`)} className="rounded-2xl border-2 border-[var(--border)] bg-white p-3">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--ink3)]">
+          <span aria-hidden="true">🤖</span> {t(`${NS}.live.replyLabel`)}
+        </p>
+        <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${stageColor}`} aria-live="polite">
+          {t(`${NS}.live.stage.${stage}`)}
+        </span>
+      </div>
+      <div className="space-y-2">
+        {parts.map((p) => {
+          const isNew = fresh.includes(p.id);
+          return (
+            <div
+              key={p.id}
+              className={`rounded-xl border-l-4 px-2.5 py-1.5 transition-colors duration-700 motion-reduce:transition-none ${
+                p.src === "base" ? "border-red-200 bg-[var(--s2)] text-[var(--ink2)]" : isNew && !reduce ? "border-[#22C55E] bg-green-50" : "border-[#F47C20]/60 bg-white"
+              }`}
+            >
+              <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--ink3)]">
+                {p.src === "base" ? (
+                  t(`${NS}.live.generic`)
+                ) : (
+                  <>
+                    <span aria-hidden="true">{BLOCK_EMOJI[p.src]}</span> {t(`${NS}.live.from`, { block: t(`${NS}.blk.${p.src}.name`) })}
+                  </>
+                )}
+                {isNew && <NewBadge />}
+              </p>
+              <p className="whitespace-pre-line text-sm leading-relaxed text-[var(--ink)]">{p.text}</p>
+            </div>
+          );
+        })}
+      </div>
+      {holes.length > 0 && (
+        <p className="mt-2 rounded-xl bg-amber-50 p-2 text-xs font-semibold text-amber-800">{t(`${NS}.live.holes`, { list: holes.join(", ") })}</p>
+      )}
+      <div className="mt-2">
+        <Illustrative />
+      </div>
+    </section>
   );
 }
 

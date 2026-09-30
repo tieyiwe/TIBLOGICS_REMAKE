@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react";
 // Categorical palette in fixed order (validated reference palette).
 export const SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"];
 
-const CH = 220;
 const PAD = { l: 38, r: 16, t: 12, b: 26 };
 
 export default function Chart({
@@ -14,13 +13,19 @@ export default function Chart({
   title,
   stepLabel,
   tableLabel,
+  height = 220,
+  drawKey,
 }: {
   series: number[][];
   names: string[];
   title: string;
   stepLabel: string;
   tableLabel: string;
+  height?: number;
+  /** Change it to replay the line-drawing animation (skipped with reduced motion). */
+  drawKey?: string | number;
 }) {
+  const CH = height;
   const [hover, setHover] = useState<number | null>(null);
   // Draw in real pixels so axis text stays readable on phones and desktops.
   const wrap = useRef<HTMLDivElement>(null);
@@ -42,6 +47,9 @@ export default function Chart({
 
   return (
     <figure className="m-0">
+      <style>{`@keyframes lmDraw { from { stroke-dashoffset: 1 } to { stroke-dashoffset: 0 } }
+        .lm-draw { stroke-dasharray: 1; animation: lmDraw .9s ease-out both }
+        @media (prefers-reduced-motion: reduce) { .lm-draw { animation: none; stroke-dasharray: none } }`}</style>
       <figcaption className="text-sm font-bold text-[var(--ink)]">{title}</figcaption>
       <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1" aria-hidden="true">
         {names.map((n, i) => (
@@ -81,7 +89,9 @@ export default function Chart({
           ))}
           {series.map((s, i) => (
             <polyline
-              key={i}
+              key={`${drawKey ?? ""}-${i}`}
+              className={drawKey !== undefined ? "lm-draw" : undefined}
+              pathLength={1}
               points={s.map((v, k) => `${x(k).toFixed(1)},${y(v).toFixed(1)}`).join(" ")}
               fill="none"
               stroke={SERIES[i % SERIES.length]}
