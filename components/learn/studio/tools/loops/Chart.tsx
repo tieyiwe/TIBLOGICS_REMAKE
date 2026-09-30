@@ -34,10 +34,11 @@ export default function Chart({
   }, []);
   const steps = series[0]?.length ?? 0;
   const maxV = Math.max(200, ...series.flat());
-  const yMax = Math.ceil(maxV / 50) * 50;
+  const yMax = Math.ceil(maxV / 100) * 100;
+  const stepV = yMax <= 200 ? 50 : 100;
+  const ticks = Array.from({ length: yMax / stepV + 1 }, (_, i) => i * stepV);
   const x = (i: number) => PAD.l + (i / Math.max(1, steps - 1)) * (CW - PAD.l - PAD.r);
   const y = (v: number) => PAD.t + (1 - v / yMax) * (CH - PAD.t - PAD.b);
-  const ticks = [0, yMax / 4, yMax / 2, (3 * yMax) / 4, yMax];
 
   return (
     <figure className="m-0">

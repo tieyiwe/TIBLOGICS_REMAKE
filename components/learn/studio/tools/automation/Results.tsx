@@ -80,7 +80,7 @@ export default function Results({
   const saved = minutesSaved(run, manualMin);
   const perEvent = run.traces.length ? saved / run.traces.length : 0;
   const hoursMonth = Math.round((perEvent * monthly) / 60);
-  const humans = run.traces.filter((tr) => tr.humans > 0 || tr.actions.some((a) => a.action === "task"));
+  const humans = run.traces.filter((tr) => tr.humans > 0);
   const silent = run.traces.filter((tr) => tr.outcome === "silent");
   const title = (id: string) => t(`${P}.ev.${id}`);
   const emoji = (id: string) => events.find((e) => e.id === id)?.emoji ?? "";
