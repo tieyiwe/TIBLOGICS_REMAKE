@@ -354,6 +354,12 @@ Behaviour: before you write anything, ask me up to three questions about anythin
 
 Notice the instruction to use brackets rather than guess. That one line turns invented details into visible gaps you can fill yourself.
 
+Practise describing product, process and performance together: build a pilot-plan prompt from blocks and aim for 3 stars on the strength meter.
+
+\`\`\`studio
+prompt-builder:pilot-plan
+\`\`\`
+
 ## Description is a conversation, not a single shot
 
 You rarely get everything right in the first message, and that is fine. Fluent users treat the first reply as information. If it is too long, say so. If the tone is off, describe the tone you wanted, perhaps with an example. If it misunderstood, explain what you meant rather than repeating the same words louder.
@@ -490,6 +496,12 @@ The third thing to watch is how the AI behaved while working with you.
 - **Did it admit uncertainty, or sound equally sure about everything?** Equal confidence on every point is a warning sign, not a comfort.
 
 Noticing these patterns feeds straight back into Description. If the tool is too agreeable, ask it to challenge you next time.
+
+Try it on a real-looking case: flag the agreeable sentences in a friendly reply, then add critic moves until the policy's blind spots appear.
+
+\`\`\`studio
+critic-mode:clinic-policy
+\`\`\`
 
 ## Use it, fix it, or start again
 

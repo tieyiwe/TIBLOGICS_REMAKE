@@ -644,6 +644,12 @@ Instead of describing a document, paste it. Instead of summarising the problem, 
 
 Don't overdo it. "You are a world-class genius expert" adds nothing.
 
+Try it: build a reply to an unhappy client from blocks, and watch the strength meter climb as you add real context, a reader and a format.
+
+\`\`\`studio
+prompt-builder:client-email
+\`\`\`
+
 ## Long conversations drift
 
 In a long chat, early instructions fade. If output starts drifting, restate the key constraint. It's not being difficult — earlier context genuinely carries less weight as the conversation grows.`,
@@ -723,6 +729,12 @@ Be concrete: word counts and sentence counts beat abstract sizes.
 
 If you have an example of what good looks like, paste it: "Match this style." This is more effective than any adjective. One sample beats three paragraphs of description.
 
+Now practise spotting the difference: in each round, pick the stronger prompt, name what the weaker one is missing, then fix it.
+
+\`\`\`studio
+prompt-arena:rookie
+\`\`\`
+
 ## Ask for the thinking, or don't
 
 "Explain your reasoning" gets you the working — useful when you need to check the logic.
@@ -788,6 +800,12 @@ Vague correction gets a vague apology and a slightly reshuffled version of the s
 Models are trained to be agreeable. Push hard enough and one will apologise and change a correct answer to a wrong one.
 
 If you say "are you sure?" about something correct, you may get "You're right, I apologise" followed by a worse answer. Agreement is not evidence. If you're testing, ask "what's the evidence for that?" rather than applying pressure.
+
+Practise catching an over-agreeable answer, then add critic moves to the prompt until the hidden problems in the plan show up.
+
+\`\`\`studio
+critic-mode:bakery
+\`\`\`
 
 ## Know when to start fresh
 

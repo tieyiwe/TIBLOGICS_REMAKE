@@ -139,7 +139,8 @@ export default function MapCanvas({
     <svg
       ref={svgRef}
       viewBox={`0 0 ${W} ${H}`}
-      className="block h-auto w-full touch-none select-none rounded-xl bg-white"
+      className="block h-auto w-full min-w-[600px] select-none rounded-xl bg-white"
+      style={{ touchAction: "pan-x pan-y" }}
       role="group"
       aria-label={ariaLabel}
       onPointerMove={move}
@@ -261,6 +262,7 @@ export default function MapCanvas({
             aria-label={varAria(v)}
             aria-pressed={sel}
             transform={`translate(${v.x},${v.y})`}
+            style={{ touchAction: "none" }}
             className="cursor-grab focus:outline-none [&:focus-visible>rect]:stroke-[#F47C20]"
             onPointerDown={(e) => down(e, v)}
             onKeyDown={(e) => keyVar(e, v)}

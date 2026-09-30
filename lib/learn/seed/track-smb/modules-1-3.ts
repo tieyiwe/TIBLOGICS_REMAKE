@@ -349,6 +349,12 @@ List what I should check on each tool's website before deciding (features, data 
 Say clearly where your product knowledge might be out of date.
 \`\`\`
 
+Before you run it, play the Pro league below: pick the stronger prompt in each round (one is about choosing software), tag what the weak one misses, and fix it.
+
+\`\`\`studio
+prompt-arena:pro
+\`\`\`
+
 ## Try it now
 
 Run the prompt with your three tasks from the time audit. Then spend ten minutes checking the menus and help pages of two tools you already pay for.
@@ -739,6 +745,12 @@ A brief is only good if the drafts it produces sound like you. Test it:
 3. If not, say what is wrong ("too many exclamation marks", "we would never say treat yourself") and add that to the brief, not just to this one chat.
 
 Each correction you add to the brief improves every future draft. That is a small reinforcing loop in your marketing: better brief, better drafts, less editing, more time to improve the brief.
+
+Testing a prompt is a skill you can practise: run three support-ticket prompts against tricky messages, pick the one to use, and find where the "improved" version got worse.
+
+\`\`\`studio
+test-bench:pick-best
+\`\`\`
 
 ## Try it now
 
@@ -1786,6 +1798,12 @@ What I am willing to offer: [e.g. redo the work, partial refund, replacement]
 Draft a reply under 150 words: acknowledge, apologise for what we got wrong, explain the fix and when it will happen, and give a named contact.
 Then, separately, suggest what in our process might have caused this and one change that would prevent it next time.
 Do not offer anything beyond what I have said I am willing to offer.
+\`\`\`
+
+Warm up first: build a complaint reply from blocks and see which ones (the facts, the reader, the limits on what you offer) lift the prompt's strength.
+
+\`\`\`studio
+prompt-builder:client-email
 \`\`\`
 
 ## Complaints are system feedback

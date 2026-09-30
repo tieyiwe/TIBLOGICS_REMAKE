@@ -542,7 +542,7 @@ export default function LoopMapper({ challengeId, embedded, onComplete, progress
             {selection?.type === "var" && linkMode ? t(`${P}.linkFromHint`, { v: name(selection.id) }) : notice || (linkMode ? t(`${P}.idleLink`) : t(`${P}.idleMove`))}
           </p>
 
-          <div className="mt-2 overflow-hidden rounded-xl border border-[#D2DCE8]">
+          <div className="mt-2 overflow-x-auto overscroll-x-contain rounded-xl border border-[#D2DCE8]">
             <MapCanvas
               vars={map.vars}
               links={map.links}

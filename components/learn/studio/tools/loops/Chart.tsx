@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Categorical palette in fixed order (validated reference palette).
 export const SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"];
 
-const CW = 600;
-const CH = 230;
+const CH = 220;
 const PAD = { l: 38, r: 16, t: 12, b: 26 };
 
 export default function Chart({
@@ -23,6 +22,16 @@ export default function Chart({
   tableLabel: string;
 }) {
   const [hover, setHover] = useState<number | null>(null);
+  // Draw in real pixels so axis text stays readable on phones and desktops.
+  const wrap = useRef<HTMLDivElement>(null);
+  const [CW, setCW] = useState(600);
+  useEffect(() => {
+    const el = wrap.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setCW(Math.max(260, Math.round(el.clientWidth))));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const steps = series[0]?.length ?? 0;
   const maxV = Math.max(200, ...series.flat());
   const yMax = Math.ceil(maxV / 50) * 50;
@@ -41,10 +50,12 @@ export default function Chart({
           </li>
         ))}
       </ul>
-      <div className="relative mt-2">
+      <div ref={wrap} className="relative mt-2">
         <svg
           viewBox={`0 0 ${CW} ${CH}`}
-          className="block h-auto w-full touch-none"
+          className="block touch-none"
+          width={CW}
+          height={CH}
           aria-hidden="true"
           onPointerMove={(e) => {
             const r = (e.currentTarget as SVGSVGElement).getBoundingClientRect();
@@ -62,7 +73,7 @@ export default function Chart({
               </text>
             </g>
           ))}
-          {[0, 5, 10, 15, 20].filter((s) => s < steps).map((s) => (
+          {(CW < 400 ? [0, 10, 20] : [0, 5, 10, 15, 20]).filter((s) => s < steps).map((s) => (
             <text key={s} x={x(s)} y={CH - 8} textAnchor="middle" fontSize="10" fill="#7A8FA6">
               {s}
             </text>
