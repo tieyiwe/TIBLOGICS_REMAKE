@@ -93,6 +93,11 @@ export default function BlogPageClient({
 
   useEffect(() => {
     trackPageVisit("/ai-times");
+    // /ai-times?search=… opens with that search (the site's SearchAction in
+    // app/layout.tsx points here). Read once on mount, not via
+    // useSearchParams, so the page stays statically cacheable.
+    const q = new URLSearchParams(window.location.search).get("search");
+    if (q) setSearch(q.slice(0, 100));
   }, []);
 
   const fetchPosts = useCallback(async (silent = false) => {

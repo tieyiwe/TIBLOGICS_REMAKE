@@ -375,7 +375,7 @@ export default function PromotionEditor({
       <Card title="Applies to" subtitle="Only checkouts with these items get the discount. Other items in the same cart pay full price.">
         <fieldset>
           <legend className="sr-only">Applies to</legend>
-          <ul className="grid gap-3 md:grid-cols-2">
+          <ul className="grid items-start gap-3 md:grid-cols-2">
             {SCOPE_KEYS.map((k) => {
               const s = f.scope[k]!;
               const opts = k === "tracks" ? tracks : k === "store" ? products : null;
