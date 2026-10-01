@@ -35,6 +35,11 @@ import {
   GraduationCap,
   KeyRound,
   Gauge,
+  TrendingUp,
+  CalendarDays,
+  Link2,
+  Palette,
+  Send,
 } from "lucide-react";
 
 interface NavSubItem {
@@ -91,6 +96,20 @@ const navItems: NavItem[] = [
   { label: "Test access", href: "/admin_pro/test-access", icon: KeyRound },
   { label: "Revenue", href: "/admin_pro/revenue", icon: DollarSign },
   { label: "AI Usage", href: "/admin_pro/ai-usage", icon: Gauge },
+  {
+    label: "Growth",
+    href: "/admin_pro/growth",
+    icon: TrendingUp,
+    subItems: [
+      { label: "Hub", href: "/admin_pro/growth", icon: TrendingUp },
+      { label: "Content kits", href: "/admin_pro/growth/content", icon: Sparkles },
+      { label: "Calendar", href: "/admin_pro/growth/calendar", icon: CalendarDays },
+      { label: "Links & attribution", href: "/admin_pro/growth/links", icon: Link2 },
+      { label: "Leads", href: "/admin_pro/growth/leads", icon: Users },
+      { label: "Outreach", href: "/admin_pro/growth/outreach", icon: Send },
+      { label: "Brand & audiences", href: "/admin_pro/growth/settings", icon: Palette },
+    ],
+  },
   {
     label: "Blog",
     href: "/admin_pro/blog",
@@ -217,6 +236,15 @@ const NAV_PERMISSION_MAP: Record<string, string> = {
   "/admin_pro/agents":         "agents",
   "/admin_pro/settings":       "__admin_only__",
   "/admin_pro/ai-usage":       "__admin_only__",
+  // Growth: the section and its lead workspace are open to the "growth"
+  // permission; content, scheduling, links and brand settings are admin-only.
+  "/admin_pro/growth":          "growth",
+  "/admin_pro/growth/leads":    "growth",
+  "/admin_pro/growth/outreach": "growth",
+  "/admin_pro/growth/content":  "__admin_only__",
+  "/admin_pro/growth/calendar": "__admin_only__",
+  "/admin_pro/growth/links":    "__admin_only__",
+  "/admin_pro/growth/settings": "__admin_only__",
 };
 
 export default function AdminSidebar() {

@@ -165,7 +165,14 @@ export async function enrollLeads(sequenceId: string, leadIds: string[]): Promis
   return out;
 }
 
-const jitterMs = (maxMin: number) => Math.floor(Math.random() * maxMin * 60_000);
+// Random delay added to each approved send time so a batch does not go out at
+// once. OUTREACH_JITTER_MIN overrides both defaults (20 min for the first
+// email, 120 for follow-ups); 0 disables it.
+const jitterMs = (defMin: number) => {
+  const env = Number(process.env.OUTREACH_JITTER_MIN);
+  const maxMin = process.env.OUTREACH_JITTER_MIN !== undefined && Number.isFinite(env) && env >= 0 ? env : defMin;
+  return Math.floor(Math.random() * maxMin * 60_000);
+};
 
 /**
  * Owner approval. Only drafts become approved; each gets a send time (day

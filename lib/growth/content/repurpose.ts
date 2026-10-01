@@ -19,7 +19,7 @@ import { suggestSlots } from "./times";
 // (GROWTH_REPURPOSE_BATCH items, default 4, one Haiku call each).
 
 const STATE_KEY = "repurpose";
-const FIRST_RUN_LOOKBACK_DAYS = 3;
+const FIRST_RUN_LOOKBACK_DAYS = 2;
 const DEFAULT_PLATFORMS: Platform[] = ["linkedin", "x", "facebook"];
 
 export interface RepurposeItem {
@@ -142,7 +142,8 @@ export async function findNewItems(since: Date): Promise<RepurposeItem[]> {
         `Starts ${s.startsAt.toLocaleString("en-US", { dateStyle: "long", timeStyle: "short", timeZone: s.timezone || "UTC" })} (${s.timezone}).`,
       ].filter(Boolean),
     });
-  return items.sort((a, b) => a.at.getTime() - b.at.getTime());
+  // Newest first: the freshest content is drafted first when a run is bounded.
+  return items.sort((a, b) => b.at.getTime() - a.at.getTime());
 }
 
 const REPURPOSE_RULES = `You repurpose new content from a small AI company into social media posts. Return ONE JSON object: {"posts":[{"platform":"...","text":"...","hashtags":["..."]}]} with exactly one post per requested platform, nothing else.

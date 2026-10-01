@@ -232,6 +232,7 @@ export async function runSender(opts: { ignoreWindow?: boolean } = {}): Promise<
       }
     }
     res.capRemaining = Math.max(0, cfg.dailyCap - (await sentInLast24h()));
+    if (res.capRemaining === 0 && !res.reason) res.reason = `Daily cap of ${cfg.dailyCap} reached`;
     return res;
   } finally {
     await releaseLock(res);

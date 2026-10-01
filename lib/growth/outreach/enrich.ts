@@ -190,7 +190,9 @@ export function detectSignals(html: string, text: string, opts: { https: boolean
     copyrightYear,
     outdated: outdatedReasons.length > 0,
     outdatedReasons,
-    noUnsolicitedNotice: /(do not|don't|no)\s+(send\s+)?(unsolicited|solicitation|commercial electronic|marketing e-?mails?)/i.test(text),
+    // Conservative on purpose: any mention of unsolicited mail or soliciting
+    // means we do not infer consent from the published address (CASL s.10(9)(b)).
+    noUnsolicitedNotice: /\bunsolicited\b|\bno solicit|\bdo not solicit|\bsolicitation (is )?(not|prohibited)|\bno (marketing|commercial) e-?mails?\b/i.test(text),
     title,
     description,
   };

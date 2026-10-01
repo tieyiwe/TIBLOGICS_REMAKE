@@ -6,6 +6,7 @@
 //   OUTREACH_GAP_MAX_SEC       (default 20 / 90 seconds)
 //   OUTREACH_SEND_WINDOW       local sending hours "start-end", 24h (default 8-18)
 //   OUTREACH_TZ                time zone for the window (default America/Toronto)
+//   OUTREACH_JITTER_MIN        max random delay added to approved send times (default 20 / 120 min)
 //   OUTREACH_PHYSICAL_ADDRESS  postal address printed in every email (REQUIRED:
 //                              the sender refuses to run without it)
 //   OUTREACH_FROM_NAME         display name (default "Tieyiwe Bassole, TIBLOGICS")
