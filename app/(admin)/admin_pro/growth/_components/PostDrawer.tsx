@@ -151,7 +151,7 @@ export default function PostDrawer({
           <div className="flex items-center justify-between gap-2 mb-1">
             <span className={label}>Best times</span>
             <select aria-label="Audience time zone" className="rounded-md border border-[#D2DCE8] px-2 py-1 font-dm text-xs" value={tz} onChange={(e) => setTz(e.target.value)}>
-              {[...new Map(audiences.map((a) => [a.timezone, a])).values()].map((a) => <option key={a.timezone} value={a.timezone}>{a.name} ({a.timezone})</option>)}
+              {audiences.filter((a, i) => audiences.findIndex((b) => b.timezone === a.timezone) === i).map((a) => <option key={a.timezone} value={a.timezone}>{a.name} ({a.timezone})</option>)}
             </select>
           </div>
           <div className="flex flex-wrap gap-1.5">

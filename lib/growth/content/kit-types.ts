@@ -1,5 +1,5 @@
 // Shape of a product marketing kit (GrowthKit.content). Client-safe.
-import { isPlatform, PLATFORMS, type Platform } from "./platforms";
+import { isPlatform, type Platform } from "./platforms";
 
 export interface KitPost {
   platform: Platform;
@@ -116,5 +116,3 @@ export function normalizeKit(raw: unknown): KitContent {
     newsletterCampaignIds: strs(r.newsletterCampaignIds, 5, 40),
   };
 }
-
-export const EMPTY_PLATFORM_COUNT = Object.fromEntries(PLATFORMS.map((p) => [p, 0])) as Record<Platform, number>;

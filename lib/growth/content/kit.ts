@@ -6,7 +6,7 @@ import { ensureGrowthTables } from "../db";
 import { getCatalogItem, TYPE_LABEL, type CatalogItem } from "../catalog";
 import { brandBrief, findAudience, getGrowthSettings, type GrowthSettingsData } from "../settings";
 import { createLink, shortUrl } from "../links";
-import { composePost, PLATFORM_INFO, PLATFORMS, type Language, type Platform } from "./platforms";
+import { composePost, PLATFORM_INFO, PLATFORMS, type Language } from "./platforms";
 import { normalizeKit, type KitContent } from "./kit-types";
 import { addDays, slotOnDay, ymdIn } from "./times";
 
@@ -304,5 +304,3 @@ export async function kitToNewsletter(kitId: string) {
   await prisma.growthKit.update({ where: { id: kitId }, data: { content: JSON.parse(JSON.stringify(content)) } });
   return { created: ids.length, campaignIds: ids };
 }
-
-export type { Platform };
