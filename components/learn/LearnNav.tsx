@@ -18,6 +18,7 @@ const LINK_KEYS = [
   { href: "/learn/portfolio", key: "method.nav.portfolio" },
   { href: "/learn/studio", key: "studio.nav" },
   { href: "/learn/community", key: "community.nav" },
+  { href: "/learn/live", key: "live.nav" },
   { href: "/learn/leaderboard", key: "game.nav.leaderboard" },
   { href: "/learn/account", key: "learn.nav.account" },
 ];

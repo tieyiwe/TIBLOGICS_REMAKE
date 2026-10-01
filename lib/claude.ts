@@ -191,6 +191,18 @@ function withCachedHistory(messages: Anthropic.Messages.MessageParam[]): Anthrop
   return out;
 }
 
+/**
+ * Models whose API rejected our thinking/effort fields (400). Remembered for
+ * the life of the process so one bad assumption about a model's settings
+ * costs one retry, not every call.
+ */
+const reasoningRejected = new Set<string>();
+
+function isReasoningRejection(err: unknown): boolean {
+  const e = err as { status?: number; message?: string };
+  return e?.status === 400 && /thinking|output_config|effort/i.test(String(e?.message ?? ""));
+}
+
 /** Full request parameters for a task (also used to build Message Batches requests). */
 export function buildParams(task: AiTask, req: ClaudeRequest): Anthropic.Messages.MessageCreateParamsNonStreaming {
   const r = routeFor(task);
@@ -201,7 +213,7 @@ export function buildParams(task: AiTask, req: ClaudeRequest): Anthropic.Message
     max_tokens: maxTokens,
     system: r.cacheSystem ? withCachedSystem(req.system) : req.system,
     messages: r.cacheHistory ? withCachedHistory(req.messages) : req.messages,
-    ...reasoningParams(r.model, r.thinking, r.effort),
+    ...(reasoningRejected.has(r.model) ? {} : reasoningParams(r.model, r.thinking, r.effort)),
   };
   // thinking {adaptive|between_tools} and output_config are newer than the
   // pinned SDK's types; the API accepts them.
@@ -252,7 +264,16 @@ export async function runClaude(
   task: AiTask,
   req: ClaudeRequest,
 ): Promise<{ text: string; stopReason: string | null; message: Anthropic.Messages.Message }> {
-  const msg = await anthropic.messages.stream(buildParams(task, req)).finalMessage();
+  let msg: Anthropic.Messages.Message;
+  try {
+    msg = await anthropic.messages.stream(buildParams(task, req)).finalMessage();
+  } catch (err) {
+    const model = routeFor(task).model;
+    if (!isReasoningRejection(err) || reasoningRejected.has(model)) throw err;
+    console.warn(`[claude] ${model} rejected thinking/effort settings; retrying without them`, err);
+    reasoningRejected.add(model);
+    msg = await anthropic.messages.stream(buildParams(task, req)).finalMessage();
+  }
   record(task, msg, req.meta);
   if ((msg.stop_reason as string) === "refusal") throw new ClaudeRefusal();
   if (msg.stop_reason === "max_tokens") console.warn(`[claude] ${task} hit max_tokens`);
@@ -267,8 +288,10 @@ export function streamClaude(task: AiTask, req: ClaudeRequest) {
   const stream = anthropic.messages.stream(buildParams(task, req));
   stream.finalMessage().then(
     (msg) => record(task, msg, req.meta),
-    () => {
-      // Errors and aborts are handled by whoever iterates the stream.
+    (err) => {
+      // Errors and aborts are handled by whoever iterates the stream; a
+      // settings rejection is remembered so the next request goes through.
+      if (isReasoningRejection(err)) reasoningRejected.add(routeFor(task).model);
     },
   );
   return stream;

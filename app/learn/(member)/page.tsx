@@ -17,6 +17,7 @@ import DailyPanel from "@/components/learn/game/DailyPanel";
 import BadgeShelf from "@/components/learn/game/BadgeShelf";
 import MethodDashboardCards from "@/components/learn/method/MethodDashboardCards";
 import DashboardCommunityCards from "@/components/learn/community/DashboardCommunityCards";
+import DashboardLiveCard from "@/components/learn/live/DashboardLiveCard";
 import MasteryDashboard from "@/components/learn/mastery/MasteryDashboard";
 import ResumeCard from "@/components/learn/ResumeCard";
 import { NewLessonsChip } from "@/components/learn/NewLessons";
@@ -166,6 +167,9 @@ export default async function LearnDashboard() {
       <MethodDashboardCards studentId={student.id} />
 
       {/* Cohorts and community (components/learn/community) */}
+      {/* Next live expert session (components/learn/live) */}
+      <DashboardLiveCard studentId={student.id} />
+
       <DashboardCommunityCards studentId={student.id} />
 
       {/* Weak spots + "My mastery" (mastery paths) */}

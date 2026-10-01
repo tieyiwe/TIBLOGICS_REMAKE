@@ -95,6 +95,10 @@ const nextConfig = {
               "form-action 'self'",
               // Stronger than X-Frame-Options, and honoured by modern browsers
               "frame-ancestors 'self'",
+              // TIBLOGICS Learn app: the service worker (public/sw.js) and the
+              // web app manifest (app/manifest.ts) are both same-origin.
+              "worker-src 'self'",
+              "manifest-src 'self'",
             ].join("; "),
           },
         ],
@@ -106,6 +110,17 @@ const nextConfig = {
       {
         source: "/api/:path*",
         headers: [{ key: "Cache-Control", value: "no-store, no-cache, must-revalidate" }],
+      },
+      {
+        // The Learn service worker. Listed after "/:path*" so its CSP replaces
+        // the page one: the worker only fetches, and saves lesson images that
+        // may live on other https hosts (img-src https: on the pages).
+        // Never cached by the browser, so an update reaches learners at once.
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Content-Security-Policy", value: "default-src 'self'; script-src 'self'; connect-src 'self' https:; img-src 'self' https: data:" },
+        ],
       },
     ];
   },

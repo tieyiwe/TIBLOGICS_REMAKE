@@ -207,11 +207,14 @@ function trackCtes(has: Record<OptionalTable, boolean>): Prisma.Sql {
       ${diag}),
     enr AS (SELECT sid, track_id, MIN(at) AS first_at, MAX(at) AS last_at FROM touch GROUP BY 1, 2),
     dn AS (SELECT sid, track_id, COUNT(DISTINCT lesson_id)::int AS n, MAX(at) AS last_done FROM done GROUP BY 1, 2),
+    cert AS (SELECT "studentId" AS sid, "trackId" AS track_id, "issuedAt" AS at FROM "LearnCertificate" WHERE NOT "revoked"),
     per AS (
-      SELECT e.sid, e.track_id, e.first_at, e.last_at, COALESCE(dn.n, 0) AS n, dn.last_done,
-        (t.n > 0 AND COALESCE(dn.n, 0) >= t.n) AS completed
+      SELECT e.sid, e.track_id, e.first_at, e.last_at, COALESCE(dn.n, 0) AS n,
+        COALESCE(c.at, dn.last_done) AS last_done,
+        (c.sid IS NOT NULL OR (t.n > 0 AND COALESCE(dn.n, 0) >= t.n)) AS completed
       FROM enr e JOIN tot t ON t.track_id = e.track_id
-      LEFT JOIN dn ON dn.sid = e.sid AND dn.track_id = e.track_id)`;
+      LEFT JOIN dn ON dn.sid = e.sid AND dn.track_id = e.track_id
+      LEFT JOIN cert c ON c.sid = e.sid AND c.track_id = e.track_id)`;
 }
 
 // ── Queries ─────────────────────────────────────────────────────────────────
