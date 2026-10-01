@@ -88,5 +88,7 @@ export function areaMessages(locale: Locale, area: MessageArea): Record<string, 
 }
 
 export function isMessageArea(v: unknown): v is MessageArea {
-  return typeof v === "string" && v in AREAS;
+  // Own keys only: `in` also accepts "constructor", "toString"... (a 500 from
+  // /api/i18n/messages?area=constructor).
+  return typeof v === "string" && Object.prototype.hasOwnProperty.call(AREAS, v);
 }

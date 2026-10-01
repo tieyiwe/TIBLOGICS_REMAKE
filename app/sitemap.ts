@@ -49,7 +49,13 @@ const STATIC: Array<[path: string, priority: number, freq: Entry["changeFrequenc
  * "&" in an image URL (Unsplash query strings) made the whole sitemap
  * invalid XML. Escape it here.
  */
-const xml = (u: string) => u.replace(/&(?!amp;|lt;|gt;|quot;|apos;)/g, "&amp;");
+const xml = (u: string) =>
+  u
+    .replace(/&(?!amp;|lt;|gt;|quot;|apos;)/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 
 /** Absolute https image URLs only (sitemaps reject relative ones). */
 const images = (list: Array<string | null | undefined>) => {
@@ -159,5 +165,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const m of magnets) out.push({ url: absUrl(`/free/${m.slug}`), lastModified: m.updatedAt, changeFrequency: "monthly", priority: 0.6 });
   for (const p of pages) out.push({ url: absUrl(`/lp/${p.slug}`), lastModified: p.updatedAt, changeFrequency: "monthly", priority: 0.5 });
 
+  // Page URLs and hreflang links are written unescaped too (slugs come from
+  // the database).
+  for (const e of out) {
+    e.url = xml(e.url);
+    const langs = e.alternates?.languages as Record<string, string> | undefined;
+    if (langs) for (const k of Object.keys(langs)) langs[k] = xml(langs[k]);
+  }
   return out;
 }

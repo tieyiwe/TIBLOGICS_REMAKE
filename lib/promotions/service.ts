@@ -576,6 +576,11 @@ export async function stripeCodeBoxAllowed(lines: CheckoutLine[]): Promise<boole
   const promos = await activePromotionsSafe();
   const live = promos.filter((p) => p.mode === "code" && p.stripePromotionCodeId && promoStatus(p) === "live");
   if (live.length === 0) return process.env.STRIPE_ALLOW_DASHBOARD_PROMO_CODES === "true";
+  // Stripe's first_time_transaction only knows Stripe customers: these
+  // checkouts pass customer_email, so Stripe makes a fresh customer and a
+  // returning buyer would pass. First-time-only codes go through our field
+  // (isFirstTimeCustomer) only.
+  if (live.some((p) => p.firstTimeOnly)) return false;
   return lines.length > 0 && live.every((p) => lines.every((l) => scopeCoversLine(p.scope, l)));
 }
 
