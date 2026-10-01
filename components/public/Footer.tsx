@@ -38,7 +38,15 @@ export default async function Footer() {
           {/* Brand */}
           <div>
             <div className="mb-3">
-              <Image src="/footer-logo-light.png" alt="TIBLOGICS" width={192} height={96} className="h-24 w-auto" />
+              {/* The network mark is an image; the wordmark is live text so it
+                  stays crisp at any size (the old baked-in wordmark had a flaw on the "L"). */}
+              <a href="/" className="inline-flex items-center gap-3" aria-label="TIBLOGICS home">
+                <Image src="/logo-mark.png" alt="" width={290} height={173} className="h-14 w-auto" />
+                <span className="font-dm text-[1.7rem] font-extrabold leading-none tracking-tight">
+                  <span className="text-white">TIB</span>
+                  <span className="text-[#F47C20]">LOGICS</span>
+                </span>
+              </a>
             </div>
             <p className="text-[#9DB9D6] text-sm font-dm leading-relaxed mb-4">
               {t("site.footer.tagline")}
