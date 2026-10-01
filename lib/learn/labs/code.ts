@@ -121,6 +121,9 @@ export async function evaluateCode(opts: {
     };
   };
   if (!process.env.ANTHROPIC_API_KEY) return fallback(t("labs.eval.code.notYet"));
+  // No automated check passes yet: the checks already say what to fix, so the
+  // quality review (a model call) waits until the code starts working.
+  if (results.length > 0 && passed === 0) return fallback(t("labs.eval.code.notYet"));
 
   const objectiveList = objectives.map((o) => `- id "${o.id}": ${o.label}${o.guidance ? `. Marking guidance: ${o.guidance}` : ""}`).join("\n");
   const fields = (config.fields ?? [])
