@@ -5,7 +5,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { REFRESH_INTERVAL_MS } from "@/lib/blog/schedule";
 import { revalidatePath } from "next/cache";
 import { fetchSourceText } from "@/lib/blog/source-text";
-import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
 import { pickCoverImage } from "@/lib/blog-images";
 import { getUsedCoverPhotoIds } from "@/lib/blog-cover";
@@ -14,7 +13,7 @@ import { CATEGORY_TOPIC_BANK, CATEGORY_META } from "@/lib/blog/content/topic-ban
 import { SEED_POSTS } from "@/lib/blog/content/seed-posts";
 import { EDITORIAL_SPOTLIGHTS } from "@/lib/blog/content/spotlights";
 
-import { streamChat, CLAUDE_FAST_MODEL } from "@/lib/claude";
+import { streamChat } from "@/lib/claude";
 import resend from "@/lib/resend";
 import { assignCoverImage } from "@/lib/blog-cover";
 import { requireAdmin, secretEquals } from "@/lib/require-admin";
@@ -22,7 +21,6 @@ import { CURATED_ARTICLES, renderSources } from "@/lib/blog/content/curated";
 import { RETRACTIONS } from "@/lib/blog/content/retractions";
 import { applyCorrections } from "@/lib/blog/content/apply-corrections";
 
-const anthropic = new Anthropic();
 
 
 // What counts as worth writing about.
@@ -366,7 +364,8 @@ Return a JSON object:
       // The old 2000 cap sat right on that boundary: anything over it truncated
       // mid-JSON, the parse below threw, and the article was dropped with no
       // trace beyond a missing post.
-      4000
+      4000,
+      "article",
     );
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON");
@@ -397,7 +396,8 @@ Return ONLY a JSON array:
     const raw = await streamChat(
       [{ role: "user", content: prompt }],
       "You are a practical AI advisor. Generate concise, actionable tips.",
-      300
+      600,
+      "tips",
     );
     const match = raw.match(/\[[\s\S]*?\]/);
     if (!match) throw new Error("no array");

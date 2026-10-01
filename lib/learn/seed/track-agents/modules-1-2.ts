@@ -722,7 +722,7 @@ Then write your own corrected plan in five lines. You are done when it keeps the
   {
     title: "Structured Outputs and Tools",
     summary:
-      "Get output your code can trust: JSON with validation and repair, tool (function) calling, the agent loop that runs tools until the job is done, and how to design tools and connect them through the Model Context Protocol (MCP).",
+      "Get output your code can trust: JSON with validation and repair, tool (function) calling, the agent loop that runs tools until the job is done, and how to design tools and connect them through the Model Context Protocol (MCP), and how to handle images, documents and audio as inputs.",
     lessons: [
       {
         title: "Structured outputs: JSON you can trust after you validate it",
@@ -1295,6 +1295,134 @@ You are done when you have replaced a broad tool with narrower ones, each descri
           },
         ],
       },
+      // Added after the original four so seed matching by position is stable.
+      {
+        title: "Images, documents and audio: multimodal inputs and extraction",
+        objective: "Send images and documents to a model from code, build a document extraction pipeline with validation and human review, handle audio through transcription, and treat every non-text input as untrusted.",
+        durationMinutes: 27,
+        contentType: "article",
+        bodyMd: `## Models that read more than text
+
+Earlier lessons treated message content as text. In practice, content can be a list of blocks, and some of those blocks can be images or documents. At the time of writing (October 2026), the major providers accept images and PDF documents in requests to many of their models, while audio input support varies by provider and model. Check the current documentation for supported formats, size limits and how each input is priced, because these change.
+
+Multimodal input opens up a large class of features: triaging screenshots of error messages, reading photos of damaged goods, pulling fields out of invoices, answering questions about a chart. It also brings new failure modes and new attack routes.
+
+## Images
+
+You usually send an image as a content block, either as base64-encoded data or as a URL the provider fetches. Images are converted to tokens, so a large image costs more and adds latency. Resize to the smallest size that keeps the detail you need.
+
+Models are good at describing scenes, reading clear text and interpreting simple charts. They are weaker at precise counting, exact positions and measurements, and small or blurred text. If your feature depends on one of those, test it specifically, and consider a dedicated vision service (for example an object detection or OCR service) for that step. Never build a feature that identifies people from their faces without legal advice; it is one of the most restricted uses of AI.
+
+## Documents: an extraction pipeline
+
+For PDFs you have two routes. You can send the document directly, where supported, so the model sees both the text and the page images. Or you can extract the text first with a parser or OCR service and send only text, which is cheaper and easier to debug but loses layout. Tables and forms often need the first route or a layout-aware extraction service.
+
+A dependable extraction feature is a pipeline, not a single call:
+
+1. **Ingest**: check file type and size, scan uploads, strip metadata you do not need.
+2. **Extract**: send the document with a schema for the fields you want (Lesson 1 of this module).
+3. **Validate**: check types and business rules, not just JSON shape.
+4. **Route**: send failures and low-confidence fields to a person.
+5. **Store**: keep each value with the page it came from, so reviewers can check it quickly.
+
+\`\`\`js
+function checkInvoice(inv) {
+  const problems = [];
+  const lines = inv.lines.reduce((sum, l) => sum + l.amount, 0);
+  if (Math.abs(lines + inv.tax - inv.total) > 0.01) problems.push("totals do not add up");
+  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(inv.date)) problems.push("date not in YYYY-MM-DD form");
+  if (new Date(inv.date) > new Date()) problems.push("invoice date is in the future");
+  return problems; // empty means it can go straight through; otherwise route to a person
+}
+\`\`\`
+
+Arithmetic checks like this catch a surprising share of misreads, because a misread digit rarely leaves the totals consistent.
+
+## Audio
+
+Where a model does not take audio directly, or you need a record of what was said, transcribe first with a speech to text model and pass the text. Keep timestamps and, where available, speaker labels, so answers can point back to the moment in the recording. Recording people has its own legal rules: make sure callers and staff are told, and that you have a basis for keeping the audio.
+
+## Non-text inputs are untrusted input
+
+Everything from Module 5 on prompt injection applies here, with extra hiding places. A PDF can contain white text on a white background telling the model to ignore its instructions. An image can contain written instructions. A document's metadata can carry a payload. So:
+
+- Treat extracted content as data, never as instructions, and keep it clearly marked in the prompt.
+- Keep tool permissions narrow for any flow that reads uploaded files.
+- Strip image metadata such as location before storing or sending it on.
+- Set size and page limits, and decide how long you keep uploads.
+
+## Try it now
+
+\`\`\`try
+I am building a feature that extracts [FIELDS, e.g. supplier, date, line items, tax, total] from [DOCUMENT TYPE] uploaded by [WHO]. Propose a JSON Schema for the fields, three business-rule checks my code should run after extraction, a rule for when a person must review the result, and two ways an attacker could hide instructions in the uploaded file, with a defence for each.
+\`\`\`
+
+Run the prompt for a document type from your own work. Then write the validation function for your schema in the language you use, and test it on one correct and one deliberately wrong example.
+
+You are done when you have a schema, a validation function that rejects the wrong example, a review rule, and two injection defences written down.`,
+        microCheck: [
+          {
+            question: "An extraction feature misreads the total on some invoices. Which code check catches many of these misreads cheaply?",
+            options: [
+              "Checking that line amounts plus tax equal the total",
+              "Checking that the JSON parses without any errors",
+              "Checking that the PDF file name ends in .pdf",
+              "Checking that the model replied within two seconds",
+            ],
+            correctIndex: 0,
+            explanation:
+              "A misread digit rarely keeps the totals consistent, so an arithmetic check catches many errors. Valid JSON, file names and response time say nothing about whether values are right.",
+          },
+          {
+            question: "Why can sending a large, high-resolution photo to a model be a poor default?",
+            options: [
+              "Images become tokens, so size adds cost and latency",
+              "Models refuse any image over a few hundred pixels",
+              "Large images are always stored publicly by providers",
+              "High resolution turns off the model's text reading",
+            ],
+            correctIndex: 0,
+            explanation:
+              "Images are converted to tokens, so larger ones cost more and slow responses. Resize to the smallest size that keeps the detail the task needs.",
+          },
+          {
+            question: "An uploaded PDF contains hidden white text telling the assistant to email its contents elsewhere. What is the main defence?",
+            options: [
+              "Treat file content as data and keep tool permissions narrow",
+              "Convert every PDF to an image before sending it to the model",
+              "Ask users to promise their files contain no instructions",
+              "Use a larger model that notices hidden text more often",
+            ],
+            correctIndex: 0,
+            explanation:
+              "Hidden text is prompt injection by another route. Marking file content as data and limiting what tools can do bounds the damage even if the model is fooled.",
+          },
+          {
+            question: "A team needs exact counts of items in warehouse photos and finds a general model miscounts. What is a sensible next step?",
+            options: [
+              "Test a dedicated object detection service for that step",
+              "Raise the temperature so the model counts more carefully",
+              "Ask the model to double its count to be on the safe side",
+              "Send the photos as audio so a different model reads them",
+            ],
+            correctIndex: 0,
+            explanation:
+              "Precise counting is a known weakness of general multimodal models. A dedicated detection service, tested on your own photos, may handle that step better.",
+          },
+          {
+            question: "Why keep timestamps when transcribing calls for a question-answering feature?",
+            options: [
+              "Answers can point back to the moment in the recording",
+              "Timestamps make the transcription model far cheaper",
+              "Providers reject transcripts that have no timestamps",
+              "Timestamps remove the need to tell callers about it",
+            ],
+            correctIndex: 0,
+            explanation:
+              "Timestamps let reviewers check an answer against the exact part of the call. They do not change cost or replace telling people they are being recorded.",
+          },
+        ],
+      },
     ],
     quiz: [
       {
@@ -1416,6 +1544,30 @@ You are done when you have replaced a broad tool with narrower ones, each descri
         correctIndex: 0,
         explanation:
           "When tools overlap and names say little, the model has no basis for choosing, so choices look random. Give each tool one clear job and a description saying when to use it.",
+      },
+      {
+        question: "A feature sends scanned contracts as plain text extracted by a basic parser, and answers about tables are often wrong. What is the likely cause?",
+        options: [
+          "The text extraction lost the table layout",
+          "The model's temperature was set too low",
+          "The contracts were too short to analyse",
+          "The schema allowed too few string fields",
+        ],
+        correctIndex: 0,
+        explanation:
+          "Basic text extraction flattens tables, so rows and columns lose their meaning. Sending the document directly where supported, or using layout-aware extraction, keeps the structure.",
+      },
+      {
+        question: "Users upload phone photos for a claims feature. Which step belongs in ingestion before anything reaches the model?",
+        options: [
+          "Strip metadata such as location and check size",
+          "Increase the image resolution to the maximum",
+          "Convert each photo to text with a translation API",
+          "Store every photo publicly so reviewers can see it",
+        ],
+        correctIndex: 0,
+        explanation:
+          "Photo metadata can include location and other personal data the feature does not need, and size limits control cost and abuse. Upscaling and public storage add cost and risk.",
       },
     ],
   },

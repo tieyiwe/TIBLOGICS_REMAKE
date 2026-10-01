@@ -132,6 +132,12 @@ export default function LearnAdminClient({
             Cohorts
           </Link>
           <Link
+            href="/admin_pro/learn/live"
+            className="rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)]"
+          >
+            Live sessions
+          </Link>
+          <Link
             href="/admin_pro/learn/community"
             className="rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)]"
           >

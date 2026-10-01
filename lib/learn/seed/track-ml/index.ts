@@ -19,9 +19,9 @@ export const AI_ML_FUNDAMENTALS: SeedTrack = {
   tagline: "Understand how AI and machine learning really work, well enough to speak credibly with engineers and choose the right solution.",
   description: `Most people who work with AI have never been shown how it actually works. This track gives you a solid, vendor-neutral technical foundation without asking you to write code.
 
-You will learn how machines learn from data, what makes data fit for a model, and how the common model types work in plain terms. You will learn to read an evaluation properly: precision and recall, thresholds, error measures, and how to evaluate generative AI with test sets, rubrics and checked model judges. You will look inside foundation models (tokens, transformers, embeddings, retrieval-augmented generation, agents) and learn to apply them: choosing a model, deciding between prompting, retrieval and fine-tuning, estimating cost, and launching with monitoring and a real human in the loop. The final module covers fairness, privacy, security and governance, including risk-based regulation and recognised frameworks.
+You will learn how machines learn from data, what makes data fit for a model, how the common model types work in plain terms, and how to recognise vision, language, speech and document workloads. You will learn to read an evaluation properly: precision and recall, thresholds, error measures, and how to evaluate generative AI with test sets, rubrics and checked model judges. You will look inside foundation models (tokens, transformers, embeddings, retrieval-augmented generation, agents) and learn to apply them: choosing a model, deciding between prompting, retrieval and fine-tuning, understanding the main fine-tuning methods, inference settings and text-scoring measures, estimating cost, and launching with monitoring and a real human in the loop. The final module covers fairness, privacy, security and governance, including risk-based regulation and recognised frameworks.
 
-It covers the core topics behind entry-level cloud AI certifications, in plain language, so you can go on to sit them with confidence.
+Skills this track builds also appear in entry-level cloud AI practitioner and AI fundamentals certifications. This track is independent: it is not affiliated with any vendor and is not official exam preparation.
 
 Lessons include small interactive demos you can edit, prompts you run on the page and Studio tools. Labs are done on the platform. The capstone is an AI solution proposal for a real problem in your own organisation, reviewed by a person.`,
   level: "intermediate",
@@ -39,8 +39,8 @@ Lessons include small interactive demos you can edit, prompts you run on the pag
     "Choose a foundation model, decide between prompting, retrieval and fine-tuning, estimate running cost and plan a monitored launch with a human in the loop",
     "Assess an AI system for fairness, privacy and security risks, and outline proportionate governance using risk tiers and recognised frameworks",
   ],
-  // Lessons total 607 minutes.
-  estimatedHours: 10,
+  // Lessons total 659 minutes.
+  estimatedHours: 11,
   estimatedWeeksAt3Hrs: 5,
   modules: [
     ...ML_MODULE_1,

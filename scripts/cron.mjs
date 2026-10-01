@@ -14,6 +14,8 @@
 //   node scripts/cron.mjs translate
 //   node scripts/cron.mjs cohorts
 //   node scripts/cron.mjs teams
+//   node scripts/cron.mjs reminders
+//   node scripts/cron.mjs live
 //   node scripts/cron.mjs all
 //
 // Needs two environment variables:
@@ -42,6 +44,13 @@ const JOBS = {
   // Team plans: weekly reminder emails for overdue track assignments.
   // Idempotent (each assignment at most once every 7 days).
   teams: { path: "/api/cron/teams", suggested: "daily" },
+  // Study reminders (WhatsApp, or email for learners who chose only email) at
+  // each learner's chosen local time. At most one a day, claimed before
+  // sending; a no-op for WhatsApp until the WHATSAPP_* variables are set.
+  reminders: { path: "/api/cron/reminders", suggested: "hourly" },
+  // Live expert sessions: 24h and 1h reminders, "recording available"
+  // emails. Idempotent (each send is claimed per learner before it goes out).
+  live: { path: "/api/cron/live", suggested: "every 15 minutes" },
 };
 
 /**

@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     .join("\n\n");
 
   try {
-    const text = await streamChat([{ role: "user", content: estimatePrompt(body.data.description) }], system, 2000);
+    const text = await streamChat([{ role: "user", content: estimatePrompt(body.data.description) }], system, 2000, "estimate");
     const estimate = parseEstimate(text);
     if (!estimate) {
       console.error("[calculator/estimate] unparseable reply", text.slice(0, 300));

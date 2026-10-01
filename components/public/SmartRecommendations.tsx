@@ -5,20 +5,7 @@ import Link from "next/link";
 import { Sparkles, ArrowRight, X } from "lucide-react";
 import { getContext, trackPageVisit } from "@/lib/recommendations";
 import { useT } from "@/lib/i18n/client";
-
-interface Recommendation {
-  type: "service" | "tool" | "session";
-  name: string;
-  tagline: string;
-  href: string;
-  priority: number;
-}
-
-interface RecommendationPayload {
-  headline: string;
-  reason: string;
-  recommendations: Recommendation[];
-}
+import { recommend, type RecommendationPayload } from "@/lib/recommendations-rules";
 
 const TYPE_STYLES: Record<string, string> = {
   service: "bg-[#EBF0FA] text-[#2251A3]",
@@ -63,19 +50,11 @@ export default function SmartRecommendations({ currentPage, compact = false }: P
     return () => clearTimeout(timer);
   }, [currentPage]);
 
-  async function fetchRecommendations() {
-    setLoading(true);
+  // Rule-based (lib/recommendations-rules.ts): instant, translated, and no
+  // model call or request per page view.
+  function fetchRecommendations() {
     try {
-      const ctx = getContext();
-      const res = await fetch("/api/recommendations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ context: { ...ctx, currentPage } }),
-      });
-      if (res.ok) {
-        const payload = await res.json();
-        setData(payload);
-      }
+      setData(recommend({ ...getContext(), currentPage }, t));
     } catch {
       // silently fail — recommendations are enhancement, not core
     }

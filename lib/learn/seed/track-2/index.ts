@@ -15,7 +15,9 @@ export const AI_PRACTITIONER: SeedTrack = {
 
 You will start by mapping your own work as a system, because where AI helps depends on where the real bottleneck is. Then you will learn to write prompts that hold up every time, work accurately with your own documents and data, check quality at scale instead of trusting a single good answer, automate repetitive work with a person still in the loop, and do all of it responsibly.
 
-Every module ends in a hands-on lab done inside the platform: prompts run against a real model, a summary with planted errors to catch, and your own workflow mapped and redesigned. The capstone is a real workflow of yours, rebuilt with AI and reviewed by a person.`,
+Every module ends in a hands-on lab done inside the platform: prompts run against a real model, a summary with planted errors to catch, and your own workflow mapped and redesigned. The capstone is a real workflow of yours, rebuilt with AI and reviewed by a person.
+
+Skills this track builds also appear in AI-at-work courses and entry-level AI practitioner certifications. This track is independent: it is not affiliated with any vendor and is not official exam preparation.`,
   level: "intermediate",
   status: "live",
   sortOrder: 2,

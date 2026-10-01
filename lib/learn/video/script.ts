@@ -112,7 +112,7 @@ function tidyScript(s: VideoScript): VideoScript {
 }
 
 export async function generateScript(brief: string): Promise<VideoScript> {
-  const reply = await streamChat([{ role: "user", content: brief }], SCRIPT_SYSTEM, 6000);
+  const reply = await streamChat([{ role: "user", content: brief }], SCRIPT_SYSTEM, 6000, "video-script");
   const parsed = readScript(extractJson(reply));
   if (!parsed) throw new Error("The draft did not come back in the expected shape.");
   return tidyScript(parsed);

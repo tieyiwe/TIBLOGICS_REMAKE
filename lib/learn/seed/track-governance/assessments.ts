@@ -1349,6 +1349,37 @@ Most questions are short scenarios. They test judgement: classifying risk, apply
       explanation:
         "Lowering the target whenever it is missed lets performance drift down. Corrective action should address the cause, such as owner capacity or review triggers, not move the goal.",
     },
+    // Coverage addition: Lesson 5.5 (data governance for AI).
+    {
+      moduleNumber: 5,
+      difficulty: 2,
+      question:
+        "A regulator asks which data trained version 2 of a hiring model. The team has a data record for each dataset but no link to model versions. What is missing?",
+      options: [
+        "Lineage from dataset versions to model versions",
+        "Provenance showing who first collected the data",
+        "A licence for the hiring model's base weights",
+        "A bias test repeated on the newest model only",
+      ],
+      correctIndex: 0,
+      explanation:
+        "Data records describe each dataset's origin, which is provenance. Linking dataset versions to the model versions they trained is lineage, and that is what the question needs.",
+    },
+    {
+      moduleNumber: 5,
+      difficulty: 3,
+      question:
+        "A team wants a support assistant to answer from customer account history, and expects frequent deletion requests. Which design best fits its data protection duties?",
+      options: [
+        "Retrieve account data at query time instead of training on it",
+        "Fine-tune the model weekly on all of the account history",
+        "Keep every prompt and output indefinitely for audit use",
+        "Use synthetic copies of the accounts so no review is needed",
+      ],
+      correctIndex: 0,
+      explanation:
+        "Data in model weights is very hard to remove, while retrieved records can be deleted at source. Indefinite retention and unreviewed synthetic data create new risks rather than meeting the duty.",
+    },
   ],
 };
 

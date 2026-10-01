@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { secretEquals } from "@/lib/require-admin";
 import type { Locale } from "@/lib/i18n/config";
+import {
+  collectPendingTranslations,
+  collectTranslationBatch,
+  openTranslationBatch,
+  submitTranslationBatch,
+} from "@/lib/i18n/content";
 import { warm as warmLearn } from "@/lib/i18n/sources/learn";
 import { warm as warmLabs } from "@/lib/i18n/sources/labs";
 import { warm as warmToolkit } from "@/lib/i18n/sources/toolkit";
@@ -12,6 +18,11 @@ import { warm as warmBlog } from "@/lib/i18n/sources/blog";
 // calls (default 20), then stops; the next run carries on. Once everything is
 // cached a run costs nothing. Run hourly:
 //   npm run cron translate
+//
+// With TRANSLATE_BATCH_API=1 the job uses the Message Batches API instead
+// (half price): a run first collects the results of the batch it sent last
+// time, then sends every unit still missing (up to TRANSLATE_BATCH, default
+// 300 in this mode) as one new batch. The cache is the same either way.
 export const maxDuration = 300;
 
 const LOCALES: Locale[] = ["fr", "sw"];
@@ -33,10 +44,43 @@ export async function GET(req: NextRequest) {
   if (!process.env.ANTHROPIC_API_KEY) return NextResponse.json({ error: "ANTHROPIC_API_KEY is not set" }, { status: 503 });
 
   const n = Number(process.env.TRANSLATE_BATCH);
+  const useBatchApi = process.env.TRANSLATE_BATCH_API === "1";
+
+  if (useBatchApi) {
+    try {
+      const open = await openTranslationBatch();
+      let collected: Awaited<ReturnType<typeof collectTranslationBatch>> | null = null;
+      if (open) {
+        collected = await collectTranslationBatch(open);
+        if (!collected.ended) return NextResponse.json({ mode: "batch", batch: open.id, status: collected.status });
+      }
+      const budget = { left: Number.isInteger(n) && n > 0 ? Math.min(n, 2000) : 300 };
+      const collectedAt = new Date();
+      const errors: string[] = [];
+      const units = await collectPendingTranslations(() => warmAll(budget, errors, Date.now()));
+      const sent = await submitTranslationBatch(units, collectedAt);
+      return NextResponse.json({
+        mode: "batch",
+        previous: collected ? { written: collected.written, failed: collected.failed } : null,
+        submitted: sent,
+        errors,
+        complete: !sent && errors.length === 0,
+      });
+    } catch (err) {
+      console.error("[cron/translate] batch mode failed, translating synchronously", err instanceof Error ? err.message : err);
+      // Fall through to the synchronous path below.
+    }
+  }
+
   const budget = { left: Number.isInteger(n) && n > 0 ? Math.min(n, 200) : 20 };
-  const done: Record<string, number> = {};
   const errors: string[] = [];
-  const started = Date.now();
+  const done = await warmAll(budget, errors, Date.now());
+  const translated = Object.values(done).reduce((a, b) => a + b, 0);
+  return NextResponse.json({ translated, byArea: done, budgetLeft: budget.left, errors, complete: translated === 0 && errors.length === 0 });
+}
+
+async function warmAll(budget: { left: number }, errors: string[], started: number): Promise<Record<string, number>> {
+  const done: Record<string, number> = {};
   outer: for (const locale of LOCALES) {
     for (const [name, warm] of SOURCES) {
       if (budget.left <= 0 || Date.now() - started > 240_000) break outer;
@@ -49,6 +93,5 @@ export async function GET(req: NextRequest) {
       }
     }
   }
-  const translated = Object.values(done).reduce((a, b) => a + b, 0);
-  return NextResponse.json({ translated, byArea: done, budgetLeft: budget.left, errors, complete: translated === 0 && errors.length === 0 });
+  return done;
 }

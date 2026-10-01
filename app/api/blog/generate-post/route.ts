@@ -74,7 +74,8 @@ category must be one of: breaking, ai-business, tips, tools, case-studies, indus
       const raw = await streamChat(
         [{ role: "user", content: prompt }],
         "You are a professional AI technology journalist. Return only valid JSON — no markdown, no extra commentary.",
-        1200
+        3000,
+        "article-admin",
       );
       const clean = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
       const jsonMatch = clean.match(/\{[\s\S]*\}/);

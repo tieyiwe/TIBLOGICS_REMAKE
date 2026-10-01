@@ -15,7 +15,9 @@ export const AI_SYSTEMS_EXPERT: SeedTrack = {
 
 It opens with systems thinking at organisational scale: stocks and flows, delays, reinforcing and balancing loops, incentives, and where to intervene. Every module after that applies it. You will learn what agents really are and when a simpler workflow is the better choice, how to evaluate and monitor AI systems, how they fail and how to secure them, how risk-based regulation and good documentation work, and how to cost, measure and lead adoption honestly.
 
-The labs are real design work done inside the platform, and the capstone is a full AI system and leadership plan for an organisation you know, reviewed by a person.`,
+The labs are real design work done inside the platform, and the capstone is a full AI system and leadership plan for an organisation you know, reviewed by a person.
+
+Skills this track builds also appear in generative AI leadership and AI governance certifications. This track is independent: it is not affiliated with any vendor or certification body and is not official exam preparation.`,
   level: "advanced",
   status: "live",
   sortOrder: 3,

@@ -140,6 +140,7 @@ Write only the post content — no labels, no explanations.`;
         [{ role: "user", content: prompt }],
         "You are a social media expert for a tech agency. Write only the post content.",
         600,
+        "social",
       );
     }
 

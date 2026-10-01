@@ -21,9 +21,9 @@ export const AI_GOVERNANCE: SeedTrack = {
   tagline: "Decide which AI your organisation uses, how, and who answers for it, with controls that people actually follow.",
   description: `AI is already inside most organisations: in tools staff chose themselves, in features switched on in software you already pay for, and in vendor systems that help make decisions about people. This track is for the people responsible for making that safe, fair and lawful without stopping the useful work.
 
-You will learn what goes wrong with AI and why governance is a system of incentives and feedback loops, not a document. You will learn how risk-based regulation is structured, using the EU AI Act as the main example, how data protection law applies to AI, and how the NIST AI Risk Management Framework, ISO/IEC 42001, ISO/IEC 23894 and the OECD AI Principles fit together. Then you will do the work: build a use-case register, classify risk, write impact assessments, test for unfair outcomes, design human oversight, write policies people follow, respond to AI incidents, question vendors and their contracts, and run a governance programme with metrics leadership can act on.
+You will learn what goes wrong with AI and why governance is a system of incentives and feedback loops, not a document. You will learn how risk-based regulation is structured, using the EU AI Act as the main example, how data protection law applies to AI, and how the NIST AI Risk Management Framework, ISO/IEC 42001, ISO/IEC 23894 and the OECD AI Principles fit together. Then you will do the work: build a use-case register, classify risk, write impact assessments, test for unfair outcomes, govern the data behind AI from provenance to retirement, design human oversight, write policies people follow, respond to AI incidents, question vendors and their contracts, and run a governance programme with metrics leadership can act on.
 
-The labs are done on the platform, and the capstone is a full AI governance pack for an organisation you know, reviewed by a person. This track is general education, not legal advice, and it is not affiliated with or official preparation for any certification body or standard.`,
+The labs are done on the platform, and the capstone is a full AI governance pack for an organisation you know, reviewed by a person. Skills this track builds also appear in professional AI governance certifications. This track is general education, not legal advice, and it is independent: it is not affiliated with, or official preparation for, any certification body or standard.`,
   level: "advanced",
   status: "live",
   sortOrder: 11,
@@ -39,8 +39,8 @@ The labs are done on the platform, and the capstone is a full AI governance pack
     "Run vendor due diligence, spot weak contract terms and set governance gates for in-house builds",
     "Set up and run an AI governance programme with clear roles, paired metrics and a realistic 90-day plan",
   ],
-  // Lessons total 613 minutes.
-  estimatedHours: 10,
+  // Lessons total 639 minutes.
+  estimatedHours: 10.5,
   estimatedWeeksAt3Hrs: 4,
   modules: [
     ...GOV_MODULE_1,

@@ -47,6 +47,9 @@ export const POINT_SOURCES = [
   // thread id, so switching the answer cannot farm XP).
   "peer_review",
   "community_answer",
+  // Live expert sessions: joining inside the join window (refId: the
+  // session id, so once per session).
+  "live_session",
 ] as const;
 export type PointSource = (typeof POINT_SOURCES)[number];
 

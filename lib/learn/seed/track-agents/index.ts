@@ -20,9 +20,11 @@ export const AI_APPS_AGENTS: SeedTrack = {
   tagline: "Build AI features and agents that hold up in production: tools, retrieval, evaluation, security and cost, done properly.",
   description: `Getting a model to produce something impressive once takes an afternoon. Building an AI feature that is reliable, safe, affordable and understandable by the next developer is engineering, and that is what this track teaches.
 
-You will call models from code the professional way (messages, system prompts, tokens and cost, streaming, retries with backoff, keys kept on the server), get structured output you can trust, give models tools and run the agent loop with proper stop conditions, connect tools and data through the Model Context Protocol, build retrieval-augmented generation with citations and access control, and decide when an agent is the right design at all. Then you will prove it works with eval sets and regression tests, defend it against prompt injection and data exfiltration, and ship and operate it with sensible architecture, cost control, monitoring and handover.
+You will call models from code the professional way (messages, system prompts, tokens and cost, streaming, retries with backoff, keys kept on the server), get structured output you can trust, give models tools and run the agent loop with proper stop conditions, connect tools and data through the Model Context Protocol, handle images, documents and audio with a validated extraction pipeline, build retrieval-augmented generation with citations and access control, and decide when an agent is the right design at all. Then you will prove it works with eval sets and regression tests, defend it against prompt injection and data exfiltration, and ship and operate it with sensible architecture, cost control, monitoring and handover.
 
-It is vendor-neutral, with examples from several providers and open-source models, and hands-on throughout: Code Studio labs where you build a retry-safe client, a JSON validator with repair, a tool-calling loop with a step budget and a mini RAG pipeline against mock models, plus design reviews and an evaluation plan. The capstone is a small AI feature or agent of your own, documented with an eval set, a security review, a cost estimate and a system map, reviewed by a person.`,
+It is vendor-neutral, with examples from several providers and open-source models, and hands-on throughout: Code Studio labs where you build a retry-safe client, a JSON validator with repair, a tool-calling loop with a step budget and a mini RAG pipeline against mock models, plus design reviews and an evaluation plan. The capstone is a small AI feature or agent of your own, documented with an eval set, a security review, a cost estimate and a system map, reviewed by a person.
+
+Skills this track builds also appear in cloud AI engineer associate certifications and AI developer courses from model providers. This track is independent: it is not affiliated with any vendor and is not official exam preparation.`,
   level: "advanced",
   status: "live",
   sortOrder: 10,
@@ -38,8 +40,8 @@ It is vendor-neutral, with examples from several providers and open-source model
     "Evaluate AI features with eval sets, calibrated judges and regression tests, and defend them against prompt injection and data leaks",
     "Ship and operate AI features with the right architecture, cost controls, monitoring, incident response and a system map for handover",
   ],
-  // Lessons total 656 minutes.
-  estimatedHours: 11,
+  // Lessons total 683 minutes.
+  estimatedHours: 11.5,
   estimatedWeeksAt3Hrs: 6,
   modules: [...TRACK_AGENTS_MODULES_1_TO_2, ...TRACK_AGENTS_MODULES_3_TO_4, ...TRACK_AGENTS_MODULES_5_TO_6].map(spreadModule),
   labs: TRACK_AGENTS_LABS,

@@ -4,6 +4,46 @@ import { prisma } from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
 import { requireAdmin } from "@/lib/require-admin";
 
+type Lead = Record<string, string | undefined>;
+
+/**
+ * Real businesses from Google Places Text Search (New). No model call: the
+ * names, phones, websites and addresses come from Places, not from an AI.
+ */
+async function placesLeads(key: string, location: string, industry: string, instructions: string, count: number): Promise<Lead[]> {
+  const textQuery = [industry || "small businesses", "in", location, instructions ? `(${instructions.slice(0, 120)})` : ""].join(" ").trim();
+  const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Goog-Api-Key": key,
+      "X-Goog-FieldMask":
+        "places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.websiteUri,places.primaryTypeDisplayName,places.editorialSummary",
+    },
+    body: JSON.stringify({ textQuery, pageSize: count }),
+    signal: AbortSignal.timeout(20_000),
+  });
+  if (!res.ok) throw new Error(`Places search failed (${res.status})`);
+  const data = (await res.json()) as {
+    places?: Array<{
+      displayName?: { text?: string };
+      formattedAddress?: string;
+      nationalPhoneNumber?: string;
+      websiteUri?: string;
+      primaryTypeDisplayName?: { text?: string };
+      editorialSummary?: { text?: string };
+    }>;
+  };
+  return (data.places ?? []).slice(0, count).map((p) => ({
+    companyName: p.displayName?.text,
+    phone: p.nationalPhoneNumber,
+    website: p.websiteUri,
+    location: p.formattedAddress,
+    industry: p.primaryTypeDisplayName?.text ?? industry,
+    description: p.editorialSummary?.text,
+  }));
+}
+
 export async function POST(req: NextRequest) {
   const unauth = await requireAdmin();
   if (unauth) return unauth;
@@ -18,9 +58,14 @@ export async function POST(req: NextRequest) {
     // Cap count to prevent DB bloat from large batch requests
     const safeCount = Math.min(Math.max(1, Number(count) || 8), 20);
 
-    const hasGoogleKey = !!process.env.GOOGLE_PLACES_API_KEY;
-
-    const prompt = `Generate ${safeCount} realistic local business leads based on these search criteria:
+    const googleKey = process.env.GOOGLE_PLACES_API_KEY;
+    let rawLeads: Lead[];
+    let source: string;
+    if (googleKey) {
+      rawLeads = await placesLeads(googleKey, location.trim(), String(industry ?? ""), String(instructions ?? ""), safeCount);
+      source = "google_places";
+    } else {
+      const prompt = `Generate ${safeCount} realistic local business leads based on these search criteria:
 
 Location: ${location}
 Industry / Type: ${industry || "small and medium-sized businesses"}
@@ -40,24 +85,26 @@ Each object must have exactly these fields:
 
 Make them diverse, realistic, and specific to the ${location} area. Do not repeat company names.`;
 
-    const messages = [{ role: "user" as const, content: prompt }];
-    const systemPrompt =
-      "You are a lead generation AI. Output only valid JSON arrays. No markdown code blocks, no explanation text, just the raw JSON array starting with [ and ending with ].";
+      const messages = [{ role: "user" as const, content: prompt }];
+      const systemPrompt =
+        "You are a lead generation AI. Output only valid JSON arrays. No markdown code blocks, no explanation text, just the raw JSON array starting with [ and ending with ].";
 
-    const text = await streamChat(messages, systemPrompt, 2500);
+      const text = await streamChat(messages, systemPrompt, 2500, "lead-search");
 
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      throw new Error("Failed to parse lead data from AI response");
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) {
+        throw new Error("Failed to parse lead data from AI response");
+      }
+
+      rawLeads = JSON.parse(jsonMatch[0]);
+      source = "ai_generated";
     }
 
-    const rawLeads = JSON.parse(jsonMatch[0]);
-
     const createdLeads = await prisma.$transaction(
-      rawLeads.map((lead: Record<string, string>) =>
+      rawLeads.filter((lead) => lead.companyName).map((lead) =>
         prisma.agentLead.create({
           data: {
-            source: hasGoogleKey ? "google_places" : "ai_generated",
+            source,
             companyName: lead.companyName ?? "Unknown",
             contactName: lead.contactName,
             email: lead.email,

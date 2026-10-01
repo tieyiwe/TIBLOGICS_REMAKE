@@ -164,7 +164,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unknown agent" }, { status: 400 });
     }
 
-    const text = await streamChat(messages, agentConfig.systemPrompt, 1024);
+    const text = await streamChat(messages, agentConfig.systemPrompt, 2500, "admin-chat", { ref: `agent:${agent}` });
     return NextResponse.json({ text });
   } catch (err) {
     console.error("Agent error:", err);

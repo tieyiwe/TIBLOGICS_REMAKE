@@ -16,7 +16,9 @@ export const VIBE_CODING_ENGINEER: SeedTrack = {
 
 You will learn to write a spec before you prompt, build in small loops with version control as your undo button, read and debug code you did not write, test what the AI produced instead of trusting it, spot the security mistakes AI makes most often, and ship and maintain an app without it falling over.
 
-It is hands-on from the first lesson. Every lesson has live code playgrounds and prompts you run on the page, and the labs happen in the built-in Code Studio: an editor, a live preview, an AI pair programmer whose changes you review before applying, saved versions like Git commits, and automated checks. The capstone is a small real app you build and ship yourself, reviewed by a person.`,
+It is hands-on from the first lesson. Every lesson has live code playgrounds and prompts you run on the page, and the labs happen in the built-in Code Studio: an editor, a live preview, an AI pair programmer whose changes you review before applying, saved versions like Git commits, and automated checks. The capstone is a small real app you build and ship yourself, reviewed by a person.
+
+Skills this track builds also appear in AI-assisted and agentic coding courses from model providers and developer platforms. This track is independent: it is not affiliated with any of them and is not official preparation for any certificate.`,
   level: "intermediate",
   status: "live",
   sortOrder: 4,

@@ -64,3 +64,13 @@ export function questionsOpen(s: SessionTiming, now = Date.now()): boolean {
 export function safeUrl(url: string | null | undefined): string | null {
   return url && /^https?:\/\//i.test(url) ? url : null;
 }
+
+export type LivePhase = "upcoming" | "live" | "past" | "cancelled";
+
+/** What a learner sees on the badge. "live" from the start until it is over. */
+export function livePhase(s: SessionTiming, now = Date.now()): LivePhase {
+  if (s.status === "cancelled") return "cancelled";
+  if (sessionOver(s, now)) return "past";
+  if (s.status === "live" || now >= ms(s.startsAt)) return "live";
+  return "upcoming";
+}

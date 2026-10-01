@@ -61,7 +61,15 @@ export async function POST(req: NextRequest) {
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: "Invalid messages" }, { status: 400 });
     }
-    const text = await streamChat(messages, NEWS_AGENT_SYSTEM, 1200);
+    // Bounded history: the last 20 plain-text turns, starting with the admin's.
+    const turns = (messages as Array<{ role?: unknown; content?: unknown }>)
+      .filter((m) => (m?.role === "user" || m?.role === "assistant") && typeof m.content === "string")
+      .map((m) => ({ role: m.role as "user" | "assistant", content: (m.content as string).slice(0, 30_000) }))
+      .slice(-20);
+    while (turns.length && turns[0].role !== "user") turns.shift();
+    if (!turns.length) return NextResponse.json({ error: "Invalid messages" }, { status: 400 });
+    // 2500: a drafted newsletter's HTML lives inside the action JSON.
+    const text = await streamChat(turns, NEWS_AGENT_SYSTEM, 2500, "admin-chat", { ref: "news-agent" });
 
     // Parse any action block
     const actionMatch = text.match(/```action\s*([\s\S]*?)```/);

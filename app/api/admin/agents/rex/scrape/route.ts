@@ -89,7 +89,7 @@ Provide a JSON analysis with ONLY these fields (no markdown, just raw JSON):
 }`;
 
   const messages = [{ role: "user" as const, content: prompt }];
-  const text = await streamChat(messages, "You are a business analyst. Return only valid JSON.", 1500);
+  const text = await streamChat(messages, "You are a business analyst. Return only valid JSON.", 1500, "classify");
 
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   let info: Record<string, unknown> = {};

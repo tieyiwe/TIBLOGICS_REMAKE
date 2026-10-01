@@ -8,7 +8,7 @@ import type { SeedModule } from "../types";
 export const GOV_MODULE_5: SeedModule[] = [{
   title: "Buying and Building Responsibly",
   summary:
-    "Ask vendors the due diligence questions that matter, know the contract terms that protect you (data use, training on your data, liability, audit rights, exit), run procurement with checks scaled to risk, test vendor claims instead of believing them, and build in-house AI through clear governance gates.",
+    "Ask vendors the due diligence questions that matter, know the contract terms that protect you (data use, training on your data, liability, audit rights, exit), run procurement with checks scaled to risk, test vendor claims instead of believing them, build in-house AI through clear governance gates, and govern the data behind AI from provenance to retirement.",
   lessons: [
     // ── 5.1 ─────────────────────────────────────────────────────────────
     {
@@ -484,6 +484,132 @@ You are done when every gate has named evidence and a decision-maker, and you ha
         },
       ],
     },
+
+    // ── 5.5 ─────────────────────────────────────────────────────────────
+    // Added after the original four so seed matching by position is stable.
+    {
+      title: "Data governance for AI: provenance, lineage, rights and retention",
+      objective:
+        "Record where the data behind an AI system came from and how it flows, confirm the right to use it, and set retention, deletion and retirement rules that still work once a model has been trained.",
+      durationMinutes: 26,
+      contentType: "article",
+      bodyMd: `## AI inherits its data's problems
+
+Every AI system is shaped by data: the examples it was trained or fine-tuned on, the documents it retrieves, the prompts people type and the outputs it produces. Most governance failures with AI trace back to a data decision made early and quietly. A model trained on data you had no right to use may have to be withdrawn. A dataset that under-represents a group produces unfair results however good the model. A log that keeps every prompt forever becomes a store of personal data nobody planned for.
+
+Data governance for AI asks four questions: where did it come from, where does it go, are we allowed to use it this way, and how long do we keep it?
+
+## Provenance and lineage
+
+**Provenance** is the origin of a dataset and the terms it came with: who created it, when, how it was collected and under what licence or legal basis. **Lineage** is its path through your systems: which cleaning and labelling steps changed it, which version trained which model version, and which outputs depend on it.
+
+You need both to answer the questions that will come. A regulator asks what the system was trained on. A person asks you to delete their data. A bias test finds a problem and you need to know which dataset caused it. Without lineage, each of these becomes an investigation; with it, a lookup.
+
+A simple **data record** (sometimes called a datasheet or data card) for each dataset is enough to start:
+
+| Field | Example entry |
+|---|---|
+| Source and owner | Customer support tickets, owned by the support lead |
+| Collected how and when | Exported from the helpdesk, January to June |
+| Legal basis or licence | Legitimate interests, assessed in the DPIA |
+| Contents | Free text, may contain names and order numbers |
+| Changes made | Names masked; duplicates removed; labelled by two staff |
+| Used by | Triage classifier version 3 |
+| Retention | Delete raw export after 12 months |
+
+## The right to use the data
+
+Having data is not the same as being allowed to use it for AI.
+
+- **Purpose.** Under data protection law, personal data collected for one purpose cannot simply be reused for another. Training a model on customer records needs its own assessment.
+- **Licences and copyright.** Third-party and scraped content comes with terms. How copyright applies to training is unsettled in many places, so take advice for anything commercial.
+- **Contracts.** Customer and supplier agreements may restrict how their data is used, including for training.
+- **Likeness and voice.** Using a person's image or voice to train or clone needs their clear consent.
+
+## Quality, representativeness and minimisation
+
+Ask whether the data fits the purpose: is it accurate, recent enough, consistently labelled and representative of the people the system will affect? Collect and keep only what the purpose needs. **Synthetic data** (artificially generated records) can help with privacy and gaps, but it can carry the biases of the data it was modelled on and, if generated carelessly from personal data, can still reveal it.
+
+## Retention, deletion and retirement
+
+Set retention periods for every data store around the system: training sets, retrieval content, prompts, outputs and logs. Plan deletion before launch. Removing one person's data from a trained model is usually impractical, which is a strong reason to keep personal data out of training and supply it through retrieval instead, where deleting the document removes it from future answers.
+
+Agents add new flows to govern: tool calls that move data between systems, and memory that stores what the agent learned about a user. Each needs an owner and a retention rule like any other store.
+
+When a system is **retired**, decide what happens to its datasets, logs and documentation; revoke its access and keys; tell its users; and update the use-case register (Module 3). Keep what you need to answer questions about past decisions, and delete the rest on schedule.
+
+## Try it now
+
+\`\`\`try
+Act as a data governance adviser. Here is an AI use in my organisation: [DESCRIBE THE SYSTEM, ITS DATA SOURCES AND WHO IT AFFECTS]. Draft a data record for each data source with these fields: source and owner, how collected, legal basis or licence, contents, changes made, used by, retention. Then list the questions I must answer before I can confirm we have the right to use each source, and propose a deletion and retirement plan.
+\`\`\`
+
+Run the prompt for one AI use you know. Correct anything it invents about your systems, then mark every field you could not fill from real knowledge.
+
+You are done when each data source has a completed record, the unknowns have a named person to ask, and the system has a written retention and retirement rule.`,
+      microCheck: [
+        {
+          question: "A person asks a company to delete their data, and the company cannot tell which model versions were trained on it. What was missing?",
+          options: [
+            "Lineage linking dataset versions to model versions",
+            "A higher accuracy target for the latest model",
+            "A longer retention period for all training data",
+            "A vendor contract banning deletion requests",
+          ],
+          correctIndex: 0,
+          explanation:
+            "Lineage records which version of which dataset trained which model. Without it, a deletion request becomes an investigation rather than a lookup.",
+        },
+        {
+          question: "A team wants to train a model on customer records collected to process orders. What must happen first?",
+          options: [
+            "Assess whether the new purpose is lawful for that data",
+            "Nothing, since the company already holds the records",
+            "Ask the model vendor to approve the training data set",
+            "Move the records to a new system before any training",
+          ],
+          correctIndex: 0,
+          explanation:
+            "Personal data collected for one purpose cannot simply be reused for another. Training is a new purpose that needs its own assessment and legal basis.",
+        },
+        {
+          question: "Why is supplying personal data through retrieval often easier to govern than training on it?",
+          options: [
+            "Deleting the document removes it from future answers",
+            "Retrieval systems are exempt from data protection law",
+            "Retrieved data is never shown to the people who ask",
+            "Retrieval makes the model forget all earlier training",
+          ],
+          correctIndex: 0,
+          explanation:
+            "Data baked into model weights is very hard to remove, while a retrieved document can be deleted at its source. Retrieval does not escape data protection duties.",
+        },
+        {
+          question: "A team proposes synthetic data so it can skip a privacy review. What is the flaw?",
+          options: [
+            "Synthetic data can still reveal or mirror the source",
+            "Synthetic data is banned by every AI regulation",
+            "Synthetic data cannot be used to train any model",
+            "Synthetic data always contains more names than real data",
+          ],
+          correctIndex: 0,
+          explanation:
+            "Synthetic records modelled on personal data can carry its biases and, if generated carelessly, reveal it. They reduce risk but do not remove the need for review.",
+        },
+        {
+          question: "An AI assistant is being retired. Which step is most often forgotten?",
+          options: [
+            "Revoking its access keys and updating the register",
+            "Announcing the retirement date to the vendor first",
+            "Raising the model's temperature before switching off",
+            "Retraining the model one final time on recent data",
+          ],
+          correctIndex: 0,
+          explanation:
+            "Retired systems often keep live credentials and stay listed as active, leaving risk and a wrong inventory behind. Retirement is a governance decision with its own checklist.",
+        },
+      ],
+    },
   ],
   quiz: [
     {
@@ -625,6 +751,32 @@ You are done when every gate has named evidence and a decision-maker, and you ha
       correctIndex: 1,
       explanation:
         "A rollback should return to a known safe way of working, so the service continues while the problem is fixed. Stopping advice harms the people the service exists for.",
+    },
+    {
+      question:
+        "A model was trained on a dataset bought from a broker. Months later, the broker cannot show it had consent for the data. Which earlier control would have reduced this risk most?",
+      options: [
+        "Recording provenance and licence terms before use",
+        "Raising the model's accuracy target before launch",
+        "Training on a larger copy of the same broker data",
+        "Adding a disclaimer that outputs may be inaccurate",
+      ],
+      correctIndex: 0,
+      explanation:
+        "Checking and recording where data came from, and on what terms, before training is the control that catches this. Once the model is trained, the remedy may be withdrawing it.",
+    },
+    {
+      question:
+        "An agent stores notes about each user in long-term memory to personalise later sessions. What does governance need to add?",
+      options: [
+        "An owner and a retention rule for the memory store",
+        "Nothing, as agent memory is not a kind of data store",
+        "A ban on agents ever reading any of the stored notes",
+        "A longer context window so memory is no longer needed",
+      ],
+      correctIndex: 0,
+      explanation:
+        "Agent memory is a new store of personal data. Like any other store it needs an owner, a purpose, a retention period and a way to honour deletion requests.",
     },
   ],
 }];

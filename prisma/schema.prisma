@@ -1782,3 +1782,122 @@ model LoginEvent {
   @@index([studentId, at])
   @@index([at])
 }
+
+// ── Verified skill badges (lib/learn/skill-badges) ──────────────────────────
+// Open Badges 3.0 credentials, finer grained than certificates. Created at
+// runtime by lib/learn/skill-badges/db.ts; keep the two in step. Plain id
+// columns, no Prisma relations (Student is not edited); the runtime SQL adds
+// a cascading foreign key to Student.
+
+/// One awarded skill badge. badgeKey is the catalog key ("module:<track>:<n>",
+/// "studio:<tool>", "capstone:<track>", "skill:<slug>"). credential is the
+/// signed OpenBadgeCredential exactly as served; facts are frozen at award.
+model SkillBadgeAward {
+  id           String    @id
+  studentId    String
+  badgeKey     String
+  family       String
+  name         String
+  /// Track slugs whose certificate revocation also revokes this badge.
+  trackSlugs   Json      @default("[]")
+  /// [{ name, description }]: what was passed, never the learner's work.
+  evidence     Json      @default("[]")
+  issuedAt     DateTime  @default(now())
+  /// Per-award salt for the hashed email identity.
+  salt         String
+  credential   Json
+  /// sha256 fingerprint of the signing public key ("" when unsigned).
+  keyFp        String    @default("")
+  /// false when signed with an ephemeral development key (or not at all).
+  signed       Boolean   @default(false)
+  isPublic     Boolean   @default(true)
+  /// Set when the badge was awarded by a lazy backfill: no toast.
+  notifiedAt   DateTime?
+  revokedAt    DateTime?
+  revokedReason String?
+
+  @@unique([studentId, badgeKey])
+  @@index([studentId])
+}
+
+// ── Study reminders: WhatsApp and email (lib/learn/reminders) ───────────────
+// Created at runtime by lib/learn/reminders/db.ts; keep the two in step. Plain
+// id columns, no Prisma relation (Student is not edited); the runtime SQL adds
+// cascading foreign keys.
+
+/// A learner's reminder settings. WhatsApp needs a phone number and an
+/// explicit consent (consentAt + the wording they agreed to). An inbound STOP
+/// sets optedOutAt and turns WhatsApp off. days: weekdays, 0 = Sunday.
+model StudyReminderPref {
+  studentId     String    @id
+  whatsappOn    Boolean   @default(false)
+  phoneE164     String?
+  emailOn       Boolean   @default(false)
+  /// "HH:MM", wall clock in `timezone`.
+  timeLocal     String    @default("18:00")
+  timezone      String    @default("UTC")
+  days          String    @default("1,2,3,4,5")
+  /// en | fr
+  language      String    @default("en")
+  consentAt     DateTime?
+  consentText   String?
+  optedOutAt    DateTime?
+  /// settings | whatsapp_stop
+  optOutSource  String?
+  /// Set after 3 reminders in a row were ignored: nothing is sent until then.
+  pausedUntil   DateTime?
+  ignoredCount  Int       @default(0)
+  lastSentAt    DateTime?
+  /// WhatsApp delivery status of the last message: sent | delivered | read | failed
+  lastStatus    String?
+  lastStatusAt  DateTime?
+  lastInboundAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([phoneE164])
+}
+
+/// One reminder per learner per local day. The row is inserted (claimed)
+/// before the message is sent, so overlapping runs never send twice.
+/// status: claimed | sent | failed | skipped
+model StudyReminderLog {
+  id         String   @id @default(cuid())
+  studentId  String
+  /// "YYYY-MM-DD" in the learner's time zone.
+  day        String
+  channel    String
+  status     String   @default("claimed")
+  providerId String?
+  error      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([studentId, day])
+  @@index([providerId])
+}
+
+// ── Claude API usage log (lib/ai-usage.ts) ──────────────────────────────────
+// Created at runtime there; keep the two in step. No relations: studentId is
+// a plain column. One row per model call (or per Message Batches result).
+
+/// One Claude call: task (lib/claude.ts AiTask), model, tokens and the
+/// estimated cost in US cents (list prices; batch results at half price).
+model AiUsage {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  task             String
+  model            String
+  batch            Boolean  @default(false)
+  inputTokens      Int      @default(0)
+  outputTokens     Int      @default(0)
+  cacheReadTokens  Int      @default(0)
+  cacheWriteTokens Int      @default(0)
+  costCents        Float    @default(0)
+  stopReason       String?
+  studentId        String?
+  ref              String?
+
+  @@index([createdAt])
+  @@index([task, createdAt])
+}

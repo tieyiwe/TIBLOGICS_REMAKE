@@ -91,16 +91,15 @@ What a successful outcome looks like for this client.
 
 Be direct and specific. This is for the expert's eyes only — no fluff.`;
 
-    const anthropic = (await import("@/lib/claude")).default;
-    const { CLAUDE_MODEL } = await import("@/lib/claude");
+    const { runClaude } = await import("@/lib/claude");
 
-    const response = await anthropic.messages.create({
-      model: CLAUDE_MODEL,
-      max_tokens: 1200,
+    // All text blocks are joined (content[0] can be a thinking block).
+    const { text: briefText } = await runClaude("brief", {
+      system: "You prepare consultants for client sessions. Follow the requested format exactly.",
       messages: [{ role: "user", content: prompt }],
+      maxTokens: 1500,
+      meta: { ref: `brief:${id}` },
     });
-
-    const briefText = response.content[0].type === "text" ? response.content[0].text : "";
 
     const result = {
       text: briefText,

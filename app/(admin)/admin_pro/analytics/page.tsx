@@ -1,394 +1,436 @@
-"use client";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { requireAdminPage } from "../_lib/admin-page-auth";
+import { canViewAnalytics, getAnalytics, parseRange, RANGES, STALL_DAYS, MIN_ANSWERS } from "@/lib/admin/analytics";
+import { Card, DayBars, Delta, Empty, Kpi, Meter, SectionTitle, int, money, pct, td, th } from "./ui";
 
-import { useState, useEffect, useCallback } from "react";
-import { Users, Monitor, Smartphone, Tablet, Globe, TrendingUp, Eye, Loader2, RefreshCw, Radio, Zap, MapPin } from "lucide-react";
+// Per-request and session-scoped: never prerendered. The numbers themselves
+// are cached for a minute in lib/admin/analytics.ts.
+export const dynamic = "force-dynamic";
 
-interface LiveSession {
-  sessionId: string;
-  page: string;
-  device: string;
-  browser: string;
-  os: string;
-  origin: string;
-  ip: string;
-  lastSeen: string;
-}
+// Owner analytics: revenue, funnel, learning, retention, engagement and
+// content for the last 7/30/90 days, each compared with the period before.
+// Owner and admins only (it shows revenue); collaborators keep the visitor
+// view at /admin_pro/analytics/visitors.
 
-interface PageView {
-  id: string;
-  page: string;
-  origin: string;
-  device: string;
-  browser: string;
-  os: string;
-  createdAt: string;
-}
+const SECTIONS = [
+  ["revenue", "Revenue"], ["funnel", "Funnel"], ["learning", "Learning"], ["retention", "Retention"],
+  ["engagement", "Engagement"], ["content", "Content"],
+] as const;
 
-interface AnalyticsData {
-  liveCount: number;
-  liveSessions: LiveSession[];
-  recentViews: PageView[];
-  topPages: { page: string; count: number }[];
-  topOrigins: { origin: string; count: number }[];
-  topCountries: { country: string; count: number }[];
-  topFeatures: { feature: string; count: number }[];
-  deviceBreakdown: { desktop: number; mobile: number; tablet: number; total: number };
-  hourly: { hour: number; count: number }[];
-}
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 
-const DEVICE_ICONS: Record<string, React.ElementType> = {
-  desktop: Monitor,
-  mobile: Smartphone,
-  tablet: Tablet,
-};
-
-function timeAgo(dateStr: string) {
-  const s = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
-  if (s < 60) return `${s}s ago`;
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  return `${Math.floor(s / 3600)}h ago`;
-}
-
-function DevicePct({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
-  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
-  const Icon = DEVICE_ICONS[label.toLowerCase()] ?? Monitor;
-  return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between">
-        <span className="flex items-center gap-1.5 font-dm text-xs text-[#3A4A5C]">
-          <Icon size={12} /> {label}
-        </span>
-        <span className="font-dm text-xs font-semibold text-[#0D1B2A]">{pct}%</span>
-      </div>
-      <div className="h-2 bg-[#E8EFF8] rounded-full overflow-hidden">
-        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: color }} />
-      </div>
-      <span className="font-dm text-[11px] text-[#7A8FA6]">{count} sessions</span>
-    </div>
-  );
-}
-
-function HourlyChart({ data }: { data: { hour: number; count: number }[] }) {
-  const max = Math.max(...data.map((d) => d.count), 1);
-  const now = new Date().getHours();
-  return (
-    <div className="flex items-end gap-1 h-20">
-      {data.map((d) => (
-        <div key={d.hour} className="flex-1 flex flex-col items-center gap-0.5">
-          <div
-            className="w-full rounded-t transition-all duration-500"
-            style={{
-              height: `${Math.max(4, (d.count / max) * 72)}px`,
-              backgroundColor: d.hour === now ? "#F47C20" : "#2251A3",
-              opacity: d.hour === now ? 1 : 0.5 + (d.count / max) * 0.5,
-            }}
-          />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export default function AnalyticsPage() {
-  const [data, setData] = useState<AnalyticsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-
-  const fetchData = useCallback(async () => {
-    try {
-      const res = await fetch("/api/analytics/realtime");
-      const json = await res.json();
-      setData(json);
-      setLastUpdated(new Date());
-    } catch {
-      // keep existing data
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Each poll runs four queries. Left open all day at 60s that was ~5,700
-  // queries a day per open tab, most of them while nobody was looking at the
-  // screen. Poll less often, and not at all while the tab is hidden — with a
-  // refresh on return so the numbers are still current when you look back.
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(() => {
-      if (typeof document !== "undefined" && document.hidden) return;
-      fetchData();
-    }, 120_000);
-
-    const onVisible = () => {
-      if (!document.hidden) fetchData();
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [fetchData]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 size={20} className="animate-spin text-[#7A8FA6]" />
-      </div>
-    );
-  }
-
-  const d = data!;
-  const total = d.deviceBreakdown.total || 1;
+export default async function AnalyticsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const session = await requireAdminPage();
+  if (!canViewAnalytics(session.user)) redirect("/admin_pro/analytics/visitors");
+  const range = parseRange((await searchParams).range);
+  const a = await getAnalytics(range);
+  const r = a.revenue;
+  const L = a.learning;
+  const signups = a.funnel.steps[0];
+  const prevWord = `previous ${range} days`;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-syne font-bold text-2xl text-[#0D1B2A]">Visitor Analytics</h1>
+    <div className="space-y-6 max-w-[1400px]">
+      {/* Header + range switch */}
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="font-syne font-bold text-2xl text-[#0D1B2A]">Owner Analytics</h1>
           <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">
-            Real-time site visitors · updates every minute
+            Last {range} days ({fmtDate(a.from)} to today) compared with the {prevWord}. Times in UTC. Updated{" "}
+            {new Date(a.generatedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC
+            (cached for a minute).
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs font-dm text-[#7A8FA6]">
-          <RefreshCw size={12} className="animate-spin" style={{ animationDuration: "5s" }} />
-          {lastUpdated ? `Updated ${timeAgo(lastUpdated.toISOString())}` : "Loading…"}
-        </div>
+        <nav className="inline-flex rounded-xl border border-[#D2DCE8] bg-white p-1" aria-label="Date range">
+          {RANGES.map((d) => (
+            <Link
+              key={d}
+              href={`/admin_pro/analytics?range=${d}`}
+              aria-current={d === range ? "page" : undefined}
+              className={`px-3 py-1.5 rounded-lg font-dm text-sm font-medium ${
+                d === range ? "bg-[#1B3A6B] text-white" : "text-[#3A4A5C] hover:bg-[#F4F7FB]"
+              }`}
+            >
+              {d} days
+            </Link>
+          ))}
+        </nav>
+      </div>
+      <nav className="flex flex-wrap gap-2 font-dm text-xs" aria-label="Sections">
+        {SECTIONS.map(([id, label]) => (
+          <a key={id} href={`#${id}`} className="rounded-full bg-white border border-[#D2DCE8] px-3 py-1 text-[#2251A3] hover:bg-[#F4F7FB]">
+            {label}
+          </a>
+        ))}
+        <Link href="/admin_pro/analytics/visitors" className="rounded-full bg-white border border-[#D2DCE8] px-3 py-1 text-[#2251A3] hover:bg-[#F4F7FB]">
+          Live visitors →
+        </Link>
+      </nav>
+
+      {/* ── Revenue ─────────────────────────────────────────────────────── */}
+      <SectionTitle id="revenue">Revenue</SectionTitle>
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+        <Kpi label={`Paid one-time revenue, last ${range} days`} value={money(r.total.cur)} pair={r.total} prevLabel={money(r.total.prev)} note="Stored amounts" />
+        <Kpi
+          label="Est. recurring revenue (MRR) now"
+          value={money(r.mrr.totalCents)}
+          note={`Estimate: Learning Box + team seats${r.mrr.toolkitCents != null && r.mrr.toolkitActive ? " + Toolkit Live" : ""}`}
+        />
+        <Kpi label={`New paid Learn subscriptions`} value={int(r.newLearnSubs.cur)} pair={r.newLearnSubs} />
+        <Kpi
+          label="Learn subscriptions cancelled"
+          value={int(r.cancelledLearnSubs.cur)}
+          pair={r.cancelledLearnSubs}
+          invert
+          note="Estimate: by date of last change"
+        />
       </div>
 
-      {/* Live count hero */}
-      <div className="bg-gradient-to-br from-[#1B3A6B] to-[#2251A3] rounded-2xl p-6 flex items-center gap-6">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="w-4 h-4 rounded-full bg-green-400" />
-            <div className="absolute inset-0 w-4 h-4 rounded-full bg-green-400 animate-ping opacity-60" />
-          </div>
-          <div>
-            <p className="font-dm text-white/70 text-sm">Live on site right now</p>
-            <p className="font-syne font-extrabold text-5xl text-white leading-none mt-1">
-              {d.liveCount}
-            </p>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <Card title="One-time revenue by source" subtitle={`Last ${range} days vs ${prevWord}`} csv="revenue" range={range}>
+          <ul className="space-y-4">
+            {r.sources.map((s) => (
+              <li key={s.key}>
+                <div className="flex justify-between gap-2 font-dm text-sm">
+                  <span className="text-[#3A4A5C] min-w-0">{s.label}</span>
+                  <span className="font-semibold text-[#0D1B2A] tabular-nums shrink-0">{s.tracked ? money(s.cents.cur) : "not tracked"}</span>
+                </div>
+                <Meter value={s.cents.cur} max={Math.max(1, ...r.sources.map((x) => x.cents.cur))} />
+                {s.tracked && (
+                  <p className="mt-1 font-dm text-[11px] text-[#7A8FA6]">
+                    {int(s.count.cur)} payments · <Delta v={s.cents} /> vs {money(s.cents.prev)}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </Card>
+        <Card title="Paid one-time revenue per day" subtitle="All one-time sources, stored amounts" csv="revenue-daily" range={range} className="lg:col-span-2">
+          <DayBars data={r.daily} format={money} label="Revenue" />
+        </Card>
+      </div>
+
+      <Card title="Recurring revenue (estimates)" subtitle="Subscriptions in force today, at list prices. Renewals are not stored, so check Stripe for exact figures." range={range}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm font-dm">
+            <thead>
+              <tr className="border-b border-[#F4F7FB] text-left text-xs uppercase tracking-wider text-[#7A8FA6]">
+                <th className={th}>Product</th><th className={th}>Active</th><th className={th}>Basis</th><th className={`${th} text-right`}>Est. MRR</th>
+              </tr>
+            </thead>
+            <tbody className="text-[#3A4A5C]">
+              <tr className="border-b border-[#F4F7FB]">
+                <td className={td}>Learning Box subscriptions</td>
+                <td className={td}>{int(r.mrr.learnMonthly)} monthly{r.mrr.learnAnnual ? `, ${int(r.mrr.learnAnnual)} annual (legacy)` : ""}</td>
+                <td className={td}>{money(r.mrr.learnPriceCents)}/month each; annual ÷ 12</td>
+                <td className={`${td} text-right font-semibold text-[#0D1B2A]`}>{money(r.mrr.learnCents)}</td>
+              </tr>
+              <tr className="border-b border-[#F4F7FB]">
+                <td className={td}>Team plans</td>
+                <td className={td}>{a.tables.Team ? `${int(r.mrr.teams)} teams, ${int(r.mrr.teamSeats)} seats` : "not tracked"}</td>
+                <td className={td}>Seats × seat price (comped teams excluded){r.newTeams ? ` · ${int(r.newTeams.cur)} new paid teams` : ""}</td>
+                <td className={`${td} text-right font-semibold text-[#0D1B2A]`}>{money(r.mrr.teamCents)}</td>
+              </tr>
+              <tr>
+                <td className={td}>Toolkit Live / Compliance Guard</td>
+                <td className={td}>{a.tables.ToolkitSubscription ? int(r.mrr.toolkitActive) : "not tracked"}</td>
+                <td className={td}>
+                  {r.mrr.toolkitCents == null ? "Price not set in env (TOOLKIT_PRICE_CENTS / GUARD_PRICE_CENTS)" : "Active × plan price"}
+                  {r.newToolkitSubs ? ` · ${int(r.newToolkitSubs.cur)} new in period` : ""}
+                </td>
+                <td className={`${td} text-right font-semibold text-[#0D1B2A]`}>{r.mrr.toolkitCents == null ? "–" : money(r.mrr.toolkitCents)}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <div className="ml-auto flex gap-4 flex-wrap">
-          {[
-            { label: "Last 100 sessions", value: d.deviceBreakdown.total },
-            { label: "Top page", value: d.topPages[0]?.page?.split("/").pop() || "—" },
-            { label: "Top origin", value: d.topOrigins[0]?.origin || "direct" },
-          ].map((stat) => (
-            <div key={stat.label} className="text-center">
-              <p className="font-syne font-bold text-xl text-white">{stat.value}</p>
-              <p className="font-dm text-white/50 text-xs mt-0.5">{stat.label}</p>
+      </Card>
+
+      {/* ── Funnel ──────────────────────────────────────────────────────── */}
+      <SectionTitle id="funnel">Funnel</SectionTitle>
+      <Card
+        title="Sign-up funnel"
+        subtitle={`Learners who signed up in the last ${range} days and how far they have got so far. The previous cohort has had longer, so later steps favour it.`}
+        csv="funnel"
+        range={range}
+      >
+        {a.funnel.visitors && (
+          <p className="mb-4 font-dm text-sm text-[#3A4A5C]">
+            <span className="font-semibold text-[#0D1B2A]">{int(a.funnel.visitors.cur)}</span> unique site visitors (sessions){" "}
+            <Delta v={a.funnel.visitors} /> · sign-up rate {pct(signups.cur, a.funnel.visitors.cur)} of visitors (not linked per person)
+          </p>
+        )}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm font-dm min-w-[560px]">
+            <thead>
+              <tr className="border-b border-[#F4F7FB] text-left text-xs uppercase tracking-wider text-[#7A8FA6]">
+                <th className={th}>Step</th><th className={`${th} w-2/5`}></th><th className={`${th} text-right`}>Learners</th>
+                <th className={`${th} text-right`}>Of sign-ups</th><th className={`${th} text-right`}>From previous step</th><th className={`${th} text-right`}>Previous period</th>
+              </tr>
+            </thead>
+            <tbody className="text-[#3A4A5C]">
+              {a.funnel.steps.map((s, i) => {
+                const before = i === 0 ? null : a.funnel.steps[i - 1];
+                return (
+                  <tr key={s.key} className="border-b border-[#F4F7FB] last:border-0">
+                    <td className={td}>{s.label}</td>
+                    <td className={`${td} align-middle`}><Meter value={s.cur} max={signups.cur} color={i === 0 ? "#1B3A6B" : "#2251A3"} /></td>
+                    <td className={`${td} text-right font-semibold text-[#0D1B2A] tabular-nums`}>{int(s.cur)}</td>
+                    <td className={`${td} text-right tabular-nums`}>{pct(s.cur, signups.cur)}</td>
+                    <td className={`${td} text-right tabular-nums`}>{before ? pct(s.cur, before.cur) : "–"}</td>
+                    <td className={`${td} text-right tabular-nums text-[#7A8FA6]`}>{int(s.prev)} ({pct(s.prev, signups.prev)})</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* ── Learning ────────────────────────────────────────────────────── */}
+      <SectionTitle id="learning">Learning</SectionTitle>
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+        <Kpi label="Daily active learners (last 24 h)" value={int(L.dau.cur)} pair={L.dau} />
+        <Kpi label="Weekly active (last 7 days)" value={int(L.wau.cur)} pair={L.wau} />
+        <Kpi label="Monthly active (last 30 days)" value={int(L.mau.cur)} pair={L.mau} note={`Stickiness DAU/MAU ${pct(L.dau.cur, L.mau.cur)}`} />
+        <Kpi label={`Lessons completed, last ${range} days`} value={int(L.lessons.cur)} pair={L.lessons} />
+      </div>
+      <p className="-mt-3 font-dm text-xs text-[#7A8FA6]">
+        Active = signed in, completed a lesson or earned XP. Compared with the same window ending {fmtDate(a.from)}.
+        {!a.tables.LoginEvent && " Sign-in history is not tracked yet, so only lessons and XP count."}
+      </p>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <Card title="Lessons completed per day" csv="activity-daily" range={range}>
+          <DayBars data={L.lessonsPerDay} label="Lessons completed" />
+        </Card>
+        <Card title="Active learners per day" csv="activity-daily" range={range}>
+          <DayBars data={L.dailyActive} label="Active learners" />
+        </Card>
+      </div>
+
+      <Card
+        title="Tracks"
+        subtitle={`Enrolled = touched the track (lesson, quiz, lab, exam or placement), all time. Completed = every lesson done or tested out. Median days = first activity to last lesson, for completers. Stalled = not completed and no activity for ${STALL_DAYS}+ days; the drop-off module is where their next lesson sits. Pass rates are for the last ${range} days.`}
+        csv="tracks"
+        range={range}
+      >
+        {L.tracks.length === 0 ? <Empty>No tracks yet.</Empty> : (
+          <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+            <table className="w-full text-sm font-dm min-w-[980px]">
+              <thead>
+                <tr className="border-b border-[#F4F7FB] text-left text-xs uppercase tracking-wider text-[#7A8FA6]">
+                  <th className={th}>Track</th><th className={`${th} text-right`}>Enrolled</th><th className={`${th} text-right`}>New / active</th>
+                  <th className={`${th} text-right`}>Completed</th><th className={`${th} text-right`}>Median days</th><th className={`${th} text-right`}>Avg progress</th>
+                  <th className={`${th} text-right`}>Certs</th><th className={th}>Biggest drop-off</th>
+                  <th className={`${th} text-right`}>Quiz pass</th><th className={`${th} text-right`}>Exam pass</th>
+                </tr>
+              </thead>
+              <tbody className="text-[#3A4A5C]">
+                {L.tracks.map((t) => (
+                  <tr key={t.id} className="border-b border-[#F4F7FB] last:border-0">
+                    <td className={td}>
+                      <span className="font-medium text-[#0D1B2A]">{t.title}</span>
+                      <span className="block text-[11px] text-[#7A8FA6]">{t.lessons} lessons{t.status !== "live" ? ` · ${t.status.replace("_", " ")}` : ""}</span>
+                    </td>
+                    <td className={`${td} text-right tabular-nums`}>{int(t.enrolled)}</td>
+                    <td className={`${td} text-right tabular-nums`}>{int(t.startedInPeriod)} / {int(t.activeInPeriod)}</td>
+                    <td className={`${td} text-right tabular-nums`}>{int(t.completed)} <span className="text-[#7A8FA6]">({t.completionPct}%)</span></td>
+                    <td className={`${td} text-right tabular-nums`}>{t.medianDays == null ? "–" : t.medianDays}</td>
+                    <td className={`${td} text-right tabular-nums`}>{t.enrolled ? `${t.avgProgressPct}%` : "–"}</td>
+                    <td className={`${td} text-right tabular-nums`}>{int(t.certificates)}</td>
+                    <td className={td}>
+                      {t.dropModule ? (
+                        <>
+                          <span className="text-[#0D1B2A]">{t.dropModule}</span>
+                          <span className="block text-[11px] text-[#7A8FA6]">{t.dropModuleStalls} of {t.stalled} stalled</span>
+                        </>
+                      ) : <span className="text-[#7A8FA6]">{t.stalled ? `${t.stalled} stalled` : "–"}</span>}
+                    </td>
+                    <td className={`${td} text-right tabular-nums`}>{t.quiz.attempts ? `${pct(t.quiz.passed, t.quiz.attempts)} of ${t.quiz.attempts}` : "–"}</td>
+                    <td className={`${td} text-right tabular-nums`}>{t.exam.attempts ? `${pct(t.exam.passed, t.exam.attempts)} of ${t.exam.attempts}` : "–"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <Card title="Assessment pass rates" subtitle={`Last ${range} days vs ${prevWord}`} csv="assessments" range={range}>
+          <ul className="space-y-3 font-dm text-sm">
+            {L.assessments.map((x) => (
+              <li key={x.kind} className="flex items-baseline justify-between gap-3">
+                <span className="text-[#3A4A5C]">{x.kind === "quiz" ? "Module quizzes" : x.kind === "exam" ? "Final exams" : "Labs"}</span>
+                <span className="text-right">
+                  <span className="font-semibold text-[#0D1B2A] tabular-nums">{pct(x.passed.cur, x.attempts.cur)}</span>
+                  <span className="text-[#7A8FA6]"> of {int(x.attempts.cur)} · before {pct(x.passed.prev, x.attempts.prev)}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+        <Card
+          title="Hardest questions"
+          subtitle={`Lowest share answered correctly, all time, at least ${MIN_ANSWERS} answers.`}
+          csv="hardest-questions"
+          range={range}
+          className="lg:col-span-2"
+        >
+          {L.hardest.length === 0 ? <Empty>Not enough answers yet.</Empty> : (
+            <ol className="space-y-3 font-dm text-sm">
+              {L.hardest.map((h, i) => (
+                <li key={i} className="flex gap-3">
+                  <span className="shrink-0 w-12 text-right font-semibold tabular-nums text-[#B42318]">{h.correctPct}%</span>
+                  <span className="min-w-0">
+                    <span className="text-[#0D1B2A] line-clamp-2">{h.question}</span>
+                    <span className="block text-[11px] text-[#7A8FA6]">
+                      {h.kind === "exam" ? "Final exam" : "Quiz"} · {h.track} · {h.module} · {int(h.answers)} answers
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </Card>
+      </div>
+
+      {/* ── Retention ───────────────────────────────────────────────────── */}
+      <SectionTitle id="retention">Retention</SectionTitle>
+      <Card
+        title="Weekly sign-up cohorts"
+        subtitle="Share of each week's sign-ups active (signed in, completed a lesson or earned XP) in each week after signing up. Weeks start Monday, UTC."
+        csv="retention"
+        range={range}
+      >
+        <div className="overflow-x-auto">
+          <table className="text-xs font-dm border-separate border-spacing-0.5 min-w-full">
+            <thead>
+              <tr className="text-left text-[#7A8FA6]">
+                <th className="py-1 pr-3 font-semibold whitespace-nowrap">Week of</th>
+                <th className="py-1 pr-3 font-semibold text-right">Sign-ups</th>
+                {Array.from({ length: a.retention.weeks }, (_, k) => (
+                  <th key={k} className="py-1 px-1 font-semibold text-center whitespace-nowrap">W{k}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {a.retention.cohorts.map((c) => (
+                <tr key={c.week}>
+                  <td className="py-1 pr-3 whitespace-nowrap text-[#3A4A5C]">{fmtDate(`${c.week}T00:00:00Z`).replace(/, \d{4}$/, "")}</td>
+                  <td className="py-1 pr-3 text-right tabular-nums text-[#0D1B2A] font-semibold">{c.size}</td>
+                  {Array.from({ length: a.retention.weeks }, (_, k) => {
+                    if (k >= c.retained.length) return <td key={k} />;
+                    if (!c.size) return <td key={k} className="text-center text-[#C5D1E0]">·</td>;
+                    const share = c.retained[k] / c.size;
+                    return (
+                      <td
+                        key={k}
+                        title={`${c.retained[k]} of ${c.size} active in week ${k}`}
+                        className="h-8 min-w-[44px] rounded text-center tabular-nums"
+                        style={{
+                          background: share ? `rgba(34, 81, 163, ${0.08 + share * 0.82})` : "#F4F7FB",
+                          color: share > 0.5 ? "#fff" : "#0D1B2A",
+                        }}
+                      >
+                        {Math.round(share * 100)}%
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* ── Engagement ──────────────────────────────────────────────────── */}
+      <SectionTitle id="engagement">Engagement</SectionTitle>
+      <Card title="Feature use" subtitle={`Last ${range} days vs ${prevWord}. Features whose tables do not exist yet show as not tracked.`} csv="engagement" range={range}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-8">
+          {a.engagement.map((e) => (
+            <div key={e.key} className="flex items-baseline justify-between gap-3 border-b border-[#F4F7FB] py-2.5 font-dm text-sm">
+              <span className="text-[#3A4A5C] min-w-0">{e.label}</span>
+              {e.tracked ? (
+                <span className="shrink-0 text-right">
+                  <span className="font-semibold text-[#0D1B2A] tabular-nums">{int(e.cur)}</span>{" "}
+                  <span className="text-xs"><Delta v={{ cur: e.cur, prev: e.prev }} /></span>
+                </span>
+              ) : (
+                <span className="shrink-0 text-xs text-[#7A8FA6]">not tracked</span>
+              )}
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Device breakdown */}
-        <div className="bg-white border border-[#D2DCE8] rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Monitor size={15} className="text-[#2251A3]" />
-            <h2 className="font-syne font-bold text-sm text-[#0D1B2A]">Device Types</h2>
-          </div>
-          <div className="space-y-4">
-            <DevicePct label="Desktop" count={d.deviceBreakdown.desktop} total={total} color="#2251A3" />
-            <DevicePct label="Mobile" count={d.deviceBreakdown.mobile} total={total} color="#F47C20" />
-            <DevicePct label="Tablet" count={d.deviceBreakdown.tablet} total={total} color="#0F6E56" />
-          </div>
-        </div>
-
-        {/* Top origins */}
-        <div className="bg-white border border-[#D2DCE8] rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Globe size={15} className="text-[#2251A3]" />
-            <h2 className="font-syne font-bold text-sm text-[#0D1B2A]">Traffic Sources</h2>
-          </div>
-          <div className="space-y-2.5">
-            {d.topOrigins.length === 0 ? (
-              <p className="font-dm text-xs text-[#7A8FA6]">No data yet</p>
-            ) : (
-              d.topOrigins.map((o) => (
-                <div key={o.origin} className="flex items-center justify-between">
-                  <span className="font-dm text-sm text-[#3A4A5C] capitalize truncate max-w-[70%]">{o.origin}</span>
-                  <div className="flex items-center gap-2">
-                    <div className="h-1.5 bg-[#E8EFF8] rounded-full overflow-hidden w-16">
-                      <div
-                        className="h-full bg-[#2251A3] rounded-full"
-                        style={{ width: `${Math.min(100, (o.count / (d.topOrigins[0]?.count ?? 1)) * 100)}%` }}
-                      />
-                    </div>
-                    <span className="font-dm text-xs font-semibold text-[#0D1B2A] w-6 text-right">{o.count}</span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Top pages */}
-        <div className="bg-white border border-[#D2DCE8] rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp size={15} className="text-[#2251A3]" />
-            <h2 className="font-syne font-bold text-sm text-[#0D1B2A]">Top Pages</h2>
-          </div>
-          <div className="space-y-2.5">
-            {d.topPages.length === 0 ? (
-              <p className="font-dm text-xs text-[#7A8FA6]">No data yet</p>
-            ) : (
-              d.topPages.map((p) => (
-                <div key={p.page} className="flex items-center justify-between">
-                  <span className="font-dm text-sm text-[#3A4A5C] truncate max-w-[70%]">
-                    {p.page === "/" ? "Home" : p.page}
-                  </span>
-                  <span className="font-dm text-xs font-semibold text-[#0D1B2A]">{p.count}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Country + Feature tracking */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Countries */}
-        <div className="bg-white border border-[#D2DCE8] rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <MapPin size={15} className="text-[#2251A3]" />
-            <h2 className="font-syne font-bold text-sm text-[#0D1B2A]">Top Countries</h2>
-          </div>
-          <div className="space-y-2.5">
-            {(!d.topCountries || d.topCountries.length === 0) ? (
-              <p className="font-dm text-xs text-[#7A8FA6]">No location data yet — requires Cloudflare or Vercel hosting headers</p>
-            ) : (
-              d.topCountries.map((c) => (
-                <div key={c.country} className="flex items-center justify-between">
-                  <span className="font-dm text-sm text-[#3A4A5C]">{c.country}</span>
-                  <div className="flex items-center gap-2">
-                    <div className="h-1.5 bg-[#E8EFF8] rounded-full overflow-hidden w-16">
-                      <div className="h-full bg-[#0F6E56] rounded-full" style={{ width: `${Math.min(100, (c.count / (d.topCountries[0]?.count ?? 1)) * 100)}%` }} />
-                    </div>
-                    <span className="font-dm text-xs font-semibold text-[#0D1B2A] w-6 text-right">{c.count}</span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Top Features / Buttons Clicked */}
-        <div className="bg-white border border-[#D2DCE8] rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Zap size={15} className="text-[#F47C20]" />
-            <h2 className="font-syne font-bold text-sm text-[#0D1B2A]">Top Features Used <span className="text-[#7A8FA6] font-normal text-xs">(7 days)</span></h2>
-          </div>
-          <div className="space-y-2.5">
-            {(!d.topFeatures || d.topFeatures.length === 0) ? (
-              <p className="font-dm text-xs text-[#7A8FA6]">No feature clicks tracked yet. Add data-track=&quot;feature-name&quot; to buttons.</p>
-            ) : (
-              d.topFeatures.map((f) => (
-                <div key={f.feature} className="flex items-center justify-between">
-                  <span className="font-dm text-sm text-[#3A4A5C] truncate max-w-[70%] capitalize">{f.feature.replace(/_/g, " ")}</span>
-                  <div className="flex items-center gap-2">
-                    <div className="h-1.5 bg-[#E8EFF8] rounded-full overflow-hidden w-16">
-                      <div className="h-full bg-[#F47C20] rounded-full" style={{ width: `${Math.min(100, (f.count / (d.topFeatures[0]?.count ?? 1)) * 100)}%` }} />
-                    </div>
-                    <span className="font-dm text-xs font-semibold text-[#0D1B2A] w-6 text-right">{f.count}</span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Hourly chart */}
-      <div className="bg-white border border-[#D2DCE8] rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Eye size={15} className="text-[#2251A3]" />
-            <h2 className="font-syne font-bold text-sm text-[#0D1B2A]">Pageviews — Last 24h</h2>
-          </div>
-          <div className="flex items-center gap-3 text-[11px] font-dm text-[#7A8FA6]">
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-[#F47C20] inline-block" /> Current hour</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-[#2251A3]/50 inline-block" /> Past hours</span>
-          </div>
-        </div>
-        <HourlyChart data={d.hourly} />
-        <div className="flex justify-between mt-1.5">
-          <span className="font-dm text-[10px] text-[#7A8FA6]">12am</span>
-          <span className="font-dm text-[10px] text-[#7A8FA6]">6am</span>
-          <span className="font-dm text-[10px] text-[#7A8FA6]">12pm</span>
-          <span className="font-dm text-[10px] text-[#7A8FA6]">6pm</span>
-          <span className="font-dm text-[10px] text-[#7A8FA6]">11pm</span>
-        </div>
-      </div>
-
-      {/* Live sessions + recent views */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Live sessions */}
-        <div className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2 px-5 py-3.5 border-b border-[#F4F7FB]">
-            <Radio size={14} className="text-green-500" />
-            <h2 className="font-syne font-bold text-sm text-[#0D1B2A]">Live Sessions ({d.liveCount})</h2>
-          </div>
-          <div className="divide-y divide-[#F4F7FB] max-h-72 overflow-y-auto">
-            {d.liveSessions.length === 0 ? (
-              <div className="px-5 py-8 text-center">
-                <p className="font-dm text-xs text-[#7A8FA6]">No active visitors right now</p>
+      {/* ── Content ─────────────────────────────────────────────────────── */}
+      <SectionTitle id="content">Content</SectionTitle>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <Card title="Top blog posts" subtitle="By view count, all time (views are not stored per day)." csv="blog" range={range}>
+          {a.content.blog.length === 0 ? <Empty>No post views recorded yet.</Empty> : (
+            <ol className="space-y-2 font-dm text-sm">
+              {a.content.blog.map((b) => (
+                <li key={b.slug} className="flex items-baseline justify-between gap-3">
+                  <a href={`/ai-times/${b.slug}`} className="min-w-0 truncate text-[#2251A3] hover:underline">{b.title}</a>
+                  <span className="shrink-0 tabular-nums font-semibold text-[#0D1B2A]">{int(b.views)}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </Card>
+        <Card title="Top store products" subtitle={`Paid orders in the last ${range} days; all-time units below.`} csv="products" range={range}>
+          {a.content.products.length === 0 && a.content.productsAllTime.length === 0 ? <Empty>No store sales yet.</Empty> : (
+            <div className="space-y-4 font-dm text-sm">
+              {a.content.products.length === 0 ? <p className="text-[#7A8FA6]">No sales in this period.</p> : (
+                <ol className="space-y-2">
+                  {a.content.products.map((p) => (
+                    <li key={p.name} className="flex items-baseline justify-between gap-3">
+                      <span className="min-w-0 truncate text-[#3A4A5C]">{p.name}</span>
+                      <span className="shrink-0 tabular-nums"><span className="text-[#7A8FA6]">{p.units} × </span><span className="font-semibold text-[#0D1B2A]">{money(p.cents)}</span></span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+              {a.content.productsAllTime.length > 0 && (
+                <p className="text-xs text-[#7A8FA6]">
+                  All time: {a.content.productsAllTime.slice(0, 5).map((p) => `${p.name} (${p.sold})`).join(", ")}
+                </p>
+              )}
+            </div>
+          )}
+        </Card>
+        {a.tables.PageView && (
+          <Card title="Top pages" subtitle={`Page views in the last ${range} days`} csv="pages" range={range} className="lg:col-span-2">
+            {a.content.pages.length === 0 ? <Empty>No page views in this period.</Empty> : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm font-dm">
+                  <thead>
+                    <tr className="border-b border-[#F4F7FB] text-left text-xs uppercase tracking-wider text-[#7A8FA6]">
+                      <th className={th}>Page</th><th className={`${th} w-1/3`}></th><th className={`${th} text-right`}>Views</th><th className={`${th} text-right`}>Sessions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-[#3A4A5C]">
+                    {a.content.pages.map((p) => (
+                      <tr key={p.page} className="border-b border-[#F4F7FB] last:border-0">
+                        <td className={`${td} break-all`}>{p.page}</td>
+                        <td className={`${td} align-middle`}><Meter value={p.views} max={a.content.pages[0].views} /></td>
+                        <td className={`${td} text-right tabular-nums font-semibold text-[#0D1B2A]`}>{int(p.views)}</td>
+                        <td className={`${td} text-right tabular-nums`}>{int(p.visitors)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ) : (
-              d.liveSessions.map((s) => {
-                const DevIcon = DEVICE_ICONS[s.device] ?? Monitor;
-                return (
-                  <div key={s.sessionId} className="px-5 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0" />
-                      <div className="min-w-0">
-                        <p className="font-dm text-sm text-[#0D1B2A] truncate">{s.page}</p>
-                        <p className="font-dm text-xs text-[#7A8FA6]">
-                          <DevIcon size={10} className="inline mr-0.5" />{s.os} · {s.browser}{(s as LiveSession & { country?: string }).country ? ` · ${(s as LiveSession & { country?: string }).country}` : ""}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="font-dm text-[11px] text-[#7A8FA6] flex-shrink-0 ml-2">{timeAgo(s.lastSeen)}</span>
-                  </div>
-                );
-              })
             )}
-          </div>
-        </div>
-
-        {/* Recent page views */}
-        <div className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden">
-          <div className="flex items-center gap-2 px-5 py-3.5 border-b border-[#F4F7FB]">
-            <Users size={14} className="text-[#2251A3]" />
-            <h2 className="font-syne font-bold text-sm text-[#0D1B2A]">Recent Visitors</h2>
-          </div>
-          <div className="divide-y divide-[#F4F7FB] max-h-72 overflow-y-auto">
-            {d.recentViews.length === 0 ? (
-              <div className="px-5 py-8 text-center">
-                <p className="font-dm text-xs text-[#7A8FA6]">No visits recorded yet</p>
-              </div>
-            ) : (
-              d.recentViews.slice(0, 20).map((v) => {
-                const DevIcon = DEVICE_ICONS[v.device] ?? Monitor;
-                return (
-                  <div key={v.id} className="px-5 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <DevIcon size={13} className="text-[#7A8FA6] flex-shrink-0" />
-                      <div className="min-w-0">
-                        <p className="font-dm text-sm text-[#0D1B2A] truncate">{v.page}</p>
-                        <p className="font-dm text-xs text-[#7A8FA6]">{v.origin} · {v.browser} · {v.os}</p>
-                      </div>
-                    </div>
-                    <span className="font-dm text-[11px] text-[#7A8FA6] flex-shrink-0 ml-2">{timeAgo(v.createdAt)}</span>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
+          </Card>
+        )}
       </div>
     </div>
   );

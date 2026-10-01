@@ -18,7 +18,9 @@ This track teaches you to see a prompt as one part of a system: the inputs, the 
 
 Every lesson has prompts you run on the page and Studio tools to compare strong and weak prompts side by side. The labs are done on the platform, with one built in a free Claude or ChatGPT account. The capstone is a tested, documented prompt system for your own work.
 
-Assumes you already use AI tools regularly.`,
+Assumes you already use AI tools regularly.
+
+Skills this track builds also appear in prompt engineering courses from model providers and in AI practitioner certifications. This track is independent: it is not affiliated with any vendor and is not official exam preparation.`,
   level: "intermediate",
   status: "live",
   sortOrder: 8,

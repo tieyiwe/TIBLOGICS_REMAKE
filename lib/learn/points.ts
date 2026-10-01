@@ -30,6 +30,8 @@ export const POINT_VALUES: Record<PointSource, number> = {
   // Community: a helpful capstone peer review, an accepted answer.
   peer_review: 20,
   community_answer: 10,
+  // Live expert sessions: attending (joining during the window), once each.
+  live_session: 15,
 };
 
 export const LEVELS = [

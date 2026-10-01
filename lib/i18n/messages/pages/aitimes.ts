@@ -262,4 +262,96 @@ export default tri({
     "Un rendez-vous gratuit de 30 minutes pour explorer ce que l'IA peut faire pour vous.",
     "Mkutano wa dakika 30 bila malipo kuchunguza kile AI inachoweza kukufanyia.",
   ],
+
+  // Smart recommendations: rule-based picks (lib/recommendations-rules.ts)
+  "pages.recs.rule.calculator": ["AI Cost Calculator", "Calculateur de coûts IA", "Kikokotoo cha Gharama za AI"],
+  "pages.recs.rule.calculatorTagline": [
+    "Estimate your monthly AI API costs before you build.",
+    "Estimez vos coûts mensuels d'API IA avant de construire.",
+    "Kadiria gharama zako za kila mwezi za API ya AI kabla ya kujenga.",
+  ],
+  "pages.recs.rule.audit": ["AI Readiness Audit", "Audit de préparation à l'IA", "Ukaguzi wa Utayari wa AI"],
+  "pages.recs.rule.auditTagline": [
+    "90 minutes and a written plan for where AI fits in your business.",
+    "90 minutes et un plan écrit pour savoir où l'IA s'intègre dans votre entreprise.",
+    "Dakika 90 na mpango wa maandishi wa mahali AI inafaa katika biashara yako.",
+  ],
+  "pages.recs.rule.strategy": ["AI Strategy Session", "Séance de stratégie IA", "Kikao cha Mkakati wa AI"],
+  "pages.recs.rule.strategyTagline": [
+    "60 minutes to turn your AI ideas into a clear roadmap.",
+    "60 minutes pour transformer vos idées d'IA en feuille de route claire.",
+    "Dakika 60 kugeuza mawazo yako ya AI kuwa ramani iliyo wazi.",
+  ],
+  "pages.recs.rule.costSession": ["AI Cost & Price Strategy", "Stratégie de coûts et de prix IA", "Mkakati wa Gharama na Bei za AI"],
+  "pages.recs.rule.costSessionTagline": [
+    "Price your AI product and keep model costs under control.",
+    "Fixez le prix de votre produit IA et maîtrisez les coûts des modèles.",
+    "Weka bei ya bidhaa yako ya AI na udhibiti gharama za modeli.",
+  ],
+  "pages.recs.rule.aiImpl": ["AI Implementation & Agents", "Mise en œuvre de l'IA et agents", "Utekelezaji wa AI na Mawakala"],
+  "pages.recs.rule.aiImplTagline": [
+    "Custom AI agents and automations built into your workflow.",
+    "Des agents IA et des automatisations sur mesure, intégrés à votre façon de travailler.",
+    "Mawakala wa AI na mifumo ya kiotomatiki iliyoundwa kwa ajili ya kazi zako.",
+  ],
+  "pages.recs.rule.automation": ["Workflow Automation", "Automatisation des processus", "Uendeshaji Kiotomatiki wa Kazi"],
+  "pages.recs.rule.automationTagline": [
+    "Connect your tools and remove repetitive work.",
+    "Connectez vos outils et supprimez les tâches répétitives.",
+    "Unganisha zana zako na uondoe kazi zinazojirudia.",
+  ],
+  "pages.recs.rule.training": ["AI Training & Academy", "Formation et académie IA", "Mafunzo na Chuo cha AI"],
+  "pages.recs.rule.trainingTagline": [
+    "Hands-on AI training for you and your team.",
+    "Une formation pratique à l'IA pour vous et votre équipe.",
+    "Mafunzo ya vitendo ya AI kwa ajili yako na timu yako.",
+  ],
+  "pages.recs.rule.careflow": ["CareFlow AI", "CareFlow AI", "CareFlow AI"],
+  "pages.recs.rule.careflowTagline": [
+    "Automated wellness check-ins for care and social work teams.",
+    "Des suivis de bien-être automatisés pour les équipes de soins et de travail social.",
+    "Ufuatiliaji wa ustawi wa kiotomatiki kwa timu za huduma na ustawi wa jamii.",
+  ],
+  "pages.recs.rule.instory": ["InStory", "InStory", "InStory"],
+  "pages.recs.rule.instoryTagline": [
+    "AI-personalised learning for K-8 schools.",
+    "Un apprentissage personnalisé par l'IA pour les écoles primaires et les collèges.",
+    "Ujifunzaji unaobinafsishwa na AI kwa shule za msingi.",
+  ],
+  "pages.recs.rule.headline.scanner": ["Turn your scan into a plan", "Transformez votre analyse en plan", "Geuza uchunguzi wako kuwa mpango"],
+  "pages.recs.rule.reason.scanner": [
+    "You checked your site's AI readiness. These take you from a score to action.",
+    "Vous avez vérifié la préparation de votre site à l'IA. Voici comment passer du score à l'action.",
+    "Umekagua utayari wa tovuti yako kwa AI. Haya yatakusaidia kutoka kwenye alama hadi vitendo.",
+  ],
+  "pages.recs.rule.headline.cost": ["Get your AI costs right", "Maîtrisez vos coûts IA", "Panga gharama zako za AI vizuri"],
+  "pages.recs.rule.reason.cost": [
+    "You looked at AI costs. These help you plan spend and pricing.",
+    "Vous vous intéressez aux coûts de l'IA. Ceci vous aide à planifier vos dépenses et vos prix.",
+    "Umeangalia gharama za AI. Haya yatakusaidia kupanga matumizi na bei.",
+  ],
+  "pages.recs.rule.headline.advisor": ["Your next step with AI", "Votre prochaine étape avec l'IA", "Hatua yako inayofuata na AI"],
+  "pages.recs.rule.reason.advisor": [
+    "You explored AI ideas with our advisor. Here is where to go next.",
+    "Vous avez exploré des idées d'IA avec notre conseiller. Voici la suite.",
+    "Umechunguza mawazo ya AI na mshauri wetu. Hapa ndipo pa kwenda sasa.",
+  ],
+  "pages.recs.rule.headline.health": ["AI for care teams", "L'IA pour les équipes de soins", "AI kwa timu za huduma za afya"],
+  "pages.recs.rule.reason.health": [
+    "Picked for healthcare and care organisations.",
+    "Sélectionné pour les organisations de santé et de soins.",
+    "Imechaguliwa kwa mashirika ya afya na huduma.",
+  ],
+  "pages.recs.rule.headline.education": ["AI for schools and educators", "L'IA pour les écoles et les enseignants", "AI kwa shule na walimu"],
+  "pages.recs.rule.reason.education": [
+    "Picked for schools, teachers and training teams.",
+    "Sélectionné pour les écoles, les enseignants et les équipes de formation.",
+    "Imechaguliwa kwa shule, walimu na timu za mafunzo.",
+  ],
+  "pages.recs.rule.headline.reading": ["From reading to doing", "De la lecture à l'action", "Kutoka kusoma hadi kutenda"],
+  "pages.recs.rule.reason.reading": [
+    "You have been reading about AI. These help you put it to work.",
+    "Vous lisez sur l'IA. Voici de quoi la mettre en pratique.",
+    "Umekuwa ukisoma kuhusu AI. Haya yatakusaidia kuitumia kazini.",
+  ],
 });

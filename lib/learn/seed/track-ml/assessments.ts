@@ -1292,6 +1292,63 @@ You have up to 3 attempts, with a 24-hour gap between them so that a retry is a 
       explanation:
         "Slow, uniform approval pushes use underground. Proportionate, risk-tiered governance with a quick path for low-risk uses makes the safe route the easy one.",
     },
+    // Coverage additions: Lesson 2.5 (workloads) and Lesson 5.5 (customisation and scoring).
+    {
+      moduleNumber: 2,
+      difficulty: 2,
+      question: "A council wants to blur faces in street photos before publishing them. A supplier offers facial recognition. What should the council conclude?",
+      options: [
+        "Face detection is enough; identifying people adds risk",
+        "Facial recognition is needed to find every face first",
+        "Object detection cannot locate faces in any photo",
+        "OCR should read each face and then blur the text",
+      ],
+      correctIndex: 0,
+      explanation:
+        "Blurring only needs to find faces, which is detection. Recognition identifies who people are, a heavily restricted use that the task does not require.",
+    },
+    {
+      moduleNumber: 2,
+      difficulty: 3,
+      question: "A document extraction pipeline fills invoice records automatically. Which design best limits the damage from misread fields?",
+      options: [
+        "Check totals add up and route low-confidence fields to a person",
+        "Accept every field and correct errors when suppliers complain",
+        "Raise the OCR resolution and remove all human review steps",
+        "Translate each invoice first so the model reads it better",
+      ],
+      correctIndex: 0,
+      explanation:
+        "Validation catches internal inconsistencies and confidence routing sends doubtful fields to people before they cause harm. Waiting for complaints lets errors spread through the system.",
+    },
+    {
+      moduleNumber: 5,
+      difficulty: 2,
+      question: "Which statement about reinforcement learning from human feedback (RLHF) is accurate?",
+      options: [
+        "It trains a model towards answers that people ranked higher",
+        "It adds new facts to a model by retrieving documents live",
+        "It is a sampling setting chosen on each individual request",
+        "It shrinks a large model by copying it into a small one",
+      ],
+      correctIndex: 0,
+      explanation:
+        "RLHF is a form of preference tuning: people rank alternative answers and the model is trained towards the preferred ones. Retrieval, sampling and distillation are different techniques.",
+    },
+    {
+      moduleNumber: 5,
+      difficulty: 3,
+      question: "A team reports that its fine-tuned model beats the base model on a public benchmark, so it should replace the prompted baseline. What is the weakest part of this case?",
+      options: [
+        "No comparison on the team's own held-out task data",
+        "Public benchmarks are never published for any models",
+        "Fine-tuned models cannot be compared with base models",
+        "The benchmark should have used a higher temperature",
+      ],
+      correctIndex: 0,
+      explanation:
+        "Benchmarks may not resemble the task and may have leaked into training data. The decision needs the fine-tune and a well-prompted baseline scored on the team's own held-out examples.",
+    },
   ],
 };
 

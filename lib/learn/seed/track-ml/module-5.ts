@@ -538,6 +538,138 @@ Edit the draft until every element names an owner. You are done when the plan fi
         },
       ],
     },
+
+    // ── Lesson 5.5 ────────────────────────────────────────────────────────
+    // Added after the original four so seed matching by position is stable.
+    {
+      title: "Customising and measuring a foundation model: methods, settings and scores",
+      objective:
+        "Distinguish the main ways of customising a foundation model, prepare data for fine-tuning, set inference parameters for a task, and choose suitable measures such as overlap scores, semantic similarity, benchmarks and human review.",
+      durationMinutes: 27,
+      contentType: "article",
+      bodyMd: `## Under the bonnet of "fine-tuning"
+
+Lesson 5.2 helped you decide whether to fine-tune. This lesson explains what the options actually are, how the data is prepared, which settings you control on every request, and how generated text is scored. You will meet these terms in vendor documentation and in conversations with engineers, so it pays to know what each one means.
+
+All fine-tuning is a form of **transfer learning**: reusing what a model learned on one broad task as the starting point for a narrower one. That is why a few thousand examples can change a model that took vast amounts of data to build.
+
+## Five ways to change a model
+
+| Method | What happens | Typical use | Who usually does it |
+|---|---|---|---|
+| **Supervised (instruction) fine-tuning** | Train on pairs of input and ideal output | House format, tone, a specialised task | You, through a provider's service |
+| **Parameter-efficient fine-tuning** | Train a small add-on set of weights instead of all of them; **LoRA** (low-rank adaptation) is a common method | The same goals, cheaper, with swappable add-ons | You or your engineers |
+| **Continued pre-training** | Feed large volumes of unlabelled text from one domain | Absorbing the vocabulary of law, medicine or a technical field | Teams with a lot of domain text and compute |
+| **Preference tuning** | People (or a model) rank alternative answers and the model is trained towards the preferred ones; **reinforcement learning from human feedback (RLHF)** is the best-known form | Helpfulness, safety, declining harmful requests | Mostly model providers |
+| **Distillation** | A large model's outputs train a smaller, cheaper model | Speed and cost on a narrow task | You, if the licence allows it |
+
+Two cautions. First, check the provider's terms: some forbid using outputs to train other models. Second, every one of these changes the model's weights, so it must be re-evaluated, and repeated when the base model is retired.
+
+## Preparing the data
+
+The quality of a fine-tune is mostly the quality of its examples.
+
+- **Fit and consistent.** Each example shows exactly the behaviour you want, and labels follow one written guideline.
+- **Representative.** Include the awkward cases, not just the easy ones, and the full range of people and situations the system will meet.
+- **Held out.** Keep a test set that is never used in training, so you can measure honestly (Module 2).
+- **Lawful and documented.** Remove personal data you do not need, confirm you have the right to use the content, and record where it came from (Module 6).
+
+## Settings you control on every request
+
+These **inference parameters** change behaviour without any training:
+
+- **Temperature**: higher gives more varied output, lower gives more predictable output.
+- **Top-p** (nucleus sampling): the model picks only from the smallest group of likely next tokens whose probabilities add up to p. Lower values make output more focused.
+- **Top-k**: the model picks only from the k most likely next tokens.
+- **Maximum output tokens**: a hard cap on length, and so on cost.
+- **Stop sequences**: text that ends generation when it appears.
+
+Providers usually advise adjusting temperature or top-p, not both at once. You also choose **real-time** or **batch** inference. Batch suits work that is not urgent, such as overnight classification, and at the time of writing (October 2026) several providers price it lower; check current terms.
+
+## Scoring generated text
+
+| Measure | How it works | Good for | Blind spot |
+|---|---|---|---|
+| **ROUGE** | Counts how much of a reference text's wording appears in the output | Summaries | Rewards matching words, not correct meaning |
+| **BLEU** | Counts how much of the output's wording appears in reference translations | Translation | Penalises valid wording that differs |
+| **Semantic similarity** (BERTScore is one example) | Compares meaning using embeddings (Module 4) | Paraphrases, short answers | Can miss a single wrong fact |
+| **Public benchmarks** | Standard test sets shared across models | A rough first shortlist | May not resemble your task; may have leaked into training data |
+| **Human review and rubrics** | People, or checked model judges, score against criteria (Module 3) | Quality that matters to users | Slower and costlier |
+
+Automatic scores are cheap and repeatable, which makes them good for spotting regressions. They are poor at judging whether an answer is right or useful. A sound evaluation pairs at least one automatic score with human review on a sample.
+
+## Try it now
+
+\`\`\`try
+I want to adapt a foundation model for this task: [DESCRIBE THE TASK, THE VOLUME AND WHAT GOOD OUTPUT LOOKS LIKE]. Which customisation method from this list fits, if any: better prompting, supervised fine-tuning, parameter-efficient fine-tuning, continued pre-training, distillation? Suggest starting values for temperature and maximum output tokens, say whether batch inference fits, and propose one automatic measure plus one human review step to evaluate it.
+\`\`\`
+
+Run the prompt for one task from your work. Check its advice against the tables above and correct anything that does not fit.
+
+You are done when you have a chosen method (or a reason to stay with prompting), two parameter settings with reasons, and an evaluation that pairs an automatic score with human review.`,
+      microCheck: [
+        {
+          question: "A team wants the benefits of fine-tuning but with lower training cost and the option to swap behaviours. Which method fits?",
+          options: [
+            "Parameter-efficient fine-tuning such as LoRA",
+            "Continued pre-training on all of the company text",
+            "Preference tuning with thousands of raters",
+            "Raising temperature on every single request",
+          ],
+          correctIndex: 0,
+          explanation:
+            "Parameter-efficient methods train a small add-on set of weights, which is cheaper and lets you swap add-ons. Continued pre-training and preference tuning are far heavier undertakings.",
+        },
+        {
+          question: "A summarisation system scores well on ROUGE, but reviewers find summaries that reverse the meaning of the source. Why can both be true?",
+          options: [
+            "ROUGE rewards shared words, not correct meaning",
+            "ROUGE only works on translations, not summaries",
+            "Reviewers are less reliable than automatic scores",
+            "A high ROUGE score proves the summary is accurate",
+          ],
+          correctIndex: 0,
+          explanation:
+            "Overlap scores count matching wording, so a summary that reuses the source's words while flipping its meaning can still score well. Human review catches what overlap misses.",
+        },
+        {
+          question: "An extraction task returns rambling answers and sometimes runs on far longer than needed. Which settings help most?",
+          options: [
+            "Lower temperature and a maximum output token cap",
+            "Higher temperature and a larger top-k value",
+            "Continued pre-training on longer documents",
+            "Switching from batch to real-time inference",
+          ],
+          correctIndex: 0,
+          explanation:
+            "Lower temperature makes output more predictable and a token cap limits length and cost. Raising randomness or retraining does not address rambling output on a narrow task.",
+        },
+        {
+          question: "Why must the test set for a fine-tune be kept out of the training examples?",
+          options: [
+            "Otherwise the score measures memory, not skill",
+            "Otherwise the provider charges for that data twice",
+            "Otherwise the model refuses to read the data",
+            "Otherwise the fine-tune runs far too quickly",
+          ],
+          correctIndex: 0,
+          explanation:
+            "A model scored on examples it trained on can look excellent while failing on new cases. A held-out set gives an honest estimate of performance on unseen inputs.",
+        },
+        {
+          question: "A firm classifies 100,000 archived documents once, with no deadline. Which choice reduces cost without lowering quality?",
+          options: [
+            "Run the work through batch inference",
+            "Raise top-p so outputs vary more widely",
+            "Use real-time calls with retries switched off",
+            "Fine-tune a model before testing any prompt",
+          ],
+          correctIndex: 0,
+          explanation:
+            "Batch inference suits non-urgent bulk work and is often priced lower. Changing sampling or skipping retries does not reduce cost safely, and fine-tuning first skips the cheaper baseline.",
+        },
+      ],
+    },
   ],
   quiz: [
     {
@@ -671,6 +803,30 @@ Edit the draft until every element names an owner. You are done when the plan fi
       correctIndex: 0,
       explanation:
         "Approval counts rise if reviewers stop checking. Pairing with errors found later, or the rate of edits, exposes rubber-stamping.",
+    },
+    {
+      question: "A legal publisher has millions of pages of case law and wants a model fluent in its terminology before any task-specific training. Which method matches this goal?",
+      options: [
+        "Continued pre-training on the unlabelled case law",
+        "Distillation from a smaller, cheaper open model",
+        "Lowering top-k so the model picks fewer tokens",
+        "Preference tuning with a handful of rankings",
+      ],
+      correctIndex: 0,
+      explanation:
+        "Continued pre-training on large volumes of domain text helps a model absorb a field's vocabulary. Sampling settings and small preference sets do not add domain knowledge.",
+    },
+    {
+      question: "A translation feature is compared across two models using BLEU alone. What should be added before choosing?",
+      options: [
+        "Review of a sample by fluent human speakers",
+        "A higher temperature for both models in tests",
+        "A public benchmark on unrelated maths problems",
+        "A longer maximum output token limit for both",
+      ],
+      correctIndex: 0,
+      explanation:
+        "BLEU penalises valid wording that differs from the references and cannot judge whether meaning survived. Fluent reviewers on a sample catch what the score misses.",
     },
   ],
 }];

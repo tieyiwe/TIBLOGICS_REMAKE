@@ -7,7 +7,7 @@ const stamp = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}
 
 /** RFC 5545 text escaping, then folding at 74 octets-ish (by characters). */
 function text(v: string): string {
-  return v.replace(/\\/g, "\\\\").replace(/;/g, "\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+  return v.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
 }
 function fold(line: string): string {
   const out: string[] = [];
@@ -52,5 +52,39 @@ export function cohortIcs(c: {
     );
   }
   lines.push("END:VCALENDAR");
+  return lines.map(fold).join("\r\n") + "\r\n";
+}
+
+/** One event (a live expert session). The meeting link is not in it. */
+export function singleEventIcs(e: {
+  uid: string;
+  calName: string;
+  summary: string;
+  description: string;
+  pageUrl: string;
+  start: Date;
+  end: Date;
+  cancelled?: boolean;
+}): string {
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//TIBLOGICS//Learn live sessions//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    `X-WR-CALNAME:${text(e.calName)}`,
+    "BEGIN:VEVENT",
+    `UID:${e.uid}@tiblogics.com`,
+    `DTSTAMP:${stamp(new Date())}`,
+    `DTSTART:${stamp(e.start)}`,
+    `DTEND:${stamp(e.end)}`,
+    `SUMMARY:${text(e.summary)}`,
+    `DESCRIPTION:${text(e.description)}`,
+    `LOCATION:${text(e.pageUrl)}`,
+    `URL:${text(e.pageUrl)}`,
+    `STATUS:${e.cancelled ? "CANCELLED" : "CONFIRMED"}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ];
   return lines.map(fold).join("\r\n") + "\r\n";
 }

@@ -22,6 +22,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!transcript || typeof transcript !== "string" || transcript.trim().length < 10) {
       return NextResponse.json({ error: "Transcript too short" }, { status: 400 });
     }
+    // About two hours of speech. Bounds what one request can send to the model.
+    if (transcript.length > 120_000) {
+      return NextResponse.json({ error: "Transcript too long (max 120,000 characters)" }, { status: 413 });
+    }
 
     const appt = await prisma.appointment.findUnique({
       where: { id },
@@ -66,16 +70,15 @@ Topics that came up but weren't fully explored — worth revisiting next time.
 
 Be precise and clinical. Flag anything that needs immediate attention.`;
 
-    const anthropic = (await import("@/lib/claude")).default;
-    const { CLAUDE_MODEL } = await import("@/lib/claude");
+    const { runClaude } = await import("@/lib/claude");
 
-    const response = await anthropic.messages.create({
-      model: CLAUDE_MODEL,
-      max_tokens: 1000,
+    // All text blocks are joined (content[0] can be a thinking block).
+    const { text: analysisText } = await runClaude("brief", {
+      system: "You are an expert session analyst for a consultant. Follow the requested format exactly.",
       messages: [{ role: "user", content: prompt }],
+      maxTokens: 1500,
+      meta: { ref: `voice:${id}` },
     });
-
-    const analysisText = response.content[0].type === "text" ? response.content[0].text : "";
 
     const result = {
       text: analysisText,

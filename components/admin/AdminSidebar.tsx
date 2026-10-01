@@ -34,6 +34,7 @@ import {
   ShoppingBag,
   GraduationCap,
   KeyRound,
+  Gauge,
 } from "lucide-react";
 
 interface NavSubItem {
@@ -89,6 +90,7 @@ const navItems: NavItem[] = [
   { label: "Automation Blueprints", href: "/admin_pro/blueprints", icon: FileText },
   { label: "Test access", href: "/admin_pro/test-access", icon: KeyRound },
   { label: "Revenue", href: "/admin_pro/revenue", icon: DollarSign },
+  { label: "AI Usage", href: "/admin_pro/ai-usage", icon: Gauge },
   {
     label: "Blog",
     href: "/admin_pro/blog",
@@ -102,11 +104,13 @@ const navItems: NavItem[] = [
   { label: "Events & Training", href: "/admin_pro/events", icon: Calendar },
   { label: "Learn (Learning Box)", href: "/admin_pro/learn", icon: GraduationCap },
   { label: "Learn: Learners", href: "/admin_pro/learn/learners", icon: Users },
+  { label: "Learn: Live sessions", href: "/admin_pro/learn/live", icon: Calendar },
   { label: "Store", href: "/admin_pro/shop", icon: ShoppingBag },
   { label: "Service Requests", href: "/admin_pro/service-requests", icon: Briefcase },
   { label: "Partnerships", href: "/admin_pro/partnerships", icon: Briefcase },
   { label: "Waitlist", href: "/admin_pro/waitlist", icon: Users },
-  { label: "Visitor Analytics", href: "/admin_pro/analytics", icon: BarChart2 },
+  { label: "Owner Analytics", href: "/admin_pro/analytics", icon: BarChart2 },
+  { label: "Visitor Analytics", href: "/admin_pro/analytics/visitors", icon: BarChart2 },
   {
     label: "AI Agents",
     href: "/admin_pro/agents",
@@ -207,9 +211,11 @@ const NAV_PERMISSION_MAP: Record<string, string> = {
   "/admin_pro/shop":           "shop",
   "/admin_pro/learn":          "events",
   "/admin_pro/learn/learners": "events",
+  "/admin_pro/learn/live":     "events",
   "/admin_pro/analytics":      "analytics",
   "/admin_pro/agents":         "agents",
   "/admin_pro/settings":       "__admin_only__",
+  "/admin_pro/ai-usage":       "__admin_only__",
 };
 
 export default function AdminSidebar() {

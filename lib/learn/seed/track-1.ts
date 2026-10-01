@@ -18,7 +18,9 @@ We start with what the word "AI" actually means, why these tools behave the way 
 
 By the end you'll be able to hold your own in any conversation about AI at work, use these tools daily without embarrassing yourself, and spot the difference between something genuinely useful and something confidently wrong.
 
-No coding. No maths. No prior experience of any kind.`,
+No coding. No maths. No prior experience of any kind.
+
+Skills this track builds also appear in AI fluency and AI literacy courses from AI labs and technology companies. This track is independent: it is not affiliated with any of them and is not official preparation for any certificate.`,
   level: "starter",
   status: "live",
   sortOrder: 1,
