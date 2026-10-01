@@ -16,7 +16,7 @@ export const LEARN_LOCALES = ["en", "fr"] as const satisfies readonly Locale[];
 export function learnLocale(locale: Locale): Locale {
   return (LEARN_LOCALES as readonly string[]).includes(locale) ? locale : "en";
 }
-export const LEARN_PATH = /^\/(learn|learning-box|p|certificates)(\/|$)/;
+export const LEARN_PATH = /^\/(learn|learning-box|p|certificates|badges)(\/|$)/;
 
 export const LOCALE_NAMES: Record<Locale, string> = {
   en: "English",

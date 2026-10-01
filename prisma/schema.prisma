@@ -1901,3 +1901,79 @@ model AiUsage {
   @@index([createdAt])
   @@index([task, createdAt])
 }
+
+// ── Live expert sessions (lib/learn/live) ───────────────────────────────────
+// Created at runtime (lib/learn/live/db.ts); keep the two in step. Plain id
+// columns, no Prisma relations; the runtime SQL adds cascading foreign keys
+// (RSVPs, questions and votes go with their session or learner).
+
+/// A monthly live session with a guest expert. status: scheduled | live |
+/// ended | cancelled. trackIds: JSON array of related track ids ([] = all).
+model ExpertSession {
+  id              String   @id @default(cuid())
+  title           String
+  expertName      String
+  expertBio       String?  @db.Text
+  expertPhotoUrl  String?
+  topic           String?
+  trackIds        Json     @default("[]")
+  startsAt        DateTime
+  durationMinutes Int      @default(60)
+  /// IANA zone the session was planned in (display and emails).
+  timezone        String   @default("UTC")
+  /// Handed out only on "Join", inside the window, to learners with a seat.
+  meetingUrl      String?
+  capacity        Int      @default(100)
+  status          String   @default("scheduled")
+  recordingUrl    String?
+  /// [{ title, url }]
+  resources       Json     @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
+
+  @@index([startsAt])
+}
+
+/// An RSVP. status: going (a seat) | waitlist (ordered by createdAt). The
+/// reminded*For columns hold the start time each reminder was sent for, so a
+/// moved session is reminded again; joinedAt is attendance (first "Join").
+model ExpertSessionRsvp {
+  sessionId        String
+  studentId        String
+  status           String    @default("going")
+  createdAt        DateTime  @default(now())
+  promotedAt       DateTime?
+  reminded24For    DateTime?
+  reminded1For     DateTime?
+  recordingSentFor String?
+  joinedAt         DateTime?
+
+  @@id([sessionId, studentId])
+  @@index([studentId])
+  @@index([sessionId, status, createdAt])
+}
+
+/// A question for the expert, asked before the session.
+model ExpertSessionQuestion {
+  id         String    @id @default(cuid())
+  sessionId  String
+  authorId   String
+  body       String    @db.Text
+  score      Int       @default(0)
+  hidden     Boolean   @default(false)
+  answeredAt DateTime?
+  deletedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([sessionId])
+  @@index([authorId])
+}
+
+model ExpertSessionVote {
+  questionId String
+  studentId  String
+  createdAt  DateTime @default(now())
+
+  @@id([questionId, studentId])
+  @@index([studentId])
+}

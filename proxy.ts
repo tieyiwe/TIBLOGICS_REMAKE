@@ -80,7 +80,7 @@ async function gate(req: NextRequest) {
 }
 
 /** The Learning Box is offered in English and French only (see lib/i18n/config). */
-const LEARN_AREA = /^\/(learn|learning-box|api\/learn|p|certificates)(\/|$)/;
+const LEARN_AREA = /^\/(learn|learning-box|api\/learn|p|certificates|badges)(\/|$)/;
 
 export async function proxy(req: NextRequest) {
   const res = await gate(req);
@@ -93,5 +93,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin_pro/:path*", "/learn/:path*", "/learning-box/:path*", "/api/learn/:path*", "/p/:path*", "/certificates/:path*"],
+  matcher: ["/admin_pro/:path*", "/learn/:path*", "/learning-box/:path*", "/api/learn/:path*", "/p/:path*", "/certificates/:path*", "/badges/:path*"],
 };

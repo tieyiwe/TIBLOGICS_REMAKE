@@ -118,7 +118,7 @@ export default async function AnalyticsPage({
 
       <Card title="Recurring revenue (estimates)" subtitle="Subscriptions in force today, at list prices. Renewals are not stored, so check Stripe for exact figures." range={range}>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm font-dm">
+          <table className="w-full text-sm font-dm min-w-[640px]">
             <thead>
               <tr className="border-b border-[#F4F7FB] text-left text-xs uppercase tracking-wider text-[#7A8FA6]">
                 <th className={th}>Product</th><th className={th}>Active</th><th className={th}>Basis</th><th className={`${th} text-right`}>Est. MRR</th>
@@ -134,7 +134,7 @@ export default async function AnalyticsPage({
               <tr className="border-b border-[#F4F7FB]">
                 <td className={td}>Team plans</td>
                 <td className={td}>{a.tables.Team ? `${int(r.mrr.teams)} teams, ${int(r.mrr.teamSeats)} seats` : "not tracked"}</td>
-                <td className={td}>Seats × seat price (comped teams excluded){r.newTeams ? ` · ${int(r.newTeams.cur)} new paid teams` : ""}</td>
+                <td className={td}>Seats × seat price (comped teams excluded){r.newTeams ? ` · ${int(r.newTeams.cur)} paid teams started in period (incl. since cancelled)` : ""}</td>
                 <td className={`${td} text-right font-semibold text-[#0D1B2A]`}>{money(r.mrr.teamCents)}</td>
               </tr>
               <tr>

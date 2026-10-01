@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1B3A6B">
+<meta name="robots" content="noindex">
+<title>TIBLOGICS Learn</title>
+<!-- The page public/sw.js shows for a /learn page it cannot fetch and has not
+     saved. Text in English, French and Swahili (the tib_lang cookie picks);
+     the list is the lessons downloaded on this device (IndexedDB, written by
+     the service worker). Keep the wording in step with lib/i18n/messages/pwa.ts. -->
+<style>
+  :root { --ink:#131A1B; --ink2:#3d4a4f; --ink3:#6b7a80; --navy:#1B3A6B; --orange:#F47C20; --border:#e3e8ee; --bg:#F4F7FB; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background:var(--bg); color:var(--ink); }
+  header { background:var(--navy); color:#fff; padding:16px 20px; font-weight:800; letter-spacing:.02em; }
+  header span { color:#F9A738; }
+  main { max-width:640px; margin:0 auto; padding:28px 20px 48px; }
+  h1 { font-size:22px; margin:0 0 8px; }
+  p { color:var(--ink2); line-height:1.6; margin:0 0 14px; }
+  .card { background:#fff; border:1px solid var(--border); border-radius:16px; padding:20px; margin-top:20px; }
+  h2 { font-size:15px; margin:0 0 12px; }
+  ul { list-style:none; margin:0; padding:0; }
+  li a { display:block; padding:12px 10px; border-radius:10px; color:var(--ink); text-decoration:none; font-weight:600; min-height:44px; }
+  li a:hover, li a:focus { background:var(--bg); outline:2px solid var(--orange); outline-offset:-2px; }
+  .muted { color:var(--ink3); font-size:13px; }
+  button { margin-top:8px; border:0; border-radius:999px; padding:12px 22px; font-weight:700; background:var(--ink); color:#fff; font-size:14px; cursor:pointer; min-height:44px; }
+  button:focus-visible { outline:3px solid var(--orange); outline-offset:2px; }
+</style>
+</head>
+<body>
+<header>TIB<span>LOGICS</span> Learn</header>
+<main>
+  <h1 id="t-title">You are offline</h1>
+  <p id="t-body">This page is not saved on this device. Lessons you downloaded still open without a connection.</p>
+  <button id="retry" type="button">Try again</button>
+  <section class="card" aria-labelledby="t-saved">
+    <h2 id="t-saved">Lessons on this device</h2>
+    <ul id="list"></ul>
+    <p id="t-none" class="muted" hidden>No lessons downloaded yet. Open a track and choose "Download for offline" next time you are online.</p>
+  </section>
+</main>
+<script>
+(function () {
+  var T = {
+    en: { title: "You are offline", body: "This page is not saved on this device. Lessons you downloaded still open without a connection.", retry: "Try again", saved: "Lessons on this device", none: "No lessons downloaded yet. Open a track and choose “Download for offline” next time you are online." },
+    fr: { title: "Vous êtes hors ligne", body: "Cette page n’est pas enregistrée sur cet appareil. Les leçons téléchargées s’ouvrent toujours sans connexion.", retry: "Réessayer", saved: "Leçons sur cet appareil", none: "Aucune leçon téléchargée pour l’instant. Ouvrez un parcours et choisissez « Télécharger hors ligne » lors de votre prochaine connexion." },
+    sw: { title: "Huko nje ya mtandao", body: "Ukurasa huu haujahifadhiwa kwenye kifaa hiki. Masomo uliyopakua bado yanafunguka bila mtandao.", retry: "Jaribu tena", saved: "Masomo kwenye kifaa hiki", none: "Bado hujapakua masomo. Fungua njia ya kujifunza na uchague “Pakua kwa matumizi nje ya mtandao” utakapokuwa mtandaoni." }
+  };
+  var m = /(?:^|;\s*)tib_lang=(en|fr|sw)/.exec(document.cookie);
+  var lang = m ? m[1] : ((navigator.language || "en").slice(0, 2) in T ? (navigator.language || "en").slice(0, 2) : "en");
+  var t = T[lang];
+  document.documentElement.lang = lang;
+  document.getElementById("t-title").textContent = t.title;
+  document.getElementById("t-body").textContent = t.body;
+  document.getElementById("retry").textContent = t.retry;
+  document.getElementById("t-saved").textContent = t.saved;
+  document.getElementById("t-none").textContent = t.none;
+  document.getElementById("retry").addEventListener("click", function () { location.reload(); });
+  window.addEventListener("online", function () { location.reload(); });
+
+  var list = document.getElementById("list");
+  function none() { document.getElementById("t-none").hidden = false; }
+  if (!("indexedDB" in window)) return none();
+  var req = indexedDB.open("tib-learn-offline", 1);
+  req.onupgradeneeded = function () {
+    var db = req.result;
+    ["queue", "downloads", "meta"].forEach(function (s) {
+      if (!db.objectStoreNames.contains(s)) db.createObjectStore(s, { keyPath: s === "queue" ? "lessonId" : s === "downloads" ? "url" : "key" });
+    });
+  };
+  req.onerror = none;
+  req.onsuccess = function () {
+    var db = req.result;
+    var get = db.transaction("downloads", "readonly").objectStore("downloads").getAll();
+    get.onsuccess = function () {
+      var rows = (get.result || []).sort(function (a, b) { return (a.track + a.savedAt) < (b.track + b.savedAt) ? -1 : 1; });
+      if (!rows.length) return none();
+      rows.forEach(function (r) {
+        var li = document.createElement("li");
+        var a = document.createElement("a");
+        a.href = new URL(r.url, location.origin).pathname;
+        a.textContent = r.title || a.href;
+        if (r.track) { var s = document.createElement("span"); s.className = "muted"; s.textContent = " · " + r.track; a.appendChild(s); }
+        li.appendChild(a);
+        list.appendChild(li);
+      });
+    };
+    get.onerror = none;
+  };
+})();
+</script>
+</body>
+</html>
