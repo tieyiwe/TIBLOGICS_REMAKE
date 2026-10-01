@@ -5,7 +5,7 @@ import AIBanner from "@/components/public/AIBanner";
 import { Bot, Zap, Brain, BookOpen, HeartPulse, Package, GraduationCap } from "lucide-react";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 
-const OG_IMAGE = "https://tiblogics.com/og-image.png";
+const OG_IMAGE = "https://tiblogics.com/opengraph-image?v=3";
 const OG_LOCALE = { en: "en_US", fr: "fr_FR", sw: "sw_KE" } as const;
 const SERVICE_COUNT = 9;
 

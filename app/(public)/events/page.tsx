@@ -668,13 +668,13 @@ export default function EventsPage() {
   return (
     <div className="min-h-screen bg-[#F4F7FB]">
       {/* Hero */}
-      <section className="bg-gradient-to-br from-[#0D1B2A] via-[#1B3A6B] to-[#2251A3] text-white pt-32 sm:pt-44 pb-20 px-4">
+      <section className="bg-gradient-to-br from-[#0D1B2A] via-[#1B3A6B] to-[#2251A3] text-white pt-28 sm:pt-36 lg:pt-44 pb-10 sm:pb-12 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-6">
             <span className="text-[#F47C20] text-sm">🎓</span>
             <span className="font-dm text-sm text-white/80">{t("pages.events.hero.badge")}</span>
           </div>
-          <h1 className="font-syne font-extrabold text-4xl sm:text-5xl lg:text-6xl mb-5 leading-tight">
+          <h1 className="font-syne font-extrabold text-4xl sm:text-5xl lg:text-6xl mb-4 leading-tight">
             {t("pages.events.hero.title")}
           </h1>
           <p className="font-dm text-lg sm:text-xl text-white/70 max-w-2xl mx-auto leading-relaxed">
@@ -705,7 +705,7 @@ export default function EventsPage() {
       </section>
 
       {/* TIBLOGICS Events Grid */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12">
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
@@ -715,12 +715,16 @@ export default function EventsPage() {
         ) : (
           <>
             {filtered.length === 0 ? (
-              <div className="text-center py-16">
+              // On "All" an empty TIBLOGICS list says nothing: the industry
+              // events below fill the page. Other tabs get a short note.
+              activeFilter === "all" && upcomingEvents.length > 0 ? null : (
+              <div className="text-center py-8">
                 <p className="font-syne font-bold text-xl text-[#1B3A6B] mb-2">
                   {t(`pages.events.empty.${activeFilter}`)}
                 </p>
                 <p className="font-dm text-[#7A8FA6]">{t("pages.events.empty.body")}</p>
               </div>
+              )
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filtered.map((event) => (
@@ -731,7 +735,7 @@ export default function EventsPage() {
 
             {/* Popular Tech Events */}
             {(activeFilter === "all" || activeFilter === "event") && upcomingEvents.length > 0 && (
-              <div className="mt-16">
+              <div className={filtered.length === 0 ? "" : "mt-12"}>
                 <div className="flex items-center gap-3 mb-6">
                   <div>
                     <h2 className="font-syne font-bold text-2xl text-[#0D1B2A]">{t("pages.events.industry.title")}</h2>

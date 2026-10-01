@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
       description: t("pages.events.meta.ogDescription"),
       type: "website",
       url: "https://tiblogics.com/events",
-      images: [{ url: "https://tiblogics.com/og-image.png", width: 1200, height: 630 }],
+      images: [{ url: "https://tiblogics.com/opengraph-image?v=3", width: 1200, height: 630 }],
     },
     twitter: {
       card: "summary_large_image",

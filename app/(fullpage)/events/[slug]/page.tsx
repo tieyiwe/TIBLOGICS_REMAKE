@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     const title = `${event.title} | TIBLOGICS Events`;
     const description = event.description.slice(0, 160);
-    const image = event.coverImage ?? `${SITE_URL}/og-image.png`;
+    const image = event.coverImage ?? `${SITE_URL}/opengraph-image?v=3`;
     const url = `${SITE_URL}/events/${slug}`;
 
     return {
@@ -131,7 +131,7 @@ export default async function EventPage({ params, searchParams }: Props) {
         : "https://schema.org/SoldOut",
       url: eventUrl,
     },
-    image: event.coverImage ?? `${SITE_URL}/og-image.png`,
+    image: event.coverImage ?? `${SITE_URL}/opengraph-image?v=3`,
     ...(event.capacity != null && { maximumAttendeeCapacity: event.capacity }),
     ...(event.spots != null && { remainingAttendeeCapacity: event.spots }),
   };

@@ -17,14 +17,14 @@ export async function generateMetadata(): Promise<Metadata> {
       description: t("pages.products.meta.ogDescription"),
       url: "https://tiblogics.com/products",
       type: "website",
-      images: [{ url: "https://tiblogics.com/og-image.png", width: 1200, height: 630, alt: t("pages.products.meta.ogTitle") }],
+      images: [{ url: "https://tiblogics.com/opengraph-image?v=3", width: 1200, height: 630, alt: t("pages.products.meta.ogTitle") }],
     },
     twitter: {
       card: "summary_large_image",
       title: t("pages.products.meta.ogTitle"),
       description: t("pages.products.meta.twitterDescription"),
       creator: "@tiblogics",
-      images: ["https://tiblogics.com/og-image.png"],
+      images: ["https://tiblogics.com/opengraph-image?v=3"],
     },
   };
 }

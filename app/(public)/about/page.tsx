@@ -20,14 +20,14 @@ export async function generateMetadata(): Promise<Metadata> {
       description: t("pages.about.meta.ogDescription"),
       url: "https://tiblogics.com/about",
       type: "website",
-      images: [{ url: "https://tiblogics.com/og-image.png", width: 1200, height: 630, alt: t("pages.about.hero.tag") }],
+      images: [{ url: "https://tiblogics.com/opengraph-image?v=3", width: 1200, height: 630, alt: t("pages.about.hero.tag") }],
     },
     twitter: {
       card: "summary_large_image",
       title: t("pages.about.hero.tag"),
       description: t("pages.about.meta.twitterDescription"),
       creator: "@tiblogics",
-      images: ["https://tiblogics.com/og-image.png"],
+      images: ["https://tiblogics.com/opengraph-image?v=3"],
     },
   };
 }
