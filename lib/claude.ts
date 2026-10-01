@@ -101,8 +101,8 @@ export const ROUTES: Record<AiTask, Route> = {
 
   "code-assist": { tier: "sonnet", maxTokens: 8000, thinking: "adaptive", effort: "medium", cacheSystem: true },
   "grade-code": { tier: "sonnet", maxTokens: 4000, thinking: "adaptive", effort: "medium" },
-  "grade-prompt": { tier: "sonnet", maxTokens: 1600, thinking: "off" },
-  "grade-work": { tier: "sonnet", maxTokens: 1800, thinking: "off" },
+  "grade-prompt": { tier: "sonnet", maxTokens: 4000, thinking: "adaptive", effort: "medium" },
+  "grade-work": { tier: "sonnet", maxTokens: 4000, thinking: "adaptive", effort: "medium" },
   "review-draft": { tier: "sonnet", maxTokens: 4000, thinking: "adaptive", effort: "medium" },
   "toolkit-write": { tier: "sonnet", maxTokens: 4000, thinking: "off", effort: "low" },
   "compliance-review": { tier: "sonnet", maxTokens: 4000, thinking: "adaptive", effort: "medium" },
