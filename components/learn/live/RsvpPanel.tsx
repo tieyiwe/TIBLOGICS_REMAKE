@@ -88,7 +88,7 @@ export default function RsvpPanel({
 
       <div className="flex flex-wrap items-center gap-2">
         {mine?.status === "going" && canJoin && (
-          <button type="button" onClick={join} disabled={busy} className={`${primaryBtn} bg-[#F47C20]`} data-testid="join-btn">
+          <button type="button" onClick={join} disabled={busy} className={primaryBtn} style={{ background: "#F47C20" }} data-testid="join-btn">
             {t("live.join")} ↗
           </button>
         )}
