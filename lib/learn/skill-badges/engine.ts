@@ -584,7 +584,10 @@ export async function loadVerifiedBadge(id: string): Promise<VerifiedBadge | nul
   }
 
   const credential = a.credential as Record<string, unknown>;
-  const check = verifyDocument(credential, key);
+  // A badge signed with a production key that is no longer the current one
+  // cannot be checked here (the DID publishes only the current key).
+  const check: ReturnType<typeof verifyDocument> =
+    a.signed && (!key || a.keyFp !== key.fingerprint) ? { ok: false, reason: "unknown_key" } : verifyDocument(credential, key);
   const issuerOk = ((credential.issuer as { id?: string } | undefined)?.id ?? credential.issuer) === issuerDid();
   const revokedSlugs = await revokedTrackSlugs(a.studentId);
   const revoked = !!a.revokedAt || jsonStrings(a.trackSlugs).some((s) => revokedSlugs.has(s));
