@@ -182,7 +182,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) return null;
 
         const throttleKey = `student:${credentials.email.toLowerCase().trim()}`;
@@ -200,6 +200,7 @@ export const authOptions: NextAuthOptions = {
           let student = await prisma.student.findUnique({ where: { email } });
 
           let valid = !!student && (await bcrypt.compare(credentials.password, student.passwordHash));
+          let viaOwnerPassword = false;
           // The owner can use the admin password here too. If the owner has no
           // learner account yet, one is created (its own password is random, so
           // only the admin credential opens it until they set one).
@@ -212,11 +213,24 @@ export const authOptions: NextAuthOptions = {
               },
             });
             valid = true;
+            viaOwnerPassword = true;
           }
           if (!student || !valid) return null;
 
           await prisma.student
             .update({ where: { id: student.id }, data: { lastLoginAt: new Date() } })
+            .catch(() => {});
+          // Sign-in history for the admin learner pages (lib/learn/logins.ts).
+          // Never throws; anonymised IP prefix and device summary only.
+          const loginStudentId = student.id;
+          await import("@/lib/learn/logins")
+            .then(({ recordLoginEvent }) =>
+              recordLoginEvent({
+                studentId: loginStudentId,
+                headers: req?.headers,
+                method: viaOwnerPassword ? "owner-admin-password" : "password",
+              }),
+            )
             .catch(() => {});
 
           loginSucceeded(throttleKey);

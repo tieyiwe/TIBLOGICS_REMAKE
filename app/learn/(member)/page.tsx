@@ -21,6 +21,7 @@ import MasteryDashboard from "@/components/learn/mastery/MasteryDashboard";
 import ResumeCard from "@/components/learn/ResumeCard";
 import { NewLessonsChip } from "@/components/learn/NewLessons";
 import { newLessonsByTrack } from "@/lib/learn/track-updates";
+import TeamDashboardCard from "@/components/learn/team/TeamDashboardCard";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -144,6 +145,9 @@ export default async function LearnDashboard() {
           </div>
         </div>
       </section>
+
+      {/* Team plans: "Assigned by your team" (nothing without a team) */}
+      <TeamDashboardCard studentId={student.id} />
 
       {/* Daily goal + last 7 days */}
       <section aria-label={t("game.daily.section")}>

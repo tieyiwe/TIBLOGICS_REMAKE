@@ -1756,3 +1756,29 @@ model TeamAssignment {
   @@unique([teamId, studentId, trackId])
   @@index([studentId])
 }
+
+// ── Learner sign-in history (lib/learn/logins.ts) ───────────────────────────
+// Created at runtime there; keep the two in step. Plain id column, no Prisma
+// relation (Student is not edited); the runtime SQL adds a cascading foreign
+// key. No passwords, no full IPs: ipPrefix is IPv4 /24 or IPv6 /48.
+
+/// One successful TIBLOGICS Learn sign-in. method: password |
+/// owner-admin-password | invite. Rows older than 400 days are pruned.
+model LoginEvent {
+  id         String   @id @default(cuid())
+  studentId  String
+  at         DateTime @default(now())
+  ipPrefix   String?
+  /// Trimmed to 300 characters.
+  userAgent  String?
+  /// desktop | mobile | tablet | bot | unknown
+  deviceType String?
+  browser    String?
+  os         String?
+  /// ISO country code from the edge geo header, when the host sets one.
+  country    String?
+  method     String   @default("password")
+
+  @@index([studentId, at])
+  @@index([at])
+}

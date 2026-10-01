@@ -12,6 +12,8 @@ export default function CommunitySettings({ replyDigest }: { replyDigest: boolea
   const [msg, setMsg] = useState<string | null>(null);
 
   async function toggle(v: boolean) {
+    const before = on;
+    setOn(v);
     setBusy(true);
     setMsg(null);
     const r = await api<{ replyDigest: boolean }>("/api/learn/community/settings", "PATCH", { replyDigest: v });
@@ -19,7 +21,10 @@ export default function CommunitySettings({ replyDigest }: { replyDigest: boolea
     if (r.ok) {
       setOn(r.data.replyDigest);
       setMsg(t("community.settings.saved"));
-    } else setMsg(r.error);
+    } else {
+      setOn(before);
+      setMsg(r.error);
+    }
   }
 
   return (

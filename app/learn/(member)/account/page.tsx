@@ -126,6 +126,16 @@ export default async function AccountPage() {
         )}
       </section>
 
+      {entitlement.team && (
+        <section className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6">
+          <h2 className="text-sm font-bold text-[var(--ink)]">{t("team.account.title")}</h2>
+          <p className="mt-1 text-sm text-[var(--ink2)]">{t("team.account.line", { team: entitlement.team.name })}</p>
+          <Link href="/learn/team" className="mt-3 inline-block text-sm font-semibold text-[var(--blue2)] underline">
+            {t("team.account.link")}
+          </Link>
+        </section>
+      )}
+
       {owned.length > 0 && (
         <section className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6">
           <h2 className="text-sm font-bold text-[var(--ink)]">{t("learn.account.owned")}</h2>

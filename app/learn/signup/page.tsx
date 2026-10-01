@@ -23,7 +23,8 @@ function SignupForm() {
   const rawNext = params.get("next");
   const next = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") && !rawNext.startsWith("/\\") ? rawNext : null;
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  // Prefilled from a team invitation link (/join-team/...).
+  const [email, setEmail] = useState(params.get("email") ?? "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -37,7 +38,7 @@ function SignupForm() {
       const res = await fetch("/api/learn/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, locale }),
+        body: JSON.stringify({ name, email, password, locale, track, next }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? t("learn.auth.createFailed"));

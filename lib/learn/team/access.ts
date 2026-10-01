@@ -55,14 +55,11 @@ export async function getMembership(studentId: string | null | undefined): Promi
     });
     if (seats.length === 0) return null;
     const teams = await prisma.team.findMany({ where: { id: { in: seats.map((s) => s.teamId) } } });
-    const rows = seats
-      .map((s) => {
-        const team = teams.find((t) => t.id === s.teamId);
-        return team
-          ? { memberId: s.id, role: s.role as TeamRole, team, entitled: teamEntitled(team), inGrace: teamInGrace(team) }
-          : null;
-      })
-      .filter((x): x is TeamMembership => x !== null);
+    const rows: TeamMembership[] = [];
+    for (const s of seats) {
+      const team = teams.find((t) => t.id === s.teamId);
+      if (team) rows.push({ memberId: s.id, role: s.role as TeamRole, team, entitled: teamEntitled(team), inGrace: teamInGrace(team) });
+    }
     rows.sort((a, b) => Number(b.entitled) - Number(a.entitled));
     return rows[0] ?? null;
   } catch (err) {

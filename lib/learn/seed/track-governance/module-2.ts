@@ -44,7 +44,7 @@ Everything else, which is most everyday AI use, carries few specific obligations
 The Act gives different obligations to different roles. The two that matter most for most organisations:
 
 - **Provider**: develops an AI system, or has one developed, and places it on the market or puts it into service under its own name. Providers of high-risk systems carry the heaviest duties: a risk management system, data governance, technical documentation, logging, instructions for use, human oversight design, accuracy and security, and a conformity assessment before the system is placed on the market.
-- **Deployer**: uses an AI system under its authority in a professional context. Deployers of high-risk systems must use them according to the instructions, assign human oversight to competent people, monitor operation, keep the logs they control, and inform people in certain situations (for example workers affected by workplace AI). Some deployers, such as public bodies and certain providers of credit or insurance, must also carry out an assessment of the impact on fundamental rights.
+- **Deployer**: uses an AI system under its authority in a professional context. Deployers of high-risk systems must use them in line with the instructions for use, assign human oversight to competent people, monitor operation, keep the logs they control, and inform people in certain situations (for example workers affected by workplace AI). Some deployers, such as public bodies and certain providers of credit or insurance, must also carry out an assessment of the impact on fundamental rights.
 
 Most organisations reading this are deployers. But be careful: if you substantially modify a high-risk system or put your own name on it, you can become a provider.
 

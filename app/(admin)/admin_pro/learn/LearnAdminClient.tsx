@@ -111,6 +111,12 @@ export default function LearnAdminClient({
             Tutor usage
           </Link>
           <Link
+            href="/admin_pro/learn/teams"
+            className="rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)]"
+          >
+            Teams
+          </Link>
+          <Link
             href="/admin_pro/learn/cohorts"
             className="rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)]"
           >

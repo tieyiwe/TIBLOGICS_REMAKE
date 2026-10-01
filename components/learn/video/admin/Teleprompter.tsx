@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { FlipHorizontal, Pause, Play, RotateCcw, X } from "lucide-react";
 import type { VideoScript } from "@/lib/learn/video/shared";
 
@@ -72,8 +73,10 @@ export default function Teleprompter({ script, onClose }: { script: VideoScript;
     };
   }, [onClose, restart]);
 
-  return (
-    <div role="dialog" aria-modal="true" aria-label="Teleprompter" className="fixed inset-0 z-[100] flex flex-col bg-black text-white" data-testid="teleprompter">
+  // Portalled to <body> so no admin layout container (stacking context,
+  // sticky header) can sit on top of it.
+  return createPortal(
+    <div role="dialog" aria-modal="true" aria-label="Teleprompter" className="fixed inset-0 z-[1000] flex flex-col bg-black text-white" data-testid="teleprompter">
       <div className="flex flex-wrap items-center gap-3 border-b border-white/15 bg-[#0D1B2A] px-4 py-2 font-dm text-sm">
         <button type="button" onClick={() => setPlaying((p) => !p)} className="inline-flex items-center gap-1.5 rounded-lg bg-[#F47C20] px-3 py-1.5 font-bold" autoFocus>
           {playing ? <Pause size={15} /> : <Play size={15} />} {playing ? "Pause" : "Start"}
@@ -125,6 +128,7 @@ export default function Teleprompter({ script, onClose }: { script: VideoScript;
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
