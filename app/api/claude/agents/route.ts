@@ -2,6 +2,8 @@ import { checkRateLimit } from "@/lib/rate-limit";
 export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/claude";
+import { requireAdmin } from "@/lib/require-admin";
+import { boundChatMessages } from "@/lib/chat-bounds";
 
 const AGENTS: Record<string, { name: string; systemPrompt: string }> = {
   aria: {
@@ -140,14 +142,20 @@ Be honest about data limitations. If given partial data, say so and work with wh
 };
 
 export async function POST(req: NextRequest) {
+  // Admin-only: these are the internal agents in /admin_pro/agents. Without
+  // this check anyone could run the model on the site's bill.
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
   const ip = req.headers.get("x-forwarded-for") ?? "unknown";
   if (!(await checkRateLimit(`claude-agents:${ip}`, 50, 3_600_000))) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }
 
   try {
-    const { messages, agent } = await req.json();
-    if (!messages || !Array.isArray(messages) || !agent) {
+    const body = await req.json();
+    const agent = body?.agent;
+    const messages = boundChatMessages(body?.messages);
+    if (!messages || !agent) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 

@@ -40,6 +40,8 @@ export async function GET(req: NextRequest) {
   outer: for (const locale of LOCALES) {
     for (const [name, warm] of SOURCES) {
       if (budget.left <= 0 || Date.now() - started > 240_000) break outer;
+      // Learning Box content is English and French only: no Swahili course translation.
+      if (locale === "sw" && (name === "learn" || name === "labs")) continue;
       try {
         done[`${name}:${locale}`] = await warm(locale, budget);
       } catch (err) {

@@ -5,7 +5,7 @@ import { getToken } from "next-auth/jwt";
 // withAuth) because the two areas need different sign-in destinations:
 //   /admin_pro/* → /admin_pro/login   (admins & collaborators)
 //   /learn/*     → /learn/login       (TIBLOGICS Learn students)
-export async function proxy(req: NextRequest) {
+async function gate(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
@@ -79,6 +79,19 @@ export async function proxy(req: NextRequest) {
   return NextResponse.next();
 }
 
+/** The Learning Box is offered in English and French only (see lib/i18n/config). */
+const LEARN_AREA = /^\/(learn|learning-box|api\/learn|p|certificates)(\/|$)/;
+
+export async function proxy(req: NextRequest) {
+  const res = await gate(req);
+  if (!LEARN_AREA.test(req.nextUrl.pathname) || res.headers.get("location")) return res;
+  // Mark Learning Box requests so getLocale() can serve English instead of
+  // Swahili there. The rest of the site keeps all three languages.
+  const headers = new Headers(req.headers);
+  headers.set("x-tib-area", "learn");
+  return NextResponse.next({ request: { headers } });
+}
+
 export const config = {
-  matcher: ["/admin_pro/:path*", "/learn/:path*"],
+  matcher: ["/admin_pro/:path*", "/learn/:path*", "/learning-box/:path*", "/api/learn/:path*", "/p/:path*", "/certificates/:path*"],
 };
