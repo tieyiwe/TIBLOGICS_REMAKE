@@ -235,7 +235,7 @@ ${sandboxResponse.slice(0, 4000)}
 Grade the prompt now. JSON only.`;
 
   try {
-    const raw = await streamChat([{ role: "user", content: userMsg }], COACH_SYSTEM + graderLanguage(locale), 1600);
+    const raw = await streamChat([{ role: "user", content: userMsg }], COACH_SYSTEM + graderLanguage(locale), 1600, "grade-prompt");
     const parsed = extractJson(raw);
     if (!parsed) return heuristicPromptEval(learnerPrompt, objectives, passScore, t);
 
@@ -349,7 +349,7 @@ ${work}
 Grade the work now. JSON only.`;
 
   try {
-    const raw = await streamChat([{ role: "user", content: userMsg }], WORKBENCH_SYSTEM + graderLanguage(locale), 1800);
+    const raw = await streamChat([{ role: "user", content: userMsg }], WORKBENCH_SYSTEM + graderLanguage(locale), 1800, "grade-work");
     const parsed = extractJson(raw);
     if (!parsed) return heuristicWorkbenchEval(config, answers, objectives, passScore, t);
     const results: ObjectiveResult[] = objectives.map((o) => {

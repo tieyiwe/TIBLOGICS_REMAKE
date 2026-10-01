@@ -77,7 +77,7 @@ ${submission.submissionMd ? `Written submission:\n${submission.submissionMd}` : 
 Write the internal draft pre-review now.`;
 
   try {
-    const text = await streamChat([{ role: "user", content: prompt }], SYSTEM, 2000);
+    const text = await streamChat([{ role: "user", content: prompt }], SYSTEM, 4000, "review-draft");
 
     await prisma.capstoneSubmission.update({
       where: { id: submissionId },

@@ -68,7 +68,9 @@ export async function POST(req: NextRequest) {
     const raw = await streamChat(
       [{ role: "user", content: `CURRENT FILE:\n\`\`\`html\n${code}\n\`\`\`\n\nMY REQUEST:\n${request}` }],
       assistSystem(lab.briefMd, config, locale),
-      6000,
+      8000,
+      "code-assist",
+      { studentId: student.id, ref: labId },
     );
     const { reply, code: proposed } = parseAssist(raw, t("labs.eval.code.updatedFile"), code);
     const prior = Array.isArray(attempt?.transcript) ? (attempt!.transcript as unknown[]) : [];

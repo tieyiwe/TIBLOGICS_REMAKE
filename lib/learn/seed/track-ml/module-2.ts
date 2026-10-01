@@ -523,6 +523,139 @@ You are done when you have a one-paragraph recommendation that names the option,
         },
       ],
     },
+
+    // ── Lesson 2.5 ────────────────────────────────────────────────────────
+    // Added after the original four so seed matching by position is stable.
+    {
+      title: "Recognising AI workloads: vision, language, speech and documents",
+      objective:
+        "Identify the main vision, language, speech and document workloads, choose between a prebuilt service, a custom model and a general foundation model for each, and name how each should be judged.",
+      durationMinutes: 25,
+      contentType: "article",
+      bodyMd: `## Name the workload before you pick the tool
+
+Long before chat assistants, most AI in production did narrower jobs: reading a number plate, flagging an angry email, turning a phone call into text. These jobs are still everywhere, often inside products you already use. Being able to name the **workload** (the kind of task the AI performs) tells you what data it needs, how to measure it and what can go wrong. It also helps you spot when a proposal uses a heavy tool for a light job.
+
+There are four families worth knowing.
+
+## Vision workloads
+
+- **Image classification** gives one label to a whole image: "damaged" or "not damaged", "cat" or "dog".
+- **Object detection** finds several things in one image and says where each is, usually with a box around it. Counting items on a shelf or spotting a missing safety helmet are detection tasks.
+- **Segmentation** outlines the exact area of each thing, pixel by pixel. Measuring how much of a leaf is diseased needs segmentation, not just detection.
+- **Optical character recognition (OCR)** reads printed or handwritten text from images and scans.
+- **Face detection** finds that a face is present (to blur it, for example). **Facial recognition** identifies who the person is. These are very different in risk. Identifying people from their faces is one of the most restricted uses of AI: some biometric uses are prohibited or high-risk under the EU AI Act, and many providers limit access to it. Treat it as a legal question first and a technical one second.
+
+## Language workloads
+
+- **Text classification**, including **sentiment analysis** (is this review positive, negative or mixed?).
+- **Entity extraction**: pulling out names, organisations, dates, amounts and places. **Key phrase extraction** pulls out the main topics.
+- **Language detection** and **translation**.
+- **Summarisation** and **question answering** over a text.
+
+Dedicated language models did each of these separately. A general large language model can do all of them from a prompt, which is flexible, but a small dedicated model can be cheaper and more predictable for one high-volume job.
+
+## Speech workloads
+
+- **Speech to text** (transcription), often with **diarisation**: working out who spoke when.
+- **Text to speech** (speech synthesis), including custom voices. Cloning a real person's voice needs their clear consent.
+- **Speech translation**, which chains the two with translation in between.
+
+Speech systems are a textbook case of the representation bias from Lesson 2.1. Accents, background noise and specialist vocabulary all raise error rates, so test on recordings from your own callers and staff.
+
+## Documents: where the families meet
+
+Extracting data from invoices, forms and contracts combines several workloads: OCR to read the text, layout analysis to understand tables and fields, and entity extraction to fill a structured record (supplier, date, total). Good document pipelines also check the result (does the line total add up?) and send low-confidence fields to a person rather than guessing.
+
+## Three ways to get the work done
+
+| Option | Example | Strengths | Watch for |
+|---|---|---|---|
+| **Prebuilt service** | A cloud API for OCR, translation or transcription | Fast to start, no training data needed | Generic categories; check where data is processed |
+| **Custom-trained model** | A classifier trained on your labelled defect photos | Fits your own categories; cheap per item at volume | Needs labelled data and retraining |
+| **General foundation model** | A multimodal model prompted to describe and classify a photo | Flexible, handles varied tasks with reasoning | Cost per item, consistency, harder to measure |
+
+A sensible default: try a prebuilt service for a standard task, a general model when the task varies or needs judgement, and a custom model when your categories are specific and the volume is high. Whatever you choose, test it on your own data, because performance on someone else's examples tells you little.
+
+## How to judge each one
+
+- **Classification and sentiment**: precision and recall (Module 3), checked across groups.
+- **Detection**: misses and false alarms, and whether boxes land in the right place.
+- **OCR and transcription**: the share of characters or words that come out wrong, often called the **word error rate** for speech.
+- **Translation and summaries**: review by fluent people, supported by automatic overlap scores (Module 5).
+
+\`\`\`try
+I have this task at work: [DESCRIBE IT, e.g. "sort photos of returned goods into resellable, repairable and scrap"]. Tell me which AI workload family and specific workload this is, whether a prebuilt service, a custom-trained model or a general foundation model fits best, what data I would need to test it, and which measure I should use to judge it. Flag any legal or privacy concerns.
+\`\`\`
+
+## Try it now
+
+List three tasks in your organisation that involve images, audio, scanned documents or large volumes of text. For each, name the workload (for example "object detection" or "entity extraction"), pick one of the three options from the table, and write the measure you would use. Run the prompt above on the one you are least sure about.
+
+You are done when each of the three tasks has a named workload, a chosen option with a one-line reason, and a measure.`,
+      microCheck: [
+        {
+          question: "A retailer wants to count how many of each product are visible on a shelf photo. Which workload is this?",
+          options: [
+            "Object detection, finding and locating each item",
+            "Image classification, giving the photo one label",
+            "Sentiment analysis of the product packaging text",
+            "Speech to text over the store's audio recordings",
+          ],
+          correctIndex: 0,
+          explanation:
+            "Counting needs each item found and located, which is object detection. Classification gives a single label to the whole image, so it cannot count separate items.",
+        },
+        {
+          question: "What separates face detection from facial recognition?",
+          options: [
+            "Detection finds a face; recognition says whose it is",
+            "Detection needs video; recognition works on photos",
+            "Detection is regulated; recognition is unrestricted",
+            "Detection uses OCR; recognition uses translation",
+          ],
+          correctIndex: 0,
+          explanation:
+            "Detecting that a face is present is low risk. Identifying the person is biometric identification, one of the most restricted uses of AI and a legal question before a technical one.",
+        },
+        {
+          question: "A transcription tool works well in testing but makes many errors on a call centre's real calls. What is the most likely cause?",
+          options: [
+            "Test audio lacked the callers' accents and line noise",
+            "Transcription tools only work in a single language",
+            "The calls were too short for a model to transcribe",
+            "Speech to text always needs a custom voice first",
+          ],
+          correctIndex: 0,
+          explanation:
+            "Speech models degrade with accents, noise and vocabulary they rarely saw. Testing on your own recordings reveals this before launch; generic test audio hides it.",
+        },
+        {
+          question: "A firm processes 200,000 invoices a year in a standard format. Which option is a sensible first try?",
+          options: [
+            "A prebuilt document extraction service, tested on samples",
+            "Training a custom vision model from scratch on day one",
+            "A general chat assistant with each invoice pasted by hand",
+            "Continued pre-training of a large model on all invoices",
+          ],
+          correctIndex: 0,
+          explanation:
+            "Invoices are a standard, high-volume task that prebuilt services handle well, and testing on real samples shows whether it is good enough. Building from scratch is costly without evidence it is needed.",
+        },
+        {
+          question: "Which measure fits a speech to text system best?",
+          options: [
+            "The share of words that come out wrong",
+            "The area under a ROC curve per speaker",
+            "The number of boxes drawn on each frame",
+            "The ROUGE score against the call summary",
+          ],
+          correctIndex: 0,
+          explanation:
+            "Word error rate counts substituted, missing and extra words against a correct transcript. The other measures belong to classification, detection or summarisation.",
+        },
+      ],
+    },
   ],
   quiz: [
     {
@@ -656,6 +789,30 @@ You are done when you have a one-paragraph recommendation that names the option,
       correctIndex: 0,
       explanation:
         "Starting from the decision and its owner keeps the work tied to value. Starting from the technology tends to produce solutions looking for a problem.",
+    },
+    {
+      question: "An insurer wants to measure what share of a dented car door is damaged in each claim photo. Which workload fits?",
+      options: [
+        "Segmentation, outlining the damaged area exactly",
+        "Object detection, putting one box around the car",
+        "Image classification, labelling the photo damaged",
+        "Entity extraction from the text of the claim form",
+      ],
+      correctIndex: 0,
+      explanation:
+        "Measuring an area needs the exact outline of the damage, which is segmentation. A box or a single label says that damage exists but not how much of the door it covers.",
+    },
+    {
+      question: "A team wants to sort 30,000 support emails a month into its own nine categories. Prompting a general model works but is costly. What is a reasonable next option?",
+      options: [
+        "A custom classifier trained on labelled past emails",
+        "A speech synthesis model to read the emails aloud",
+        "A prebuilt translation service for every incoming email",
+        "Facial recognition to identify who sent each email",
+      ],
+      correctIndex: 0,
+      explanation:
+        "Specific categories at high volume suit a custom classifier trained on labelled history, which is cheap per item. The other workloads do not sort text into categories.",
     },
   ],
 }];

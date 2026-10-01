@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
 
     const userContent = contextMd ? `${contextMd}\n\n---\n\n${prompt}` : prompt;
 
-    const response = await streamChat([{ role: "user", content: userContent }], system, 1200);
+    const response = await streamChat([{ role: "user", content: userContent }], system, 1200, "sandbox", { studentId: student.id, ref: labId });
 
     // Append to the transcript so the learner keeps their iteration history
     const prior = Array.isArray(attempt?.transcript) ? (attempt.transcript as unknown[]) : [];

@@ -1,4 +1,4 @@
-import anthropic, { CLAUDE_MODEL } from "@/lib/claude";
+import { ClaudeRefusal, runClaude, type AiTask } from "@/lib/claude";
 import type { LibraryPrompt } from "./library";
 import { VERTICAL_LABELS, type Severity, type Vertical } from "./guard/rules";
 import type { GuardFinding } from "./guard/scan";
@@ -81,13 +81,14 @@ function profileBlock(p: Profile): string {
   return rows.filter(([, v]) => v.trim()).map(([k, v]) => `${k}: ${v.trim()}`).join("\n") || "(no profile saved yet)";
 }
 
-async function run(system: string, user: string, maxTokens: number): Promise<{ text: string; usage: Usage }> {
-  const msg = await anthropic.messages
-    .stream({ model: CLAUDE_MODEL, max_tokens: maxTokens, system, messages: [{ role: "user", content: user }] })
-    .finalMessage();
-  if ((msg.stop_reason as string) === "refusal") throw new ModelDeclinedError("The model declined this request.");
-  const text = msg.content.map((b) => (b.type === "text" ? b.text : "")).join("").trim();
-  return { text, usage: { inputTokens: msg.usage.input_tokens, outputTokens: msg.usage.output_tokens } };
+async function run(task: AiTask, system: string, user: string, maxTokens: number): Promise<{ text: string; usage: Usage }> {
+  try {
+    const { text, message: msg } = await runClaude(task, { system, messages: [{ role: "user", content: user }], maxTokens });
+    return { text: text.trim(), usage: { inputTokens: msg.usage.input_tokens, outputTokens: msg.usage.output_tokens } };
+  } catch (err) {
+    if (err instanceof ClaudeRefusal) throw new ModelDeclinedError("The model declined this request.");
+    throw err;
+  }
 }
 
 /** Fill a library prompt for this business and write the deliverable. */
@@ -133,7 +134,7 @@ export async function generate(
     extra.trim() ? `\n<notes_from_user>\n${extra.trim()}\n</notes_from_user>` : "",
   ].join("\n");
 
-  const out = await run(system, user, 4000);
+  const out = await run("toolkit-write", system, user, 4000);
   return { ...out, text: plainText(out.text) };
 }
 
@@ -164,7 +165,7 @@ export async function deepReview(
     `Write "issue" and "basis" in ${LANGUAGE_FOR_AI[locale]}${locale === "en" ? "" : " (keep the names of laws, rules and agencies as they are officially written)"}. Write "fix" in the same language as the draft, since it replaces the quoted words.`,
   ].filter(Boolean).join("\n");
 
-  const { text: raw, usage } = await run(system, `<draft>\n${text}\n</draft>`, 2500);
+  const { text: raw, usage } = await run("compliance-review", system, `<draft>\n${text}\n</draft>`, 4000);
 
   let parsed: unknown;
   try {

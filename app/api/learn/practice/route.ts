@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
   const systemPrompt = lang ? `${system}\n\n${lang}` : system;
 
   try {
-    const response = await streamChat([{ role: "user", content: parsed.data.prompt }], systemPrompt, 1400);
+    const response = await streamChat([{ role: "user", content: parsed.data.prompt }], systemPrompt, 1400, "practice", { studentId: student.id, ref: parsed.data.lessonId ?? null });
     return NextResponse.json({ ok: true, response });
   } catch (err) {
     console.error("[POST /api/learn/practice]", err);

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import prisma from "@/lib/prisma";
-import anthropic, { CLAUDE_MODEL } from "@/lib/claude";
+import { ClaudeRefusal, runClaude } from "@/lib/claude";
 import { ensureBlueprintTables } from "./db";
 import { MAX_ATTEMPTS, STALE_GENERATION_MINUTES } from "./config";
 import { BUDGET_LABELS, currentHours, IntakeSchema, type Intake } from "./intake";
@@ -153,12 +153,16 @@ export async function generateBlueprint(id: string): Promise<GenerateOutcome> {
   const bp = await prisma.blueprint.findUniqueOrThrow({ where: { id } });
   try {
     const intake = IntakeSchema.parse(bp.intake);
-    const msg = await anthropic.messages
-      .stream({ model: CLAUDE_MODEL, max_tokens: 16000, system: systemFor(intake.locale ?? "en"), messages: [{ role: "user", content: brief(intake) }] })
-      .finalMessage();
-    if ((msg.stop_reason as string) === "refusal") throw new Error("The model declined to write this blueprint.");
-    if (msg.stop_reason === "max_tokens") throw new Error("The blueprint was cut off before it finished.");
-    const raw = msg.content.map((b) => (b.type === "text" ? b.text : "")).join("");
+    // Opus with adaptive thinking at medium effort: the budget covers thinking plus the JSON.
+    const { text: raw, stopReason, message: msg } = await runClaude("blueprint", {
+      system: systemFor(intake.locale ?? "en"),
+      messages: [{ role: "user", content: brief(intake) }],
+      maxTokens: 20000,
+      meta: { ref: `blueprint:${id}` },
+    }).catch((err) => {
+      throw err instanceof ClaudeRefusal ? new Error("The model declined to write this blueprint.") : err;
+    });
+    if (stopReason === "max_tokens") throw new Error("The blueprint was cut off before it finished.");
     const result = parse(raw, intake);
 
     const saved = await prisma.blueprint.update({
