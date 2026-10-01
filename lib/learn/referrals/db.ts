@@ -57,6 +57,8 @@ const STATEMENTS = [
   `CREATE INDEX IF NOT EXISTS "LearnReferralReward_referrerStudentId_createdAt_idx" ON "LearnReferralReward"("referrerStudentId", "createdAt")`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "LearnReferralEvent_code_kind_visitorHash_day_key" ON "LearnReferralEvent"("code", "kind", "visitorHash", "day")`,
   `CREATE INDEX IF NOT EXISTS "LearnReferralEvent_code_kind_idx" ON "LearnReferralEvent"("code", "kind")`,
+  // When the friend's welcome coupon was last put on a checkout (one open checkout at a time).
+  `ALTER TABLE "LearnReferral" ADD COLUMN IF NOT EXISTS "couponClaimedAt" TIMESTAMP(3)`,
 ];
 
 let ready: Promise<void> | null = null;

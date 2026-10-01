@@ -2371,6 +2371,8 @@ model LearnReferral {
   paidAt            DateTime?
   payKind           String?
   amountCents       Int?
+  /// When the welcome coupon was last put on a checkout (one open checkout per 24 h).
+  couponClaimedAt   DateTime?
   createdAt         DateTime  @default(now())
 
   @@index([referrerStudentId])

@@ -69,7 +69,7 @@ We build BI dashboards, data pipelines, and AI-powered analytics that turn raw d
 Cross-platform mobile apps (iOS & Android) with native-quality performance. Great for client-facing apps, field service tools, healthcare apps, and logistics platforms.
 
 **8. AI Training & Academy**
-We train teams how to actually use AI — not just theory. Workshops, on-site training, and access to 90+ lessons on the TIBLOGICS AI Academy on Skool, spanning 3 courses on AI implementation, workflow automation, and business transformation.
+We train teams how to actually use AI — not just theory. Workshops, on-site training, and self-paced certificate tracks on ARFA (AI Readiness For All), the TIBLOGICS AI Academy at tiblogics.com/learning-box: one track for life from $297, or every track for $89/month, with team plans for companies.
 
 UPCOMING TIBLOGICS TRAINING EVENTS:
 - Practical AI Training (Coming Soon) — Hands-on live sessions for business owners and teams. Learn to build AI workflows, automate tasks, and integrate AI into daily operations. Online. Users can sign up to get notified at /events.
@@ -91,7 +91,7 @@ Architecture for complex, multi-service systems. We design distributed backends,
 - InStory: AI-personalized learning for K-8 schools
 - CareFlow AI: Automated wellness check-ins for social work agencies
 - ShipFrica: Shipping SaaS for African diaspora logistics businesses
-- AI Academy on Skool: 90+ lessons across 3 AI courses
+- ARFA, the TIBLOGICS AI Academy: certificate tracks for professionals, business owners, parents and builders (tiblogics.com/learning-box)
 
 Contact: info@tiblogics.com`;
 

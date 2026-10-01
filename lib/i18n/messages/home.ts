@@ -162,7 +162,7 @@ const messages: Messages = {
     "home.servicesGrid.security": "Security audits, penetration testing, and hardened infrastructure for peace of mind.",
     "home.servicesGrid.data": "Business intelligence dashboards, data pipelines, and AI-powered insights.",
     "home.servicesGrid.mobile": "React Native cross-platform apps that deliver native-quality experiences.",
-    "home.servicesGrid.training": "90+ lessons, 3 courses, team workshops, and AI implementation training on Skool.",
+    "home.servicesGrid.training": "Team workshops, on-site training and self-paced certificate tracks on ARFA, the TIBLOGICS AI Academy.",
     "home.servicesGrid.iot.name": "System Design & IoT",
     "home.servicesGrid.iot": "Architecture design, IoT integrations, and complex multi-service systems.",
 
@@ -170,7 +170,7 @@ const messages: Messages = {
     "home.stats.products": "Live AI Products",
     "home.stats.markets": "Serving Markets Worldwide",
     "home.stats.businesses": "Businesses Transformed",
-    "home.stats.academy": "AI Academy on Skool",
+    "home.stats.academy": "ARFA · AI Academy tracks",
   },
   fr: {
     "home.meta.title": "Agence de mise en œuvre de l'IA et de solutions numériques",
@@ -319,14 +319,14 @@ const messages: Messages = {
     "home.servicesGrid.security": "Audits de sécurité, tests d'intrusion et infrastructure renforcée pour votre tranquillité d'esprit.",
     "home.servicesGrid.data": "Tableaux de bord décisionnels, pipelines de données et analyses propulsées par l'IA.",
     "home.servicesGrid.mobile": "Applications multiplateformes React Native offrant une expérience digne d'une application native.",
-    "home.servicesGrid.training": "Plus de 90 leçons, 3 cours, des ateliers d'équipe et une formation à la mise en œuvre de l'IA sur Skool.",
+    "home.servicesGrid.training": "Ateliers d'équipe, formations sur site et parcours certifiants à votre rythme sur ARFA, l'Académie IA de TIBLOGICS.",
     "home.servicesGrid.iot.name": "Conception de systèmes et IoT",
     "home.servicesGrid.iot": "Conception d'architectures, intégrations IoT et systèmes multiservices complexes.",
 
     "home.stats.products": "Produits IA en ligne",
     "home.stats.markets": "Marchés servis dans le monde",
     "home.stats.businesses": "Entreprises transformées",
-    "home.stats.academy": "AI Academy sur Skool",
+    "home.stats.academy": "Parcours ARFA · Académie IA",
   },
   sw: {
     "home.meta.title": "Wakala wa utekelezaji wa AI na suluhisho za kidijitali",
@@ -475,14 +475,14 @@ const messages: Messages = {
     "home.servicesGrid.security": "Ukaguzi wa usalama, majaribio ya udukuzi (penetration testing) na miundombinu iliyoimarishwa kwa amani ya akili.",
     "home.servicesGrid.data": "Dashibodi za takwimu za biashara, mifumo ya data na maarifa yanayotokana na AI.",
     "home.servicesGrid.mobile": "App za React Native zinazofanya kazi kwenye mifumo yote, zenye ubora sawa na app asilia.",
-    "home.servicesGrid.training": "Masomo 90+, kozi 3, warsha za timu na mafunzo ya utekelezaji wa AI kwenye Skool.",
+    "home.servicesGrid.training": "Warsha za timu, mafunzo mahali pa kazi na kozi za vyeti kwa kasi yako kwenye ARFA, Chuo cha AI cha TIBLOGICS.",
     "home.servicesGrid.iot.name": "Usanifu wa mifumo na IoT",
     "home.servicesGrid.iot": "Usanifu wa mifumo, muunganisho wa IoT na mifumo tata ya huduma nyingi.",
 
     "home.stats.products": "Bidhaa za AI zinazotumika",
     "home.stats.markets": "Masoko tunayohudumia duniani",
     "home.stats.businesses": "Biashara zilizobadilishwa",
-    "home.stats.academy": "AI Academy kwenye Skool",
+    "home.stats.academy": "Kozi za ARFA · Chuo cha AI",
   },
 };
 

@@ -167,8 +167,14 @@ export async function referralCouponFor(studentId: string): Promise<string | nul
   if (!coupon) return null;
   try {
     await ensureReferralTables();
-    const r = await prisma.learnReferral.findUnique({ where: { referredStudentId: studentId }, select: { status: true } });
-    return r?.status === "signed_up" ? coupon : null;
+    // Claimed atomically: the coupon goes on ONE checkout at a time. Stripe
+    // checkout sessions expire after 24 hours, so an abandoned checkout frees
+    // it again; once a payment settles the referral is "paid" and it stops.
+    const claimed = await prisma.$executeRaw`
+      UPDATE "LearnReferral" SET "couponClaimedAt" = NOW()
+      WHERE "referredStudentId" = ${studentId} AND "status" = 'signed_up'
+        AND ("couponClaimedAt" IS NULL OR "couponClaimedAt" < NOW() - INTERVAL '24 hours')`;
+    return claimed > 0 ? coupon : null;
   } catch {
     return null;
   }

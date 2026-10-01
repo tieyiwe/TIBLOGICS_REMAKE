@@ -89,9 +89,9 @@ export default tri({
   ],
   "pages.services.svc.training.name": ["AI Training & Academy", "Formation et académie IA", "Mafunzo na Akademia ya AI"],
   "pages.services.svc.training.desc": [
-    "Team workshops, on-site training and 90+ lessons on the TIBLOGICS AI Academy.",
-    "Ateliers d'équipe, formations sur site et plus de 90 leçons sur l'académie IA de TIBLOGICS.",
-    "Warsha za timu, mafunzo mahali pa kazi na masomo zaidi ya 90 kwenye Akademia ya AI ya TIBLOGICS.",
+    "Team workshops, on-site training and self-paced certificate tracks on ARFA, the TIBLOGICS AI Academy.",
+    "Ateliers d'équipe, formations sur site et parcours certifiants à votre rythme sur ARFA, l'Académie IA de TIBLOGICS.",
+    "Warsha za timu, mafunzo mahali pa kazi na kozi za vyeti kwa kasi yako kwenye ARFA, Chuo cha AI cha TIBLOGICS.",
   ],
   "pages.services.svc.iot.name": ["System Design & IoT", "Architecture système et IoT", "Usanifu wa Mifumo na IoT"],
   "pages.services.svc.iot.desc": [

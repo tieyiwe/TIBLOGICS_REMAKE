@@ -84,12 +84,12 @@ const PROJECTS = [
     tasks: ["Proposal built", "Pricing widget done", "Schedule demo", "Close"]
   },
   {
-    name: "AI Implementation Academy",
-    description: "Skool platform. 3 courses, 90+ lessons. Founding members $97/mo. Launch in progress.",
+    name: "ARFA · AI Academy",
+    description: "ARFA (AI Readiness For All), the TIBLOGICS AI Academy on tiblogics.com: certificate tracks, $297+ per track or $89/month, team plans.",
     category: "EDUCATION" as ProjectCategory, status: "ACTIVE" as ProjectStatus, priority: "HIGH" as ProjectPriority,
     progress: 70, revenueEarned: 0, revenuePotential: 120000, monthlyRecurring: 0,
     deadline: new Date("2026-05-01"), starred: true, color: "#7c3aed",
-    tasks: ["90 lessons built", "3-course structure done", "Intro video script done", "Founding member launch", "Phase 2: price increase"]
+    tasks: ["Tracks live", "Team plans live", "Launch campaign", "First cohort", "Partnerships"]
   },
   {
     name: "The In-Story Method Book",
