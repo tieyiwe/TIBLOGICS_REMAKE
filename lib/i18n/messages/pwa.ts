@@ -78,6 +78,7 @@ const messages: Messages = {
     "pwa.reminders.err.timezone": "Choose a time zone.",
     "pwa.reminders.err.days": "Choose at least one day.",
     "pwa.reminders.err.unavailable": "WhatsApp reminders are not available yet.",
+    "pwa.reminders.err.stopped": "This number replied STOP. To get reminders again, send START to our WhatsApp number from it.",
     "pwa.reminders.msg.noLesson": "your next lesson",
     "pwa.reminders.msg.studio": "your Learning Studio challenge",
     "pwa.reminders.email.subject": "Time for today's lesson",
@@ -161,6 +162,7 @@ const messages: Messages = {
     "pwa.reminders.err.timezone": "Choisissez un fuseau horaire.",
     "pwa.reminders.err.days": "Choisissez au moins un jour.",
     "pwa.reminders.err.unavailable": "Les rappels WhatsApp ne sont pas encore disponibles.",
+    "pwa.reminders.err.stopped": "Ce numéro a répondu STOP. Pour recevoir à nouveau les rappels, envoyez START à notre numéro WhatsApp depuis ce numéro.",
     "pwa.reminders.msg.noLesson": "votre prochaine leçon",
     "pwa.reminders.msg.studio": "votre défi Learning Studio",
     "pwa.reminders.email.subject": "C’est l’heure de la leçon du jour",
@@ -244,6 +246,7 @@ const messages: Messages = {
     "pwa.reminders.err.timezone": "Chagua ukanda wa saa.",
     "pwa.reminders.err.days": "Chagua angalau siku moja.",
     "pwa.reminders.err.unavailable": "Vikumbusho vya WhatsApp bado havipatikani.",
+    "pwa.reminders.err.stopped": "Nambari hii ilijibu STOP. Ili kupata vikumbusho tena, tuma START kwa nambari yetu ya WhatsApp kutoka nambari hiyo.",
   },
 };
 

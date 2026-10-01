@@ -57,7 +57,10 @@ export interface ReminderInput {
   consentText: string;
 }
 
-export type SaveError = "phone" | "consent" | "time" | "timezone" | "days" | "unavailable";
+export type SaveError = "phone" | "consent" | "time" | "timezone" | "days" | "unavailable" | "stopped";
+
+/** Learner accounts that may send WhatsApp reminders to one number (a shared family phone). */
+const MAX_ACCOUNTS_PER_NUMBER = 3;
 
 export async function saveReminderSettings(studentId: string, input: ReminderInput): Promise<{ ok: true } | { ok: false; error: SaveError }> {
   await ensureReminderTables();
@@ -85,6 +88,17 @@ export async function saveReminderSettings(studentId: string, input: ReminderInp
     const stillValid = !!before?.whatsappOn && before.phoneE164 === phone && !!before.consentAt && !before.optedOutAt;
     if (!stillValid) {
       if (!input.consent) return { ok: false, error: "consent" };
+      // Anyone can type any number here, so the person who holds the number
+      // has the last word: once they reply STOP, only their own START brings
+      // reminders back (a settings save cannot override it), and one number
+      // cannot be signed up by an unbounded number of accounts.
+      const others = await prisma.studyReminderPref.findMany({
+        where: { phoneE164: phone, studentId: { not: studentId } },
+        select: { whatsappOn: true, optOutSource: true },
+      });
+      if (before?.phoneE164 === phone && before.optOutSource === "whatsapp_stop") return { ok: false, error: "stopped" };
+      if (others.some((o) => o.optOutSource === "whatsapp_stop")) return { ok: false, error: "stopped" };
+      if (others.filter((o) => o.whatsappOn).length >= MAX_ACCOUNTS_PER_NUMBER - 1) return { ok: false, error: "phone" };
       consentAt = now;
       consentText = input.consentText.slice(0, 500);
     }
