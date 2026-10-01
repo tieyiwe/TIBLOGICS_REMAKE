@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/i18n/client";
 import { bumpPractice, celebrate } from "@/lib/learn/game-client";
 import ResultFlair from "./game/ResultFlair";
@@ -51,6 +51,14 @@ export default function QuizRunner({
   } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // Each step replaces the whole view, so focus moves to its heading (and a
+  // screen reader reads the result) instead of falling back to the page.
+  const stepHeading = useRef<HTMLHeadingElement>(null);
+  const moved = useRef(false);
+  useEffect(() => {
+    if (!moved.current) return;
+    stepHeading.current?.focus({ preventScroll: true });
+  }, [questions, result]);
 
   async function load() {
     setBusy(true);
@@ -63,6 +71,7 @@ export default function QuizRunner({
       setPending(!!data.pending);
       setAnswers({});
       setResult(null);
+      moved.current = true;
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
       setError(err instanceof Error ? err.message : t("labs.error.generic"));
@@ -83,6 +92,7 @@ export default function QuizRunner({
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? t("labs.quiz.scoreError"));
       setResult(data);
+      moved.current = true;
       bumpPractice();
       celebrate({
         points: data.pointsAwarded,
@@ -137,7 +147,7 @@ export default function QuizRunner({
         >
           {busy ? t("labs.loading") : alreadyPassed ? t("labs.quiz.retake") : t("labs.quiz.start")}
         </button>
-        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+        {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
       </section>
     );
   }
@@ -147,10 +157,11 @@ export default function QuizRunner({
     return (
       <section className="rounded-2xl border border-[var(--border)] bg-white p-8">
         <div className="text-center">
-          <p className="text-5xl font-black" style={{ color: result.passed ? "#22A387" : "#E05F00" }}>
+          <p aria-hidden="true" className="text-5xl font-black" style={{ color: result.passed ? "#1A7F69" : "#B8500A" }}>
             {result.score}%
           </p>
-          <h1 className="mt-2 text-xl font-bold text-[var(--ink)]">
+          <h1 ref={stepHeading} tabIndex={-1} className="mt-2 text-xl font-bold text-[var(--ink)] focus:outline-none">
+            <span className="sr-only">{result.score}%. </span>
             {result.passed ? t("labs.quiz.passed") : t("labs.quiz.notYet")}
           </h1>
           <p className="mt-1 text-sm text-[var(--ink2)]">
@@ -188,7 +199,18 @@ export default function QuizRunner({
                       <span aria-hidden="true" className="shrink-0">
                         {correct ? "✓" : chosen ? "✗" : "·"}
                       </span>
-                      <span>{o}</span>
+                      <span>
+                        {(correct || chosen) && (
+                          <span className="sr-only">
+                            {correct
+                              ? chosen
+                                ? `${t("a11y.quiz.correctAnswer")}, ${t("a11y.quiz.yourAnswer")}: `
+                                : `${t("a11y.quiz.correctAnswer")}: `
+                              : `${t("a11y.quiz.yourWrongAnswer")}: `}
+                          </span>
+                        )}
+                        {o}
+                      </span>
                     </li>
                   );
                 })}
@@ -225,7 +247,7 @@ export default function QuizRunner({
     <section className="rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
       <div className="sticky top-16 z-10 -mx-6 mb-6 border-b border-[var(--border)] bg-white/95 px-6 py-3 backdrop-blur sm:-mx-8 sm:px-8">
         <div className="flex items-center justify-between text-sm">
-          <span className="font-bold text-[var(--ink)]">{moduleTitle}</span>
+          <h1 ref={stepHeading} tabIndex={-1} className="font-bold text-[var(--ink)] focus:outline-none">{moduleTitle}</h1>
           <span className="text-[var(--ink3)]">
             {t("labs.answered", { n: answeredCount, total: questions.length })}
           </span>
@@ -276,7 +298,7 @@ export default function QuizRunner({
         ))}
       </ol>
 
-      {error && <p className="mt-5 text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="mt-5 text-sm text-red-700">{error}</p>}
 
       <button
         onClick={submit}

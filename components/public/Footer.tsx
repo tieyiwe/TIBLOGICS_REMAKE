@@ -57,9 +57,9 @@ export default async function Footer() {
 
           {/* Services */}
           <div>
-            <h4 className="font-syne font-700 text-sm uppercase tracking-wider text-[#E8EFF8] mb-4">
+            <h2 className="font-syne font-700 text-sm uppercase tracking-wider text-[#E8EFF8] mb-4">
               {t("site.footer.services")}
-            </h4>
+            </h2>
             <ul className="space-y-2">
               {services.map((s) => (
                 <li key={s}>
@@ -76,9 +76,9 @@ export default async function Footer() {
 
           {/* Startups & Products */}
           <div>
-            <h4 className="font-syne font-700 text-sm uppercase tracking-wider text-[#E8EFF8] mb-4">
+            <h2 className="font-syne font-700 text-sm uppercase tracking-wider text-[#E8EFF8] mb-4">
               {t("site.footer.products")}
-            </h4>
+            </h2>
             <ul className="space-y-2">
               {products.map((p) => (
                 <li key={p.label}>
@@ -95,9 +95,9 @@ export default async function Footer() {
 
           {/* Company */}
           <div>
-            <h4 className="font-syne font-700 text-sm uppercase tracking-wider text-[#E8EFF8] mb-4">
+            <h2 className="font-syne font-700 text-sm uppercase tracking-wider text-[#E8EFF8] mb-4">
               {t("site.footer.company")}
-            </h4>
+            </h2>
             <ul className="space-y-2">
               {company.map((c) => (
                 <li key={c.key}>
@@ -124,6 +124,9 @@ export default async function Footer() {
             </Link>
             <Link href="/terms" className="text-[#9DB9D6] hover:text-white text-xs font-dm transition-colors">
               {t("site.footer.terms")}
+            </Link>
+            <Link href="/accessibility" className="text-[#9DB9D6] hover:text-white text-xs font-dm transition-colors">
+              {t("a11y.page.footerLink")}
             </Link>
           </nav>
         </div>

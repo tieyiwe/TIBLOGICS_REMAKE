@@ -6,6 +6,8 @@ import type { Metadata } from "next";
 import { fmtDate } from "@/lib/learn/format";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTracks } from "@/lib/i18n/sources/learn";
+import { linkedInAddUrl } from "@/lib/learn/skill-badges/share";
+import { siteBase } from "@/lib/learn/skill-badges/signing";
 
 export const dynamic = "force-dynamic";
 
@@ -76,13 +78,28 @@ export default async function MyCertificatesPage() {
               </div>
 
               {!c.revoked && (
-                <Link
-                  href={`/certificates/${c.verificationId}`}
-                  className="mt-4 inline-block rounded-full px-5 py-2 text-xs font-bold text-white"
-                  style={{ background: c.track.accentColor }}
-                >
-                  {t("learn.certs.viewShare")} →
-                </Link>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Link
+                    href={`/certificates/${c.verificationId}`}
+                    className="inline-block rounded-full px-5 py-2 text-xs font-bold text-white"
+                    style={{ background: c.track.accentColor }}
+                  >
+                    {t("learn.certs.viewShare")} →
+                  </Link>
+                  <a
+                    href={linkedInAddUrl({
+                      name: c.certificateName,
+                      issuedAt: c.issuedAt,
+                      certUrl: `${siteBase()}/certificates/${c.verificationId}`,
+                      certId: c.verificationId,
+                    })}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block rounded-full bg-[#0A66C2] px-5 py-2 text-xs font-bold text-white"
+                  >
+                    {t("learn.cert.addToLinkedIn")}
+                  </a>
+                </div>
               )}
             </div>
           ))}

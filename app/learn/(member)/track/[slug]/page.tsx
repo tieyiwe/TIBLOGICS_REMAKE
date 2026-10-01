@@ -24,6 +24,7 @@ import { newLessonsInTrack } from "@/lib/learn/track-updates";
 import { NewLessonsPanel, NewPill } from "@/components/learn/NewLessons";
 import { resumeTitle } from "@/components/learn/ResumeCard";
 import TrackCommunityCards from "@/components/learn/community/TrackCommunityCards";
+import OfflineDownload from "@/components/learn/pwa/OfflineDownload";
 
 export const dynamic = "force-dynamic";
 
@@ -343,6 +344,18 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
           )
         )}
       </section>
+
+      {/* Download for offline (components/learn/pwa, public/sw.js) */}
+      <OfflineDownload
+        trackSlug={track.slug}
+        trackTitle={text?.title ?? track.title}
+        accentColor={track.accentColor}
+        modules={track.modules.map((m) => ({
+          id: m.id,
+          title: text?.modules[m.id]?.title ?? m.title,
+          lessons: m.lessons.map((l) => ({ id: l.id, title: text?.lessons[l.id]?.title ?? l.title })),
+        }))}
+      />
 
       {/* Modules */}
       <section>

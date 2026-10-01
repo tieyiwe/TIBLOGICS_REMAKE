@@ -11,6 +11,7 @@ import { checkLevelUp, notifyMilestone } from "@/lib/learn/milestones";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { localizeQuestions } from "@/lib/i18n/sources/labs";
 import { gameDelta, gameSnapshot } from "@/lib/learn/badges";
+import { awardSkillBadgesSafe } from "@/lib/learn/skill-badges/engine";
 import { applyTestOut } from "@/lib/learn/mastery/testout";
 
 // Scores micro-checks (mode: "micro") and module quizzes (mode: "quiz").
@@ -161,6 +162,8 @@ export async function POST(req: NextRequest) {
     // Mastery paths: a pass from a Mastered diagnostic tests out of the
     // module's unfinished lessons (no-op otherwise).
     const testOut = passed ? await applyTestOut(student.id, quiz.moduleId) : { testedOut: false, testOutPoints: 0 };
+    // Verified skill badges (module mastery, cross-track skills). Idempotent.
+    if (passed) await awardSkillBadgesSafe(student.id);
 
     return NextResponse.json({ score, passed, passScore: quiz.passScore, graded, pointsAwarded, ...game, ...testOut });
   } catch (err) {

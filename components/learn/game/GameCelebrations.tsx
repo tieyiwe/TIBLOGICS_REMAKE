@@ -10,10 +10,12 @@ import { confettiBurst } from "./confetti";
 
 interface Toast {
   id: number;
-  kind: "xp" | "badge";
+  kind: "xp" | "badge" | "skill";
   points?: number;
   reason?: GameEventDetail["reason"];
   badgeId?: string;
+  /** Verified skill badge (lib/learn/skill-badges): award id, key and English name. */
+  skill?: { id: string; key: string; name: string };
 }
 
 const TOAST_MS = 4500;
@@ -51,6 +53,31 @@ export default function GameCelebrations() {
     return () => window.removeEventListener(GAME_EVENT, onGame);
   }, [dismiss]);
 
+  // Verified skill badges are awarded server-side wherever XP is; any not
+  // yet announced are fetched (and marked announced) on load and after each
+  // game event.
+  useEffect(() => {
+    // The server claims each badge once, so a late answer is still shown.
+    const check = async () => {
+      try {
+        const res = await fetch("/api/learn/badges/unseen", { method: "POST" });
+        if (!res.ok) return;
+        const d = (await res.json()) as { badges?: Array<{ id: string; key: string; name: string }> };
+        const add: Toast[] = (d.badges ?? []).map((b) => ({ id: nextId.current++, kind: "skill" as const, skill: b }));
+        if (!add.length) return;
+        setToasts((ts) => [...ts, ...add].slice(-4));
+        for (const x of add) setTimeout(() => dismiss(x.id), TOAST_MS + 3000);
+        confettiBurst();
+      } catch {
+        /* offline: they will show next time */
+      }
+    };
+    const onGame = () => void setTimeout(check, 400);
+    void check();
+    window.addEventListener(GAME_EVENT, onGame);
+    return () => window.removeEventListener(GAME_EVENT, onGame);
+  }, [dismiss]);
+
   return (
     <>
       {/* Polite live region: announced without stealing focus. */}
@@ -78,6 +105,8 @@ export default function GameCelebrations() {
                 ×
               </button>
             </div>
+          ) : x.kind === "skill" ? (
+            <SkillBadgeToast key={x.id} badge={x.skill!} onDismiss={() => dismiss(x.id)} />
           ) : (
             <BadgeToast key={x.id} id={x.badgeId!} onDismiss={() => dismiss(x.id)} />
           ),
@@ -118,6 +147,32 @@ function BadgeToast({ id, onDismiss }: { id: string; onDismiss: () => void }) {
         <span className="block text-xs font-bold uppercase tracking-wide text-[var(--orange2)]">{t("game.toast.badge")}</span>
         <span className="block text-sm font-black text-[var(--ink)]">{t(badgeNameKey(id))}</span>
         <span className="block text-xs text-[var(--ink2)]">{t(badgeDescKey(id))}</span>
+      </span>
+      <button onClick={onDismiss} aria-label={t("game.toast.dismiss")} className="ml-1 self-start rounded-full px-1.5 text-[var(--ink3)] hover:text-[var(--ink)]">
+        ×
+      </button>
+    </div>
+  );
+}
+
+function SkillBadgeToast({ badge, onDismiss }: { badge: { id: string; key: string; name: string }; onDismiss: () => void }) {
+  const t = useT();
+  const name = badge.key.startsWith("skill:") ? t(`badges.skill.${badge.key.slice(6)}.name`) : badge.name;
+  return (
+    <div className="game-toast pointer-events-auto flex max-w-sm items-center gap-3 rounded-2xl border-2 border-[#F47C20] bg-white px-4 py-3 shadow-xl">
+      <span
+        aria-hidden="true"
+        className="game-badge-pop flex h-11 w-11 shrink-0 items-center justify-center bg-[#1B3A6B] text-xl text-white"
+        style={{ clipPath: "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)" }}
+      >
+        ★
+      </span>
+      <span className="min-w-0">
+        <span className="block text-xs font-bold uppercase tracking-wide text-[var(--orange2)]">{t("badges.toast.kicker")}</span>
+        <span className="block text-sm font-black text-[var(--ink)]">{name}</span>
+        <a href={`/learn/badges`} className="block text-xs font-semibold text-[#1B3A6B] underline">
+          {t("badges.toast.view")}
+        </a>
       </span>
       <button onClick={onDismiss} aria-label={t("game.toast.dismiss")} className="ml-1 self-start rounded-full px-1.5 text-[var(--ink3)] hover:text-[var(--ink)]">
         ×

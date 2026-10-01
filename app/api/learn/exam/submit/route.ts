@@ -9,6 +9,7 @@ import { presentQuestion, type GradedQuestion } from "@/lib/learn/assessments";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { localizeQuestions } from "@/lib/i18n/sources/labs";
 import { gameDelta, gameSnapshot } from "@/lib/learn/badges";
+import { awardSkillBadgesSafe } from "@/lib/learn/skill-badges/engine";
 
 // Re-validates against the SERVER clock. A submission after expiry is scored
 // on the answers saved up to expiry and marked `expired` — a network failure
@@ -59,6 +60,8 @@ export async function POST(req: NextRequest) {
     if (!result) return NextResponse.json({ error: t("labs.api.examScoreFailed") }, { status: 500 });
     const awarded = (result as { pointsAwarded?: number }).pointsAwarded ?? 0;
     const game = awarded > 0 ? gameDelta(before, await gameSnapshot(student.id)) : gameDelta(null, null);
+    // Verified skill badges: a pass can complete a certificate. Idempotent.
+    if (awarded > 0) await awardSkillBadgesSafe(student.id);
 
     // Scoring above is on indexes and knows nothing of language. The review
     // texts are swapped for the learner's language here: the same question,

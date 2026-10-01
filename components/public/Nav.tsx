@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/client";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useFocusTrap } from "@/lib/a11y/useFocusTrap";
 
 const NEW_LOGO = "/logo.png";
 
@@ -37,6 +38,19 @@ export default function Nav() {
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
+
+  // The open drawer is a modal dialog: focus stays inside, Escape closes it,
+  // and focus returns to the menu button.
+  const drawerRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(drawerRef, mobileOpen);
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [mobileOpen]);
 
   function isActive(href: string) {
     if (href === "/") return pathname === "/";
@@ -131,7 +145,7 @@ export default function Nav() {
       <div
         className={cn(
           "fixed inset-0 z-50 lg:hidden transition-all duration-300",
-          mobileOpen ? "pointer-events-auto" : "pointer-events-none"
+          mobileOpen ? "pointer-events-auto visible" : "pointer-events-none invisible"
         )}
       >
         <div
@@ -143,6 +157,10 @@ export default function Nav() {
         />
 
         <div
+          ref={drawerRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={t("site.nav.main")}
           className={cn(
             "absolute right-0 top-0 bottom-0 w-72 bg-white shadow-2xl transition-transform duration-300 ease-out flex flex-col",
             mobileOpen ? "translate-x-0" : "translate-x-full"

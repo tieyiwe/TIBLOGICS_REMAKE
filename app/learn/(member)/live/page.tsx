@@ -9,6 +9,7 @@ import { livePhase } from "@/lib/learn/live/shared";
 import { trackTexts } from "@/lib/learn/community/text";
 import SessionTime from "@/components/learn/community/SessionTime";
 import PhaseBadge from "@/components/learn/live/PhaseBadge";
+import ExpertAvatar from "@/components/learn/live/ExpertAvatar";
 
 export const dynamic = "force-dynamic";
 
@@ -48,14 +49,7 @@ export default async function LiveSessionsPage() {
           href={`/learn/live/${s.id}`}
           className="flex gap-4 rounded-2xl border border-[var(--border)] bg-white p-4 transition-colors hover:border-[var(--ink3)] sm:p-5"
         >
-          {s.expertPhotoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={s.expertPhotoUrl} alt="" className="h-14 w-14 shrink-0 rounded-full object-cover sm:h-16 sm:w-16" />
-          ) : (
-            <span aria-hidden="true" className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[var(--s2)] text-2xl sm:h-16 sm:w-16">
-              🎙️
-            </span>
-          )}
+          <ExpertAvatar url={s.expertPhotoUrl} name={s.expertName} size={60} />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <PhaseBadge phase={phase} t={t} />

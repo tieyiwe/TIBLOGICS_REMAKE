@@ -15,6 +15,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (b.status === "revoked") {
     return NextResponse.json({ error: "This badge has been revoked", revoked: true, id: b.credential.id }, { status: 410 });
   }
+  // A stored credential that no longer matches its signature is never handed out.
+  if (b.status === "invalid") {
+    return NextResponse.json({ error: "This badge failed verification", status: b.status }, { status: 409 });
+  }
   const download = req.nextUrl.searchParams.get("download") === "1";
   const file = `tiblogics-badge-${id}`;
   const common = {

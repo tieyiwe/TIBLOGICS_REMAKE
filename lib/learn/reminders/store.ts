@@ -17,6 +17,8 @@ export interface ReminderSettings {
   optedOutAt: string | null;
   optOutSource: string | null;
   pausedUntil: string | null;
+  /** Delivery status of the last WhatsApp reminder (webhook): sent | delivered | read | failed */
+  lastStatus: string | null;
 }
 
 const lang = (l: string | null | undefined): ReminderLanguage => (l === "fr" ? "fr" : "en");
@@ -37,6 +39,7 @@ export async function getReminderSettings(studentId: string, fallbackLocale?: st
     optedOutAt: p?.optedOutAt?.toISOString() ?? null,
     optOutSource: p?.optOutSource ?? null,
     pausedUntil: p?.pausedUntil && p.pausedUntil > new Date() ? p.pausedUntil.toISOString() : null,
+    lastStatus: p?.lastSentAt ? p.lastStatus ?? null : null,
   };
 }
 

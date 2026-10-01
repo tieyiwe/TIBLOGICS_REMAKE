@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { X, Send, ChevronLeft, Loader2 } from "lucide-react";
 import { useLocale, useT } from "@/lib/i18n/client";
 import type { Locale } from "@/lib/i18n/config";
+import { useFocusTrap } from "@/lib/a11y/useFocusTrap";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -136,6 +137,18 @@ export default function EchelonFloat() {
   const ctaVisibleRef = useRef(false);
   const isOpenRef = useRef(false);
   const sessionIdRef = useRef<string>("");
+  // The open chat is a modal dialog: focus stays inside, Escape closes it and
+  // focus returns to the button that opened it.
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, isOpen);
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !e.defaultPrevented) setIsOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isOpen]);
 
   // Generate or restore a persistent session ID for this browser session
   useEffect(() => {
@@ -546,6 +559,7 @@ export default function EchelonFloat() {
       {/* Chat window — CSS transition, no framer-motion */}
       {isOpen && (
         <div
+          ref={dialogRef}
           className="tibo-fade-in fixed z-50 flex flex-col bg-white border border-[#D2DCE8] shadow-2xl overflow-hidden rounded-2xl inset-x-3 bottom-[80px] top-auto sm:inset-auto sm:bottom-20 sm:right-6 sm:w-[360px]"
           style={{ maxHeight: "min(72dvh, 600px)" }}
           data-chat-widget="echelon"
@@ -683,10 +697,10 @@ export default function EchelonFloat() {
       )}
 
       {/* Floating trigger button — desktop only (mobile uses MobileBottomNav Tibo tab) */}
-      <div className="hidden sm:block fixed bottom-6 right-6 z-[55]" data-chat-widget="echelon-trigger" aria-label={t("site.chat.launcher")}>
+      <aside className="hidden sm:block fixed bottom-6 right-6 z-[55]" data-chat-widget="echelon-trigger" aria-label={t("site.chat.launcher")}>
         {!isOpen && (
           <span
-            className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-30 pointer-events-none"
+            className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full opacity-30 pointer-events-none"
             style={{ background: "#1B3A6B" }}
           />
         )}
@@ -708,7 +722,7 @@ export default function EchelonFloat() {
             <span className="absolute top-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white bg-[#F47C20]" />
           )}
         </button>
-      </div>
+      </aside>
     </>
   );
 }

@@ -81,11 +81,15 @@ function renderInline(text: string, keyPrefix: string): Inline[] {
 function codeBlock(block: { lang: string; lines: string[] }, key: string): React.ReactNode {
   const lang = block.lang.trim().toLowerCase();
   const text = block.lines.join("\n");
-  if (lang === "try" || lang === "text" || lang === "prompt") return <TryBlock key={key} text={text} />;
-  if (lang === "playground") return <Playground key={key} code={text} />;
-  if (lang === "studio") return <StudioEmbed key={key} spec={text} />;
+  // data-narrate-skip: "Listen" (components/a11y/LessonListen) does not read
+  // code or interactive widgets aloud.
+  if (lang === "try" || lang === "text" || lang === "prompt")
+    return <div key={key} data-narrate-skip><TryBlock text={text} /></div>;
+  if (lang === "playground") return <div key={key} data-narrate-skip><Playground code={text} /></div>;
+  if (lang === "studio") return <div key={key} data-narrate-skip><StudioEmbed spec={text} /></div>;
   return (
-    <pre key={key} className="mb-4 overflow-x-auto rounded-xl bg-[var(--ink)] p-4 text-[13px] leading-relaxed text-white">
+    // Focusable so keyboard users can scroll long lines (WCAG 2.1.1).
+    <pre key={key} tabIndex={0} data-narrate-skip className="mb-4 overflow-x-auto rounded-xl bg-[var(--ink)] p-4 text-[0.8125rem] leading-relaxed text-white">
       <code>{text}</code>
     </pre>
   );
@@ -94,6 +98,17 @@ function codeBlock(block: { lang: string; lines: string[] }, key: string): React
 export default function Markdown({ source }: { source: string }) {
   const lines = source.replace(/\r\n/g, "\n").split("\n");
   const blocks: React.ReactNode[] = [];
+
+  // The page title is the <h1>, so the body's top heading level becomes <h2>
+  // whatever the author used (a lesson that starts at "##" must not jump
+  // from h1 to h3: WCAG 1.3.1 heading order). Sizes still follow the authored level.
+  let fenced = false;
+  let topLevel = 6;
+  for (const l of lines) {
+    if (l.trim().startsWith("```")) fenced = !fenced;
+    const hm = !fenced && /^(#{1,4})\s+/.exec(l.trimEnd());
+    if (hm) topLevel = Math.min(topLevel, hm[1].length);
+  }
 
   let paragraph: string[] = [];
   let list: { ordered: boolean; items: string[] } | null = null;
@@ -105,7 +120,7 @@ export default function Markdown({ source }: { source: string }) {
   const flushParagraph = () => {
     if (paragraph.length === 0) return;
     blocks.push(
-      <p key={`p${k++}`} className="mb-4 text-[15px] leading-[1.75] text-[var(--ink2)]">
+      <p key={`p${k++}`} className="mb-4 text-[0.9375rem] leading-[1.75] text-[var(--ink2)]">
         {renderInline(paragraph.join(" "), `p${k}`)}
       </p>,
     );
@@ -118,7 +133,7 @@ export default function Markdown({ source }: { source: string }) {
     blocks.push(
       <Tag
         key={`l${k++}`}
-        className={`mb-4 space-y-1.5 pl-5 text-[15px] leading-[1.75] text-[var(--ink2)] ${
+        className={`mb-4 space-y-1.5 pl-5 text-[0.9375rem] leading-[1.75] text-[var(--ink2)] ${
           list.ordered ? "list-decimal" : "list-disc"
         }`}
       >
@@ -135,7 +150,7 @@ export default function Markdown({ source }: { source: string }) {
     blocks.push(
       <blockquote
         key={`q${k++}`}
-        className="mb-4 border-l-4 border-[var(--orange)] bg-[var(--s2)] py-3 pl-4 pr-3 text-[15px] italic leading-[1.75] text-[var(--ink2)]"
+        className="mb-4 border-l-4 border-[var(--orange)] bg-[var(--s2)] py-3 pl-4 pr-3 text-[0.9375rem] italic leading-[1.75] text-[var(--ink2)]"
       >
         {renderInline(quote.join(" "), `q${k}`)}
       </blockquote>,
@@ -163,8 +178,9 @@ export default function Markdown({ source }: { source: string }) {
     const body = rows.slice(2).map(cells);
     const key = `t${k++}`;
     blocks.push(
-      <div key={key} className="mb-5 overflow-x-auto rounded-xl border border-[var(--border)]">
-        <table className="w-full border-collapse text-left text-[14px] leading-relaxed">
+      // Focusable so a wide table can be scrolled with the keyboard.
+      <div key={key} tabIndex={0} className="mb-5 overflow-x-auto rounded-xl border border-[var(--border)]">
+        <table className="w-full border-collapse text-left text-[0.875rem] leading-relaxed">
           <thead className="bg-[var(--s2)]">
             <tr>
               {head.map((c, ci) => (
@@ -244,7 +260,7 @@ export default function Markdown({ source }: { source: string }) {
           : level === 3
           ? "mt-6 mb-2 text-base font-bold text-[var(--ink)]"
           : "mt-5 mb-2 text-sm font-bold uppercase tracking-wide text-[var(--ink3)]";
-      const Tag = (`h${Math.min(level + 1, 6)}`) as "h2" | "h3" | "h4" | "h5" | "h6";
+      const Tag = (`h${Math.min(level - topLevel + 2, 6)}`) as "h2" | "h3" | "h4" | "h5" | "h6";
       blocks.push(
         <Tag key={`h${k++}`} className={cls}>
           {renderInline(h[2], `h${k}`)}

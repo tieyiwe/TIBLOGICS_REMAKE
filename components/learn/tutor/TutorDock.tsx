@@ -13,6 +13,7 @@ import {
 } from "@/lib/learn/tutor/shared";
 import TutorProfileForm from "./TutorProfileForm";
 import TutorSelectionAsk from "./TutorSelectionAsk";
+import { useFocusTrap } from "@/lib/a11y/useFocusTrap";
 
 // Tutor, the AI tutor side panel. Desktop: a panel docked on the right that
 // collapses to a side tab. Mobile: a bottom sheet opened from a floating
@@ -127,6 +128,9 @@ function TutorPanel({ kind, refId }: { kind: Exclude<TutorDockKind, "exam">; ref
       window.removeEventListener("resize", measure);
     };
   }, [open, desktop]);
+
+  // Mobile sheet is modal: focus stays in it and returns to the launcher.
+  useFocusTrap(panelRef, open && !desktop);
 
   // Mobile sheet: Escape closes, the page behind does not scroll.
   useEffect(() => {

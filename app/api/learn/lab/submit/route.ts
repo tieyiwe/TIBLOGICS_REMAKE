@@ -15,6 +15,7 @@ import { evaluateCode, MAX_CODE } from "@/lib/learn/labs/code";
 import { getLocale, getT, translatorFor } from "@/lib/i18n/server";
 import { localizeLab } from "@/lib/i18n/sources/labs";
 import { gameDelta, gameSnapshot } from "@/lib/learn/badges";
+import { awardSkillBadgesSafe } from "@/lib/learn/skill-badges/engine";
 import { deleteDrafts } from "@/lib/learn/drafts/server";
 
 export const maxDuration = 120;
@@ -206,6 +207,8 @@ export async function POST(req: NextRequest) {
         checkLevelUp(student.id, totalBefore, totalBefore + pointsAwarded);
         game = gameDelta(before, await gameSnapshot(student.id));
       }
+      // Verified skill badges (module mastery, cross-track skills). Idempotent.
+      await awardSkillBadgesSafe(student.id);
     }
 
     return NextResponse.json({

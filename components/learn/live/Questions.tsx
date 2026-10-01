@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocale, useT } from "@/lib/i18n/client";
 import { api, inputCls, linkBtn, primaryBtn, timeAgo } from "@/components/learn/community/client-utils";
 import { LIVE_LIMITS } from "@/lib/learn/live/shared";
@@ -28,6 +28,9 @@ export default function Questions({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mine, setMine] = useState(myCount);
+  // Relative times depend on the clock: shown once in the browser only.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   async function reload() {
     const r = await api<{ questions: QuestionItem[] }>(`/api/learn/live/${sessionId}/questions`);
@@ -127,8 +130,12 @@ export default function Questions({
                 <p className="whitespace-pre-wrap text-sm text-[var(--ink)] [overflow-wrap:anywhere]">{q.body}</p>
                 <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-[var(--ink3)]">
                   <span>{q.author || t("community.learner")}{q.mine && ` (${t("community.you")})`}</span>
-                  <span>·</span>
-                  <span>{timeAgo(q.createdAt, locale)}</span>
+                  {mounted && (
+                    <>
+                      <span>·</span>
+                      <span>{timeAgo(q.createdAt, locale)}</span>
+                    </>
+                  )}
                   {q.answered && <span className="rounded-full bg-green-100 px-2 py-0.5 font-semibold text-green-800">✓ {t("live.q.answered")}</span>}
                   {q.hidden && <span className="rounded-full bg-amber-100 px-2 py-0.5 font-semibold text-amber-900">{t("live.q.hiddenOwn")}</span>}
                   {q.mine && canAsk && (

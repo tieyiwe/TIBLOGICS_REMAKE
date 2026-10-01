@@ -5,6 +5,7 @@ import { liveTablesReady } from "@/lib/learn/live/db";
 import { canAttend, listSessions, myRsvps } from "@/lib/learn/live/sessions";
 import { livePhase } from "@/lib/learn/live/shared";
 import SessionTime from "@/components/learn/community/SessionTime";
+import ExpertAvatar from "./ExpertAvatar";
 
 // Dashboard: the next live expert session (or the one live now), with the
 // learner's RSVP state. Renders nothing when there is none or on failure.
@@ -23,14 +24,7 @@ export default async function DashboardLiveCard({ studentId }: { studentId: stri
 
     return (
       <section aria-labelledby="dash-live" className="flex flex-col gap-4 rounded-2xl border border-[var(--border)] bg-white p-5 sm:flex-row sm:items-center">
-        {next.expertPhotoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={next.expertPhotoUrl} alt="" className="h-14 w-14 shrink-0 rounded-full object-cover" />
-        ) : (
-          <span aria-hidden="true" className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[var(--s2)] text-2xl">
-            🎙️
-          </span>
-        )}
+        <ExpertAvatar url={next.expertPhotoUrl} name={next.expertName} size={56} />
         <div className="min-w-0 flex-1">
           <p id="dash-live" className="text-xs font-semibold uppercase tracking-wide text-[var(--ink3)]">
             {live ? <span className="text-red-700">● {t("live.phase.live")}</span> : t("live.dash.next")}

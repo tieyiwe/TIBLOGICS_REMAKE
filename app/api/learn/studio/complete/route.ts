@@ -5,6 +5,7 @@ import { checkRateLimit } from "@/lib/require-admin";
 import { awardPoints, getTotalPoints } from "@/lib/learn/points";
 import { checkLevelUp } from "@/lib/learn/milestones";
 import { gameDelta, gameSnapshot } from "@/lib/learn/badges";
+import { awardSkillBadgesSafe } from "@/lib/learn/skill-badges/engine";
 import { isValidChallenge, previousChallenge } from "@/lib/learn/studio/catalog";
 import prisma from "@/lib/prisma";
 import { getT } from "@/lib/i18n/server";
@@ -53,5 +54,7 @@ export async function POST(req: NextRequest) {
   const total = totalBefore + points;
   checkLevelUp(student.id, totalBefore, total);
   const game = gameDelta(snapBefore, await gameSnapshot(student.id));
+  // Verified skill badges (Studio challenge sets). Idempotent.
+  await awardSkillBadgesSafe(student.id);
   return NextResponse.json({ ok: true, pointsAwarded: points, newBadges: game.newBadges, levelUp: game.levelUp });
 }

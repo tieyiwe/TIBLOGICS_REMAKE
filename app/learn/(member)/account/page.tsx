@@ -10,6 +10,9 @@ import type { Metadata } from "next";
 import { fmtDate } from "@/lib/learn/format";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { ensureLeaderboardColumn } from "@/lib/learn/leaderboard";
+import StudyReminders from "@/components/learn/pwa/StudyReminders";
+import AppInstall from "@/components/learn/pwa/AppInstall";
+import { getReminderSettings } from "@/lib/learn/reminders/store";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +82,10 @@ export default async function AccountPage() {
       <CommunitySettings
         replyDigest={await getProfile(student.id).then((p) => p.replyDigest).catch(() => true)}
       />
+
+      {/* Study reminders (WhatsApp / email) and the installable app (components/learn/pwa) */}
+      {await reminderSection(student.id, student.email, student.locale)}
+      <AppInstall />
 
       <section className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6">
         <h2 className="text-sm font-bold text-[var(--ink)]">{t("learn.account.subscription")}</h2>
@@ -153,4 +160,11 @@ export default async function AccountPage() {
       )}
     </div>
   );
+}
+
+async function reminderSection(studentId: string, email: string, locale: string) {
+  const settings = await getReminderSettings(studentId, locale).catch(() => null);
+  if (!settings) return null;
+  const saved = await prisma.studyReminderPref.count({ where: { studentId } }).catch(() => 1);
+  return <StudyReminders initial={settings} email={email} isNew={saved === 0} />;
 }

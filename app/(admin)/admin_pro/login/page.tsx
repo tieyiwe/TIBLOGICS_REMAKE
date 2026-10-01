@@ -159,7 +159,7 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F7FB] flex items-center justify-center p-4">
+    <main className="min-h-screen bg-[#F4F7FB] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
         {/* Logo */}
         <div className="flex flex-col items-center gap-1 mb-6">
@@ -167,7 +167,7 @@ export default function AdminLoginPage() {
             <span className="text-[#4A7CA5]">TIB</span>
             <span className="text-[#F47C20]">LOGICS</span>
           </span>
-          <p className="text-[#7A8FA6] text-sm">Admin Portal</p>
+          <h1 className="text-[#5A6E84] text-sm font-normal font-dm">Admin Portal</h1>
         </div>
 
         <hr className="border-[#D2DCE8] mb-6" />
@@ -358,6 +358,6 @@ export default function AdminLoginPage() {
           </>
         )}
       </div>
-    </div>
+    </main>
   );
 }

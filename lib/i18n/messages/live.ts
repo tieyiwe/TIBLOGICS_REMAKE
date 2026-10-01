@@ -6,7 +6,7 @@ import type { Messages } from "./types";
 // French uses a no-break space before : ; ? and !.
 const messages: Messages = {
   en: {
-    "live.nav": "Live sessions",
+    "live.nav": "Live",
     "live.title": "Live expert sessions",
     "live.kicker": "Every month",
     "live.intro": "Each month a guest expert joins us live. Save your seat, send your questions in advance and watch the recording afterwards.",
@@ -105,7 +105,7 @@ const messages: Messages = {
     "live.email.recording.p2": "You will also find the resources the expert shared and the questions from the session there.",
   },
   fr: {
-    "live.nav": "Sessions en direct",
+    "live.nav": "En direct",
     "live.title": "Sessions en direct avec des experts",
     "live.kicker": "Chaque mois",
     "live.intro": "Chaque mois, un expert invité nous rejoint en direct. Réservez votre place, envoyez vos questions à l'avance et regardez l'enregistrement ensuite.",
@@ -204,7 +204,7 @@ const messages: Messages = {
     "live.email.recording.p2": "Vous y trouverez aussi les ressources partagées par l'expert et les questions de la session.",
   },
   sw: {
-    "live.nav": "Vipindi mubashara",
+    "live.nav": "Mubashara",
     "live.title": "Vipindi mubashara na wataalamu",
     "live.kicker": "Kila mwezi",
     "live.intro": "Kila mwezi mtaalamu mgeni hujiunga nasi mubashara. Hifadhi nafasi yako, tuma maswali yako mapema na utazame rekodi baadaye.",

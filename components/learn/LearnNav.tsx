@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import ReadingPrefsPanel from "@/components/a11y/ReadingPrefsPanel";
 import { POINTS_PER_LEVEL } from "@/lib/learn/points";
 import { fmtNumber, rankName } from "@/lib/learn/format";
 import { LOCALE_COOKIE, isLocale } from "@/lib/i18n/config";
@@ -15,6 +16,7 @@ const LINK_KEYS = [
   { href: "/learn/tracks", key: "learn.nav.myTracks" },
   { href: "/learn/review", key: "method.nav.review" },
   { href: "/learn/certificates", key: "learn.nav.certificates" },
+  { href: "/learn/badges", key: "badges.nav" },
   { href: "/learn/portfolio", key: "method.nav.portfolio" },
   { href: "/learn/studio", key: "studio.nav" },
   { href: "/learn/community", key: "community.nav" },
@@ -62,6 +64,16 @@ export default function LearnNav({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Escape closes the account panel.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
   const levelHint =
     level.next == null
       ? t("learn.nav.topLevel")
@@ -95,6 +107,7 @@ export default function LearnNav({
 
         <div className="ml-auto flex items-center gap-3">
           <LanguageSwitcher className="hidden md:inline-flex" />
+          <ReadingPrefsPanel />
 
           {/* Points + level */}
           <div className="hidden text-right sm:block">
@@ -123,9 +136,8 @@ export default function LearnNav({
           <button
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
-            aria-haspopup="menu"
             aria-label={t("learn.nav.menu")}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--ink)] text-sm font-bold text-white"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--ink)] text-sm font-bold text-white"
           >
             {studentName.charAt(0).toUpperCase()}
           </button>
@@ -133,12 +145,11 @@ export default function LearnNav({
       </div>
 
       {open && (
-        <div role="menu" className="border-t border-[var(--border)] bg-white px-4 py-3 xl:hidden">
+        <div className="border-t border-[var(--border)] bg-white px-4 py-3 xl:hidden">
           {LINKS.map((l) => (
             <Link
               key={l.href}
               href={l.href}
-              role="menuitem"
               onClick={() => setOpen(false)}
               className="block rounded-lg px-3 py-2 text-sm font-semibold text-[var(--ink2)]"
             >

@@ -7,6 +7,8 @@ export function motionAllowed(): boolean {
   if (typeof window === "undefined") return false;
   if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return false;
   if (document.querySelector('[data-a11y="true"]')) return false;
+  // Reading preferences "Reduce motion" (lib/a11y/reading-prefs.ts).
+  if (document.documentElement.getAttribute("data-rp-motion") === "reduce") return false;
   return true;
 }
 

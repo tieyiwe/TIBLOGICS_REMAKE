@@ -13,7 +13,9 @@
     --orange-light:#FEF0E3;
     --ink:         #0D1B2A;
     --ink2:        #3A4A5C;
-    --ink3:        #7A8FA6;
+    /* Muted text. Was #7A8FA6 (3.3:1 on white); this shade keeps the hue
+       and passes WCAG AA 4.5:1 on white, --s2 and --s3. */
+    --ink3:        #5A6E84;
     --surface:     #FFFFFF;
     --s2:          #F4F7FB;
     --s3:          #E8EFF8;
@@ -483,4 +485,124 @@ html {
 [data-a11y="true"] .game-modal,
 [data-a11y="true"] .game-here {
   animation: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Accessibility (WCAG 2.2 AA)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Muted grey text written as a literal colour (text-[#7A8FA6]) all over the
+   site measured 3.3:1 on white. Remapped here to the --ink3 shade rather than
+   editing a hundred files; on the dark navy surfaces, where the light grey is
+   the one that passes, it keeps its original colour. */
+.text-\[\#7A8FA6\] {
+  color: #5A6E84;
+}
+:is(.bg-\[\#0D1B2A\], .bg-\[\#1B3A6B\], .bg-\[\#0A1628\], .bg-\[var\(--ink\)\], .bg-\[var\(--blue\)\], footer) .text-\[\#7A8FA6\] {
+  color: #7A8FA6;
+}
+
+/* Honour the system "reduce motion" setting everywhere, not only where a
+   component remembered to. Content never depends on an animation running. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Lesson narration ("Listen", components/a11y/LessonListen.tsx): a light
+   tint on the paragraph being read. The sentence itself is marked with the
+   CSS Custom Highlight API; that ::highlight() rule lives in the component
+   because the CSS build here does not parse it yet. */
+[data-narrating] {
+  background-color: rgba(255, 224, 138, 0.28);
+  border-radius: 4px;
+  box-shadow: 0 0 0 4px rgba(255, 224, 138, 0.28);
+}
+
+/* ── Reading preferences (components/a11y/ReadingPrefsPanel.tsx) ──────────
+   data-rp-* attributes on <html>, set only on /learn pages. */
+
+/* Fonts: self-hosted Atkinson Hyperlegible and OpenDyslexic (OFL). Code
+   keeps its monospace font. */
+html[data-rp-font="atkinson"] body :not(code, pre, kbd, samp, code *, pre *, .font-mono),
+html[data-rp-font="atkinson"] body {
+  font-family: var(--rp-font-atkinson, Verdana), Verdana, Tahoma, sans-serif !important;
+}
+html[data-rp-font="dyslexic"] body :not(code, pre, kbd, samp, code *, pre *, .font-mono),
+html[data-rp-font="dyslexic"] body {
+  font-family: var(--rp-font-dyslexic, Verdana), Verdana, Tahoma, sans-serif !important;
+}
+
+/* Text size: scales everything sized in rem. */
+html[data-rp-size="112"] { font-size: 112.5%; }
+html[data-rp-size="125"] { font-size: 125%; }
+html[data-rp-size="150"] { font-size: 150%; }
+
+/* Line spacing (WCAG 1.4.12 asks that 1.5 never breaks the page). */
+html[data-rp-line="relaxed"] body :is(p, li, dd, dt, blockquote, td, th, label, figcaption, summary) {
+  line-height: 1.9 !important;
+}
+html[data-rp-line="loose"] body :is(p, li, dd, dt, blockquote, td, th, label, figcaption, summary) {
+  line-height: 2.3 !important;
+}
+
+/* Letter and word spacing ("wider" is the WCAG 1.4.12 test value). */
+html[data-rp-letter="wide"] body :is(p, li, dd, dt, blockquote, td, th, label, figcaption, summary, h1, h2, h3, h4, h5, h6, a, span, strong, em, button) {
+  letter-spacing: 0.06em !important;
+  word-spacing: 0.1em !important;
+}
+html[data-rp-letter="wider"] body :is(p, li, dd, dt, blockquote, td, th, label, figcaption, summary, h1, h2, h3, h4, h5, h6, a, span, strong, em, button) {
+  letter-spacing: 0.12em !important;
+  word-spacing: 0.16em !important;
+}
+
+/* High contrast: darker text, firmer borders, underlined links, a strong
+   focus ring. Brand colours stay; only their weaker neighbours change. */
+html[data-rp-contrast="high"] {
+  --ink2: #17222E;
+  --ink3: #2E3D4E;
+  --border: #6B7F95;
+  --s2: #FFFFFF;
+  --s3: #EEF2F7;
+}
+html[data-rp-contrast="high"] body {
+  background: #FFFFFF;
+}
+html[data-rp-contrast="high"] main a:not([class*="rounded-full"]):not([role="button"]) {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+html[data-rp-contrast="high"] .text-\[\#7A8FA6\] {
+  color: #2E3D4E;
+}
+html[data-rp-contrast="high"] :focus-visible {
+  outline: 3px solid #0D1B2A !important;
+  outline-offset: 2px;
+}
+
+/* Reduced motion, whatever the system setting says. */
+html[data-rp-motion="reduce"] *,
+html[data-rp-motion="reduce"] *::before,
+html[data-rp-motion="reduce"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Focus mode: hide the lesson outline and side panels; the lesson takes a
+   single comfortable reading column. */
+html[data-rp-focus="on"] [data-focus-hide] {
+  display: none !important;
+}
+html[data-rp-focus="on"] [data-focus-grid] {
+  display: block !important;
+  max-width: 48rem;
+  margin-inline: auto;
 }

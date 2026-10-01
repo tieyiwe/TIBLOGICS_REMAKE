@@ -10,18 +10,16 @@ export async function POST() {
   if (!student) return NextResponse.json({ badges: [] }, { status: 401 });
   try {
     await ensureSkillBadgeTables();
-    const rows = await prisma.skillBadgeAward.findMany({
-      where: { studentId: student.id, notifiedAt: null },
-      orderBy: { issuedAt: "asc" },
-      select: { id: true, badgeKey: true, name: true, family: true },
-      take: 10,
-    });
-    if (rows.length) {
-      await prisma.skillBadgeAward.updateMany({
-        where: { id: { in: rows.map((r) => r.id) }, notifiedAt: null },
-        data: { notifiedAt: new Date() },
-      });
-    }
+    // One atomic claim, so two tabs (or a double effect) never both toast.
+    const rows = await prisma.$queryRaw<Array<{ id: string; badgeKey: string; name: string; family: string }>>`
+      UPDATE "SkillBadgeAward" SET "notifiedAt" = NOW()
+      WHERE "id" IN (
+        SELECT "id" FROM "SkillBadgeAward"
+        WHERE "studentId" = ${student.id} AND "notifiedAt" IS NULL
+        ORDER BY "issuedAt" ASC LIMIT 10
+        FOR UPDATE SKIP LOCKED
+      )
+      RETURNING "id", "badgeKey", "name", "family"`;
     return NextResponse.json({ badges: rows.map((r) => ({ id: r.id, key: r.badgeKey, name: r.name, family: r.family })) });
   } catch (err) {
     console.error("[learn/badges/unseen]", err);

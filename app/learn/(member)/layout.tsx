@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import LearnNav from "@/components/learn/LearnNav";
+import SkipLink from "@/components/a11y/SkipLink";
 import GraceBanner from "@/components/learn/GraceBanner";
 import GameCelebrations from "@/components/learn/game/GameCelebrations";
+import PwaShell from "@/components/learn/pwa/PwaShell";
 import { getLearnContext } from "@/lib/learn/session";
 import { getTotalPoints, levelFor } from "@/lib/learn/points";
 
@@ -24,6 +26,7 @@ export default async function MemberLayout({ children }: { children: React.React
       className="min-h-screen bg-[var(--s2)]"
       data-a11y={student.accessibilityMode ? "true" : undefined}
     >
+      <SkipLink />
       <LearnNav
         studentName={student.name}
         points={total}
@@ -31,8 +34,10 @@ export default async function MemberLayout({ children }: { children: React.React
         savedLocale={student.locale}
       />
       {entitlement.inGrace && <GraceBanner graceUntil={entitlement.graceUntil} />}
-      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-6xl px-4 py-8 focus:outline-none">{children}</main>
       <GameCelebrations />
+      {/* Offline app: service worker, offline indicator, queued completions */}
+      <PwaShell studentId={student.id} />
     </div>
   );
 }

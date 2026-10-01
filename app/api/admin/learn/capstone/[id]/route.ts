@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/require-admin";
 import { CAPSTONE_STATUSES } from "@/lib/learn/types";
 import { awardPoints } from "@/lib/learn/points";
 import { maybeIssueCertificate } from "@/lib/learn/certificates";
+import { awardSkillBadgesSafe } from "@/lib/learn/skill-badges/engine";
 import { sendCapstoneStatusEmail } from "@/lib/learn/emails";
 import { generateCapstonePreReview } from "@/lib/learn/ai-review";
 
@@ -60,6 +61,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       await awardPoints(existing.studentId, "capstone_pass", existing.capstone.trackId);
       certificate = await maybeIssueCertificate(existing.studentId, existing.capstone.trackId);
     }
+    // Verified skill badges (capstone with distinction). A re-scored pass
+    // can earn it too, so this runs on every pass. Idempotent.
+    if (status === "passed") await awardSkillBadgesSafe(existing.studentId);
 
     // Notify the learner on any status the learner cares about
     if (status !== "submitted") {

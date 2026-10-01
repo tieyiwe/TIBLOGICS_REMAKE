@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/i18n/client";
 import { bumpPractice, celebrate } from "@/lib/learn/game-client";
 import ResultFlair from "./game/ResultFlair";
@@ -39,6 +39,12 @@ export default function MicroCheck({
   const [result, setResult] = useState<{ score: number; passed: boolean; graded: Graded[]; pointsAwarded: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // The result replaces the questions (and the button just pressed): move
+  // focus to its heading so keyboard and screen reader users land on it.
+  const resultHeading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (result) resultHeading.current?.focus({ preventScroll: false });
+  }, [result]);
 
   async function load() {
     setBusy(true);
@@ -96,7 +102,7 @@ export default function MicroCheck({
         >
           {busy ? t("labs.loading") : t("labs.micro.start")}
         </button>
-        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+        {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
       </section>
     );
   }
@@ -106,10 +112,10 @@ export default function MicroCheck({
     return (
       <section className="rounded-2xl border border-[var(--border)] bg-white p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-base font-bold text-[var(--ink)]">
+          <h2 ref={resultHeading} tabIndex={-1} className="text-base font-bold text-[var(--ink)] focus:outline-none">
             {result.passed ? t("labs.micro.niceWork") : t("labs.micro.anotherLook")}
           </h2>
-          <p className="text-sm font-bold" style={{ color: result.passed ? "#22A387" : "#E05F00" }}>
+          <p className="text-sm font-bold" style={{ color: result.passed ? "#1A7F69" : "#B8500A" }}>
             {result.passed
               ? t("labs.micro.passedTag", { score: result.score })
               : t("labs.micro.toPassTag", { score: result.score, pass: passScore })}
@@ -144,7 +150,18 @@ export default function MicroCheck({
                       <span aria-hidden="true" className="shrink-0">
                         {correct ? "✓" : chosen ? "✗" : "·"}
                       </span>
-                      <span>{o}</span>
+                      <span>
+                        {(correct || chosen) && (
+                          <span className="sr-only">
+                            {correct
+                              ? chosen
+                                ? `${t("a11y.quiz.correctAnswer")}, ${t("a11y.quiz.yourAnswer")}: `
+                                : `${t("a11y.quiz.correctAnswer")}: `
+                              : `${t("a11y.quiz.yourWrongAnswer")}: `}
+                          </span>
+                        )}
+                        {o}
+                      </span>
                     </li>
                   );
                 })}
@@ -205,7 +222,7 @@ export default function MicroCheck({
         ))}
       </ol>
 
-      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
 
       <button
         onClick={submit}

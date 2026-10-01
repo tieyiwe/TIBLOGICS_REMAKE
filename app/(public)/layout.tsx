@@ -1,4 +1,5 @@
 import Nav from "@/components/public/Nav";
+import SkipLink from "@/components/a11y/SkipLink";
 import Footer from "@/components/public/Footer";
 import MobileBottomNav from "@/components/public/MobileBottomNav";
 import AnalyticsTracker from "@/components/public/AnalyticsTracker";
@@ -12,8 +13,9 @@ export default function PublicLayout({
   return (
     <>
       <AnalyticsTracker />
+      <SkipLink />
       <Nav />
-      <main className="min-h-screen pb-[76px] sm:pb-0">{children}</main>
+      <main id="main-content" tabIndex={-1} className="min-h-screen pb-[76px] focus:outline-none sm:pb-0">{children}</main>
       <Footer />
       <MobileBottomNav />
       <EchelonFloatClient />

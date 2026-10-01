@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Maximize2, Minimize2 } from "lucide-react";
+import { MotionConfig } from "framer-motion";
 import Link from "next/link";
 import { useT } from "@/lib/i18n/client";
 import { celebrate, bumpPractice } from "@/lib/learn/game-client";
@@ -11,6 +12,7 @@ import { STUDIO_COMPONENTS } from "./registry";
 import { StudioLayoutContext } from "./StudioFrame";
 import { StudioDraftContext } from "./useStudioDraft";
 import DraftStatus from "../DraftStatus";
+import { useFocusTrap } from "@/lib/a11y/useFocusTrap";
 import type { DraftSaveStatus } from "@/lib/learn/drafts/client";
 
 type ToolProgress = Record<string, { done: boolean; perfect: boolean }>;
@@ -42,6 +44,13 @@ export default function StudioHost({
   // the learner has built is lost when it opens or closes.
   const [full, setFull] = useState(false);
   const fullBtn = useRef<HTMLButtonElement>(null);
+  // Full screen is modal: Tab stays inside the overlay (the page behind is
+  // covered). Focus goes back to the toggle on exit (effect below).
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(overlayRef, full, { initialFocus: fullBtn, returnFocus: false });
+  // The "Reduce motion" reading preference also stills framer-motion.
+  const [stillMotion, setStillMotion] = useState(false);
+  useEffect(() => setStillMotion(document.documentElement.getAttribute("data-rp-motion") === "reduce"), []);
 
   useEffect(() => {
     if (!full) return;
@@ -113,6 +122,7 @@ export default function StudioHost({
   return (
     <StudioLayoutContext.Provider value={{ layout }}>
       <div
+        ref={overlayRef}
         role={full ? "dialog" : undefined}
         aria-modal={full ? true : undefined}
         aria-label={full ? t(`studio.${toolId}.name`) : undefined}
@@ -145,7 +155,9 @@ export default function StudioHost({
         {!embedded && !full && <div className="mb-3 flex justify-end">{toggle}</div>}
         <div className={full ? "flex min-h-0 flex-1 flex-col overflow-auto p-3 sm:p-5 lg:overflow-hidden" : embedded ? "p-3 sm:p-4" : ""}>
           <StudioDraftContext.Provider value={setDraftStatus}>
-            <Tool challengeId={challengeId} embedded={embedded && !full} onComplete={onComplete} progress={progress} />
+            <MotionConfig reducedMotion={stillMotion ? "always" : "user"}>
+              <Tool challengeId={challengeId} embedded={embedded && !full} onComplete={onComplete} progress={progress} />
+            </MotionConfig>
           </StudioDraftContext.Provider>
         </div>
         {draftStatus !== "idle" && (

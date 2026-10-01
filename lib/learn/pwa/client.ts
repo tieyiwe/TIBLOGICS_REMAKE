@@ -197,6 +197,24 @@ export async function removeDownloads(urls: string[]): Promise<void> {
 
 /** Everything saved on this device, gone (also done by the worker on sign-out). */
 export async function clearOfflineData(): Promise<void> {
+  const worker = pwaEnabled() ? navigator.serviceWorker.controller : null;
+  if (worker) {
+    // The worker clears and then puts the offline page back.
+    const id = `${Date.now()}`;
+    await new Promise<void>((resolve) => {
+      const onMsg = (e: MessageEvent) => {
+        if (e.data?.type === "cleared" && e.data.id === id) {
+          navigator.serviceWorker.removeEventListener("message", onMsg);
+          resolve();
+        }
+      };
+      navigator.serviceWorker.addEventListener("message", onMsg);
+      worker.postMessage({ type: "clear", id });
+      setTimeout(resolve, 5000);
+    });
+    announce();
+    return;
+  }
   if (typeof caches !== "undefined") {
     for (const k of await caches.keys()) if (k.startsWith("tib-learn-")) await caches.delete(k);
   }

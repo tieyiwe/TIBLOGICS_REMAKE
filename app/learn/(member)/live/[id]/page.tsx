@@ -10,9 +10,10 @@ import { parseVideoUrl } from "@/lib/learn/video/shared";
 import { trackTexts } from "@/lib/learn/community/text";
 import SessionTime from "@/components/learn/community/SessionTime";
 import PhaseBadge from "@/components/learn/live/PhaseBadge";
+import ExpertAvatar from "@/components/learn/live/ExpertAvatar";
 import RsvpPanel from "@/components/learn/live/RsvpPanel";
 import Questions from "@/components/learn/live/Questions";
-import VideoPlayer from "@/components/learn/video/VideoPlayer";
+import RecordingPlayer from "@/components/learn/live/RecordingPlayer";
 
 export const dynamic = "force-dynamic";
 
@@ -111,7 +112,7 @@ export default async function LiveSessionPage({ params }: { params: Promise<{ id
             ▶ {t("live.recording")}
           </h2>
           {playable ? (
-            <VideoPlayer url={recording} title={s.title} />
+            <RecordingPlayer url={recording} title={s.title} />
           ) : safeUrl(recording) ? (
             <a href={recording} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-[var(--blue2)] underline">
               {t("live.watchRecording")} ↗
@@ -127,10 +128,7 @@ export default async function LiveSessionPage({ params }: { params: Promise<{ id
             {t("live.aboutExpert")}
           </h2>
           <div className="mt-3 flex items-start gap-3">
-            {s.expertPhotoUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={s.expertPhotoUrl} alt={s.expertName} className="h-16 w-16 shrink-0 rounded-full object-cover" />
-            )}
+            <ExpertAvatar url={s.expertPhotoUrl} name={s.expertName} size={64} />
             <div className="min-w-0">
               <p className="font-bold text-[var(--ink)]">{s.expertName}</p>
               {s.expertBio && <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-[var(--ink2)] [overflow-wrap:anywhere]">{s.expertBio}</p>}

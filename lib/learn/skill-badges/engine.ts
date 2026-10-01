@@ -339,6 +339,8 @@ function resolveAll(s: Structure, f: Facts): ResolvedBadge[] {
     const minTracks = Math.min(def.minTracks, Math.max(allTracks.size, 1));
     reqs.push({ kind: "tracks", need: minTracks, have: Math.min(usedTracks.size, minTracks), items: [] });
     if (usedTracks.size < minTracks) ok = false;
+    // Alignments name every track the skill draws on; revocation follows only
+    // the tracks whose passes count as evidence.
     const trackSlugs = [...allTracks];
     out.push({
       key: skillBadgeKey(def.slug),
@@ -347,7 +349,7 @@ function resolveAll(s: Structure, f: Facts): ResolvedBadge[] {
       name: def.name,
       description: def.description,
       criteria: `Across the TIBLOGICS Learning Box, ${criteriaParts.join("; and ")}; with passes from at least ${minTracks} different tracks. Labs are hands-on tasks scored against published criteria.`,
-      trackSlugs,
+      trackSlugs: [...usedTracks],
       alignments: trackSlugs.map((slug) => ({ targetName: s.tracks.get(slug)?.title ?? slug, targetUrl: trackUrl(slug) })),
       reqs,
       earned: ok,

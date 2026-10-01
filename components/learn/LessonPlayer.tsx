@@ -13,6 +13,8 @@ import Markdown from "./Markdown";
 import { fmtMinutes } from "@/lib/learn/format";
 import { useT } from "@/lib/i18n/client";
 import { celebrate } from "@/lib/learn/game-client";
+import { queueCompletion } from "@/lib/learn/pwa/client";
+import LessonListen from "@/components/a11y/LessonListen";
 
 interface LessonView {
   id: string;
@@ -90,11 +92,20 @@ export default function LessonPlayer({
     if (saving) return;
     setSaving(true);
     try {
+      // Offline (a downloaded lesson): keep it on this device and send it
+      // when the connection returns (lib/learn/pwa/client.ts). The server
+      // stays the authority; the call is idempotent.
       const res = await fetch("/api/learn/progress", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lessonId: lesson.id }),
-      });
+      }).catch(() => null);
+      if (!res) {
+        const queued = await queueCompletion(lesson.id);
+        if (queued) setDone(true);
+        setToast(t(queued ? "pwa.lesson.queued" : "pwa.lesson.queueFailed"));
+        return;
+      }
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setDone(true);
@@ -108,11 +119,11 @@ export default function LessonPlayer({
   }
 
   return (
-    <div className="lg:grid lg:grid-cols-[1fr_300px] lg:gap-8">
+    <div data-focus-grid className="lg:grid lg:grid-cols-[1fr_300px] lg:gap-8">
       {/* ── Main column ─────────────────────────────────────────────────── */}
-      <article className="min-w-0">
+      <article id="lesson-article" className="min-w-0">
         <header>
-          <h1 className="text-2xl font-black leading-tight text-[var(--ink)]">{lesson.title}</h1>
+          <h1 data-narrate className="text-2xl font-black leading-tight text-[var(--ink)]">{lesson.title}</h1>
           <p className="mt-2 text-sm text-[var(--ink3)]">
             {fmtMinutes(t, lesson.durationMinutes)}
             {done && (
@@ -123,6 +134,7 @@ export default function LessonPlayer({
           </p>
           {lesson.objective && (
             <p
+              data-narrate
               className="mt-4 rounded-xl border-l-4 bg-white p-4 text-sm leading-relaxed text-[var(--ink2)]"
               style={{ borderLeftColor: accentColor }}
             >
@@ -130,6 +142,8 @@ export default function LessonPlayer({
               {lesson.objective}
             </p>
           )}
+          {/* Read aloud (Web Speech API); hidden where unsupported. */}
+          <LessonListen targetId="lesson-article" />
           {loop}
         </header>
 
@@ -137,7 +151,7 @@ export default function LessonPlayer({
         {lesson.video ? (
           <LessonMedia lessonId={lesson.id} title={lesson.title} video={lesson.video} accentColor={accentColor}>
             {lesson.bodyMd && (
-              <div className="rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
+              <div data-narrate className="rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
                 <Markdown source={lesson.bodyMd} />
               </div>
             )}
@@ -151,7 +165,7 @@ export default function LessonPlayer({
             )}
 
             {lesson.bodyMd && (
-              <div className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
+              <div data-narrate className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
                 <Markdown source={lesson.bodyMd} />
               </div>
             )}
@@ -249,7 +263,7 @@ export default function LessonPlayer({
       </article>
 
       {/* ── Outline rail ────────────────────────────────────────────────── */}
-      <aside className="mt-8 lg:mt-0">
+      <aside data-focus-hide className="mt-8 lg:mt-0">
         <button
           onClick={() => setOutlineOpen((v) => !v)}
           aria-expanded={outlineOpen}
