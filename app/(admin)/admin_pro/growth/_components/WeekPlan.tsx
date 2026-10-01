@@ -10,6 +10,7 @@ import { StatusPill } from "./ui";
 export default function WeekPlan({ initial, audiences }: { initial: PostView[]; audiences: AudienceTz[] }) {
   const [posts, setPosts] = useState(initial);
   const [open, setOpen] = useState<PostView | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const days = useMemo(() => {
     const now = new Date();
     const mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
@@ -34,7 +35,7 @@ export default function WeekPlan({ initial, audiences }: { initial: PostView[]; 
                 {d.toLocaleDateString("en-US", { weekday: "short", day: "numeric" })}
               </p>
               <ul className="space-y-1">
-                {list.map((p) => (
+                {(expanded.has(key(d)) ? list : list.slice(0, 6)).map((p) => (
                   <li key={p.id}>
                     <button onClick={() => setOpen(p)} className="w-full text-left rounded-md bg-white border border-[#E6ECF3] px-1.5 py-1 hover:shadow-sm" style={{ borderLeft: `3px solid ${PLATFORM_INFO[p.platform].color}` }}>
                       <span className="block font-dm text-[11px] font-semibold text-[#0D1B2A] truncate">
@@ -44,6 +45,9 @@ export default function WeekPlan({ initial, audiences }: { initial: PostView[]; 
                     </button>
                   </li>
                 ))}
+                {list.length > 6 && !expanded.has(key(d)) && (
+                  <li><button className="font-dm text-[11px] text-[#2251A3] underline" onClick={() => setExpanded((x) => new Set(x).add(key(d)))}>+{list.length - 6} more</button></li>
+                )}
                 {list.length === 0 && <li className="font-dm text-[11px] text-[#9AAABB]">—</li>}
               </ul>
             </div>

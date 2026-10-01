@@ -55,6 +55,7 @@ export default function CalendarClient({ audiences, configured }: { audiences: A
   const [hideRejected, setHideRejected] = useState(true);
   const [dragOver, setDragOver] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const days = useMemo(() => Array.from({ length: 14 }, (_, i) => addDaysLocal(start, i)), [start]);
 
@@ -186,9 +187,12 @@ export default function CalendarClient({ audiences, configured }: { audiences: A
                 className={`min-h-[150px] border-r border-b border-[#E6ECF3] p-1.5 space-y-1.5 ${dragOver === k ? "bg-[#EAF1FB]" : k < today ? "bg-[#FAFBFD]" : ""}`}
               >
                 <div className={`font-dm text-xs ${k === today ? "font-bold text-[#F47C20]" : "text-[#7A8FA6]"}`}>{d.getDate()} {d.getDate() === 1 || d === days[0] ? d.toLocaleDateString("en-US", { month: "short" }) : ""}</div>
-                {list.map((p) => (
+                {(expanded.has(k) ? list : list.slice(0, 5)).map((p) => (
                   <Chip key={p.id} p={p} onOpen={() => setOpen(p)} draggable={!["published", "publishing"].includes(p.status)} />
                 ))}
+                {list.length > 5 && !expanded.has(k) && (
+                  <button className="font-dm text-[11px] text-[#2251A3] underline" onClick={() => setExpanded((x) => new Set(x).add(k))}>+{list.length - 5} more</button>
+                )}
               </div>
             );
           })}
