@@ -1,12 +1,13 @@
 import Link from "next/link";
-import { Download, Users } from "lucide-react";
+import { Download, MessageSquare, Users } from "lucide-react";
 import { Button, EmptyState, PageHeader, buttonClasses } from "@/components/admin/ui";
 import { LEARN_TABS } from "../tabs";
-import { redirect } from "next/navigation";
-import { requireAdminPage } from "../../_lib/admin-page-auth";
+import prisma from "@/lib/prisma";
+import { canManageLearners, requireLearnerPage } from "@/lib/learn/account-status/admin-auth";
 import {
-  filterQuery, listLearners, parseFilters, type LearnerFilters, type LearnerRow, type SortKey,
+  filterQuery, listLearners, parseFilters, type LearnerFilters, type SortKey,
 } from "@/lib/learn/admin/learners";
+import { LearnersTable, type Row } from "./LearnersTable";
 
 export const dynamic = "force-dynamic";
 
@@ -14,68 +15,83 @@ export const dynamic = "force-dynamic";
 // check and sign-ins. Filters live in the URL (a plain GET form), so a view
 // can be bookmarked and the CSV export uses exactly the same filters.
 
-const LANG: Record<string, string> = { en: "EN", fr: "FR", sw: "SW" };
-const STATUS_STYLE: Record<string, string> = {
-  active: "bg-[var(--a-success-bg)] text-[var(--a-success)]",
-  trial: "bg-[var(--a-info-bg)] text-[var(--a-info)]",
-  lifetime: "bg-[var(--a-success-bg)] text-[var(--a-success)]",
-  "past due": "bg-[var(--a-warn-bg)] text-[var(--a-warn)]",
-  cancelled: "bg-[var(--a-danger-bg)] text-[var(--a-danger)]",
-  none: "bg-[var(--a-surface-2)] text-[var(--a-ink-3)]",
-};
-
-const date = (d: Date) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-function ago(d: Date | null): string {
-  if (!d) return "Never";
-  const m = Math.round((Date.now() - d.getTime()) / 60_000);
-  if (m < 60) return `${Math.max(1, m)} min ago`;
-  if (m < 48 * 60) return `${Math.round(m / 60)} h ago`;
-  return `${Math.round(m / 1440)} days ago`;
-}
-
 export default async function LearnersPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const session = await requireAdminPage();
-  // Learner PII: the Learn ("events") permission, as in the sidebar.
-  if (!(session.user.isAdmin || session.user.permissions?.some((p) => p === "*" || p === "events"))) redirect("/admin_pro");
+  // Learner PII: owner, admin, or a collaborator with the "learners" (or
+  // older Learn "events") permission. Bulk actions: owner or admin only.
+  const session = await requireLearnerPage("read");
+  const canManage = canManageLearners(session);
   const f = parseFilters(await searchParams);
-  const { rows, total, page, pages, tracks } = await listLearners(f);
+  const [{ rows, total, page, pages, tracks }, tagRows] = await Promise.all([
+    listLearners(f),
+    prisma.$queryRaw<Array<{ tag: string }>>`SELECT DISTINCT unnest("tags") AS tag FROM "LearnerAccount" ORDER BY 1 LIMIT 200`.catch(() => []),
+  ]);
 
   const sortLink = (key: SortKey) =>
     filterQuery(f, { sort: key, dir: f.sort === key && f.dir === "desc" ? "asc" : "desc", page: 1 });
-  const th = (key: SortKey | null, label: string, right = false) => (
-    <th scope="col" className={`whitespace-nowrap px-3 py-2.5 font-semibold ${right ? "text-right" : ""}`}>
-      {key ? (
-        <Link href={`/admin_pro/learn/learners${sortLink(key)}`} className="hover:text-[var(--a-ink)]" aria-sort={f.sort === key ? (f.dir === "desc" ? "descending" : "ascending") : undefined}>
-          {label}
-          {f.sort === key ? (f.dir === "desc" ? " ↓" : " ↑") : ""}
-        </Link>
-      ) : (
-        label
-      )}
-    </th>
+  const sortHead = (key: SortKey, label: string) => (
+    <Link href={`/admin_pro/learn/learners${sortLink(key)}`} className="hover:text-[var(--a-ink)]" aria-label={`Sort by ${label}`}>
+      {label}
+      {f.sort === key ? (f.dir === "desc" ? " ↓" : " ↑") : ""}
+    </Link>
   );
+  const headers = {
+    name: sortHead("name", "Learner"),
+    created: sortHead("created", "Signed up"),
+    progress: sortHead("progress", "Progress"),
+    lastLogin: sortHead("lastLogin", "Last login"),
+    logins: sortHead("logins", "Logins 30d"),
+    xp: sortHead("xp", "XP"),
+    certs: sortHead("certs", "Certs"),
+  };
+  const tableRows: Row[] = rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    email: r.email,
+    createdAt: r.createdAt.toISOString(),
+    locale: r.locale,
+    emailVerified: r.emailVerified,
+    planLabels: r.plan.labels,
+    planStatus: r.plan.status,
+    tracksStarted: r.tracksStarted,
+    progress: r.progress,
+    placement: r.placement,
+    lastLoginAt: r.lastLoginAt?.toISOString() ?? null,
+    logins30: r.logins30,
+    xp: r.xp,
+    certificates: r.certificates,
+    accountStatus: r.accountStatus,
+    suspendedUntil: r.suspendedUntil?.toISOString() ?? null,
+    tags: r.tags,
+  }));
   const input =
     "h-9 rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] bg-[var(--a-surface)] px-3 font-dm text-[13.5px] text-[var(--a-ink)] focus:border-[var(--a-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20";
   const exportHref = `/api/admin/learn/learners/export${filterQuery(f, { page: 1 })}`;
-  const filtered = !!(f.q || f.plan || f.active || f.never || f.cert || f.track);
+  const filtered = !!(f.q || f.plan || f.active || f.never || f.cert || f.track || f.tag || f.status || f.lang || f.team || f.inactive || f.progressMin != null || f.progressMax != null);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Learners"
-        subtitle="Everyone who signed up for TIBLOGICS Learn: plan, progress, placement check and sign-ins."
+        subtitle="Everyone who signed up for ARFA, the TIBLOGICS AI Academy: account status, plan, progress, placement check and sign-ins."
         tabs={LEARN_TABS}
         activeTab="/admin_pro/learn/learners"
         className="mb-0"
         actions={
-          <a href={exportHref} className={buttonClasses("secondary")}>
-            <Download size={16} aria-hidden />
-            Download CSV ({total.toLocaleString("en")})
-          </a>
+          <>
+            {canManage ? (
+              <Button href="/admin_pro/communications/new" variant="secondary" icon={MessageSquare}>
+                Message learners
+              </Button>
+            ) : null}
+            <a href={exportHref} className={buttonClasses("secondary")}>
+              <Download size={16} aria-hidden />
+              Download CSV ({total.toLocaleString("en")})
+            </a>
+          </>
         }
       />
 
@@ -114,6 +130,34 @@ export default async function LearnersPage({
             ))}
           </select>
         </label>
+        <label className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--a-ink-3)]">
+          Account
+          <select name="status" defaultValue={f.status ?? ""} className={input}>
+            <option value="">Any (not deleted)</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+            <option value="blocked">Blocked</option>
+            <option value="deleted">Deleted</option>
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--a-ink-3)]">
+          Tag
+          <select name="tag" defaultValue={f.tag ?? ""} className={input}>
+            <option value="">Any tag</option>
+            {tagRows.map((t) => (
+              <option key={t.tag} value={t.tag}>{t.tag}</option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--a-ink-3)]">
+          Language
+          <select name="lang" defaultValue={f.lang ?? ""} className={input}>
+            <option value="">Any</option>
+            <option value="en">English</option>
+            <option value="fr">French</option>
+            <option value="sw">Swahili</option>
+          </select>
+        </label>
         <label className="flex items-center gap-2 pb-2 text-sm text-[var(--ink2)]">
           <input type="checkbox" name="never" value="1" defaultChecked={f.never} /> Never back since sign-up
         </label>
@@ -149,83 +193,13 @@ export default async function LearnersPage({
             compact
           />
         ) : (
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[1280px] font-dm text-[13.5px]">
-              <thead>
-                <tr className="border-b border-[var(--a-border)] bg-[var(--a-surface-2)] text-left text-[11px] uppercase tracking-[.08em] text-[var(--a-ink-3)]">
-                  {th("name", "Learner")}
-                  {th("created", "Signed up")}
-                  {th(null, "Lang")}
-                  {th(null, "Plan")}
-                  {th(null, "Status")}
-                  {th(null, "Tracks started")}
-                  {th("progress", "Progress", true)}
-                  {th(null, "Placement check")}
-                  {th("lastLogin", "Last login")}
-                  {th("logins", "Logins 30d", true)}
-                  {th("xp", "XP", true)}
-                  {th("certs", "Certs", true)}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border)]">
-                {rows.map((r) => (
-                  <Row key={r.id} r={r} />
-                ))}
-              </tbody>
-            </table>
+          <div className="mt-4">
+            <LearnersTable rows={tableRows} headers={headers} canManage={canManage} />
           </div>
         )}
         {pages > 1 && <Pager f={f} page={page} pages={pages} />}
       </section>
     </div>
-  );
-}
-
-function Row({ r }: { r: LearnerRow }) {
-  return (
-    <tr className="align-top transition-colors hover:bg-[#f8fafd]">
-      <td className="min-w-[220px] max-w-[280px] px-3 py-2.5">
-        <Link href={`/admin_pro/learn/learners/${r.id}`} className="font-semibold text-[var(--ink)] hover:text-[var(--blue2)] hover:underline">
-          {r.name}
-        </Link>
-        <p className="break-all text-xs text-[var(--ink3)]">
-          {r.email}
-          {!r.emailVerified && <span title="Email not verified"> · unverified</span>}
-        </p>
-      </td>
-      <td className="whitespace-nowrap px-3 py-2.5 text-[var(--ink2)]">{date(r.createdAt)}</td>
-      <td className="px-3 py-2.5 text-[var(--ink2)]">{LANG[r.locale] ?? r.locale}</td>
-      <td className="px-3 py-2.5 text-[var(--ink2)]">
-        {r.plan.labels.map((l) => (
-          <p key={l} className="whitespace-nowrap">{l}</p>
-        ))}
-      </td>
-      <td className="px-3 py-2.5">
-        <span className={`whitespace-nowrap rounded px-2 py-0.5 text-xs font-bold capitalize ${STATUS_STYLE[r.plan.status]}`}>
-          {r.plan.status === "none" ? "None" : r.plan.status}
-        </span>
-      </td>
-      <td className="px-3 py-2.5 text-[var(--ink2)]">
-        {r.tracksStarted.length ? r.tracksStarted.join(", ") : <span className="text-[var(--ink3)]">None</span>}
-      </td>
-      <td className="px-3 py-2.5 text-right font-semibold text-[var(--ink)]">{r.tracksStarted.length ? `${r.progress}%` : "None"}</td>
-      <td className="px-3 py-2.5 text-xs text-[var(--ink2)]">
-        {r.placement.length === 0 ? (
-          <span className="text-[var(--ink3)]">None</span>
-        ) : (
-          r.placement.map((p) => (
-            <p key={p.track}>
-              <span className={p.done ? "font-semibold text-green-700" : "text-[var(--ink3)]"}>{p.done ? "Yes" : "No"}</span> · {p.track}
-              {p.summary && <span className="text-[var(--ink3)]"> ({p.summary})</span>}
-            </p>
-          ))
-        )}
-      </td>
-      <td className="whitespace-nowrap px-3 py-2.5 text-[var(--ink2)]" title={r.lastLoginAt?.toISOString()}>{ago(r.lastLoginAt)}</td>
-      <td className="px-3 py-2.5 text-right text-[var(--ink2)]">{r.logins30}</td>
-      <td className="px-3 py-2.5 text-right text-[var(--ink2)]">{r.xp.toLocaleString("en")}</td>
-      <td className="px-3 py-2.5 text-right text-[var(--ink2)]">{r.certificates}</td>
-    </tr>
   );
 }
 

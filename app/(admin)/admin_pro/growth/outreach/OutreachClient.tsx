@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  AlertTriangle, CheckCircle2, ChevronDown, Clock, Loader2, Pause, Play, Plus, Send, ShieldOff, Sparkles, Trash2, Users, Archive, X,
+  AlertTriangle, CheckCircle2, CheckCheck, Clock, Inbox, Loader2, Pause, Pencil, Play, Plus, Send, ShieldOff, SkipForward, Sparkles, Trash2, Users, Archive, X, ExternalLink,
 } from "lucide-react";
 import ComplianceNote from "@/components/admin/growth-outreach/ComplianceNote";
+import { Badge, Button, EmptyState, Kbd, StatCard, Tabs, useToast } from "@/components/admin/ui";
 import { OFFERS } from "@/lib/growth/outreach/offers";
+import GrowthTabs from "../_components/GrowthTabs";
+import { PageHeader, Progress } from "../_components/ui";
 import { api, Modal } from "../leads/ui";
 
 interface Status {
@@ -33,8 +36,13 @@ const TABS = [
 type Tab = (typeof TABS)[number]["key"];
 
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString("en-CA", { dateStyle: "medium", timeStyle: "short" }) : "");
+const isTyping = (t: EventTarget | null) => {
+  const el = t as HTMLElement | null;
+  return !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable);
+};
 
 export default function OutreachClient({ canSend, mergeFields }: { canSend: boolean; mergeFields: Array<[string, string]> }) {
+  const toastApi = useToast();
   const [tab, setTab] = useState<Tab>("draft");
   const [status, setStatus] = useState<Status | null>(null);
   const [msgs, setMsgs] = useState<QMsg[]>([]);
@@ -42,12 +50,12 @@ export default function OutreachClient({ canSend, mergeFields }: { canSend: bool
   const [supp, setSupp] = useState<Supp[]>([]);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [editing, setEditing] = useState<Sequence | "new" | null>(null);
 
   const flash = useCallback((kind: "ok" | "err", text: string) => {
-    setToast({ kind, text });
-    setTimeout(() => setToast(null), 5000);
+    if (kind === "ok") toastApi.success(text);
+    else toastApi.error(text);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadStatus = useCallback(async () => setStatus(await api<Status>("/api/admin/growth/outreach/status")), []);
@@ -102,114 +110,102 @@ export default function OutreachClient({ canSend, mergeFields }: { canSend: bool
     }
   }
 
-  // Group the approval queue by enrollment (one card per lead).
-  const groups = useMemo(() => {
-    const m = new Map<string, QMsg[]>();
-    for (const x of msgs) m.set(x.enrollmentId, [...(m.get(x.enrollmentId) ?? []), x]);
-    return [...m.values()].map((g) => g.sort((a, b) => a.stepIndex - b.stepIndex));
-  }, [msgs]);
-
-  const capPct = status ? Math.min(100, (status.sent24h / Math.max(1, status.dailyCap)) * 100) : 0;
+  const leadsWaiting = useMemo(() => new Set(msgs.map((m) => m.enrollmentId)).size, [msgs]);
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-4">
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="font-dm text-xs font-semibold uppercase tracking-wider text-[#F47C20]">Growth</p>
-          <h1 className="font-syne font-extrabold text-2xl text-[#0D1B2A]">Outreach</h1>
-          <p className="font-dm text-sm text-[#7A8FA6]">Multi-step email sequences. You approve every email; the sender respects the cap, sending hours and suppression list.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/admin_pro/growth/leads" className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[#D2DCE8] bg-white text-sm font-dm font-semibold text-[#1B3A6B] hover:bg-[#F4F7FB]"><Users size={15} /> Leads</Link>
-          {canSend && (
-            <button onClick={runNow} disabled={busy === "run"} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[#1B3A6B] text-white text-sm font-dm font-semibold hover:bg-[#2251A3] disabled:opacity-50" data-testid="run-now">
-              {busy === "run" ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />} Run sender now
-            </button>
-          )}
-        </div>
-      </div>
+    <div className="mx-auto max-w-[1400px] space-y-5">
+      <PageHeader
+        title="Outreach"
+        subtitle="Multi-step email sequences. You approve every email; the sender respects the cap, sending hours and suppression list."
+        actions={
+          <>
+            <Button icon={Users} href="/admin_pro/growth/leads">Leads</Button>
+            {canSend && <Button variant="primary" icon={Send} loading={busy === "run"} onClick={runNow} data-testid="run-now">Run sender now</Button>}
+          </>
+        }
+      />
+      <GrowthTabs />
 
       {status && status.problems.length > 0 && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 font-dm text-sm text-red-700 space-y-1" data-testid="config-problems">
-          <p className="font-semibold flex items-center gap-2"><AlertTriangle size={16} /> Sending is blocked</p>
+        <div className="space-y-1 rounded-[var(--a-radius-card)] border border-[#f6cccc] bg-[var(--a-danger-bg)] p-4 font-dm text-[13px] text-[var(--a-danger)]" data-testid="config-problems">
+          <p className="flex items-center gap-2 font-semibold"><AlertTriangle size={16} /> Sending is blocked</p>
           {status.problems.map((p) => <p key={p}>{p}</p>)}
         </div>
       )}
 
-      {/* Status */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="rounded-2xl bg-white border border-[#E5EAF2] px-4 py-3">
-          <p className="font-dm text-xs text-[#7A8FA6]">Sent, last 24h</p>
-          <p className="font-syne font-bold text-2xl text-[#0D1B2A]">{status?.sent24h ?? "-"}<span className="text-sm text-[#7A8FA6] font-dm"> / {status?.dailyCap ?? "-"} cap</span></p>
-          <div className="mt-2 h-1.5 rounded-full bg-[#EEF2F7]"><div className="h-full rounded-full bg-[#F47C20]" style={{ width: `${capPct}%` }} /></div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] p-4 shadow-[var(--a-shadow-card)]">
+          <p className="font-dm text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--a-ink-3)]">Sent, last 24h</p>
+          <p className="mt-1 font-dm text-[24px] font-bold tabular-nums text-[var(--a-ink)]">{status?.sent24h ?? "-"}<span className="text-[13px] font-semibold text-[var(--a-ink-3)]"> / {status?.dailyCap ?? "-"} cap</span></p>
+          <div className="mt-2"><Progress value={status?.sent24h ?? 0} max={Math.max(1, status?.dailyCap ?? 1)} label="Daily cap used" /></div>
         </div>
-        <div className="rounded-2xl bg-white border border-[#E5EAF2] px-4 py-3">
-          <p className="font-dm text-xs text-[#7A8FA6]">Needs approval</p>
-          <p className="font-syne font-bold text-2xl text-[#B8500A]">{status?.counts.draft ?? 0}</p>
-        </div>
-        <div className="rounded-2xl bg-white border border-[#E5EAF2] px-4 py-3">
-          <p className="font-dm text-xs text-[#7A8FA6]">Scheduled</p>
-          <p className="font-syne font-bold text-2xl text-[#2251A3]">{status?.counts.approved ?? 0}</p>
-        </div>
-        <div className="rounded-2xl bg-white border border-[#E5EAF2] px-4 py-3">
-          <p className="font-dm text-xs text-[#7A8FA6]">Sending hours</p>
-          <p className="font-dm text-sm font-semibold text-[#0D1B2A] mt-1 flex items-center gap-1.5">
-            <span className={`w-2 h-2 rounded-full ${status?.inWindow ? "bg-[#16a34a]" : "bg-[#9CA3AF]"}`} /> {status?.window ?? "-"}
+        <StatCard label="Needs approval" value={status?.counts.draft ?? 0} tone={status?.counts.draft ? "orange" : "default"} />
+        <StatCard label="Scheduled" value={status?.counts.approved ?? 0} />
+        <div className="rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] p-4 shadow-[var(--a-shadow-card)]">
+          <p className="font-dm text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--a-ink-3)]">Sending hours</p>
+          <p className="mt-1.5 flex items-center gap-1.5 font-dm text-[14px] font-semibold text-[var(--a-ink)]">
+            <span className={`h-2 w-2 rounded-full ${status?.inWindow ? "bg-[var(--a-success)]" : "bg-[var(--a-ink-3)]"}`} /> {status?.window ?? "-"}
           </p>
-          <p className="font-dm text-[11px] text-[#7A8FA6] mt-1">Last run {status?.lastRunAt ? fmt(status.lastRunAt) : "never"}{status?.lastResult?.reason ? `: ${status.lastResult.reason}` : ""}</p>
+          <p className="mt-1 font-dm text-[11.5px] text-[var(--a-ink-3)]">Last run {status?.lastRunAt ? fmt(status.lastRunAt) : "never"}{status?.lastResult?.reason ? `: ${status.lastResult.reason}` : ""}</p>
         </div>
       </div>
 
       {status && (
-        <p className="font-dm text-xs text-[#7A8FA6]">
-          From <b className="text-[#3A4A5C]">{status.fromName} &lt;{status.fromEmail}&gt;</b> · replies go to <b className="text-[#3A4A5C]">{status.replyTo}</b> (mark replies on the lead to stop its sequence) · postal address: <b className="text-[#3A4A5C]">{status.physicalAddress ?? "not set"}</b> · up to {status.perRun} per run, randomly spaced.
+        <p className="font-dm text-[12px] text-[var(--a-ink-3)]">
+          From <b className="text-[var(--a-ink-2)]">{status.fromName} &lt;{status.fromEmail}&gt;</b> · replies go to <b className="text-[var(--a-ink-2)]">{status.replyTo}</b> (mark replies on the lead to stop its sequence) · postal address: <b className="text-[var(--a-ink-2)]">{status.physicalAddress ?? "not set"}</b> · up to {status.perRun} per run, randomly spaced.
         </p>
       )}
 
       <ComplianceNote defaultOpen={false} />
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-[#E5EAF2] overflow-x-auto">
-        {TABS.map((t) => (
-          <button key={t.key} onClick={() => setTab(t.key)} className={`px-3 py-2 font-dm text-sm font-semibold whitespace-nowrap border-b-2 ${tab === t.key ? "border-[#F47C20] text-[#0D1B2A]" : "border-transparent text-[#7A8FA6]"}`}>
-            {t.label}{t.key === "draft" && status?.counts.draft ? ` (${status.counts.draft})` : ""}
-          </button>
-        ))}
+      <div className="border-b border-[var(--a-border)]">
+        <Tabs
+          ariaLabel="Outreach sections"
+          active={tab}
+          onChange={(id) => { if (id !== tab) { setMsgs([]); setTab(id as Tab); } }}
+          items={TABS.map((t) => ({ id: t.key, label: t.label, count: t.key === "draft" ? status?.counts.draft ?? null : t.key === "approved" ? status?.counts.approved ?? null : null }))}
+        />
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-10"><Loader2 className="animate-spin text-[#2251A3]" /></div>
+      {loading && msgs.length === 0 && tab !== "sequences" && tab !== "suppression" ? (
+        <div className="flex justify-center py-10"><Loader2 className="animate-spin text-[var(--a-blue)]" /></div>
       ) : tab === "sequences" ? (
         <Sequences seqs={seqs} onEdit={setEditing} onChanged={() => loadTab("sequences")} flash={flash} />
       ) : tab === "suppression" ? (
         <Suppression entries={supp} canSend={canSend} onChanged={() => loadTab("suppression")} flash={flash} />
       ) : (
         <div className="space-y-3">
-          {tab === "draft" && groups.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-[#FFF7ED] border border-[#FED7AA] p-3 font-dm text-sm">
-              <span className="text-[#9A3412]">{msgs.length} email(s) for {groups.length} lead(s) are waiting. Nothing sends until approved.</span>
+          {tab === "draft" && msgs.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 rounded-[var(--a-radius-card)] border border-[#f9d6b8] bg-[var(--a-orange-bg)] px-4 py-2.5 font-dm text-[13px]">
+              <span className="text-[var(--a-orange-text)]"><b className="tabular-nums">{msgs.length}</b> email(s) for <b className="tabular-nums">{leadsWaiting}</b> lead(s) are waiting. Nothing sends until approved.</span>
               {canSend ? (
-                <button
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon={CheckCheck}
+                  className="ml-auto"
+                  loading={busy === "all"}
                   onClick={() => approve({ all: true }, "all", `Approve all ${msgs.length} drafted emails? They will go out over the coming days within the daily cap.`)}
-                  disabled={busy === "all"}
-                  className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-[#0F6E56] text-white px-3 py-1.5 font-semibold disabled:opacity-50"
                   data-testid="approve-all"
                 >
-                  <CheckCircle2 size={15} /> Approve all
-                </button>
+                  Approve all
+                </Button>
               ) : (
-                <span className="ml-auto text-xs text-[#9A3412]">Only an admin can approve.</span>
+                <span className="ml-auto text-[12px] text-[var(--a-orange-text)]">Only an admin can approve.</span>
               )}
             </div>
           )}
-          {groups.length === 0 && (
-            <p className="rounded-2xl bg-white border border-dashed border-[#D2DCE8] p-8 text-center font-dm text-sm text-[#7A8FA6]">
-              {tab === "draft" ? <>Nothing waiting. Add leads to a sequence from the <Link href="/admin_pro/growth/leads" className="text-[#2251A3] underline">Leads</Link> board.</> : "Nothing here."}
-            </p>
+          {msgs.length === 0 ? (
+            <div className="rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)]">
+              <EmptyState
+                icon={tab === "draft" ? CheckCircle2 : Inbox}
+                title={tab === "draft" ? "Inbox zero" : "Nothing here"}
+                body={tab === "draft" ? <>Nothing waiting. Add leads to a sequence from the <Link href="/admin_pro/growth/leads" className="text-[var(--a-blue)] underline">Leads</Link> board.</> : undefined}
+              />
+            </div>
+          ) : (
+            <MessageInbox key={tab} msgs={msgs} tab={tab} canSend={canSend} onApprove={approve} onCounts={loadStatus} setMsgs={setMsgs} flash={flash} />
           )}
-          {groups.map((g) => (
-            <LeadGroup key={g[0].enrollmentId} msgs={g} tab={tab} canSend={canSend} busy={busy} onApprove={approve} onChanged={refresh} flash={flash} />
-          ))}
         </div>
       )}
 
@@ -222,114 +218,259 @@ export default function OutreachClient({ canSend, mergeFields }: { canSend: bool
           flash={flash}
         />
       )}
-
-      {toast && (
-        <div role="status" className={`fixed bottom-5 right-5 z-[60] max-w-sm rounded-xl px-4 py-3 shadow-lg font-dm text-sm ${toast.kind === "ok" ? "bg-[#0D1B2A] text-white" : "bg-red-600 text-white"}`} data-testid="toast">
-          {toast.text}
-        </div>
-      )}
     </div>
   );
 }
 
-function LeadGroup({ msgs, tab, canSend, busy, onApprove, onChanged, flash }: {
-  msgs: QMsg[]; tab: Tab; canSend: boolean; busy: string | null;
-  onApprove: (b: Record<string, unknown>, label: string) => Promise<void>; onChanged: () => Promise<void>; flash: (k: "ok" | "err", t: string) => void;
+/**
+ * Approval inbox: a list on the left, the selected email on the right.
+ * Keys: j/k (or arrows) move, A approve, E edit, S skip.
+ */
+function MessageInbox({ msgs, tab, canSend, onApprove, onCounts, setMsgs, flash }: {
+  msgs: QMsg[]; tab: Tab; canSend: boolean;
+  onApprove: (b: Record<string, unknown>, label: string, confirmText?: string) => Promise<void>;
+  /** Refreshes the header counts only; the list is updated locally. */
+  onCounts: () => Promise<void>;
+  setMsgs: (fn: (xs: QMsg[]) => QMsg[]) => void;
+  flash: (k: "ok" | "err", t: string) => void;
 }) {
-  const [open, setOpen] = useState(tab === "draft");
-  const first = msgs[0];
-  return (
-    <div className="rounded-2xl bg-white border border-[#E5EAF2]" data-testid="approval-group">
-      <div className="flex flex-wrap items-center gap-3 px-4 py-3">
-        <button onClick={() => setOpen((o) => !o)} className="flex items-center gap-2 min-w-0 flex-1 text-left">
-          <ChevronDown size={16} className={`text-[#7A8FA6] transition-transform ${open ? "" : "-rotate-90"}`} />
-          <span className="min-w-0">
-            <span className="block font-dm font-semibold text-[#0D1B2A] truncate">{first.lead?.companyName ?? "(deleted lead)"} <span className="font-normal text-[#7A8FA6]">· {first.toEmail}</span></span>
-            <span className="block font-dm text-xs text-[#7A8FA6] truncate">{first.sequenceName} · {msgs.length} email(s){first.lead?.score != null ? ` · score ${first.lead.score}` : ""} · consent: {first.lead?.consentBasis.replace(/_/g, " ")}</span>
-          </span>
-        </button>
-        {tab === "draft" && canSend && (
-          <button onClick={() => onApprove({ enrollmentIds: [first.enrollmentId] }, first.enrollmentId)} disabled={busy === first.enrollmentId} className="inline-flex items-center gap-1.5 rounded-lg bg-[#0F6E56] text-white px-3 py-1.5 font-dm text-sm font-semibold disabled:opacity-50" data-testid="approve-lead">
-            <CheckCircle2 size={14} /> Approve {msgs.length > 1 ? "all steps" : ""}
-          </button>
-        )}
-      </div>
-      {open && (
-        <div className="border-t border-[#F0F3F8] p-4 grid gap-3 lg:grid-cols-2">
-          {msgs.map((m) => <QMessage key={m.id} m={m} canSend={canSend} onApprove={onApprove} onChanged={onChanged} flash={flash} />)}
-        </div>
-      )}
-    </div>
+  const ordered = useMemo(
+    () => [...msgs].sort((a, b) => (a.lead?.companyName ?? "").localeCompare(b.lead?.companyName ?? "") || a.enrollmentId.localeCompare(b.enrollmentId) || a.stepIndex - b.stepIndex),
+    [msgs],
   );
-}
-
-function QMessage({ m, canSend, onApprove, onChanged, flash }: {
-  m: QMsg; canSend: boolean; onApprove: (b: Record<string, unknown>, label: string) => Promise<void>; onChanged: () => Promise<void>; flash: (k: "ok" | "err", t: string) => void;
-}) {
+  const [selId, setSelId] = useState<string | null>(ordered[0]?.id ?? null);
   const [edit, setEdit] = useState(false);
-  const [subject, setSubject] = useState(m.subject);
-  const [body, setBody] = useState(m.bodyText);
-  const unsent = m.status === "draft" || m.status === "approved";
-  async function save() {
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [working, setWorking] = useState<string | null>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+
+  const idx = Math.max(0, ordered.findIndex((m) => m.id === selId));
+  const sel = ordered[idx] ?? null;
+  const unsent = sel ? sel.status === "draft" || sel.status === "approved" : false;
+  const steps = sel ? ordered.filter((m) => m.enrollmentId === sel.enrollmentId) : [];
+
+  useEffect(() => {
+    if (!ordered.some((m) => m.id === selId)) setSelId(ordered[Math.min(idx, ordered.length - 1)]?.id ?? null);
+  }, [ordered, selId, idx]);
+  useEffect(() => {
+    setEdit(false);
+    if (sel) { setSubject(sel.subject); setBody(sel.bodyText); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sel?.id]);
+
+  const select = (id: string, scroll = false) => {
+    setSelId(id);
+    document.querySelector(`[data-msg-id="${id}"]`)?.scrollIntoView({ block: "nearest" });
+    if (scroll && window.matchMedia("(max-width: 1023px)").matches) previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  const nextAfter = (ids: string[]) => {
+    const rest = ordered.filter((m) => !ids.includes(m.id));
+    const after = ordered.slice(idx + 1).find((m) => !ids.includes(m.id)) ?? rest[rest.length - 1];
+    return after?.id ?? null;
+  };
+  const drop = (ids: string[]) => {
+    const n = nextAfter(ids);
+    setMsgs((xs) => xs.filter((x) => !ids.includes(x.id)));
+    setSelId(n);
+  };
+
+  async function approveOne(m: QMsg) {
+    if (!canSend || m.status !== "draft") return;
+    setWorking("approve");
     try {
-      await api(`/api/admin/growth/outreach/messages/${m.id}`, { method: "PATCH", body: JSON.stringify({ subject, bodyText: body }) });
-      setEdit(false);
-      flash("ok", "Saved. It needs approval again.");
-      await onChanged();
+      const r = await api<{ approved: number }>("/api/admin/growth/outreach/approve", { method: "POST", body: JSON.stringify({ messageIds: [m.id] }) });
+      flash("ok", r.approved ? `Approved: ${m.lead?.companyName ?? "email"}, step ${m.stepIndex + 1}` : "Nothing approved (it may be blocked)");
+      drop([m.id]);
+      onCounts().catch(() => {});
     } catch (e) {
       flash("err", e instanceof Error ? e.message : "Failed");
+    } finally {
+      setWorking(null);
     }
   }
-  async function skip() {
+  async function skip(m: QMsg) {
+    if (!(m.status === "draft" || m.status === "approved")) return;
+    setWorking("skip");
     try {
       await api(`/api/admin/growth/outreach/messages/${m.id}`, { method: "DELETE" });
-      await onChanged();
+      flash("ok", "Skipped. The rest of the sequence continues.");
+      drop([m.id]);
+      onCounts().catch(() => {});
     } catch (e) {
       flash("err", e instanceof Error ? e.message : "Failed");
+    } finally {
+      setWorking(null);
     }
   }
+  async function save() {
+    if (!sel) return;
+    setWorking("save");
+    try {
+      await api(`/api/admin/growth/outreach/messages/${sel.id}`, { method: "PATCH", body: JSON.stringify({ subject, bodyText: body }) });
+      setMsgs((xs) => xs.map((x) => (x.id === sel.id ? { ...x, subject, bodyText: body, status: "draft" } : x)));
+      setEdit(false);
+      flash("ok", tab === "draft" ? "Saved" : "Saved. It needs approval again.");
+      if (tab !== "draft") onCounts().catch(() => {});
+    } catch (e) {
+      flash("err", e instanceof Error ? e.message : "Failed");
+    } finally {
+      setWorking(null);
+    }
+  }
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!sel || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (edit) {
+        if (e.key === "Escape") { e.preventDefault(); setEdit(false); setSubject(sel.subject); setBody(sel.bodyText); }
+        return;
+      }
+      if (isTyping(e.target) || document.querySelector("[role=dialog]")) return;
+      const k = e.key.toLowerCase();
+      if (k === "j" || e.key === "ArrowDown") { e.preventDefault(); const n = ordered[Math.min(ordered.length - 1, idx + 1)]; if (n) select(n.id); }
+      else if (k === "k" || e.key === "ArrowUp") { e.preventDefault(); const n = ordered[Math.max(0, idx - 1)]; if (n) select(n.id); }
+      else if (k === "a" && !working) { e.preventDefault(); approveOne(sel); }
+      else if (k === "e" && unsent) { e.preventDefault(); setEdit(true); }
+      else if (k === "s" && !working) { e.preventDefault(); skip(sel); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sel, edit, ordered, idx, working, unsent]);
+
   return (
-    <div className="rounded-xl bg-[#FAFBFD] border border-[#EEF2F7] p-3 font-dm text-sm space-y-2" data-testid="queue-message">
-      <div className="flex items-center gap-2 text-xs text-[#7A8FA6]">
-        <span className="font-semibold text-[#0D1B2A]">Step {m.stepIndex + 1} · day {m.dayOffset}</span>
-        {m.personalised && <span className="rounded-full bg-[#F3E8FF] text-[#7c3aed] px-2 py-0.5 font-semibold">AI personalised</span>}
-        <span className="ml-auto flex items-center gap-1">
-          {m.sentAt ? <><CheckCircle2 size={12} className="text-[#0F6E56]" /> {fmt(m.sentAt)}</> : m.scheduledFor ? <><Clock size={12} /> {fmt(m.scheduledFor)}</> : null}
-        </span>
-      </div>
-      {edit ? (
-        <>
-          <input value={subject} onChange={(e) => setSubject(e.target.value)} className="w-full rounded-lg border border-[#D2DCE8] px-2.5 py-1.5 font-semibold bg-white" />
-          <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={9} className="w-full rounded-lg border border-[#D2DCE8] p-2.5 bg-white" />
-        </>
-      ) : (
-        <>
-          <p className="font-semibold text-[#0D1B2A]">{m.subject}</p>
-          <p className="whitespace-pre-wrap text-[#3A4A5C] text-[13px] leading-relaxed">{m.bodyText}</p>
-          <p className="text-[11px] text-[#9CA3AF] border-t border-dashed border-[#E5EAF2] pt-1.5">+ footer: sender, postal address, why they got it, one-click unsubscribe</p>
-        </>
-      )}
-      {m.error && <p className="text-xs text-red-600">{m.error}</p>}
-      {unsent && (
-        <div className="flex flex-wrap justify-end gap-2">
-          {edit ? (
-            <>
-              <button onClick={() => setEdit(false)} className="px-3 py-1 rounded-lg text-[#3A4A5C]">Cancel</button>
-              <button onClick={save} className="px-3 py-1 rounded-lg bg-[#1B3A6B] text-white font-semibold">Save</button>
-            </>
-          ) : (
-            <>
-              <button onClick={() => setEdit(true)} className="px-3 py-1 rounded-lg border border-[#D2DCE8] bg-white">Edit</button>
-              <button onClick={skip} className="px-3 py-1 rounded-lg border border-[#D2DCE8] bg-white text-[#6B7280]">Skip</button>
-              {m.status === "draft" && canSend && (
-                <button onClick={() => onApprove({ messageIds: [m.id] }, m.id)} className="px-3 py-1 rounded-lg bg-[#0F6E56] text-white font-semibold" data-testid="approve-one">Approve</button>
-              )}
-            </>
-          )}
+    <div className="grid gap-4 lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)]" data-testid="outreach-inbox">
+      {/* List */}
+      <div className="overflow-hidden rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] shadow-[var(--a-shadow-card)]">
+        <div className="flex items-center justify-between border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-3 py-2 font-dm text-[12px] text-[var(--a-ink-3)]">
+          <span className="tabular-nums">{ordered.length} email{ordered.length === 1 ? "" : "s"}</span>
+          <span className="hidden items-center gap-1 sm:inline-flex"><Kbd>j</Kbd><Kbd>k</Kbd> move{tab === "draft" || tab === "approved" ? <> <Kbd>A</Kbd> <Kbd>E</Kbd> <Kbd>S</Kbd></> : null}</span>
         </div>
-      )}
+        <ul className="max-h-[62vh] overflow-y-auto" role="listbox" aria-label="Emails">
+          {ordered.map((m) => {
+            const on = m.id === sel?.id;
+            return (
+              <li key={m.id} role="option" aria-selected={on}>
+                <button
+                  type="button"
+                  data-msg-id={m.id}
+                  onClick={() => select(m.id, true)}
+                  className={`relative block w-full border-b border-[var(--a-border)] px-3 py-2.5 text-left transition-colors duration-150 ${on ? "bg-[var(--a-info-bg)]" : "hover:bg-[var(--a-surface-2)]"}`}
+                  data-testid="approval-group"
+                >
+                  {on && <span className="absolute inset-y-0 left-0 w-[3px] bg-[var(--a-blue)]" aria-hidden />}
+                  <span className="flex items-center gap-2">
+                    <span className="min-w-0 flex-1 truncate font-dm text-[13px] font-semibold text-[var(--a-ink)]">{m.lead?.companyName ?? "(deleted lead)"}</span>
+                    {m.lead?.score != null && <ScoreDot score={m.lead.score} />}
+                    <span className="shrink-0 font-dm text-[11px] text-[var(--a-ink-3)]">Step {m.stepIndex + 1}</span>
+                  </span>
+                  <span className="mt-0.5 block truncate font-dm text-[12.5px] text-[var(--a-ink-2)]">{m.subject}</span>
+                  <span className="mt-0.5 flex items-center gap-1.5 font-dm text-[11px] text-[var(--a-ink-3)]">
+                    {m.personalised && <Sparkles size={11} className="text-[#7c3aed]" aria-label="AI personalised" />}
+                    <span className="truncate">{m.sentAt ? `Sent ${fmt(m.sentAt)}` : m.scheduledFor ? fmt(m.scheduledFor) : `Day ${m.dayOffset}`} · {m.sequenceName}</span>
+                    {m.error && <AlertTriangle size={11} className="shrink-0 text-[var(--a-danger)]" aria-label="Error" />}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      {/* Preview */}
+      <div ref={previewRef} className="min-w-0 scroll-mt-4">
+        {sel && (
+          <div className="a-anim-fade overflow-hidden rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] shadow-[var(--a-shadow-card)]" data-testid="queue-message">
+            <div className="flex flex-wrap items-start gap-3 border-b border-[var(--a-border)] px-5 py-4">
+              <div className="min-w-0 flex-1">
+                <p className="font-syne text-[17px] font-semibold text-[var(--a-ink)]">{sel.lead?.companyName ?? "(deleted lead)"}</p>
+                <p className="mt-0.5 font-dm text-[12.5px] text-[var(--a-ink-3)]">
+                  {[sel.lead?.contactName, sel.sequenceName, `step ${sel.stepIndex + 1} of ${steps.length || 1}`, sel.lead ? `consent: ${sel.lead.consentBasis.replace(/_/g, " ")}` : null].filter(Boolean).join(" · ")}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {sel.personalised && <Badge tone="info"><Sparkles size={11} aria-hidden /> AI personalised</Badge>}
+                {sel.lead?.score != null && <Badge tone={sel.lead.score >= 70 ? "success" : sel.lead.score >= 45 ? "orange" : "neutral"}>Score {sel.lead.score}</Badge>}
+                {sel.lead && <Button size="sm" variant="ghost" icon={ExternalLink} href={`/admin_pro/growth/leads?open=${sel.lead.id}`}>Lead</Button>}
+              </div>
+            </div>
+
+            <div className="space-y-3 px-5 py-4">
+              <dl className="grid grid-cols-[64px_1fr] gap-y-1 font-dm text-[12.5px]">
+                <dt className="text-[var(--a-ink-3)]">To</dt><dd className="truncate text-[var(--a-ink)]">{sel.toEmail ?? "-"}</dd>
+                <dt className="text-[var(--a-ink-3)]">When</dt>
+                <dd className="flex items-center gap-1 text-[var(--a-ink-2)]">
+                  {sel.sentAt ? <><CheckCircle2 size={12} className="text-[var(--a-success)]" /> Sent {fmt(sel.sentAt)}</> : sel.scheduledFor ? <><Clock size={12} /> {fmt(sel.scheduledFor)}</> : <>Day {sel.dayOffset} after approval, inside sending hours</>}
+                </dd>
+              </dl>
+              {edit ? (
+                <div className="space-y-2">
+                  <label className="block">
+                    <span className="sr-only">Subject</span>
+                    <input value={subject} onChange={(e) => setSubject(e.target.value)} autoFocus className="h-9 w-full rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] px-3 font-dm text-[14px] font-semibold focus:border-[var(--a-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20" />
+                  </label>
+                  <label className="block">
+                    <span className="sr-only">Body</span>
+                    <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={12} onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); save(); } }} className="w-full rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] p-3 font-dm text-[13.5px] leading-relaxed focus:border-[var(--a-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20" />
+                  </label>
+                  <p className="font-dm text-[11.5px] text-[var(--a-ink-3)]"><Kbd>Ctrl</Kbd> + <Kbd>Enter</Kbd> to save, <Kbd>Esc</Kbd> to cancel.</p>
+                </div>
+              ) : (
+                <div className="rounded-[12px] border border-[var(--a-border)] bg-[var(--a-surface-2)]/60 p-4">
+                  <p className="font-dm text-[15px] font-semibold text-[var(--a-ink)]" data-testid="preview-subject">{sel.subject}</p>
+                  <p className="mt-3 whitespace-pre-wrap font-dm text-[13.5px] leading-relaxed text-[var(--a-ink-2)]">{sel.bodyText}</p>
+                  <p className="mt-4 border-t border-dashed border-[var(--a-border-strong)] pt-2 font-dm text-[11.5px] text-[var(--a-ink-3)]">+ footer: sender, postal address, why they got it, one-click unsubscribe</p>
+                </div>
+              )}
+              {sel.error && <p className="rounded-[var(--a-radius-control)] bg-[var(--a-danger-bg)] px-3 py-2 font-dm text-[12.5px] text-[var(--a-danger)]">{sel.error}</p>}
+            </div>
+
+            {unsent && (
+              <div className="flex flex-wrap items-center gap-2 border-t border-[var(--a-border)] bg-[var(--a-surface-2)]/50 px-5 py-3">
+                {edit ? (
+                  <>
+                    <Button variant="ghost" onClick={() => { setEdit(false); setSubject(sel.subject); setBody(sel.bodyText); }}>Cancel</Button>
+                    <Button variant="primary" loading={working === "save"} onClick={save}>Save</Button>
+                  </>
+                ) : (
+                  <>
+                    {sel.status === "draft" && (
+                      canSend ? (
+                        <Button variant="primary" icon={CheckCircle2} loading={working === "approve"} onClick={() => approveOne(sel)} data-testid="approve-one">
+                          Approve <Kbd className="ml-1 border-white/30 bg-white/15 text-white shadow-none">A</Kbd>
+                        </Button>
+                      ) : (
+                        <span className="font-dm text-[12px] text-[var(--a-ink-3)]">Only an admin can approve.</span>
+                      )
+                    )}
+                    <Button icon={Pencil} onClick={() => setEdit(true)}>Edit <Kbd className="ml-1">E</Kbd></Button>
+                    <Button variant="ghost" icon={SkipForward} loading={working === "skip"} onClick={() => skip(sel)}>Skip <Kbd className="ml-1">S</Kbd></Button>
+                    {sel.status === "draft" && canSend && steps.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        className="ml-auto"
+                        icon={CheckCheck}
+                        onClick={async () => { await onApprove({ enrollmentIds: [sel.enrollmentId] }, sel.enrollmentId); }}
+                        data-testid="approve-lead"
+                      >
+                        Approve all {steps.length} steps
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
+}
+
+function ScoreDot({ score }: { score: number }) {
+  const cls = score >= 70 ? "bg-[var(--a-success-bg)] text-[var(--a-success)]" : score >= 45 ? "bg-[var(--a-orange-bg)] text-[var(--a-orange-text)]" : "bg-[var(--a-surface-2)] text-[var(--a-ink-3)]";
+  return <span className={`shrink-0 rounded-full px-1.5 font-dm text-[10.5px] font-bold tabular-nums leading-[18px] ${cls}`}>{score}</span>;
 }
 
 function Sequences({ seqs, onEdit, onChanged, flash }: { seqs: Sequence[]; onEdit: (s: Sequence | "new") => void; onChanged: () => Promise<void>; flash: (k: "ok" | "err", t: string) => void }) {
@@ -345,37 +486,37 @@ function Sequences({ seqs, onEdit, onChanged, flash }: { seqs: Sequence[]; onEdi
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
-        <button onClick={() => onEdit("new")} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[#F47C20] text-white text-sm font-dm font-semibold" data-testid="new-sequence"><Plus size={15} /> New sequence</button>
+        <button onClick={() => onEdit("new")} className="inline-flex items-center gap-2 px-3 py-2 rounded-[var(--a-radius-control)] bg-[var(--a-orange-text)] text-white text-sm font-dm font-semibold" data-testid="new-sequence"><Plus size={15} /> New sequence</button>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         {seqs.map((s) => (
-          <div key={s.id} className="rounded-2xl bg-white border border-[#E5EAF2] p-4 font-dm text-sm space-y-3">
+          <div key={s.id} className="rounded-[var(--a-radius-card)] bg-white border border-[var(--a-border)] p-4 font-dm text-sm space-y-3">
             <div className="flex items-start gap-2">
               <div className="min-w-0 flex-1">
-                <p className="font-syne font-bold text-[#0D1B2A]">{s.name}</p>
-                {s.description && <p className="text-xs text-[#7A8FA6]">{s.description}</p>}
+                <p className="font-syne font-bold text-[var(--a-ink)]">{s.name}</p>
+                {s.description && <p className="text-xs text-[var(--a-ink-3)]">{s.description}</p>}
               </div>
-              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${s.status === "active" ? "bg-[#E8F7EE] text-[#0F6E56]" : "bg-[#F4F4F5] text-[#6B7280]"}`}>{s.status}</span>
+              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${s.status === "active" ? "bg-[var(--a-success-bg)] text-[var(--a-success)]" : "bg-[#F4F4F5] text-[var(--a-ink-3)]"}`}>{s.status}</span>
             </div>
             <ol className="space-y-1.5">
               {s.steps.map((st, i) => (
                 <li key={i} className="flex gap-2 text-xs">
-                  <span className="flex-shrink-0 rounded-md bg-[#EBF0FA] text-[#2251A3] px-1.5 py-0.5 font-semibold">Day {st.dayOffset}</span>
-                  <span className="truncate text-[#3A4A5C]">{st.subject}{st.personalise ? " · AI" : ""}</span>
+                  <span className="flex-shrink-0 rounded-md bg-[var(--a-info-bg)] text-[var(--a-blue)] px-1.5 py-0.5 font-semibold">Day {st.dayOffset}</span>
+                  <span className="truncate text-[var(--a-ink-2)]">{st.subject}{st.personalise ? " · AI" : ""}</span>
                 </li>
               ))}
             </ol>
-            <p className="text-xs text-[#7A8FA6]">
+            <p className="text-xs text-[var(--a-ink-3)]">
               {Object.entries(s.stats).map(([k, v]) => `${v} ${k}`).join(" · ") || "No emails yet"}
             </p>
             <div className="flex flex-wrap gap-2">
-              <button onClick={() => onEdit(s)} className="px-3 py-1 rounded-lg border border-[#D2DCE8]">Edit</button>
+              <button onClick={() => onEdit(s)} className="px-3 py-1 rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)]">Edit</button>
               {s.status === "active" ? (
-                <button onClick={() => setStatus(s, "paused")} className="inline-flex items-center gap-1 px-3 py-1 rounded-lg border border-[#D2DCE8]"><Pause size={13} /> Pause</button>
+                <button onClick={() => setStatus(s, "paused")} className="inline-flex items-center gap-1 px-3 py-1 rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)]"><Pause size={13} /> Pause</button>
               ) : (
-                <button onClick={() => setStatus(s, "active")} className="inline-flex items-center gap-1 px-3 py-1 rounded-lg border border-[#D2DCE8]"><Play size={13} /> Resume</button>
+                <button onClick={() => setStatus(s, "active")} className="inline-flex items-center gap-1 px-3 py-1 rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)]"><Play size={13} /> Resume</button>
               )}
-              <button onClick={() => setStatus(s, "archived")} className="inline-flex items-center gap-1 px-3 py-1 rounded-lg border border-[#D2DCE8] text-[#6B7280]"><Archive size={13} /> Archive</button>
+              <button onClick={() => setStatus(s, "archived")} className="inline-flex items-center gap-1 px-3 py-1 rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] text-[var(--a-ink-3)]"><Archive size={13} /> Archive</button>
             </div>
           </div>
         ))}
@@ -428,53 +569,53 @@ function SequenceEditor({ seq, mergeFields, onClose, onSaved, flash }: {
     <Modal title={seq ? "Edit sequence" : "New sequence"} onClose={onClose} wide>
       <div className="space-y-4 font-dm text-sm">
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="flex flex-col gap-1"><span className="text-xs text-[#7A8FA6]">Name</span><input value={name} onChange={(e) => setName(e.target.value)} className="rounded-lg border border-[#D2DCE8] px-3 py-2" data-testid="seq-name" /></label>
-          <label className="flex flex-col gap-1"><span className="text-xs text-[#7A8FA6]">Description</span><input value={description} onChange={(e) => setDescription(e.target.value)} className="rounded-lg border border-[#D2DCE8] px-3 py-2" /></label>
+          <label className="flex flex-col gap-1"><span className="text-xs text-[var(--a-ink-3)]">Name</span><input value={name} onChange={(e) => setName(e.target.value)} className="rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] px-3 py-2" data-testid="seq-name" /></label>
+          <label className="flex flex-col gap-1"><span className="text-xs text-[var(--a-ink-3)]">Description</span><input value={description} onChange={(e) => setDescription(e.target.value)} className="rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] px-3 py-2" /></label>
         </div>
 
-        <details className="rounded-xl bg-[#F4F7FB] p-3">
-          <summary className="cursor-pointer font-semibold text-[#1B3A6B] flex items-center gap-2"><Sparkles size={14} /> Draft the steps with AI</summary>
+        <details className="rounded-[12px] bg-[var(--a-surface-2)] p-3">
+          <summary className="cursor-pointer font-semibold text-[var(--a-navy)] flex items-center gap-2"><Sparkles size={14} /> Draft the steps with AI</summary>
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
-            <input value={audience} onChange={(e) => setAudience(e.target.value)} placeholder="Audience, e.g. dental clinics in Ottawa" className="rounded-lg border border-[#D2DCE8] px-3 py-2 sm:col-span-3" />
-            <select value={offerKey} onChange={(e) => setOfferKey(e.target.value)} className="rounded-lg border border-[#D2DCE8] px-2 py-2">
+            <input value={audience} onChange={(e) => setAudience(e.target.value)} placeholder="Audience, e.g. dental clinics in Ottawa" className="rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] px-3 py-2 sm:col-span-3" />
+            <select value={offerKey} onChange={(e) => setOfferKey(e.target.value)} className="rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] px-2 py-2">
               <option value="">Best-fit offer per lead</option>
               {OFFERS.map((o) => <option key={o.key} value={o.key}>{o.name}</option>)}
             </select>
-            <input value={goal} onChange={(e) => setGoal(e.target.value)} className="rounded-lg border border-[#D2DCE8] px-3 py-2" />
-            <button onClick={aiDraft} disabled={!audience || busy === "ai"} className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#1B3A6B] text-white px-3 py-2 font-semibold disabled:opacity-50">
+            <input value={goal} onChange={(e) => setGoal(e.target.value)} className="rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] px-3 py-2" />
+            <button onClick={aiDraft} disabled={!audience || busy === "ai"} className="inline-flex items-center justify-center gap-1.5 rounded-[var(--a-radius-control)] bg-[var(--a-navy)] text-white px-3 py-2 font-semibold disabled:opacity-50">
               {busy === "ai" ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} Draft
             </button>
           </div>
         </details>
 
-        <p className="text-xs text-[#7A8FA6]">Merge fields: {mergeFields.map(([k, d]) => <code key={k} title={d} className="mx-0.5 rounded bg-[#EEF2F7] px-1">{`{{${k}}}`}</code>)}</p>
+        <p className="text-xs text-[var(--a-ink-3)]">Merge fields: {mergeFields.map(([k, d]) => <code key={k} title={d} className="mx-0.5 rounded bg-[var(--a-surface-2)] px-1">{`{{${k}}}`}</code>)}</p>
 
         <div className="space-y-3">
           {steps.map((s, i) => (
-            <div key={i} className="rounded-xl border border-[#E5EAF2] p-3 space-y-2">
+            <div key={i} className="rounded-[12px] border border-[var(--a-border)] p-3 space-y-2">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="font-semibold text-[#0D1B2A]">Step {i + 1}</span>
-                <label className="flex items-center gap-1 text-xs text-[#7A8FA6]">Day
-                  <input type="number" min={0} max={60} value={s.dayOffset} onChange={(e) => upd(i, { dayOffset: Number(e.target.value) })} className="w-16 rounded-md border border-[#D2DCE8] px-2 py-1" />
+                <span className="font-semibold text-[var(--a-ink)]">Step {i + 1}</span>
+                <label className="flex items-center gap-1 text-xs text-[var(--a-ink-3)]">Day
+                  <input type="number" min={0} max={60} value={s.dayOffset} onChange={(e) => upd(i, { dayOffset: Number(e.target.value) })} className="w-16 rounded-md border border-[var(--a-border-strong)] px-2 py-1" />
                 </label>
-                <label className="flex items-center gap-1.5 text-xs text-[#3A4A5C]"><input type="checkbox" checked={s.personalise} onChange={(e) => upd(i, { personalise: e.target.checked })} /> Personalise per lead with AI (Haiku)</label>
-                <button onClick={() => setSteps((x) => x.filter((_, j) => j !== i))} className="ml-auto text-[#9CA3AF] hover:text-red-600" aria-label="Remove step"><Trash2 size={15} /></button>
+                <label className="flex items-center gap-1.5 text-xs text-[var(--a-ink-2)]"><input type="checkbox" checked={s.personalise} onChange={(e) => upd(i, { personalise: e.target.checked })} /> Personalise per lead with AI (Haiku)</label>
+                <button onClick={() => setSteps((x) => x.filter((_, j) => j !== i))} className="ml-auto text-[var(--a-ink-3)] hover:text-[var(--a-danger)]" aria-label="Remove step"><Trash2 size={15} /></button>
               </div>
-              <input value={s.subject} onChange={(e) => upd(i, { subject: e.target.value })} placeholder="Subject" className="w-full rounded-lg border border-[#D2DCE8] px-3 py-2 font-semibold" />
-              <textarea value={s.body} onChange={(e) => upd(i, { body: e.target.value })} rows={7} placeholder="Body (plain text)" className="w-full rounded-lg border border-[#D2DCE8] p-3" />
-              {/^\s*(re|fwd?)\s*:/i.test(s.subject) && <p className="text-xs text-red-600">Subjects that pretend to be a reply or forward are deceptive under CAN-SPAM.</p>}
+              <input value={s.subject} onChange={(e) => upd(i, { subject: e.target.value })} placeholder="Subject" className="w-full rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] px-3 py-2 font-semibold" />
+              <textarea value={s.body} onChange={(e) => upd(i, { body: e.target.value })} rows={7} placeholder="Body (plain text)" className="w-full rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] p-3" />
+              {/^\s*(re|fwd?)\s*:/i.test(s.subject) && <p className="text-xs text-[var(--a-danger)]">Subjects that pretend to be a reply or forward are deceptive under CAN-SPAM.</p>}
             </div>
           ))}
           {steps.length < 6 && (
-            <button onClick={() => setSteps((x) => [...x, { dayOffset: (x[x.length - 1]?.dayOffset ?? 0) + 3, subject: "", body: "", personalise: false }])} className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-[#D2DCE8] px-3 py-2 text-[#1B3A6B]">
+            <button onClick={() => setSteps((x) => [...x, { dayOffset: (x[x.length - 1]?.dayOffset ?? 0) + 3, subject: "", body: "", personalise: false }])} className="inline-flex items-center gap-1.5 rounded-[var(--a-radius-control)] border border-dashed border-[var(--a-border-strong)] px-3 py-2 text-[var(--a-navy)]">
               <Plus size={14} /> Add step
             </button>
           )}
         </div>
-        <p className="text-xs text-[#7A8FA6]">Edits apply to leads you enrol from now on; already-drafted emails keep their text (edit them in the approval queue).</p>
+        <p className="text-xs text-[var(--a-ink-3)]">Edits apply to leads you enrol from now on; already-drafted emails keep their text (edit them in the approval queue).</p>
         <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg text-[#3A4A5C]">Cancel</button>
-          <button onClick={save} disabled={!name.trim() || busy === "save" || steps.some((s) => /^\s*(re|fwd?)\s*:/i.test(s.subject))} className="px-4 py-2 rounded-lg bg-[#F47C20] text-white font-semibold disabled:opacity-50" data-testid="seq-save">Save sequence</button>
+          <button onClick={onClose} className="px-4 py-2 rounded-[var(--a-radius-control)] text-[var(--a-ink-2)]">Cancel</button>
+          <button onClick={save} disabled={!name.trim() || busy === "save" || steps.some((s) => /^\s*(re|fwd?)\s*:/i.test(s.subject))} className="px-4 py-2 rounded-[var(--a-radius-control)] bg-[var(--a-orange-text)] text-white font-semibold disabled:opacity-50" data-testid="seq-save">Save sequence</button>
         </div>
       </div>
     </Modal>
@@ -504,27 +645,27 @@ function Suppression({ entries, canSend, onChanged, flash }: { entries: Supp[]; 
   }
   return (
     <div className="grid gap-4 lg:grid-cols-3">
-      <div className="rounded-2xl bg-white border border-[#E5EAF2] p-4 font-dm text-sm space-y-2 h-fit">
-        <p className="font-semibold text-[#0D1B2A] flex items-center gap-2"><ShieldOff size={15} /> Add do-not-contact</p>
-        <textarea value={values} onChange={(e) => setValues(e.target.value)} rows={5} placeholder={"name@company.com\n@competitor.com (whole domain)"} className="w-full rounded-lg border border-[#D2DCE8] p-2.5" />
-        <button onClick={add} disabled={!values.trim()} className="w-full rounded-lg bg-[#1B3A6B] text-white py-2 font-semibold disabled:opacity-50">Add</button>
-        <p className="text-xs text-[#7A8FA6]">Unsubscribes, hard bounces and do-not-contact entries are checked before every send. Unsubscribes cannot be removed by you.</p>
+      <div className="rounded-[var(--a-radius-card)] bg-white border border-[var(--a-border)] p-4 font-dm text-sm space-y-2 h-fit">
+        <p className="font-semibold text-[var(--a-ink)] flex items-center gap-2"><ShieldOff size={15} /> Add do-not-contact</p>
+        <textarea value={values} onChange={(e) => setValues(e.target.value)} rows={5} placeholder={"name@company.com\n@competitor.com (whole domain)"} className="w-full rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] p-2.5" />
+        <button onClick={add} disabled={!values.trim()} className="w-full rounded-[var(--a-radius-control)] bg-[var(--a-navy)] text-white py-2 font-semibold disabled:opacity-50">Add</button>
+        <p className="text-xs text-[var(--a-ink-3)]">Unsubscribes, hard bounces and do-not-contact entries are checked before every send. Unsubscribes cannot be removed by you.</p>
       </div>
-      <div className="lg:col-span-2 rounded-2xl bg-white border border-[#E5EAF2] overflow-x-auto">
+      <div className="lg:col-span-2 rounded-[var(--a-radius-card)] bg-white border border-[var(--a-border)] overflow-x-auto">
         <table className="w-full min-w-[520px] font-dm text-sm">
-          <thead className="bg-[#F4F7FB] text-[#7A8FA6] text-xs uppercase tracking-wide"><tr><th className="p-3 text-left">Address / domain</th><th className="p-3 text-left">Reason</th><th className="p-3 text-left">Added</th><th className="p-3" /></tr></thead>
+          <thead className="bg-[var(--a-surface-2)] text-[var(--a-ink-3)] text-xs uppercase tracking-wide"><tr><th className="p-3 text-left">Address / domain</th><th className="p-3 text-left">Reason</th><th className="p-3 text-left">Added</th><th className="p-3" /></tr></thead>
           <tbody>
             {entries.map((e) => (
-              <tr key={e.value} className="border-t border-[#F0F3F8]">
-                <td className="p-3 text-[#0D1B2A]">{e.value}</td>
-                <td className="p-3"><span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${e.reason === "unsubscribe" ? "bg-red-50 text-red-600" : "bg-[#F4F4F5] text-[#6B7280]"}`}>{e.reason.replace(/_/g, " ")}</span>{e.note && <span className="block text-[11px] text-[#9CA3AF]">{e.note}</span>}</td>
-                <td className="p-3 text-xs text-[#7A8FA6]">{new Date(e.createdAt).toLocaleDateString("en-CA")}</td>
-                <td className="p-3 text-right">{canSend && e.reason !== "unsubscribe" && e.reason !== "complaint" && <button onClick={() => remove(e.value)} className="text-[#9CA3AF] hover:text-red-600" aria-label="Remove"><X size={15} /></button>}</td>
+              <tr key={e.value} className="border-t border-[var(--a-border)]">
+                <td className="p-3 text-[var(--a-ink)]">{e.value}</td>
+                <td className="p-3"><span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${e.reason === "unsubscribe" ? "bg-[var(--a-danger-bg)] text-[var(--a-danger)]" : "bg-[#F4F4F5] text-[var(--a-ink-3)]"}`}>{e.reason.replace(/_/g, " ")}</span>{e.note && <span className="block text-[11px] text-[var(--a-ink-3)]">{e.note}</span>}</td>
+                <td className="p-3 text-xs text-[var(--a-ink-3)]">{new Date(e.createdAt).toLocaleDateString("en-CA")}</td>
+                <td className="p-3 text-right">{canSend && e.reason !== "unsubscribe" && e.reason !== "complaint" && <button onClick={() => remove(e.value)} className="text-[var(--a-ink-3)] hover:text-[var(--a-danger)]" aria-label="Remove"><X size={15} /></button>}</td>
               </tr>
             ))}
           </tbody>
         </table>
-        {entries.length === 0 && <p className="p-6 text-center text-sm text-[#7A8FA6]">The list is empty.</p>}
+        {entries.length === 0 && <p className="p-6 text-center text-sm text-[var(--a-ink-3)]">The list is empty.</p>}
       </div>
     </div>
   );

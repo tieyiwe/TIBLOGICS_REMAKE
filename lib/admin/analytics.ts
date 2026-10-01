@@ -452,7 +452,7 @@ async function compute(range: RangeDays): Promise<Analytics> {
     return f === "money" ? { cur: num(r?.cur), prev: num(r?.prev) } : { cur: num(r?.ncur), prev: num(r?.nprev) };
   };
   const SOURCES: Array<[string, string, boolean]> = [
-    ["tracks", "Learning Box track purchases (one-time)", has.TrackPurchase],
+    ["tracks", "AI Academy (ARFA) track purchases (one-time)", has.TrackPurchase],
     ["store", "Store orders", true],
     ["events", "Events & training", true],
     ["bookings", "Paid bookings", true],
@@ -674,7 +674,7 @@ export function analyticsCsv(a: Analytics, table: CsvTable): string {
       head = ["Source", "Basis", `Last ${a.range} days (USD)`, "Previous period (USD)", "Payments", "Previous payments"];
       rows = a.revenue.sources.map((s) => [s.label, s.tracked ? "stored amounts" : "not tracked", dollars(s.cents.cur), dollars(s.cents.prev), s.count.cur, s.count.prev]);
       rows.push(["Total one-time", "stored amounts", dollars(a.revenue.total.cur), dollars(a.revenue.total.prev), "", ""]);
-      rows.push(["Learning Box MRR", `estimate: ${a.revenue.mrr.learnMonthly} monthly + ${a.revenue.mrr.learnAnnual} annual active`, dollars(a.revenue.mrr.learnCents), "", "", ""]);
+      rows.push(["AI Academy (ARFA) MRR", `estimate: ${a.revenue.mrr.learnMonthly} monthly + ${a.revenue.mrr.learnAnnual} annual active`, dollars(a.revenue.mrr.learnCents), "", "", ""]);
       rows.push(["Team seats MRR", `estimate: ${a.revenue.mrr.teams} teams, ${a.revenue.mrr.teamSeats} seats`, dollars(a.revenue.mrr.teamCents), "", "", ""]);
       rows.push(["Toolkit Live MRR", a.revenue.mrr.toolkitCents == null ? "price not set" : `estimate: ${a.revenue.mrr.toolkitActive} active`, a.revenue.mrr.toolkitCents == null ? "" : dollars(a.revenue.mrr.toolkitCents), "", "", ""]);
       rows.push(["New paid Learn subscriptions", "count", "", "", a.revenue.newLearnSubs.cur, a.revenue.newLearnSubs.prev]);

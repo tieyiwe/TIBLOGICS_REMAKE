@@ -7,18 +7,18 @@ import { ChevronDown, ShieldCheck } from "lucide-react";
 export default function ComplianceNote({ defaultOpen = false }: { defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="rounded-2xl border border-[#CFE3D9] bg-[#F1FAF5]">
+    <section className="rounded-[var(--a-radius-card)] border border-[#CFE3D9] bg-[#F1FAF5]">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center gap-3 px-4 py-3 text-left"
         aria-expanded={open}
       >
-        <ShieldCheck size={18} className="text-[#0F6E56] flex-shrink-0" />
+        <ShieldCheck size={18} className="text-[var(--a-success)] flex-shrink-0" />
         <span className="font-dm text-sm font-semibold text-[#0F4D3C] flex-1">
           Cold email rules (Canada CASL and US CAN-SPAM): what this tool enforces
         </span>
-        <ChevronDown size={16} className={`text-[#0F6E56] transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown size={16} className={`text-[var(--a-success)] transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
         <div className="px-4 pb-4 grid gap-3 md:grid-cols-2 font-dm text-[13px] leading-relaxed text-[#24493E]">

@@ -72,9 +72,9 @@ export function issuerProfile() {
     id: issuerDid(),
     type: ["Profile"],
     // Credentials already signed keep the old name; only new ones carry this.
-    name: "TIBLOGICS AI Academy (ARFA)",
+    name: "ARFA, the TIBLOGICS AI Academy",
     url: base + "/",
-    description: "ARFA: AI Readiness For All, the AI Academy of TIBLOGICS. AI skills training with assessed labs, exams and capstone projects.",
+    description: "ARFA (AI Readiness For All) is the TIBLOGICS AI Academy platform: AI skills training with assessed labs, exams and capstone projects.",
     image: { id: `${base}/icon.svg`, type: "Image" },
   };
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import { rememberRecent } from "./CommandPalette";
 
 export type NotifType = "appointment" | "contact" | "service_request" | "partnership" | "waitlist";
 export type NotifItem = { id: string; type: NotifType; title: string; subtitle: string; href: string; createdAt: string };
@@ -68,6 +70,12 @@ export function AdminShellProvider({ children }: { children: ReactNode }) {
       clearInterval(t);
     };
   }, []);
+
+  // Recent pages for the command palette.
+  const pathname = usePathname();
+  useEffect(() => {
+    if (pathname && pathname.startsWith("/admin_pro")) rememberRecent(pathname);
+  }, [pathname]);
 
   // Global Cmd/Ctrl+K.
   useEffect(() => {

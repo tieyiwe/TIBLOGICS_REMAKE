@@ -99,7 +99,7 @@ export async function findNewItems(since: Date): Promise<RepurposeItem[]> {
   for (const t of tracks)
     items.push({
       key: `track:${t.id}`, kind: "track", title: t.title, url: `/learning-box/${t.slug}`, at: t.createdAt,
-      facts: [`New TIBLOGICS Learning Box track (${t.level})${t.status === "coming_soon" ? ", coming soon: waitlist open" : ""}.`, t.tagline ? `Tagline: ${t.tagline}` : "", `Description: ${clip(t.description, 600)}`].filter(Boolean),
+      facts: [`New TIBLOGICS AI Academy track (${t.level})${t.status === "coming_soon" ? ", coming soon: waitlist open" : ""}.`, t.tagline ? `Tagline: ${t.tagline}` : "", `Description: ${clip(t.description, 600)}`].filter(Boolean),
     });
   // New lessons in an existing track: one item per track per day.
   const byTrack = new Map<string, { track: { id: string; slug: string; title: string }; titles: string[]; at: Date }>();
@@ -116,7 +116,7 @@ export async function findNewItems(since: Date): Promise<RepurposeItem[]> {
   for (const [k, e] of byTrack)
     items.push({
       key: `lessons:${k}`, kind: "lessons", title: `New lessons in ${e.track.title}`, url: `/learning-box/${e.track.slug}`, at: e.at,
-      facts: [`${e.titles.length} new lesson${e.titles.length > 1 ? "s" : ""} added to the Learning Box track "${e.track.title}": ${e.titles.slice(0, 8).join("; ")}.`],
+      facts: [`${e.titles.length} new lesson${e.titles.length > 1 ? "s" : ""} added to the AI Academy track "${e.track.title}": ${e.titles.slice(0, 8).join("; ")}.`],
     });
   for (const p of products)
     items.push({
@@ -137,7 +137,7 @@ export async function findNewItems(since: Date): Promise<RepurposeItem[]> {
     items.push({
       key: `live:${s.id}`, kind: "live", title: s.title, url: `/learn/live/${s.id}`, at: s.createdAt,
       facts: [
-        `Live expert session for Learning Box members with ${s.expertName}.`,
+        `Live expert session for AI Academy members with ${s.expertName}.`,
         s.topic ? `Topic: ${clip(s.topic, 300)}` : "",
         `Starts ${s.startsAt.toLocaleString("en-US", { dateStyle: "long", timeStyle: "short", timeZone: s.timezone || "UTC" })} (${s.timezone}).`,
       ].filter(Boolean),

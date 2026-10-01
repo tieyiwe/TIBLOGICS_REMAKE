@@ -8,15 +8,15 @@ import type { LinkReport, Row } from "@/lib/growth/reports";
 import { PLATFORMS } from "@/lib/growth/content/platforms";
 import { btn, Card, input, label, money, Stat } from "../_components/ui";
 
-const pct = (n: number, d: number) => (d ? `${Math.round((n / d) * 100)}%` : "–");
+const pct = (n: number, d: number) => (d ? `${Math.round((n / d) * 100)}%` : "-");
 
 function Table({ rows, kind }: { rows: Row[]; kind: "links" | "campaigns" | "platforms" }) {
-  if (!rows.length) return <p className="font-dm text-sm text-[#7A8FA6]">No data yet.</p>;
+  if (!rows.length) return <p className="font-dm text-sm text-[var(--a-ink-3)]">No data yet.</p>;
   return (
-    <div className="overflow-x-auto -mx-1">
-      <table className="w-full min-w-[560px] font-dm text-sm">
+    <div className="-mx-5 -mb-5 overflow-x-auto">
+      <table className="w-full min-w-[560px] font-dm text-[13px]">
         <thead>
-          <tr className="text-left text-xs text-[#7A8FA6]">
+          <tr className="bg-[var(--a-surface-2)] text-left text-[11px] uppercase tracking-[.08em] text-[var(--a-ink-3)] [&>th]:font-semibold [&>th]:py-2 [&>th]:px-2">
             <th className="py-1.5 px-1">{kind === "links" ? "Link" : kind === "campaigns" ? "Campaign" : "Platform"}</th>
             <th className="py-1.5 px-1 text-right">Clicks</th>
             <th className="py-1.5 px-1 text-right">Sign-ups</th>
@@ -27,15 +27,15 @@ function Table({ rows, kind }: { rows: Row[]; kind: "links" | "campaigns" | "pla
         </thead>
         <tbody>
           {rows.slice(0, 200).map((r) => (
-            <tr key={r.key} className="border-t border-[#E6ECF3]">
+            <tr key={r.key} className="border-t border-[var(--a-border)] transition-colors hover:bg-[var(--a-surface-2)] [&>td]:px-2">
               <td className="py-1.5 px-1 max-w-[360px]">
-                <span className="block truncate text-[#0D1B2A]" title={r.label}>{r.label}</span>
-                {kind === "links" && <span className="block truncate text-[11px] text-[#7A8FA6]">/go/{r.key} · {r.source}/{r.medium} · {r.campaign}</span>}
+                <span className="block truncate text-[var(--a-ink)]" title={r.label}>{r.label}</span>
+                {kind === "links" && <span className="block truncate text-[11px] text-[var(--a-ink-3)]">/go/{r.key} · {r.source}/{r.medium} · {r.campaign}</span>}
               </td>
               <td className="py-1.5 px-1 text-right tabular-nums">{r.clicks}</td>
               <td className="py-1.5 px-1 text-right tabular-nums">{r.signups}</td>
               <td className="py-1.5 px-1 text-right tabular-nums">{r.conversions}</td>
-              <td className="py-1.5 px-1 text-right tabular-nums text-[#7A8FA6]">{pct(r.signups + r.conversions, r.clicks)}</td>
+              <td className="py-1.5 px-1 text-right tabular-nums text-[var(--a-ink-3)]">{pct(r.signups + r.conversions, r.clicks)}</td>
               <td className="py-1.5 px-1 text-right tabular-nums font-semibold">{money(r.revenueCents)}</td>
             </tr>
           ))}
@@ -46,7 +46,7 @@ function Table({ rows, kind }: { rows: Row[]; kind: "links" | "campaigns" | "pla
 }
 
 const Csv = ({ view, days }: { view: string; days: number }) => (
-  <a href={`/api/admin/growth/links/export?view=${view}&days=${days}`} className="inline-flex items-center gap-1 rounded-lg border border-[#D2DCE8] px-2.5 py-1 font-dm text-xs text-[#2251A3] hover:bg-[#F4F7FB]">
+  <a href={`/api/admin/growth/links/export?view=${view}&days=${days}`} className="inline-flex items-center gap-1 rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] px-2.5 py-1 font-dm text-xs text-[var(--a-blue)] hover:bg-[var(--a-surface-2)]">
     <Download size={12} /> CSV
   </a>
 );
@@ -75,10 +75,10 @@ export default function LinksClient({ report, days, ranges, site }: { report: Li
 
   return (
     <div className="space-y-4">
-      <nav className="inline-flex rounded-xl border border-[#D2DCE8] bg-white p-1" aria-label="Date range">
+      <nav className="inline-flex rounded-[var(--a-radius-control)] border border-[var(--a-border)] bg-[var(--a-surface-2)] p-0.5" aria-label="Date range">
         {ranges.map((d) => (
           <Link key={d} href={`/admin_pro/growth/links?days=${d}`} aria-current={d === days ? "page" : undefined}
-            className={`px-3 py-1.5 rounded-lg font-dm text-sm font-medium ${d === days ? "bg-[#1B3A6B] text-white" : "text-[#3A4A5C] hover:bg-[#F4F7FB]"}`}>
+            className={`inline-flex h-8 items-center rounded-[8px] px-3 font-dm text-[13px] font-semibold transition-colors duration-150 ${d === days ? "bg-[var(--a-surface)] text-[var(--a-ink)] shadow-[0_1px_2px_rgba(13,27,42,.08)] ring-1 ring-[var(--a-border)]" : "text-[var(--a-ink-3)] hover:text-[var(--a-ink)]"}`}>
             {d === 365 ? "1 year" : `${d} days`}
           </Link>
         ))}
@@ -86,7 +86,7 @@ export default function LinksClient({ report, days, ranges, site }: { report: Li
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Stat label={`Unique clicks, last ${days} days`} value={t.clicks.toLocaleString("en-US")} note="One per visitor, link and day; bots excluded" />
-        <Stat label="Learn sign-ups" value={t.signups.toLocaleString("en-US")} note={`${pct(t.signups, t.clicks)} of clicks`} />
+        <Stat label="AI Academy sign-ups" value={t.signups.toLocaleString("en-US")} note={`${pct(t.signups, t.clicks)} of clicks`} />
         <Stat label="Conversions" value={t.conversions.toLocaleString("en-US")} note="Paid purchases, subscriptions, registrations, bookings" />
         <Stat label="Attributed revenue" value={money(t.revenueCents)} tone={t.revenueCents ? "good" : undefined} note="Paid records only" />
       </div>
@@ -99,17 +99,17 @@ export default function LinksClient({ report, days, ranges, site }: { report: Li
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Card title="Conversions by type">
-          {report.byKind.length === 0 ? <p className="font-dm text-sm text-[#7A8FA6]">No attributed conversions yet.</p> : (
-            <ul className="divide-y divide-[#E6ECF3] font-dm text-sm">
+          {report.byKind.length === 0 ? <p className="font-dm text-sm text-[var(--a-ink-3)]">No attributed conversions yet.</p> : (
+            <ul className="divide-y divide-[var(--a-border)] font-dm text-sm">
               {report.byKind.map((k) => (
                 <li key={k.kind} className="flex items-center justify-between gap-2 py-1.5">
                   <span>{k.label}</span>
-                  <span className="tabular-nums text-[#3A4A5C]">{k.converted}/{k.count} {k.revenueCents ? `· ${money(k.revenueCents)}` : ""}</span>
+                  <span className="tabular-nums text-[var(--a-ink-2)]">{k.converted}/{k.count} {k.revenueCents ? `· ${money(k.revenueCents)}` : ""}</span>
                 </li>
               ))}
             </ul>
           )}
-          <p className="mt-2 font-dm text-[11px] text-[#7A8FA6]">Started / converted. A started checkout counts once it is paid.</p>
+          <p className="mt-2 font-dm text-[11px] text-[var(--a-ink-3)]">Started / converted. A started checkout counts once it is paid.</p>
         </Card>
 
         <Card title={<span id="new" className="inline-flex items-center gap-1.5"><Link2 size={16} /> New tracked link</span>} subtitle={`Targets must be https on ${new URL(site).host} or a host in GROWTH_LINK_ALLOWED_HOSTS.`}>
@@ -131,11 +131,11 @@ export default function LinksClient({ report, days, ranges, site }: { report: Li
               <div><label className={label} htmlFor="l-cont">Content (optional)</label><input id="l-cont" className={input} value={form.utmContent} onChange={(e) => setForm({ ...form, utmContent: e.target.value })} /></div>
             </div>
             <div><label className={label} htmlFor="l-label">Label (optional)</label><input id="l-label" className={input} value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} /></div>
-            {err && <p role="alert" className="font-dm text-sm text-[#B42318]">{err}</p>}
+            {err && <p role="alert" className="font-dm text-sm text-[var(--a-danger)]">{err}</p>}
             <button className={btn.primary} disabled={busy}>{busy ? "Creating…" : "Create link"}</button>
             {created && (
-              <div className="flex items-center gap-2 rounded-lg bg-[#E7F6F0] border border-[#B6E2D0] px-3 py-2">
-                <code className="font-mono text-sm text-[#0F6E56] break-all" data-testid="new-link">{created}</code>
+              <div className="flex items-center gap-2 rounded-[var(--a-radius-control)] bg-[#E7F6F0] border border-[#B6E2D0] px-3 py-2">
+                <code className="font-mono text-sm text-[var(--a-success)] break-all" data-testid="new-link">{created}</code>
                 <button type="button" className="ml-auto p-1" aria-label="Copy link" onClick={async () => { await navigator.clipboard.writeText(created).catch(() => {}); setCopied(true); setTimeout(() => setCopied(false), 1500); }}>
                   {copied ? <Check size={15} /> : <Copy size={15} />}
                 </button>

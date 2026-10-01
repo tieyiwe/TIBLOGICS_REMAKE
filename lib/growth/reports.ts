@@ -10,9 +10,9 @@ import { ensureGrowthTables } from "./db";
 const DAY = 86_400_000;
 
 export const KIND_LABEL: Record<string, string> = {
-  learn_signup: "Learn sign-up",
+  learn_signup: "AI Academy sign-up",
   track_checkout: "Track purchase",
-  learn_subscription_checkout: "Learn subscription",
+  learn_subscription_checkout: "AI Academy subscription",
   toolkit_checkout: "Toolkit subscription",
   blueprint: "Blueprint",
   order: "Store order",

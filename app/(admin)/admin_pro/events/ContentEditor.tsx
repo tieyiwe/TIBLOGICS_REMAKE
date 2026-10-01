@@ -38,20 +38,20 @@ function ScalarField({ label, value, onChange }: { label: string; value: string 
   const long = !isNumber && (str.length > 48 || str.includes("\n"));
   return (
     <label className="block">
-      <span className="block font-dm text-xs font-semibold text-[#3A4A5C] mb-1">{label}</span>
+      <span className="block font-dm text-xs font-semibold text-[var(--a-ink-2)] mb-1">{label}</span>
       {long ? (
         <textarea
           value={str}
           onChange={(e) => onChange(e.target.value)}
           rows={Math.min(6, Math.max(2, Math.ceil(str.length / 60)))}
-          className="w-full border border-[#D2DCE8] rounded-lg px-3 py-2 font-dm text-sm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3] resize-y"
+          className="w-full border border-[var(--a-border)] rounded-lg px-3 py-2 font-dm text-sm text-[var(--a-ink)] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[var(--a-blue)] resize-y"
         />
       ) : (
         <input
           type={isNumber ? "number" : "text"}
           value={str}
           onChange={(e) => onChange(isNumber ? Number(e.target.value) : e.target.value)}
-          className="w-full border border-[#D2DCE8] rounded-lg px-3 py-2 font-dm text-sm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[#2251A3]"
+          className="w-full border border-[var(--a-border)] rounded-lg px-3 py-2 font-dm text-sm text-[var(--a-ink)] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/30 focus:border-[var(--a-blue)]"
         />
       )}
     </label>
@@ -68,8 +68,8 @@ function Node({ label, value, onChange, depth }: { label: string; value: Json; o
   if (typeof value === "boolean") {
     return (
       <label className="flex items-center gap-2 cursor-pointer">
-        <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} className="w-4 h-4 rounded border-[#D2DCE8]" />
-        <span className="font-dm text-sm text-[#3A4A5C]">{label}</span>
+        <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} className="w-4 h-4 rounded border-[var(--a-border)]" />
+        <span className="font-dm text-sm text-[var(--a-ink-2)]">{label}</span>
       </label>
     );
   }
@@ -77,12 +77,12 @@ function Node({ label, value, onChange, depth }: { label: string; value: Json; o
   // Arrays
   if (Array.isArray(value)) {
     return (
-      <div className="border border-[#E2E8F0] rounded-xl overflow-hidden">
+      <div className="border border-[#E2E8F0] rounded-[var(--a-radius-control)] overflow-hidden">
         <button type="button" onClick={() => setOpen((o) => !o)}
-          className="w-full flex items-center justify-between px-3 py-2 bg-[#F4F7FB] hover:bg-[#EBF0FA] transition-colors">
+          className="w-full flex items-center justify-between px-3 py-2 bg-[var(--a-surface-2)] hover:bg-[var(--a-info-bg)] transition-colors">
           <span className="font-dm text-sm font-semibold text-[#1B3A6B] flex items-center gap-1.5">
             {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}{label}
-            <span className="text-[#7A8FA6] font-normal">({value.length})</span>
+            <span className="text-[var(--a-ink-3)] font-normal">({value.length})</span>
           </span>
         </button>
         {open && (
@@ -90,9 +90,9 @@ function Node({ label, value, onChange, depth }: { label: string; value: Json; o
             {value.map((item, i) => (
               <div key={i} className="relative border border-[#E2E8F0] rounded-lg p-3 pt-3">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-dm text-[11px] font-semibold uppercase tracking-wider text-[#7A8FA6]">{humanize(label.replace(/s$/, ""))} {i + 1}</span>
+                  <span className="font-dm text-[11px] font-semibold uppercase tracking-wider text-[var(--a-ink-3)]">{humanize(label.replace(/s$/, ""))} {i + 1}</span>
                   <button type="button" aria-label="Remove" onClick={() => onChange(value.filter((_, j) => j !== i))}
-                    className="p-1 rounded text-[#7A8FA6] hover:text-red-600 hover:bg-red-50 transition-colors">
+                    className="p-1 rounded text-[var(--a-ink-3)] hover:text-red-600 hover:bg-red-50 transition-colors">
                     <Trash2 size={13} />
                   </button>
                 </div>
@@ -102,7 +102,7 @@ function Node({ label, value, onChange, depth }: { label: string; value: Json; o
             ))}
             <button type="button"
               onClick={() => onChange([...value, value.length ? cloneTemplate(value[0]) : ""])}
-              className="inline-flex items-center gap-1.5 self-start text-xs font-dm font-semibold px-3 py-1.5 rounded-lg border border-dashed border-[#2251A3]/40 text-[#2251A3] hover:bg-[#EBF0FA] transition-colors">
+              className="inline-flex items-center gap-1.5 self-start text-xs font-dm font-semibold px-3 py-1.5 rounded-lg border border-dashed border-[#2251A3]/40 text-[var(--a-blue)] hover:bg-[var(--a-info-bg)] transition-colors">
               <Plus size={12} /> Add {humanize(label.replace(/s$/, ""))}
             </button>
           </div>
@@ -129,9 +129,9 @@ function Node({ label, value, onChange, depth }: { label: string; value: Json; o
   if (allScalar && depth > 0) return body;
 
   return (
-    <div className="border border-[#E2E8F0] rounded-xl overflow-hidden">
+    <div className="border border-[#E2E8F0] rounded-[var(--a-radius-control)] overflow-hidden">
       <button type="button" onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-1.5 px-3 py-2 bg-[#F4F7FB] hover:bg-[#EBF0FA] transition-colors">
+        className="w-full flex items-center gap-1.5 px-3 py-2 bg-[var(--a-surface-2)] hover:bg-[var(--a-info-bg)] transition-colors">
         {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
         <span className="font-dm text-sm font-semibold text-[#1B3A6B]">{label}</span>
       </button>

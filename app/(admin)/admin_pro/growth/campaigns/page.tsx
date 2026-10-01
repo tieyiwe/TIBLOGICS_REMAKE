@@ -30,7 +30,7 @@ export default async function CampaignsPage() {
           <EmptyState
             icon={Megaphone}
             title="No campaigns yet"
-            body="Pick a goal like 20 Learn sign-ups or 5 discovery calls. The copilot plans it and drafts everything in a minute."
+            body="Pick a goal like 20 AI Academy sign-ups or 5 discovery calls. The copilot plans it and drafts everything in a minute."
             action={<Button variant="primary" icon={Rocket} href="/admin_pro/growth/campaigns/new">Plan your first campaign</Button>}
           />
         </Card>

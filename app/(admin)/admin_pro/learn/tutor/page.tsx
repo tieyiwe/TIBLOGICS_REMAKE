@@ -3,6 +3,10 @@ import prisma from "@/lib/prisma";
 import { requireAdminPage } from "../../_lib/admin-page-auth";
 import { tutorTablesReady } from "@/lib/learn/tutor/db";
 import { tutorDailyLimit } from "@/lib/learn/tutor/server";
+import { Bot, MessageSquare, Users } from "lucide-react";
+import { Card, EmptyState, Notice, PageHeader, StatCard, tableStyles } from "@/components/admin/ui";
+import { cn } from "@/lib/utils";
+import { LEARN_TABS } from "../tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -54,115 +58,117 @@ export default async function TutorUsagePage() {
   const total = perDay.reduce((s, r) => s + n(r.messages), 0);
   const peak = Math.max(1, ...perDay.map((r) => n(r.messages)));
 
+  const learners = perDay.reduce((s, r) => Math.max(s, n(r.learners)), 0);
+  const spark = [...perDay].reverse().map((r) => n(r.messages));
+
   return (
     <div className="space-y-6">
-      <header>
-        <Link href="/admin_pro/learn" className="text-sm text-[var(--blue2)] hover:underline">
-          ← TIBLOGICS Learn
-        </Link>
-        <h1 className="mt-2 text-2xl font-black text-[var(--ink)]">Tutor usage</h1>
-        <p className="mt-1 text-sm text-[var(--ink3)]">
-          Learner messages to Tutor over the last {DAYS} days. Limit per learner: {tutorDailyLimit()} a day (TUTOR_DAILY_LIMIT), also counted
-          toward the shared Learn AI budget (LEARN_AI_DAILY).
-        </p>
-      </header>
+      <PageHeader
+        title="Tutor usage"
+        subtitle={`Learner messages to Tutor over the last ${DAYS} days. Limit per learner: ${tutorDailyLimit()} a day (TUTOR_DAILY_LIMIT), also counted toward the shared Learn AI budget (LEARN_AI_DAILY).`}
+        breadcrumb={[{ label: "ARFA · AI Academy", href: "/admin_pro/learn" }, { label: "Tutor" }]}
+        tabs={LEARN_TABS}
+        activeTab="/admin_pro/learn/tutor"
+        className="mb-0"
+      />
 
-      {!ready && (
-        <p className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          The Tutor tables could not be created. Check the database connection.
-        </p>
-      )}
+      {!ready && <Notice tone="warn" title="Tutor tables unavailable">The Tutor tables could not be created. Check the database connection.</Notice>}
 
-      <section className="rounded-xl border border-[var(--border)] bg-white p-5">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 className="text-sm font-bold text-[var(--ink)]">Messages per day</h2>
-          <p className="text-xs text-[var(--ink3)]">{total.toLocaleString("en")} messages in total</p>
-        </div>
+      <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
+        <StatCard label={`Messages, ${DAYS} days`} value={total.toLocaleString("en")} icon={MessageSquare} tone="navy" spark={spark} />
+        <StatCard label="Peak learners in a day" value={learners} icon={Users} />
+        <StatCard label="Lessons asked about" value={topLessons.length >= 15 ? "15+" : topLessons.length} icon={Bot} />
+      </div>
+
+      <Card title="Messages per day" subtitle={`${total.toLocaleString("en")} messages in total`} padded={false}>
         {perDay.length === 0 ? (
-          <p className="mt-3 text-sm text-[var(--ink3)]">No Tutor messages yet.</p>
+          <EmptyState icon={MessageSquare} title="No Tutor messages yet" body="When ARFA learners ask Tutor a question, daily volume shows here." compact />
         ) : (
-          <table className="mt-3 w-full text-sm">
-            <thead>
-              <tr className="border-b border-[var(--border)] text-left text-xs uppercase tracking-wide text-[var(--ink3)]">
-                <th className="pb-2">Day</th>
-                <th className="pb-2 text-right">Messages</th>
-                <th className="pb-2 text-right">Learners</th>
-                <th className="w-1/2 pb-2 pl-4" aria-hidden="true" />
-              </tr>
-            </thead>
-            <tbody>
-              {perDay.map((r) => (
-                <tr key={new Date(r.day).toISOString()} className="border-b border-[var(--border)] last:border-0">
-                  <td className="py-2">{new Date(r.day).toLocaleDateString("en", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" })}</td>
-                  <td className="py-2 text-right font-semibold tabular-nums">{n(r.messages)}</td>
-                  <td className="py-2 text-right tabular-nums">{n(r.learners)}</td>
-                  <td className="py-2 pl-4" aria-hidden="true">
-                    <div className="h-2 rounded-full bg-[var(--blue2)]" style={{ width: `${(n(r.messages) / peak) * 100}%` }} />
-                  </td>
+          <div className="relative overflow-x-auto">
+            <table className={tableStyles.table}>
+              <thead className={tableStyles.thead}>
+                <tr>
+                  <th className={tableStyles.th}>Day</th>
+                  <th className={cn(tableStyles.th, "text-right")}>Messages</th>
+                  <th className={cn(tableStyles.th, "text-right")}>Learners</th>
+                  <th className={cn(tableStyles.th, "w-1/2")} aria-hidden="true" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {perDay.map((r) => (
+                  <tr key={new Date(r.day).toISOString()} className={tableStyles.tr}>
+                    <td className={cn(tableStyles.td, "text-[var(--a-ink)]")}>
+                      {new Date(r.day).toLocaleDateString("en", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" })}
+                    </td>
+                    <td className={cn(tableStyles.td, "text-right font-semibold tabular-nums text-[var(--a-ink)]")}>{n(r.messages)}</td>
+                    <td className={cn(tableStyles.td, "text-right tabular-nums")}>{n(r.learners)}</td>
+                    <td className={tableStyles.td} aria-hidden="true">
+                      <div className="h-2 rounded-full bg-[var(--a-blue)]/80" style={{ width: `${(n(r.messages) / peak) * 100}%` }} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </section>
+      </Card>
 
-      <section className="rounded-xl border border-[var(--border)] bg-white p-5">
-        <h2 className="text-sm font-bold text-[var(--ink)]">Top lessons asked about</h2>
+      <Card title="Top lessons asked about" padded={false}>
         {topLessons.length === 0 ? (
-          <p className="mt-3 text-sm text-[var(--ink3)]">No lesson questions yet.</p>
+          <EmptyState icon={Bot} title="No lesson questions yet" compact />
         ) : (
-          <table className="mt-3 w-full text-sm">
-            <thead>
-              <tr className="border-b border-[var(--border)] text-left text-xs uppercase tracking-wide text-[var(--ink3)]">
-                <th className="pb-2">Lesson</th>
-                <th className="pb-2">Track</th>
-                <th className="pb-2 text-right">Messages</th>
-                <th className="pb-2 text-right">Learners</th>
-              </tr>
-            </thead>
-            <tbody>
-              {topLessons.map((r) => (
-                <tr key={r.lessonId} className="border-b border-[var(--border)] last:border-0">
-                  <td className="py-2">
-                    <Link href={`/admin_pro/learn/lessons/${r.lessonId}`} className="text-[var(--blue2)] hover:underline">
-                      {r.title ?? r.lessonId}
-                    </Link>
-                  </td>
-                  <td className="py-2 text-[var(--ink3)]">{r.track ?? ""}</td>
-                  <td className="py-2 text-right font-semibold tabular-nums">{n(r.messages)}</td>
-                  <td className="py-2 text-right tabular-nums">{n(r.learners)}</td>
+          <div className="relative overflow-x-auto">
+            <table className={tableStyles.table}>
+              <thead className={tableStyles.thead}>
+                <tr>
+                  <th className={tableStyles.th}>Lesson</th>
+                  <th className={tableStyles.th}>Track</th>
+                  <th className={cn(tableStyles.th, "text-right")}>Messages</th>
+                  <th className={cn(tableStyles.th, "text-right")}>Learners</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {topLessons.map((r) => (
+                  <tr key={r.lessonId} className={tableStyles.tr}>
+                    <td className={tableStyles.td}>
+                      <Link href={`/admin_pro/learn/lessons/${r.lessonId}`} className="font-medium text-[var(--a-blue)] hover:underline">
+                        {r.title ?? r.lessonId}
+                      </Link>
+                    </td>
+                    <td className={cn(tableStyles.td, "text-[var(--a-ink-3)]")}>{r.track ?? ""}</td>
+                    <td className={cn(tableStyles.td, "text-right font-semibold tabular-nums text-[var(--a-ink)]")}>{n(r.messages)}</td>
+                    <td className={cn(tableStyles.td, "text-right tabular-nums")}>{n(r.learners)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </section>
+      </Card>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <section className="rounded-xl border border-[var(--border)] bg-white p-5">
-          <h2 className="text-sm font-bold text-[var(--ink)]">By page</h2>
-          <ul className="mt-3 space-y-1 text-sm">
+        <Card title="By page">
+          <ul className="space-y-2 font-dm text-[13.5px]">
             {totals.map((r) => (
-              <li key={r.kind} className="flex justify-between">
+              <li key={r.kind} className="flex justify-between text-[var(--a-ink-2)]">
                 <span className="capitalize">{r.kind}</span>
-                <span className="font-semibold tabular-nums">{n(r.messages)}</span>
+                <span className="font-semibold tabular-nums text-[var(--a-ink)]">{n(r.messages)}</span>
               </li>
             ))}
-            {totals.length === 0 && <li className="text-[var(--ink3)]">None yet.</li>}
+            {totals.length === 0 && <li className="text-[var(--a-ink-3)]">None yet.</li>}
           </ul>
-        </section>
-        <section className="rounded-xl border border-[var(--border)] bg-white p-5">
-          <h2 className="text-sm font-bold text-[var(--ink)]">Quick actions</h2>
-          <ul className="mt-3 space-y-1 text-sm">
+        </Card>
+        <Card title="Quick actions">
+          <ul className="space-y-2 font-dm text-[13.5px]">
             {actions.map((r) => (
-              <li key={r.action ?? "typed"} className="flex justify-between">
+              <li key={r.action ?? "typed"} className="flex justify-between text-[var(--a-ink-2)]">
                 <span>{r.action ? ACTION_LABEL[r.action] ?? r.action : "Typed question"}</span>
-                <span className="font-semibold tabular-nums">{n(r.messages)}</span>
+                <span className="font-semibold tabular-nums text-[var(--a-ink)]">{n(r.messages)}</span>
               </li>
             ))}
-            {actions.length === 0 && <li className="text-[var(--ink3)]">None yet.</li>}
+            {actions.length === 0 && <li className="text-[var(--a-ink-3)]">None yet.</li>}
           </ul>
-        </section>
+        </Card>
       </div>
     </div>
   );

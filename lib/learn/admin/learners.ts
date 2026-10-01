@@ -17,6 +17,8 @@ import { ensureTeamTables } from "@/lib/learn/team/db";
 import { ensureMethodTables } from "@/lib/learn/method/db";
 import { ensureTutorTables } from "@/lib/learn/tutor/db";
 import { ensureLoginEventTable } from "@/lib/learn/logins";
+import { ensureAccountTables } from "@/lib/learn/account-status/db";
+import { accountStates, type AccountStatus } from "@/lib/learn/account-status";
 
 export const PAGE_SIZE = 50;
 const DAY = 86_400_000;
@@ -47,6 +49,8 @@ export async function ensureLearnerTables(): Promise<Ready> {
 // ── Filters ─────────────────────────────────────────────────────────────────
 
 export const PLAN_FILTERS = ["monthly", "annual", "comped", "team", "tracks", "paid", "none"] as const;
+export const STATUS_FILTERS = ["active", "suspended", "blocked", "deleted"] as const;
+export type StatusFilter = (typeof STATUS_FILTERS)[number];
 export const SORTS = ["created", "name", "email", "lastLogin", "logins", "xp", "progress", "certs"] as const;
 export type PlanFilter = (typeof PLAN_FILTERS)[number];
 export type SortKey = (typeof SORTS)[number];
@@ -60,6 +64,16 @@ export interface LearnerFilters {
   never: boolean;
   cert: boolean;
   track: string | null;
+  /** Admin tag (LearnerAccount.tags), e.g. "vip". */
+  tag: string | null;
+  /** Account status; deleted accounts are hidden unless asked for. */
+  status: StatusFilter | null;
+  lang: "en" | "fr" | "sw" | null;
+  team: string | null;
+  /** Inactive: no sign-in, lesson or XP in the last N days. */
+  inactive: number | null;
+  progressMin: number | null;
+  progressMax: number | null;
   sort: SortKey;
   dir: "asc" | "desc";
   page: number;
@@ -80,10 +94,33 @@ export function parseFilters(sp: Params | URLSearchParams): LearnerFilters {
     never: get("never") === "1",
     cert: get("cert") === "1",
     track: /^[\w-]{1,64}$/.test(get("track")) ? get("track") : null,
+    tag: normaliseTag(get("tag")) || null,
+    status: (STATUS_FILTERS as readonly string[]).includes(get("status")) ? (get("status") as StatusFilter) : null,
+    lang: get("lang") === "en" || get("lang") === "fr" || get("lang") === "sw" ? (get("lang") as "en" | "fr" | "sw") : null,
+    team: /^[\w-]{1,64}$/.test(get("team")) ? get("team") : null,
+    inactive: intIn(get("inactive"), 1, 3650),
+    progressMin: intIn(get("pmin"), 0, 100),
+    progressMax: intIn(get("pmax"), 0, 100),
     sort: SORTS.includes(sort) ? sort : "created",
     dir: get("dir") === "asc" ? "asc" : "desc",
     page: Math.max(1, Math.min(10_000, Number.parseInt(get("page"), 10) || 1)),
   };
+}
+
+function intIn(v: string, min: number, max: number): number | null {
+  if (!/^\d{1,5}$/.test(v)) return null;
+  const n = Number(v);
+  return n >= min && n <= max ? n : null;
+}
+
+/** Tags are short lower-case labels: letters, digits, spaces and dashes. */
+export function normaliseTag(raw: string): string {
+  return raw.trim().toLowerCase().replace(/[^\p{L}\p{N} _-]/gu, "").replace(/\s+/g, " ").slice(0, 32);
+}
+
+/** Every filter empty (the "all learners" view). */
+export function noFilters(): LearnerFilters {
+  return parseFilters(new URLSearchParams());
 }
 
 /** Query string for a filter set (page and sort overridable), for links. */
@@ -96,6 +133,13 @@ export function filterQuery(f: LearnerFilters, over: Partial<LearnerFilters> = {
   if (m.never) p.set("never", "1");
   if (m.cert) p.set("cert", "1");
   if (m.track) p.set("track", m.track);
+  if (m.tag) p.set("tag", m.tag);
+  if (m.status) p.set("status", m.status);
+  if (m.lang) p.set("lang", m.lang);
+  if (m.team) p.set("team", m.team);
+  if (m.inactive) p.set("inactive", String(m.inactive));
+  if (m.progressMin != null) p.set("pmin", String(m.progressMin));
+  if (m.progressMax != null) p.set("pmax", String(m.progressMax));
   if (m.sort !== "created") p.set("sort", m.sort);
   if (m.dir !== "desc") p.set("dir", m.dir);
   if (m.page > 1) p.set("page", String(m.page));
@@ -165,6 +209,48 @@ async function buildWhere(f: LearnerFilters, ready: Ready): Promise<Prisma.Stude
     and.push({ id: { in: rows.map((r) => r.id) } });
   }
   if (f.cert) and.push({ certificates: { some: { revoked: false } } });
+  if (f.lang) and.push({ locale: f.lang });
+  if (f.inactive) {
+    const since = new Date(Date.now() - f.inactive * DAY);
+    and.push({
+      OR: [{ lastLoginAt: null }, { lastLoginAt: { lt: since } }],
+      progress: { none: { completedAt: { gte: since } } },
+      points: { none: { createdAt: { gte: since } } },
+    });
+  }
+  if (f.team) {
+    const seats = ready.teams
+      ? await prisma.teamMember.findMany({ where: { teamId: f.team, status: "active", studentId: { not: null } }, select: { studentId: true } }).catch(() => [])
+      : [];
+    and.push({ id: { in: seats.map((s) => s.studentId!).filter(Boolean) } });
+  }
+  // Account status and tags live in LearnerAccount (no relation): ids first.
+  const acct = await ensureAccountTables().then(() => true).catch(() => false);
+  if (f.tag) {
+    const rows = acct ? await prisma.learnerAccount.findMany({ where: { tags: { has: f.tag } }, select: { studentId: true } }) : [];
+    and.push({ id: { in: rows.map((r) => r.studentId) } });
+  }
+  if (f.status && f.status !== "active") {
+    const rows = acct
+      ? await prisma.learnerAccount.findMany({
+          where: f.status === "suspended"
+            ? { status: "suspended", OR: [{ suspendedUntil: null }, { suspendedUntil: { gt: new Date() } }] }
+            : { status: f.status },
+          select: { studentId: true },
+        })
+      : [];
+    and.push({ id: { in: rows.map((r) => r.studentId) } });
+  } else if (acct) {
+    // "active" and the default view leave out locked or deleted accounts
+    // ("active" also leaves out suspended and blocked ones).
+    const hidden = await prisma.learnerAccount.findMany({
+      where: f.status === "active"
+        ? { OR: [{ status: { in: ["blocked", "deleted"] } }, { status: "suspended", OR: [{ suspendedUntil: null }, { suspendedUntil: { gt: new Date() } }] }] }
+        : { status: "deleted" },
+      select: { studentId: true },
+    });
+    if (hidden.length) and.push({ id: { notIn: hidden.map((r) => r.studentId) } });
+  }
   if (f.track) {
     const t = f.track;
     const diag = ready.mastery
@@ -372,6 +458,9 @@ export interface LearnerRow {
   logins30: number;
   xp: number;
   certificates: number;
+  accountStatus: AccountStatus;
+  suspendedUntil: Date | null;
+  tags: string[];
 }
 
 export interface TrackLite { id: string; slug: string; title: string }
@@ -386,7 +475,7 @@ export async function trackList(): Promise<TrackLite[]> {
 async function rowsFor(ids: string[], ready: Ready, tracks: TrackLite[]): Promise<LearnerRow[]> {
   if (ids.length === 0) return [];
   const title = new Map(tracks.map((t) => [t.id, t.title]));
-  const [students, subs, purchases, teams, progress, xp, logins, certs, diags, estimates] = await Promise.all([
+  const [students, subs, purchases, teams, progress, xp, logins, certs, diags, estimates, accounts] = await Promise.all([
     prisma.student.findMany({
       where: { id: { in: ids } },
       select: { id: true, name: true, email: true, createdAt: true, locale: true, emailVerified: true, lastLoginAt: true },
@@ -413,6 +502,7 @@ async function rowsFor(ids: string[], ready: Ready, tracks: TrackLite[]): Promis
           .groupBy({ by: ["studentId", "trackId", "level"], where: { studentId: { in: ids } }, _count: { _all: true } })
           .catch(() => [])
       : [],
+    accountStates(ids),
   ]);
 
   const subBy = new Map(subs.map((s) => [s.studentId, s]));
@@ -459,6 +549,9 @@ async function rowsFor(ids: string[], ready: Ready, tracks: TrackLite[]): Promis
       logins30: logins.get(id) ?? 0,
       xp: xp.get(id) ?? 0,
       certificates: certs.get(id) ?? 0,
+      accountStatus: accounts.get(id)?.status ?? "active",
+      suspendedUntil: accounts.get(id)?.suspendedUntil ?? null,
+      tags: accounts.get(id)?.tags ?? [],
     }];
   });
 }
@@ -484,7 +577,8 @@ async function sortedIds(f: LearnerFilters, ready: Ready, all: boolean): Promise
     lastLogin: [{ lastLoginAt: { sort: dir, nulls: "last" } }, { createdAt: "desc" }],
   };
   const skip = (f.page - 1) * PAGE_SIZE;
-  if (dbOrder[f.sort]) {
+  const ranged = f.progressMin != null || f.progressMax != null;
+  if (dbOrder[f.sort] && !ranged) {
     const [total, rows] = await Promise.all([
       prisma.student.count({ where }),
       prisma.student.findMany({
@@ -498,7 +592,21 @@ async function sortedIds(f: LearnerFilters, ready: Ready, all: boolean): Promise
   }
   // Computed sorts: rank every matching learner by one aggregate (one grouped
   // query over the whole table), then page in memory.
-  const matching = await prisma.student.findMany({ where, orderBy: { createdAt: "desc" }, select: { id: true } });
+  let matching = await prisma.student.findMany({ where, orderBy: dbOrder[f.sort] ?? { createdAt: "desc" }, select: { id: true } });
+  if (ranged) {
+    // Progress range: one grouped pass over every learner, then filter.
+    const prog = await progressByStudent(null, ready);
+    const lo = f.progressMin ?? 0;
+    const hi = f.progressMax ?? 100;
+    matching = matching.filter((r) => {
+      const v = prog.get(r.id)?.percent ?? 0;
+      return v >= lo && v <= hi;
+    });
+    if (dbOrder[f.sort]) {
+      const ids = matching.map((r) => r.id);
+      return { ids: all ? ids : ids.slice(skip, skip + PAGE_SIZE), total: ids.length };
+    }
+  }
   const metric: Map<string, number> =
     f.sort === "xp" ? await xpBy(null)
     : f.sort === "logins" ? await logins30By(null, ready)
@@ -510,6 +618,19 @@ async function sortedIds(f: LearnerFilters, ready: Ready, all: boolean): Promise
     .sort((a, b) => (a.v - b.v) * sign || a.i - b.i)
     .map((r) => r.id);
   return { ids: all ? ids : ids.slice(skip, skip + PAGE_SIZE), total: matching.length };
+}
+
+/** Every learner id matching the filters, sorted (no paging): audiences, bulk actions. */
+export async function matchingStudentIds(f: LearnerFilters): Promise<string[]> {
+  const ready = await ensureLearnerTables();
+  return (await sortedIds(f, ready, true)).ids;
+}
+
+/** Overall progress % for these learners (merge fields). */
+export async function progressFor(ids: string[]): Promise<Map<string, { percent: number; tracks: string[] }>> {
+  const ready = await ensureLearnerTables();
+  const m = await progressByStudent(ids, ready);
+  return new Map([...m.entries()].map(([k, v]) => [k, { percent: v.percent, tracks: v.tracks }]));
 }
 
 export async function listLearners(f: LearnerFilters): Promise<LearnerPage> {
@@ -537,7 +658,7 @@ export async function learnersCsv(f: LearnerFilters): Promise<{ csv: string; cou
   const { ids } = await sortedIds(f, ready, true);
   const head = [
     "Name", "Email", "Signed up (UTC)", "Language", "Email verified", "Plan", "Status", "Tracks started",
-    "Progress %", "Placement check", "Last login (UTC)", "Logins (30 days)", "Total XP", "Certificates", "Admin link",
+    "Progress %", "Placement check", "Last login (UTC)", "Logins (30 days)", "Total XP", "Certificates", "Account status", "Tags", "Admin link",
   ];
   const lines = [head.map(cell).join(",")];
   const site = (process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com").replace(/\/$/, "");
@@ -548,7 +669,7 @@ export async function learnersCsv(f: LearnerFilters): Promise<{ csv: string; cou
         r.name, r.email, iso(r.createdAt), r.locale, r.emailVerified ? "yes" : "no", r.plan.labels.join("; "), r.plan.status,
         r.tracksStarted.join("; "), r.progress,
         r.placement.map((p) => `${p.track}: ${p.done ? `yes${p.summary ? ` (${p.summary})` : ""}` : "no"}`).join("; "),
-        iso(r.lastLoginAt), r.logins30, r.xp, r.certificates, `${site}/admin_pro/learn/learners/${r.id}`,
+        iso(r.lastLoginAt), r.logins30, r.xp, r.certificates, r.accountStatus, r.tags.join("; "), `${site}/admin_pro/learn/learners/${r.id}`,
       ].map(cell).join(","));
     }
   }

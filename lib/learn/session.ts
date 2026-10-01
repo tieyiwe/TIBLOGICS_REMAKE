@@ -3,12 +3,15 @@
 import { cache } from "react";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { authOptions, OWNER_EMAIL } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { ensureLearnEditColumns } from "@/lib/learn/admin/columns";
 import { getT } from "@/lib/i18n/server";
 import { purchasedTrackIds } from "@/lib/learn/purchases";
 import { getMembership } from "@/lib/learn/team/access";
+import { getAccountState, isLockedOut } from "@/lib/learn/account-status";
 
 export interface StudentSession {
   id: string;
@@ -16,6 +19,21 @@ export interface StudentSession {
   name: string;
   accessibilityMode: boolean;
   locale: string;
+  /** Signed in with a temporary password from an admin: must choose a new one. */
+  mustChangePassword?: boolean;
+}
+
+/** Why getStudent() refused the current session (per request). */
+const refusal = cache((): { reason: "locked" | "revoked" | null } => ({ reason: null }));
+
+/** A page render or server action, as opposed to an API call. Never throws. */
+async function isPageRequest(): Promise<boolean> {
+  try {
+    const h = await headers();
+    return h.get("rsc") === "1" || !!h.get("next-action") || (h.get("accept") ?? "").includes("text/html");
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -35,9 +53,11 @@ export async function getStudent(): Promise<StudentSession | null> {
   // API before they query. Failure is logged, not fatal.
   await ensureLearnEditColumns().catch((err) => console.error("[learn] editedAt columns", err));
   let studentId: string | undefined;
+  let sv = 0;
   try {
     const session = await getServerSession(authOptions);
     studentId = session?.user?.studentId;
+    sv = session?.user?.sv ?? 0;
   } catch (err) {
     console.error("[learn/session] session resolution failed", err);
     return null;
@@ -50,7 +70,22 @@ export async function getStudent(): Promise<StudentSession | null> {
       select: { id: true, email: true, name: true, accessibilityMode: true, locale: true },
     })
     .catch(() => null);
-  return student;
+  if (!student) return null;
+
+  // Account status (admin suspend / block / delete) and "sign out
+  // everywhere": one cached query per request. A locked account, or a
+  // session older than the account's session version, counts as signed out.
+  // Pages go to /learn/account-status, which explains and clears the session
+  // cookie (sending them to /learn/login would loop: the proxy sends a
+  // cookie holder from the login page back to /learn). APIs get null (401).
+  const state = await getAccountState(student.id);
+  const locked = isLockedOut(state);
+  if (locked || sv < state.sessionVersion) {
+    refusal().reason = locked ? "locked" : "revoked";
+    if (await isPageRequest()) redirect(locked ? "/learn/account-status" : "/learn/account-status?signedout=1");
+    return null;
+  }
+  return state.mustChangePassword ? { ...student, mustChangePassword: true } : student;
 }
 
 export type Entitlement = {
@@ -118,8 +153,10 @@ export async function getIndividualEntitlement(studentId: string | null | undefi
     sub.status === "past_due" && !!sub.graceUntil && sub.graceUntil.getTime() > now;
   // A free month earned through the referral program (lib/learn/referrals) is
   // comped access with an end date (plan "referral"); other comps never end.
+  // An admin's "extend access by N days" is the same kind of timed comp
+  // (plan "comp_timed", lib/learn/account-status/actions.ts).
   const referralCompOver =
-    sub.status === "comped" && sub.plan === "referral" && !!sub.currentPeriodEnd && sub.currentPeriodEnd.getTime() <= now;
+    sub.status === "comped" && (sub.plan === "referral" || sub.plan === "comp_timed") && !!sub.currentPeriodEnd && sub.currentPeriodEnd.getTime() <= now;
   const entitled =
     sub.status === "active" || sub.status === "trialing" || (sub.status === "comped" && !referralCompOver) || inGrace;
 
@@ -191,6 +228,9 @@ export async function requireStudent(): Promise<
   const student = await getStudent();
   if (!student) {
     const t = await getT();
+    if (refusal().reason === "locked") {
+      return { error: NextResponse.json({ error: t("authStatus.suspended"), code: "account_locked" }, { status: 403 }), student: null };
+    }
     return { error: NextResponse.json({ error: t("learn.api.signInRequired") }, { status: 401 }), student: null };
   }
   return { error: null, student };

@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import prisma from "@/lib/prisma";
 import { ensureTeamTables } from "./db";
 import { getMembership, teamEntitled, type TeamMembership, type TeamRow } from "./access";
+import { applyPlan, deletePlan, savePlan } from "./plan";
 import { TEAM_GRACE_DAYS, TEAM_INVITE_DAYS, TEAM_MAX_SEATS, TEAM_PRODUCT, isManagerRole, type TeamRole } from "./config";
 
 // Team plans: lifecycle, seats, invitations and assignments. Every function
@@ -144,13 +145,30 @@ export type InviteOutcome =
   | { email: string; ok: true; memberId: string; token: string }
   | { email: string; ok: false; reason: "member" | "invited" | "full" };
 
+/** What every invitation in one batch carries until it is accepted (see ./plan.ts). */
+export interface InviteOptions {
+  role?: "member" | "manager";
+  trackIds?: string[];
+  dueAt?: Date | null;
+  locale?: string | null;
+}
+
 /**
  * Invites each address, in order, while seats remain. An address that was
  * removed earlier is invited again on the same row. Returns the token for
  * each new invitation so the caller can email it (only its hash is stored).
+ * Names, role and tracks to assign are kept with the invitation and applied
+ * when it is accepted.
  */
-export async function inviteMembers(team: TeamRow, inviterId: string, emails: string[]): Promise<InviteOutcome[]> {
+export async function inviteMembers(
+  team: TeamRow,
+  inviterId: string,
+  list: Array<string | { email: string; name?: string | null }>,
+  opts: InviteOptions = {},
+): Promise<InviteOutcome[]> {
   await ensureTeamTables();
+  const rows = list.map((x) => (typeof x === "string" ? { email: x, name: null } : { email: x.email, name: x.name?.trim() || null }));
+  const emails = rows.map((r) => r.email);
   // One transaction holding the team's row lock: without it, parallel invite
   // requests each read the same "seats used" and together hand out more
   // seats than the team pays for. The seat count is re-read under the lock.
@@ -160,7 +178,7 @@ export async function inviteMembers(team: TeamRow, inviterId: string, emails: st
       const out: InviteOutcome[] = [];
       let used = await seatsUsedTx(tx, team.id);
       const existing = await tx.teamMember.findMany({ where: { teamId: team.id, email: { in: emails } } });
-      for (const email of emails) {
+      for (const { email, name } of rows) {
         const row = existing.find((r) => r.email === email);
         if (row?.status === "active") { out.push({ email, ok: false, reason: "member" }); continue; }
         const live = row?.status === "invited" && row.inviteExpiresAt && row.inviteExpiresAt > new Date();
@@ -181,6 +199,15 @@ export async function inviteMembers(team: TeamRow, inviterId: string, emails: st
         const m = row
           ? await tx.teamMember.update({ where: { id: row.id }, data })
           : await tx.teamMember.create({ data: { teamId: team.id, email, ...data } });
+        await savePlan(tx, {
+          memberId: m.id,
+          teamId: team.id,
+          name: name ? name.slice(0, 80) : null,
+          role: opts.role === "manager" ? "manager" : "member",
+          trackIds: opts.trackIds ?? [],
+          dueAt: opts.dueAt ?? null,
+          locale: opts.locale ?? null,
+        });
         used++;
         out.push({ email, ok: true, memberId: m.id, token });
       }
@@ -208,7 +235,7 @@ function seatsUsedTx(tx: Tx, teamId: string): Promise<number> {
 }
 
 /** New link and expiry for a pending invitation (the old link stops working). */
-export async function resendInvite(teamId: string, memberId: string): Promise<{ email: string; token: string } | "notFound" | "full"> {
+export async function resendInvite(teamId: string, memberId: string): Promise<{ email: string; token: string; memberId: string } | "notFound" | "full"> {
   await ensureTeamTables();
   // Same team row lock as inviteMembers, so a renewal cannot race an invite
   // for the last seat.
@@ -224,7 +251,7 @@ export async function resendInvite(teamId: string, memberId: string): Promise<{ 
       where: { id: m.id },
       data: { inviteTokenHash: hashToken(token), inviteExpiresAt: inviteExpiry(), invitedAt: new Date() },
     });
-    return { email: m.email, token };
+    return { email: m.email, token, memberId: m.id };
   });
 }
 
@@ -239,6 +266,7 @@ export async function removeMember(teamId: string, memberId: string): Promise<"o
     data: { status: "removed", removedAt: new Date(), inviteTokenHash: null, inviteExpiresAt: null, role: "member" },
   });
   if (m.studentId) await prisma.teamAssignment.deleteMany({ where: { teamId, studentId: m.studentId } });
+  await deletePlan(teamId, m.id).catch(() => undefined);
   return "ok";
 }
 
@@ -303,7 +331,10 @@ export async function acceptInvite(token: string, student: { id: string; email: 
     where: { id: inv.memberId, status: "invited", inviteTokenHash: hashToken(token) },
     data: { status: "active", studentId: student.id, joinedAt: new Date(), inviteTokenHash: null, inviteExpiresAt: null },
   });
-  return n.count === 1 ? "ok" : "invalid";
+  if (n.count !== 1) return "invalid";
+  // Role and tracks chosen at invitation time.
+  await applyPlan(inv.teamId, inv.memberId, student.id).catch((err) => console.error("[learn/team] apply plan", err));
+  return "ok";
 }
 
 /** A member leaves: the seat is freed. Purchases and their own subscription are untouched. */
@@ -323,6 +354,13 @@ async function memberStudentId(memberId: string): Promise<string | null> {
 }
 
 // ── Assignments ───────────────────────────────────────────────────────────
+
+/** Assigns several tracks at once (same due date). Returns the number of learners reached. */
+export async function assignTracks(teamId: string, assignerId: string, studentIds: string[], trackIds: string[], dueAt: Date | null): Promise<number> {
+  let reached = 0;
+  for (const trackId of trackIds) reached = Math.max(reached, await assignTrack(teamId, assignerId, studentIds, trackId, dueAt));
+  return reached;
+}
 
 /** Assigns a track to active members of this team (others are ignored). Re-assigning updates the due date. */
 export async function assignTrack(
@@ -362,6 +400,7 @@ export interface MyAssignment {
   slug: string;
   title: string;
   dueAt: Date | null;
+  assignedAt: Date;
   percent: number;
   overdue: boolean;
 }
@@ -389,7 +428,7 @@ export async function myAssignments(studentId: string): Promise<{ teamName: stri
         const t = tracks.find((x) => x.id === r.trackId);
         if (!t) return null;
         const percent = pct.get(studentId)?.get(r.trackId) ?? 0;
-        return { id: r.id, trackId: r.trackId, slug: t.slug, title: t.title, dueAt: r.dueAt, percent, overdue: !!r.dueAt && r.dueAt < now && percent < 100 };
+        return { id: r.id, trackId: r.trackId, slug: t.slug, title: t.title, dueAt: r.dueAt, assignedAt: r.createdAt, percent, overdue: !!r.dueAt && r.dueAt < now && percent < 100 };
       })
       .filter((x): x is MyAssignment => x !== null),
   };

@@ -148,11 +148,14 @@ export default async function VerifyCertificatePage({
               </div>
             </div>
             <p className="mt-8 text-xs font-semibold text-[var(--ink2)]">
-              ARFA: AI Readiness For All, a{" "}
+              Issued by ARFA, the{" "}
               <span className="font-black tracking-tight text-[var(--ink)]">
                 TIB<span className="text-[var(--orange)]">LOGICS</span>
               </span>{" "}
-              academy
+              AI Academy
+            </p>
+            <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-[var(--ink3)]">
+              ARFA: AI Readiness For All
             </p>
           </div>
         </article>

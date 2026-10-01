@@ -47,7 +47,7 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ id:
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
           [t("team.members.lastActive"), s.lastActiveAt ? fmtDate(s.lastActiveAt, locale) : t("team.members.never")],
-          [t("team.members.quiz"), s.quizAverage == null ? "–" : `${s.quizAverage}%`],
+          [t("team.members.quiz"), s.quizAverage == null ? "-" : `${s.quizAverage}%`],
           [t("team.members.review"), t(s.reviewStreak === 1 ? "team.days.one" : "team.days.other", { n: s.reviewStreak })],
           [t("team.detail.reviewDays"), String(s.reviewDays30)],
         ].map(([k, v]) => (

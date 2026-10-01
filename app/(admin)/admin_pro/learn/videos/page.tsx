@@ -1,5 +1,8 @@
 import Link from "next/link";
-import { ArrowLeft, Check, Minus } from "lucide-react";
+import { Check, Clapperboard, Minus } from "lucide-react";
+import { Badge, Card, EmptyState, PageHeader, tableStyles } from "@/components/admin/ui";
+import { cn } from "@/lib/utils";
+import { LEARN_TABS } from "../tabs";
 import prisma from "@/lib/prisma";
 import { requireAdminPage } from "../../_lib/admin-page-auth";
 import { videoTablesReady } from "@/lib/learn/video/db";
@@ -61,16 +64,20 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
   };
 
   return (
-    <div className="space-y-5 max-w-6xl">
-      <div>
-        <Link href="/admin_pro/learn" className="inline-flex items-center gap-1 font-dm text-sm text-[#2251A3]">
-          <ArrowLeft size={14} /> Learning Box
-        </Link>
-        <h1 className="font-syne font-bold text-2xl text-[#0D1B2A] mt-2">Lesson videos</h1>
-        <p className="font-dm text-sm text-[#3A4A5C] mt-1">
-          {withVideo} of {all.length} lessons have a video. Open a lesson to add one, draft its script, or add captions.
-        </p>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title="Lesson videos"
+        subtitle={`${withVideo} of ${all.length} lessons have a video. Open a lesson to add one, draft its script, or add captions.`}
+        breadcrumb={[{ label: "ARFA · AI Academy", href: "/admin_pro/learn" }, { label: "Videos" }]}
+        tabs={LEARN_TABS}
+        activeTab="/admin_pro/learn/videos"
+        className="mb-0"
+      />
+      {tracks.length === 0 ? (
+        <Card>
+          <EmptyState icon={Clapperboard} title="No tracks yet" body="Seed ARFA content from the Learn admin overview, then lessons show up here." />
+        </Card>
+      ) : null}
 
       {/* Per-track summary */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -83,47 +90,67 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
             <Link
               key={t.id}
               href={qs({ track: active ? undefined : t.id, missing: onlyMissing })}
-              className={`rounded-xl border bg-white p-4 transition-colors ${active ? "border-[#2251A3] ring-2 ring-[#2251A3]/20" : "border-[#D2DCE8] hover:border-[#7A8FA6]"}`}
+              aria-current={active ? "true" : undefined}
+              className={cn(
+                "rounded-[var(--a-radius-card)] border bg-[var(--a-surface)] p-4 shadow-[var(--a-shadow-card)] transition-colors duration-150",
+                active ? "border-[var(--a-blue)] ring-2 ring-[var(--a-blue)]/15" : "border-[var(--a-border)] hover:border-[var(--a-border-strong)]",
+              )}
             >
-              <p className="font-dm text-sm font-bold text-[#0D1B2A]">{t.title}</p>
-              <p className="font-dm text-xs text-[#7A8FA6] mt-0.5">
+              <div className="flex items-start justify-between gap-2">
+                <p className="font-dm text-[14px] font-semibold text-[var(--a-ink)]">{t.title}</p>
+                <span className="shrink-0 whitespace-nowrap font-dm text-[13px] font-bold tabular-nums text-[var(--a-ink)]">{pct}%</span>
+              </div>
+              <p className="mt-0.5 font-dm text-[12.5px] text-[var(--a-ink-3)]">
                 {n} of {ls.length} with video · {ls.length - n} missing
               </p>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#E8EFF8]" role="img" aria-label={`${pct}% of lessons have a video`}>
-                <div className="h-full bg-[#22A387]" style={{ width: `${pct}%` }} />
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--a-surface-2)]" role="img" aria-label={`${pct}% of lessons have a video`}>
+                <div className="h-full rounded-full bg-[var(--a-success)]" style={{ width: `${pct}%` }} />
               </div>
             </Link>
           );
         })}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 font-dm text-sm">
-        <Link href={qs({ track: sp.track, missing: false })} className={`rounded-full px-3 py-1 font-semibold ${!onlyMissing ? "bg-[#1B3A6B] text-white" : "text-[#2251A3] hover:bg-[#EBF0FA]"}`}>
-          All lessons
-        </Link>
-        <Link href={qs({ track: sp.track, missing: true })} className={`rounded-full px-3 py-1 font-semibold ${onlyMissing ? "bg-[#1B3A6B] text-white" : "text-[#2251A3] hover:bg-[#EBF0FA]"}`}>
-          Missing a video
-        </Link>
+      <div className="flex flex-wrap items-center gap-2 font-dm">
+        <div className="inline-flex rounded-[var(--a-radius-control)] border border-[var(--a-border)] bg-[var(--a-surface-2)] p-0.5" role="group" aria-label="Filter lessons">
+          {[
+            { on: !onlyMissing, href: qs({ track: sp.track, missing: false }), label: "All lessons" },
+            { on: onlyMissing, href: qs({ track: sp.track, missing: true }), label: "Missing a video" },
+          ].map((o) => (
+            <Link
+              key={o.label}
+              href={o.href}
+              aria-current={o.on ? "true" : undefined}
+              className={cn(
+                "inline-flex h-8 items-center rounded-[8px] px-3 text-[13px] font-semibold transition-colors duration-150",
+                o.on
+                  ? "bg-[var(--a-surface)] text-[var(--a-ink)] shadow-[0_1px_2px_rgba(13,27,42,.08)] ring-1 ring-[var(--a-border)]"
+                  : "text-[var(--a-ink-3)] hover:text-[var(--a-ink)]",
+              )}
+            >
+              {o.label}
+            </Link>
+          ))}
+        </div>
         {sp.track && (
-          <Link href={qs({ missing: onlyMissing })} className="text-xs text-[#2251A3] underline">
+          <Link href={qs({ missing: onlyMissing })} className="text-[13px] font-semibold text-[var(--a-blue)] hover:underline">
             Show every track
           </Link>
         )}
       </div>
 
       {selected.map((t) => (
-        <section key={t.id} className="bg-white border border-[#D2DCE8] rounded-2xl p-5">
-          <h2 className="font-syne font-bold text-base text-[#0D1B2A]">{t.title}</h2>
-          <div className="mt-3 overflow-x-auto">
-            <table className="w-full min-w-[640px] font-dm text-sm">
-              <thead>
-                <tr className="border-b border-[#E6EBF1] text-left text-xs uppercase tracking-wide text-[#7A8FA6]">
-                  <th className="py-2 pr-3">Lesson</th>
-                  <th className="py-2 pr-3">Video</th>
-                  <th className="py-2 pr-3 text-right">Chapters</th>
-                  <th className="py-2 pr-3">Captions</th>
-                  <th className="py-2 pr-3">Script</th>
-                  <th className="py-2" />
+        <Card key={t.id} title={t.title} padded={false}>
+          <div className="relative overflow-x-auto">
+            <table className={cn(tableStyles.table, "min-w-[640px]")}>
+              <thead className={tableStyles.thead}>
+                <tr>
+                  <th className={tableStyles.th}>Lesson</th>
+                  <th className={tableStyles.th}>Video</th>
+                  <th className={cn(tableStyles.th, "text-right")}>Chapters</th>
+                  <th className={tableStyles.th}>Captions</th>
+                  <th className={tableStyles.th}>Script</th>
+                  <th className={tableStyles.th}><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -132,7 +159,7 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
                   if (!rows.length) return null;
                   return [
                     <tr key={m.id}>
-                      <td colSpan={6} className="pt-3 pb-1 text-xs font-bold uppercase tracking-wide text-[#3A4A5C]">
+                      <td colSpan={6} className="a-micro border-b border-[var(--a-border)] bg-[#fafbfd] px-4 pb-1.5 pt-3">
                         {m.sortOrder + 1}. {m.title}
                       </td>
                     </tr>,
@@ -141,33 +168,36 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
                       const kind = l.videoUrl ? parseVideoUrl(l.videoUrl)?.kind : null;
                       const v = scriptVersions.get(l.id) ?? 0;
                       return (
-                        <tr key={l.id} className="border-b border-[#F0F3F7]" data-has-video={l.videoUrl ? "1" : "0"}>
-                          <td className="py-2 pr-3 text-[#0D1B2A]">{l.title}</td>
-                          <td className="py-2 pr-3">
+                        <tr key={l.id} className={tableStyles.tr} data-has-video={l.videoUrl ? "1" : "0"}>
+                          <td className={cn(tableStyles.td, "font-medium text-[var(--a-ink)]")}>{l.title}</td>
+                          <td className={tableStyles.td}>
                             {l.videoUrl ? (
-                              <span className="inline-flex items-center gap-1 text-green-700">
-                                <Check size={14} /> {kind ? KIND[kind] : "Link"}
+                              <span className="inline-flex items-center gap-1 font-semibold text-[var(--a-success)]">
+                                <Check size={14} aria-hidden /> {kind ? KIND[kind] : "Link"}
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-800">Missing</span>
+                              <Badge tone="warn">Missing</Badge>
                             )}
                           </td>
-                          <td className="py-2 pr-3 text-right text-[#3A4A5C]">{info?.chapters || <Minus size={14} className="ml-auto text-[#D2DCE8]" />}</td>
-                          <td className="py-2 pr-3">
+                          <td className={cn(tableStyles.td, "text-right tabular-nums")}>{info?.chapters || <Minus size={14} className="ml-auto text-[var(--a-border-strong)]" aria-label="None" />}</td>
+                          <td className={tableStyles.td}>
                             <span className="inline-flex gap-1">
                               {CAPTION_LANGS.map((lg) => (
                                 <span
                                   key={lg}
-                                  className={`rounded px-1.5 py-0.5 text-[11px] font-bold uppercase ${info?.langs.includes(lg) ? "bg-green-50 text-green-700" : "bg-[#F4F7FB] text-[#B4C2D3]"}`}
+                                  className={cn(
+                                    "rounded px-1.5 py-0.5 text-[11px] font-bold uppercase",
+                                    info?.langs.includes(lg) ? "bg-[var(--a-success-bg)] text-[var(--a-success)]" : "bg-[var(--a-surface-2)] text-[var(--a-ink-3)] line-through decoration-1",
+                                  )}
                                 >
                                   {lg}
                                 </span>
                               ))}
                             </span>
                           </td>
-                          <td className="py-2 pr-3 text-xs text-[#3A4A5C]">{v ? `v${v}` : <span className="text-[#B4C2D3]">None</span>}</td>
-                          <td className="py-2 text-right">
-                            <Link href={`/admin_pro/learn/lessons/${l.id}#video`} className="text-xs font-semibold text-[#2251A3] underline">
+                          <td className={cn(tableStyles.td, "text-[12.5px]")}>{v ? `v${v}` : <span className="text-[var(--a-ink-3)]">None</span>}</td>
+                          <td className={cn(tableStyles.td, "text-right")}>
+                            <Link href={`/admin_pro/learn/lessons/${l.id}#video`} className="whitespace-nowrap text-[13px] font-semibold text-[var(--a-blue)] hover:underline">
                               {l.videoUrl ? "Edit video" : "Add video"}
                             </Link>
                           </td>
@@ -179,7 +209,7 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
               </tbody>
             </table>
           </div>
-        </section>
+        </Card>
       ))}
     </div>
   );

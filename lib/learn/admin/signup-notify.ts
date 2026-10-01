@@ -69,6 +69,6 @@ export async function sendSignupNotification(s: {
   </div>`;
 
   // Header injection: nodemailer encodes subjects, but keep it to one line.
-  const subject = `New TIBLOGICS Learn sign-up: ${s.name.replace(/[\r\n]+/g, " ").slice(0, 80)}`;
+  const subject = `New ARFA (AI Academy) sign-up: ${s.name.replace(/[\r\n]+/g, " ").slice(0, 80)}`;
   await resend.emails.send({ to: adminNotifyEmail(), subject, html });
 }

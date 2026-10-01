@@ -10,7 +10,7 @@ import { badgeSvg } from "@/lib/learn/skill-badges/svg";
 export const runtime = "nodejs";
 export const size = OG_SIZE;
 export const contentType = "image/png";
-export const alt = "TIBLOGICS verified skill badge";
+export const alt = "ARFA, the TIBLOGICS AI Academy: verified skill badge";
 
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -47,7 +47,10 @@ export default async function Image({ params }: { params: Promise<{ id: string }
         )}
         <div style={{ display: "flex", flexDirection: "column", marginLeft: 56, width: 620 }}>
           <div style={{ display: "flex", fontSize: 40, fontWeight: 700, color: "white" }}>
-            TIB<span style={{ color: BADGE_ORANGE }}>LOGICS</span>
+            AR<span style={{ color: BADGE_ORANGE }}>FA</span>
+            <span style={{ marginLeft: 14, fontSize: 26, color: "rgba(255,255,255,0.8)", alignSelf: "flex-end", paddingBottom: 5 }}>
+              · TIBLOGICS AI Academy
+            </span>
           </div>
           <div style={{ display: "flex", marginTop: 18, fontSize: 22, fontWeight: 700, letterSpacing: 3, color: BADGE_ORANGE }}>
             {show ? FAMILY_LABEL_EN[b!.award.family].toUpperCase() : "SKILL BADGE"}

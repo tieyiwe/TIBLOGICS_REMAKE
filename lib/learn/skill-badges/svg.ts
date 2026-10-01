@@ -1,4 +1,4 @@
-// The badge image: a TIBLOGICS-branded SVG (navy #1B3A6B, orange #F47C20).
+// The badge image: an ARFA-branded SVG (the TIBLOGICS AI Academy) (navy #1B3A6B, orange #F47C20).
 // Pure string building, safe on server and client. Served by
 // /badges/[id]/image and drawn inline on the learner's badge shelf.
 import { BADGE_NAVY, BADGE_ORANGE, type BadgeGlyph } from "./catalog";
@@ -75,7 +75,7 @@ export function badgeSvg({ glyph, kicker, name, footer, idSuffix = "b" }: BadgeS
 <polygon points="${hex(190)}" fill="${BADGE_ORANGE}"/>
 <polygon points="${hex(176)}" fill="url(#${g})"/>
 <polygon points="${hex(164)}" fill="none" stroke="#FFFFFF" stroke-opacity="0.25" stroke-width="2"/>
-<text x="200" y="86" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="17" font-weight="700" fill="#FFFFFF" letter-spacing="1">TIB<tspan fill="${BADGE_ORANGE}">LOGICS</tspan></text>
+<text x="200" y="86" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="17" font-weight="700" fill="#FFFFFF" letter-spacing="1">AR<tspan fill="${BADGE_ORANGE}">FA</tspan><tspan font-size="11" fill-opacity="0.85" letter-spacing="1.5"> · AI ACADEMY</tspan></text>
 <g transform="translate(200 168) scale(1.05)" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">${GLYPHS[glyph]}</g>
 <rect x="70" y="${nameY - 52}" width="260" height="24" rx="12" fill="${BADGE_ORANGE}"/>
 <text x="200" y="${nameY - 35}" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#FFFFFF" letter-spacing="1.5">${esc(kicker.toUpperCase())}</text>

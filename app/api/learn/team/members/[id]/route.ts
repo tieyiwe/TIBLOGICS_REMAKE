@@ -5,7 +5,7 @@ import { getLocale, getT } from "@/lib/i18n/server";
 import { requireTeamManager, teamRateLimit } from "@/lib/learn/team/guard";
 import { removeMember, resendInvite, setMemberRole } from "@/lib/learn/team/service";
 import { memberDetail } from "@/lib/learn/team/report";
-import { sendTeamInvite } from "@/lib/learn/team/emails";
+import { deliverInvite } from "@/lib/learn/team/emails";
 
 type Ctx = { params: Promise<{ id: string }> };
 const Id = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
@@ -44,14 +44,14 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     const r = await resendInvite(teamId, id.data);
     if (r === "notFound") return NextResponse.json({ error: t("team.api.notFound") }, { status: 404 });
     if (r === "full") return NextResponse.json({ error: t("team.api.full") }, { status: 409 });
-    const known = await prisma.student.findUnique({ where: { email: r.email }, select: { locale: true } }).catch(() => null);
-    await sendTeamInvite({
-      email: r.email,
+    await deliverInvite({
+      teamId,
       teamName: g.m.team.name,
-      inviterName: g.student.name,
+      memberId: r.memberId,
+      email: r.email,
       token: r.token,
-      expiresAt: new Date(Date.now() + 14 * 86_400_000),
-      locale: known?.locale ?? (await getLocale()),
+      inviterName: g.student.name,
+      fallbackLocale: await getLocale(),
     }).catch((err) => console.error("[team/members] resend email", err instanceof Error ? err.message : err));
     return NextResponse.json({ ok: true });
   }

@@ -55,18 +55,22 @@ export type StatTone = "default" | "navy" | "orange" | "success" | "warn" | "dan
 
 function Sparkline({ data, tone }: { data: number[]; tone: StatTone }) {
   if (data.length < 2) return null;
-  const w = 96;
-  const h = 28;
+  // Fixed coordinate space, stretched to the card width.
+  const w = 200;
+  const h = 36;
   const min = Math.min(...data);
   const max = Math.max(...data);
   const span = max - min || 1;
-  const pts = data.map((v, i) => [(i / (data.length - 1)) * w, h - 2 - ((v - min) / span) * (h - 4)]);
+  const pts = data.map((v, i) => [(i / (data.length - 1)) * w, h - 3 - ((v - min) / span) * (h - 8)]);
   const d = pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
-  const stroke = tone === "orange" ? "var(--a-orange)" : tone === "success" ? "var(--a-success)" : "var(--a-blue)";
+  const stroke =
+    tone === "orange" ? "var(--a-orange)" : tone === "success" ? "var(--a-success)" : tone === "danger" ? "var(--a-danger)" : "var(--a-blue)";
+  const [lx, ly] = pts[pts.length - 1];
   return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden className="shrink-0 overflow-visible">
-      <path d={`${d} L${w},${h} L0,${h} Z`} fill={stroke} opacity={0.08} />
-      <path d={d} fill="none" stroke={stroke} strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" />
+    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden className="block h-9 w-full overflow-visible">
+      <path d={`${d} L${w},${h} L0,${h} Z`} fill={stroke} opacity={0.07} />
+      <path d={d} fill="none" stroke={stroke} strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+      <circle cx={lx} cy={ly} r={2.5} fill={stroke} vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }
@@ -138,10 +142,10 @@ export function StatCard({
   const inner = (
     <>
       <div className="flex items-center justify-between gap-2">
-        <p className="a-micro truncate">{label}</p>
+        <p className="a-micro min-w-0 leading-snug">{label}</p>
         {Icon ? <Icon size={16} className="shrink-0 text-[var(--a-ink-3)]" aria-hidden /> : null}
       </div>
-      <div className="mt-2 flex items-end justify-between gap-3">
+      <div className="mt-2">
         <div className="min-w-0">
           <p className="truncate font-dm text-[26px] font-bold leading-none tracking-tight text-[var(--a-ink)] tabular-nums">{value}</p>
           {deltaEl || hint ? (
@@ -153,7 +157,11 @@ export function StatCard({
           ) : null}
           {hint && deltaLabel ? <p className="mt-1 truncate font-dm text-[12px] text-[var(--a-ink-3)]">{hint}</p> : null}
         </div>
-        {spark && spark.length > 1 ? <Sparkline data={spark} tone={tone} /> : null}
+        {spark && spark.length > 1 ? (
+          <div className="-mx-1 mt-3">
+            <Sparkline data={spark} tone={tone} />
+          </div>
+        ) : null}
       </div>
     </>
   );
@@ -161,7 +169,7 @@ export function StatCard({
     "relative block min-w-0 overflow-hidden rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] p-4 shadow-[var(--a-shadow-card)]",
     "before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:content-['']",
     accent,
-    href && "transition-colors duration-150 hover:border-[var(--a-border-strong)] hover:bg-[#fbfcfe]",
+    href && "a-lift hover:border-[var(--a-border-strong)]",
     className,
   );
   return href ? (

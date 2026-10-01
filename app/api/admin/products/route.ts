@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
+import { auditFromRequest } from "@/lib/admin/audit";
 import { revalidateShop } from "@/lib/shop/revalidate";
 import { parseDeliveryFields } from "@/lib/shop/delivery-fields";
 
@@ -85,6 +86,7 @@ export async function POST(req: NextRequest) {
     });
 
     revalidateShop();
+    if (product.published) await auditFromRequest("product.publish", { type: "product", id: product.id, label: product.name }, { created: true });
     return NextResponse.json({ product });
   } catch (err) {
     console.error("[admin/products POST]", err);

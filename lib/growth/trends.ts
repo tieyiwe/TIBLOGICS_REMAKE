@@ -49,7 +49,7 @@ Rules:
 - Facts about the news come only from the ARTICLE; facts about the product only from its line in PRODUCTS. Do not invent statistics, results, prices, dates or quotes.
 - Never use a banned claim. No URLs in the text (the link is added automatically). Hashtags without "#".
 - Lead with the news (a timely hook), then the practical takeaway, then a soft call to action toward the product.
-- Pick the product that fits best; prefer Learn tracks, tools and services over articles.`;
+- Pick the product that fits best; prefer AI Academy tracks, tools and services over articles.`;
 
 function productList(items: CatalogItem[]): string {
   return items.map((i) => `${i.key} | ${i.type} | ${i.title} | ${clip(i.summary.replace(/\s+/g, " "), 110)}`).join("\n");

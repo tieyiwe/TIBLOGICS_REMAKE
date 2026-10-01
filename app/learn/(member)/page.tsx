@@ -100,6 +100,10 @@ export default async function LearnDashboard() {
             {t("common.translationPending")}
           </p>
         )}
+        {/* Team plans: "Your team learning plan", at the top (nothing without a team) */}
+        <div className="mt-5 empty:hidden">
+          <TeamDashboardCard studentId={student.id} />
+        </div>
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
           <div className="rounded-2xl border border-[var(--border)] bg-white p-5">
             <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink3)]">{t("learn.dash.points")}</p>
@@ -147,8 +151,6 @@ export default async function LearnDashboard() {
         </div>
       </section>
 
-      {/* Team plans: "Assigned by your team" (nothing without a team) */}
-      <TeamDashboardCard studentId={student.id} />
 
       {/* Daily goal + last 7 days */}
       <section aria-label={t("game.daily.section")}>

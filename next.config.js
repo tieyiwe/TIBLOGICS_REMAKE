@@ -47,6 +47,9 @@ const nextConfig = {
       // link to /courses, so these have to keep working indefinitely.
       { source: "/courses", destination: "/learning-box", permanent: true },
       { source: "/courses/:slug", destination: "/learning-box/:slug", permanent: true },
+      // The catalog is presented as the AI Academy (ARFA); its URL stays /learning-box.
+      { source: "/ai-academy", destination: "/learning-box", permanent: true },
+      { source: "/academy", destination: "/learning-box", permanent: true },
       // "Shop" became "Store". Order matters: the more specific paths first,
       // so /shop/:slug does not swallow them. /shop/covers/* is a public asset
       // directory, two segments deep, so /shop/:slug never matches it.

@@ -1,5 +1,5 @@
 import { Radar, Repeat, Clock, Users } from "lucide-react";
-import MetricCard from "@/components/admin/MetricCard";
+import { Badge, DataTable, EmptyState, Notice, PageHeader, StatCard, type BadgeTone } from "@/components/admin/ui";
 import prisma from "@/lib/prisma";
 import { requireAdminPage } from "../_lib/admin-page-auth";
 import { ensureMonitorTables } from "@/lib/monitor/db";
@@ -11,15 +11,15 @@ import { hostOf } from "@/lib/monitor/report";
 // one from the public page.
 export const dynamic = "force-dynamic";
 
-const STATUS_STYLE: Record<string, string> = {
-  active: "bg-green-100 text-green-700",
-  past_due: "bg-amber-100 text-amber-800",
-  canceled: "bg-gray-100 text-gray-600",
-  pending: "bg-[#EBF0FA] text-[#2251A3]",
+const STATUS_TONE: Record<string, BadgeTone> = {
+  active: "success",
+  past_due: "warn",
+  canceled: "neutral",
+  pending: "info",
 };
 
 function fmt(d: Date | null) {
-  return d ? d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
+  return d ? d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Never";
 }
 
 export default async function MonitorAdminPage() {
@@ -41,83 +41,93 @@ export default async function MonitorAdminPage() {
   const active = subs.filter((s) => s.status === "active").length;
   const pastDue = subs.filter((s) => s.status === "past_due").length;
 
+  type Sub = (typeof subs)[number];
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-syne font-bold text-2xl text-[#0D1B2A]">Readiness Monitor</h1>
-        <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">Paid weekly scans of a customer&apos;s site against up to three competitors.</p>
-      </div>
+      <PageHeader
+        title="Readiness Monitor"
+        subtitle="Paid weekly scans of a customer's site against up to three competitors."
+        className="mb-0"
+      />
 
       {!pricing && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 font-dm text-sm text-amber-900">
-          <strong>Not on sale.</strong> Set <code>MONITOR_PRICE_CENTS</code> in Replit Secrets (for example{" "}
-          <code>9900</code> for $99 a month) and republish to open checkout. Until then the public page collects waitlist
-          sign-ups ({waitlist} so far).
-        </div>
+        <Notice tone="warn" title="Not on sale">
+          <p>
+            Set <code>MONITOR_PRICE_CENTS</code> in Replit Secrets (for example{" "}
+            <code>9900</code> for $99 a month) and republish to open checkout. Until then the public page collects waitlist
+            sign-ups ({waitlist} so far).
+          </p>
+        </Notice>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard label="Active subscribers" value={String(active)} icon={Radar} iconColor="#1B3A6B" />
-        <MetricCard
+      <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Active subscribers" value={active} icon={Radar} tone="navy" />
+        <StatCard
           label="Est. monthly revenue"
-          value={pricing ? `$${((active * pricing.amount) / 100).toLocaleString("en-US")}` : "—"}
+          value={pricing ? `$${((active * pricing.amount) / 100).toLocaleString("en-US")}` : "n/a"}
+          hint={pricing ? `${formatMonitorPrice(pricing)}/month each` : "Not on sale"}
           icon={Repeat}
-          iconColor="#0F6E56"
+          tone="success"
         />
-        <MetricCard label="Payment failing" value={String(pastDue)} icon={Clock} iconColor="#F47C20" />
-        <MetricCard label="Waitlist" value={String(waitlist)} icon={Users} iconColor="#2251A3" />
+        <StatCard label="Payment failing" value={pastDue} icon={Clock} tone={pastDue > 0 ? "danger" : "default"} />
+        <StatCard label="Waitlist" value={waitlist} icon={Users} />
       </div>
       {pricing && (
-        <p className="-mt-3 font-dm text-xs text-[#7A8FA6]">
-          Price: {formatMonitorPrice(pricing)}/month. Revenue is active subscribers at today&apos;s price; discounts
-          and promotion codes are only in Stripe.
+        <p className="-mt-3 font-dm text-[12.5px] text-[var(--a-ink-3)]">
+          Revenue is active subscribers at today&apos;s price; discounts and promotion codes are only in Stripe.
         </p>
       )}
 
-      <div className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden">
-        {subs.length === 0 ? (
-          <p className="p-10 text-center font-dm text-sm text-[#7A8FA6]">No subscribers yet.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm font-dm">
-              <thead>
-                <tr className="border-b border-[#F4F7FB] bg-[#F8FAFD] text-left text-xs uppercase tracking-wider text-[#7A8FA6]">
-                  <th className="px-5 py-3 font-semibold">Customer</th>
-                  <th className="px-4 py-3 font-semibold">Site</th>
-                  <th className="px-4 py-3 font-semibold hidden md:table-cell">Competitors</th>
-                  <th className="px-4 py-3 font-semibold">Score</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold hidden sm:table-cell">Last scan</th>
-                </tr>
-              </thead>
-              <tbody>
-                {subs.map((s) => (
-                  <tr key={s.id} className="border-b border-[#F4F7FB] last:border-0">
-                    <td className="px-5 py-3">
-                      <p className="font-medium text-[#0D1B2A]">{s.name ?? s.email}</p>
-                      {s.name && <p className="text-xs text-[#7A8FA6]">{s.email}</p>}
-                      <p className="text-xs text-[#7A8FA6]">since {fmt(s.createdAt)}</p>
-                    </td>
-                    <td className="px-4 py-3 text-[#0D1B2A]">{hostOf(s.siteUrl)}</td>
-                    <td className="px-4 py-3 hidden md:table-cell text-xs text-[#3A4A5C]">
-                      {s.competitors.map(hostOf).join(", ") || "—"}
-                    </td>
-                    <td className="px-4 py-3 font-semibold text-[#0D1B2A]">
-                      {s.scans[0]?.ok ? s.scans[0].overallScore : "—"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_STYLE[s.status] ?? "bg-gray-100 text-gray-600"}`}>
-                        {s.status.replace("_", " ")}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 hidden sm:table-cell text-xs text-[#7A8FA6]">{fmt(s.lastRunAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <DataTable<Sub>
+        caption="Monitor subscribers"
+        rows={subs}
+        rowKey={(s) => s.id}
+        empty={
+          <EmptyState
+            icon={Radar}
+            title="No subscribers yet"
+            body={pricing ? "Paid subscribers appear here once checkout completes." : "Open checkout by setting a price, then subscribers appear here."}
+          />
+        }
+        columns={[
+          {
+            key: "customer",
+            header: "Customer",
+            primary: true,
+            render: (s) => (
+              <div className="min-w-0">
+                <p className="font-medium text-[var(--a-ink)]">{s.name ?? s.email}</p>
+                {s.name && <p className="text-[12px] text-[var(--a-ink-3)]">{s.email}</p>}
+                <p className="text-[12px] text-[var(--a-ink-3)]">since {fmt(s.createdAt)}</p>
+              </div>
+            ),
+          },
+          { key: "site", header: "Site", render: (s) => <span className="text-[var(--a-ink)]">{hostOf(s.siteUrl)}</span> },
+          {
+            key: "competitors",
+            header: "Competitors",
+            hideOnMobile: true,
+            render: (s) => <span className="text-[12.5px]">{s.competitors.map(hostOf).join(", ") || "None"}</span>,
+          },
+          {
+            key: "score",
+            header: "Score",
+            align: "right",
+            render: (s) => <span className="font-semibold tabular-nums text-[var(--a-ink)]">{s.scans[0]?.ok ? s.scans[0].overallScore : "n/a"}</span>,
+          },
+          {
+            key: "status",
+            header: "Status",
+            render: (s) => (
+              <Badge tone={STATUS_TONE[s.status] ?? "neutral"} dot className="capitalize">
+                {s.status.replace("_", " ")}
+              </Badge>
+            ),
+          },
+          { key: "last", header: "Last scan", render: (s) => <span className="text-[12.5px] tabular-nums">{fmt(s.lastRunAt)}</span> },
+        ]}
+      />
     </div>
   );
 }

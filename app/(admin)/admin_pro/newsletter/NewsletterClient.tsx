@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Users, Mail, Send, Loader2, X, Plus, Check, Search } from "lucide-react";
-import Link from "next/link";
+import { Button, EmptyState, PageHeader, Segmented, StatCard, useConfirm, useToast } from "@/components/admin/ui";
 
 export interface Subscriber {
   id: string;
@@ -36,7 +36,7 @@ export interface Article {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  DRAFT: "bg-[#FEF0E3] text-[#F47C20]",
+  DRAFT: "bg-[var(--a-orange-bg)] text-[var(--a-orange-text)]",
   SENT: "bg-green-100 text-green-700",
 };
 
@@ -71,6 +71,8 @@ export default function NewsletterClient(initial: {
   const [sending, setSending] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"campaigns" | "subscribers" | "compose">("campaigns");
   const [subSearch, setSubSearch] = useState("");
+  const confirmFn = useConfirm();
+  const toast = useToast();
 
   // Compose state
   const articles = initial.articles;
@@ -86,23 +88,40 @@ export default function NewsletterClient(initial: {
   }, [router]);
 
   async function sendCampaign(campaignId: string) {
-    if (!confirm("Send this campaign to all active subscribers?")) return;
+    const ok = await confirmFn({
+      title: "Send this campaign?",
+      body: `It goes to all ${subscriberCount} active subscriber${subscriberCount !== 1 ? "s" : ""} right away. Emails cannot be recalled.`,
+      confirmLabel: "Send campaign",
+      danger: false,
+    });
+    if (!ok) return;
     setSending(campaignId);
-    await fetch("/api/newsletter/send", {
+    const res = await fetch("/api/newsletter/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ campaignId }),
-    });
+    }).catch(() => null);
+    if (res?.ok) toast.success("Campaign sent");
+    else toast.error("Send failed", "Check the campaign and try again.");
     await loadData();
     setSending(null);
   }
 
   async function handleCompose(doSend: boolean) {
     if (!composeSubject.trim() || !composeIntro.trim() || selectedArticleIds.length === 0) {
-      alert("Please fill in a subject, intro text, and select at least one article.");
+      toast.error("Missing details", "Fill in a subject and intro text, and pick at least one article.");
       return;
     }
-    if (doSend && !confirm(`Send to ${subscriberCount} active subscriber${subscriberCount !== 1 ? "s" : ""}?`)) return;
+    if (
+      doSend &&
+      !(await confirmFn({
+        title: `Send to ${subscriberCount} active subscriber${subscriberCount !== 1 ? "s" : ""}?`,
+        body: "The newsletter is emailed immediately. Emails cannot be recalled.",
+        confirmLabel: "Send now",
+        danger: false,
+      }))
+    )
+      return;
     setComposing(true);
     try {
       const res = await fetch("/api/newsletter/compose", {
@@ -116,7 +135,8 @@ export default function NewsletterClient(initial: {
         }),
       });
       const data = await res.json();
-      if (!res.ok) { alert(data.error ?? "Failed"); return; }
+      if (!res.ok) { toast.error("Could not save the newsletter", data.error ?? "Please try again."); return; }
+      toast.success(doSend ? "Newsletter sent" : "Draft saved");
       // Reset and go to campaigns tab
       setComposeSubject("");
       setComposeIntro("");
@@ -143,100 +163,88 @@ export default function NewsletterClient(initial: {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-syne font-bold text-2xl text-[#0D1B2A]">Newsletter</h1>
-          <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">Manage subscribers and campaigns</p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setActiveTab("compose")}
-            className="flex items-center gap-2 bg-[#F47C20] hover:bg-[#d96b18] text-white rounded-xl px-4 py-2 text-sm font-dm font-semibold transition-colors"
-          >
-            <Plus size={14} /> Compose
-          </button>
-          <Link
-            href="/admin_pro/blog/news-agent"
-            className="flex items-center gap-2 bg-[#1B3A6B] hover:bg-[#2251A3] text-white rounded-xl px-4 py-2 text-sm font-dm font-semibold transition-colors"
-          >
-            <Mail size={15} /> Draft with Echelon
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Newsletter"
+        subtitle="Subscribers, campaigns and the AI Times digest."
+        className="mb-0"
+        actions={
+          <>
+            <Button href="/admin_pro/blog/news-agent" variant="secondary" icon={Mail}>
+              Draft with Echelon
+            </Button>
+            <Button variant="primary" icon={Plus} onClick={() => setActiveTab("compose")}>
+              Compose
+            </Button>
+          </>
+        }
+      />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Subscribers", value: subscriberCount, icon: <Users size={16} className="text-[#2251A3]" /> },
-          { label: "Campaigns Sent", value: campaigns.filter(c => c.status === "SENT").length, icon: <Send size={16} className="text-green-600" /> },
-          { label: "Drafts", value: campaigns.filter(c => c.status === "DRAFT").length, icon: <Mail size={16} className="text-[#F47C20]" /> },
-          { label: "Total Emails Sent", value: campaigns.reduce((s, c) => s + c.recipientCount, 0), icon: <Mail size={16} className="text-purple-500" /> },
-        ].map(stat => (
-          <div key={stat.label} className="bg-white border border-[#D2DCE8] rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-2">
-              <p className="font-dm text-sm text-[#7A8FA6]">{stat.label}</p>
-              {stat.icon}
-            </div>
-            <p className="font-syne font-extrabold text-2xl text-[#0D1B2A]">{stat.value}</p>
-          </div>
-        ))}
+      <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Subscribers" value={subscriberCount.toLocaleString()} icon={Users} tone="navy" />
+        <StatCard label="Campaigns sent" value={campaigns.filter(c => c.status === "SENT").length} icon={Send} tone="success" />
+        <StatCard label="Drafts" value={campaigns.filter(c => c.status === "DRAFT").length} icon={Mail} tone="orange" />
+        <StatCard label="Total emails sent" value={campaigns.reduce((s, c) => s + c.recipientCount, 0).toLocaleString()} icon={Mail} />
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2">
-        {(["campaigns", "subscribers", "compose"] as const).map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 rounded-xl text-sm font-dm font-medium transition-colors capitalize ${
-              activeTab === tab ? "bg-[#1B3A6B] text-white" : "bg-white border border-[#D2DCE8] text-[#3A4A5C] hover:border-[#1B3A6B]"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
+      <Segmented
+        ariaLabel="Newsletter view"
+        value={activeTab}
+        onChange={(v) => setActiveTab(v as typeof activeTab)}
+        options={[
+          { value: "campaigns", label: "Campaigns", count: campaigns.length },
+          { value: "subscribers", label: "Subscribers", count: subscriberCount },
+          { value: "compose", label: "Compose" },
+        ]}
+      />
 
       {/* Campaigns tab */}
       {activeTab === "campaigns" && (
-        <div className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden">
+        <div className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] overflow-hidden">
           {loading ? (
-            <div className="flex justify-center py-12"><Loader2 size={20} className="animate-spin text-[#7A8FA6]" /></div>
+            <div className="flex justify-center py-12"><Loader2 size={20} className="animate-spin text-[var(--a-ink-3)]" /></div>
           ) : campaigns.length === 0 ? (
-            <div className="text-center py-12 px-6">
-              <p className="font-dm text-sm text-[#7A8FA6] mb-3">No campaigns yet.</p>
-              <button onClick={() => setActiveTab("compose")} className="text-xs text-[#2251A3] hover:underline font-dm">
-                Compose your first newsletter →
-              </button>
-            </div>
+            <EmptyState
+              icon={Mail}
+              title="No campaigns yet"
+              body="Pick a few AI Times articles, add a short intro, and send your first digest."
+              action={
+                <Button variant="primary" icon={Plus} onClick={() => setActiveTab("compose")}>
+                  Compose your first newsletter
+                </Button>
+              }
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-[#F4F7FB] border-b border-[#D2DCE8]">
+                  <tr className="bg-[var(--a-surface-2)] border-b border-[var(--a-border)]">
                     {["Campaign", "Status", "Recipients", "Date", ""].map(h => (
-                      <th key={h} className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">{h}</th>
+                      <th key={h} className="text-left px-5 py-3 font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em]">{h}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#F4F7FB]">
+                <tbody className="divide-y divide-[var(--a-border)]">
                   {campaigns.map(c => (
-                    <tr key={c.id} className="hover:bg-[#F4F7FB]/50 transition-colors">
+                    <tr key={c.id} className="hover:bg-[#f8fafd] transition-colors">
                       <td className="px-5 py-4">
-                        <p className="font-dm text-sm font-medium text-[#0D1B2A] line-clamp-1">{c.title}</p>
-                        <p className="font-dm text-xs text-[#7A8FA6]">{c.subject}</p>
+                        <p className="font-dm text-sm font-medium text-[var(--a-ink)] line-clamp-1">{c.title}</p>
+                        <p className="font-dm text-xs text-[var(--a-ink-3)]">{c.subject}</p>
                       </td>
                       <td className="px-5 py-4">
                         <span className={`text-xs font-medium font-dm px-2 py-0.5 rounded-full ${STATUS_COLORS[c.status] ?? "bg-gray-100 text-gray-500"}`}>
                           {c.status}
                         </span>
                       </td>
-                      <td className="px-5 py-4 font-dm text-sm text-[#7A8FA6]">{c.recipientCount}</td>
-                      <td className="px-5 py-4 font-dm text-xs text-[#7A8FA6]">{fmt(c.createdAt)}</td>
+                      <td className="px-5 py-4 font-dm text-sm text-[var(--a-ink-3)]">{c.recipientCount}</td>
+                      <td className="px-5 py-4 font-dm text-xs text-[var(--a-ink-3)]">{fmt(c.createdAt)}</td>
                       <td className="px-5 py-4">
                         {c.status === "DRAFT" && (
                           <button
                             onClick={() => sendCampaign(c.id)}
                             disabled={sending === c.id}
-                            className="flex items-center gap-1.5 text-xs font-dm font-medium text-[#2251A3] hover:text-[#1B3A6B] disabled:opacity-50"
+                            className="flex items-center gap-1.5 text-xs font-dm font-medium text-[var(--a-blue)] hover:text-[#1B3A6B] disabled:opacity-50"
                           >
                             {sending === c.id ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />} Send
                           </button>
@@ -255,43 +263,44 @@ export default function NewsletterClient(initial: {
       {activeTab === "subscribers" && (
         <div className="space-y-4">
           <div className="relative max-w-xs">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7A8FA6]" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--a-ink-3)]" />
             <input
               value={subSearch}
               onChange={e => setSubSearch(e.target.value)}
               placeholder="Search subscribers…"
-              className="w-full pl-9 pr-4 py-2 border border-[#D2DCE8] rounded-xl text-sm font-dm focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3]"
+              className="w-full pl-9 pr-4 py-2 border border-[var(--a-border)] rounded-[var(--a-radius-control)] text-sm font-dm focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20 focus:border-[var(--a-blue)]"
             />
           </div>
-          <div className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden">
+          <div className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] overflow-hidden">
             {loading ? (
-              <div className="flex justify-center py-12"><Loader2 size={20} className="animate-spin text-[#7A8FA6]" /></div>
+              <div className="flex justify-center py-12"><Loader2 size={20} className="animate-spin text-[var(--a-ink-3)]" /></div>
             ) : filteredSubs.length === 0 ? (
-              <div className="text-center py-12">
-                <Users size={28} className="text-[#D2DCE8] mx-auto mb-3" />
-                <p className="font-dm text-sm text-[#7A8FA6]">{subSearch ? "No subscribers match your search." : "No subscribers yet."}</p>
-              </div>
+              <EmptyState
+                icon={Users}
+                title={subSearch ? "No subscribers match" : "No subscribers yet"}
+                body={subSearch ? "Try a different email or name." : "People who sign up on the site or AI Times appear here."}
+              />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-[#F4F7FB] border-b border-[#D2DCE8]">
+                    <tr className="bg-[var(--a-surface-2)] border-b border-[var(--a-border)]">
                       {["Name", "Email", "Source", "Subscribed", "Status"].map(h => (
-                        <th key={h} className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">{h}</th>
+                        <th key={h} className="text-left px-5 py-3 font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em]">{h}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#F4F7FB]">
+                  <tbody className="divide-y divide-[var(--a-border)]">
                     {filteredSubs.map(s => (
-                      <tr key={s.id} className="hover:bg-[#F4F7FB]/50 transition-colors">
-                        <td className="px-5 py-3 font-dm text-sm text-[#0D1B2A]">{s.firstName ?? "—"}</td>
-                        <td className="px-5 py-3 font-dm text-sm text-[#3A4A5C]">{s.email}</td>
-                        <td className="px-5 py-3 font-dm text-xs text-[#7A8FA6]">
+                      <tr key={s.id} className="hover:bg-[#f8fafd] transition-colors">
+                        <td className="px-5 py-3 font-dm text-sm text-[var(--a-ink)]">{s.firstName ?? "—"}</td>
+                        <td className="px-5 py-3 font-dm text-sm text-[var(--a-ink-2)]">{s.email}</td>
+                        <td className="px-5 py-3 font-dm text-xs text-[var(--a-ink-3)]">
                           {SOURCE_LABELS[s.source] ?? s.source}
                         </td>
-                        <td className="px-5 py-3 font-dm text-xs text-[#7A8FA6]">{fmt(s.subscribedAt)}</td>
+                        <td className="px-5 py-3 font-dm text-xs text-[var(--a-ink-3)]">{fmt(s.subscribedAt)}</td>
                         <td className="px-5 py-3">
-                          <span className={`text-xs font-medium font-dm px-2 py-0.5 rounded-full ${s.active ? "bg-green-100 text-green-700" : "bg-[#F4F7FB] text-[#7A8FA6]"}`}>
+                          <span className={`text-xs font-medium font-dm px-2 py-0.5 rounded-full ${s.active ? "bg-green-100 text-green-700" : "bg-[var(--a-surface-2)] text-[var(--a-ink-3)]"}`}>
                             {s.active ? "Active" : "Unsubscribed"}
                           </span>
                         </td>
@@ -308,36 +317,36 @@ export default function NewsletterClient(initial: {
       {/* Compose tab */}
       {activeTab === "compose" && (
         <div className="space-y-5">
-          <div className="bg-white border border-[#D2DCE8] rounded-2xl p-6 space-y-4">
-            <h2 className="font-syne font-bold text-base text-[#0D1B2A]">Compose Newsletter</h2>
+          <div className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-6 space-y-4">
+            <h2 className="font-syne font-bold text-base text-[var(--a-ink)]">Compose Newsletter</h2>
 
             <div className="space-y-1.5">
-              <label className="block text-sm font-dm font-medium text-[#3A4A5C]">Subject line</label>
+              <label className="block text-sm font-dm font-medium text-[var(--a-ink-2)]">Subject line</label>
               <input
                 type="text"
                 value={composeSubject}
                 onChange={e => setComposeSubject(e.target.value)}
                 placeholder="e.g. This Week in AI — 5 Things You Need to Know"
-                className="w-full px-4 py-2.5 border border-[#D2DCE8] rounded-xl text-sm font-dm focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3]"
+                className="w-full px-4 py-2.5 border border-[var(--a-border)] rounded-[var(--a-radius-control)] text-sm font-dm focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20 focus:border-[var(--a-blue)]"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-sm font-dm font-medium text-[#3A4A5C]">Intro message</label>
+              <label className="block text-sm font-dm font-medium text-[var(--a-ink-2)]">Intro message</label>
               <textarea
                 value={composeIntro}
                 onChange={e => setComposeIntro(e.target.value)}
                 rows={3}
                 placeholder="A short personal message to your subscribers before the articles…"
-                className="w-full px-4 py-2.5 border border-[#D2DCE8] rounded-xl text-sm font-dm resize-none focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3]"
+                className="w-full px-4 py-2.5 border border-[var(--a-border)] rounded-[var(--a-radius-control)] text-sm font-dm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20 focus:border-[var(--a-blue)]"
               />
             </div>
           </div>
 
           {/* Article picker */}
-          <div className="bg-white border border-[#D2DCE8] rounded-2xl p-6 space-y-4">
+          <div className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-syne font-bold text-base text-[#0D1B2A]">
+              <h2 className="font-syne font-bold text-base text-[var(--a-ink)]">
                 Pick Articles
                 {selectedArticleIds.length > 0 && (
                   <span className="ml-2 bg-[#2251A3] text-white text-xs font-dm px-2 py-0.5 rounded-full">
@@ -346,38 +355,38 @@ export default function NewsletterClient(initial: {
                 )}
               </h2>
               <div className="relative">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7A8FA6]" />
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--a-ink-3)]" />
                 <input
                   value={articleSearch}
                   onChange={e => setArticleSearch(e.target.value)}
                   placeholder="Search articles…"
-                  className="pl-8 pr-4 py-1.5 border border-[#D2DCE8] rounded-xl text-xs font-dm focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3] w-44"
+                  className="pl-8 pr-4 py-1.5 border border-[var(--a-border)] rounded-[var(--a-radius-control)] text-xs font-dm focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20 focus:border-[var(--a-blue)] w-44"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5 max-h-80 overflow-y-auto">
               {filteredArticles.length === 0 ? (
-                <p className="text-center py-6 text-sm font-dm text-[#7A8FA6]">No articles found.</p>
+                <p className="text-center py-6 text-sm font-dm text-[var(--a-ink-3)]">No articles found.</p>
               ) : filteredArticles.map(a => {
                 const selected = selectedArticleIds.includes(a.id);
                 return (
                   <button
                     key={a.id}
                     onClick={() => toggleArticle(a.id)}
-                    className={`w-full flex items-start gap-3 px-4 py-3 rounded-xl text-left transition-colors ${
-                      selected ? "bg-[#EBF0FA] border border-[#2251A3]/30" : "bg-[#F4F7FB] hover:bg-[#EBF0FA] border border-transparent"
+                    className={`w-full flex items-start gap-3 px-4 py-3 rounded-[var(--a-radius-control)] text-left transition-colors ${
+                      selected ? "bg-[var(--a-info-bg)] border border-[#2251A3]/30" : "bg-[var(--a-surface-2)] hover:bg-[var(--a-info-bg)] border border-transparent"
                     }`}
                   >
                     <div className={`flex-shrink-0 w-5 h-5 rounded-md border-2 mt-0.5 flex items-center justify-center transition-colors ${
-                      selected ? "bg-[#2251A3] border-[#2251A3]" : "border-[#D2DCE8]"
+                      selected ? "bg-[#2251A3] border-[#2251A3]" : "border-[var(--a-border)]"
                     }`}>
                       {selected && <Check size={11} className="text-white" />}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-dm text-sm font-medium text-[#0D1B2A] line-clamp-1">{a.title}</p>
-                      <p className="font-dm text-xs text-[#7A8FA6] line-clamp-1 mt-0.5">{a.excerpt}</p>
-                      <p className="font-dm text-xs text-[#2251A3] mt-0.5">tiblogics.com/ai-times/{a.slug}</p>
+                      <p className="font-dm text-sm font-medium text-[var(--a-ink)] line-clamp-1">{a.title}</p>
+                      <p className="font-dm text-xs text-[var(--a-ink-3)] line-clamp-1 mt-0.5">{a.excerpt}</p>
+                      <p className="font-dm text-xs text-[var(--a-blue)] mt-0.5">tiblogics.com/ai-times/{a.slug}</p>
                     </div>
                   </button>
                 );
@@ -390,14 +399,14 @@ export default function NewsletterClient(initial: {
             <button
               onClick={() => handleCompose(false)}
               disabled={composing}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 border border-[#D2DCE8] rounded-xl text-sm font-dm font-medium text-[#3A4A5C] hover:border-[#1B3A6B] hover:text-[#1B3A6B] transition-colors disabled:opacity-50"
+              className="flex items-center justify-center gap-2 px-5 py-2.5 border border-[var(--a-border)] rounded-[var(--a-radius-control)] text-sm font-dm font-medium text-[var(--a-ink-2)] hover:border-[var(--a-border-strong)] hover:text-[#1B3A6B] transition-colors disabled:opacity-50"
             >
               {composing ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />} Save as Draft
             </button>
             <button
               onClick={() => handleCompose(true)}
               disabled={composing}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#2251A3] hover:bg-[#1B3A6B] text-white rounded-xl text-sm font-dm font-semibold transition-colors disabled:opacity-50"
+              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#2251A3] hover:bg-[var(--a-navy)] text-white rounded-[var(--a-radius-control)] text-sm font-dm font-semibold transition-colors disabled:opacity-50"
             >
               {composing ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
               Send to {subscriberCount} subscriber{subscriberCount !== 1 ? "s" : ""}

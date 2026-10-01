@@ -31,7 +31,8 @@ const STATUSES = [
   ["cancelled", "Cancelled"],
 ] as const;
 
-const input = "w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm";
+const input =
+  "h-9 w-full rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] bg-[var(--a-surface)] px-3 font-dm text-[13.5px] text-[var(--a-ink)] focus:border-[var(--a-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20";
 const label = "text-xs font-semibold text-[var(--ink2)]";
 
 export default function SessionForm({
@@ -205,7 +206,7 @@ export default function SessionForm({
         </div>
       </fieldset>
       <div className="flex items-center gap-3 sm:col-span-2">
-        <button onClick={save} disabled={busy} className="rounded-lg bg-[var(--ink)] px-4 py-2 text-sm font-bold text-white hover:opacity-90 disabled:opacity-50">
+        <button onClick={save} disabled={busy} className="inline-flex h-9 items-center rounded-[var(--a-radius-control)] bg-[var(--a-orange-text)] px-4 font-dm text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#9c4408] disabled:opacity-60">
           {busy ? "Saving…" : sessionId ? "Save changes" : "Create session"}
         </button>
         {msg && <span role="status" className={`text-sm ${msg.ok ? "text-green-700" : "text-red-700"}`}>{msg.text}</span>}

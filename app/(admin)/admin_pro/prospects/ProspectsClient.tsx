@@ -50,7 +50,7 @@ const STATUS_ORDER: ProspectStatus[] = ["NEW","CONTACTED","QUALIFIED","PROPOSAL_
 
 const STATUS_COLORS: Record<string, string> = {
   NEW:           "bg-[#FEF0E3] text-[#F47C20]",
-  CONTACTED:     "bg-[#EBF0FA] text-[#2251A3]",
+  CONTACTED:     "bg-[var(--a-info-bg)] text-[var(--a-blue)]",
   QUALIFIED:     "bg-green-100 text-green-700",
   PROPOSAL_SENT: "bg-purple-100 text-purple-700",
   NEGOTIATING:   "bg-yellow-100 text-yellow-700",
@@ -163,14 +163,14 @@ function ProspectPanel({
       <div className="flex-1 bg-black/40" onClick={onClose} />
       <div className="w-full max-w-lg bg-white h-full shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#D2DCE8] bg-[#F4F7FB]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--a-border)] bg-[var(--a-surface-2)]">
           <div className="min-w-0">
-            <h2 className="font-syne font-bold text-lg text-[#0D1B2A] truncate">{prospect.name}</h2>
-            <p className="font-dm text-sm text-[#7A8FA6] truncate">{prospect.business}</p>
+            <h2 className="font-syne font-bold text-lg text-[var(--a-ink)] truncate">{prospect.name}</h2>
+            <p className="font-dm text-sm text-[var(--a-ink-3)] truncate">{prospect.business}</p>
           </div>
           <div className="flex items-center gap-2 ml-3">
-            {saving && <RefreshCw size={14} className="animate-spin text-[#7A8FA6]" />}
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-[#D2DCE8] transition-colors text-[#7A8FA6]">
+            {saving && <RefreshCw size={14} className="animate-spin text-[var(--a-ink-3)]" />}
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-[#D2DCE8] transition-colors text-[var(--a-ink-3)]">
               <X size={16} />
             </button>
           </div>
@@ -178,41 +178,41 @@ function ProspectPanel({
 
         <div className="flex-1 overflow-y-auto">
           {/* Contact Info */}
-          <div className="px-6 py-4 border-b border-[#F4F7FB] space-y-2">
-            <p className="font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide mb-3">Contact Info</p>
+          <div className="px-6 py-4 border-b border-[var(--a-border)] space-y-2">
+            <p className="font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em] mb-3">Contact Info</p>
             <div className="grid grid-cols-2 gap-3">
               {prospect.email && (
                 <a href={`mailto:${prospect.email}`}
-                  className="flex items-center gap-2 text-sm font-dm text-[#2251A3] hover:underline col-span-2 truncate">
+                  className="flex items-center gap-2 text-sm font-dm text-[var(--a-blue)] hover:underline col-span-2 truncate">
                   <Mail size={13} className="flex-shrink-0" /> {prospect.email}
                 </a>
               )}
               {prospect.phone && (
                 <a href={`tel:${prospect.phone}`}
-                  className="flex items-center gap-2 text-sm font-dm text-[#3A4A5C] truncate">
+                  className="flex items-center gap-2 text-sm font-dm text-[var(--a-ink-2)] truncate">
                   <Phone size={13} className="flex-shrink-0" /> {prospect.phone}
                 </a>
               )}
-              <div className="flex items-center gap-2 text-sm font-dm text-[#3A4A5C]">
+              <div className="flex items-center gap-2 text-sm font-dm text-[var(--a-ink-2)]">
                 <Building2 size={13} className="flex-shrink-0" /> {prospect.industry}
               </div>
-              <div className="flex items-center gap-2 text-sm font-dm text-[#3A4A5C]">
+              <div className="flex items-center gap-2 text-sm font-dm text-[var(--a-ink-2)]">
                 <Tag size={13} className="flex-shrink-0" /> {prospect.source.replace(/_/g," ")}
               </div>
             </div>
           </div>
 
           {/* Pipeline */}
-          <div className="px-6 py-4 border-b border-[#F4F7FB] space-y-3">
-            <p className="font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Pipeline</p>
+          <div className="px-6 py-4 border-b border-[var(--a-border)] space-y-3">
+            <p className="font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em]">Pipeline</p>
             <div className="grid grid-cols-2 gap-3">
               {/* Status */}
               <div>
-                <label className="font-dm text-xs text-[#7A8FA6] mb-1 block">Status</label>
+                <label className="font-dm text-xs text-[var(--a-ink-3)] mb-1 block">Status</label>
                 <select
                   value={status}
                   onChange={e => handleStatusChange(e.target.value as ProspectStatus)}
-                  className="w-full text-sm font-dm bg-white border border-[#D2DCE8] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3]"
+                  className="w-full text-sm font-dm bg-white border border-[var(--a-border)] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20 focus:border-[var(--a-blue)]"
                 >
                   {ALL_STATUSES.map(s => (
                     <option key={s} value={s}>{s.replace(/_/g," ")}</option>
@@ -221,38 +221,38 @@ function ProspectPanel({
               </div>
               {/* Deal value */}
               <div>
-                <label className="font-dm text-xs text-[#7A8FA6] mb-1 block">Deal Value ($)</label>
+                <label className="font-dm text-xs text-[var(--a-ink-3)] mb-1 block">Deal Value ($)</label>
                 <div className="relative">
-                  <DollarSign size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7A8FA6]" />
+                  <DollarSign size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--a-ink-3)]" />
                   <input
                     type="number"
                     value={estimatedValue}
                     onChange={e => setEstimatedValue(e.target.value)}
                     onBlur={handleValueBlur}
                     placeholder="0"
-                    className="w-full pl-7 pr-3 py-2 text-sm font-dm bg-white border border-[#D2DCE8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3]"
+                    className="w-full pl-7 pr-3 py-2 text-sm font-dm bg-white border border-[var(--a-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20 focus:border-[var(--a-blue)]"
                   />
                 </div>
               </div>
               {/* Budget */}
               <div>
-                <label className="font-dm text-xs text-[#7A8FA6] mb-1 block">Budget (stated)</label>
-                <p className="text-sm font-dm font-medium text-[#0D1B2A] py-2">{prospect.budget || "—"}</p>
+                <label className="font-dm text-xs text-[var(--a-ink-3)] mb-1 block">Budget (stated)</label>
+                <p className="text-sm font-dm font-medium text-[var(--a-ink)] py-2">{prospect.budget || "—"}</p>
               </div>
               {/* Follow-up date */}
               <div>
-                <label className="font-dm text-xs text-[#7A8FA6] mb-1 block">Follow-up Date</label>
+                <label className="font-dm text-xs text-[var(--a-ink-3)] mb-1 block">Follow-up Date</label>
                 <div className="relative">
-                  <Calendar size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7A8FA6]" />
+                  <Calendar size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--a-ink-3)]" />
                   <input
                     type="date"
                     value={followUpDate}
                     onChange={e => setFollowUpDate(e.target.value)}
                     onBlur={handleFollowUpBlur}
-                    className={`w-full pl-7 pr-3 py-2 text-sm font-dm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 ${
+                    className={`w-full pl-7 pr-3 py-2 text-sm font-dm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20 ${
                       fuStatus === "overdue" ? "border-red-400 text-red-600" :
                       fuStatus === "soon" ? "border-amber-400 text-amber-700" :
-                      "border-[#D2DCE8]"
+                      "border-[var(--a-border)]"
                     }`}
                   />
                 </div>
@@ -268,41 +268,41 @@ function ProspectPanel({
 
           {/* Main challenge */}
           {prospect.mainChallenge && (
-            <div className="px-6 py-4 border-b border-[#F4F7FB]">
-              <p className="font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide mb-2">Main Challenge</p>
-              <p className="text-sm font-dm text-[#3A4A5C] leading-relaxed">{prospect.mainChallenge}</p>
+            <div className="px-6 py-4 border-b border-[var(--a-border)]">
+              <p className="font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em] mb-2">Main Challenge</p>
+              <p className="text-sm font-dm text-[var(--a-ink-2)] leading-relaxed">{prospect.mainChallenge}</p>
             </div>
           )}
 
           {/* Solutions */}
           {prospect.suggestedSolutions.length > 0 && (
-            <div className="px-6 py-4 border-b border-[#F4F7FB]">
-              <p className="font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide mb-2">Suggested Solutions</p>
+            <div className="px-6 py-4 border-b border-[var(--a-border)]">
+              <p className="font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em] mb-2">Suggested Solutions</p>
               <div className="flex flex-wrap gap-1.5">
                 {prospect.suggestedSolutions.map(s => (
-                  <span key={s} className="bg-[#EBF0FA] text-[#2251A3] text-xs px-2.5 py-1 rounded-full font-dm">{s}</span>
+                  <span key={s} className="bg-[var(--a-info-bg)] text-[var(--a-blue)] text-xs px-2.5 py-1 rounded-full font-dm">{s}</span>
                 ))}
               </div>
             </div>
           )}
 
           {/* Notes */}
-          <div className="px-6 py-4 border-b border-[#F4F7FB]">
-            <p className="font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide mb-2 flex items-center gap-1.5">
-              <StickyNote size={12} /> Notes <span className="text-[#7A8FA6] font-normal normal-case">(auto-saves)</span>
+          <div className="px-6 py-4 border-b border-[var(--a-border)]">
+            <p className="font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em] mb-2 flex items-center gap-1.5">
+              <StickyNote size={12} /> Notes <span className="text-[var(--a-ink-3)] font-normal normal-case">(auto-saves)</span>
             </p>
             <textarea
               value={notes}
               onChange={e => handleNotesChange(e.target.value)}
               rows={4}
               placeholder="Add internal notes about this prospect…"
-              className="w-full text-sm font-dm text-[#0D1B2A] bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3] placeholder-[#7A8FA6]"
+              className="w-full text-sm font-dm text-[var(--a-ink)] bg-[var(--a-surface-2)] border border-[var(--a-border)] rounded-[var(--a-radius-control)] px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20 focus:border-[var(--a-blue)] placeholder-[#7A8FA6]"
             />
           </div>
 
           {/* Activity Log */}
           <div className="px-6 py-4">
-            <p className="font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide mb-3">Activity Log</p>
+            <p className="font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em] mb-3">Activity Log</p>
 
             {/* Add note */}
             <div className="flex gap-2 mb-4">
@@ -312,12 +312,12 @@ function ProspectPanel({
                 onChange={e => setNewNote(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && submitNote()}
                 placeholder="Log a call, email, or note…"
-                className="flex-1 text-sm font-dm bg-white border border-[#D2DCE8] rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3] placeholder-[#7A8FA6]"
+                className="flex-1 text-sm font-dm bg-white border border-[var(--a-border)] rounded-[var(--a-radius-control)] px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20 focus:border-[var(--a-blue)] placeholder-[#7A8FA6]"
               />
               <button
                 onClick={submitNote}
                 disabled={addingNote || !newNote.trim()}
-                className="flex items-center gap-1.5 px-4 py-2 bg-[#2251A3] text-white text-sm font-dm font-medium rounded-xl hover:bg-[#1B3A6B] disabled:opacity-40 transition-colors"
+                className="flex items-center gap-1.5 px-4 py-2 bg-[#2251A3] text-white text-sm font-dm font-medium rounded-[var(--a-radius-control)] hover:bg-[var(--a-navy)] disabled:opacity-40 transition-colors"
               >
                 {addingNote ? <RefreshCw size={13} className="animate-spin" /> : <Plus size={13} />}
                 Log
@@ -328,49 +328,49 @@ function ProspectPanel({
             <div className="space-y-3">
               {/* Created entry */}
               <div className="flex gap-3">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[#EBF0FA] flex items-center justify-center mt-0.5">
-                  <CheckCircle2 size={12} className="text-[#2251A3]" />
+                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-[var(--a-info-bg)] flex items-center justify-center mt-0.5">
+                  <CheckCircle2 size={12} className="text-[var(--a-blue)]" />
                 </div>
                 <div>
-                  <p className="text-xs font-dm font-medium text-[#0D1B2A]">Prospect created</p>
-                  <p className="text-xs font-dm text-[#7A8FA6]">{new Date(prospect.createdAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</p>
+                  <p className="text-xs font-dm font-medium text-[var(--a-ink)]">Prospect created</p>
+                  <p className="text-xs font-dm text-[var(--a-ink-3)]">{new Date(prospect.createdAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</p>
                 </div>
               </div>
               {activity.map((a, i) => (
                 <div key={i} className="flex gap-3">
                   <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center mt-0.5 ${
-                    a.type === "note" ? "bg-amber-100" : "bg-[#EBF0FA]"
+                    a.type === "note" ? "bg-amber-100" : "bg-[var(--a-info-bg)]"
                   }`}>
                     {a.type === "note"
                       ? <StickyNote size={11} className="text-amber-600" />
-                      : <ChevronRight size={12} className="text-[#2251A3]" />
+                      : <ChevronRight size={12} className="text-[var(--a-blue)]" />
                     }
                   </div>
                   <div>
-                    <p className="text-xs font-dm text-[#0D1B2A]">{a.text}</p>
-                    <p className="text-xs font-dm text-[#7A8FA6]">{new Date(a.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</p>
+                    <p className="text-xs font-dm text-[var(--a-ink)]">{a.text}</p>
+                    <p className="text-xs font-dm text-[var(--a-ink-3)]">{new Date(a.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</p>
                   </div>
                 </div>
               ))}
               {activity.length === 0 && (
-                <p className="text-xs font-dm text-[#7A8FA6] italic">No activity logged yet.</p>
+                <p className="text-xs font-dm text-[var(--a-ink-3)] italic">No activity logged yet.</p>
               )}
             </div>
           </div>
         </div>
 
         {/* Footer actions */}
-        <div className="px-6 py-4 border-t border-[#D2DCE8] bg-[#F4F7FB] flex items-center justify-between">
+        <div className="px-6 py-4 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] flex items-center justify-between">
           <div className="flex items-center gap-2">
             {prospect.email && (
               <a href={`mailto:${prospect.email}`}
-                className="flex items-center gap-1.5 px-3 py-2 bg-white border border-[#D2DCE8] text-[#0D1B2A] text-sm font-dm rounded-xl hover:bg-[#EBF0FA] hover:border-[#2251A3] hover:text-[#2251A3] transition-colors">
+                className="flex items-center gap-1.5 px-3 py-2 bg-white border border-[var(--a-border)] text-[var(--a-ink)] text-sm font-dm rounded-[var(--a-radius-control)] hover:bg-[var(--a-info-bg)] hover:border-[#2251A3] hover:text-[var(--a-blue)] transition-colors">
                 <Mail size={13} /> Email
               </a>
             )}
             <button
               onClick={() => { onUpdate(prospect.id, { archived: !prospect.archived }); onClose(); }}
-              className="flex items-center gap-1.5 px-3 py-2 bg-white border border-[#D2DCE8] text-[#7A8FA6] text-sm font-dm rounded-xl hover:bg-amber-50 hover:text-amber-600 hover:border-amber-300 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 bg-white border border-[var(--a-border)] text-[var(--a-ink-3)] text-sm font-dm rounded-[var(--a-radius-control)] hover:bg-amber-50 hover:text-amber-600 hover:border-amber-300 transition-colors"
             >
               {prospect.archived ? <ArchiveRestore size={13} /> : <Archive size={13} />}
               {prospect.archived ? "Restore" : "Archive"}
@@ -378,7 +378,7 @@ function ProspectPanel({
           </div>
           <button
             onClick={() => { onDelete(prospect.id, prospect.name); onClose(); }}
-            className="flex items-center gap-1.5 px-3 py-2 text-red-500 text-sm font-dm rounded-xl hover:bg-red-50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 text-red-500 text-sm font-dm rounded-[var(--a-radius-control)] hover:bg-red-50 transition-colors"
           >
             <Trash2 size={13} /> Delete
           </button>
@@ -410,6 +410,16 @@ export default function ProspectsClient({
   const [loading, setLoading]       = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [busyId, setBusyId]         = useState<string | null>(null);
+  // Global search (Cmd/Ctrl+K) links here with ?q=; seed the filter from it.
+  useEffect(() => {
+    try {
+      const q = new URLSearchParams(window.location.search).get("q");
+      if (q) {
+        setSearch(q);
+        setView("table");
+      }
+    } catch {}
+  }, []);
   const [selected, setSelected]     = useState<Prospect | null>(null);
 
   const load = useCallback(async () => {
@@ -433,7 +443,8 @@ export default function ProspectsClient({
   const filtered = items.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.business.toLowerCase().includes(search.toLowerCase()) ||
-    p.industry.toLowerCase().includes(search.toLowerCase())
+    p.industry.toLowerCase().includes(search.toLowerCase()) ||
+    (p.email ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
   function updateItem(id: string, data: Partial<Prospect>) {
@@ -522,7 +533,7 @@ export default function ProspectsClient({
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <RefreshCw size={18} className="animate-spin text-[#7A8FA6]" />
+          <RefreshCw size={18} className="animate-spin text-[var(--a-ink-3)]" />
         </div>
       ) : (
         <>
@@ -538,28 +549,28 @@ export default function ProspectsClient({
                       <div className="rounded-t-xl px-4 py-3 border-t-4"
                         style={{ borderColor: col.color, backgroundColor: col.color + "10" }}>
                         <div className="flex items-center justify-between">
-                          <span className="font-syne font-bold text-sm text-[#0D1B2A]">{col.label}</span>
+                          <span className="font-syne font-bold text-sm text-[var(--a-ink)]">{col.label}</span>
                           <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full"
                             style={{ backgroundColor: col.color + "20", color: col.color }}>
                             {cards.length}
                           </span>
                         </div>
                         {val > 0 && (
-                          <p className="text-xs font-dm text-[#7A8FA6] mt-1 flex items-center gap-1">
+                          <p className="text-xs font-dm text-[var(--a-ink-3)] mt-1 flex items-center gap-1">
                             <DollarSign size={10} /> {fmt(val)} potential
                           </p>
                         )}
                       </div>
-                      <div className="bg-[#F4F7FB] rounded-b-xl p-2 space-y-2 min-h-[120px]">
+                      <div className="bg-[var(--a-surface-2)] rounded-b-xl p-2 space-y-2 min-h-[120px]">
                         {cards.length === 0 && (
-                          <p className="text-center text-xs font-dm text-[#7A8FA6] py-6">No prospects</p>
+                          <p className="text-center text-xs font-dm text-[var(--a-ink-3)] py-6">No prospects</p>
                         )}
                         {cards.map(p => {
                           const fu = followUpStatus(p.followUpDate);
                           return (
                             <div key={p.id}
                               onClick={() => setSelected(p)}
-                              className="bg-white border border-[#D2DCE8] rounded-xl p-3 space-y-2 cursor-pointer hover:border-[#2251A3]/40 hover:shadow-sm transition-all group">
+                              className="bg-white border border-[var(--a-border)] rounded-[var(--a-radius-control)] p-3 space-y-2 cursor-pointer hover:border-[#2251A3]/40 hover:shadow-sm transition-all group">
                               {fu && (
                                 <div className={`flex items-center gap-1 text-xs font-dm px-2 py-0.5 rounded-full w-fit ${
                                   fu === "overdue" ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-700"
@@ -569,14 +580,14 @@ export default function ProspectsClient({
                               )}
                               <div className="flex items-start justify-between gap-1">
                                 <div className="min-w-0">
-                                  <p className="font-dm font-semibold text-sm text-[#0D1B2A] leading-tight truncate group-hover:text-[#2251A3]">{p.name}</p>
-                                  <p className="font-dm text-xs text-[#7A8FA6] truncate">{p.business}</p>
+                                  <p className="font-dm font-semibold text-sm text-[var(--a-ink)] leading-tight truncate group-hover:text-[var(--a-blue)]">{p.name}</p>
+                                  <p className="font-dm text-xs text-[var(--a-ink-3)] truncate">{p.business}</p>
                                 </div>
-                                <span className="text-xs font-dm text-[#7A8FA6] whitespace-nowrap flex-shrink-0">
+                                <span className="text-xs font-dm text-[var(--a-ink-3)] whitespace-nowrap flex-shrink-0">
                                   {daysAgo(p.createdAt)}d
                                 </span>
                               </div>
-                              <p className="text-xs font-dm text-[#7A8FA6]">{p.industry} · {p.budget}</p>
+                              <p className="text-xs font-dm text-[var(--a-ink-3)]">{p.industry} · {p.budget}</p>
                               {p.estimatedValue && (
                                 <p className="text-xs font-dm font-semibold text-[#0F6E56] flex items-center gap-1">
                                   <DollarSign size={10} /> {p.estimatedValue.toLocaleString()} deal
@@ -584,13 +595,13 @@ export default function ProspectsClient({
                               )}
                               <div className="flex flex-wrap gap-1">
                                 {p.suggestedSolutions.slice(0, 2).map(s => (
-                                  <span key={s} className="bg-[#EBF0FA] text-[#2251A3] text-xs px-1.5 py-0.5 rounded-full font-dm">{s}</span>
+                                  <span key={s} className="bg-[var(--a-info-bg)] text-[var(--a-blue)] text-xs px-1.5 py-0.5 rounded-full font-dm">{s}</span>
                                 ))}
                               </div>
                               <div className="flex items-center justify-between gap-2 pt-1" onClick={e => e.stopPropagation()}>
                                 {!showArchived && p.status !== "CLOSED_WON" && (
                                   <button onClick={() => moveToNext(p.id)}
-                                    className="flex-1 text-xs font-dm font-medium text-[#2251A3] border border-[#D2DCE8] rounded-lg py-1.5 hover:bg-[#EBF0FA] transition-colors">
+                                    className="flex-1 text-xs font-dm font-medium text-[var(--a-blue)] border border-[var(--a-border)] rounded-lg py-1.5 hover:bg-[var(--a-info-bg)] transition-colors">
                                     Move → {COLUMNS[STATUS_ORDER.indexOf(p.status) + 1]?.label}
                                   </button>
                                 )}

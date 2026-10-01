@@ -16,8 +16,8 @@ import { translatorFor } from "@/lib/i18n/server";
 export type CatalogType = "track" | "learn-plan" | "product" | "toolkit" | "blueprint" | "tool" | "service" | "event" | "live" | "article";
 
 export const TYPE_LABEL: Record<CatalogType, string> = {
-  track: "Learn track",
-  "learn-plan": "Learn plan",
+  track: "AI Academy track",
+  "learn-plan": "AI Academy plan",
   product: "Store product",
   toolkit: "Toolkit Live",
   blueprint: "Blueprint",
@@ -133,7 +133,7 @@ export async function getCatalog(): Promise<CatalogItem[]> {
       price: `${money(price)} one-time, or included in the ${money(PLANS.monthly.amount)}/month all-tracks plan`,
       createdAt: tr.createdAt.toISOString(),
       facts: [
-        `Self-paced online track in TIBLOGICS Learning Box, level: ${tr.level}${tr.status === "coming_soon" ? " (coming soon, waitlist open)" : ""}.`,
+        `Self-paced online track in TIBLOGICS AI Academy (inside the product it is "ARFA · AI Academy"; ARFA = AI Readiness For All), level: ${tr.level}${tr.status === "coming_soon" ? " (coming soon, waitlist open)" : ""}.`,
         tr.tagline ? `Tagline: ${tr.tagline}` : "",
         `Description: ${clip(tr.description, 700)}`,
         tr.audience ? `Who it is for: ${clip(tr.audience, 300)}` : "",
@@ -150,12 +150,12 @@ export async function getCatalog(): Promise<CatalogItem[]> {
   items.push({
     key: "learn-plan:monthly",
     type: "learn-plan",
-    title: "Learning Box: all tracks (monthly)",
+    title: "AI Academy: all tracks (monthly)",
     summary: PLANS.monthly.blurb,
     url: "/learning-box",
     price: `${money(PLANS.monthly.amount)}/month`,
     facts: [
-      `Every TIBLOGICS Learning Box track, ${money(PLANS.monthly.amount)} per month. ${PLANS.monthly.blurb}`,
+      `Every AI Academy track, ${money(PLANS.monthly.amount)} per month. ${PLANS.monthly.blurb}`,
       tracks.length ? `Tracks include: ${tracks.filter((x) => x.status === "live").map((x) => x.title).join("; ")}.` : "",
       "Lessons, labs, quizzes, final exams and certificates; available in English and French.",
     ].filter(Boolean),
@@ -264,7 +264,7 @@ export async function getCatalog(): Promise<CatalogItem[]> {
       url: `/learn/live/${s.id}`,
       createdAt: s.createdAt.toISOString(),
       facts: [
-        `Live expert session for TIBLOGICS Learning Box members with ${s.expertName}.`,
+        `Live expert session for TIBLOGICS AI Academy members with ${s.expertName}.`,
         s.topic ? `Topic: ${clip(s.topic, 300)}` : "",
         s.expertBio ? `About the expert: ${clip(s.expertBio, 400)}` : "",
         `Starts ${s.startsAt.toLocaleString("en-US", { dateStyle: "long", timeStyle: "short", timeZone: s.timezone || "UTC" })} (${s.timezone}), ${s.durationMinutes} minutes.`,

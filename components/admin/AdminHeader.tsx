@@ -20,7 +20,7 @@ import {
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Kbd } from "@/components/admin/ui";
+import { Avatar, Kbd } from "@/components/admin/ui";
 import { activeHref, canSee, flattenNav, visibleSections } from "@/components/admin/shell/nav";
 import { useAdminShell, type NotifType } from "@/components/admin/shell/AdminShellContext";
 import { CommandPalette, visibleQuickActions } from "@/components/admin/shell/CommandPalette";
@@ -121,12 +121,25 @@ export default function AdminHeader() {
   const bell = usePopover();
   const create = usePopover();
   const profile = usePopover();
+  // Seen notification ids persist per browser so the badge only counts new items.
+  const SEEN_KEY = "tib.admin.notifSeen";
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    try {
+      setSeenIds(new Set(JSON.parse(window.localStorage.getItem(SEEN_KEY) ?? "[]") as string[]));
+    } catch {}
+  }, []);
   const unread = items.filter((i) => !seenIds.has(i.id)).length;
 
   function toggleBell() {
     bell.setOpen(!bell.open);
-    if (!bell.open) setSeenIds(new Set(items.map((i) => i.id)));
+    if (!bell.open) {
+      const next = new Set(items.map((i) => i.id));
+      setSeenIds(next);
+      try {
+        window.localStorage.setItem(SEEN_KEY, JSON.stringify([...next].slice(-200)));
+      } catch {}
+    }
   }
 
   function navigate(href: string) {
@@ -135,7 +148,6 @@ export default function AdminHeader() {
   }
 
   const name = session?.user?.name ?? session?.user?.email ?? "Admin";
-  const initial = name.charAt(0).toUpperCase();
   const role = viewer.isAdmin ? "Admin" : ((session?.user as { role?: string } | undefined)?.role ?? "Collaborator");
 
   return (
@@ -292,9 +304,7 @@ export default function AdminHeader() {
               aria-label="Account menu"
               className="flex h-11 items-center gap-2 rounded-[var(--a-radius-control)] px-1 transition-colors hover:bg-[var(--a-surface-2)] sm:h-9 sm:pr-2"
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--a-navy)] font-dm text-xs font-semibold text-white">
-                {initial}
-              </span>
+              <Avatar name={name} size={32} />
               <span className="hidden max-w-[140px] truncate font-dm text-[13.5px] font-medium text-[var(--a-ink-2)] xl:block">{name}</span>
               <ChevronDown size={14} className="hidden text-[var(--a-ink-3)] sm:block" aria-hidden />
             </button>

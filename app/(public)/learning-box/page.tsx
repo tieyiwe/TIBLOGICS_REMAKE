@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import LevelPicker from "@/components/learn/LevelPicker";
 import Reveal from "@/components/learn/Reveal";
-import ArfaWordmark from "@/components/learn/ArfaWordmark";
 import HowItWorks from "@/components/learn/method/HowItWorks";
 import { getCatalog } from "@/lib/learn/catalog";
 import { fmtPrice } from "@/lib/learn/format";
@@ -17,9 +16,15 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
+  const title = t("learn.box.metaTitle");
+  const description = t("learn.box.metaDescription");
   return {
-    title: t("learn.box.metaTitle"),
-    description: t("learn.box.metaDescription"),
+    // Absolute: the brand lockup already names TIBLOGICS.
+    title: { absolute: title },
+    description,
+    // Page-level openGraph/twitter replace the root ones, so keep the image.
+    openGraph: { type: "website", url: "/learning-box", siteName: "TIBLOGICS", title, description, images: ["/opengraph-image?v=3"] },
+    twitter: { card: "summary_large_image", title, description, images: ["/opengraph-image?v=3"] },
   };
 }
 
@@ -30,6 +35,7 @@ export default async function LearningBoxPage() {
     locale,
   );
   const tracks = catalog.map((c) => withTrackText(c, texts.get(c.slug)));
+  const brand = t("learn.box.heroBrand");
   const monthly = PLANS.monthly;
   // The lowest one-time price among the tracks on sale.
   const onSale = tracks.filter((x) => x.status === "live").map((x) => x.priceCents);
@@ -53,24 +59,32 @@ export default async function LearningBoxPage() {
           the white header sits on top of the eyebrow and headline. */}
       <section className="bg-[var(--ink)] px-4 pb-16 pt-32 text-white sm:pb-20 sm:pt-44">
         <div className="learn-hero mx-auto max-w-6xl">
-          <div
-            className="flex flex-wrap items-center gap-x-4 gap-y-3"
+          {/* ARFA is the TIBLOGICS AI Academy platform: the brand is the headline. */}
+          <h1
+            className="max-w-3xl text-3xl font-black leading-tight sm:text-5xl"
             style={{ "--stagger-index": 0 } as React.CSSProperties}
           >
-            <ArfaWordmark size="md" tone="dark" subtitle={false} />
-            <div className="border-l border-white/20 pl-4">
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--orange)]">
-                {t("learn.box.heroEyebrow")}
-              </p>
-              <p className="mt-1 text-xs text-white/70">{t("learn.box.poweredBy")}</p>
-            </div>
-          </div>
-          <h1
-            className="mt-3 max-w-3xl text-3xl font-black leading-tight sm:text-5xl"
+            {brand.startsWith("ARFA") ? (
+              <>
+                AR<span className="text-[var(--orange)]">FA</span>
+                {brand.slice(4)}
+              </>
+            ) : (
+              brand
+            )}
+          </h1>
+          <p
+            className="mt-2 text-sm font-bold uppercase tracking-[0.2em] text-[var(--orange)]"
+            style={{ "--stagger-index": 1 } as React.CSSProperties}
+          >
+            AI Readiness For All
+          </p>
+          <p
+            className="mt-6 max-w-3xl text-xl font-bold leading-snug sm:text-2xl"
             style={{ "--stagger-index": 1 } as React.CSSProperties}
           >
             {t("learn.box.heroTitle")}
-          </h1>
+          </p>
           <p
             className="mt-5 max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg"
             style={{ "--stagger-index": 2 } as React.CSSProperties}

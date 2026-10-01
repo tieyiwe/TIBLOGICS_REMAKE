@@ -46,7 +46,7 @@ async function attempt<T>(label: string, fn: () => Promise<T>, fallback: T): Pro
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const times = (n: number) => (n === 1 ? "once" : n === 2 ? "twice" : `${n} times`);
-const SOURCE_KIND: Record<string, string> = { blog: "New article published", track: "New Learn track", lessons: "New lessons", product: "New store product", event: "New event", live: "New live session" };
+const SOURCE_KIND: Record<string, string> = { blog: "New article published", track: "New AI Academy track", lessons: "New lessons", product: "New store product", event: "New event", live: "New live session" };
 
 // ── Next best actions ───────────────────────────────────────────────────────
 
@@ -240,8 +240,8 @@ export async function getNextActions(): Promise<NextAction[]> {
     const ratio = rate(worst) > 0 ? rate(best) / rate(worst) : Infinity;
     if (ratio < 2) return null;
     const title = Number.isFinite(ratio)
-      ? `Your Learn sign-ups from ${label(best.key)} convert ${ratio >= 10 ? Math.round(ratio) : ratio.toFixed(1)}x ${label(worst.key)}: shift effort`
-      : `${label(best.key)} brings Learn sign-ups, ${label(worst.key)} none from ${worst.clicks} clicks: shift effort`;
+      ? `Your AI Academy sign-ups from ${label(best.key)} convert ${ratio >= 10 ? Math.round(ratio) : ratio.toFixed(1)}x ${label(worst.key)}: shift effort`
+      : `${label(best.key)} brings AI Academy sign-ups, ${label(worst.key)} none from ${worst.clicks} clicks: shift effort`;
     return {
       id: `insight:${best.key}:${worst.key}`,
       kind: "channel-insight",
@@ -366,7 +366,7 @@ export async function getGoalProgress(goals?: Goals): Promise<{ items: GoalItem[
   ]);
   const signups = kindCount(cur, ["learn_signup"], "count");
   const items: GoalItem[] = [
-    { key: "signups", label: "Learn sign-ups", value: signups, target: g.signups, display: String(signups), targetDisplay: String(g.signups), lastWeek: kindCount(prev, ["learn_signup"], "count"), source: "Attributed to a tracked campaign" },
+    { key: "signups", label: "AI Academy sign-ups", value: signups, target: g.signups, display: String(signups), targetDisplay: String(g.signups), lastWeek: kindCount(prev, ["learn_signup"], "count"), source: "Attributed to a tracked campaign" },
     { key: "leads", label: "New leads", value: leads, target: g.leads, display: String(leads), targetDisplay: String(g.leads), lastWeek: prevLeads, source: "Added to the lead workspace" },
     { key: "revenueCents", label: "Attributed revenue", value: cur.totals.revenueCents, target: g.revenueCents, display: money(cur.totals.revenueCents), targetDisplay: money(g.revenueCents), lastWeek: prev.totals.revenueCents, source: "Paid records from tracked links" },
     { key: "posts", label: "Posts published", value: posts, target: g.posts, display: String(posts), targetDisplay: String(g.posts), lastWeek: prevPosts, source: "Published or marked posted" },

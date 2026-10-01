@@ -3,6 +3,10 @@ import { requireAdminPage } from "../../_lib/admin-page-auth";
 import { communityTablesReady } from "@/lib/learn/community/db";
 import { openReports, recentPeerReviews, recentThreads, suspendedLearners, threadForStaff } from "@/lib/learn/community/admin";
 import { LiftSuspension, PeerToggle, ReportRow, StaffThread } from "./ModerationClient";
+import { Ban, Flag, Layers, MessagesSquare, ShieldCheck, Star } from "lucide-react";
+import { Avatar, Badge, Button, Card, EmptyState, Notice, PageHeader, StatCard, tableStyles } from "@/components/admin/ui";
+import { cn } from "@/lib/utils";
+import { LEARN_TABS } from "../tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +14,12 @@ export default async function CommunityModerationPage({ searchParams }: { search
   await requireAdminPage();
   const { thread: threadId } = await searchParams;
   if (!(await communityTablesReady())) {
-    return <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">The community tables could not be created. Check the database connection.</p>;
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Community moderation" tabs={LEARN_TABS} activeTab="/admin_pro/learn/community" className="mb-0" />
+        <Notice tone="warn" title="Community tables unavailable">The community tables could not be created. Check the database connection.</Notice>
+      </div>
+    );
   }
   const [reports, threads, suspended, peer, inspected] = await Promise.all([
     openReports(),
@@ -22,20 +31,26 @@ export default async function CommunityModerationPage({ searchParams }: { search
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-xs text-[var(--ink3)]">
-            <Link href="/admin_pro/learn" className="underline">Learn</Link> / Community
-          </p>
-          <h1 className="text-xl font-black text-[var(--ink)]">Community moderation</h1>
-          <p className="text-sm text-[var(--ink3)]">
-            Reports, threads, suspensions and peer reviews. A post reported by 3 learners is hidden automatically until you decide.
-          </p>
-        </div>
-        <Link href="/admin_pro/learn/cohorts" className="rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-semibold">
-          Cohorts →
-        </Link>
-      </header>
+      <PageHeader
+        title="Community moderation"
+        subtitle="Reports, threads, suspensions and peer reviews. A post reported by 3 learners is hidden automatically until you decide."
+        breadcrumb={[{ label: "ARFA · AI Academy", href: "/admin_pro/learn" }, { label: "Community" }]}
+        tabs={LEARN_TABS}
+        activeTab="/admin_pro/learn/community"
+        actions={
+          <Button href="/admin_pro/learn/cohorts" variant="secondary" icon={Layers}>
+            Cohorts
+          </Button>
+        }
+        className="mb-0"
+      />
+
+      <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Open reports" value={reports.length} icon={Flag} tone={reports.length > 0 ? "danger" : "default"} href="#reports" />
+        <StatCard label="Recent threads" value={threads.length} icon={MessagesSquare} tone="navy" />
+        <StatCard label="Suspended" value={suspended.length} icon={Ban} tone={suspended.length > 0 ? "warn" : "default"} />
+        <StatCard label="Peer reviews" value={peer.length} icon={Star} />
+      </div>
 
       {inspected && (
         <StaffThread
@@ -46,87 +61,107 @@ export default async function CommunityModerationPage({ searchParams }: { search
         />
       )}
 
-      <section className="rounded-xl border border-[var(--border)] bg-white p-5">
-        <h2 className="text-sm font-bold text-[var(--ink)]">Report queue ({reports.length})</h2>
+      <Card
+        id="reports"
+        title="Report queue"
+        icon={Flag}
+        action={reports.length > 0 ? <Badge tone="danger">{reports.length} open</Badge> : null}
+      >
         {reports.length === 0 ? (
-          <p className="mt-3 text-sm text-[var(--ink3)]">No open reports.</p>
+          <EmptyState icon={ShieldCheck} title="No open reports" body="The community is quiet. Reported posts land here for a decision." compact />
         ) : (
-          <ul className="mt-3 space-y-3">
+          <ul className="space-y-3">
             {reports.map((r) => (
               <ReportRow key={r.targetId} r={{ ...r, firstAt: r.firstAt.toISOString() }} />
             ))}
           </ul>
         )}
-      </section>
+      </Card>
 
-      <section className="rounded-xl border border-[var(--border)] bg-white p-5">
-        <h2 className="text-sm font-bold text-[var(--ink)]">Recent threads</h2>
+      <Card title="Recent threads" icon={MessagesSquare} padded={false}>
         {threads.length === 0 ? (
-          <p className="mt-3 text-sm text-[var(--ink3)]">No threads yet.</p>
+          <EmptyState icon={MessagesSquare} title="No threads yet" body="Learner discussions on lessons and cohorts will appear here." compact />
         ) : (
-          <div className="mt-3 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border)] text-left text-xs text-[var(--ink3)]">
-                  <th className="py-2 pr-3">Thread</th>
-                  <th className="py-2 pr-3">Where</th>
-                  <th className="py-2 pr-3">Author</th>
-                  <th className="py-2 pr-3">Replies</th>
-                  <th className="py-2">State</th>
+          <div className="relative overflow-x-auto">
+            <table className={cn(tableStyles.table, "min-w-[640px]")}>
+              <thead className={tableStyles.thead}>
+                <tr>
+                  <th className={tableStyles.th}>Thread</th>
+                  <th className={tableStyles.th}>Where</th>
+                  <th className={tableStyles.th}>Author</th>
+                  <th className={cn(tableStyles.th, "text-right")}>Replies</th>
+                  <th className={tableStyles.th}>State</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[var(--border)]">
+              <tbody>
                 {threads.map((th) => (
-                  <tr key={th.id}>
-                    <td className="py-2 pr-3">
-                      <Link href={`/admin_pro/learn/community?thread=${th.id}`} className="font-semibold text-[var(--blue2)] underline">{th.title}</Link>
+                  <tr key={th.id} className={cn(tableStyles.tr, th.id === threadId && "bg-[var(--a-info-bg)]")}>
+                    <td className={tableStyles.td}>
+                      <Link href={`/admin_pro/learn/community?thread=${th.id}`} className="font-semibold text-[var(--a-blue)] hover:underline">
+                        {th.title}
+                      </Link>
                     </td>
-                    <td className="py-2 pr-3 text-xs">
+                    <td className={cn(tableStyles.td, "text-[12.5px]")}>
                       {th.trackTitle}
                       {th.lessonTitle && ` · ${th.lessonTitle}`}
                       {th.cohortName && ` · cohort: ${th.cohortName}`}
                     </td>
-                    <td className="py-2 pr-3 text-xs">{th.authorName}<br />{th.authorEmail}</td>
-                    <td className="py-2 pr-3">{Number(th.replyCount)}</td>
-                    <td className="py-2 text-xs">{th.hidden ? "hidden" : th.answerPostId ? "answered" : "open"}</td>
+                    <td className={tableStyles.td}>
+                      <span className="flex items-center gap-2">
+                        <Avatar name={th.authorName ?? th.authorEmail ?? "?"} size={26} />
+                        <span className="min-w-0 text-[12.5px]">
+                          <span className="block font-medium text-[var(--a-ink)]">{th.authorName}</span>
+                          <span className="block text-[var(--a-ink-3)]">{th.authorEmail}</span>
+                        </span>
+                      </span>
+                    </td>
+                    <td className={cn(tableStyles.td, "text-right tabular-nums")}>{Number(th.replyCount)}</td>
+                    <td className={tableStyles.td}>
+                      {th.hidden ? <Badge tone="danger">Hidden</Badge> : th.answerPostId ? <Badge tone="success">Answered</Badge> : <Badge tone="info">Open</Badge>}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-      </section>
+      </Card>
 
-      <section className="rounded-xl border border-[var(--border)] bg-white p-5">
-        <h2 className="text-sm font-bold text-[var(--ink)]">Suspended from posting ({suspended.length})</h2>
+      <Card title="Suspended from posting" icon={Ban} action={suspended.length > 0 ? <Badge tone="warn">{suspended.length}</Badge> : null}>
         {suspended.length === 0 ? (
-          <p className="mt-3 text-sm text-[var(--ink3)]">Nobody is suspended.</p>
+          <p className="font-dm text-[13.5px] text-[var(--a-ink-3)]">Nobody is suspended.</p>
         ) : (
-          <ul className="mt-3 space-y-2">
+          <ul className="divide-y divide-[var(--a-border)]">
             {suspended.map((s) => (
-              <li key={s.studentId} className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                <span>
-                  <strong>{s.name}</strong> ({s.email}) until {s.suspendedUntil.toISOString().slice(0, 10)}
-                  {s.suspendReason && <span className="text-[var(--ink3)]"> · {s.suspendReason}</span>}
+              <li key={s.studentId} className="flex flex-wrap items-center justify-between gap-2 py-2.5 font-dm text-[13.5px] first:pt-0 last:pb-0">
+                <span className="flex items-center gap-2.5">
+                  <Avatar name={s.name ?? s.email} size={28} />
+                  <span>
+                    <strong className="text-[var(--a-ink)]">{s.name}</strong> <span className="text-[var(--a-ink-3)]">({s.email})</span> until{" "}
+                    {s.suspendedUntil.toISOString().slice(0, 10)}
+                    {s.suspendReason && <span className="text-[var(--a-ink-3)]"> · {s.suspendReason}</span>}
+                  </span>
                 </span>
                 <LiftSuspension studentId={s.studentId} />
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </Card>
 
-      <section className="rounded-xl border border-[var(--border)] bg-white p-5">
-        <h2 className="text-sm font-bold text-[var(--ink)]">Capstone peer reviews</h2>
-        <p className="text-xs text-[var(--ink3)]">Advisory only: the official grade comes from the staff review. Learners see each other anonymously.</p>
+      <Card
+        title="Capstone peer reviews"
+        icon={Star}
+        subtitle="Advisory only: the official grade comes from the staff review. Learners see each other anonymously."
+      >
         {peer.length === 0 ? (
-          <p className="mt-3 text-sm text-[var(--ink3)]">No peer reviews yet.</p>
+          <p className="font-dm text-[13.5px] text-[var(--a-ink-3)]">No peer reviews yet.</p>
         ) : (
-          <ul className="mt-3 space-y-3">
+          <ul className="space-y-3">
             {peer.map((r) => (
-              <li key={r.id} className="rounded-xl border border-[var(--border)] p-4">
+              <li key={r.id} className="rounded-[12px] border border-[var(--a-border)] p-4 font-dm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-xs text-[var(--ink3)]">
+                  <p className="text-[12.5px] text-[var(--a-ink-3)]">
                     {r.trackTitle} · reviewer {r.reviewerName} ({r.reviewerEmail}) → {r.authorName} ({r.authorEmail}) · {r.status}
                     {r.helpful && " · marked helpful"}
                     {r.hidden && " · hidden"}
@@ -134,7 +169,7 @@ export default async function CommunityModerationPage({ searchParams }: { search
                   {r.status === "submitted" && <PeerToggle reviewId={r.id} hidden={r.hidden} />}
                 </div>
                 {Array.isArray(r.feedback) && r.feedback.length > 0 && (
-                  <ul className="mt-2 space-y-1 text-xs">
+                  <ul className="mt-2 space-y-1 text-[12.5px] text-[var(--a-ink-2)]">
                     {(r.feedback as Array<{ criterion: string; rating: number | null; text: string }>).map((f, i) => (
                       <li key={i}>
                         <strong>{f.criterion}</strong>
@@ -147,7 +182,7 @@ export default async function CommunityModerationPage({ searchParams }: { search
             ))}
           </ul>
         )}
-      </section>
+      </Card>
     </div>
   );
 }

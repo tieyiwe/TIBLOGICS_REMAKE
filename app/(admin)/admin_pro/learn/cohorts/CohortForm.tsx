@@ -23,7 +23,8 @@ export interface CohortFormValue {
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const ZONES = ["Africa/Nairobi", "Africa/Lagos", "Africa/Johannesburg", "Africa/Kinshasa", "Africa/Dakar", "Africa/Abidjan", "Europe/London", "Europe/Paris", "America/New_York", "America/Chicago", "America/Los_Angeles", "UTC"];
 
-const input = "w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm";
+const input =
+  "h-9 w-full rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] bg-[var(--a-surface)] px-3 font-dm text-[13.5px] text-[var(--a-ink)] focus:border-[var(--a-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20";
 
 export default function CohortForm({
   tracks,

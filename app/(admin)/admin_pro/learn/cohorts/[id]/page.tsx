@@ -30,7 +30,7 @@ export default async function CohortAdminPage({ params }: { params: Promise<{ id
         <p className="text-xs text-[var(--ink3)]">
           <Link href="/admin_pro/learn" className="underline">Learn</Link> / <Link href="/admin_pro/learn/cohorts" className="underline">Cohorts</Link>
         </p>
-        <h1 className="text-xl font-black text-[var(--ink)]">{cohort.name}</h1>
+        <h1 className="font-syne text-[24px] font-bold leading-tight text-[var(--a-ink)] sm:text-[26px]">{cohort.name}</h1>
         <p className="text-sm text-[var(--ink3)]">
           Learner page: <Link href={`/learn/community/cohort/${cohort.id}`} className="underline">/learn/community/cohort/{cohort.id}</Link>
         </p>

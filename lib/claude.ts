@@ -50,6 +50,7 @@ export type AiTask =
   | "growth-post"
   | "growth-rewrite"
   | "growth-ideas"
+  | "comms-translate"
   // Sonnet
   | "code-assist"
   | "grade-code"
@@ -117,6 +118,8 @@ export const ROUTES: Record<AiTask, Route> = {
   "growth-rewrite": { tier: "haiku", maxTokens: 1800 },
   // Growth: trend post ideas from AI Times articles, and the mission control summary.
   "growth-ideas": { tier: "haiku", maxTokens: 1200 },
+  // Communications center: an admin message (subject + body) into French.
+  "comms-translate": { tier: "haiku", maxTokens: 4000 },
 
   "code-assist": { tier: "sonnet", maxTokens: 8000, thinking: "adaptive", effort: "medium", cacheSystem: true },
   "grade-code": { tier: "sonnet", maxTokens: 4000, thinking: "adaptive", effort: "medium" },

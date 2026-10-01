@@ -34,7 +34,7 @@ export const DEFAULT_SETTINGS: GrowthSettingsData = {
     "Practical, warm and confident. Plain language over jargon. We show how AI saves time and money in real businesses, with concrete examples. Never hype, never fear-mongering. Short sentences. We speak to owners and professionals as peers.",
   offers: [
     "AI implementation services: custom AI agents and workflow automation for businesses",
-    "TIBLOGICS Learning Box: self-paced AI tracks with certificates",
+    "TIBLOGICS AI Academy (ARFA: AI Readiness For All): self-paced AI tracks with certificates",
     "Free AI tools: Website AI Scanner, AI Product Cost Calculator",
   ],
   proofPoints: [],

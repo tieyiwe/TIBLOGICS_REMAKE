@@ -23,7 +23,7 @@ export default async function TeamAdminDetailPage({ params }: { params: Promise<
         <p className="text-xs text-[var(--ink3)]">
           <Link href="/admin_pro/learn" className="underline">Learn</Link> / <Link href="/admin_pro/learn/teams" className="underline">Teams</Link> / {team.name}
         </p>
-        <h1 className="text-xl font-black text-[var(--ink)]">{team.name}</h1>
+        <h1 className="font-syne text-[24px] font-bold leading-tight text-[var(--a-ink)] sm:text-[26px]">{team.name}</h1>
         <p className="text-sm text-[var(--ink3)]">
           Owner {owner ? `${owner.name} (${owner.email})` : team.ownerStudentId} · {team.comped ? "comped" : team.status} · {d.used} of {team.seats} seats in use ·{" "}
           {money(d.seatPrice)} per seat · MRR {team.status === "active" && !team.comped ? money(d.seatPrice * team.seats) : "$0"}

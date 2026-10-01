@@ -3,29 +3,42 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useConfirm, useToast } from "@/components/admin/ui";
 
 // Community moderation (admin, English): report queue, thread inspector with
 // hide / delete / mark answer, suspensions, and peer review visibility.
 
 type Json = Record<string, unknown>;
 
-const btn = "rounded-lg border border-[var(--border)] bg-white px-3 py-1.5 text-xs font-semibold hover:border-[var(--ink3)] disabled:opacity-50";
-const danger = "rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white hover:opacity-90 disabled:opacity-50";
+const btn =
+  "inline-flex h-8 items-center rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] bg-[var(--a-surface)] px-3 font-dm text-[12.5px] font-semibold text-[var(--a-ink)] transition-colors duration-150 hover:bg-[var(--a-surface-2)] disabled:opacity-50";
+const danger =
+  "inline-flex h-8 items-center rounded-[var(--a-radius-control)] bg-[var(--a-danger)] px-3 font-dm text-[12.5px] font-semibold text-white transition-colors duration-150 hover:bg-[#991b1b] disabled:opacity-50";
 
 export function useModerate() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const confirmFn = useConfirm();
+  const toast = useToast();
   async function act(body: Json) {
     setBusy(true);
     setError(null);
     const res = await fetch("/api/admin/learn/community", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await res.json().catch(() => ({}));
     setBusy(false);
-    if (!res.ok) setError(data.error ?? "Failed");
-    else router.refresh();
+    if (!res.ok) {
+      setError(data.error ?? "Failed");
+      toast.error("Moderation failed", data.error ?? "Please try again.");
+    } else {
+      toast.success("Done", typeof body.action === "string" ? `Action: ${body.action}` : undefined);
+      router.refresh();
+    }
   }
-  return { act, busy, error };
+  /** Kit confirm dialog for destructive moderation. */
+  const confirmDelete = (title: string) =>
+    confirmFn({ title, body: "Learners will no longer see it. This cannot be undone.", confirmLabel: "Delete" });
+  return { act, busy, error, confirmDelete };
 }
 
 function Suspend({ studentId, name }: { studentId: string; name: string }) {
@@ -54,9 +67,9 @@ export function ReportRow({
 }: {
   r: { targetType: "thread" | "post"; targetId: string; threadId: string; title: string; bodyMd: string; hidden: boolean; deleted: boolean; authorId: string; authorName: string; authorEmail: string; reports: number; reasons: string[]; firstAt: string };
 }) {
-  const { act, busy, error } = useModerate();
+  const { act, busy, error, confirmDelete } = useModerate();
   return (
-    <li className="rounded-xl border border-[var(--border)] p-4">
+    <li className="rounded-[12px] border border-[var(--a-border)] p-4 font-dm">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-sm font-bold text-[var(--ink)]">
           {r.targetType === "thread" ? "Thread" : "Reply"} in “{r.title}”
@@ -77,7 +90,7 @@ export function ReportRow({
         ) : (
           <button disabled={busy} onClick={() => act({ action: "hide", targetType: r.targetType, targetId: r.targetId })} className={btn}>Hide</button>
         )}
-        <button disabled={busy} onClick={() => confirm("Delete this for everyone?") && act({ action: "delete", targetType: r.targetType, targetId: r.targetId })} className={danger}>Delete</button>
+        <button disabled={busy} onClick={async () => (await confirmDelete("Delete this for everyone?")) && act({ action: "delete", targetType: r.targetType, targetId: r.targetId })} className={danger}>Delete</button>
         <button disabled={busy} onClick={() => act({ action: "dismiss", targetId: r.targetId })} className={btn}>Dismiss reports</button>
         <Link href={`/admin_pro/learn/community?thread=${r.threadId}`} className="text-xs font-semibold underline">Open thread</Link>
         <Suspend studentId={r.authorId} name={r.authorName} />
@@ -95,10 +108,10 @@ export function StaffThread({
     posts: Array<{ id: string; bodyMd: string; hidden: boolean; authorId: string; authorName: string; authorEmail: string; createdAt: string }>;
   };
 }) {
-  const { act, busy, error } = useModerate();
+  const { act, busy, error, confirmDelete } = useModerate();
   const { thread, posts } = data;
   return (
-    <section className="rounded-xl border-2 border-[var(--ink)] bg-white p-5">
+    <section className="rounded-[var(--a-radius-card)] border border-[var(--a-blue)] bg-[var(--a-surface)] p-5 shadow-[var(--a-shadow-card)] ring-2 ring-[var(--a-blue)]/10">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-bold text-[var(--ink)]">
           {thread.title} {thread.hidden && <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] text-amber-900">hidden</span>}
@@ -111,7 +124,7 @@ export function StaffThread({
         <button disabled={busy} onClick={() => act({ action: thread.hidden ? "unhide" : "hide", targetType: "thread", targetId: thread.id })} className={btn}>
           {thread.hidden ? "Unhide thread" : "Hide thread"}
         </button>
-        <button disabled={busy} onClick={() => confirm("Delete this thread?") && act({ action: "delete", targetType: "thread", targetId: thread.id })} className={danger}>Delete thread</button>
+        <button disabled={busy} onClick={async () => (await confirmDelete("Delete this thread?")) && act({ action: "delete", targetType: "thread", targetId: thread.id })} className={danger}>Delete thread</button>
         <Suspend studentId={thread.authorId} name={thread.authorName} />
       </div>
       <ul className="mt-4 space-y-2">
@@ -132,7 +145,7 @@ export function StaffThread({
                 <button disabled={busy} onClick={() => act({ action: p.hidden ? "unhide" : "hide", targetType: "post", targetId: p.id })} className={btn}>
                   {p.hidden ? "Unhide" : "Hide"}
                 </button>
-                <button disabled={busy} onClick={() => confirm("Delete this reply?") && act({ action: "delete", targetType: "post", targetId: p.id })} className={danger}>Delete</button>
+                <button disabled={busy} onClick={async () => (await confirmDelete("Delete this reply?")) && act({ action: "delete", targetType: "post", targetId: p.id })} className={danger}>Delete</button>
                 <Suspend studentId={p.authorId} name={p.authorName} />
               </div>
             </li>

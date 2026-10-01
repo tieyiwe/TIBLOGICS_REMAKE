@@ -8,6 +8,7 @@ import { maybeIssueCertificate } from "@/lib/learn/certificates";
 import { awardSkillBadgesSafe } from "@/lib/learn/skill-badges/engine";
 import { sendCapstoneStatusEmail } from "@/lib/learn/emails";
 import { generateCapstonePreReview } from "@/lib/learn/ai-review";
+import { auditFromRequest } from "@/lib/admin/audit";
 
 const Body = z.object({
   status: z.enum(CAPSTONE_STATUSES),
@@ -54,6 +55,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         reviewedAt: terminal ? new Date() : undefined,
       },
     });
+
+    await auditFromRequest("capstone.review", { type: "learner", id: existing.studentId, label: existing.student.email }, { submissionId: id, status, score: score ?? null });
 
     // Award points + attempt certificate issuance on a first pass only
     let certificate: Awaited<ReturnType<typeof maybeIssueCertificate>> = null;

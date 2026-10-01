@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { LoaderCircle } from "lucide-react";
-import type { ButtonHTMLAttributes, ElementType, ReactNode } from "react";
+import { forwardRef, type ButtonHTMLAttributes, type ElementType, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
@@ -48,7 +48,7 @@ export type ButtonProps = Common &
     external?: boolean;
   };
 
-export function Button({
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button({
   variant = "secondary",
   size = "md",
   icon: Icon,
@@ -61,7 +61,7 @@ export function Button({
   type,
   disabled,
   ...rest
-}: ButtonProps) {
+}, ref) {
   const iconSize = size === "sm" ? 14 : 16;
   const content = (
     <>
@@ -90,6 +90,7 @@ export function Button({
   }
   return (
     <button
+      ref={ref}
       type={type ?? "button"}
       className={cls}
       disabled={disabled || loading}
@@ -99,7 +100,7 @@ export function Button({
       {content}
     </button>
   );
-}
+});
 
 /** Square icon-only button; always pass an aria-label. */
 export function IconButton({

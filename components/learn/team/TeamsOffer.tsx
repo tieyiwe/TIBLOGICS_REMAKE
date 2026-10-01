@@ -1,16 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { fmtPrice } from "@/lib/learn/format";
 import { useLocale, useT } from "@/lib/i18n/client";
+import { quoteSeats, type SeatTier } from "@/lib/learn/team/config";
 
 /**
  * The Teams option: pick seats (at least the minimum), name the company, then
  * Stripe Checkout. mode "checkout" (signed-in) starts checkout; mode "link"
  * (public pages) sends the visitor to create an account first and brings
  * them back here with the seat count. Prices are display only: the server
- * recomputes them.
+ * recomputes them. Optional volume bands are read from /api/learn/team/pricing
+ * and priced with the same quoteSeats() that checkout uses.
  */
 export default function TeamsOffer({
   seatPriceCents,
@@ -32,7 +34,22 @@ export default function TeamsOffer({
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const total = seats * seatPriceCents;
+  const [tiers, setTiers] = useState<SeatTier[]>([]);
+  useEffect(() => {
+    let live = true;
+    fetch("/api/learn/team/pricing")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (live && d && Array.isArray(d.tiers)) setTiers(d.tiers);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+  const quote = quoteSeats({ seatPriceCents, minSeats, tiers }, Number.isInteger(seats) ? seats : minSeats);
+  const unit = quote.seatPriceCents;
+  const total = quote.totalCents;
   const valid = Number.isInteger(seats) && seats >= minSeats && seats <= 500;
   const next = `/learn/subscribe?team=1&seats=${seats}`;
 
@@ -73,6 +90,17 @@ export default function TeamsOffer({
           <span className="block text-xs text-[var(--ink3)]">{t("team.offer.perSeat")}</span>
         </p>
       </div>
+      {tiers.length > 0 && (
+        <div className="mt-3 rounded-xl bg-[var(--s2)] px-4 py-3 text-sm">
+          <p className="text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">{t("team.offer.volume")}</p>
+          <ul className="mt-1 space-y-0.5 text-[var(--ink2)]">
+            <li>{t("team.offer.tierBase", { n: minSeats, price: fmtPrice(seatPriceCents, locale) })}</li>
+            {tiers.map((x) => (
+              <li key={x.minSeats}>{t("team.offer.tierLine", { n: x.minSeats, price: fmtPrice(x.seatPriceCents, locale) })}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       <ul className="mt-4 grid gap-1.5 text-sm text-[var(--ink2)] sm:grid-cols-2">
         {[1, 2, 3, 4].map((n) => (
           <li key={n} className="flex gap-2">
@@ -126,7 +154,7 @@ export default function TeamsOffer({
           )}
           <p className="text-sm text-[var(--ink2)] sm:col-span-2" aria-live="polite">
             {valid
-              ? t("team.offer.total", { n: seats, price: fmtPrice(seatPriceCents, locale), total: fmtPrice(total, locale) })
+              ? t("team.offer.total", { n: seats, price: fmtPrice(unit, locale), total: fmtPrice(total, locale) })
               : t("team.offer.minError", { n: minSeats })}
           </p>
           <div className="sm:col-span-2">

@@ -253,21 +253,21 @@ export default function BlogClient(initial: {
       />
 
       {imageResult && (
-        <div className="bg-blue-50 border border-blue-200 text-blue-900 rounded-xl px-4 py-3 text-sm font-dm flex items-center justify-between">
+        <div className="bg-blue-50 border border-blue-200 text-blue-900 rounded-[var(--a-radius-control)] px-4 py-3 text-sm font-dm flex items-center justify-between">
           <span>🖼 {imageResult}</span>
           <button onClick={() => setImageResult(null)} className="text-blue-600 hover:text-blue-800 ml-4">✕</button>
         </div>
       )}
 
       {repairResult && (
-        <div className="bg-green-50 border border-green-200 text-green-800 rounded-xl px-4 py-3 text-sm font-dm flex items-center justify-between">
+        <div className="bg-green-50 border border-green-200 text-green-800 rounded-[var(--a-radius-control)] px-4 py-3 text-sm font-dm flex items-center justify-between">
           <span>{repairResult}</span>
           <button onClick={() => setRepairResult(null)} className="text-green-600 hover:text-green-800 ml-4">✕</button>
         </div>
       )}
 
       {featuredError && (
-        <div className="bg-orange-50 border border-orange-200 text-orange-800 rounded-xl px-4 py-3 text-sm font-dm flex items-center justify-between">
+        <div className="bg-orange-50 border border-orange-200 text-orange-800 rounded-[var(--a-radius-control)] px-4 py-3 text-sm font-dm flex items-center justify-between">
           <span>⭐ {featuredError}</span>
           <button onClick={() => setFeaturedError(null)} className="text-orange-600 hover:text-orange-800 ml-4">✕</button>
         </div>
@@ -285,7 +285,7 @@ export default function BlogClient(initial: {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="min-w-0 rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] shadow-[var(--a-shadow-card)] p-5">
           <h3 className="mb-3 flex items-center gap-2 font-dm text-[14px] font-semibold text-[var(--a-ink)]">
-            <RefreshCw size={14} className="text-[#2251A3]" /> Auto-Refresh Status
+            <RefreshCw size={14} className="text-[var(--a-blue)]" /> Auto-Refresh Status
           </h3>
           {refreshStatus ? (
             <div className="space-y-2 font-dm text-sm">
@@ -297,7 +297,7 @@ export default function BlogClient(initial: {
               </div>
               <div className="flex justify-between">
                 <span className="text-[var(--a-ink-3)]">Last refresh</span>
-                <span className="text-[#3A4A5C]">
+                <span className="text-[var(--a-ink-2)]">
                   {refreshStatus.lastRefresh
                     ? new Date(refreshStatus.lastRefresh).toLocaleString()
                     : "Never"}
@@ -305,7 +305,7 @@ export default function BlogClient(initial: {
               </div>
               <div className="flex justify-between">
                 <span className="text-[var(--a-ink-3)]">Next auto-refresh</span>
-                <span className="text-[#3A4A5C]">
+                <span className="text-[var(--a-ink-2)]">
                   {refreshStatus.nextRefresh
                     ? new Date(refreshStatus.nextRefresh).toLocaleString()
                     : "On next page load"}
@@ -325,7 +325,7 @@ export default function BlogClient(initial: {
           </h3>
           {breaking ? (
             <div>
-              <p className="font-dm text-sm text-[#0D1B2A] font-medium line-clamp-2 mb-1">
+              <p className="font-dm text-sm text-[var(--a-ink)] font-medium line-clamp-2 mb-1">
                 {breaking.headline}
               </p>
               <p className="font-dm text-xs text-[var(--a-ink-3)] mb-3">
@@ -343,7 +343,7 @@ export default function BlogClient(initial: {
               <p className="font-dm text-sm text-[var(--a-ink-3)] mb-3">No active breaking news</p>
               <Link
                 href="/admin_pro/blog/news-agent"
-                className="text-xs text-[#2251A3] font-dm hover:underline"
+                className="text-xs text-[var(--a-blue)] font-dm hover:underline"
               >
                 Use News Agent to set one →
               </Link>
@@ -354,7 +354,7 @@ export default function BlogClient(initial: {
 
       {/* Posts table */}
       <div className="min-w-0 rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] shadow-[var(--a-shadow-card)] overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#D2DCE8] flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-[var(--a-border)] flex items-center justify-between">
           <h3 className="font-dm text-[14px] font-semibold text-[var(--a-ink)]">All posts</h3>
           <span className="text-xs font-dm text-[var(--a-ink-3)]">{posts.length} posts</span>
         </div>
@@ -393,7 +393,7 @@ export default function BlogClient(initial: {
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">{p.coverEmoji}</span>
                         <div>
-                          <p className="font-dm text-sm font-medium text-[#0D1B2A] line-clamp-1">
+                          <p className="font-dm text-sm font-medium text-[var(--a-ink)] line-clamp-1">
                             {p.title}
                           </p>
                           <div className="flex items-center gap-1.5 mt-0.5">
@@ -410,7 +410,7 @@ export default function BlogClient(initial: {
                       </div>
                     </td>
                     <td className="px-5 py-3">
-                      <span className="text-xs font-dm text-[#3A4A5C]">
+                      <span className="text-xs font-dm text-[var(--a-ink-2)]">
                         {CATEGORY_LABELS[p.category] ?? p.category}
                       </span>
                     </td>
@@ -428,7 +428,7 @@ export default function BlogClient(initial: {
                         <Link
                           href={`/ai-times/${p.slug}`}
                           target="_blank"
-                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#EBF0FA] text-[var(--a-ink-3)] hover:text-[#2251A3] transition-colors"
+                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[var(--a-info-bg)] text-[var(--a-ink-3)] hover:text-[var(--a-blue)] transition-colors"
                           title="View post"
                         >
                           <Eye size={14} />
@@ -438,7 +438,7 @@ export default function BlogClient(initial: {
                           className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
                             !p.coverImage || p.coverImage.startsWith("/")
                               ? "text-red-400 hover:bg-red-50 hover:text-red-600"
-                              : "text-[var(--a-ink-3)] hover:bg-[#F4F7FB] hover:text-[#2251A3]"
+                              : "text-[var(--a-ink-3)] hover:bg-[var(--a-surface-2)] hover:text-[var(--a-blue)]"
                           }`}
                           title={
                             !p.coverImage || p.coverImage.startsWith("/")
@@ -466,7 +466,7 @@ export default function BlogClient(initial: {
                         })()}
                         <button
                           onClick={() => togglePublish(p.id, p.published)}
-                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#F4F7FB] text-[var(--a-ink-3)] transition-colors"
+                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[var(--a-surface-2)] text-[var(--a-ink-3)] transition-colors"
                           title={p.published ? "Unpublish" : "Publish"}
                         >
                           {p.published ? <EyeOff size={14} /> : <Eye size={14} />}

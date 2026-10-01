@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Plus, RefreshCw } from "lucide-react";
+import { CalendarDays, Check, CheckCheck, ChevronLeft, ChevronRight, CircleAlert, GripVertical, Hand, Plus, RefreshCw, X } from "lucide-react";
+import { Badge, Button, Card, EmptyState, IconButton, Segmented, Select, Toolbar, useToast } from "@/components/admin/ui";
 import type { PostView } from "@/lib/growth/content/posts";
 import { PLATFORM_INFO, PLATFORMS, STATUS_LABEL, type Platform, type PostStatus } from "@/lib/growth/content/platforms";
 import PostDrawer, { patchPost, type AudienceTz } from "../_components/PostDrawer";
-import { btn, Card, input, label, StatusPill } from "../_components/ui";
+import { input, label, StatusPill } from "../_components/ui";
 
 const DAY = 86_400_000;
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -17,35 +18,64 @@ function weekStart(d: Date): Date {
 }
 const addDaysLocal = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 const timeOf = (iso: string) => new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+const LOCKED = ["published", "publishing"];
+type View = "week" | "month";
 
-function Chip({ p, onOpen, draggable }: { p: PostView; onOpen: () => void; draggable: boolean }) {
+function Chip({
+  p,
+  onOpen,
+  draggable,
+  compact,
+  selectable,
+  selected,
+  onToggle,
+}: {
+  p: PostView;
+  onOpen: () => void;
+  draggable: boolean;
+  compact?: boolean;
+  selectable?: boolean;
+  selected?: boolean;
+  onToggle?: () => void;
+}) {
   const info = PLATFORM_INFO[p.platform];
   return (
-    <button
-      type="button"
+    <div
       draggable={draggable}
       onDragStart={(e) => {
         e.dataTransfer.setData("text/plain", p.id);
         e.dataTransfer.effectAllowed = "move";
       }}
-      onClick={onOpen}
       data-post-id={p.id}
-      className={`w-full text-left rounded-lg border bg-white px-2 py-1.5 hover:shadow-sm transition-shadow ${draggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${p.status === "rejected" ? "opacity-50" : ""}`}
-      style={{ borderLeft: `3px solid ${info.color}` }}
-      title={p.text.slice(0, 200)}
+      className={`group relative flex items-stretch rounded-[8px] border bg-[var(--a-surface)] transition-[box-shadow,border-color] duration-150 hover:border-[var(--a-border-strong)] hover:shadow-[0_2px_8px_rgba(13,27,42,.08)] ${selected ? "border-[var(--a-blue)] ring-2 ring-[var(--a-blue)]/20" : "border-[var(--a-border)]"} ${p.status === "rejected" ? "opacity-50" : ""} ${draggable ? "cursor-grab active:cursor-grabbing" : ""}`}
     >
-      <span className="flex items-center justify-between gap-1">
-        <span className="font-dm text-[11px] font-semibold text-[#0D1B2A] truncate">{info.label}</span>
-        {p.scheduledAt && <span className="font-dm text-[10px] text-[#7A8FA6] shrink-0">{timeOf(p.scheduledAt)}</span>}
-      </span>
-      <span className="block font-dm text-[11px] text-[#3A4A5C] line-clamp-2 leading-snug">{p.body}</span>
-      <span className="mt-1 block"><StatusPill status={p.status} label={STATUS_LABEL[p.status as PostStatus] ?? p.status} /></span>
-    </button>
+      <span className="w-[3px] shrink-0 rounded-l-[7px]" style={{ background: info.color }} aria-hidden />
+      {selectable && (
+        <label className="flex shrink-0 items-start pl-1.5 pt-1.5">
+          <span className="sr-only">Select post</span>
+          <input type="checkbox" checked={!!selected} onChange={onToggle} className="h-3.5 w-3.5 accent-[var(--a-blue)]" />
+        </label>
+      )}
+      <button type="button" onClick={onOpen} className="min-w-0 flex-1 px-2 py-1.5 text-left focus-visible:outline-none" title={p.text.slice(0, 200)}>
+        <span className="flex items-center justify-between gap-1">
+          <span className="min-w-0 truncate font-dm text-[11.5px] font-semibold text-[var(--a-ink)]">{info.label}</span>
+          {p.scheduledAt && <span className="shrink-0 font-dm text-[10.5px] tabular-nums text-[var(--a-ink-3)]">{timeOf(p.scheduledAt)}</span>}
+        </span>
+        {!compact && <span className="block font-dm text-[11.5px] leading-snug text-[var(--a-ink-2)] line-clamp-2 [overflow-wrap:anywhere]">{p.body}</span>}
+        <span className="mt-1 flex items-center gap-1">
+          <StatusPill status={p.status} label={STATUS_LABEL[p.status as PostStatus] ?? p.status} />
+          {p.image && <span className="font-dm text-[10px] font-semibold text-[var(--a-ink-3)]">IMG</span>}
+        </span>
+      </button>
+      {draggable && <GripVertical size={12} className="absolute right-0.5 top-1/2 -translate-y-1/2 text-[var(--a-ink-3)] opacity-0 group-hover:opacity-60" aria-hidden />}
+    </div>
   );
 }
 
 export default function CalendarClient({ audiences, configured }: { audiences: AudienceTz[]; configured: Record<Platform, boolean> }) {
-  const [start, setStart] = useState(() => weekStart(new Date()));
+  const toast = useToast();
+  const [view, setView] = useState<View>("week");
+  const [anchor, setAnchor] = useState(() => new Date());
   const [posts, setPosts] = useState<PostView[]>([]);
   const [queue, setQueue] = useState<PostView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,15 +86,28 @@ export default function CalendarClient({ audiences, configured }: { audiences: A
   const [dragOver, setDragOver] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
-  const days = useMemo(() => Array.from({ length: 14 }, (_, i) => addDaysLocal(start, i)), [start]);
+  // Visible range: a week (7 days from Monday) or a month grid (whole weeks).
+  const { start, days } = useMemo(() => {
+    if (view === "week") {
+      const s = weekStart(anchor);
+      return { start: s, days: Array.from({ length: 7 }, (_, i) => addDaysLocal(s, i)) };
+    }
+    const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+    const s = weekStart(first);
+    const last = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+    const n = Math.ceil((last.getTime() - s.getTime()) / DAY / 7 + 0.01) * 7;
+    return { start: s, days: Array.from({ length: Math.max(35, n) }, (_, i) => addDaysLocal(s, i)) };
+  }, [view, anchor]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setErr(null);
     try {
       const from = start.toISOString();
-      const to = addDaysLocal(start, 14).toISOString();
+      const to = addDaysLocal(start, days.length).toISOString();
       const [a, b] = await Promise.all([
         fetch(`/api/admin/growth/posts?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`).then((r) => r.json()),
         fetch(`/api/admin/growth/posts?status=draft,ready,failed`).then((r) => r.json()),
@@ -77,7 +120,7 @@ export default function CalendarClient({ audiences, configured }: { audiences: A
     } finally {
       setLoading(false);
     }
-  }, [start]);
+  }, [start, days.length]);
 
   useEffect(() => {
     load();
@@ -94,136 +137,225 @@ export default function CalendarClient({ audiences, configured }: { audiences: A
     setOpen((o) => (o?.id === p.id ? p : o));
   };
 
-  const visible = (p: PostView) => (!platformFilter || p.platform === platformFilter) && (!hideRejected || p.status !== "rejected");
   const byDay = useMemo(() => {
     const m = new Map<string, PostView[]>();
     for (const p of posts) {
-      if (!p.scheduledAt || !visible(p)) continue;
+      if (!p.scheduledAt) continue;
+      if (platformFilter && p.platform !== platformFilter) continue;
+      if (hideRejected && p.status === "rejected") continue;
       const k = ymd(new Date(p.scheduledAt));
       m.set(k, [...(m.get(k) ?? []), p]);
     }
     for (const v of m.values()) v.sort((a, b) => (a.scheduledAt ?? "").localeCompare(b.scheduledAt ?? ""));
     return m;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [posts, platformFilter, hideRejected]);
+
+  const draftsInView = useMemo(() => [...byDay.values()].flat().filter((p) => p.status === "draft"), [byDay]);
 
   async function dropOn(day: Date, id: string) {
     setDragOver(null);
     const p = posts.find((x) => x.id === id) ?? queue.find((x) => x.id === id);
-    if (!p || ["published", "publishing"].includes(p.status)) return;
+    if (!p || LOCKED.includes(p.status)) return;
     const old = p.scheduledAt ? new Date(p.scheduledAt) : null;
     const next = new Date(day.getFullYear(), day.getMonth(), day.getDate(), old?.getHours() ?? 9, old?.getMinutes() ?? 0);
+    if (old && ymd(old) === ymd(next)) return;
     if (p.status === "scheduled" && next.getTime() < Date.now()) {
-      setErr("A scheduled post cannot be moved into the past.");
+      toast.error("Cannot move into the past", "A scheduled post needs a future time.");
       return;
     }
     const prev = posts;
-    // Optimistic move
     setPosts((xs) => (xs.some((x) => x.id === id) ? xs.map((x) => (x.id === id ? { ...x, scheduledAt: next.toISOString() } : x)) : [...xs, { ...p, scheduledAt: next.toISOString() }]));
     try {
-      upsert(await patchPost(id, { scheduledAt: next.toISOString() }));
+      const saved = await patchPost(id, { scheduledAt: next.toISOString() });
+      upsert(saved);
+      toast.success(`Moved to ${next.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`, `${PLATFORM_INFO[p.platform].label} keeps its time.`);
     } catch (e) {
       setPosts(prev);
-      setErr(e instanceof Error ? e.message : "Could not move the post");
+      toast.error("Could not move the post", e instanceof Error ? e.message : undefined);
     }
   }
+
+  async function bulk(ids: string[], action: "approve" | "reject") {
+    if (!ids.length) return;
+    setBulkBusy(true);
+    try {
+      const res = await fetch("/api/admin/growth/posts/bulk", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids, action }) });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error ?? "Bulk update failed");
+      (j.posts as PostView[]).forEach(upsert);
+      setSelected(new Set());
+      const failed = (j.failed as unknown[] | undefined)?.length ?? 0;
+      toast.success(`${action === "approve" ? "Approved" : "Rejected"} ${j.updated} post${j.updated === 1 ? "" : "s"}`, failed ? `${failed} could not be changed (check their time or text).` : undefined);
+    } catch (e) {
+      toast.error("Bulk update failed", e instanceof Error ? e.message : undefined);
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  const toggle = (id: string) => setSelected((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const shift = (dir: -1 | 1) => setAnchor((a) => (view === "week" ? addDaysLocal(a, 7 * dir) : new Date(a.getFullYear(), a.getMonth() + dir, 1)));
 
   const today = ymd(new Date());
   const ready = queue.filter((p) => p.status === "ready");
   const drafts = queue.filter((p) => p.status === "draft");
+  const unscheduled = drafts.filter((p) => !p.scheduledAt);
   const failed = queue.filter((p) => p.status === "failed");
+  const rangeLabel =
+    view === "week"
+      ? `${days[0].toLocaleDateString("en-US", { month: "short", day: "numeric" })} to ${days[6].toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+      : anchor.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const perCell = view === "week" ? 12 : 3;
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <button className={btn.ghost} onClick={() => setStart(addDaysLocal(start, -7))} aria-label="Previous week"><ChevronLeft size={16} /></button>
-        <button className={btn.ghost} onClick={() => setStart(weekStart(new Date()))}>This week</button>
-        <button className={btn.ghost} onClick={() => setStart(addDaysLocal(start, 7))} aria-label="Next week"><ChevronRight size={16} /></button>
-        <span className="font-dm text-sm text-[#3A4A5C] mx-1">
-          {start.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – {addDaysLocal(start, 13).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-        </span>
-        <select aria-label="Platform filter" className="rounded-lg border border-[#D2DCE8] bg-white px-2 py-2 font-dm text-sm" value={platformFilter} onChange={(e) => setPlatformFilter(e.target.value as Platform | "")}>
+      <Toolbar
+        className="mb-0"
+        end={
+          <>
+            <IconButton icon={RefreshCw} aria-label="Reload" onClick={load} className={loading ? "[&_svg]:animate-spin" : ""} />
+            <Button variant="primary" icon={Plus} onClick={() => setShowNew(true)}>New post</Button>
+          </>
+        }
+      >
+        <div className="flex items-center gap-1">
+          <IconButton icon={ChevronLeft} aria-label={view === "week" ? "Previous week" : "Previous month"} onClick={() => shift(-1)} variant="secondary" />
+          <Button onClick={() => setAnchor(new Date())}>Today</Button>
+          <IconButton icon={ChevronRight} aria-label={view === "week" ? "Next week" : "Next month"} onClick={() => shift(1)} variant="secondary" />
+        </div>
+        <span className="font-syne text-[16px] font-semibold text-[var(--a-ink)] tabular-nums" aria-live="polite">{rangeLabel}</span>
+        <Segmented ariaLabel="Calendar view" value={view} onChange={(v) => setView(v as View)} options={[{ value: "week", label: "Week" }, { value: "month", label: "Month" }]} />
+        <Select label="Platform filter" value={platformFilter} onChange={(e) => setPlatformFilter(e.target.value as Platform | "")}>
           <option value="">All platforms</option>
           {PLATFORMS.map((p) => <option key={p} value={p}>{PLATFORM_INFO[p].label}</option>)}
-        </select>
-        <label className="inline-flex items-center gap-1.5 font-dm text-sm text-[#3A4A5C]">
-          <input type="checkbox" checked={hideRejected} onChange={(e) => setHideRejected(e.target.checked)} /> Hide rejected
+        </Select>
+        <label className="inline-flex h-9 items-center gap-1.5 font-dm text-[13px] text-[var(--a-ink-2)]">
+          <input type="checkbox" checked={hideRejected} onChange={(e) => setHideRejected(e.target.checked)} className="accent-[var(--a-blue)]" /> Hide rejected
         </label>
-        <div className="ml-auto flex gap-2">
-          <button className={btn.ghost} onClick={load} aria-label="Reload"><RefreshCw size={15} className={loading ? "animate-spin" : ""} /></button>
-          <button className={btn.primary} onClick={() => setShowNew(true)}><Plus size={15} /> New post</button>
-        </div>
-      </div>
+      </Toolbar>
 
-      <div className="flex flex-wrap gap-2 font-dm text-xs text-[#3A4A5C]">
+      <div className="flex flex-wrap gap-1.5">
         {PLATFORMS.map((p) => (
-          <span key={p} className="inline-flex items-center gap-1.5 rounded-full bg-white border border-[#D2DCE8] px-2.5 py-1">
-            <span className="w-2 h-2 rounded-full" style={{ background: PLATFORM_INFO[p].color }} />
-            {PLATFORM_INFO[p].label}: {PLATFORM_INFO[p].api ? (configured[p] ? "auto-publish" : "no tokens, manual") : "manual (copy + deep link)"}
+          <span key={p} className="inline-flex items-center gap-1.5 rounded-full border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 py-1 font-dm text-[12px] text-[var(--a-ink-2)]">
+            <span className="h-2 w-2 rounded-full" style={{ background: PLATFORM_INFO[p].color }} />
+            {PLATFORM_INFO[p].label}
+            <span className="text-[var(--a-ink-3)]">{PLATFORM_INFO[p].api ? (configured[p] ? "auto" : "manual") : "copy + open"}</span>
           </span>
         ))}
       </div>
 
-      {err && <p role="alert" className="rounded-lg bg-[#FEF3F2] border border-[#F3C5C0] px-3 py-2 font-dm text-sm text-[#B42318]">{err}</p>}
+      {err && (
+        <p role="alert" className="flex items-center gap-2 rounded-[var(--a-radius-control)] border border-[#f6cccc] bg-[var(--a-danger-bg)] px-3 py-2 font-dm text-[13px] text-[var(--a-danger)]">
+          <CircleAlert size={15} aria-hidden /> {err}
+        </p>
+      )}
 
-      {/* Grid: md and up */}
-      <div className="hidden md:block bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden">
-        <div className="grid grid-cols-7 border-b border-[#D2DCE8] bg-[#F4F7FB]">
-          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-            <div key={d} className="px-2 py-1.5 font-dm text-xs font-semibold text-[#3A4A5C]">{d}</div>
-          ))}
+      {/* Bulk bar: appears with a selection, or offers "approve all drafts in view". */}
+      <div className="flex flex-wrap items-center gap-2 rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] px-3 py-2 shadow-[var(--a-shadow-card)]">
+        {selected.size > 0 ? (
+          <>
+            <Badge tone="info">{selected.size} selected</Badge>
+            <Button size="sm" variant="primary" icon={Check} loading={bulkBusy} onClick={() => bulk([...selected], "approve")}>Approve {selected.size}</Button>
+            <Button size="sm" icon={X} disabled={bulkBusy} onClick={() => bulk([...selected], "reject")}>Reject</Button>
+            <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>Clear</Button>
+          </>
+        ) : (
+          <>
+            <span className="font-dm text-[13px] text-[var(--a-ink-2)]">
+              {draftsInView.length ? <><strong className="text-[var(--a-ink)] tabular-nums">{draftsInView.length}</strong> draft{draftsInView.length === 1 ? "" : "s"} in view wait for approval. Tick posts to act on a few, or approve them all.</> : "No drafts waiting in this range."}
+            </span>
+            {draftsInView.length > 0 && (
+              <>
+                <Button size="sm" variant="ghost" onClick={() => setSelected(new Set(draftsInView.map((p) => p.id)))}>Select drafts</Button>
+                <Button size="sm" variant="primary" icon={CheckCheck} loading={bulkBusy} onClick={() => bulk(draftsInView.map((p) => p.id), "approve")}>Approve all {draftsInView.length}</Button>
+              </>
+            )}
+          </>
+        )}
+      </div>
+
+      <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_300px]">
+        {/* Grid: md and up */}
+        <div className="hidden min-w-0 overflow-hidden rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] shadow-[var(--a-shadow-card)] md:block">
+          <div className="grid grid-cols-7 border-b border-[var(--a-border)] bg-[var(--a-surface-2)]">
+            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+              <div key={d} className="px-2 py-2 font-dm text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--a-ink-3)]">{d}</div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7">
+            {days.map((d) => {
+              const k = ymd(d);
+              const list = byDay.get(k) ?? [];
+              const outside = view === "month" && d.getMonth() !== anchor.getMonth();
+              const shown = expanded.has(k) ? list : list.slice(0, perCell);
+              return (
+                <div
+                  key={k}
+                  data-day={k}
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(k); }}
+                  onDragLeave={() => setDragOver((x) => (x === k ? null : x))}
+                  onDrop={(e) => { e.preventDefault(); const id = e.dataTransfer.getData("text/plain"); if (id) dropOn(d, id); }}
+                  className={`space-y-1.5 border-b border-r border-[var(--a-border)] p-1.5 transition-colors duration-150 [&:nth-child(7n)]:border-r-0 ${view === "week" ? "min-h-[420px]" : "min-h-[128px]"} ${dragOver === k ? "bg-[var(--a-info-bg)] outline-2 -outline-offset-2 outline-dashed outline-[var(--a-blue)]" : k < today || outside ? "bg-[var(--a-surface-2)]/50" : ""}`}
+                >
+                  <div className="flex items-center justify-between px-0.5">
+                    <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 font-dm text-[12px] tabular-nums ${k === today ? "bg-[var(--a-orange)] font-bold text-white" : outside ? "text-[var(--a-ink-3)]/70" : "font-semibold text-[var(--a-ink-2)]"}`}>
+                      {d.getDate()}
+                    </span>
+                    {(d.getDate() === 1 || d === days[0]) && <span className="font-dm text-[11px] text-[var(--a-ink-3)]">{d.toLocaleDateString("en-US", { month: "short" })}</span>}
+                  </div>
+                  {shown.map((p) => (
+                    <Chip
+                      key={p.id}
+                      p={p}
+                      compact={view === "month"}
+                      onOpen={() => setOpen(p)}
+                      draggable={!LOCKED.includes(p.status)}
+                      selectable={p.status === "draft"}
+                      selected={selected.has(p.id)}
+                      onToggle={() => toggle(p.id)}
+                    />
+                  ))}
+                  {list.length > perCell && !expanded.has(k) && (
+                    <button className="px-1 font-dm text-[11.5px] font-semibold text-[var(--a-blue)] hover:underline" onClick={() => setExpanded((x) => new Set(x).add(k))}>+{list.length - perCell} more</button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
-        <div className="grid grid-cols-7">
+
+        {/* Agenda: phones */}
+        <div className="space-y-4 md:hidden">
           {days.map((d) => {
-            const k = ymd(d);
-            const list = byDay.get(k) ?? [];
+            const list = byDay.get(ymd(d)) ?? [];
+            if (!list.length) return null;
             return (
-              <div
-                key={k}
-                data-day={k}
-                onDragOver={(e) => { e.preventDefault(); setDragOver(k); }}
-                onDragLeave={() => setDragOver((x) => (x === k ? null : x))}
-                onDrop={(e) => { e.preventDefault(); const id = e.dataTransfer.getData("text/plain"); if (id) dropOn(d, id); }}
-                className={`min-h-[150px] border-r border-b border-[#E6ECF3] p-1.5 space-y-1.5 ${dragOver === k ? "bg-[#EAF1FB]" : k < today ? "bg-[#FAFBFD]" : ""}`}
-              >
-                <div className={`font-dm text-xs ${k === today ? "font-bold text-[#F47C20]" : "text-[#7A8FA6]"}`}>{d.getDate()} {d.getDate() === 1 || d === days[0] ? d.toLocaleDateString("en-US", { month: "short" }) : ""}</div>
-                {(expanded.has(k) ? list : list.slice(0, 5)).map((p) => (
-                  <Chip key={p.id} p={p} onOpen={() => setOpen(p)} draggable={!["published", "publishing"].includes(p.status)} />
-                ))}
-                {list.length > 5 && !expanded.has(k) && (
-                  <button className="font-dm text-[11px] text-[#2251A3] underline" onClick={() => setExpanded((x) => new Set(x).add(k))}>+{list.length - 5} more</button>
-                )}
+              <div key={ymd(d)}>
+                <p className={`mb-1.5 font-dm text-[11px] font-semibold uppercase tracking-[.08em] ${ymd(d) === today ? "text-[var(--a-orange-text)]" : "text-[var(--a-ink-3)]"}`}>{d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</p>
+                <div className="space-y-1.5">
+                  {list.map((p) => <Chip key={p.id} p={p} onOpen={() => setOpen(p)} draggable={false} selectable={p.status === "draft"} selected={selected.has(p.id)} onToggle={() => toggle(p.id)} />)}
+                </div>
               </div>
             );
           })}
+          {!loading && byDay.size === 0 && (
+            <EmptyState compact icon={CalendarDays} title="Nothing scheduled" body="Approve drafts from a kit or create a post." action={<Button variant="primary" icon={Plus} onClick={() => setShowNew(true)}>New post</Button>} />
+          )}
         </div>
-      </div>
 
-      {/* Agenda: phones */}
-      <div className="md:hidden space-y-3">
-        {days.map((d) => {
-          const list = byDay.get(ymd(d)) ?? [];
-          if (!list.length) return null;
-          return (
-            <div key={ymd(d)}>
-              <p className="font-dm text-xs font-semibold text-[#3A4A5C] mb-1">{d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })}</p>
-              <div className="space-y-1.5">{list.map((p) => <Chip key={p.id} p={p} onOpen={() => setOpen(p)} draggable={false} />)}</div>
-            </div>
-          );
-        })}
-        {!loading && byDay.size === 0 && <p className="font-dm text-sm text-[#7A8FA6]">Nothing scheduled in these two weeks.</p>}
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card title={`Needs approval (${drafts.length})`} subtitle="Drafts from kits, automation and manual posts. Open one to edit, approve or reject.">
-          <QueueList items={drafts} onOpen={setOpen} />
-        </Card>
-        <Card title={`Ready to post by hand (${ready.length})`} subtitle="Due posts for platforms without publishing tokens.">
-          <QueueList items={ready} onOpen={setOpen} />
-        </Card>
-        <Card title={`Failed (${failed.length})`} subtitle="Check the error, fix, then retry.">
-          <QueueList items={failed} onOpen={setOpen} />
-        </Card>
+        <aside className="grid items-start gap-4 lg:grid-cols-3 2xl:block 2xl:space-y-4">
+          <Card title="Needs approval" action={<Badge tone={drafts.length ? "orange" : "neutral"}>{drafts.length}</Badge>} subtitle={unscheduled.length ? `${unscheduled.length} without a date. Drag one onto a day.` : "Open one to edit, approve or reject."}>
+            <QueueList items={drafts} onOpen={setOpen} selected={selected} onToggle={toggle} />
+          </Card>
+          <Card title="Ready to post by hand" icon={Hand} action={<Badge tone={ready.length ? "info" : "neutral"}>{ready.length}</Badge>} subtitle="Due posts for platforms without tokens.">
+            <QueueList items={ready} onOpen={setOpen} />
+          </Card>
+          {failed.length > 0 && (
+            <Card title="Failed" action={<Badge tone="danger">{failed.length}</Badge>} subtitle="Check the error, fix, then retry.">
+              <QueueList items={failed} onOpen={setOpen} />
+            </Card>
+          )}
+        </aside>
       </div>
 
       {open && (
@@ -244,13 +376,13 @@ export default function CalendarClient({ audiences, configured }: { audiences: A
   );
 }
 
-function QueueList({ items, onOpen }: { items: PostView[]; onOpen: (p: PostView) => void }) {
-  if (!items.length) return <p className="font-dm text-sm text-[#7A8FA6]">Nothing here.</p>;
+function QueueList({ items, onOpen, selected, onToggle }: { items: PostView[]; onOpen: (p: PostView) => void; selected?: Set<string>; onToggle?: (id: string) => void }) {
+  if (!items.length) return <p className="font-dm text-[13px] text-[var(--a-ink-3)]">Nothing here.</p>;
   return (
-    <ul className="space-y-1.5 max-h-96 overflow-y-auto">
+    <ul className="-mx-1 max-h-80 space-y-1.5 overflow-y-auto px-1">
       {items.map((p) => (
         <li key={p.id}>
-          <Chip p={p} onOpen={() => onOpen(p)} draggable />
+          <Chip p={p} onOpen={() => onOpen(p)} draggable={!LOCKED.includes(p.status)} selectable={!!onToggle && p.status === "draft"} selected={selected?.has(p.id)} onToggle={() => onToggle?.(p.id)} />
         </li>
       ))}
     </ul>
@@ -258,12 +390,18 @@ function QueueList({ items, onOpen }: { items: PostView[]; onOpen: (p: PostView)
 }
 
 function NewPost({ onClose, onCreated }: { onClose: () => void; onCreated: (p: PostView) => void }) {
+  const toast = useToast();
   const [platform, setPlatform] = useState<Platform>("linkedin");
   const [body, setBody] = useState("");
   const [target, setTarget] = useState("");
   const [campaign, setCampaign] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
   async function create() {
     setBusy(true);
     setErr(null);
@@ -275,13 +413,15 @@ function NewPost({ onClose, onCreated }: { onClose: () => void; onCreated: (p: P
     const j = await res.json().catch(() => ({}));
     setBusy(false);
     if (!res.ok) return setErr(j.error ?? "Could not create the post");
+    toast.success("Draft created");
     onCreated(j.post);
   }
+  const max = PLATFORM_INFO[platform].maxChars;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="New post">
-      <button className="absolute inset-0 bg-black/30" aria-label="Close" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-2xl bg-white p-5 space-y-3 shadow-xl">
-        <h2 className="font-syne font-bold text-lg text-[#0D1B2A]">New post</h2>
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="np-title">
+      <button className="absolute inset-0 bg-[rgba(13,27,42,.35)]" aria-label="Close" onClick={onClose} />
+      <div className="a-anim-pop relative w-full max-w-md space-y-3 rounded-t-[20px] bg-[var(--a-surface)] p-5 shadow-[var(--a-shadow-pop)] sm:rounded-[20px]">
+        <h2 id="np-title" className="font-syne text-[18px] font-semibold text-[var(--a-ink)]">New post</h2>
         <div>
           <label className={label} htmlFor="np-platform">Platform</label>
           <select id="np-platform" className={input} value={platform} onChange={(e) => setPlatform(e.target.value as Platform)}>
@@ -290,7 +430,8 @@ function NewPost({ onClose, onCreated }: { onClose: () => void; onCreated: (p: P
         </div>
         <div>
           <label className={label} htmlFor="np-body">Text</label>
-          <textarea id="np-body" rows={5} className={input} value={body} onChange={(e) => setBody(e.target.value)} />
+          <textarea id="np-body" rows={5} className={input} value={body} onChange={(e) => setBody(e.target.value)} autoFocus />
+          <p className={`mt-1 text-right font-dm text-[11.5px] tabular-nums ${body.length > max ? "text-[var(--a-danger)]" : "text-[var(--a-ink-3)]"}`}>{body.length} / {max}</p>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
@@ -302,10 +443,10 @@ function NewPost({ onClose, onCreated }: { onClose: () => void; onCreated: (p: P
             <input id="np-campaign" className={input} placeholder="manual" value={campaign} onChange={(e) => setCampaign(e.target.value)} />
           </div>
         </div>
-        {err && <p role="alert" className="font-dm text-sm text-[#B42318]">{err}</p>}
+        {err && <p role="alert" className="font-dm text-[13px] text-[var(--a-danger)]">{err}</p>}
         <div className="flex justify-end gap-2">
-          <button className={btn.ghost} onClick={onClose}>Cancel</button>
-          <button className={btn.primary} disabled={busy || !body.trim()} onClick={create}>Create draft</button>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" loading={busy} disabled={!body.trim()} onClick={create}>Create draft</Button>
         </div>
       </div>
     </div>

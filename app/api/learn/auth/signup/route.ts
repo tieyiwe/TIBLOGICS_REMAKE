@@ -10,6 +10,7 @@ import { sendSignupNotification } from "@/lib/learn/admin/signup-notify";
 import { OWNER_EMAIL } from "@/lib/auth";
 import { recordAttribution } from "@/lib/growth/attribution";
 import { recordReferralSignup } from "@/lib/learn/referrals/service";
+import { isEmailBlocked } from "@/lib/learn/account-status";
 
 const SignupSchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -69,6 +70,10 @@ export async function POST(req: NextRequest) {
     // with the admin password (lib/auth.ts). Same answer as a taken address.
     if (email === OWNER_EMAIL.toLowerCase()) {
       return NextResponse.json({ error: t("learn.api.emailExists") }, { status: 409 });
+    }
+    // A blocked learner cannot open a new account with the same address.
+    if (await isEmailBlocked(email)) {
+      return NextResponse.json({ error: t("authStatus.signupBlocked"), code: "blocked" }, { status: 403 });
     }
     const existing = await prisma.student.findUnique({ where: { email }, select: { id: true } });
     if (existing) {

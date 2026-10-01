@@ -224,7 +224,7 @@ export function GoalTracker({ items: initial, elapsed, goals: initialGoals }: { 
       {editing ? (
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
-            {([["signups", "Learn sign-ups"], ["leads", "New leads"], ["revenueCents", "Revenue (USD)"], ["posts", "Posts published"]] as const).map(([k, l]) => (
+            {([["signups", "AI Academy sign-ups"], ["leads", "New leads"], ["revenueCents", "Revenue (USD)"], ["posts", "Posts published"]] as const).map(([k, l]) => (
               <div key={k}>
                 <label className={label} htmlFor={`goal-${k}`}>{l}</label>
                 <input

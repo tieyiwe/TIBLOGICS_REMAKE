@@ -1,8 +1,12 @@
-import Link from "next/link";
 import { requireAdminPage } from "../../_lib/admin-page-auth";
 import { teamTablesReady } from "@/lib/learn/team/db";
 import { getTeamPricing, listTeamsForAdmin, teamMrr } from "@/lib/learn/team/admin";
 import { CompTeamForm, DefaultsForm } from "./TeamsAdminForms";
+import { Building2, DollarSign, Gift, UsersRound } from "lucide-react";
+import { Badge, Card, DataTable, EmptyState, Notice, PageHeader, StatCard, type BadgeTone } from "@/components/admin/ui";
+import { LEARN_TABS } from "../tabs";
+
+const TEAM_TONE: Record<string, BadgeTone> = { active: "success", trialing: "info", past_due: "warn", canceled: "neutral", incomplete: "warn" };
 
 export const dynamic = "force-dynamic";
 
@@ -13,68 +17,95 @@ export default async function TeamsAdminPage() {
   const ready = await teamTablesReady();
   const [teams, pricing, mrr] = ready ? await Promise.all([listTeamsForAdmin(), getTeamPricing(), teamMrr()]) : [[], await getTeamPricing(), { cents: 0, teams: 0, seats: 0 }];
 
+  type Team = (typeof teams)[number];
+  const comped = teams.filter((t) => t.comped).length;
+
   return (
     <div className="space-y-6">
-      <header>
-        <p className="text-xs text-[var(--ink3)]">
-          <Link href="/admin_pro/learn" className="underline">Learn</Link> / Teams
-        </p>
-        <h1 className="text-xl font-black text-[var(--ink)]">Teams</h1>
-        <p className="text-sm text-[var(--ink3)]">
-          Company plans: seats with every track, billed monthly per seat. Team MRR {money(mrr.cents)} from {mrr.teams} paying teams ({mrr.seats} seats).
-        </p>
-      </header>
-      {!ready && <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">The team tables could not be created. Check the database connection.</p>}
+      <PageHeader
+        title="Teams"
+        subtitle="Company plans: seats with every track, billed monthly per seat."
+        breadcrumb={[{ label: "ARFA · AI Academy", href: "/admin_pro/learn" }, { label: "Teams" }]}
+        tabs={LEARN_TABS}
+        activeTab="/admin_pro/learn/teams"
+        className="mb-0"
+      />
+      {!ready && <Notice tone="warn" title="Team tables unavailable">The team tables could not be created. Check the database connection.</Notice>}
 
-      <section className="rounded-xl border border-[var(--border)] bg-white p-5">
-        <h2 className="text-sm font-bold text-[var(--ink)]">All teams</h2>
-        {teams.length === 0 ? (
-          <p className="mt-3 text-sm text-[var(--ink3)]">No teams yet.</p>
-        ) : (
-          <div className="mt-3 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border)] text-left text-xs text-[var(--ink3)]">
-                  <th className="py-2 pr-3">Team</th>
-                  <th className="py-2 pr-3">Owner</th>
-                  <th className="py-2 pr-3">Status</th>
-                  <th className="py-2 pr-3">Seats (active / invited)</th>
-                  <th className="py-2 pr-3">Seat price</th>
-                  <th className="py-2">MRR</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border)]">
-                {teams.map((t) => (
-                  <tr key={t.id}>
-                    <td className="py-2 pr-3 font-semibold">
-                      <Link href={`/admin_pro/learn/teams/${t.id}`} className="text-[var(--blue2)] underline">{t.name}</Link>
-                    </td>
-                    <td className="py-2 pr-3">{t.owner?.email ?? t.ownerStudentId}</td>
-                    <td className="py-2 pr-3">{t.comped ? "comped" : t.status}{t.cancelAtPeriodEnd ? " (cancelling)" : ""}</td>
-                    <td className="py-2 pr-3">{t.seats} ({t.activeMembers} / {t.invited})</td>
-                    <td className="py-2 pr-3">{money(t.seatPrice)}</td>
-                    <td className="py-2">{money(t.mrrCents)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Team MRR" value={money(mrr.cents)} icon={DollarSign} tone="success" />
+        <StatCard label="Paying teams" value={mrr.teams} icon={Building2} tone="navy" />
+        <StatCard label="Paid seats" value={mrr.seats} icon={UsersRound} />
+        <StatCard label="Comped teams" value={comped} icon={Gift} />
+      </div>
+
+      <DataTable<Team>
+        caption="All teams"
+        rows={teams}
+        rowKey={(t) => t.id}
+        rowHref={(t) => `/admin_pro/learn/teams/${t.id}`}
+        empty={
+          <EmptyState
+            icon={UsersRound}
+            title="No teams yet"
+            body="Teams appear when a company buys seats, or when you comp one below for a partner or pilot."
+            action={
+              <a href="#comp-team" className="font-dm text-[13.5px] font-semibold text-[var(--a-blue)] hover:underline">
+                Comp a team
+              </a>
+            }
+          />
+        }
+        columns={[
+          { key: "name", header: "Team", primary: true, render: (t) => <span className="font-semibold text-[var(--a-ink)]">{t.name}</span> },
+          { key: "owner", header: "Owner", render: (t) => <span className="break-all">{t.owner?.email ?? t.ownerStudentId}</span> },
+          {
+            key: "status",
+            header: "Status",
+            render: (t) => (
+              <Badge tone={t.comped ? "orange" : (TEAM_TONE[t.status] ?? "neutral")} dot className="capitalize">
+                {t.comped ? "comped" : t.status.replace("_", " ")}
+                {t.cancelAtPeriodEnd ? " (cancelling)" : ""}
+              </Badge>
+            ),
+          },
+          {
+            key: "seats",
+            header: "Seats",
+            align: "right",
+            render: (t) => (
+              <span className="tabular-nums">
+                <span className="font-semibold text-[var(--a-ink)]">{t.seats}</span>{" "}
+                <span className="text-[12px] text-[var(--a-ink-3)]">
+                  ({t.activeMembers} active / {t.invited} invited)
+                </span>
+              </span>
+            ),
+          },
+          { key: "price", header: "Seat price", align: "right", hideOnMobile: true, render: (t) => <span className="tabular-nums">{money(t.seatPrice)}</span> },
+          { key: "mrr", header: "MRR", align: "right", render: (t) => <span className="font-semibold tabular-nums text-[var(--a-ink)]">{money(t.mrrCents)}</span> },
+        ]}
+      />
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card
+          title="Defaults for new teams"
+          subtitle="Existing teams keep the price they bought at (change one on its page). If STRIPE_LEARN_TEAM_PRICE_ID is set, Stripe bills that Price instead; keep the two equal."
+        >
+          <div className="font-dm text-[13px] font-semibold text-[var(--a-ink-2)]">
+            <DefaultsForm seatPriceCents={pricing.seatPriceCents} minSeats={pricing.minSeats} />
           </div>
-        )}
-      </section>
-
-      <section className="rounded-xl border border-[var(--border)] bg-white p-5">
-        <h2 className="text-sm font-bold text-[var(--ink)]">Defaults for new teams</h2>
-        <p className="mb-3 mt-1 text-xs text-[var(--ink3)]">
-          Existing teams keep the price they bought at (change one on its page). If STRIPE_LEARN_TEAM_PRICE_ID is set, Stripe bills that Price instead; keep the two equal.
-        </p>
-        <DefaultsForm seatPriceCents={pricing.seatPriceCents} minSeats={pricing.minSeats} />
-      </section>
-
-      <section className="rounded-xl border border-[var(--border)] bg-white p-5">
-        <h2 className="text-sm font-bold text-[var(--ink)]">Comp a team</h2>
-        <p className="mb-3 mt-1 text-xs text-[var(--ink3)]">Free seats for partners and pilots. The owner needs a learner account; they invite their people from /learn/team.</p>
-        <CompTeamForm />
-      </section>
+        </Card>
+        <Card
+          id="comp-team"
+          title="Comp a team"
+          subtitle="Free seats for partners and pilots. The owner needs a learner account; they invite their people from /learn/team."
+        >
+          <div className="font-dm text-[13px] font-semibold text-[var(--a-ink-2)]">
+            <CompTeamForm />
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

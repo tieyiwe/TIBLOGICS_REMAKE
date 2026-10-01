@@ -21,7 +21,7 @@ export default function JoinTeamButton({ token }: { token: string }) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? t("team.error.generic"));
-      router.push("/learn?team=joined");
+      router.push("/learn/team/welcome");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("team.error.generic"));

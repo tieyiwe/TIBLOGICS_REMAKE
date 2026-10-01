@@ -89,8 +89,8 @@ export function DayBars({ data, format = int, label }: { data: DayPoint[]; forma
           <span>{format(max)}</span>
           <span>0</span>
         </div>
-        <div className={`relative flex-1 h-36 flex items-end ${gap} border-b border-[#D2DCE8]`} role="img" aria-label={`${label}, daily`}>
-          <div className="pointer-events-none absolute inset-x-0 top-0 border-t border-dashed border-[#E8EFF8]" />
+        <div className={`relative flex-1 h-36 flex items-end ${gap} border-b border-[var(--a-border)]`} role="img" aria-label={`${label}, daily`}>
+          <div className="pointer-events-none absolute inset-x-0 top-0 border-t border-dashed border-[var(--a-border)]" />
           {data.map((d) => (
             <div key={d.day} className="group relative flex-1 h-full flex items-end" title={`${shortDay(d.day)}: ${format(d.value)}`}>
               <div
@@ -113,7 +113,7 @@ export function DayBars({ data, format = int, label }: { data: DayPoint[]; forma
 /** Horizontal bar used in lists (funnel, sources). */
 export function Meter({ value, max, color = "#2251A3" }: { value: number; max: number; color?: string }) {
   return (
-    <div className="h-2 rounded-full bg-[#F4F7FB] overflow-hidden">
+    <div className="h-2 rounded-full bg-[var(--a-surface-2)] overflow-hidden">
       <div className="h-full rounded-full" style={{ width: `${max ? Math.min(100, (value / max) * 100) : 0}%`, background: color }} />
     </div>
   );

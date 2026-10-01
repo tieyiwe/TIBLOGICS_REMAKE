@@ -7,7 +7,7 @@ import { SessionWrapper } from "@/components/admin/SessionWrapper";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { AdminShellProvider } from "@/components/admin/shell/AdminShellContext";
-import { ToastProvider } from "@/components/admin/ui";
+import { ConfirmProvider, ToastProvider } from "@/components/admin/ui";
 import "../admin.css";
 
 // Routes inside the (admin) group that must render WITHOUT the auth guard
@@ -46,8 +46,9 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
 
   return (
     <AdminShellProvider>
-      <ToastProvider>
-        <div className="admin-root flex h-[100dvh] overflow-hidden">
+      <div className="admin-root flex h-[100dvh] overflow-hidden">
+        <ToastProvider>
+        <ConfirmProvider>
           <a
             href="#admin-main"
             className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[90] focus:rounded-md focus:bg-white focus:px-3 focus:py-2 focus:font-dm focus:text-sm focus:shadow-lg"
@@ -57,12 +58,13 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
           <AdminSidebar />
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
             <AdminHeader />
-            <main id="admin-main" tabIndex={-1} className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 focus:outline-none sm:p-6">
+            <main id="admin-main" tabIndex={-1} className="relative min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 focus:outline-none sm:p-6">
               {children}
             </main>
           </div>
-        </div>
-      </ToastProvider>
+        </ConfirmProvider>
+        </ToastProvider>
+      </div>
     </AdminShellProvider>
   );
 }

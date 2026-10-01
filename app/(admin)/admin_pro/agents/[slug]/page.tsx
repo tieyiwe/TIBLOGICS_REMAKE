@@ -66,13 +66,13 @@ function MarkdownText({ text }: { text: string }) {
     <div className="space-y-1.5 font-dm text-sm leading-relaxed">
       {lines.map((line, i) => {
         if (line.startsWith("**") && line.endsWith("**")) {
-          return <p key={i} className="font-bold text-[#0D1B2A]">{line.slice(2, -2)}</p>;
+          return <p key={i} className="font-bold text-[var(--a-ink)]">{line.slice(2, -2)}</p>;
         }
         if (line.startsWith("## ")) {
-          return <p key={i} className="font-syne font-bold text-base text-[#0D1B2A] mt-2">{line.slice(3)}</p>;
+          return <p key={i} className="font-syne font-bold text-base text-[var(--a-ink)] mt-2">{line.slice(3)}</p>;
         }
         if (line.startsWith("# ")) {
-          return <p key={i} className="font-syne font-extrabold text-lg text-[#0D1B2A] mt-2">{line.slice(2)}</p>;
+          return <p key={i} className="font-syne font-extrabold text-lg text-[var(--a-ink)] mt-2">{line.slice(2)}</p>;
         }
         if (line.startsWith("- ") || line.startsWith("• ")) {
           return <p key={i} className="pl-3 before:content-['•'] before:mr-2 before:text-current">{line.slice(2)}</p>;
@@ -156,16 +156,16 @@ export default function AgentChatPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] max-h-[800px]">
       {/* Agent header */}
-      <div className="bg-white border border-[#D2DCE8] rounded-2xl p-4 mb-4 flex items-center justify-between">
+      <div className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-4 mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+            className="w-10 h-10 rounded-[var(--a-radius-control)] flex items-center justify-center text-xl"
             style={{ backgroundColor: agent.bg }}
           >
             {agent.avatar}
           </div>
           <div>
-            <p className="font-syne font-bold text-base text-[#0D1B2A]">{agent.name}</p>
+            <p className="font-syne font-bold text-base text-[var(--a-ink)]">{agent.name}</p>
             <p className="font-dm text-xs font-medium" style={{ color: agent.color }}>{agent.title}</p>
           </div>
           <span className="ml-2 w-2 h-2 rounded-full bg-green-500 inline-block" title="Online" />
@@ -173,7 +173,7 @@ export default function AgentChatPage() {
         {messages.length > 0 && (
           <button
             onClick={() => setMessages([])}
-            className="flex items-center gap-1.5 text-xs text-[#7A8FA6] hover:text-red-500 transition-colors font-dm"
+            className="flex items-center gap-1.5 text-xs text-[var(--a-ink-3)] hover:text-red-500 transition-colors font-dm"
           >
             <Trash2 size={13} />
             Clear
@@ -187,16 +187,16 @@ export default function AgentChatPage() {
           <div className="space-y-5 py-4">
             <div className="text-center">
               <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3"
+                className="w-16 h-16 rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] flex items-center justify-center text-3xl mx-auto mb-3"
                 style={{ backgroundColor: agent.bg }}
               >
                 {agent.avatar}
               </div>
-              <p className="font-syne font-bold text-lg text-[#0D1B2A]">Chat with {agent.name}</p>
-              <p className="font-dm text-sm text-[#7A8FA6] mt-1">{agent.title}</p>
+              <p className="font-syne font-bold text-lg text-[var(--a-ink)]">Chat with {agent.name}</p>
+              <p className="font-dm text-sm text-[var(--a-ink-3)] mt-1">{agent.title}</p>
             </div>
             <div>
-              <p className="font-dm text-xs text-[#7A8FA6] uppercase tracking-wider font-semibold mb-2 text-center">
+              <p className="font-dm text-xs text-[var(--a-ink-3)] uppercase tracking-wider font-semibold mb-2 text-center">
                 Try asking
               </p>
               <div className="flex flex-col gap-2">
@@ -204,7 +204,7 @@ export default function AgentChatPage() {
                   <button
                     key={s}
                     onClick={() => sendMessage(s)}
-                    className="text-left text-sm font-dm px-4 py-2.5 bg-white border border-[#D2DCE8] rounded-xl hover:border-[#2251A3] hover:bg-[#EBF0FA] transition-colors text-[#3A4A5C]"
+                    className="text-left text-sm font-dm px-4 py-2.5 bg-white border border-[var(--a-border)] rounded-[var(--a-radius-control)] hover:border-[#2251A3] hover:bg-[var(--a-info-bg)] transition-colors text-[var(--a-ink-2)]"
                   >
                     {s}
                   </button>
@@ -225,18 +225,18 @@ export default function AgentChatPage() {
               )}
               <div className={`group relative max-w-[80%] ${msg.role === "user" ? "max-w-[70%]" : ""}`}>
                 {msg.role === "user" ? (
-                  <div className="bg-[#1B3A6B] text-white rounded-2xl rounded-tr-sm px-4 py-3 font-dm text-sm">
+                  <div className="bg-[var(--a-navy)] text-white rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] rounded-tr-sm px-4 py-3 font-dm text-sm">
                     {msg.content}
                   </div>
                 ) : (
-                  <div className="bg-white border border-[#D2DCE8] rounded-2xl rounded-tl-sm px-4 py-3">
+                  <div className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] rounded-tl-sm px-4 py-3">
                     <MarkdownText text={msg.content} />
                   </div>
                 )}
                 {msg.role === "assistant" && (
                   <button
                     onClick={() => copyMessage(idx, msg.content)}
-                    className="absolute -bottom-5 left-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[#7A8FA6] hover:text-[#1B3A6B] text-xs font-dm"
+                    className="absolute -bottom-5 left-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[var(--a-ink-3)] hover:text-[#1B3A6B] text-xs font-dm"
                   >
                     {copied === idx ? <Check size={12} /> : <Copy size={12} />}
                     {copied === idx ? "Copied!" : "Copy"}
@@ -255,7 +255,7 @@ export default function AgentChatPage() {
             >
               {agent.avatar}
             </div>
-            <div className="bg-white border border-[#D2DCE8] rounded-2xl rounded-tl-sm px-4 py-3">
+            <div className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] rounded-tl-sm px-4 py-3">
               <div className="flex gap-1.5">
                 <span className="typing-dot w-2 h-2 rounded-full bg-[#7A8FA6]" />
                 <span className="typing-dot w-2 h-2 rounded-full bg-[#7A8FA6]" />
@@ -268,7 +268,7 @@ export default function AgentChatPage() {
       </div>
 
       {/* Input */}
-      <div className="bg-white border border-[#D2DCE8] rounded-2xl p-3 flex items-end gap-2">
+      <div className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-3 flex items-end gap-2">
         <textarea
           ref={textareaRef}
           value={input}
@@ -276,13 +276,13 @@ export default function AgentChatPage() {
           onKeyDown={handleKeyDown}
           rows={1}
           placeholder={agent.placeholder}
-          className="flex-1 resize-none outline-none font-dm text-sm text-[#0D1B2A] placeholder:text-[#7A8FA6] max-h-32 overflow-y-auto bg-transparent"
+          className="flex-1 resize-none outline-none font-dm text-sm text-[var(--a-ink)] placeholder:text-[var(--a-ink-3)] max-h-32 overflow-y-auto bg-transparent"
           style={{ fieldSizing: "content" } as React.CSSProperties}
         />
         <button
           onClick={() => sendMessage()}
           disabled={!input.trim() || loading}
-          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors disabled:opacity-40"
+          className="w-9 h-9 rounded-[var(--a-radius-control)] flex items-center justify-center flex-shrink-0 transition-colors disabled:opacity-40"
           style={{ backgroundColor: agent.color }}
         >
           <Send size={15} className="text-white" />

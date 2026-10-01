@@ -14,6 +14,8 @@ import { getTotalPoints, levelFor } from "@/lib/learn/points";
 export default async function MemberLayout({ children }: { children: React.ReactNode }) {
   const { student, entitlement, access } = await getLearnContext();
   if (!student) redirect("/learn/login");
+  // Signed in with a temporary password set by an admin.
+  if (student.mustChangePassword) redirect("/learn/change-password");
   if (!access.any) redirect("/learn/subscribe");
 
   const total = await getTotalPoints(student.id);

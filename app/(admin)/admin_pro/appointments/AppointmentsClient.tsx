@@ -81,17 +81,17 @@ function ActionMenu({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#F4F7FB] text-[#7A8FA6]"
+        className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--a-surface-2)] text-[var(--a-ink-3)]"
       >
         <MoreVertical size={15} />
       </button>
       {open && (
-        <div className="absolute right-0 top-9 bg-white border border-[#D2DCE8] rounded-xl shadow-lg z-20 min-w-[160px] py-1">
+        <div className="absolute right-0 top-9 bg-white border border-[var(--a-border)] rounded-[var(--a-radius-control)] shadow-lg z-20 min-w-[160px] py-1">
           <button
-            className="w-full text-left px-4 py-2.5 text-sm font-dm text-[#0D1B2A] hover:bg-[#F4F7FB] flex items-center gap-2"
+            className="w-full text-left px-4 py-2.5 text-sm font-dm text-[var(--a-ink)] hover:bg-[var(--a-surface-2)] flex items-center gap-2"
             onClick={() => { onSelect(appt); setOpen(false); }}
           >
-            <ExternalLink size={13} className="text-[#7A8FA6]" /> View Details
+            <ExternalLink size={13} className="text-[var(--a-ink-3)]" /> View Details
           </button>
         </div>
       )}
@@ -353,14 +353,14 @@ function DetailPanel({
       {/* Panel */}
       <div className="relative z-10 w-full max-w-lg bg-white shadow-2xl flex flex-col h-full overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#D2DCE8] sticky top-0 bg-white z-10">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--a-border)] sticky top-0 bg-white z-10">
           <div>
-            <p className="font-syne font-bold text-base text-[#0D1B2A]">{appt.firstName} {appt.lastName}</p>
-            <p className="font-dm text-xs text-[#7A8FA6]">{appt.email}</p>
+            <p className="font-syne font-bold text-base text-[var(--a-ink)]">{appt.firstName} {appt.lastName}</p>
+            <p className="font-dm text-xs text-[var(--a-ink-3)]">{appt.email}</p>
           </div>
           <div className="flex items-center gap-3">
             <Badge label={appt.status} cls={STATUS_COLOR[appt.status] ?? "bg-gray-100 text-gray-500"} />
-            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#F4F7FB] text-[#7A8FA6]">
+            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--a-surface-2)] text-[var(--a-ink-3)]">
               <X size={16} />
             </button>
           </div>
@@ -368,7 +368,7 @@ function DetailPanel({
 
         {/* Toast */}
         {toast && (
-          <div className={`mx-6 mt-4 flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-dm border ${
+          <div className={`mx-6 mt-4 flex items-center gap-2 px-4 py-3 rounded-[var(--a-radius-control)] text-sm font-dm border ${
             toast.type === "ok"
               ? "bg-green-50 border-green-200 text-green-700"
               : "bg-red-50 border-red-200 text-red-600"
@@ -379,7 +379,7 @@ function DetailPanel({
         )}
 
         {/* Tab switcher */}
-        <div className="flex border-b border-[#D2DCE8] px-6 sticky top-[73px] bg-white z-10">
+        <div className="flex border-b border-[var(--a-border)] px-6 sticky top-[73px] bg-white z-10">
           {([["details", "Details"], ["intel", "Session Intel"]] as const).map(([tab, label]) => (
             <button
               key={tab}
@@ -387,7 +387,7 @@ function DetailPanel({
               className={`px-4 py-3 text-sm font-dm font-medium border-b-2 transition-colors ${
                 detailTab === tab
                   ? "border-[#1B3A6B] text-[#1B3A6B]"
-                  : "border-transparent text-[#7A8FA6] hover:text-[#0D1B2A]"
+                  : "border-transparent text-[var(--a-ink-3)] hover:text-[var(--a-ink)]"
               }`}
             >
               {tab === "intel" && <Brain size={13} className="inline mr-1.5 mb-0.5" />}
@@ -405,41 +405,41 @@ function DetailPanel({
               {/* AI Client Brief */}
               <section>
                 <div className="flex items-center justify-between mb-3">
-                  <p className="font-dm text-sm font-semibold text-[#0D1B2A] flex items-center gap-1.5">
+                  <p className="font-dm text-sm font-semibold text-[var(--a-ink)] flex items-center gap-1.5">
                     <Sparkles size={14} className="text-[#F47C20]" /> Pre-Session AI Brief
                   </p>
                   <button
                     onClick={handleGenerateBrief}
                     disabled={briefLoading}
-                    className="flex items-center gap-1.5 text-xs font-dm text-[#2251A3] hover:underline disabled:opacity-50"
+                    className="flex items-center gap-1.5 text-xs font-dm text-[var(--a-blue)] hover:underline disabled:opacity-50"
                   >
                     {briefLoading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
                     {brief ? "Regenerate" : "Generate Brief"}
                   </button>
                 </div>
                 {!brief && !briefLoading && (
-                  <div className="bg-[#F4F7FB] rounded-xl p-4 text-center">
+                  <div className="bg-[var(--a-surface-2)] rounded-[var(--a-radius-control)] p-4 text-center">
                     <Brain size={24} className="text-[#B0BEC5] mx-auto mb-2" />
-                    <p className="font-dm text-sm text-[#7A8FA6]">Generate an AI brief to get client insights, recommended approach, and opening questions before the session.</p>
+                    <p className="font-dm text-sm text-[var(--a-ink-3)]">Generate an AI brief to get client insights, recommended approach, and opening questions before the session.</p>
                     <button
                       onClick={handleGenerateBrief}
-                      className="mt-3 px-4 py-2 bg-[#1B3A6B] text-white text-sm font-dm font-semibold rounded-xl hover:bg-[#2251A3] transition-colors"
+                      className="mt-3 px-4 py-2 bg-[var(--a-navy)] text-white text-sm font-dm font-semibold rounded-[var(--a-radius-control)] hover:bg-[#2251A3] transition-colors"
                     >
                       Generate Now
                     </button>
                   </div>
                 )}
                 {briefLoading && (
-                  <div className="bg-[#F4F7FB] rounded-xl p-6 flex items-center justify-center gap-2">
-                    <Loader2 size={16} className="animate-spin text-[#2251A3]" />
-                    <span className="font-dm text-sm text-[#7A8FA6]">Analyzing client data…</span>
+                  <div className="bg-[var(--a-surface-2)] rounded-[var(--a-radius-control)] p-6 flex items-center justify-center gap-2">
+                    <Loader2 size={16} className="animate-spin text-[var(--a-blue)]" />
+                    <span className="font-dm text-sm text-[var(--a-ink-3)]">Analyzing client data…</span>
                   </div>
                 )}
                 {brief && !briefLoading && (
-                  <div className="bg-[#F4F7FB] rounded-xl p-4">
+                  <div className="bg-[var(--a-surface-2)] rounded-[var(--a-radius-control)] p-4">
                     <div className="flex items-center gap-2 mb-3">
                       {brief.hasChatHistory && (
-                        <span className="flex items-center gap-1 text-xs font-dm text-[#2251A3] bg-[#EBF0FA] px-2 py-0.5 rounded-full">
+                        <span className="flex items-center gap-1 text-xs font-dm text-[var(--a-blue)] bg-[var(--a-info-bg)] px-2 py-0.5 rounded-full">
                           <MessageSquare size={10} /> {brief.chatMessageCount} chat msgs
                         </span>
                       )}
@@ -447,7 +447,7 @@ function DetailPanel({
                         Generated {new Date(brief.generatedAt).toLocaleString()}
                       </span>
                     </div>
-                    <div className="font-dm text-sm text-[#3A4A5C] whitespace-pre-wrap leading-relaxed">
+                    <div className="font-dm text-sm text-[var(--a-ink-2)] whitespace-pre-wrap leading-relaxed">
                       {brief.text}
                     </div>
                   </div>
@@ -455,14 +455,14 @@ function DetailPanel({
               </section>
 
               {/* Divider */}
-              <div className="border-t border-[#F4F7FB]" />
+              <div className="border-t border-[var(--a-border)]" />
 
               {/* Voice & Session Analysis */}
               <section>
-                <p className="font-dm text-sm font-semibold text-[#0D1B2A] flex items-center gap-1.5 mb-1">
+                <p className="font-dm text-sm font-semibold text-[var(--a-ink)] flex items-center gap-1.5 mb-1">
                   <Mic size={14} className="text-[#F47C20]" /> Voice & Session Analysis
                 </p>
-                <p className="font-dm text-xs text-[#7A8FA6] mb-3">
+                <p className="font-dm text-xs text-[var(--a-ink-3)] mb-3">
                   Record live or paste a transcript from the session. AI will detect mood, key issues, urgency, and recommended follow-ups.
                 </p>
 
@@ -470,16 +470,16 @@ function DetailPanel({
                 <div className="flex gap-2 mb-2">
                   <button
                     onClick={toggleRecording}
-                    className={`flex items-center gap-1.5 px-3 py-2 text-sm font-dm font-semibold rounded-xl transition-colors ${
+                    className={`flex items-center gap-1.5 px-3 py-2 text-sm font-dm font-semibold rounded-[var(--a-radius-control)] transition-colors ${
                       isRecording
                         ? "bg-red-100 text-red-600 hover:bg-red-200 animate-pulse"
-                        : "bg-[#EBF0FA] text-[#2251A3] hover:bg-[#2251A3] hover:text-white"
+                        : "bg-[var(--a-info-bg)] text-[var(--a-blue)] hover:bg-[#2251A3] hover:text-white"
                     }`}
                   >
                     {isRecording ? <><MicOff size={13} /> Stop Recording</> : <><Mic size={13} /> Record Voice</>}
                   </button>
                   {transcript && (
-                    <button onClick={() => setTranscript("")} className="text-xs text-[#7A8FA6] hover:text-red-500 font-dm">Clear</button>
+                    <button onClick={() => setTranscript("")} className="text-xs text-[var(--a-ink-3)] hover:text-red-500 font-dm">Clear</button>
                   )}
                 </div>
 
@@ -488,7 +488,7 @@ function DetailPanel({
                   onChange={(e) => setTranscript(e.target.value)}
                   placeholder="Transcript appears here as you speak, or paste it manually…"
                   rows={5}
-                  className="w-full px-3 py-2.5 text-sm font-dm border border-[#D2DCE8] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3] bg-white resize-none"
+                  className="w-full px-3 py-2.5 text-sm font-dm border border-[var(--a-border)] rounded-[var(--a-radius-control)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20 focus:border-[var(--a-blue)] bg-white resize-none"
                 />
                 <p className="font-dm text-xs text-[#B0BEC5] mt-1 mb-3">
                   {transcript.trim().split(/\s+/).filter(Boolean).length} words
@@ -497,18 +497,18 @@ function DetailPanel({
                 <button
                   onClick={handleAnalyzeVoice}
                   disabled={voiceLoading || transcript.trim().split(/\s+/).length < 5}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#F47C20] text-white text-sm font-dm font-semibold rounded-xl hover:bg-[#d96a15] transition-colors disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[var(--a-orange-text)] text-white text-sm font-dm font-semibold rounded-[var(--a-radius-control)] hover:bg-[#d96a15] transition-colors disabled:opacity-50"
                 >
                   {voiceLoading ? <Loader2 size={14} className="animate-spin" /> : <Brain size={14} />}
                   Analyze Session
                 </button>
 
                 {voiceAnalysis && !voiceLoading && (
-                  <div className="mt-4 bg-[#F4F7FB] rounded-xl p-4">
+                  <div className="mt-4 bg-[var(--a-surface-2)] rounded-[var(--a-radius-control)] p-4">
                     <p className="font-dm text-xs text-[#B0BEC5] mb-3">
                       Analyzed {new Date(voiceAnalysis.analyzedAt).toLocaleString()} · {voiceAnalysis.wordCount} words
                     </p>
-                    <div className="font-dm text-sm text-[#3A4A5C] whitespace-pre-wrap leading-relaxed">
+                    <div className="font-dm text-sm text-[var(--a-ink-2)] whitespace-pre-wrap leading-relaxed">
                       {voiceAnalysis.text}
                     </div>
                   </div>
@@ -520,8 +520,8 @@ function DetailPanel({
           {/* ── DETAILS TAB ── */}
           {detailTab === "details" && <>
           {/* Meeting Details */}
-          <section className="bg-[#F4F7FB] rounded-2xl p-4 space-y-2">
-            <p className="font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide mb-3">Meeting Details</p>
+          <section className="bg-[var(--a-surface-2)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-4 space-y-2">
+            <p className="font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em] mb-3">Meeting Details</p>
             <Row label="Service" value={fmt(appt.serviceType)} />
             <Row label="Duration" value={appt.serviceDuration} />
             <Row label="Date" value={fmtDate(appt.date)} />
@@ -540,10 +540,10 @@ function DetailPanel({
 
           {/* Meeting Link */}
           <section>
-            <p className="font-dm text-sm font-semibold text-[#0D1B2A] mb-2 flex items-center gap-1.5">
-              <Video size={14} className="text-[#2251A3]" /> Meeting Link
+            <p className="font-dm text-sm font-semibold text-[var(--a-ink)] mb-2 flex items-center gap-1.5">
+              <Video size={14} className="text-[var(--a-blue)]" /> Meeting Link
             </p>
-            <p className="font-dm text-xs text-[#7A8FA6] mb-2">
+            <p className="font-dm text-xs text-[var(--a-ink-3)] mb-2">
               Paste a Jitsi Meet link or leave blank to auto-generate one. This will be included in the confirmation email.
             </p>
             <div className="flex gap-2">
@@ -552,12 +552,12 @@ function DetailPanel({
                 value={meetingLink}
                 onChange={(e) => setMeetingLink(e.target.value)}
                 placeholder="https://meet.jit.si/tiblogics-..."
-                className="flex-1 px-3 py-2.5 text-sm font-dm border border-[#D2DCE8] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3] bg-white"
+                className="flex-1 px-3 py-2.5 text-sm font-dm border border-[var(--a-border)] rounded-[var(--a-radius-control)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20 focus:border-[var(--a-blue)] bg-white"
               />
               <button
                 onClick={handleSaveMeetingLink}
                 disabled={busy === "link"}
-                className="px-3 py-2.5 bg-[#EBF0FA] text-[#2251A3] text-sm font-dm rounded-xl hover:bg-[#2251A3] hover:text-white transition-colors disabled:opacity-50"
+                className="px-3 py-2.5 bg-[var(--a-info-bg)] text-[var(--a-blue)] text-sm font-dm rounded-[var(--a-radius-control)] hover:bg-[#2251A3] hover:text-white transition-colors disabled:opacity-50"
               >
                 {busy === "link" ? <Loader2 size={14} className="animate-spin" /> : "Save"}
               </button>
@@ -567,7 +567,7 @@ function DetailPanel({
                 href={appt.zoomLink}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-2 flex items-center gap-1.5 text-xs text-[#2251A3] font-dm hover:underline"
+                className="mt-2 flex items-center gap-1.5 text-xs text-[var(--a-blue)] font-dm hover:underline"
               >
                 <ExternalLink size={11} /> Open link
               </a>
@@ -576,17 +576,17 @@ function DetailPanel({
 
           {/* Reschedule note (if a new time was suggested) */}
           {appt.notes && appt.notes.startsWith("[Reschedule suggested]") && (
-            <section className="bg-[#FEF0E3] border border-orange-100 rounded-xl p-4">
+            <section className="bg-[#FEF0E3] border border-orange-100 rounded-[var(--a-radius-control)] p-4">
               <p className="font-dm text-xs font-semibold text-[#F47C20] uppercase mb-1 flex items-center gap-1.5">
                 <CalendarClock size={12} /> Reschedule Suggested
               </p>
-              <p className="font-dm text-sm text-[#3A4A5C]">{appt.notes.replace("[Reschedule suggested] ", "")}</p>
+              <p className="font-dm text-sm text-[var(--a-ink-2)]">{appt.notes.replace("[Reschedule suggested] ", "")}</p>
             </section>
           )}
 
           {/* Cancel reason (if cancelled) */}
           {appt.status === "CANCELLED" && appt.cancelReason && (
-            <section className="bg-red-50 border border-red-100 rounded-xl p-4">
+            <section className="bg-red-50 border border-red-100 rounded-[var(--a-radius-control)] p-4">
               <p className="font-dm text-xs font-semibold text-red-400 uppercase mb-1">Cancellation Reason</p>
               <p className="font-dm text-sm text-red-700">{appt.cancelReason}</p>
             </section>
@@ -594,14 +594,14 @@ function DetailPanel({
 
           {/* Actions */}
           <section className="space-y-3">
-            <p className="font-dm text-sm font-semibold text-[#0D1B2A]">Actions</p>
+            <p className="font-dm text-sm font-semibold text-[var(--a-ink)]">Actions</p>
 
             {/* Confirm */}
             {appt.status === "PENDING" && (
               <button
                 onClick={handleConfirm}
                 disabled={!!busy}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#1B3A6B] text-white text-sm font-dm font-semibold rounded-xl hover:bg-[#2251A3] transition-colors disabled:opacity-60"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[var(--a-navy)] text-white text-sm font-dm font-semibold rounded-[var(--a-radius-control)] hover:bg-[#2251A3] transition-colors disabled:opacity-60"
               >
                 {busy === "confirm" ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
                 Confirm & Send Meeting Email
@@ -613,7 +613,7 @@ function DetailPanel({
               <button
                 onClick={handleResendEmail}
                 disabled={!!busy}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#EBF0FA] text-[#2251A3] text-sm font-dm font-semibold rounded-xl hover:bg-[#2251A3] hover:text-white transition-colors disabled:opacity-60"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[var(--a-info-bg)] text-[var(--a-blue)] text-sm font-dm font-semibold rounded-[var(--a-radius-control)] hover:bg-[#2251A3] hover:text-white transition-colors disabled:opacity-60"
               >
                 {busy === "resend" ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                 Resend Confirmation Email
@@ -622,38 +622,38 @@ function DetailPanel({
 
             {/* Suggest new time */}
             {["PENDING", "CONFIRMED"].includes(appt.status) && (
-              <div className="border border-[#D2DCE8] rounded-xl overflow-hidden">
+              <div className="border border-[var(--a-border)] rounded-[var(--a-radius-control)] overflow-hidden">
                 <button
                   onClick={() => setShowReschedule((v) => !v)}
-                  className="w-full flex items-center justify-between gap-2 px-4 py-3 text-sm font-dm font-semibold text-[#0D1B2A] hover:bg-[#F4F7FB] transition-colors"
+                  className="w-full flex items-center justify-between gap-2 px-4 py-3 text-sm font-dm font-semibold text-[var(--a-ink)] hover:bg-[var(--a-surface-2)] transition-colors"
                 >
                   <span className="flex items-center gap-2">
                     <CalendarClock size={14} className="text-[#F47C20]" />
                     Suggest a New Time
                   </span>
-                  <span className="text-[#7A8FA6] text-xs">{showReschedule ? "▲" : "▼"}</span>
+                  <span className="text-[var(--a-ink-3)] text-xs">{showReschedule ? "▲" : "▼"}</span>
                 </button>
                 {showReschedule && (
-                  <div className="px-4 pb-4 space-y-3 border-t border-[#F4F7FB] pt-3">
-                    <p className="font-dm text-xs text-[#7A8FA6]">
+                  <div className="px-4 pb-4 space-y-3 border-t border-[var(--a-border)] pt-3">
+                    <p className="font-dm text-xs text-[var(--a-ink-3)]">
                       An email will be sent to <strong>{appt.email}</strong> with the proposed new time.
                     </p>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="block font-dm text-xs text-[#7A8FA6] mb-1">New Date</label>
+                        <label className="block font-dm text-xs text-[var(--a-ink-3)] mb-1">New Date</label>
                         <input
                           type="date"
                           value={suggestedDate}
                           onChange={(e) => setSuggestedDate(e.target.value)}
-                          className="w-full px-3 py-2 text-sm font-dm border border-[#D2DCE8] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3] bg-white"
+                          className="w-full px-3 py-2 text-sm font-dm border border-[var(--a-border)] rounded-[var(--a-radius-control)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20 focus:border-[var(--a-blue)] bg-white"
                         />
                       </div>
                       <div>
-                        <label className="block font-dm text-xs text-[#7A8FA6] mb-1">New Time</label>
+                        <label className="block font-dm text-xs text-[var(--a-ink-3)] mb-1">New Time</label>
                         <select
                           value={suggestedTimeSlot}
                           onChange={(e) => setSuggestedTimeSlot(e.target.value)}
-                          className="w-full px-3 py-2 text-sm font-dm border border-[#D2DCE8] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3] bg-white"
+                          className="w-full px-3 py-2 text-sm font-dm border border-[var(--a-border)] rounded-[var(--a-radius-control)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20 focus:border-[var(--a-blue)] bg-white"
                         >
                           <option value="">Select time</option>
                           {["8:00 AM","8:30 AM","9:00 AM","9:30 AM","10:00 AM","10:30 AM","11:00 AM","11:30 AM",
@@ -669,12 +669,12 @@ function DetailPanel({
                       onChange={(e) => setRescheduleMessage(e.target.value)}
                       placeholder="Optional note to client (e.g. 'Apologies for the change — looking forward to speaking with you!')"
                       rows={2}
-                      className="w-full px-3 py-2 text-sm font-dm border border-[#D2DCE8] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3] bg-white resize-none"
+                      className="w-full px-3 py-2 text-sm font-dm border border-[var(--a-border)] rounded-[var(--a-radius-control)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20 focus:border-[var(--a-blue)] bg-white resize-none"
                     />
                     <button
                       onClick={handleReschedule}
                       disabled={!!busy}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#F47C20] text-white text-sm font-dm font-semibold rounded-xl hover:bg-[#d96a15] transition-colors disabled:opacity-60"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[var(--a-orange-text)] text-white text-sm font-dm font-semibold rounded-[var(--a-radius-control)] hover:bg-[#d96a15] transition-colors disabled:opacity-60"
                     >
                       {busy === "reschedule" ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                       Send Time Suggestion to Client
@@ -689,7 +689,7 @@ function DetailPanel({
               <button
                 onClick={handleComplete}
                 disabled={!!busy}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white text-sm font-dm font-semibold rounded-xl hover:bg-green-700 transition-colors disabled:opacity-60"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white text-sm font-dm font-semibold rounded-[var(--a-radius-control)] hover:bg-green-700 transition-colors disabled:opacity-60"
               >
                 {busy === "complete" ? <Loader2 size={14} className="animate-spin" /> : <CheckCheck size={14} />}
                 Mark as Completed
@@ -704,12 +704,12 @@ function DetailPanel({
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
                   placeholder="Cancellation reason (optional)"
-                  className="w-full px-3 py-2.5 text-sm font-dm border border-[#D2DCE8] rounded-xl focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 bg-white"
+                  className="w-full px-3 py-2.5 text-sm font-dm border border-[var(--a-border)] rounded-[var(--a-radius-control)] focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 bg-white"
                 />
                 <button
                   onClick={handleCancel}
                   disabled={!!busy}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-red-200 text-red-500 text-sm font-dm font-semibold rounded-xl hover:bg-red-50 transition-colors disabled:opacity-60"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-red-200 text-red-500 text-sm font-dm font-semibold rounded-[var(--a-radius-control)] hover:bg-red-50 transition-colors disabled:opacity-60"
                 >
                   {busy === "cancel" ? <Loader2 size={14} className="animate-spin" /> : <Ban size={14} />}
                   Cancel Appointment
@@ -721,7 +721,7 @@ function DetailPanel({
             <button
               onClick={handleDelete}
               disabled={!!busy}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-red-200 text-red-600 text-sm font-dm rounded-xl hover:bg-red-50 transition-colors disabled:opacity-60"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-red-200 text-red-600 text-sm font-dm rounded-[var(--a-radius-control)] hover:bg-red-50 transition-colors disabled:opacity-60"
             >
               {busy === "delete" ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
               Delete Record
@@ -739,8 +739,8 @@ function DetailPanel({
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4">
-      <span className="font-dm text-xs text-[#7A8FA6] shrink-0">{label}</span>
-      <span className="font-dm text-sm text-[#0D1B2A] text-right">{value}</span>
+      <span className="font-dm text-xs text-[var(--a-ink-3)] shrink-0">{label}</span>
+      <span className="font-dm text-sm text-[var(--a-ink)] text-right">{value}</span>
     </div>
   );
 }

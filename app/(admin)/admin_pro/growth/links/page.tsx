@@ -15,12 +15,12 @@ export default async function GrowthLinksPage({ searchParams }: { searchParams: 
   const days = RANGES.includes(n) ? n : 30;
   const report = await getLinkReport(days);
   return (
-    <div className="space-y-5 max-w-[1400px]">
-      <GrowthTabs />
+    <div className="mx-auto max-w-[1400px] space-y-5">
       <PageHeader
         title="Links & attribution"
         subtitle="Clicks on tracked links, and the sign-ups, purchases and bookings that followed within 30 days (first-party cookie, no personal data). Revenue counts only paid records."
       />
+      <GrowthTabs />
       <LinksClient report={report} days={days} ranges={RANGES} site={siteUrl()} />
     </div>
   );

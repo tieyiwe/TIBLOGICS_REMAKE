@@ -186,10 +186,10 @@ export default function ShopClient(initial: {
       />
 
       {needsSync && (
-        <div className="mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between gap-3 flex-wrap">
+        <div className="mb-6 bg-amber-50 border border-amber-200 rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-4 flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <p className="font-syne font-bold text-[#0D1B2A]">Set up the store database</p>
-            <p className="font-dm text-sm text-[#7A8FA6]">Click Sync Database once to create the Product, Collection & Order tables.</p>
+            <p className="font-syne font-bold text-[var(--a-ink)]">Set up the store database</p>
+            <p className="font-dm text-sm text-[var(--a-ink-3)]">Click Sync Database once to create the Product, Collection & Order tables.</p>
           </div>
           <button onClick={syncDatabase} disabled={syncing}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-dm font-semibold text-white bg-[#F47C20] hover:bg-[#e06d15] disabled:opacity-60">
@@ -199,12 +199,12 @@ export default function ShopClient(initial: {
       )}
 
       {!needsSync && !loading && (toolkitCount < 4 || seedMsg) && (
-        <div className="mb-6 bg-[#F4F7FB] border border-[#D2DCE8] rounded-2xl p-4 flex items-center justify-between gap-3 flex-wrap">
+        <div className="mb-6 bg-[var(--a-surface-2)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-4 flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <p className="font-syne font-bold text-[#0D1B2A]">
+            <p className="font-syne font-bold text-[var(--a-ink)]">
               {toolkitCount < 4 ? "Add the AI Toolkits to the store" : "AI Toolkits"}
             </p>
-            <p className="font-dm text-sm text-[#7A8FA6]">
+            <p className="font-dm text-sm text-[var(--a-ink-3)]">
               {seedMsg
                 ? seedMsg.text
                 : `The four AI Toolkit PDFs are ready to list at $79 each. ${toolkitCount} of 4 are in the store.`}
@@ -213,7 +213,7 @@ export default function ShopClient(initial: {
           <button
             onClick={seedToolkits}
             disabled={seeding}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-dm font-semibold text-white bg-[#1B3A6B] hover:bg-[#2251A3] disabled:opacity-60"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-dm font-semibold text-white bg-[var(--a-navy)] hover:bg-[#2251A3] disabled:opacity-60"
           >
             {seeding ? <><Loader2 size={16} className="animate-spin" /> Adding…</> : toolkitCount < 4 ? "Add them" : "Refresh them"}
           </button>
@@ -243,7 +243,7 @@ export default function ShopClient(initial: {
       </div>
 
       {loading ? (
-        <div className="animate-pulse space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 bg-[#F4F7FB] rounded-xl" />)}</div>
+        <div className="animate-pulse space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 bg-[var(--a-surface-2)] rounded-[var(--a-radius-control)]" />)}</div>
       ) : tab === "products" ? (
         products.length === 0 ? (
           <Empty icon={Package} text="No products yet." sub="Click New Product to add your first listing." />
@@ -253,7 +253,7 @@ export default function ShopClient(initial: {
               const onSale = p.onSale && p.compareAtPrice && p.compareAtPrice > p.price;
               return (
                 <div key={p.id} className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] overflow-hidden group">
-                  <div className="relative aspect-[16/10] bg-[#F4F7FB] flex items-center justify-center overflow-hidden">
+                  <div className="relative aspect-[16/10] bg-[var(--a-surface-2)] flex items-center justify-center overflow-hidden">
                     {p.images[0] ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />
@@ -267,17 +267,17 @@ export default function ShopClient(initial: {
                   <div className="p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="font-syne font-bold text-[#0D1B2A] truncate">{p.name}</div>
-                        <div className="font-dm text-xs text-[#7A8FA6] mt-0.5">{p.category} · {p.stock == null ? "∞" : p.stock} stock · {p.soldCount} sold</div>
+                        <div className="font-syne font-bold text-[var(--a-ink)] truncate">{p.name}</div>
+                        <div className="font-dm text-xs text-[var(--a-ink-3)] mt-0.5">{p.category} · {p.stock == null ? "∞" : p.stock} stock · {p.soldCount} sold</div>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="font-syne font-extrabold text-[#0D1B2A]">{p.price === 0 ? "Free" : money(p.price, p.currency)}</div>
-                        {onSale && <div className="font-dm text-[11px] text-[#7A8FA6] line-through">{money(p.compareAtPrice!, p.currency)}</div>}
+                        <div className="font-syne font-extrabold text-[var(--a-ink)]">{p.price === 0 ? "Free" : money(p.price, p.currency)}</div>
+                        {onSale && <div className="font-dm text-[11px] text-[var(--a-ink-3)] line-through">{money(p.compareAtPrice!, p.currency)}</div>}
                       </div>
                     </div>
                     {p.collections?.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
-                        {p.collections.slice(0, 3).map((c) => <span key={c} className="text-[10px] font-dm bg-[#EBF0FA] text-[#2251A3] px-1.5 py-0.5 rounded">{c}</span>)}
+                        {p.collections.slice(0, 3).map((c) => <span key={c} className="text-[10px] font-dm bg-[var(--a-info-bg)] text-[var(--a-blue)] px-1.5 py-0.5 rounded">{c}</span>)}
                       </div>
                     )}
                     <div className="flex items-center gap-1 mt-3 pt-3 border-t border-[#F0F3F7]">
@@ -285,7 +285,7 @@ export default function ShopClient(initial: {
                       <IconBtn active={p.featured} activeColor="text-amber-500" onClick={() => quickToggle(p, "featured")} title="Featured"><Star size={15} /></IconBtn>
                       <IconBtn active={p.onSale} activeColor="text-[#F47C20]" onClick={() => quickToggle(p, "onSale")} title="On sale"><Tag size={15} /></IconBtn>
                       <div className="flex-1" />
-                      <button onClick={() => setEditing(p)} className="p-2 rounded-lg hover:bg-[#F4F7FB] text-[#2251A3]"><Pencil size={15} /></button>
+                      <button onClick={() => setEditing(p)} className="p-2 rounded-lg hover:bg-[var(--a-surface-2)] text-[var(--a-blue)]"><Pencil size={15} /></button>
                       <button onClick={() => del(p)} className="p-2 rounded-lg hover:bg-red-50 text-red-400"><Trash2 size={15} /></button>
                     </div>
                   </div>
@@ -301,7 +301,7 @@ export default function ShopClient(initial: {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {collections.map((c) => (
               <div key={c.id} className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] overflow-hidden">
-                <div className="relative aspect-[16/9] bg-[#F4F7FB] flex items-center justify-center overflow-hidden">
+                <div className="relative aspect-[16/9] bg-[var(--a-surface-2)] flex items-center justify-center overflow-hidden">
                   {c.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={c.image} alt={c.name} className="w-full h-full object-cover" />
@@ -312,14 +312,14 @@ export default function ShopClient(initial: {
                   </div>
                 </div>
                 <div className="p-4">
-                  <div className="font-syne font-bold text-[#0D1B2A]">{c.name}</div>
-                  <div className="font-dm text-xs text-[#7A8FA6] mt-0.5">{productCountFor(c.slug)} product{productCountFor(c.slug) === 1 ? "" : "s"} · /{c.slug}</div>
-                  {c.description && <p className="font-dm text-xs text-[#7A8FA6] mt-2 line-clamp-2">{c.description}</p>}
+                  <div className="font-syne font-bold text-[var(--a-ink)]">{c.name}</div>
+                  <div className="font-dm text-xs text-[var(--a-ink-3)] mt-0.5">{productCountFor(c.slug)} product{productCountFor(c.slug) === 1 ? "" : "s"} · /{c.slug}</div>
+                  {c.description && <p className="font-dm text-xs text-[var(--a-ink-3)] mt-2 line-clamp-2">{c.description}</p>}
                   <div className="flex items-center gap-1 mt-3 pt-3 border-t border-[#F0F3F7]">
                     <IconBtn active={c.published} onClick={() => colToggle(c, "published")} title={c.published ? "Published" : "Hidden"}>{c.published ? <Eye size={15} /> : <EyeOff size={15} />}</IconBtn>
                     <IconBtn active={c.featured} activeColor="text-amber-500" onClick={() => colToggle(c, "featured")} title="Featured on store"><Star size={15} /></IconBtn>
                     <div className="flex-1" />
-                    <button onClick={() => setEditingCol(c)} className="p-2 rounded-lg hover:bg-[#F4F7FB] text-[#2251A3]"><Pencil size={15} /></button>
+                    <button onClick={() => setEditingCol(c)} className="p-2 rounded-lg hover:bg-[var(--a-surface-2)] text-[var(--a-blue)]"><Pencil size={15} /></button>
                     <button onClick={() => delCol(c)} className="p-2 rounded-lg hover:bg-red-50 text-red-400"><Trash2 size={15} /></button>
                   </div>
                 </div>
@@ -342,20 +342,20 @@ export default function ShopClient(initial: {
             <tbody>
               {orders.map((o, i) => (
                 <tr key={o.id} className={tableStyles.tr}>
-                  <td className="px-5 py-3 font-dm text-sm text-[#0D1B2A] font-semibold">{o.orderNumber}</td>
-                  <td className="px-5 py-3 font-dm text-sm text-[#0D1B2A]">
+                  <td className="px-5 py-3 font-dm text-sm text-[var(--a-ink)] font-semibold">{o.orderNumber}</td>
+                  <td className="px-5 py-3 font-dm text-sm text-[var(--a-ink)]">
                     <div>{o.customerName || "Guest"}</div>
                     <div className="text-xs text-[var(--a-ink-3)]">{o.email || "No email"}</div>
                   </td>
-                  <td className="px-5 py-3 font-dm text-xs text-[#7A8FA6]">{(o.items ?? []).reduce((n, it) => n + (it.quantity ?? 0), 0)}</td>
-                  <td className="px-5 py-3 font-dm text-sm font-bold text-[#0D1B2A]">{money(o.total, o.currency)}</td>
+                  <td className="px-5 py-3 font-dm text-xs text-[var(--a-ink-3)]">{(o.items ?? []).reduce((n, it) => n + (it.quantity ?? 0), 0)}</td>
+                  <td className="px-5 py-3 font-dm text-sm font-bold text-[var(--a-ink)]">{money(o.total, o.currency)}</td>
                   <td className="px-5 py-3">
                     <select aria-label={`Status for order ${o.orderNumber}`} value={o.status} onChange={(e) => setOrderStatus(o, e.target.value)}
                       className={`text-xs font-dm font-semibold px-2 py-1 rounded-full border-0 cursor-pointer ${ORDER_STATUS[o.status] ?? "bg-gray-100 text-gray-600"}`}>
                       {Object.keys(ORDER_STATUS).map((s) => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </td>
-                  <td className="px-5 py-3 font-dm text-xs text-[#7A8FA6]">{new Date(o.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</td>
+                  <td className="px-5 py-3 font-dm text-xs text-[var(--a-ink-3)]">{new Date(o.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</td>
                 </tr>
               ))}
             </tbody>
@@ -385,14 +385,14 @@ function Empty({ icon: Icon, text, sub }: { icon: React.ElementType; text: strin
 
 function IconBtn({ children, onClick, title, active, activeColor = "text-[#22A387]" }: { children: React.ReactNode; onClick: () => void; title: string; active?: boolean; activeColor?: string }) {
   return (
-    <button onClick={onClick} title={title} className={`p-2 rounded-lg hover:bg-[#F4F7FB] transition-colors ${active ? activeColor : "text-[#B9C6D6]"}`}>
+    <button onClick={onClick} title={title} className={`p-2 rounded-lg hover:bg-[var(--a-surface-2)] transition-colors ${active ? activeColor : "text-[#B9C6D6]"}`}>
       {children}
     </button>
   );
 }
 
-const input = "w-full bg-[#F4F7FB] border border-[#D2DCE8] rounded-lg px-3 py-2 font-dm text-sm text-[#0D1B2A] focus:outline-none focus:border-[#2251A3]";
-const label = "block font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide mb-1.5";
+const input = "w-full bg-[var(--a-surface-2)] border border-[var(--a-border)] rounded-lg px-3 py-2 font-dm text-sm text-[var(--a-ink)] focus:outline-none focus:border-[var(--a-blue)]";
+const label = "block font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em] mb-1.5";
 
 function ProductModal({ product, collections, files, onClose, onSaved }: { product: Product | null; collections: Collection[]; files: DownloadFile[]; onClose: () => void; onSaved: () => void }) {
   const [f, setF] = useState(() =>
@@ -466,7 +466,7 @@ function ProductModal({ product, collections, files, onClose, onSaved }: { produ
               const on = selCols.includes(c.slug);
               return (
                 <button key={c.id} type="button" onClick={() => toggleCol(c.slug)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-dm font-semibold border transition-colors ${on ? "bg-[#EBF0FA] border-[#2251A3] text-[#2251A3]" : "bg-white border-[#D2DCE8] text-[#7A8FA6]"}`}>
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-dm font-semibold border transition-colors ${on ? "bg-[var(--a-info-bg)] border-[#2251A3] text-[var(--a-blue)]" : "bg-white border-[var(--a-border)] text-[var(--a-ink-3)]"}`}>
                   {on && <Check size={12} />} {c.name}
                 </button>
               );
@@ -513,7 +513,7 @@ function ProductModal({ product, collections, files, onClose, onSaved }: { produ
       )}
       <div className="flex flex-wrap gap-4 pt-1">
         {([["published", "Published"], ["featured", "Featured"], ["onSale", "On Sale"], ["digital", "Digital (no shipping)"]] as const).map(([k, lbl]) => (
-          <label key={k} className="flex items-center gap-2 cursor-pointer font-dm text-sm text-[#0D1B2A]">
+          <label key={k} className="flex items-center gap-2 cursor-pointer font-dm text-sm text-[var(--a-ink)]">
             <input type="checkbox" checked={f[k] as boolean} onChange={(e) => set(k, e.target.checked)} className="accent-[#F47C20] w-4 h-4" /> {lbl}
           </label>
         ))}
@@ -551,7 +551,7 @@ function CollectionModal({ collection, onClose, onSaved }: { collection: Collect
       <Field label="Sort Order (lower shows first)"><input className={input} type="number" value={f.sortOrder} onChange={(e) => set("sortOrder", e.target.value)} /></Field>
       <div className="flex flex-wrap gap-4 pt-1">
         {([["published", "Published"], ["featured", "Feature on store home"]] as const).map(([k, lbl]) => (
-          <label key={k} className="flex items-center gap-2 cursor-pointer font-dm text-sm text-[#0D1B2A]">
+          <label key={k} className="flex items-center gap-2 cursor-pointer font-dm text-sm text-[var(--a-ink)]">
             <input type="checkbox" checked={f[k] as boolean} onChange={(e) => set(k, e.target.checked)} className="accent-[#F47C20] w-4 h-4" /> {lbl}
           </label>
         ))}
@@ -563,17 +563,17 @@ function CollectionModal({ collection, onClose, onSaved }: { collection: Collect
 function Modal({ title, children, onClose, onSave, saving, error, saveLabel }: { title: string; children: React.ReactNode; onClose: () => void; onSave: () => void; saving: boolean; error: string; saveLabel: string }) {
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center overflow-y-auto p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-lg my-8" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-[var(--a-surface)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] w-full max-w-lg my-8" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#E4EBF3] sticky top-0 bg-white rounded-t-2xl z-10">
-          <h2 className="font-syne font-extrabold text-lg text-[#0D1B2A]">{title}</h2>
-          <button onClick={onClose} className="text-[#7A8FA6] hover:text-[#0D1B2A]"><X size={20} /></button>
+          <h2 className="font-syne font-extrabold text-lg text-[var(--a-ink)]">{title}</h2>
+          <button onClick={onClose} className="text-[var(--a-ink-3)] hover:text-[var(--a-ink)]"><X size={20} /></button>
         </div>
         <div className="p-6 space-y-4">
           {children}
           {error && <p className="text-red-500 font-dm text-sm">{error}</p>}
         </div>
         <div className="flex gap-3 px-6 py-4 border-t border-[#E4EBF3]">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg font-dm text-sm font-semibold text-[#7A8FA6] bg-[#F4F7FB] hover:bg-[#EBF0FA]">Cancel</button>
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg font-dm text-sm font-semibold text-[var(--a-ink-3)] bg-[var(--a-surface-2)] hover:bg-[var(--a-info-bg)]">Cancel</button>
           <button onClick={onSave} disabled={saving}
             className="flex-1 py-2.5 rounded-lg font-dm text-sm font-semibold text-white bg-[#F47C20] hover:bg-[#e06d15] flex items-center justify-center gap-2 disabled:opacity-60">
             {saving ? <><Loader2 size={16} className="animate-spin" /> Saving…</> : saveLabel}

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
 import { revalidateShop } from "@/lib/shop/revalidate";
 import { parseDeliveryFields } from "@/lib/shop/delivery-fields";
+import { auditFromRequest } from "@/lib/admin/audit";
 
 // PATCH — update a product
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -45,6 +46,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const product = await prisma.product.update({ where: { id }, data });
     revalidateShop(product.slug);
+    if (current.published !== product.published) await auditFromRequest(product.published ? "product.publish" : "product.unpublish", { type: "product", id: product.id, label: product.name }, null);
     return NextResponse.json({ product });
   } catch (err) {
     console.error("[admin/products PATCH]", err);

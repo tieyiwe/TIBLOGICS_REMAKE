@@ -27,7 +27,7 @@ export default async function RevenuePage() {
     { label: "Events & training", cents: r.allTime.events, color: "#F47C20" },
     { label: "Paid bookings", cents: r.allTime.bookings, color: "#0F6E56" },
     { label: "Automation Blueprints", cents: r.allTime.blueprints, color: "#7c3aed" },
-    { label: "Learning Box tracks (one-time)", cents: r.allTime.learnTracks, color: "#0EA5E9" },
+    { label: "ARFA track purchases (one-time)", cents: r.allTime.learnTracks, color: "#0EA5E9" },
   ];
   const maxSource = Math.max(1, ...sources.map((s) => s.cents));
 
@@ -35,7 +35,7 @@ export default async function RevenuePage() {
     <div className="space-y-6">
       <PageHeader
         title="Revenue"
-        subtitle="Money actually received: paid store orders, event registrations, bookings, Automation Blueprints and Learning Box track purchases."
+        subtitle="Money actually received: paid store orders, event registrations, bookings, Automation Blueprints and ARFA · AI Academy track purchases."
         className="mb-0"
       />
 

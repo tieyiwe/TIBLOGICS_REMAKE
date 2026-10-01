@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import ArfaWordmark from "@/components/learn/ArfaWordmark";
 import ReadingPrefsPanel from "@/components/a11y/ReadingPrefsPanel";
+import InboxBell from "@/components/learn/InboxBell";
 import { POINTS_PER_LEVEL } from "@/lib/learn/points";
 import { fmtNumber, rankName } from "@/lib/learn/format";
 import { LOCALE_COOKIE, isLocale } from "@/lib/i18n/config";
@@ -26,6 +27,7 @@ const LINK_KEYS = [
   { href: "/learn/badges", key: "badges.nav" },
   { href: "/learn/portfolio", key: "method.nav.portfolio" },
   { href: "/learn/leaderboard", key: "game.nav.leaderboard" },
+  { href: "/learn/team", key: "team.nav" },
   { href: "/learn/referrals", key: "referrals.nav" },
   { href: "/learn/account", key: "learn.nav.account" },
 ];
@@ -100,7 +102,7 @@ export default function LearnNav({
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
         <div className="flex shrink-0 items-center gap-2.5">
           <Link href="/learn" className="inline-block">
-            <ArfaWordmark size="sm" />
+            <ArfaWordmark size="sm" academyLabel={t("learn.brand.academy")} />
           </Link>
           <Link
             href="/"
@@ -204,6 +206,7 @@ export default function LearnNav({
             </div>
           </div>
 
+          <InboxBell />
           <button
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}

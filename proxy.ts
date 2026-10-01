@@ -52,11 +52,16 @@ async function gate(req: NextRequest) {
       pathname === "/learn/signup" ||
       pathname.startsWith("/learn/forgot") ||
       // The emailed reset link is opened by someone who cannot sign in.
-      pathname.startsWith("/learn/reset");
+      pathname.startsWith("/learn/reset") ||
+      // Shown to suspended or blocked learners (who have no usable session)
+      // and opened from emails without signing in.
+      pathname.startsWith("/learn/account-status") ||
+      pathname.startsWith("/learn/unsubscribe");
 
     if (isPublic) {
       // Already signed in as a student → straight to the dashboard
-      if (token?.studentId && !pathname.startsWith("/learn/forgot") && !pathname.startsWith("/learn/reset")) {
+      const stay = ["/learn/forgot", "/learn/reset", "/learn/account-status", "/learn/unsubscribe"].some((p) => pathname.startsWith(p));
+      if (token?.studentId && !stay) {
         // Honour ?next= (same-site paths only), so a signed-in account sent
         // here from the paid tools goes back to them rather than to Learn.
         // Resolved, then checked by origin: string prefix checks alone let

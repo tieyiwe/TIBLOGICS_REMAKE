@@ -2,7 +2,27 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState, type ElementType } from "react";
-import { CornerDownLeft, ExternalLink, Plus, Search } from "lucide-react";
+import {
+  CalendarPlus,
+  CornerDownLeft,
+  ExternalLink,
+  FilePlus2,
+  FileText,
+  GraduationCap,
+  Link2,
+  LoaderCircle,
+  Megaphone,
+  MessageSquareText,
+  Package,
+  Radio,
+  Search,
+  ShoppingBag,
+  Sparkles,
+  Upload,
+  User,
+  UserSearch,
+  Users,
+} from "lucide-react";
 import { useFocusTrap } from "@/lib/a11y/useFocusTrap";
 import { cn } from "@/lib/utils";
 import { Kbd } from "@/components/admin/ui";
@@ -12,19 +32,97 @@ export type QuickAction = { label: string; href: string; icon: ElementType; keyw
 
 /** Create / quick actions. Each links to an existing route and inherits that route's permission. */
 export const QUICK_ACTIONS: QuickAction[] = [
-  { label: "New appointment", href: "/admin_pro/appointments", icon: Plus, keywords: "booking meeting schedule" },
-  { label: "New marketing kit", href: "/admin_pro/growth/content", icon: Plus, keywords: "content kit social campaign" },
-  { label: "Import leads", href: "/admin_pro/growth/leads", icon: Plus, keywords: "csv upload crm" },
-  { label: "New tracked link", href: "/admin_pro/growth/links", icon: Plus, keywords: "utm attribution short link" },
-  { label: "New live session", href: "/admin_pro/learn/live", icon: Plus, keywords: "learn webinar" },
-  { label: "New blog post", href: "/admin_pro/blog", icon: Plus, keywords: "ai times article write" },
+  { label: "New appointment", href: "/admin_pro/appointments", icon: CalendarPlus, keywords: "booking meeting schedule" },
+  { label: "New marketing kit", href: "/admin_pro/growth/content", icon: Sparkles, keywords: "content kit social campaign" },
+  { label: "New campaign", href: "/admin_pro/growth/campaigns/new", icon: Megaphone, keywords: "marketing launch" },
+  { label: "Import leads", href: "/admin_pro/growth/leads", icon: Upload, keywords: "csv upload crm" },
+  { label: "New tracked link", href: "/admin_pro/growth/links", icon: Link2, keywords: "utm attribution short link" },
+  { label: "New live session", href: "/admin_pro/learn/live", icon: Radio, keywords: "learn webinar arfa academy" },
+  { label: "New blog post", href: "/admin_pro/blog", icon: FilePlus2, keywords: "ai times article write" },
+  { label: "Message learners", href: "/admin_pro/communications", icon: MessageSquareText, keywords: "email broadcast arfa academy students" },
 ];
 
 export function visibleQuickActions(viewer: NavViewer) {
   return QUICK_ACTIONS.filter((a) => canSee(a.href, viewer));
 }
 
-type Entry = { kind: "action" | "page"; label: string; href: string; icon: ElementType; hint: string; hay: string; external?: boolean };
+const RECENT_KEY = "tib.admin.recent";
+
+/** Remember the last few admin pages visited (per browser, best effort). */
+export function rememberRecent(href: string) {
+  try {
+    const cur = JSON.parse(window.localStorage.getItem(RECENT_KEY) ?? "[]") as string[];
+    const next = [href, ...cur.filter((h) => h !== href)].slice(0, 6);
+    window.localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  } catch {}
+}
+
+function readRecent(): string[] {
+  try {
+    return JSON.parse(window.localStorage.getItem(RECENT_KEY) ?? "[]") as string[];
+  } catch {
+    return [];
+  }
+}
+
+type Hit = { id: string; group: string; title: string; subtitle: string; href: string; badge?: string };
+
+const GROUP_ICON: Record<string, ElementType> = {
+  Learners: GraduationCap,
+  Leads: UserSearch,
+  Prospects: Users,
+  Contacts: User,
+  Orders: ShoppingBag,
+  Products: Package,
+  "Blog posts": FileText,
+};
+
+/** Debounced record search against /api/admin/search. */
+function useRecordSearch(q: string, enabled: boolean) {
+  const [hits, setHits] = useState<Hit[]>([]);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    const query = q.trim();
+    if (!enabled || query.length < 2) {
+      setHits([]);
+      setLoading(false);
+      return;
+    }
+    const ctl = new AbortController();
+    setLoading(true);
+    const t = window.setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/admin/search?q=${encodeURIComponent(query)}`, { signal: ctl.signal });
+        if (res.ok) {
+          const data = (await res.json()) as { hits?: Hit[] };
+          setHits(data.hits ?? []);
+        } else setHits([]);
+      } catch {
+        /* aborted or offline: keep the previous hits */
+      } finally {
+        if (!ctl.signal.aborted) setLoading(false);
+      }
+    }, 180);
+    return () => {
+      ctl.abort();
+      window.clearTimeout(t);
+    };
+  }, [q, enabled]);
+  return { hits, loading };
+}
+
+type Entry = {
+  kind: "action" | "page" | "record";
+  label: string;
+  href: string;
+  icon: ElementType;
+  hint: string;
+  hay: string;
+  external?: boolean;
+  sub?: string;
+  badge?: string;
+  group?: string;
+};
 
 function score(hay: string, q: string): number {
   if (!q) return 1;
@@ -87,14 +185,42 @@ export function CommandPalette({
     return [...actions, ...pages, site];
   }, [sections, viewer]);
 
+  const { hits, loading } = useRecordSearch(q, open);
+  const [recent, setRecent] = useState<string[]>([]);
+  useEffect(() => {
+    if (open) setRecent(readRecent());
+  }, [open]);
+
   const results = useMemo(() => {
     const query = q.trim().toLowerCase();
-    return entries
+    const nav = entries
       .map((e, i) => ({ e, s: score(e.hay, query), i }))
       .filter((x) => x.s > 0)
       .sort((a, b) => (query ? b.s - a.s || a.i - b.i : a.i - b.i))
       .map((x) => x.e);
-  }, [entries, q]);
+    if (!query) {
+      // Recently visited pages first (only ones still in this viewer's nav).
+      const rec = recent
+        .map((h) => nav.find((e) => e.kind === "page" && e.href === h))
+        .filter((e): e is Entry => !!e)
+        .slice(0, 4)
+        .map((e) => ({ ...e, kind: "page" as const, group: "Recent" }));
+      return [...rec, ...nav];
+    }
+    const records: Entry[] = hits.map((h) => ({
+      kind: "record",
+      label: h.title,
+      sub: h.subtitle,
+      badge: h.badge,
+      href: h.href,
+      icon: GROUP_ICON[h.group] ?? Search,
+      hint: h.group,
+      hay: "",
+      group: h.group,
+    }));
+    // Jump targets first (they are instant), then records grouped by type.
+    return [...nav.slice(0, 6), ...records];
+  }, [entries, q, hits, recent]);
 
   useEffect(() => {
     if (open) {
@@ -154,8 +280,8 @@ export function CommandPalette({
             ref={inputRef}
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search pages and actions"
-            aria-label="Search pages and actions"
+            placeholder="Search pages, actions, learners, leads, orders"
+            aria-label="Search pages, actions and records"
             role="combobox"
             aria-expanded="true"
             aria-controls={listId}
@@ -164,20 +290,38 @@ export function CommandPalette({
             autoComplete="off"
             spellCheck={false}
           />
+          {loading ? <LoaderCircle size={16} className="shrink-0 animate-spin text-[var(--a-ink-3)]" aria-label="Searching" /> : null}
           <Kbd className="hidden sm:inline-flex">Esc</Kbd>
         </div>
         <ul ref={listRef} id={listId} role="listbox" aria-label="Results" className="min-h-0 flex-1 overflow-y-auto p-2">
           {results.length === 0 ? (
-            <li className="px-3 py-10 text-center font-dm text-sm text-[var(--a-ink-3)]">No pages or actions match &ldquo;{q}&rdquo;.</li>
+            <li className="flex flex-col items-center px-3 py-10 text-center font-dm">
+              <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--a-surface-2)] text-[var(--a-ink-3)] ring-1 ring-inset ring-[var(--a-border)]">
+                <Search size={18} aria-hidden />
+              </span>
+              <span className="text-[14px] font-semibold text-[var(--a-ink)]">{loading ? "Searching" : "No matches"}</span>
+              <span className="mt-1 text-[13px] text-[var(--a-ink-3)]">
+                {loading ? "Looking through records" : <>Nothing matches &ldquo;{q}&rdquo;. Try a name, email or order number.</>}
+              </span>
+            </li>
           ) : (
             results.map((e, i) => {
-              const group = q ? "" : e.kind === "action" ? "Quick actions" : "Pages";
+              const group =
+                e.kind === "record"
+                  ? (e.group ?? "Records")
+                  : e.group === "Recent"
+                    ? "Recent"
+                    : q
+                      ? "Jump to"
+                      : e.kind === "action"
+                        ? "Quick actions"
+                        : "Pages";
               const showGroup = !!group && group !== lastGroup;
               lastGroup = group;
               const Icon = e.icon;
               const on = i === idx;
               return (
-                <li key={`${e.kind}-${e.href}-${e.label}`} role="presentation">
+                <li key={`${e.kind}-${e.href}-${e.label}-${i}`} role="presentation">
                   {showGroup ? <p className="a-micro px-3 pb-1 pt-2">{group}</p> : null}
                   <div
                     id={`${listId}-${i}`}
@@ -194,15 +338,26 @@ export function CommandPalette({
                     <span
                       className={cn(
                         "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset",
-                        e.kind === "action"
+                        e.kind === "record"
+                          ? "bg-[var(--a-info-bg)] text-[var(--a-info)] ring-[#d3def3]"
+                          : e.kind === "action"
                           ? "bg-[var(--a-orange-bg)] text-[var(--a-orange-text)] ring-[#f9d6b8]"
                           : "bg-[var(--a-surface-2)] text-[var(--a-ink-2)] ring-[var(--a-border)]",
                       )}
                     >
                       <Icon size={15} aria-hidden />
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-[14px] font-medium text-[var(--a-ink)]">{e.label}</span>
-                    <span className="hidden shrink-0 text-[12px] text-[var(--a-ink-3)] sm:inline">{e.hint}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[14px] font-medium text-[var(--a-ink)]">{e.label}</span>
+                      {e.sub ? <span className="block truncate text-[12px] text-[var(--a-ink-3)]">{e.sub}</span> : null}
+                    </span>
+                    {e.badge ? (
+                      <span className="hidden shrink-0 rounded-full bg-[var(--a-surface-2)] px-2 py-0.5 text-[11.5px] font-semibold capitalize text-[var(--a-ink-2)] ring-1 ring-inset ring-[var(--a-border)] sm:inline">
+                        {e.badge.replace(/_/g, " ")}
+                      </span>
+                    ) : e.kind !== "record" ? (
+                      <span className="hidden shrink-0 text-[12px] text-[var(--a-ink-3)] sm:inline">{e.hint}</span>
+                    ) : null}
                     {on ? <CornerDownLeft size={14} className="shrink-0 text-[var(--a-ink-3)]" aria-hidden /> : null}
                   </div>
                 </li>

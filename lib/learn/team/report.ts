@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { ensureMasteryTables } from "@/lib/learn/mastery/db";
 import { ensureTeamTables } from "./db";
+import { plansForTeam } from "./plan";
 
 // What a team manager sees about members. PRIVACY: this file is the only
 // reader for manager views, and it reads ONLY these sources:
@@ -110,6 +111,8 @@ export interface MemberSummary {
   studioPerfect: number;
   reviewStreak: number;
   reviewDays30: number;
+  /** For a pending invitation: what the manager chose when inviting. */
+  invite?: { name: string | null; role: string; trackIds: string[]; dueAt: string | null } | null;
 }
 
 export interface MemberActivity {
@@ -238,17 +241,22 @@ export interface TeamReport {
   progressByTrack: Array<{ trackId: string; title: string; avgPercent: number; started: number; completed: number }>;
   completionsByWeek: Array<{ week: string; lessons: number }>;
   skillGaps: Array<{ moduleId: string; module: string; track: string; avgScore: number; learners: number }>;
-  assignments: Array<{ id: string; studentId: string; trackId: string; dueAt: string | null; percent: number; overdue: boolean }>;
+  assignments: Array<{ id: string; studentId: string; trackId: string; dueAt: string | null; percent: number; overdue: boolean; createdAt: string; lastRemindedAt: string | null }>;
+  /** Distinct members who completed a lesson, per week (same weeks as completionsByWeek). */
+  activeByWeek: Array<{ week: string; learners: number }>;
+  /** The last 7 days: lessons completed, certificates earned, members active. */
+  pulse: { lessons7: number; certificates7: number; active7: number };
 }
 
 export async function teamReport(teamId: string): Promise<TeamReport> {
   const [{ rows, ids, names }, tracks] = await Promise.all([teamMembers(teamId), liveTracks()]);
   const activeIds = rows.filter((r) => r.status === "active" && r.studentId).map((r) => r.studentId!);
-  const [act, { progress }, quizzes, assignments] = await Promise.all([
+  const [act, { progress }, quizzes, assignments, plans] = await Promise.all([
     activity(ids),
     activeIds.length ? doneLessons(activeIds) : Promise.resolve({ progress: [] as Array<{ studentId: string; lessonId: string; completedAt: Date }> }),
     prisma.quiz.findMany({ select: { id: true, moduleId: true, module: { select: { title: true, track: { select: { title: true, status: true } } } } } }),
     prisma.teamAssignment.findMany({ where: { teamId }, orderBy: { createdAt: "asc" } }),
+    plansForTeam(teamId).catch(() => new Map()),
   ]);
   const now = new Date();
 
@@ -265,6 +273,10 @@ export async function teamReport(teamId: string): Promise<TeamReport> {
       joinedAt: r.joinedAt?.toISOString() ?? null,
       inviteExpiresAt: r.inviteExpiresAt?.toISOString() ?? null,
       ...summarize(r.status === "active" && r.studentId ? act.get(r.studentId) : undefined),
+      invite: (() => {
+        const pl = r.status === "invited" ? plans.get(r.id) : undefined;
+        return pl ? { name: pl.name, role: pl.role, trackIds: pl.trackIds, dueAt: pl.dueAt?.toISOString() ?? null } : null;
+      })(),
     };
   });
 
@@ -288,11 +300,22 @@ export async function teamReport(teamId: string): Promise<TeamReport> {
   };
   const first = new Date(weekStart(now).getTime() - 11 * 7 * DAY);
   const completionsByWeek = Array.from({ length: 12 }, (_, i) => ({ week: dayKey(new Date(first.getTime() + i * 7 * DAY)), lessons: 0 }));
+  const weekLearners = Array.from({ length: 12 }, () => new Set<string>());
   for (const p of progress) {
     if (p.completedAt < first) continue;
     const i = Math.floor((weekStart(p.completedAt).getTime() - first.getTime()) / (7 * DAY));
-    if (completionsByWeek[i]) completionsByWeek[i].lessons++;
+    if (completionsByWeek[i]) {
+      completionsByWeek[i].lessons++;
+      weekLearners[i].add(p.studentId);
+    }
   }
+  const activeByWeek = completionsByWeek.map((w, i) => ({ week: w.week, learners: weekLearners[i].size }));
+  const since7 = new Date(now.getTime() - 7 * DAY);
+  const pulse = {
+    lessons7: progress.filter((p) => p.completedAt >= since7).length,
+    certificates7: activeIds.reduce((n, sid) => n + (act.get(sid)?.certs.filter((c) => c.issuedAt >= since7).length ?? 0), 0),
+    active7: activeIds.filter((sid) => (act.get(sid)?.lastActive?.getTime() ?? 0) >= since7.getTime()).length,
+  };
 
   // Skills gaps: average best quiz score per module, lowest first.
   const byModule = new Map<string, number[]>();
@@ -319,12 +342,23 @@ export async function teamReport(teamId: string): Promise<TeamReport> {
     tracks,
     progressByTrack,
     completionsByWeek,
+    activeByWeek,
+    pulse,
     skillGaps,
     assignments: assignments
       .filter((a) => activeIds.includes(a.studentId))
       .map((a) => {
         const percent = act.get(a.studentId)?.perTrack.get(a.trackId) ?? 0;
-        return { id: a.id, studentId: a.studentId, trackId: a.trackId, dueAt: a.dueAt?.toISOString() ?? null, percent, overdue: !!a.dueAt && a.dueAt < now && percent < 100 };
+        return {
+          id: a.id,
+          studentId: a.studentId,
+          trackId: a.trackId,
+          dueAt: a.dueAt?.toISOString() ?? null,
+          percent,
+          overdue: !!a.dueAt && a.dueAt < now && percent < 100,
+          createdAt: a.createdAt.toISOString(),
+          lastRemindedAt: a.lastRemindedAt?.toISOString() ?? null,
+        };
       }),
   };
 }
@@ -382,16 +416,35 @@ export async function memberDetail(teamId: string, memberId: string): Promise<Me
   };
 }
 
+const csvCell = (v: unknown) => {
+  const s = v == null ? "" : String(v);
+  // Leading =,+,-,@ would run as a formula in a spreadsheet.
+  const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+  return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+};
+
+/** CSV of assignments: one row per member per assigned track, with status against the due date. */
+export async function assignmentsCsv(teamId: string): Promise<string> {
+  const r = await teamReport(teamId);
+  const title = new Map(r.tracks.map((t) => [t.id, t.title]));
+  const lines = [["name", "email", "track", "due", "percent", "status", "assigned", "last_reminded"].join(",")];
+  for (const a of r.assignments) {
+    const m = r.members.find((x) => x.studentId === a.studentId);
+    const status = a.percent >= 100 ? "done" : a.overdue ? "overdue" : a.percent > 0 ? "in_progress" : "not_started";
+    lines.push(
+      [m?.name, m?.email, title.get(a.trackId) ?? a.trackId, a.dueAt?.slice(0, 10) ?? "", a.percent, status, a.createdAt.slice(0, 10), a.lastRemindedAt?.slice(0, 10) ?? ""]
+        .map(csvCell)
+        .join(","),
+    );
+  }
+  return lines.join("\n") + "\n";
+}
+
 /** CSV of the team's progress (one row per active member per live track). */
 export async function teamCsv(teamId: string): Promise<string> {
   const r = await teamReport(teamId);
   const act = await activity(r.members.filter((m) => m.studentId).map((m) => m.studentId!));
-  const esc = (v: unknown) => {
-    const s = v == null ? "" : String(v);
-    // Leading =,+,-,@ would run as a formula in a spreadsheet.
-    const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
-    return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
-  };
+  const esc = csvCell;
   const head = ["name", "email", "role", "status", "joined", "last_active", "track", "percent", "exam_best", "assigned_due", "quiz_average", "certificates", "studio_challenges", "review_streak"];
   const lines = [head.join(",")];
   for (const m of r.members) {

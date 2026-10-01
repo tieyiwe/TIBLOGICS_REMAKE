@@ -81,7 +81,7 @@ function SignupForm() {
       <div className="w-full max-w-sm">
         <div className="text-center">
           <Link href="/learning-box" className="inline-block">
-            <ArfaWordmark size="md" />
+            <ArfaWordmark size="md" academyLabel={t("learn.brand.academy")} />
           </Link>
           <p className="mt-1.5 text-xs text-[var(--ink3)]">
             {t("learn.brand.by")}{" "}
@@ -92,7 +92,7 @@ function SignupForm() {
         </div>
 
         <div className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-7 shadow-sm">
-          <h1 className="text-xl font-bold text-[var(--ink)]">{t("learn.auth.createAccount")}</h1>
+          <h1 className="text-xl font-bold text-[var(--ink)]">{t("learn.auth.signUpTitle")}</h1>
           {next ? (
             <p className="mt-1 text-sm text-[var(--ink3)]">{t("learn.auth.oneAccount")}</p>
           ) : (

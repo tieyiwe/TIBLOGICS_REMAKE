@@ -36,7 +36,7 @@ export default async function LiveSessionAdminPage({ params }: { params: Promise
             Live sessions
           </Link>
         </p>
-        <h1 className="text-xl font-black text-[var(--ink)]">{s.title}</h1>
+        <h1 className="font-syne text-[24px] font-bold leading-tight text-[var(--a-ink)] sm:text-[26px]">{s.title}</h1>
         <p className="text-sm text-[var(--ink3)]">
           {s.going} / {s.capacity} seats · {s.waitlist} waiting · {attended} attended · learner page{" "}
           <Link href={`/learn/live/${s.id}`} className="underline">

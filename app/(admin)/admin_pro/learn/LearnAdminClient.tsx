@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Database, Sprout } from "lucide-react";
-import { Button, PageHeader, StatCard } from "@/components/admin/ui";
+import { Button, Notice, PageHeader, StatCard } from "@/components/admin/ui";
 import { LEARN_TABS } from "./tabs";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -103,8 +103,8 @@ export default function LearnAdminClient({
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Learning Box"
-        subtitle="Content, learners and capstone reviews."
+        title="ARFA · AI Academy"
+        subtitle="AI Readiness For All. Tracks, learners and capstone reviews."
         className="mb-0"
         tabs={LEARN_TABS}
         activeTab="/admin_pro/learn"
@@ -121,18 +121,14 @@ export default function LearnAdminClient({
       />
 
       {!tablesReady && (
-        <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-5">
-          <h2 className="text-sm font-bold text-amber-900">Setup required</h2>
-          <p className="mt-1 text-sm text-amber-900">
-            The Learn tables don't exist yet. Click <strong>Sync Database</strong>, then{" "}
-            <strong>Seed Learning Box Content</strong>. Both are safe to re-run — seeding updates content
-            in place and never touches learner progress.
-          </p>
-        </div>
+        <Notice tone="warn" title="Setup required">
+          The ARFA tables do not exist yet. Click <strong>Sync database</strong>, then <strong>Seed content</strong>. Both are
+          safe to re-run: seeding updates content in place and never touches learner progress.
+        </Notice>
       )}
 
       {log.length > 0 && (
-        <pre className="max-h-72 overflow-auto rounded-xl bg-[var(--ink)] p-4 text-xs leading-relaxed text-green-300">
+        <pre className="max-h-72 overflow-auto rounded-[var(--a-radius-control)] bg-[var(--ink)] p-4 text-xs leading-relaxed text-green-300">
           {log.join("\n")}
         </pre>
       )}
@@ -156,7 +152,7 @@ export default function LearnAdminClient({
         ) : (
           <ul className="mt-4 space-y-3">
             {queue.map((s) => (
-              <li key={s.id} className="rounded-xl border border-[var(--border)] p-4">
+              <li key={s.id} className="rounded-[var(--a-radius-control)] border border-[var(--border)] p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-dm text-[14px] font-semibold text-[var(--a-ink)]">{s.studentName}</p>
@@ -200,10 +196,10 @@ export default function LearnAdminClient({
         </p>
         {tracks.length === 0 ? (
           <p className="mt-3 text-sm text-[var(--ink3)]">
-            No tracks yet — run Seed Learning Box Content.
+            No tracks yet. Run Seed content above.
           </p>
         ) : (
-          <div className="mt-4 overflow-x-auto">
+          <div className="relative mt-4 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--border)] text-left text-xs uppercase tracking-wide text-[var(--ink3)]">
@@ -273,7 +269,7 @@ export default function LearnAdminClient({
         {recentPurchases.length === 0 ? (
           <p className="mt-3 text-sm text-[var(--ink3)]">No track purchases yet.</p>
         ) : (
-          <div className="mt-4 overflow-x-auto">
+          <div className="relative mt-4 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--border)] text-left text-xs uppercase tracking-wide text-[var(--ink3)]">
@@ -539,22 +535,22 @@ function CertificatesPanel({
 
       {/* Manual issue */}
       <div className="mt-4 flex flex-wrap items-end gap-3 rounded-lg bg-[var(--s2)] p-4">
-        <div>
+        <div className="min-w-0 max-w-full">
           <label className="block text-xs font-semibold text-[var(--ink)]">Student email</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="learner@example.com"
-            className="mt-1 w-56 rounded-lg border border-[var(--border)] px-3 py-2 text-sm"
+            className="mt-1 w-56 max-w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm"
           />
         </div>
-        <div>
+        <div className="min-w-0 max-w-full">
           <label className="block text-xs font-semibold text-[var(--ink)]">Track</label>
           <select
             value={trackSlug}
             onChange={(e) => setTrackSlug(e.target.value)}
-            className="mt-1 rounded-lg border border-[var(--border)] px-3 py-2 text-sm"
+            className="mt-1 w-full max-w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm sm:w-auto"
           >
             {tracks.map((t) => (
               <option key={t.slug} value={t.slug}>{t.title}</option>
@@ -563,14 +559,14 @@ function CertificatesPanel({
         </div>
         <label className="flex items-center gap-2 pb-2 text-xs text-[var(--ink2)]">
           <input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} />
-          Force (bypass the four gates — use with care)
+          Force (bypass the four gates; use with care)
         </label>
         <button
           onClick={issue}
           disabled={busy || !email.trim() || !trackSlug}
           className="rounded-lg bg-[var(--ink)] px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
         >
-          {busy ? "Issuing…" : "Issue certificate"}
+          {busy ? "Issuing" : "Issue certificate"}
         </button>
       </div>
       {message && (
@@ -579,7 +575,7 @@ function CertificatesPanel({
 
       {/* Recent certificates */}
       {recentCertificates.length > 0 && (
-        <div className="mt-5 overflow-x-auto">
+        <div className="relative mt-5 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[var(--border)] text-left text-xs uppercase tracking-wide text-[var(--ink3)]">

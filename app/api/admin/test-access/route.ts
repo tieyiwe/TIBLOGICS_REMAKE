@@ -12,6 +12,7 @@ import { ensureBlueprintTables } from "@/lib/blueprint/db";
 import { IntakeSchema } from "@/lib/blueprint/intake";
 import { blueprintLink, blueprintToken, hashToken, newCreditCode, newSalt } from "@/lib/blueprint/token";
 import { generateBlueprint } from "@/lib/blueprint/generate";
+import { auditFromRequest } from "@/lib/admin/audit";
 
 // Complimentary access to the paid tools, for the owner to test with. Nothing
 // here touches Stripe: comped rows carry no Stripe ids, so no webhook can
@@ -23,11 +24,15 @@ export async function POST(req: NextRequest) {
   if (!(await ownerSession())) return NextResponse.json({ error: "Only the owner or an admin can do this." }, { status: 403 });
   const body = (await req.json().catch(() => ({}))) as Body;
 
-  if (body.tool === "learn") return learn(body);
-  if (body.tool === "toolkit") return toolkit(body);
-  if (body.tool === "monitor") return monitor(body);
-  if (body.tool === "blueprint") return blueprint(body);
-  return NextResponse.json({ error: "Unknown tool" }, { status: 400 });
+  const res =
+    body.tool === "learn" ? await learn(body)
+    : body.tool === "toolkit" ? await toolkit(body)
+    : body.tool === "monitor" ? await monitor(body)
+    : body.tool === "blueprint" ? await blueprint(body)
+    : NextResponse.json({ error: "Unknown tool" }, { status: 400 });
+  // Admin audit log (/admin_pro/audit): successful grants and revokes.
+  if (res.ok) await auditFromRequest(`access.test.${body.action === "revoke" ? "revoke" : "grant"}`, { type: "test-access", label: typeof body.email === "string" ? body.email.toLowerCase() : String(body.id ?? (body.intake as { email?: string } | undefined)?.email ?? "") }, { tool: String(body.tool ?? "") });
+  return res;
 }
 
 /** Free Learning Box access for a TIBLOGICS account (every track, lab and exam). */

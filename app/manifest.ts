@@ -8,9 +8,9 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/learn",
-    name: "ARFA: AI Readiness For All",
+    name: "ARFA AI Academy",
     short_name: "ARFA",
-    description: "ARFA (AI Readiness For All), the AI Academy of TIBLOGICS: hands-on AI learning, career readiness, parent empowerment and community. Download lessons and keep learning offline.",
+    description: "ARFA (AI Readiness For All), the TIBLOGICS AI Academy: hands-on AI learning, career readiness, parent empowerment and community. Download lessons and keep learning offline.",
     start_url: "/learn",
     scope: "/learn",
     display: "standalone",

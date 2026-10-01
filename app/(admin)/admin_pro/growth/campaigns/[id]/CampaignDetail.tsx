@@ -150,7 +150,7 @@ export default function CampaignDetail({
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label="Clicks" value={p.totals.clicks} spark={p.daily.map((d) => d.clicks)} />
-        <StatCard label="Learn sign-ups" value={p.totals.signups} />
+        <StatCard label="AI Academy sign-ups" value={p.totals.signups} />
         <StatCard label="Conversions" value={p.totals.conversions} />
         <StatCard label="Revenue" value={money(p.totals.revenueCents)} tone={p.totals.revenueCents ? "success" : "default"} />
       </div>

@@ -18,6 +18,7 @@
 //   node scripts/cron.mjs live
 //   node scripts/cron.mjs growth
 //   node scripts/cron.mjs outreach
+//   node scripts/cron.mjs comms
 //   node scripts/cron.mjs all
 //
 // Needs two environment variables:
@@ -61,6 +62,10 @@ const JOBS = {
   // due cold emails within the daily cap (OUTREACH_DAILY_CAP), sending hours
   // and suppression list. Each email is claimed before sending; idempotent.
   outreach: { path: "/api/cron/outreach", suggested: "every 15 minutes" },
+  // Communications center: sends scheduled admin messages to learners
+  // (email and in-app), within COMMS_HOURLY_CAP emails per hour (default
+  // 300). Each recipient is claimed before sending; idempotent.
+  comms: { path: "/api/cron/comms", suggested: "every 15 minutes" },
 };
 
 /**
@@ -114,7 +119,7 @@ for (const name of names) {
     const res = await fetch(url, {
       headers: { authorization: `Bearer ${secret}` },
       // A news run generates several articles; give it room.
-      signal: AbortSignal.timeout(name === "news" ? 600_000 : name === "monitor" || name === "blueprints" || name === "translate" || name === "growth" || name === "outreach" ? 330_000 : 120_000),
+      signal: AbortSignal.timeout(name === "news" ? 600_000 : name === "monitor" || name === "blueprints" || name === "translate" || name === "growth" || name === "outreach" || name === "comms" ? 330_000 : 120_000),
     });
     const body = await res.text();
     const secs = ((Date.now() - started) / 1000).toFixed(1);

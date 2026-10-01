@@ -3,8 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-const input = "mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm";
-const btn = "rounded-lg bg-[var(--ink)] px-4 py-2 text-sm font-bold text-white hover:opacity-90 disabled:opacity-50";
+// Admin kit look (tokens from app/(admin)/admin.css).
+const input =
+  "mt-1 h-9 w-full rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] bg-[var(--a-surface)] px-3 font-dm text-[13.5px] font-normal text-[var(--a-ink)] focus:border-[var(--a-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20";
+const btn =
+  "inline-flex h-9 items-center justify-center rounded-[var(--a-radius-control)] bg-[var(--a-orange-text)] px-4 font-dm text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#9c4408] disabled:opacity-60";
 
 async function send(url: string, method: string, body: unknown) {
   const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });

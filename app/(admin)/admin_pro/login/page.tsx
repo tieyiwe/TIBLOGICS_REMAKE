@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
+import Image from "next/image";
+import { ArrowLeft, BarChart3, GraduationCap, ShieldCheck, Sparkles } from "lucide-react";
 
 type Mode = "checking" | "setup" | "login" | "reset";
 
@@ -108,7 +110,7 @@ export default function AdminLoginPage() {
     if (result?.error === "TooManyAttempts") {
       setLoginError("Too many sign-in attempts. Wait 15 minutes, then try again with your admin password.");
     } else if (result?.error) {
-      setLoginError("Invalid email or password. Use your admin password (the ADMIN_PASSWORD secret), not your Learning Box password.");
+      setLoginError("Invalid email or password. Use your admin password (the ADMIN_PASSWORD secret), not your ARFA · AI Academy password.");
     } else if (result?.url) {
       window.location.href = result.url;
     }
@@ -159,34 +161,69 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F4F7FB] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
-        {/* Logo */}
-        <div className="flex flex-col items-center gap-1 mb-6">
-          <span className="font-syne font-extrabold text-2xl tracking-tight">
-            <span className="text-[#4A7CA5]">TIB</span>
-            <span className="text-[#F47C20]">LOGICS</span>
-          </span>
-          <h1 className="text-[#5A6E84] text-sm font-normal font-dm">Admin Portal</h1>
+    <main className="grid min-h-[100dvh] bg-[var(--a-bg)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+      {/* Brand panel (desktop) */}
+      <aside className="relative hidden overflow-hidden bg-[var(--a-navy-deep)] p-12 text-white lg:flex lg:flex-col lg:justify-between">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-32 -top-32 h-[420px] w-[420px] rounded-full opacity-40"
+          style={{ background: "radial-gradient(closest-side, rgba(34,81,163,.55), transparent)" }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-40 -left-24 h-[380px] w-[380px] rounded-full opacity-30"
+          style={{ background: "radial-gradient(closest-side, rgba(244,124,32,.45), transparent)" }}
+        />
+        <Image src="/footer-logo-light.png" alt="TIBLOGICS" width={600} height={173} className="relative h-11 w-auto self-start" priority />
+        <div className="relative max-w-md">
+          <p className="font-syne text-[30px] font-bold leading-tight">Run the whole business from one calm console.</p>
+          <ul className="mt-8 space-y-4 font-dm text-[14.5px] text-white/80">
+            {[
+              { icon: BarChart3, text: "Revenue, leads and bookings at a glance" },
+              { icon: GraduationCap, text: "ARFA · AI Academy learners, cohorts and live sessions" },
+              { icon: Sparkles, text: "Growth content, outreach and campaigns" },
+            ].map(({ icon: Icon, text }) => (
+              <li key={text} className="flex items-center gap-3">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 ring-1 ring-inset ring-white/15">
+                  <Icon size={16} aria-hidden />
+                </span>
+                {text}
+              </li>
+            ))}
+          </ul>
         </div>
+        <p className="relative flex items-center gap-2 font-dm text-[12.5px] text-white/60">
+          <ShieldCheck size={14} aria-hidden /> Staff access only.
+        </p>
+      </aside>
 
-        <hr className="border-[#D2DCE8] mb-6" />
+      <div className="flex items-center justify-center p-4 sm:p-8">
+      <div className="w-full max-w-[400px]">
+        {/* Logo (mobile) + title */}
+        <div className="mb-7">
+          <Image src="/logo.png" alt="TIBLOGICS" width={600} height={173} className="mb-6 h-9 w-auto lg:hidden" priority />
+          <h1 className="font-syne text-[26px] font-bold leading-tight text-[var(--a-ink)]">
+            {mode === "setup" ? "Create your password" : mode === "reset" ? "Reset your password" : "Sign in to admin"}
+          </h1>
+          <p className="mt-1 font-dm text-[14px] text-[var(--a-ink-3)]">TIBLOGICS back office</p>
+        </div>
+        <div className="rounded-[var(--a-radius-hero)] border border-[var(--a-border)] bg-[var(--a-surface)] p-6 shadow-[0_1px_2px_rgba(13,27,42,.04),0_12px_32px_rgba(13,27,42,.06)] sm:p-7">
 
         {mode === "checking" && (
-          <div className="flex justify-center py-8 text-[#7A8FA6]">{SPINNER}</div>
+          <div className="flex justify-center py-8 text-[var(--a-ink-3)]" role="status" aria-label="Loading">{SPINNER}</div>
         )}
 
         {mode === "setup" && (
           <>
-            <div className="mb-5 text-center">
-              <h2 className="font-syne font-bold text-[#1B3A6B] text-lg">Create Admin Password</h2>
-              <p className="text-[#7A8FA6] text-sm mt-1">
-                First-time setup for <span className="font-medium text-[#3A4A5C]">tieyiwebass@gmail.com</span>
+            <div className="mb-5">
+              <h2 className="font-dm text-[15px] font-semibold text-[var(--a-ink)]">First-time setup</h2>
+              <p className="mt-1 font-dm text-[13px] text-[var(--a-ink-3)]">
+                First-time setup for <span className="font-medium text-[var(--a-ink-2)]">tieyiwebass@gmail.com</span>
               </p>
             </div>
             <form onSubmit={handleSetup} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-[#3A4A5C]">New Password</label>
+                <label className="block font-dm text-[13px] font-semibold text-[var(--a-ink-2)]">New Password</label>
                 <input
                   type="password"
                   autoComplete="new-password"
@@ -194,11 +231,11 @@ export default function AdminLoginPage() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="Min. 8 characters"
-                  className="input-base w-full"
+                  className="h-11 w-full rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] bg-[var(--a-surface)] px-3.5 font-dm text-[14.5px] text-[var(--a-ink)] placeholder:text-[var(--a-ink-3)] transition-colors duration-150 focus:border-[var(--a-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-[#3A4A5C]">Confirm Password</label>
+                <label className="block font-dm text-[13px] font-semibold text-[var(--a-ink-2)]">Confirm Password</label>
                 <input
                   type="password"
                   autoComplete="new-password"
@@ -206,18 +243,18 @@ export default function AdminLoginPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Re-enter password"
-                  className="input-base w-full"
+                  className="h-11 w-full rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] bg-[var(--a-surface)] px-3.5 font-dm text-[14.5px] text-[var(--a-ink)] placeholder:text-[var(--a-ink-3)] transition-colors duration-150 focus:border-[var(--a-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20"
                 />
               </div>
               {setupError && (
-                <p className="text-red-500 text-sm text-center">{setupError}</p>
+                <p role="alert" className="rounded-[var(--a-radius-control)] border border-[#f6cccc] bg-[var(--a-danger-bg)] px-3 py-2 font-dm text-[13px] text-[var(--a-danger)]">{setupError}</p>
               )}
               <button
                 type="submit"
                 disabled={setupLoading}
-                className="btn-primary w-full justify-center mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="mt-1 inline-flex h-11 w-full items-center justify-center gap-2 rounded-[var(--a-radius-control)] bg-[var(--a-orange-text)] font-dm text-[14.5px] font-semibold text-white shadow-[0_1px_2px_rgba(13,27,42,.08)] transition-colors duration-150 hover:bg-[#9c4408] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {setupLoading ? <>{SPINNER} Setting up…</> : "Save Password & Sign In"}
+                {setupLoading ? <>{SPINNER} Setting up</> : "Save password and sign in"}
               </button>
             </form>
           </>
@@ -226,13 +263,13 @@ export default function AdminLoginPage() {
         {mode === "login" && (
           <>
             {fromLearner && (
-              <p role="status" className="mb-4 rounded-lg border border-[#F47C20]/30 bg-[#FEF0E3] px-3 py-2.5 text-sm text-[#7A3E0E]">
-                You are signed in to your Learning Box account. Sign in with your admin password to switch to the admin dashboard.
+              <p role="status" className="mb-4 rounded-[var(--a-radius-control)] border border-[#f9d6b8] bg-[var(--a-orange-bg)] px-3 py-2.5 font-dm text-[13px] text-[#7A3E0E]">
+                You are signed in to your ARFA · AI Academy account. Sign in with your admin password to switch to the admin dashboard.
               </p>
             )}
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-1.5">
-                <label htmlFor="email" className="block text-sm font-medium text-[#3A4A5C]">
+                <label htmlFor="email" className="block font-dm text-[13px] font-semibold text-[var(--a-ink-2)]">
                   Email
                 </label>
                 <input
@@ -243,11 +280,11 @@ export default function AdminLoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@tiblogics.com"
-                  className="input-base w-full"
+                  className="h-11 w-full rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] bg-[var(--a-surface)] px-3.5 font-dm text-[14.5px] text-[var(--a-ink)] placeholder:text-[var(--a-ink-3)] transition-colors duration-150 focus:border-[var(--a-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20"
                 />
               </div>
               <div className="space-y-1.5">
-                <label htmlFor="password" className="block text-sm font-medium text-[#3A4A5C]">
+                <label htmlFor="password" className="block font-dm text-[13px] font-semibold text-[var(--a-ink-2)]">
                   Password
                 </label>
                 <input
@@ -258,24 +295,24 @@ export default function AdminLoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="input-base w-full"
+                  className="h-11 w-full rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] bg-[var(--a-surface)] px-3.5 font-dm text-[14.5px] text-[var(--a-ink)] placeholder:text-[var(--a-ink-3)] transition-colors duration-150 focus:border-[var(--a-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20"
                 />
               </div>
               {loginError && (
-                <p className="text-red-500 text-sm text-center">{loginError}</p>
+                <p role="alert" className="rounded-[var(--a-radius-control)] border border-[#f6cccc] bg-[var(--a-danger-bg)] px-3 py-2 font-dm text-[13px] text-[var(--a-danger)]">{loginError}</p>
               )}
               <button
                 type="submit"
                 disabled={loginLoading}
-                className="btn-primary w-full justify-center mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="mt-1 inline-flex h-11 w-full items-center justify-center gap-2 rounded-[var(--a-radius-control)] bg-[var(--a-orange-text)] font-dm text-[14.5px] font-semibold text-white shadow-[0_1px_2px_rgba(13,27,42,.08)] transition-colors duration-150 hover:bg-[#9c4408] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loginLoading ? <>{SPINNER} Signing in…</> : "Sign In"}
+                {loginLoading ? <>{SPINNER} Signing in</> : "Sign in"}
               </button>
             </form>
-            <div className="mt-4 text-center">
+            <div className="mt-5 text-center">
               <button
                 onClick={() => { setResetError(""); setResetSuccess(false); setMode("reset"); }}
-                className="text-xs font-dm text-[#7A8FA6] hover:text-[#2251A3] transition-colors underline underline-offset-2"
+                className="inline-flex items-center gap-1 font-dm text-[13px] font-medium text-[var(--a-blue)] underline-offset-2 transition-colors hover:underline"
               >
                 Forgot password?
               </button>
@@ -285,21 +322,21 @@ export default function AdminLoginPage() {
 
         {mode === "reset" && (
           <>
-            <div className="mb-5 text-center">
-              <h2 className="font-syne font-bold text-[#1B3A6B] text-lg">Reset Password</h2>
-              <p className="text-[#7A8FA6] text-xs mt-1 max-w-xs mx-auto">
-                Enter your <span className="font-semibold text-[#3A4A5C]">Admin Super Password</span> to verify your identity, then set a new password.
+            <div className="mb-5">
+              <h2 className="font-dm text-[15px] font-semibold text-[var(--a-ink)]">Verify it is you</h2>
+              <p className="mt-1 font-dm text-[13px] text-[var(--a-ink-3)]">
+                Enter your <span className="font-semibold text-[var(--a-ink-2)]">Admin Super Password</span> to verify your identity, then set a new password.
               </p>
             </div>
 
             {resetSuccess ? (
               <div className="text-center py-4">
-                <p className="text-green-600 font-dm text-sm font-semibold">✓ Password reset! Signing you in…</p>
+                <p className="font-dm text-sm font-semibold text-[var(--a-success)]">Password reset. Signing you in.</p>
               </div>
             ) : (
               <form onSubmit={handleReset} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-[#3A4A5C]">Admin Super Password</label>
+                  <label className="block font-dm text-[13px] font-semibold text-[var(--a-ink-2)]">Admin Super Password</label>
                   <input
                     type="password"
                     autoComplete="off"
@@ -307,11 +344,11 @@ export default function AdminLoginPage() {
                     value={masterPassword}
                     onChange={(e) => setMasterPassword(e.target.value)}
                     placeholder="Enter your admin super password"
-                    className="input-base w-full"
+                    className="h-11 w-full rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] bg-[var(--a-surface)] px-3.5 font-dm text-[14.5px] text-[var(--a-ink)] placeholder:text-[var(--a-ink-3)] transition-colors duration-150 focus:border-[var(--a-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-[#3A4A5C]">New Password</label>
+                  <label className="block font-dm text-[13px] font-semibold text-[var(--a-ink-2)]">New Password</label>
                   <input
                     type="password"
                     autoComplete="new-password"
@@ -319,11 +356,11 @@ export default function AdminLoginPage() {
                     value={resetNew}
                     onChange={(e) => setResetNew(e.target.value)}
                     placeholder="Min. 8 characters"
-                    className="input-base w-full"
+                    className="h-11 w-full rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] bg-[var(--a-surface)] px-3.5 font-dm text-[14.5px] text-[var(--a-ink)] placeholder:text-[var(--a-ink-3)] transition-colors duration-150 focus:border-[var(--a-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-[#3A4A5C]">Confirm New Password</label>
+                  <label className="block font-dm text-[13px] font-semibold text-[var(--a-ink-2)]">Confirm New Password</label>
                   <input
                     type="password"
                     autoComplete="new-password"
@@ -331,32 +368,34 @@ export default function AdminLoginPage() {
                     value={resetConfirm}
                     onChange={(e) => setResetConfirm(e.target.value)}
                     placeholder="Re-enter new password"
-                    className="input-base w-full"
+                    className="h-11 w-full rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] bg-[var(--a-surface)] px-3.5 font-dm text-[14.5px] text-[var(--a-ink)] placeholder:text-[var(--a-ink-3)] transition-colors duration-150 focus:border-[var(--a-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20"
                   />
                 </div>
                 {resetError && (
-                  <p className="text-red-500 text-sm text-center">{resetError}</p>
+                  <p role="alert" className="rounded-[var(--a-radius-control)] border border-[#f6cccc] bg-[var(--a-danger-bg)] px-3 py-2 font-dm text-[13px] text-[var(--a-danger)]">{resetError}</p>
                 )}
                 <button
                   type="submit"
                   disabled={resetLoading}
-                  className="btn-primary w-full justify-center mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="mt-1 inline-flex h-11 w-full items-center justify-center gap-2 rounded-[var(--a-radius-control)] bg-[var(--a-orange-text)] font-dm text-[14.5px] font-semibold text-white shadow-[0_1px_2px_rgba(13,27,42,.08)] transition-colors duration-150 hover:bg-[#9c4408] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {resetLoading ? <>{SPINNER} Resetting…</> : "Reset Password"}
+                  {resetLoading ? <>{SPINNER} Resetting</> : "Reset password"}
                 </button>
               </form>
             )}
 
-            <div className="mt-4 text-center">
+            <div className="mt-5 text-center">
               <button
                 onClick={() => setMode("login")}
-                className="text-xs font-dm text-[#7A8FA6] hover:text-[#2251A3] transition-colors underline underline-offset-2"
+                className="inline-flex items-center gap-1 font-dm text-[13px] font-medium text-[var(--a-blue)] underline-offset-2 transition-colors hover:underline"
               >
-                ← Back to Sign In
+                <ArrowLeft size={14} aria-hidden /> Back to sign in
               </button>
             </div>
           </>
         )}
+      </div>
+      </div>
       </div>
     </main>
   );

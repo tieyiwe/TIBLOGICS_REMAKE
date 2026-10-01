@@ -64,7 +64,7 @@ export default function QuestionBank(props: {
   })();
 
   const form = (
-    <div className="rounded-xl border border-[#2251A3]/30 bg-[#F8FAFD] p-4 space-y-3">
+    <div className="rounded-[var(--a-radius-control)] border border-[#2251A3]/30 bg-[var(--a-surface-2)] p-4 space-y-3">
       <div>
         <label className={labelCls}>Question</label>
         <textarea className={`${inputCls} min-h-[70px]`} value={draft.question} onChange={(e) => setDraft({ ...draft, question: e.target.value })} />
@@ -116,18 +116,18 @@ export default function QuestionBank(props: {
 
   return (
     <div className="space-y-2">
-      {props.questions.length === 0 && editing !== "new" && <p className="font-dm text-sm text-[#7A8FA6]">No questions yet.</p>}
+      {props.questions.length === 0 && editing !== "new" && <p className="font-dm text-sm text-[var(--a-ink-3)]">No questions yet.</p>}
       <ol className="space-y-2">
         {props.questions.map((q, n) =>
           editing === q.id ? (
             <li key={q.id}>{form}</li>
           ) : (
             <li key={q.id} className="flex gap-3 rounded-lg border border-[#E6EBF1] bg-white p-3">
-              <span className="font-dm text-xs text-[#7A8FA6] w-5 shrink-0 pt-0.5">{n + 1}.</span>
+              <span className="font-dm text-xs text-[var(--a-ink-3)] w-5 shrink-0 pt-0.5">{n + 1}.</span>
               <div className="min-w-0 flex-1 font-dm text-sm">
-                <p className="text-[#0D1B2A]">{q.question}</p>
+                <p className="text-[var(--a-ink)]">{q.question}</p>
                 <p className="text-xs text-[#0F6E56] mt-1">✓ {q.options[q.correctIndex]}</p>
-                {props.bank === "exam" && q.moduleId && <p className="text-xs text-[#7A8FA6] mt-0.5">{props.modules?.find((m) => m.id === q.moduleId)?.title}</p>}
+                {props.bank === "exam" && q.moduleId && <p className="text-xs text-[var(--a-ink-3)] mt-0.5">{props.modules?.find((m) => m.id === q.moduleId)?.title}</p>}
               </div>
               <div className="flex items-start gap-1 shrink-0">
                 <button type="button" onClick={() => start(q)} className={btnGhost} aria-label="Edit question"><Pencil size={14} /></button>

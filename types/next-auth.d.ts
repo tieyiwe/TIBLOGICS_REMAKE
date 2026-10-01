@@ -12,6 +12,8 @@ declare module "next-auth" {
       collaboratorId?: string;
       studentId?: string;
       permissions: string[];
+      /** Learner session version (lib/learn/account-status: "sign out everywhere"). */
+      sv?: number;
     };
   }
   interface User {
@@ -23,6 +25,7 @@ declare module "next-auth" {
     collaboratorId?: string;
     studentId?: string;
     permissions: string[];
+    sv?: number;
   }
 }
 
@@ -34,5 +37,6 @@ declare module "next-auth/jwt" {
     collaboratorId?: string;
     studentId?: string;
     permissions: string[];
+    sv?: number;
   }
 }

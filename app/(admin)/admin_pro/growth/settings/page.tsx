@@ -10,12 +10,12 @@ export default async function GrowthSettingsPage() {
   await requireGrowthAdminPage();
   const settings = await getGrowthSettings();
   return (
-    <div className="space-y-5 max-w-[1100px]">
-      <GrowthTabs />
+    <div className="mx-auto max-w-[1100px] space-y-5">
       <PageHeader
         title="Brand voice & audiences"
         subtitle="Every kit and auto-drafted post is written against these. Proof points are the only brand-level facts the AI may cite; banned claims are flagged wherever they appear."
       />
+      <GrowthTabs />
       <SettingsForm initial={settings} />
     </div>
   );

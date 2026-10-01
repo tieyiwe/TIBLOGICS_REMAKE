@@ -5,10 +5,13 @@ import { teamTablesReady } from "@/lib/learn/team/db";
 import { teamEntitled } from "@/lib/learn/team/access";
 import { trackPercents } from "@/lib/learn/team/report";
 import { sendOverdueReminder } from "@/lib/learn/team/emails";
+import { runTeamDigests } from "@/lib/learn/team/digest";
 
 // Team plans: a weekly email to each member with overdue assignments (past
 // the due date, track not finished). Safe to run hourly: a learner is
-// reminded about an assignment at most once every 7 days.
+// reminded about an assignment at most once every 7 days. Also sends the
+// weekly manager digest (lib/learn/team/digest.ts: once per manager per week,
+// claimed before sending).
 //   npm run cron teams
 export const maxDuration = 120;
 const WEEK = 7 * 86_400_000;
@@ -20,12 +23,13 @@ export async function GET(req: NextRequest) {
   if (!secretEquals(bearer, cronSecret)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!(await teamTablesReady())) return NextResponse.json({ error: "Team tables unavailable" }, { status: 500 });
 
+  const digest = await runTeamDigests().catch((err) => ({ digests: 0, skipped: 0, errors: [err instanceof Error ? err.message : String(err)] }));
   const now = new Date();
   const due = await prisma.teamAssignment.findMany({
     where: { dueAt: { lt: now }, OR: [{ lastRemindedAt: null }, { lastRemindedAt: { lt: new Date(now.getTime() - WEEK + 3_600_000) } }] },
     take: 2000,
   });
-  if (due.length === 0) return NextResponse.json({ reminded: 0, emails: 0 });
+  if (due.length === 0) return NextResponse.json({ reminded: 0, emails: 0, digest });
 
   const teams = await prisma.team.findMany({ where: { id: { in: [...new Set(due.map((d) => d.teamId))] } } });
   const live = new Map(teams.filter((t) => teamEntitled(t)).map((t) => [t.id, t]));
@@ -68,5 +72,5 @@ export async function GET(req: NextRequest) {
       errors.push(err instanceof Error ? err.message : String(err));
     }
   }
-  return NextResponse.json({ reminded, emails, errors });
+  return NextResponse.json({ reminded, emails, errors, digest });
 }

@@ -264,6 +264,8 @@ export async function loadLearnerDetail(id: string) {
           status: sub.status, plan: sub.plan, createdAt: sub.createdAt, updatedAt: sub.updatedAt,
           currentPeriodEnd: sub.currentPeriodEnd, graceUntil: sub.graceUntil, cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
           stripe: !!sub.stripeSubscriptionId,
+          stripeCustomerId: sub.stripeCustomerId,
+          stripeSubscriptionId: sub.stripeSubscriptionId,
         }
       : null,
     purchases: purchases.map((p) => ({

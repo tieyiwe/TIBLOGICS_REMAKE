@@ -17,7 +17,7 @@ import { STAGE_KEYS } from "./outreach/shared";
 import { DEFAULT_STEPS, parseSteps, slugify, type SequenceStep } from "./outreach/templates";
 import { checkText, claimContext } from "./content/claims";
 
-// Campaign Copilot: a goal ("20 Learn sign-ups by the 30th"), products,
+// Campaign Copilot: a goal ("20 AI Academy sign-ups by the 30th"), products,
 // audience, budget and dates become a plan (one Sonnet call: channel mix,
 // cadence, outreach target criteria, a lead magnet idea, KPIs). One click
 // then creates everything as DRAFTS under one utm_campaign: a content kit
@@ -26,7 +26,7 @@ import { checkText, claimContext } from "./content/claims";
 // publishes or sends without the usual approvals.
 
 export const GOAL_TYPES = [
-  { key: "signups", label: "Learn sign-ups", unit: "sign-ups" },
+  { key: "signups", label: "AI Academy sign-ups", unit: "sign-ups" },
   { key: "calls", label: "Discovery calls booked", unit: "calls" },
   { key: "sales", label: "Sales", unit: "sales" },
   { key: "revenue", label: "Revenue (USD)", unit: "USD" },

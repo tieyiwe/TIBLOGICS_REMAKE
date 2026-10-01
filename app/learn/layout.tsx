@@ -5,7 +5,7 @@ import { atkinson, openDyslexic } from "@/lib/a11y/fonts";
 import UtmCapture from "@/components/public/UtmCapture";
 
 export const metadata: Metadata = {
-  title: { default: "ARFA: AI Readiness For All", template: "%s | ARFA" },
+  title: { absolute: "ARFA · TIBLOGICS AI Academy", template: "%s · ARFA AI Academy" },
   robots: { index: false, follow: false },
   // Installed app (app/manifest.ts). iOS reads these instead of the manifest.
   appleWebApp: { capable: true, title: "ARFA", statusBarStyle: "default" },

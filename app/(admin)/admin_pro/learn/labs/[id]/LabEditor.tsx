@@ -101,12 +101,12 @@ export default function LabEditor(props: {
   return (
     <div className="space-y-5 max-w-4xl">
       <div>
-        <Link href={`/admin_pro/learn/tracks/${props.trackId}`} className="inline-flex items-center gap-1 font-dm text-sm text-[#2251A3]"><ArrowLeft size={14} /> {props.trackTitle}</Link>
-        <h1 className="font-syne font-bold text-2xl text-[#0D1B2A] mt-2">{isNew ? "New lab" : f.title}</h1>
-        {props.lab && props.lab.attempts > 0 && <p className="font-dm text-xs text-[#7A8FA6] mt-1">{props.lab.attempts} attempts so far. Changing objectives affects how new attempts are scored.</p>}
+        <Link href={`/admin_pro/learn/tracks/${props.trackId}`} className="inline-flex items-center gap-1 font-dm text-sm text-[var(--a-blue)]"><ArrowLeft size={14} /> {props.trackTitle}</Link>
+        <h1 className="font-syne font-bold text-2xl text-[var(--a-ink)] mt-2">{isNew ? "New lab" : f.title}</h1>
+        {props.lab && props.lab.attempts > 0 && <p className="font-dm text-xs text-[var(--a-ink-3)] mt-1">{props.lab.attempts} attempts so far. Changing objectives affects how new attempts are scored.</p>}
       </div>
 
-      <section className="bg-white border border-[#D2DCE8] rounded-2xl p-5 space-y-4">
+      <section className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-5 space-y-4">
         <div className="grid sm:grid-cols-2 gap-3">
           <div><label className={labelCls}>Title</label><input className={inputCls} value={f.title} onChange={(e) => { set("title", e.target.value); if (isNew) set("slug", slugify(e.target.value)); }} /></div>
           <div><label className={labelCls}>Slug (in the lab&apos;s address)</label><input className={inputCls} value={f.slug} onChange={(e) => set("slug", e.target.value)} /></div>
@@ -114,7 +114,7 @@ export default function LabEditor(props: {
             <select className={inputCls} value={f.labType} onChange={(e) => changeType(e.target.value)}>
               {(Object.keys(LAB_TYPE_META) as LabType[]).map((t) => <option key={t} value={t}>{LAB_TYPE_META[t].label}</option>)}
             </select>
-            <p className="font-dm text-xs text-[#7A8FA6] mt-1">{LAB_TYPE_META[f.labType as LabType]?.blurb}</p>
+            <p className="font-dm text-xs text-[var(--a-ink-3)] mt-1">{LAB_TYPE_META[f.labType as LabType]?.blurb}</p>
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div><label className={labelCls}>Minutes</label><input className={inputCls} type="number" min="1" value={f.estimatedMinutes} onChange={(e) => set("estimatedMinutes", Number(e.target.value))} /></div>
@@ -137,10 +137,10 @@ export default function LabEditor(props: {
         <label className="flex items-center gap-2 font-dm text-sm"><input type="checkbox" checked={f.isPublished} onChange={(e) => set("isPublished", e.target.checked)} className="accent-[#F47C20] w-4 h-4" /> Published (visible to learners)</label>
       </section>
 
-      <section className="bg-white border border-[#D2DCE8] rounded-2xl p-5 space-y-3">
+      <section className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-5 space-y-3">
         <div>
-          <h2 className="font-syne font-bold text-base text-[#0D1B2A]">Objectives</h2>
-          <p className="font-dm text-xs text-[#7A8FA6]">What the attempt is scored against. Learners see these before they start. Weights are relative.</p>
+          <h2 className="font-syne font-bold text-base text-[var(--a-ink)]">Objectives</h2>
+          <p className="font-dm text-xs text-[var(--a-ink-3)]">What the attempt is scored against. Learners see these before they start. Weights are relative.</p>
         </div>
         {f.objectives.map((o, i) => (
           <div key={i} className="grid grid-cols-[1fr_80px_auto] gap-2 items-start">
@@ -155,8 +155,8 @@ export default function LabEditor(props: {
         <button type="button" onClick={() => set("objectives", [...f.objectives, { id: "", label: "", weight: 1 }])} className={btnGhost}><Plus size={14} /> Objective</button>
       </section>
 
-      <section className="bg-white border border-[#D2DCE8] rounded-2xl p-5 space-y-3">
-        <h2 className="font-syne font-bold text-base text-[#0D1B2A]">{LAB_TYPE_META[f.labType as LabType]?.label} settings</h2>
+      <section className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-5 space-y-3">
+        <h2 className="font-syne font-bold text-base text-[var(--a-ink)]">{LAB_TYPE_META[f.labType as LabType]?.label} settings</h2>
         {f.labType === "prompt" && (
           <div className="space-y-3">
             <div><label className={labelCls}>Sandbox model instructions (what the learner&apos;s prompt runs against)</label><textarea className={`${inputCls} min-h-[80px]`} value={String(cfg.sandboxSystem ?? "")} onChange={(e) => setCfg("sandboxSystem", e.target.value)} /></div>
@@ -189,7 +189,7 @@ export default function LabEditor(props: {
         ), (i) => ({ id: `field-${i + 1}`, label: "", prompt: "", minWords: 30 }))}
         {f.labType === "critique" && (
           <>
-            <p className="font-dm text-xs text-[#7A8FA6]">
+            <p className="font-dm text-xs text-[var(--a-ink-3)]">
               The AI answer to review (answerMd), the flaws planted in it (each quote must appear word for word in the answer), and the
               statements learners choose from (candidates; genuine flaws point to a flaw id). Checked when you save.
             </p>

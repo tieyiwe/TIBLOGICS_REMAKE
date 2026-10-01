@@ -28,7 +28,7 @@ const CHANNEL_LABEL: Record<string, string> = {
 };
 
 const PRESETS: { id: string; icon: typeof Target; goalType: GoalType; target: number; label: string; hint: string; product?: string }[] = [
-  { id: "signups", icon: GraduationCap, goalType: "signups", target: 20, label: "20 Learn sign-ups", hint: "Grow the Learning Box", product: "learn-plan:monthly" },
+  { id: "signups", icon: GraduationCap, goalType: "signups", target: 20, label: "20 AI Academy sign-ups", hint: "Grow the AI Academy", product: "learn-plan:monthly" },
   { id: "calls", icon: PhoneCall, goalType: "calls", target: 5, label: "5 discovery calls", hint: "Book calls for services", product: "service:agents" },
   { id: "realtor", icon: ShoppingBag, goalType: "sales", target: 10, label: "Sell 10 Realtor kits", hint: "Move a store product", product: "product:the-realtor-ai-toolkit" },
   { id: "leads", icon: Users, goalType: "leads", target: 15, label: "15 warm leads", hint: "Replies and bookings" },
@@ -36,7 +36,7 @@ const PRESETS: { id: string; icon: typeof Target; goalType: GoalType; target: nu
 ];
 
 const GOAL_OPTIONS: { key: GoalType; label: string }[] = [
-  { key: "signups", label: "Learn sign-ups" },
+  { key: "signups", label: "AI Academy sign-ups" },
   { key: "calls", label: "Discovery calls" },
   { key: "sales", label: "Sales" },
   { key: "revenue", label: "Revenue (USD)" },
@@ -177,7 +177,7 @@ export default function CampaignWizard({
             </div>
             <div>
               <label className={label} htmlFor="cw-label">Name it (optional)</label>
-              <input id="cw-label" className={input} value={goalLabel} onChange={(e) => setGoalLabel(e.target.value)} placeholder="20 Learn sign-ups" />
+              <input id="cw-label" className={input} value={goalLabel} onChange={(e) => setGoalLabel(e.target.value)} placeholder="20 AI Academy sign-ups" />
             </div>
           </div>
         </Card>

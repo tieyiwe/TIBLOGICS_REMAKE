@@ -41,6 +41,10 @@ import {
   UserSearch,
   Activity,
   Eye,
+  Megaphone,
+  Magnet,
+  MessageSquareText,
+  ScrollText,
 } from "lucide-react";
 
 export interface NavSubItem {
@@ -105,6 +109,8 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Leads", href: "/admin_pro/growth/leads", icon: UserSearch, keywords: "growth crm pipeline" },
       { label: "Outreach", href: "/admin_pro/growth/outreach", icon: Send, keywords: "email sequences" },
       { label: "Content", href: "/admin_pro/growth/content", icon: Sparkles, keywords: "content kits social posts" },
+      { label: "Campaigns", href: "/admin_pro/growth/campaigns", icon: Megaphone, keywords: "marketing campaign launch" },
+      { label: "Acquisition", href: "/admin_pro/growth/acquire", icon: Magnet, keywords: "landing pages lead magnets referrals" },
       { label: "Prospects", href: "/admin_pro/prospects", icon: Users },
       { label: "Contacts", href: "/admin_pro/contacts", icon: Contact },
       {
@@ -133,11 +139,18 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    id: "learn",
-    label: "Learning Box",
+    id: "people",
+    label: "People",
     items: [
-      { label: "Learn admin", href: "/admin_pro/learn", icon: GraduationCap, keywords: "learning box tracks lessons" },
-      { label: "Learners", href: "/admin_pro/learn/learners", icon: Users, keywords: "students" },
+      { label: "Communications", href: "/admin_pro/communications", icon: MessageSquareText, keywords: "message learners email broadcast inbox" },
+      { label: "Learners", href: "/admin_pro/learn/learners", icon: Users, keywords: "students arfa academy" },
+    ],
+  },
+  {
+    id: "learn",
+    label: "ARFA · AI Academy",
+    items: [
+      { label: "Learn admin", href: "/admin_pro/learn", icon: GraduationCap, keywords: "arfa ai academy learning tracks lessons" },
       { label: "Teams", href: "/admin_pro/learn/teams", icon: UsersRound },
       { label: "Cohorts", href: "/admin_pro/learn/cohorts", icon: Layers },
       { label: "Community", href: "/admin_pro/learn/community", icon: MessagesSquare, keywords: "forum reports" },
@@ -151,7 +164,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: "Content",
     items: [
       {
-        label: "AI Times blog",
+        label: "AI Times",
         href: "/admin_pro/blog",
         icon: BookOpen,
         keywords: "posts articles",
@@ -182,6 +195,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "AI Usage", href: "/admin_pro/ai-usage", icon: Gauge, keywords: "tokens cost llm" },
       { label: "Tool analytics", href: "/admin_pro/tools", icon: Activity },
       { label: "Visitor analytics", href: "/admin_pro/analytics/visitors", icon: Eye, keywords: "traffic" },
+      { label: "Audit log", href: "/admin_pro/audit", icon: ScrollText, keywords: "activity history security" },
       { label: "Test access", href: "/admin_pro/test-access", icon: KeyRound },
       { label: "Service requests", href: "/admin_pro/service-requests", icon: Briefcase },
       { label: "Partnerships", href: "/admin_pro/partnerships", icon: Handshake },
@@ -248,6 +262,12 @@ export const NAV_PERMISSION_MAP: Record<string, string> = {
   "/admin_pro/growth/calendar": "__admin_only__",
   "/admin_pro/growth/links": "__admin_only__",
   "/admin_pro/growth/settings": "__admin_only__",
+  "/admin_pro/growth/campaigns": "__admin_only__",
+  "/admin_pro/growth/campaigns/new": "__admin_only__",
+  "/admin_pro/growth/acquire": "__admin_only__",
+  // People / ops: owner and admin only.
+  "/admin_pro/communications": "__admin_only__",
+  "/admin_pro/audit": "__admin_only__",
 };
 
 export type NavViewer = { isAdmin: boolean; permissions: string[] };

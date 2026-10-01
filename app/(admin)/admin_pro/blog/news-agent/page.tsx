@@ -147,23 +147,23 @@ export default function NewsAgentPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/admin_pro/blog"
-            className="text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors"
+            className="text-[var(--a-ink-3)] hover:text-[#1B3A6B] transition-colors"
           >
             <ArrowLeft size={18} />
           </Link>
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#1B3A6B] to-[#2251A3] flex items-center justify-center">
+          <div className="w-9 h-9 rounded-[var(--a-radius-control)] bg-gradient-to-br from-[#1B3A6B] to-[#2251A3] flex items-center justify-center">
             <Bot size={18} className="text-white" />
           </div>
           <div>
-            <h1 className="font-syne font-bold text-xl text-[#0D1B2A]">Blog News Agent</h1>
-            <p className="font-dm text-xs text-[#7A8FA6]">
+            <h1 className="font-syne font-bold text-xl text-[var(--a-ink)]">Blog News Agent</h1>
+            <p className="font-dm text-xs text-[var(--a-ink-3)]">
               Fetch news · Generate posts · Draft &amp; send newsletters
             </p>
           </div>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-green-500" />
-          <span className="text-xs font-dm text-[#7A8FA6]">Connected</span>
+          <span className="text-xs font-dm text-[var(--a-ink-3)]">Connected</span>
         </div>
       </div>
 
@@ -174,7 +174,7 @@ export default function NewsAgentPage() {
             key={qa.label}
             onClick={() => sendMessage(qa.msg)}
             disabled={loading}
-            className="flex items-center gap-2 bg-white border border-[#D2DCE8] rounded-xl px-3 py-2.5 text-xs font-dm font-medium text-[#3A4A5C] hover:border-[#2251A3] hover:text-[#2251A3] hover:bg-[#EBF0FA] transition-all disabled:opacity-50 text-left"
+            className="flex items-center gap-2 bg-white border border-[var(--a-border)] rounded-[var(--a-radius-control)] px-3 py-2.5 text-xs font-dm font-medium text-[var(--a-ink-2)] hover:border-[#2251A3] hover:text-[var(--a-blue)] hover:bg-[var(--a-info-bg)] transition-all disabled:opacity-50 text-left"
           >
             <qa.icon size={13} className="flex-shrink-0" />
             {qa.label}
@@ -185,13 +185,13 @@ export default function NewsAgentPage() {
       {/* Action feedback */}
       {actionFeedback && (
         <div
-          className="bg-[#EBF0FA] border border-[#D2DCE8] rounded-xl px-4 py-2.5 text-sm font-dm text-[#1B3A6B] mb-3 flex-shrink-0"
+          className="bg-[var(--a-info-bg)] border border-[var(--a-border)] rounded-[var(--a-radius-control)] px-4 py-2.5 text-sm font-dm text-[#1B3A6B] mb-3 flex-shrink-0"
           dangerouslySetInnerHTML={{ __html: actionFeedback }}
         />
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto bg-white border border-[#D2DCE8] rounded-2xl p-5 space-y-4">
+      <div className="flex-1 overflow-y-auto bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-5 space-y-4">
         {messages.map((msg, i) => (
           <div
             key={i}
@@ -203,10 +203,10 @@ export default function NewsAgentPage() {
               </div>
             )}
             <div
-              className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm font-dm leading-relaxed whitespace-pre-wrap ${
+              className={`max-w-[80%] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] px-4 py-3 text-sm font-dm leading-relaxed whitespace-pre-wrap ${
                 msg.role === "user"
-                  ? "bg-[#1B3A6B] text-white rounded-tr-sm"
-                  : "bg-[#F4F7FB] text-[#0D1B2A] rounded-tl-sm border border-[#E8EFF8]"
+                  ? "bg-[var(--a-navy)] text-white rounded-tr-sm"
+                  : "bg-[var(--a-surface-2)] text-[var(--a-ink)] rounded-tl-sm border border-[var(--a-border)]"
               }`}
             >
               {msg.content}
@@ -218,9 +218,9 @@ export default function NewsAgentPage() {
             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#1B3A6B] to-[#2251A3] flex items-center justify-center mr-2 mt-0.5">
               <Bot size={13} className="text-white" />
             </div>
-            <div className="bg-[#F4F7FB] rounded-2xl rounded-tl-sm px-4 py-3 border border-[#E8EFF8] flex items-center gap-1">
-              <Loader2 size={14} className="animate-spin text-[#7A8FA6]" />
-              <span className="text-xs text-[#7A8FA6] font-dm">Thinking…</span>
+            <div className="bg-[var(--a-surface-2)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] rounded-tl-sm px-4 py-3 border border-[var(--a-border)] flex items-center gap-1">
+              <Loader2 size={14} className="animate-spin text-[var(--a-ink-3)]" />
+              <span className="text-xs text-[var(--a-ink-3)] font-dm">Thinking…</span>
             </div>
           </div>
         )}
@@ -241,12 +241,12 @@ export default function NewsAgentPage() {
           }}
           placeholder="Tell the agent what to do… e.g. 'Fetch AI news and create 3 posts'"
           disabled={loading}
-          className="flex-1 bg-white border border-[#D2DCE8] rounded-xl px-4 py-3 text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3] disabled:opacity-50"
+          className="flex-1 bg-white border border-[var(--a-border)] rounded-[var(--a-radius-control)] px-4 py-3 text-sm font-dm text-[var(--a-ink)] placeholder:text-[var(--a-ink-3)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20 focus:border-[var(--a-blue)] disabled:opacity-50"
         />
         <button
           onClick={() => sendMessage()}
           disabled={loading || !input.trim()}
-          className="w-12 h-12 rounded-xl bg-[#1B3A6B] flex items-center justify-center hover:bg-[#2251A3] disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+          className="w-12 h-12 rounded-[var(--a-radius-control)] bg-[var(--a-navy)] flex items-center justify-center hover:bg-[#2251A3] disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0"
         >
           {loading ? (
             <Loader2 size={16} className="text-white animate-spin" />

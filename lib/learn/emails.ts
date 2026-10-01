@@ -25,18 +25,19 @@ const SITE = (
 /** ARFA = AI Readiness For All. The education contact for every learner email. */
 export const ARFA_EMAIL = process.env.ARFA_SMTP_USER ?? "arfa_edu@tiblogics.com";
 
-// The branded header: the ARFA wordmark (navy "AR", orange "FA", as on
-// public/arfa-banner.png) in live text, so it shows even with images off.
-function arfaHeader() {
+// The branded header, "ARFA · AI Academy" over "AI Readiness For All": the
+// ARFA wordmark (navy "AR", orange "FA", as on public/arfa-banner.png) in live
+// text, so it shows even with images off.
+function arfaHeader(t: T) {
   return `<div style="background:#FFFFFF;border-bottom:3px solid #F47C20;padding:24px 32px;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
           <td style="vertical-align:middle;padding-right:14px;border-right:2px solid #1B2A5E;">
             <div style="font-size:34px;line-height:1;font-weight:900;letter-spacing:-.01em;color:#1B2A5E;font-family:Arial,Helvetica,sans-serif;">AR<span style="color:#F47C20;">FA</span></div>
           </td>
           <td style="vertical-align:middle;padding-left:14px;font-family:Arial,Helvetica,sans-serif;">
-            <div style="font-size:14px;line-height:1.2;font-weight:800;color:#1B2A5E;">AI Readiness</div>
-            <div style="font-size:14px;line-height:1.2;font-weight:800;color:#F47C20;">For All</div>
-            <div style="font-size:10px;line-height:1.4;color:#8A9BA0;letter-spacing:.06em;text-transform:uppercase;margin-top:3px;">by TIBLOGICS</div>
+            <div style="font-size:17px;line-height:1.2;font-weight:800;color:#1B2A5E;">${t("learn.brand.academy")}</div>
+            <div style="font-size:11px;line-height:1.4;font-weight:700;color:#F47C20;letter-spacing:.08em;text-transform:uppercase;margin-top:2px;">AI Readiness For All</div>
+            <div style="font-size:10px;line-height:1.4;color:#8A9BA0;letter-spacing:.06em;text-transform:uppercase;margin-top:2px;">${t("learn.brand.by")} TIBLOGICS</div>
           </td>
         </tr></table>
       </div>`;
@@ -46,14 +47,14 @@ function shell(t: T, title: string, bodyHtml: string, cta?: { href: string; labe
   return `
   <div style="background:#F4F7FB;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
     <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e6ebf1;">
-      ${arfaHeader()}
+      ${arfaHeader(t)}
       <div style="padding:32px;">
         <h1 style="font-size:21px;color:#131A1B;margin:0 0 14px;line-height:1.3;">${title}</h1>
         ${bodyHtml}
         ${cta ? `<div style="text-align:center;margin:28px 0 4px;">
           <a href="${cta.href}" style="display:inline-block;background:linear-gradient(135deg,#F47C4C,#F9A738);color:#131A1B;font-weight:800;font-size:15px;text-decoration:none;padding:14px 32px;border-radius:50px;">${cta.label}</a>
         </div>` : ""}
-        ${afterHtml}
+        ${afterHtml ? `<div style="margin-top:24px;">${afterHtml}</div>` : ""}
       </div>
       <div style="background:#F4F7FB;padding:18px 32px;text-align:center;color:#8A9BA0;font-size:12px;">
         <div style="font-weight:700;color:#5b6b72;margin-bottom:4px;">${t("learn.email.footerBrand")}</div>

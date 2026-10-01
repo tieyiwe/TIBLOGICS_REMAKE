@@ -59,18 +59,18 @@ function AcceptInviteForm() {
         { label: "Confirm Password", value: confirm, setter: setConfirm },
       ].map(({ label, value, setter }, i) => (
         <div key={i}>
-          <label className="font-dm text-sm font-medium text-[#0D1B2A] block mb-1">{label}</label>
+          <label className="font-dm text-sm font-medium text-[var(--a-ink)] block mb-1">{label}</label>
           <div className="relative">
             <input
               type={show ? "text" : "password"}
               value={value}
               onChange={(e) => setter(e.target.value)}
               required
-              className="w-full border border-[#D2DCE8] rounded-xl px-4 py-2.5 pr-10 text-sm font-dm focus:outline-none focus:ring-2 focus:ring-[#2251A3]"
+              className="w-full border border-[var(--a-border)] rounded-[var(--a-radius-control)] px-4 py-2.5 pr-10 text-sm font-dm focus:outline-none focus:ring-2 focus:ring-[#2251A3]"
             />
             {i === 0 && (
               <button type="button" onClick={() => setShow(!show)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7A8FA6] hover:text-[#3A4A5C]">
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--a-ink-3)] hover:text-[var(--a-ink-2)]">
                 {show ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             )}
@@ -79,7 +79,7 @@ function AcceptInviteForm() {
       ))}
 
       {status && (
-        <div className={`flex items-center gap-2 text-sm px-4 py-3 rounded-xl font-dm ${
+        <div className={`flex items-center gap-2 text-sm px-4 py-3 rounded-[var(--a-radius-control)] font-dm ${
           status.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"
         }`}>
           {status.type === "success" ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
@@ -97,13 +97,13 @@ function AcceptInviteForm() {
 
 export default function AcceptInvitePage() {
   return (
-    <div className="min-h-screen bg-[#F4F7FB] flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white border border-[#D2DCE8] rounded-2xl p-8 shadow-sm">
+    <div className="min-h-screen bg-[var(--a-surface-2)] flex items-center justify-center px-4">
+      <div className="w-full max-w-md bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-8 shadow-sm">
         <div className="text-center mb-8">
-          <h1 className="font-syne font-extrabold text-2xl text-[#0D1B2A]">
+          <h1 className="font-dm font-bold text-[26px] leading-none tracking-tight tabular-nums text-[var(--a-ink)]">
             <span className="text-[#1B3A6B]">TIB</span><span className="text-[#F47C20]">LOGICS</span>
           </h1>
-          <p className="font-dm text-[#7A8FA6] text-sm mt-2">Set your password to activate your account</p>
+          <p className="font-dm text-[var(--a-ink-3)] text-sm mt-2">Set your password to activate your account</p>
         </div>
         <Suspense>
           <AcceptInviteForm />

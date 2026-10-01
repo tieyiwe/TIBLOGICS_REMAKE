@@ -33,13 +33,13 @@ function ScoreCircle({ score }: { score: number }) {
 function ScoreBar({ score, color }: { score: number; color: string }) {
   return (
     <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 bg-[#F4F7FB] rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 bg-[var(--a-surface-2)] rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all"
           style={{ width: `${score}%`, backgroundColor: color }}
         />
       </div>
-      <span className="text-xs font-dm text-[#7A8FA6] w-6 text-right">{score}</span>
+      <span className="text-xs font-dm text-[var(--a-ink-3)] w-6 text-right">{score}</span>
     </div>
   );
 }
@@ -55,8 +55,8 @@ export default async function ScannerLeadsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="font-syne font-bold text-2xl text-[#0D1B2A]">Scanner Leads</h1>
-        <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">Websites scanned via the AI Readiness Scanner tool</p>
+        <h1 className="font-syne font-bold text-[24px] leading-tight text-[var(--a-ink)] sm:text-[26px]">Scanner Leads</h1>
+        <p className="font-dm text-sm text-[var(--a-ink-3)] mt-0.5">Websites scanned via the AI Readiness Scanner tool</p>
       </div>
 
       {/* Stats row */}
@@ -68,39 +68,39 @@ export default async function ScannerLeadsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-[#D2DCE8]">
-          <h3 className="font-syne font-bold text-base text-[#0D1B2A]">Recent Scans</h3>
+      <div className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] overflow-hidden">
+        <div className="px-5 py-4 border-b border-[var(--a-border)]">
+          <h3 className="font-syne font-bold text-base text-[var(--a-ink)]">Recent Scans</h3>
         </div>
         {leads.length === 0 && (
-          <p className="px-5 py-10 text-center font-dm text-sm text-[#7A8FA6]">
+          <p className="px-5 py-10 text-center font-dm text-sm text-[var(--a-ink-3)]">
             No scans saved yet. Scans from the website scanner appear here once a visitor runs one and leaves their details.
           </p>
         )}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[#D2DCE8] bg-[#F4F7FB]">
-                <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">URL</th>
-                <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Date</th>
-                <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Overall</th>
-                <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide min-w-[120px]">AI Readiness</th>
-                <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide min-w-[160px]">SEO / Perf / UX</th>
-                <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Email</th>
-                <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Booked</th>
+              <tr className="border-b border-[var(--a-border)] bg-[var(--a-surface-2)]">
+                <th className="text-left px-5 py-3 font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em]">URL</th>
+                <th className="text-left px-5 py-3 font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em]">Date</th>
+                <th className="text-left px-5 py-3 font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em]">Overall</th>
+                <th className="text-left px-5 py-3 font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em] min-w-[120px]">AI Readiness</th>
+                <th className="text-left px-5 py-3 font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em] min-w-[160px]">SEO / Perf / UX</th>
+                <th className="text-left px-5 py-3 font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em]">Email</th>
+                <th className="text-left px-5 py-3 font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em]">Booked</th>
                 <th className="px-5 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#F4F7FB]">
+            <tbody className="divide-y divide-[var(--a-border)]">
               {leads.map(lead => (
-                <tr key={lead.id} className="hover:bg-[#F4F7FB]/60 transition-colors">
+                <tr key={lead.id} className="hover:bg-[var(--a-surface-2)]/60 transition-colors">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-2">
-                      <Globe size={13} className="text-[#7A8FA6] flex-shrink-0" />
-                      <span className="font-dm text-sm font-medium text-[#0D1B2A]">{lead.url}</span>
+                      <Globe size={13} className="text-[var(--a-ink-3)] flex-shrink-0" />
+                      <span className="font-dm text-sm font-medium text-[var(--a-ink)]">{lead.url}</span>
                     </div>
                   </td>
-                  <td className="px-5 py-4 font-dm text-sm text-[#7A8FA6]">
+                  <td className="px-5 py-4 font-dm text-sm text-[var(--a-ink-3)]">
                     {lead.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </td>
                   <td className="px-5 py-4">
@@ -111,15 +111,15 @@ export default async function ScannerLeadsPage() {
                   </td>
                   <td className="px-5 py-4 min-w-[160px] space-y-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-dm text-[#7A8FA6] w-8">SEO</span>
+                      <span className="text-xs font-dm text-[var(--a-ink-3)] w-8">SEO</span>
                       <ScoreBar score={lead.seoScore} color={scoreColor(lead.seoScore)} />
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-dm text-[#7A8FA6] w-8">Perf</span>
+                      <span className="text-xs font-dm text-[var(--a-ink-3)] w-8">Perf</span>
                       <ScoreBar score={lead.perfScore} color={scoreColor(lead.perfScore)} />
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-dm text-[#7A8FA6] w-8">UX</span>
+                      <span className="text-xs font-dm text-[var(--a-ink-3)] w-8">UX</span>
                       <ScoreBar score={lead.uxScore} color={scoreColor(lead.uxScore)} />
                     </div>
                   </td>
@@ -130,19 +130,19 @@ export default async function ScannerLeadsPage() {
                           <Mail size={10} />
                           Captured
                         </span>
-                        <p className="font-dm text-xs text-[#7A8FA6] mt-1">{lead.email}</p>
+                        <p className="font-dm text-xs text-[var(--a-ink-3)] mt-1">{lead.email}</p>
                       </div>
                     ) : (
-                      <span className="text-xs font-dm text-[#7A8FA6]">—</span>
+                      <span className="text-xs font-dm text-[var(--a-ink-3)]">—</span>
                     )}
                   </td>
                   <td className="px-5 py-4">
                     {lead.bookedCallAt ? (
-                      <span className="inline-flex items-center gap-1 bg-[#EBF0FA] text-[#2251A3] text-xs font-dm px-2 py-0.5 rounded-full">
+                      <span className="inline-flex items-center gap-1 bg-[var(--a-info-bg)] text-[var(--a-blue)] text-xs font-dm px-2 py-0.5 rounded-full">
                         Yes
                       </span>
                     ) : (
-                      <span className="text-xs font-dm text-[#7A8FA6]">No</span>
+                      <span className="text-xs font-dm text-[var(--a-ink-3)]">No</span>
                     )}
                   </td>
                   <td className="px-5 py-4">
@@ -151,7 +151,7 @@ export default async function ScannerLeadsPage() {
                     <Link
                       href={`/tools/scanner?url=${encodeURIComponent(lead.url)}`}
                       target="_blank"
-                      className="text-xs font-dm text-[#2251A3] hover:underline whitespace-nowrap"
+                      className="text-xs font-dm text-[var(--a-blue)] hover:underline whitespace-nowrap"
                     >
                       Scan again ↗
                     </Link>

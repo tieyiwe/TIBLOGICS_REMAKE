@@ -222,6 +222,15 @@ export const authOptions: NextAuthOptions = {
           }
           if (!student || !valid) return null;
 
+          // Suspended or blocked accounts (lib/learn/account-status): refused
+          // with a code the login page explains, after the password check so
+          // the code reveals nothing to someone without it.
+          const gateStudent = student;
+          const gate = await import("@/lib/learn/account-status")
+            .then(({ loginGate }) => loginGate(gateStudent.id, gateStudent.email))
+            .catch(() => ({ refuse: null, sv: 0 }));
+          if (gate.refuse) throw new Error(gate.refuse);
+
           await prisma.student
             .update({ where: { id: student.id }, data: { lastLoginAt: new Date() } })
             .catch(() => {});
@@ -247,8 +256,10 @@ export const authOptions: NextAuthOptions = {
             isOwner: false,
             studentId: student.id,
             permissions: [],
+            sv: gate.sv,
           };
-        } catch {
+        } catch (err) {
+          if (err instanceof Error && /^Account(Suspended|Blocked):/.test(err.message)) throw err;
           return null;
         }
       },
@@ -278,8 +289,15 @@ export const authOptions: NextAuthOptions = {
       // account. Anything else goes back to the learner login with an error,
       // never to the admin login page.
       try {
+        const status = await import("@/lib/learn/account-status");
+        // A blocked address never gets an account, not even a new one.
+        if (await status.isEmailBlocked((profile as { email?: string } | undefined)?.email)) return "/learn/account-status?blocked=1";
         const { studentForGoogle } = await import("@/lib/learn/google-auth");
         const found = await studentForGoogle(profile as Parameters<typeof studentForGoogle>[0]);
+        if (found) {
+          const gate = await status.loginGate(found.student.id, found.student.email);
+          if (gate.refuse) return `/learn/account-status?t=${encodeURIComponent(gate.refuse.split(":")[1] ?? "")}`;
+        }
         return found ? true : "/learn/login?error=google";
       } catch (err) {
         console.error("[auth] google sign-in", err);
@@ -294,6 +312,10 @@ export const authOptions: NextAuthOptions = {
         if (!found) throw new Error("Google account not usable");
         const s = found.student;
         await recordGoogleLogin(s.id);
+        token.sv = await import("@/lib/learn/account-status")
+          .then(({ readAccountState }) => readAccountState(s.id))
+          .then((st) => st.sessionVersion)
+          .catch(() => 0);
         token.id = s.id;
         token.email = s.email;
         token.name = s.name;
@@ -311,6 +333,7 @@ export const authOptions: NextAuthOptions = {
         token.collaboratorId = user.collaboratorId;
         token.studentId = user.studentId;
         token.permissions = user.permissions;
+        token.sv = user.sv;
       }
       return token;
     },
@@ -322,6 +345,7 @@ export const authOptions: NextAuthOptions = {
         session.user.collaboratorId = token.collaboratorId;
         session.user.studentId = token.studentId;
         session.user.permissions = token.permissions ?? [];
+        session.user.sv = token.sv;
       }
       return session;
     },

@@ -224,7 +224,7 @@ export async function recordReferralPayment(opts: {
         referrerStudentId: ref.referrerStudentId,
         referredStudentId: opts.studentId,
         status: capped ? "capped" : "pending",
-        note: capped ? `Over the monthly cap of ${monthlyCap()} rewards for this referrer.` : null,
+        note: capped ? `Over the monthly cap of ${monthlyCap()} reward${monthlyCap() === 1 ? "" : "s"} for this referrer.` : null,
       }],
       skipDuplicates: true,
     });

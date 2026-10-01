@@ -46,16 +46,47 @@
   --a-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --a-dur: 150ms;
 
+  /* Older admin screens (Learn editors, forms) use the public-site tokens.
+     Map them onto the admin palette so every screen shares one look. */
+  --ink: var(--a-ink);
+  --ink2: var(--a-ink-2);
+  --ink3: var(--a-ink-3);
+  --border: var(--a-border);
+  --blue2: var(--a-blue);
+  --s2: var(--a-surface-2);
+
   background: var(--a-bg);
   color: var(--a-ink);
 }
 
+/* Native form controls inside admin get the kit focus treatment. */
+.admin-root
+  :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus-visible, select:focus-visible, textarea:focus-visible) {
+  outline: 2px solid var(--a-blue);
+  outline-offset: 0;
+  border-color: var(--a-blue);
+}
+.admin-root input[type="checkbox"],
+.admin-root input[type="radio"] {
+  accent-color: var(--a-blue);
+}
+
+/* Subtle lift for interactive cards. */
+.admin-root .a-lift {
+  transition: transform var(--a-dur) var(--a-ease), box-shadow var(--a-dur) var(--a-ease), border-color var(--a-dur) var(--a-ease);
+}
+.admin-root .a-lift:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(13, 27, 42, 0.07);
+}
+
 /* Focus ring: 2px blue at 2px offset, keyboard only. */
-.admin-root :focus-visible {
+/* :where() keeps specificity low so a component's own focus style wins. */
+.admin-root :where(:focus-visible) {
   outline: 2px solid var(--a-blue);
   outline-offset: 2px;
 }
-.admin-root .a-sidebar :focus-visible {
+.admin-root .a-sidebar :where(:focus-visible) {
   outline-color: #9ec0ff;
 }
 

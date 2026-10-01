@@ -11,3 +11,8 @@ export { Toolbar, SearchInput, Segmented, Select, type SegmentedOption } from ".
 export { Kbd } from "./Kbd";
 export { Skeleton } from "./Skeleton";
 export { ToastProvider, useToast } from "./Toast";
+export { ConfirmDialog, ConfirmProvider, useConfirm, type ConfirmOptions } from "./ConfirmDialog";
+export { Avatar, initials } from "./Avatar";
+export { Menu, type MenuItem } from "./Menu";
+export { Tooltip } from "./Tooltip";
+export { Notice } from "./Notice";

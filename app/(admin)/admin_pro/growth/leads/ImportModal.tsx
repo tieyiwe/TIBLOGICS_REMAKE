@@ -119,26 +119,26 @@ export default function ImportModal({ onClose, onDone }: { onClose: () => void; 
     <Modal title="Import leads from CSV" onClose={onClose} wide>
       {result ? (
         <div className="space-y-3 font-dm text-sm" data-testid="import-result">
-          <p className="text-lg font-semibold text-[#0F6E56]">{result.created} lead(s) imported</p>
-          <p className="text-[#3A4A5C]">{result.duplicates.length} duplicate(s) skipped (matched by email, website domain or phone) · {result.invalid.length} invalid row(s)</p>
+          <p className="text-lg font-semibold text-[var(--a-success)]">{result.created} lead(s) imported</p>
+          <p className="text-[var(--a-ink-2)]">{result.duplicates.length} duplicate(s) skipped (matched by email, website domain or phone) · {result.invalid.length} invalid row(s)</p>
           {result.duplicates.length > 0 && (
-            <ul className="max-h-40 overflow-y-auto rounded-lg bg-[#F4F7FB] p-3 text-xs space-y-0.5">
+            <ul className="max-h-40 overflow-y-auto rounded-[var(--a-radius-control)] bg-[var(--a-surface-2)] p-3 text-xs space-y-0.5">
               {result.duplicates.map((d) => <li key={`d${d.row}`}>Row {d.row}: <b>{d.companyName}</b> duplicate by {d.by}</li>)}
             </ul>
           )}
           {result.invalid.length > 0 && (
-            <ul className="max-h-32 overflow-y-auto rounded-lg bg-red-50 p-3 text-xs space-y-0.5">
+            <ul className="max-h-32 overflow-y-auto rounded-[var(--a-radius-control)] bg-[var(--a-danger-bg)] p-3 text-xs space-y-0.5">
               {result.invalid.map((d) => <li key={`i${d.row}`}>Row {d.row}: {d.reason}</li>)}
             </ul>
           )}
-          <div className="flex justify-end"><button onClick={onClose} className="px-4 py-2 rounded-lg bg-[#1B3A6B] text-white font-semibold">Done</button></div>
+          <div className="flex justify-end"><button onClick={onClose} className="px-4 py-2 rounded-[var(--a-radius-control)] bg-[var(--a-navy)] text-white font-semibold">Done</button></div>
         </div>
       ) : rows.length === 0 ? (
         <div className="space-y-3 font-dm text-sm">
-          <label className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#D2DCE8] p-10 cursor-pointer hover:bg-[#F4F7FB]">
-            <FileUp className="text-[#2251A3]" />
-            <span className="font-semibold text-[#0D1B2A]">Choose a .csv file</span>
-            <span className="text-xs text-[#7A8FA6]">First row must be column headers. Up to 2,000 rows per batch.</span>
+          <label className="flex flex-col items-center justify-center gap-2 rounded-[var(--a-radius-card)] border-2 border-dashed border-[var(--a-border-strong)] p-10 cursor-pointer hover:bg-[var(--a-surface-2)]">
+            <FileUp className="text-[var(--a-blue)]" />
+            <span className="font-semibold text-[var(--a-ink)]">Choose a .csv file</span>
+            <span className="text-xs text-[var(--a-ink-3)]">First row must be column headers. Up to 2,000 rows per batch.</span>
             <input
               type="file"
               accept=".csv,text/csv"
@@ -152,20 +152,20 @@ export default function ImportModal({ onClose, onDone }: { onClose: () => void; 
               }}
             />
           </label>
-          {err && <p className="text-red-600">{err}</p>}
-          <p className="text-xs text-[#7A8FA6]">Only import contacts you are allowed to email: business addresses that are published, or people who have dealt with you. Purchased lists rarely meet CASL.</p>
+          {err && <p className="text-[var(--a-danger)]">{err}</p>}
+          <p className="text-xs text-[var(--a-ink-3)]">Only import contacts you are allowed to email: business addresses that are published, or people who have dealt with you. Purchased lists rarely meet CASL.</p>
         </div>
       ) : (
         <div className="space-y-4 font-dm text-sm">
-          <p className="text-[#3A4A5C]"><b>{fileName}</b>: {body.length} row(s). Map the columns:</p>
+          <p className="text-[var(--a-ink-2)]"><b>{fileName}</b>: {body.length} row(s). Map the columns:</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             {FIELDS.map((f) => (
               <label key={f.key} className="flex flex-col gap-1">
-                <span className="text-xs text-[#7A8FA6]">{f.label}</span>
+                <span className="text-xs text-[var(--a-ink-3)]">{f.label}</span>
                 <select
                   value={mapping[f.key] ?? -1}
                   onChange={(e) => setMapping({ ...mapping, [f.key]: Number(e.target.value) })}
-                  className="rounded-lg border border-[#D2DCE8] px-2 py-1.5"
+                  className="rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] px-2 py-1.5"
                   data-testid={`map-${f.key}`}
                 >
                   <option value={-1}>(skip)</option>
@@ -176,37 +176,37 @@ export default function ImportModal({ onClose, onDone }: { onClose: () => void; 
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <label className="flex flex-col gap-1 sm:col-span-2">
-              <span className="text-xs text-[#7A8FA6]">Consent basis for this list (recorded per lead; leads left &ldquo;not set&rdquo; cannot be emailed)</span>
-              <select value={consent} onChange={(e) => setConsent(e.target.value)} className="rounded-lg border border-[#D2DCE8] px-2 py-1.5" data-testid="import-consent">
+              <span className="text-xs text-[var(--a-ink-3)]">Consent basis for this list (recorded per lead; leads left &ldquo;not set&rdquo; cannot be emailed)</span>
+              <select value={consent} onChange={(e) => setConsent(e.target.value)} className="rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] px-2 py-1.5" data-testid="import-consent">
                 {CONSENT_BASES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
               </select>
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-xs text-[#7A8FA6]">Tag (optional)</span>
-              <input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="e.g. trade-show-2026" className="rounded-lg border border-[#D2DCE8] px-2 py-1.5" />
+              <span className="text-xs text-[var(--a-ink-3)]">Tag (optional)</span>
+              <input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="e.g. trade-show-2026" className="rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] px-2 py-1.5" />
             </label>
           </div>
-          <div className="overflow-x-auto rounded-xl border border-[#E5EAF2]">
+          <div className="overflow-x-auto rounded-[12px] border border-[var(--a-border)]">
             <table className="w-full text-xs">
-              <thead className="bg-[#F4F7FB] text-[#7A8FA6]">
+              <thead className="bg-[var(--a-surface-2)] text-[var(--a-ink-3)]">
                 <tr>{FIELDS.filter((f) => (mapping[f.key] ?? -1) >= 0).map((f) => <th key={f.key} className="p-2 text-left">{f.label}</th>)}</tr>
               </thead>
               <tbody>
                 {mapped.slice(0, 5).map((r, i) => (
-                  <tr key={i} className="border-t border-[#F0F3F8]">
+                  <tr key={i} className="border-t border-[var(--a-border)]">
                     {FIELDS.filter((f) => (mapping[f.key] ?? -1) >= 0).map((f) => <td key={f.key} className="p-2 truncate max-w-[180px]">{r[f.key]}</td>)}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          {err && <p className="text-red-600">{err}</p>}
+          {err && <p className="text-[var(--a-danger)]">{err}</p>}
           <div className="flex justify-between gap-2">
-            <button onClick={() => setRows([])} className="px-4 py-2 rounded-lg text-[#3A4A5C]">Choose another file</button>
+            <button onClick={() => setRows([])} className="px-4 py-2 rounded-[var(--a-radius-control)] text-[var(--a-ink-2)]">Choose another file</button>
             <button
               onClick={submit}
               disabled={busy || ((mapping.companyName ?? -1) < 0 && (mapping.website ?? -1) < 0 && (mapping.email ?? -1) < 0)}
-              className="px-4 py-2 rounded-lg bg-[#F47C20] text-white font-semibold disabled:opacity-50 inline-flex items-center gap-2"
+              className="px-4 py-2 rounded-[var(--a-radius-control)] bg-[var(--a-orange-text)] text-white font-semibold disabled:opacity-50 inline-flex items-center gap-2"
               data-testid="import-submit"
             >
               {busy && <Loader2 size={14} className="animate-spin" />} Import {body.length} row(s)

@@ -85,7 +85,7 @@ export default async function SubscribePage({
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
             <Link href="/learn" className="inline-block">
-              <ArfaWordmark size="sm" />
+              <ArfaWordmark size="sm" academyLabel={t("learn.brand.academy")} />
             </Link>
             <Link href="/" className="hidden border-l border-[var(--border)] pl-3 text-xs text-[var(--ink3)] hover:text-[var(--ink)] sm:inline">
               {t("learn.brand.by")} <span className="font-black tracking-tight text-[var(--ink)]">TIB<span className="text-[var(--orange)]">LOGICS</span></span>

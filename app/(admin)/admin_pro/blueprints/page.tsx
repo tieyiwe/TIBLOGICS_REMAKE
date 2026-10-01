@@ -1,5 +1,5 @@
 import { FileText, DollarSign, BadgeCheck, AlertTriangle } from "lucide-react";
-import MetricCard from "@/components/admin/MetricCard";
+import { Badge, DataTable, EmptyState, Notice, PageHeader, StatCard, type BadgeTone } from "@/components/admin/ui";
 import prisma from "@/lib/prisma";
 import { requireAdminPage } from "../_lib/admin-page-auth";
 import { ensureBlueprintTables } from "@/lib/blueprint/db";
@@ -11,12 +11,15 @@ import BlueprintActions from "./BlueprintActions";
 // (only their hashes are stored); the customer can request a new one.
 export const dynamic = "force-dynamic";
 
-const STATUS: Record<string, string> = {
-  ready: "bg-green-100 text-green-700",
-  paid: "bg-[#EBF0FA] text-[#2251A3]",
-  generating: "bg-[#EBF0FA] text-[#2251A3]",
-  failed: "bg-red-100 text-red-700",
+const STATUS: Record<string, BadgeTone> = {
+  ready: "success",
+  paid: "info",
+  generating: "info",
+  failed: "danger",
 };
+
+const day = (d: Date | null | undefined) =>
+  d ? d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
 
 export default async function BlueprintsAdminPage() {
   await requireAdminPage();
@@ -37,68 +40,97 @@ export default async function BlueprintsAdminPage() {
   const revenue = rows.reduce((n, r) => n + r.amountPaid, 0);
   const now = new Date();
 
+  const failed = rows.filter((r) => r.status === "failed").length;
+  type Row = (typeof rows)[number];
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-syne font-bold text-2xl text-[#0D1B2A]">Automation Blueprints</h1>
-        <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">One-time written plans, credited against a build.</p>
-      </div>
+      <PageHeader title="Automation Blueprints" subtitle="One-time written plans, credited against a build." className="mb-0" />
       {!price && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 font-dm text-sm text-amber-900">
-          <strong>Not on sale.</strong> Set <code>BLUEPRINT_PRICE_CENTS</code> (for example <code>29900</code> for $299) in Replit
-          Secrets and republish. Waitlist: {waitlist}.
-        </div>
+        <Notice tone="warn" title="Not on sale">
+          Set <code>BLUEPRINT_PRICE_CENTS</code> (for example <code>29900</code> for $299) in Replit Secrets and republish.
+          Waitlist: {waitlist}.
+        </Notice>
       )}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard label="Blueprints sold" value={String(rows.length)} icon={FileText} iconColor="#1B3A6B" />
-        <MetricCard label="Revenue" value={formatMoney(revenue)} icon={DollarSign} iconColor="#0F6E56" />
-        <MetricCard label="Credits used on builds" value={String(rows.filter((r) => r.creditUsedAt).length)} icon={BadgeCheck} iconColor="#F47C20" />
-        <MetricCard label="Need attention" value={String(rows.filter((r) => r.status === "failed").length)} icon={AlertTriangle} iconColor="#B91C1C" />
+      <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Blueprints sold" value={rows.length} icon={FileText} tone="navy" />
+        <StatCard label="Revenue" value={formatMoney(revenue)} icon={DollarSign} tone="success" />
+        <StatCard label="Credits used on builds" value={rows.filter((r) => r.creditUsedAt).length} icon={BadgeCheck} tone="orange" />
+        <StatCard label="Need attention" value={failed} icon={AlertTriangle} tone={failed > 0 ? "danger" : "default"} />
       </div>
 
-      <div className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden">
-        {rows.length === 0 ? (
-          <p className="p-10 text-center font-dm text-sm text-[#7A8FA6]">No blueprints sold yet.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm font-dm">
-              <thead>
-                <tr className="border-b border-[#F4F7FB] bg-[#F8FAFD] text-left text-xs uppercase tracking-wider text-[#7A8FA6]">
-                  <th className="px-5 py-3 font-semibold">Customer</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold">Paid</th>
-                  <th className="px-4 py-3 font-semibold">Credit</th>
-                  <th className="px-4 py-3 font-semibold"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.id} className="border-b border-[#F4F7FB] last:border-0 align-top">
-                    <td className="px-5 py-3">
-                      <p className="font-medium text-[#0D1B2A]">{r.company}</p>
-                      <p className="text-xs text-[#7A8FA6]">{r.name} · <a href={`mailto:${r.email}`} className="underline">{r.email}</a></p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS[r.status] ?? "bg-gray-100 text-gray-600"}`}>{r.status}</span>
-                      {r.status === "failed" && <p className="text-xs text-red-700 mt-1 max-w-[220px]">{r.error} (attempt {r.attempts})</p>}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-[#3A4A5C]">
-                      {formatMoney(r.amountPaid)}<br />{r.paidAt?.toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3 text-xs">
-                      <p className="font-mono font-semibold text-[#0D1B2A]">{r.creditCode}</p>
-                      <p className="text-[#7A8FA6]">
-                        {r.creditUsedAt ? `used ${r.creditUsedAt.toLocaleDateString()}` : r.creditExpiresAt && r.creditExpiresAt > now ? `valid to ${r.creditExpiresAt.toLocaleDateString()}` : "expired"}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3"><BlueprintActions id={r.id} status={r.status} creditUsed={!!r.creditUsedAt} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <DataTable<Row>
+        caption="Blueprints"
+        rows={rows}
+        rowKey={(r) => r.id}
+        empty={<EmptyState icon={FileText} title="No blueprints sold yet" body="Paid blueprints show up here with their status and build credit." />}
+        columns={[
+          {
+            key: "customer",
+            header: "Customer",
+            primary: true,
+            render: (r) => (
+              <div className="min-w-0">
+                <p className="font-medium text-[var(--a-ink)]">{r.company}</p>
+                <p className="text-[12px] text-[var(--a-ink-3)]">
+                  {r.name} ·{" "}
+                  <a href={`mailto:${r.email}`} className="text-[var(--a-blue)] hover:underline">
+                    {r.email}
+                  </a>
+                </p>
+              </div>
+            ),
+          },
+          {
+            key: "status",
+            header: "Status",
+            render: (r) => (
+              <div>
+                <Badge tone={STATUS[r.status] ?? "neutral"} dot className="capitalize">
+                  {r.status}
+                </Badge>
+                {r.status === "failed" && (
+                  <p className="mt-1 max-w-[240px] text-[12px] text-[var(--a-danger)]">
+                    {r.error} (attempt {r.attempts})
+                  </p>
+                )}
+              </div>
+            ),
+          },
+          {
+            key: "paid",
+            header: "Paid",
+            render: (r) => (
+              <div className="text-[12.5px] tabular-nums">
+                <p className="font-semibold text-[var(--a-ink)]">{formatMoney(r.amountPaid)}</p>
+                <p className="text-[var(--a-ink-3)]">{day(r.paidAt)}</p>
+              </div>
+            ),
+          },
+          {
+            key: "credit",
+            header: "Credit",
+            render: (r) => (
+              <div className="text-[12.5px]">
+                <p className="font-mono font-semibold text-[var(--a-ink)]">{r.creditCode}</p>
+                <p className="text-[var(--a-ink-3)]">
+                  {r.creditUsedAt
+                    ? `used ${day(r.creditUsedAt)}`
+                    : r.creditExpiresAt && r.creditExpiresAt > now
+                      ? `valid to ${day(r.creditExpiresAt)}`
+                      : "expired"}
+                </p>
+              </div>
+            ),
+          },
+          {
+            key: "actions",
+            header: <span className="sr-only">Actions</span>,
+            align: "right",
+            render: (r) => <BlueprintActions id={r.id} status={r.status} creditUsed={!!r.creditUsedAt} />,
+          },
+        ]}
+      />
     </div>
   );
 }

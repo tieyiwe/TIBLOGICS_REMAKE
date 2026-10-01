@@ -35,9 +35,12 @@ function money(cents: number) {
   return `$${(cents / 100).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 }
 
-function pct(cur: number, prev: number): number | null {
+function pct(cur: number, prev: number): number | string | null {
   if (prev === 0) return null; // "up from nothing" is not a percentage
-  return Math.round(((cur - prev) / prev) * 1000) / 10;
+  const p = Math.round(((cur - prev) / prev) * 1000) / 10;
+  // Off a tiny base a percentage is noise ("+8200%"); show the change instead.
+  if (Math.abs(p) >= 500) return `${cur - prev > 0 ? "+" : ""}${(cur - prev).toLocaleString("en-US")}`;
+  return p;
 }
 
 function greeting(now: Date) {
@@ -62,7 +65,7 @@ const APPT_TONE: Record<string, BadgeTone> = {
 };
 
 const ACTIVITY: Record<string, { icon: LucideIcon; label: string; cls: string }> = {
-  learner: { icon: GraduationCap, label: "New learner", cls: "bg-[var(--a-info-bg)] text-[var(--a-info)]" },
+  learner: { icon: GraduationCap, label: "New ARFA learner", cls: "bg-[var(--a-info-bg)] text-[var(--a-info)]" },
   order: { icon: ShoppingBag, label: "Store order", cls: "bg-[var(--a-success-bg)] text-[var(--a-success)]" },
   appointment: { icon: CalendarDays, label: "Booking", cls: "bg-[var(--a-orange-bg)] text-[var(--a-orange-text)]" },
   service_request: { icon: Briefcase, label: "Service request", cls: "bg-[var(--a-warn-bg)] text-[var(--a-warn)]" },
@@ -109,7 +112,7 @@ export default async function AdminDashboardPage() {
     see("/admin_pro/learn/learners") && (
       <StatCard
         key="signups"
-        label="New Learn sign-ups"
+        label="New ARFA sign-ups"
         value={d.signups.cur}
         delta={pct(d.signups.cur, d.signups.prev)}
         deltaLabel="last 7 days"
@@ -146,7 +149,7 @@ export default async function AdminDashboardPage() {
     see("/admin_pro/appointments") && (
       <StatCard
         key="appts"
-        label="Upcoming appointments"
+        label="Appointments"
         value={d.upcomingWeek}
         hint="next 7 days"
         href="/admin_pro/appointments"
@@ -199,7 +202,7 @@ export default async function AdminDashboardPage() {
         className="mb-0"
       />
 
-      {kpis.length > 0 ? <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">{kpis}</div> : null}
+      {kpis.length > 0 ? <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5 [&>*:last-child:nth-child(odd)]:col-span-2 md:[&>*:last-child:nth-child(odd)]:col-span-1">{kpis}</div> : null}
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="space-y-6 xl:col-span-2">
@@ -293,7 +296,7 @@ export default async function AdminDashboardPage() {
           ) : null}
         </div>
 
-        <Card title="Recent activity" subtitle="Latest across Learn, store, bookings and leads" padded={false}>
+        <Card title="Recent activity" subtitle="Latest across ARFA · AI Academy, store, bookings and leads" padded={false}>
           {d.activity.length === 0 ? (
             <EmptyState title="No activity yet" body="New learners, orders, bookings and leads will show up here." compact />
           ) : (

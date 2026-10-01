@@ -5,9 +5,9 @@ import Link from "next/link";
 import { Wand2, Radar, FileText, GraduationCap, Loader2 } from "lucide-react";
 
 const input =
-  "w-full px-3.5 py-2.5 border border-[#D2DCE8] rounded-xl text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3] bg-white";
-const card = "bg-white border border-[#D2DCE8] rounded-2xl p-6 space-y-4";
-const btn = "inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1B3A6B] text-white font-dm text-sm font-semibold disabled:opacity-50";
+  "w-full px-3.5 py-2.5 border border-[var(--a-border)] rounded-[var(--a-radius-control)] text-sm font-dm text-[var(--a-ink)] placeholder:text-[var(--a-ink-3)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20 focus:border-[var(--a-blue)] bg-white";
+const card = "bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-6 space-y-4";
+const btn = "inline-flex items-center gap-2 px-4 py-2.5 rounded-[var(--a-radius-control)] bg-[var(--a-navy)] text-white font-dm text-sm font-semibold disabled:opacity-50";
 
 interface Props {
   canGrant: boolean;
@@ -46,24 +46,24 @@ export default function TestAccessClient({ canGrant, learn, toolkit, monitors }:
   }
 
   if (!canGrant) {
-    return <p className="font-dm text-sm text-[#7A8FA6]">Only the owner or an admin can grant free access.</p>;
+    return <p className="font-dm text-sm text-[var(--a-ink-3)]">Only the owner or an admin can grant free access.</p>;
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-syne font-bold text-2xl text-[#0D1B2A]">Test access</h1>
-        <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">
+        <h1 className="font-syne font-bold text-[24px] leading-tight text-[var(--a-ink)] sm:text-[26px]">Test access</h1>
+        <p className="font-dm text-sm text-[var(--a-ink-3)] mt-0.5">
           Use every paid tool free, to check and test it. Nothing here charges a card or counts as revenue.
         </p>
       </div>
 
       <section className={card}>
         <div className="flex items-center gap-2">
-          <GraduationCap size={18} className="text-[#2251A3]" />
-          <h2 className="font-syne font-bold text-lg text-[#0D1B2A]">Learning Box</h2>
+          <GraduationCap size={18} className="text-[var(--a-blue)]" />
+          <h2 className="font-syne font-bold text-lg text-[var(--a-ink)]">ARFA · AI Academy</h2>
         </div>
-        <p className="font-dm text-sm text-[#3A4A5C]">
+        <p className="font-dm text-sm text-[var(--a-ink-2)]">
           Free access to every track, lesson, lab and exam for a TIBLOGICS account (create it at{" "}
           <Link href="/learn/signup" className="underline" target="_blank">/learn/signup</Link> first). Your own learner account
           with the owner email always has free access and does not need to be listed here.
@@ -82,7 +82,7 @@ export default function TestAccessClient({ canGrant, learn, toolkit, monitors }:
         </form>
         {msg.learn && <p className="font-dm text-sm text-[#1B3A6B]">{msg.learn}</p>}
         {learn.length > 0 && (
-          <ul className="divide-y divide-[#F4F7FB] border border-[#F4F7FB] rounded-xl">
+          <ul className="divide-y divide-[var(--a-border)] border border-[var(--a-border)] rounded-[var(--a-radius-control)]">
             {learn.map((em) => (
               <li key={em} className="flex items-center justify-between px-4 py-2.5 font-dm text-sm">
                 <span>{em}</span>
@@ -102,9 +102,9 @@ export default function TestAccessClient({ canGrant, learn, toolkit, monitors }:
       <section className={card}>
         <div className="flex items-center gap-2">
           <Wand2 size={18} className="text-[#B8500A]" />
-          <h2 className="font-syne font-bold text-lg text-[#0D1B2A]">Toolkit Live</h2>
+          <h2 className="font-syne font-bold text-lg text-[var(--a-ink)]">Toolkit Live</h2>
         </div>
-        <p className="font-dm text-sm text-[#3A4A5C]">
+        <p className="font-dm text-sm text-[var(--a-ink-2)]">
           Toolkit Live works through a TIBLOGICS account. Create one at{" "}
           <Link href="/learn/signup" className="underline" target="_blank">/learn/signup</Link> (use a different email from your admin login),
           grant it free access here, then sign in to that account and open{" "}
@@ -129,10 +129,10 @@ export default function TestAccessClient({ canGrant, learn, toolkit, monitors }:
         </form>
         {msg.toolkit && <p className="font-dm text-sm text-[#1B3A6B]">{msg.toolkit}</p>}
         {toolkit.length > 0 && (
-          <ul className="divide-y divide-[#F4F7FB] border border-[#F4F7FB] rounded-xl">
+          <ul className="divide-y divide-[var(--a-border)] border border-[var(--a-border)] rounded-[var(--a-radius-control)]">
             {toolkit.map((t) => (
               <li key={t.email} className="flex items-center justify-between px-4 py-2.5 font-dm text-sm">
-                <span>{t.email} <span className="text-[#7A8FA6]">· {t.plan === "guard" ? "Guard only" : "Toolkit Live"}</span></span>
+                <span>{t.email} <span className="text-[var(--a-ink-3)]">· {t.plan === "guard" ? "Guard only" : "Toolkit Live"}</span></span>
                 <button
                   className="text-red-600 text-xs font-semibold"
                   disabled={busy === `tk-${t.email}`}
@@ -149,9 +149,9 @@ export default function TestAccessClient({ canGrant, learn, toolkit, monitors }:
       <section className={card}>
         <div className="flex items-center gap-2">
           <Radar size={18} className="text-[#1B3A6B]" />
-          <h2 className="font-syne font-bold text-lg text-[#0D1B2A]">Readiness Monitor</h2>
+          <h2 className="font-syne font-bold text-lg text-[var(--a-ink)]">Readiness Monitor</h2>
         </div>
-        <p className="font-dm text-sm text-[#3A4A5C]">
+        <p className="font-dm text-sm text-[var(--a-ink-2)]">
           Creates a free monitor, runs the first scan now and weekly after that, and gives you its private dashboard link.
           Save the link: only its fingerprint is stored. The welcome and weekly emails go to the email you enter.
         </p>
@@ -185,14 +185,14 @@ export default function TestAccessClient({ canGrant, learn, toolkit, monitors }:
         {msg.monitor && <p className="font-dm text-sm text-[#1B3A6B]">{msg.monitor}</p>}
         {monLink && (
           <p className="font-dm text-sm break-all">
-            Dashboard: <a href={monLink} target="_blank" rel="noreferrer" className="underline text-[#2251A3]">{monLink}</a>
+            Dashboard: <a href={monLink} target="_blank" rel="noreferrer" className="underline text-[var(--a-blue)]">{monLink}</a>
           </p>
         )}
         {monitors.length > 0 && (
-          <ul className="divide-y divide-[#F4F7FB] border border-[#F4F7FB] rounded-xl">
+          <ul className="divide-y divide-[var(--a-border)] border border-[var(--a-border)] rounded-[var(--a-radius-control)]">
             {monitors.map((m) => (
               <li key={m.id} className="flex items-center justify-between gap-3 px-4 py-2.5 font-dm text-sm">
-                <span className="truncate">{m.siteUrl} <span className="text-[#7A8FA6]">· {m.email}</span></span>
+                <span className="truncate">{m.siteUrl} <span className="text-[var(--a-ink-3)]">· {m.email}</span></span>
                 <button
                   className="text-red-600 text-xs font-semibold shrink-0"
                   disabled={busy === `mon-${m.id}`}
@@ -204,7 +204,7 @@ export default function TestAccessClient({ canGrant, learn, toolkit, monitors }:
             ))}
           </ul>
         )}
-        <p className="font-dm text-xs text-[#7A8FA6]">
+        <p className="font-dm text-xs text-[var(--a-ink-3)]">
           Lost a dashboard link? Request a new one with the same email on the Readiness Monitor page.
         </p>
       </section>
@@ -212,9 +212,9 @@ export default function TestAccessClient({ canGrant, learn, toolkit, monitors }:
       <section className={card}>
         <div className="flex items-center gap-2">
           <FileText size={18} className="text-[#0F6E56]" />
-          <h2 className="font-syne font-bold text-lg text-[#0D1B2A]">Automation Blueprint</h2>
+          <h2 className="font-syne font-bold text-lg text-[var(--a-ink)]">Automation Blueprint</h2>
         </div>
-        <p className="font-dm text-sm text-[#3A4A5C]">
+        <p className="font-dm text-sm text-[var(--a-ink-2)]">
           Opens the real intake form in test mode. Submitting it skips checkout, writes the blueprint straight away and
           takes you to its private page.
         </p>

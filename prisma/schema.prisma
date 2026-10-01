@@ -2408,3 +2408,165 @@ model LearnReferralEvent {
   @@unique([code, kind, visitorHash, day])
   @@index([code, kind])
 }
+
+// ── Learner account controls, admin audit log, communications and Inbox ──
+// Tables created at runtime (lib/learn/account-status/db.ts,
+// lib/admin/audit.ts, lib/learn/inbox/db.ts); keep these models in step.
+// Plain id columns, no Prisma relations (Student is not edited); the
+// runtime SQL adds cascading foreign keys to Student.
+
+/// Account status of an ARFA learner. No row = active.
+/// status: active | suspended | blocked | deleted (anonymised).
+model LearnerAccount {
+  studentId          String    @id
+  status             String    @default("active")
+  suspendedUntil     DateTime?
+  statusReason       String?
+  statusChangedAt    DateTime?
+  statusChangedBy    String?
+  mustChangePassword Boolean   @default(false)
+  /// Bumped by "sign out everywhere": sessions stamped with an older one end.
+  sessionVersion     Int       @default(0)
+  tags               String[]  @default([])
+  marketingOptOut    Boolean   @default(false)
+  deletedAt          DateTime?
+  updatedAt          DateTime  @default(now())
+
+  @@index([status])
+}
+
+/// SHA-256 of a blocked learner's lower-cased email: sign-up and sign-in refused.
+model LearnerBlockedEmail {
+  emailHash String   @id
+  studentId String?
+  reason    String?
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  @@index([studentId])
+}
+
+/// Private admin note on a learner.
+model LearnerNote {
+  id          String   @id
+  studentId   String
+  authorEmail String
+  authorName  String?
+  body        String
+  createdAt   DateTime @default(now())
+
+  @@index([studentId, createdAt])
+}
+
+/// Every admin action on learners, sends, access grants and publishes.
+model AdminAuditLog {
+  id          String   @id
+  at          DateTime @default(now())
+  actorEmail  String
+  actorName   String?
+  actorRole   String?
+  action      String
+  targetType  String?
+  targetId    String?
+  targetLabel String?
+  meta        Json?
+
+  @@index([at])
+  @@index([actorEmail, at])
+  @@index([action, at])
+  @@index([targetType, targetId])
+}
+
+/// Saved message for the communications center. kind: marketing | service.
+model CommsTemplate {
+  id        String   @id
+  name      String
+  kind      String   @default("service")
+  subject   String
+  body      String
+  subjectFr String?
+  bodyFr    String?
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+}
+
+/// One send to learners. status: scheduled | starting | sending | sent | cancelled.
+model CommsCampaign {
+  id             String    @id
+  kind           String    @default("service")
+  subject        String
+  body           String
+  subjectFr      String?
+  bodyFr         String?
+  viaEmail       Boolean   @default(true)
+  viaInbox       Boolean   @default(true)
+  audience       Json
+  audienceLabel  String?
+  status         String    @default("scheduled")
+  scheduledAt    DateTime  @default(now())
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  recipientCount Int       @default(0)
+  sentCount      Int       @default(0)
+  failedCount    Int       @default(0)
+  skippedCount   Int       @default(0)
+  templateId     String?
+  createdBy      String
+  createdAt      DateTime  @default(now())
+
+  @@index([status, scheduledAt])
+  @@index([createdAt])
+}
+
+/// One learner of one campaign. status: pending | sending | sent | failed | skipped.
+model CommsRecipient {
+  id         String    @id
+  campaignId String
+  studentId  String
+  email      String
+  locale     String    @default("en")
+  status     String    @default("pending")
+  error      String?
+  claimedAt  DateTime?
+  sentAt     DateTime?
+  emailed    Boolean   @default(false)
+  threadId   String?
+
+  @@unique([campaignId, studentId])
+  @@index([campaignId, status])
+  @@index([studentId])
+  @@index([sentAt])
+}
+
+/// A conversation in a learner's Inbox. status: open | closed.
+model InboxThread {
+  id              String   @id
+  studentId       String
+  subject         String
+  campaignId      String?
+  status          String   @default("open")
+  learnerUnread   Int      @default(0)
+  adminUnread     Int      @default(0)
+  hasLearnerReply Boolean  @default(false)
+  lastMessageAt   DateTime @default(now())
+  lastSender      String   @default("admin")
+  createdAt       DateTime @default(now())
+
+  @@index([studentId, lastMessageAt])
+  @@index([hasLearnerReply, status, lastMessageAt])
+}
+
+/// One message of an Inbox thread. sender: admin | learner.
+model InboxMessage {
+  id          String   @id
+  threadId    String
+  studentId   String
+  sender      String
+  authorName  String?
+  authorEmail String?
+  body        String
+  createdAt   DateTime @default(now())
+
+  @@index([threadId, createdAt])
+}

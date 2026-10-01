@@ -233,18 +233,18 @@ export default function RexClient({
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Link href="/admin_pro/agents" className="text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors">
+        <Link href="/admin_pro/agents" className="text-[var(--a-ink-3)] hover:text-[#1B3A6B] transition-colors">
           <ArrowLeft size={18} />
         </Link>
         <div className="flex items-center gap-3 flex-1">
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+            className="w-10 h-10 rounded-[var(--a-radius-control)] flex items-center justify-center text-xl"
             style={{ backgroundColor: AGENT.bg }}
           >
             {AGENT.avatar}
           </div>
           <div>
-            <p className="font-syne font-bold text-base text-[#0D1B2A]">{AGENT.name}</p>
+            <p className="font-syne font-bold text-base text-[var(--a-ink)]">{AGENT.name}</p>
             <p className="font-dm text-xs font-medium" style={{ color: AGENT.color }}>
               {AGENT.title}
             </p>
@@ -254,7 +254,7 @@ export default function RexClient({
         {unreadMsgCount > 0 && (
           <button
             onClick={() => setShowInbox(!showInbox)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FEF0E3] border border-[#F47C20]/30 rounded-xl font-dm text-sm font-semibold text-[#F47C20] hover:bg-[#F47C20]/10 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FEF0E3] border border-[#F47C20]/30 rounded-[var(--a-radius-control)] font-dm text-sm font-semibold text-[#F47C20] hover:bg-[#F47C20]/10 transition-colors"
           >
             <Bell size={14} />
             {unreadMsgCount} from Aria
@@ -264,12 +264,12 @@ export default function RexClient({
 
       {/* Inbox panel from Aria */}
       {showInbox && agentMsgs.length > 0 && (
-        <div className="bg-white border border-[#F47C20]/30 rounded-2xl p-4 space-y-2">
+        <div className="bg-[var(--a-surface)] border border-[#F47C20]/30 rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <p className="font-syne font-bold text-sm text-[#0D1B2A]">Messages from Aria</p>
+            <p className="font-syne font-bold text-sm text-[var(--a-ink)]">Messages from Aria</p>
             <button
               onClick={() => setShowInbox(false)}
-              className="text-[#7A8FA6] hover:text-[#3A4A5C] transition-colors"
+              className="text-[var(--a-ink-3)] hover:text-[var(--a-ink-2)] transition-colors"
             >
               <X size={15} />
             </button>
@@ -277,27 +277,27 @@ export default function RexClient({
           {agentMsgs.map((msg) => (
             <div
               key={msg.id}
-              className="flex items-start justify-between gap-3 p-3 bg-[#FEF0E3]/50 rounded-xl"
+              className="flex items-start justify-between gap-3 p-3 bg-[#FEF0E3]/50 rounded-[var(--a-radius-control)]"
             >
               <div className="flex items-start gap-2 flex-1 min-w-0">
                 <span className="text-lg flex-shrink-0">✍️</span>
                 <div className="min-w-0">
-                  <p className="font-dm text-sm font-semibold text-[#0D1B2A] truncate">
+                  <p className="font-dm text-sm font-semibold text-[var(--a-ink)] truncate">
                     {msg.subject}
                   </p>
                   {msg.payload?.leads && (
-                    <p className="font-dm text-xs text-[#7A8FA6] mt-0.5">
+                    <p className="font-dm text-xs text-[var(--a-ink-3)] mt-0.5">
                       {msg.payload.leads.map((l) => l.companyName).join(", ")}
                     </p>
                   )}
-                  <p className="font-dm text-xs text-[#7A8FA6]">
+                  <p className="font-dm text-xs text-[var(--a-ink-3)]">
                     {new Date(msg.createdAt).toLocaleString()}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => markRead(msg.id)}
-                className="text-xs font-dm text-[#7A8FA6] hover:text-[#F47C20] transition-colors flex-shrink-0"
+                className="text-xs font-dm text-[var(--a-ink-3)] hover:text-[#F47C20] transition-colors flex-shrink-0"
               >
                 Dismiss
               </button>
@@ -307,18 +307,18 @@ export default function RexClient({
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-[#F4F7FB] p-1 rounded-xl w-fit">
+      <div className="flex gap-1 bg-[var(--a-surface-2)] p-1 rounded-[var(--a-radius-control)] w-fit">
         <button
           onClick={() => setTab("leads")}
           className={`px-4 py-2 rounded-lg font-dm text-sm font-medium transition-colors relative ${
             tab === "leads"
-              ? "bg-white text-[#0D1B2A] shadow-sm"
-              : "text-[#7A8FA6] hover:text-[#3A4A5C]"
+              ? "bg-white text-[var(--a-ink)] shadow-sm"
+              : "text-[var(--a-ink-3)] hover:text-[var(--a-ink-2)]"
           }`}
         >
           🗂️ Lead Board
           {inboxCount > 0 && (
-            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-[#F47C20] text-white rounded-full text-[10px] font-bold flex items-center justify-center px-1">
+            <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-[var(--a-orange-text)] text-white rounded-full text-[10px] font-bold flex items-center justify-center px-1">
               {inboxCount}
             </span>
           )}
@@ -327,8 +327,8 @@ export default function RexClient({
           onClick={() => setTab("chat")}
           className={`px-4 py-2 rounded-lg font-dm text-sm font-medium transition-colors ${
             tab === "chat"
-              ? "bg-white text-[#0D1B2A] shadow-sm"
-              : "text-[#7A8FA6] hover:text-[#3A4A5C]"
+              ? "bg-white text-[var(--a-ink)] shadow-sm"
+              : "text-[var(--a-ink-3)] hover:text-[var(--a-ink-2)]"
           }`}
         >
           💬 Chat with Rex
@@ -353,7 +353,7 @@ export default function RexClient({
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-dm text-xs font-medium transition-colors ${
                       filterTab === ft.key
                         ? "bg-[#0F6E56] text-white"
-                        : "bg-white border border-[#D2DCE8] text-[#3A4A5C] hover:border-[#0F6E56]/40"
+                        : "bg-white border border-[var(--a-border)] text-[var(--a-ink-2)] hover:border-[#0F6E56]/40"
                     }`}
                   >
                     {ft.label}
@@ -361,7 +361,7 @@ export default function RexClient({
                       className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                         filterTab === ft.key
                           ? "bg-white/20 text-white"
-                          : "bg-[#F4F7FB] text-[#7A8FA6]"
+                          : "bg-[var(--a-surface-2)] text-[var(--a-ink-3)]"
                       }`}
                     >
                       {cnt}
@@ -373,7 +373,7 @@ export default function RexClient({
             <button
               onClick={loadLeads}
               disabled={loadingLeads}
-              className="flex items-center gap-1.5 text-xs font-dm text-[#7A8FA6] hover:text-[#0F6E56] transition-colors"
+              className="flex items-center gap-1.5 text-xs font-dm text-[var(--a-ink-3)] hover:text-[#0F6E56] transition-colors"
             >
               <RefreshCw size={13} className={loadingLeads ? "animate-spin" : ""} />
               Refresh
@@ -382,10 +382,10 @@ export default function RexClient({
 
           {/* Empty state */}
           {displayed.length === 0 && (
-            <div className="bg-white border border-[#D2DCE8] rounded-2xl p-10 text-center">
+            <div className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-10 text-center">
               <p className="text-2xl mb-2">🎯</p>
-              <p className="font-syne font-bold text-[#0D1B2A] mb-1">No leads here yet</p>
-              <p className="font-dm text-sm text-[#7A8FA6]">
+              <p className="font-syne font-bold text-[var(--a-ink)] mb-1">No leads here yet</p>
+              <p className="font-dm text-sm text-[var(--a-ink-3)]">
                 {filterTab === "inbox"
                   ? "Ask Aria to search for leads and transfer them here."
                   : "No leads match this filter."}
@@ -399,14 +399,14 @@ export default function RexClient({
               {displayed.map((lead) => (
                 <div
                   key={lead.id}
-                  className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden"
+                  className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] overflow-hidden"
                 >
                   <div className="p-4">
                     <div className="flex items-start justify-between gap-3 flex-wrap">
                       {/* Lead info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-syne font-bold text-base text-[#0D1B2A]">
+                          <p className="font-syne font-bold text-base text-[var(--a-ink)]">
                             {lead.companyName}
                           </p>
                           <span
@@ -426,29 +426,29 @@ export default function RexClient({
                         </div>
                         <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
                           {lead.contactName && (
-                            <span className="font-dm text-xs text-[#7A8FA6]">
+                            <span className="font-dm text-xs text-[var(--a-ink-3)]">
                               👤 {lead.contactName}
                             </span>
                           )}
                           {lead.location && (
-                            <span className="font-dm text-xs text-[#7A8FA6]">
+                            <span className="font-dm text-xs text-[var(--a-ink-3)]">
                               📍 {lead.location}
                             </span>
                           )}
                           {lead.industry && (
-                            <span className="font-dm text-xs text-[#7A8FA6]">
+                            <span className="font-dm text-xs text-[var(--a-ink-3)]">
                               🏢 {lead.industry}
                             </span>
                           )}
                         </div>
                         <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
                           {lead.phone && (
-                            <span className="font-dm text-xs text-[#3A4A5C] font-medium">
+                            <span className="font-dm text-xs text-[var(--a-ink-2)] font-medium">
                               📞 {lead.phone}
                             </span>
                           )}
                           {lead.email && (
-                            <span className="font-dm text-xs text-[#3A4A5C]">
+                            <span className="font-dm text-xs text-[var(--a-ink-2)]">
                               ✉️ {lead.email}
                             </span>
                           )}
@@ -464,7 +464,7 @@ export default function RexClient({
                             value={lead.status}
                             onChange={(e) => triage(lead.id, e.target.value as LeadStatus)}
                             disabled={triageId === lead.id}
-                            className="appearance-none bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl font-dm text-xs text-[#3A4A5C] px-2.5 py-1.5 pr-7 outline-none hover:border-[#0F6E56]/40 transition-colors cursor-pointer"
+                            className="appearance-none bg-[var(--a-surface-2)] border border-[var(--a-border)] rounded-[var(--a-radius-control)] font-dm text-xs text-[var(--a-ink-2)] px-2.5 py-1.5 pr-7 outline-none hover:border-[#0F6E56]/40 transition-colors cursor-pointer"
                           >
                             <option value={lead.status} disabled>
                               Triage…
@@ -477,7 +477,7 @@ export default function RexClient({
                           </select>
                           <ChevronDown
                             size={10}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-[#7A8FA6] pointer-events-none"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--a-ink-3)] pointer-events-none"
                           />
                         </div>
 
@@ -489,7 +489,7 @@ export default function RexClient({
                           className={`p-1.5 rounded-lg transition-colors ${
                             expandedId === lead.id
                               ? "bg-[#E6F5F0] text-[#0F6E56]"
-                              : "hover:bg-[#F4F7FB] text-[#7A8FA6] hover:text-[#3A4A5C]"
+                              : "hover:bg-[var(--a-surface-2)] text-[var(--a-ink-3)] hover:text-[var(--a-ink-2)]"
                           }`}
                           title="Notes"
                         >
@@ -499,7 +499,7 @@ export default function RexClient({
                         {/* Delete */}
                         <button
                           onClick={() => deleteLead(lead.id)}
-                          className="p-1.5 rounded-lg hover:bg-red-50 transition-colors text-[#7A8FA6] hover:text-red-500"
+                          className="p-1.5 rounded-lg hover:bg-red-50 transition-colors text-[var(--a-ink-3)] hover:text-red-500"
                           title="Delete lead"
                         >
                           <Trash2 size={13} />
@@ -508,7 +508,7 @@ export default function RexClient({
                     </div>
 
                     {lead.description && (
-                      <p className="font-dm text-xs text-[#7A8FA6] mt-2 leading-relaxed line-clamp-2">
+                      <p className="font-dm text-xs text-[var(--a-ink-3)] mt-2 leading-relaxed line-clamp-2">
                         {lead.description}
                       </p>
                     )}
@@ -517,7 +517,7 @@ export default function RexClient({
                         📞 Call status:{" "}
                         <span className="font-semibold">{lead.callStatus}</span>
                         {lead.callSid && (
-                          <span className="text-[#7A8FA6]"> · ID: {lead.callSid.slice(0, 16)}…</span>
+                          <span className="text-[var(--a-ink-3)]"> · ID: {lead.callSid.slice(0, 16)}…</span>
                         )}
                       </p>
                     )}
@@ -525,8 +525,8 @@ export default function RexClient({
 
                   {/* Notes panel */}
                   {expandedId === lead.id && (
-                    <div className="border-t border-[#D2DCE8] p-4 bg-[#F4F7FB]/40">
-                      <label className="font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wider">
+                    <div className="border-t border-[var(--a-border)] p-4 bg-[var(--a-surface-2)]/40">
+                      <label className="font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em]r">
                         Call Notes
                       </label>
                       <textarea
@@ -536,12 +536,12 @@ export default function RexClient({
                         }
                         rows={3}
                         placeholder="Notes from the call, objections, next steps…"
-                        className="w-full mt-1.5 px-3 py-2 bg-white border border-[#D2DCE8] rounded-xl font-dm text-sm text-[#0D1B2A] placeholder:text-[#7A8FA6] outline-none focus:border-[#0F6E56] transition-colors resize-none"
+                        className="w-full mt-1.5 px-3 py-2 bg-white border border-[var(--a-border)] rounded-[var(--a-radius-control)] font-dm text-sm text-[var(--a-ink)] placeholder:text-[var(--a-ink-3)] outline-none focus:border-[#0F6E56] transition-colors resize-none"
                       />
                       <button
                         onClick={() => saveNotes(lead.id)}
                         disabled={savingNotes === lead.id}
-                        className="mt-2 px-3 py-1.5 bg-[#0F6E56] text-white rounded-xl font-dm text-xs font-semibold hover:bg-[#0d5f49] transition-colors disabled:opacity-60"
+                        className="mt-2 px-3 py-1.5 bg-[#0F6E56] text-white rounded-[var(--a-radius-control)] font-dm text-xs font-semibold hover:bg-[#0d5f49] transition-colors disabled:opacity-60"
                       >
                         {savingNotes === lead.id ? "Saving…" : "Save Notes"}
                       </button>
@@ -562,18 +562,18 @@ export default function RexClient({
               <div className="space-y-5 py-4">
                 <div className="text-center">
                   <div
-                    className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3"
+                    className="w-16 h-16 rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] flex items-center justify-center text-3xl mx-auto mb-3"
                     style={{ backgroundColor: AGENT.bg }}
                   >
                     {AGENT.avatar}
                   </div>
-                  <p className="font-syne font-bold text-lg text-[#0D1B2A]">Chat with Rex</p>
-                  <p className="font-dm text-sm text-[#7A8FA6] mt-1">
+                  <p className="font-syne font-bold text-lg text-[var(--a-ink)]">Chat with Rex</p>
+                  <p className="font-dm text-sm text-[var(--a-ink-3)] mt-1">
                     Sales &amp; Business Development
                   </p>
                 </div>
                 <div>
-                  <p className="font-dm text-xs text-[#7A8FA6] uppercase tracking-wider font-semibold mb-2 text-center">
+                  <p className="font-dm text-xs text-[var(--a-ink-3)] uppercase tracking-wider font-semibold mb-2 text-center">
                     Try asking
                   </p>
                   <div className="flex flex-col gap-2">
@@ -581,7 +581,7 @@ export default function RexClient({
                       <button
                         key={s}
                         onClick={() => sendChat(s)}
-                        className="text-left text-sm font-dm px-4 py-2.5 bg-white border border-[#D2DCE8] rounded-xl hover:border-[#0F6E56] hover:bg-[#E6F5F0]/30 transition-colors text-[#3A4A5C]"
+                        className="text-left text-sm font-dm px-4 py-2.5 bg-white border border-[var(--a-border)] rounded-[var(--a-radius-control)] hover:border-[#0F6E56] hover:bg-[#E6F5F0]/30 transition-colors text-[var(--a-ink-2)]"
                       >
                         {s}
                       </button>
@@ -605,11 +605,11 @@ export default function RexClient({
                   )}
                   <div className={`max-w-[80%] ${msg.role === "user" ? "max-w-[70%]" : ""}`}>
                     {msg.role === "user" ? (
-                      <div className="bg-[#1B3A6B] text-white rounded-2xl rounded-tr-sm px-4 py-3 font-dm text-sm">
+                      <div className="bg-[var(--a-navy)] text-white rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] rounded-tr-sm px-4 py-3 font-dm text-sm">
                         {msg.content}
                       </div>
                     ) : (
-                      <div className="bg-white border border-[#D2DCE8] rounded-2xl rounded-tl-sm px-4 py-3 font-dm text-sm text-[#3A4A5C] whitespace-pre-wrap">
+                      <div className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] rounded-tl-sm px-4 py-3 font-dm text-sm text-[var(--a-ink-2)] whitespace-pre-wrap">
                         {msg.content}
                       </div>
                     )}
@@ -625,7 +625,7 @@ export default function RexClient({
                 >
                   {AGENT.avatar}
                 </div>
-                <div className="bg-white border border-[#D2DCE8] rounded-2xl px-4 py-3">
+                <div className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] px-4 py-3">
                   <div className="flex gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#7A8FA6] animate-bounce [animation-delay:0ms]" />
                     <span className="w-2 h-2 rounded-full bg-[#7A8FA6] animate-bounce [animation-delay:150ms]" />
@@ -637,7 +637,7 @@ export default function RexClient({
             <div ref={bottomRef} />
           </div>
 
-          <div className="bg-white border border-[#D2DCE8] rounded-2xl p-3 flex items-end gap-2">
+          <div className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-3 flex items-end gap-2">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -649,13 +649,13 @@ export default function RexClient({
               }}
               rows={1}
               placeholder="Ask Rex to score a prospect, draft outreach, build a proposal…"
-              className="flex-1 resize-none outline-none font-dm text-sm text-[#0D1B2A] placeholder:text-[#7A8FA6] max-h-32 overflow-y-auto bg-transparent"
+              className="flex-1 resize-none outline-none font-dm text-sm text-[var(--a-ink)] placeholder:text-[var(--a-ink-3)] max-h-32 overflow-y-auto bg-transparent"
               style={{ fieldSizing: "content" } as React.CSSProperties}
             />
             <button
               onClick={() => sendChat()}
               disabled={!input.trim() || chatLoading}
-              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors disabled:opacity-40"
+              className="w-9 h-9 rounded-[var(--a-radius-control)] flex items-center justify-center flex-shrink-0 transition-colors disabled:opacity-40"
               style={{ backgroundColor: AGENT.color }}
             >
               <Send size={15} className="text-white" />

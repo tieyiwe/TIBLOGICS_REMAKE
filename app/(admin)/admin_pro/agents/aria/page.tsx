@@ -185,19 +185,19 @@ export default function AriaPage() {
       <div className="flex items-center gap-3">
         <Link
           href="/admin_pro/agents"
-          className="text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors"
+          className="text-[var(--a-ink-3)] hover:text-[#1B3A6B] transition-colors"
         >
           <ArrowLeft size={18} />
         </Link>
         <div className="flex items-center gap-3 flex-1">
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+            className="w-10 h-10 rounded-[var(--a-radius-control)] flex items-center justify-center text-xl"
             style={{ backgroundColor: AGENT.bg }}
           >
             {AGENT.avatar}
           </div>
           <div>
-            <p className="font-syne font-bold text-base text-[#0D1B2A]">{AGENT.name}</p>
+            <p className="font-syne font-bold text-base text-[var(--a-ink)]">{AGENT.name}</p>
             <p className="font-dm text-xs font-medium" style={{ color: AGENT.color }}>
               {AGENT.title}
             </p>
@@ -207,13 +207,13 @@ export default function AriaPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-[#F4F7FB] p-1 rounded-xl w-fit">
+      <div className="flex gap-1 bg-[var(--a-surface-2)] p-1 rounded-[var(--a-radius-control)] w-fit">
         <button
           onClick={() => setTab("search")}
           className={`px-4 py-2 rounded-lg font-dm text-sm font-medium transition-colors ${
             tab === "search"
-              ? "bg-white text-[#0D1B2A] shadow-sm"
-              : "text-[#7A8FA6] hover:text-[#3A4A5C]"
+              ? "bg-white text-[var(--a-ink)] shadow-sm"
+              : "text-[var(--a-ink-3)] hover:text-[var(--a-ink-2)]"
           }`}
         >
           🔍 Lead Search
@@ -222,8 +222,8 @@ export default function AriaPage() {
           onClick={() => setTab("chat")}
           className={`px-4 py-2 rounded-lg font-dm text-sm font-medium transition-colors ${
             tab === "chat"
-              ? "bg-white text-[#0D1B2A] shadow-sm"
-              : "text-[#7A8FA6] hover:text-[#3A4A5C]"
+              ? "bg-white text-[var(--a-ink)] shadow-sm"
+              : "text-[var(--a-ink-3)] hover:text-[var(--a-ink-2)]"
           }`}
         >
           💬 Chat with Aria
@@ -234,9 +234,9 @@ export default function AriaPage() {
       {tab === "search" && (
         <div className="space-y-4">
           {/* Search form */}
-          <div className="bg-white border border-[#D2DCE8] rounded-2xl p-5 space-y-4">
+          <div className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-5 space-y-4">
             <div>
-              <label className="font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wider">
+              <label className="font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em]r">
                 Search Instructions
               </label>
               <textarea
@@ -244,13 +244,13 @@ export default function AriaPage() {
                 onChange={(e) => setInstructions(e.target.value)}
                 rows={3}
                 placeholder="e.g. Find coffee shops and restaurants that likely haven't invested in AI or automation yet and could benefit from a digital upgrade…"
-                className="w-full mt-1.5 px-3 py-2 bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl font-dm text-sm text-[#0D1B2A] placeholder:text-[#7A8FA6] outline-none focus:border-[#F47C20] transition-colors resize-none"
+                className="w-full mt-1.5 px-3 py-2 bg-[var(--a-surface-2)] border border-[var(--a-border)] rounded-[var(--a-radius-control)] font-dm text-sm text-[var(--a-ink)] placeholder:text-[var(--a-ink-3)] outline-none focus:border-[#F47C20] transition-colors resize-none"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wider">
+                <label className="font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em]r">
                   Location *
                 </label>
                 <input
@@ -258,28 +258,28 @@ export default function AriaPage() {
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="Miami, FL"
                   onKeyDown={(e) => e.key === "Enter" && searchLeads()}
-                  className="w-full mt-1.5 px-3 py-2 bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl font-dm text-sm text-[#0D1B2A] placeholder:text-[#7A8FA6] outline-none focus:border-[#F47C20] transition-colors"
+                  className="w-full mt-1.5 px-3 py-2 bg-[var(--a-surface-2)] border border-[var(--a-border)] rounded-[var(--a-radius-control)] font-dm text-sm text-[var(--a-ink)] placeholder:text-[var(--a-ink-3)] outline-none focus:border-[#F47C20] transition-colors"
                 />
               </div>
               <div>
-                <label className="font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wider">
+                <label className="font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em]r">
                   Industry / Niche
                 </label>
                 <input
                   value={industry}
                   onChange={(e) => setIndustry(e.target.value)}
                   placeholder="Restaurants, Healthcare…"
-                  className="w-full mt-1.5 px-3 py-2 bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl font-dm text-sm text-[#0D1B2A] placeholder:text-[#7A8FA6] outline-none focus:border-[#F47C20] transition-colors"
+                  className="w-full mt-1.5 px-3 py-2 bg-[var(--a-surface-2)] border border-[var(--a-border)] rounded-[var(--a-radius-control)] font-dm text-sm text-[var(--a-ink)] placeholder:text-[var(--a-ink-3)] outline-none focus:border-[#F47C20] transition-colors"
                 />
               </div>
               <div>
-                <label className="font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wider">
+                <label className="font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em]r">
                   Lead Count
                 </label>
                 <select
                   value={count}
                   onChange={(e) => setCount(Number(e.target.value))}
-                  className="w-full mt-1.5 px-3 py-2 bg-[#F4F7FB] border border-[#D2DCE8] rounded-xl font-dm text-sm text-[#0D1B2A] outline-none focus:border-[#F47C20] transition-colors"
+                  className="w-full mt-1.5 px-3 py-2 bg-[var(--a-surface-2)] border border-[var(--a-border)] rounded-[var(--a-radius-control)] font-dm text-sm text-[var(--a-ink)] outline-none focus:border-[#F47C20] transition-colors"
                 >
                   {[5, 8, 10, 15, 20].map((n) => (
                     <option key={n} value={n}>
@@ -294,7 +294,7 @@ export default function AriaPage() {
               <button
                 onClick={searchLeads}
                 disabled={searching || !location.trim()}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-dm text-sm font-semibold text-white transition-all disabled:opacity-50"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-[var(--a-radius-control)] font-dm text-sm font-semibold text-white transition-all disabled:opacity-50"
                 style={{ backgroundColor: AGENT.color }}
               >
                 {searching ? (
@@ -310,7 +310,7 @@ export default function AriaPage() {
                 )}
               </button>
               {!process.env.NEXT_PUBLIC_GOOGLE_PLACES_ENABLED && (
-                <p className="font-dm text-xs text-[#7A8FA6]">
+                <p className="font-dm text-xs text-[var(--a-ink-3)]">
                   AI-generated leads (set{" "}
                   <span className="font-mono">GOOGLE_PLACES_API_KEY</span> for real data)
                 </p>
@@ -325,7 +325,7 @@ export default function AriaPage() {
                 <div className="flex items-center gap-3">
                   <button
                     onClick={toggleAll}
-                    className="flex items-center gap-1.5 font-dm text-sm text-[#3A4A5C] hover:text-[#0D1B2A] transition-colors"
+                    className="flex items-center gap-1.5 font-dm text-sm text-[var(--a-ink-2)] hover:text-[var(--a-ink)] transition-colors"
                   >
                     {selectedIds.size === selectable.length && selectable.length > 0 ? (
                       <CheckSquare size={16} style={{ color: AGENT.color }} />
@@ -336,7 +336,7 @@ export default function AriaPage() {
                       ? "Deselect All"
                       : "Select All"}
                   </button>
-                  <span className="font-dm text-sm text-[#7A8FA6]">{results.length} leads found</span>
+                  <span className="font-dm text-sm text-[var(--a-ink-3)]">{results.length} leads found</span>
                   {selectedIds.size > 0 && (
                     <span
                       className="font-dm text-sm font-semibold"
@@ -350,7 +350,7 @@ export default function AriaPage() {
                   <button
                     onClick={transferToRex}
                     disabled={transferring}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#0F6E56] text-white rounded-xl font-dm text-sm font-semibold hover:bg-[#0d5f49] transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2 bg-[#0F6E56] text-white rounded-[var(--a-radius-control)] font-dm text-sm font-semibold hover:bg-[#0d5f49] transition-colors disabled:opacity-50"
                   >
                     {transferring ? (
                       <>
@@ -365,7 +365,7 @@ export default function AriaPage() {
               </div>
 
               {transferDone && (
-                <div className="bg-[#E6F5F0] border border-[#0F6E56]/30 rounded-xl p-3 font-dm text-sm text-[#0F6E56]">
+                <div className="bg-[#E6F5F0] border border-[#0F6E56]/30 rounded-[var(--a-radius-control)] p-3 font-dm text-sm text-[#0F6E56]">
                   ✓ Leads sent to Rex. He&apos;ll pick them up on his Lead Board.
                 </div>
               )}
@@ -378,12 +378,12 @@ export default function AriaPage() {
                     <div
                       key={lead.id}
                       onClick={() => !transferred && toggleSelect(lead.id)}
-                      className={`bg-white border rounded-xl p-4 transition-all ${
+                      className={`bg-white border rounded-[var(--a-radius-control)] p-4 transition-all ${
                         transferred
                           ? "border-[#0F6E56]/30 bg-[#E6F5F0]/20 opacity-60 cursor-default"
                           : selected
                           ? "border-[#F47C20] ring-1 ring-[#F47C20]/20 shadow-sm cursor-pointer"
-                          : "border-[#D2DCE8] hover:border-[#F47C20]/40 hover:shadow-sm cursor-pointer"
+                          : "border-[var(--a-border)] hover:border-[#F47C20]/40 hover:shadow-sm cursor-pointer"
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2 mb-2">
@@ -398,11 +398,11 @@ export default function AriaPage() {
                             )}
                           </div>
                           <div>
-                            <p className="font-syne font-bold text-sm text-[#0D1B2A]">
+                            <p className="font-syne font-bold text-sm text-[var(--a-ink)]">
                               {lead.companyName}
                             </p>
                             {lead.location && (
-                              <p className="font-dm text-xs text-[#7A8FA6] flex items-center gap-1 mt-0.5">
+                              <p className="font-dm text-xs text-[var(--a-ink-3)] flex items-center gap-1 mt-0.5">
                                 <MapPin size={10} /> {lead.location}
                               </p>
                             )}
@@ -416,29 +416,29 @@ export default function AriaPage() {
                       </div>
 
                       {lead.description && (
-                        <p className="font-dm text-xs text-[#3A4A5C] leading-relaxed mb-2 line-clamp-2">
+                        <p className="font-dm text-xs text-[var(--a-ink-2)] leading-relaxed mb-2 line-clamp-2">
                           {lead.description}
                         </p>
                       )}
 
                       <div className="flex flex-wrap gap-x-3 gap-y-1">
                         {lead.contactName && (
-                          <span className="font-dm text-xs text-[#7A8FA6] flex items-center gap-1">
+                          <span className="font-dm text-xs text-[var(--a-ink-3)] flex items-center gap-1">
                             <Users size={10} /> {lead.contactName}
                           </span>
                         )}
                         {lead.phone && (
-                          <span className="font-dm text-xs text-[#7A8FA6] flex items-center gap-1">
+                          <span className="font-dm text-xs text-[var(--a-ink-3)] flex items-center gap-1">
                             <Phone size={10} /> {lead.phone}
                           </span>
                         )}
                         {lead.email && (
-                          <span className="font-dm text-xs text-[#7A8FA6] flex items-center gap-1">
+                          <span className="font-dm text-xs text-[var(--a-ink-3)] flex items-center gap-1">
                             <Mail size={10} /> {lead.email}
                           </span>
                         )}
                         {lead.website && (
-                          <span className="font-dm text-xs text-[#7A8FA6] flex items-center gap-1">
+                          <span className="font-dm text-xs text-[var(--a-ink-3)] flex items-center gap-1">
                             <Globe size={10} /> {lead.website}
                           </span>
                         )}
@@ -460,18 +460,18 @@ export default function AriaPage() {
               <div className="space-y-5 py-4">
                 <div className="text-center">
                   <div
-                    className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3"
+                    className="w-16 h-16 rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] flex items-center justify-center text-3xl mx-auto mb-3"
                     style={{ backgroundColor: AGENT.bg }}
                   >
                     {AGENT.avatar}
                   </div>
-                  <p className="font-syne font-bold text-lg text-[#0D1B2A]">Chat with Aria</p>
-                  <p className="font-dm text-sm text-[#7A8FA6] mt-1">
+                  <p className="font-syne font-bold text-lg text-[var(--a-ink)]">Chat with Aria</p>
+                  <p className="font-dm text-sm text-[var(--a-ink-3)] mt-1">
                     Marketing &amp; Content Specialist
                   </p>
                 </div>
                 <div>
-                  <p className="font-dm text-xs text-[#7A8FA6] uppercase tracking-wider font-semibold mb-2 text-center">
+                  <p className="font-dm text-xs text-[var(--a-ink-3)] uppercase tracking-wider font-semibold mb-2 text-center">
                     Try asking
                   </p>
                   <div className="flex flex-col gap-2">
@@ -479,7 +479,7 @@ export default function AriaPage() {
                       <button
                         key={s}
                         onClick={() => sendChat(s)}
-                        className="text-left text-sm font-dm px-4 py-2.5 bg-white border border-[#D2DCE8] rounded-xl hover:border-[#F47C20] hover:bg-[#FEF0E3]/30 transition-colors text-[#3A4A5C]"
+                        className="text-left text-sm font-dm px-4 py-2.5 bg-white border border-[var(--a-border)] rounded-[var(--a-radius-control)] hover:border-[#F47C20] hover:bg-[#FEF0E3]/30 transition-colors text-[var(--a-ink-2)]"
                       >
                         {s}
                       </button>
@@ -503,11 +503,11 @@ export default function AriaPage() {
                   )}
                   <div className={`max-w-[80%] ${msg.role === "user" ? "max-w-[70%]" : ""}`}>
                     {msg.role === "user" ? (
-                      <div className="bg-[#1B3A6B] text-white rounded-2xl rounded-tr-sm px-4 py-3 font-dm text-sm">
+                      <div className="bg-[var(--a-navy)] text-white rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] rounded-tr-sm px-4 py-3 font-dm text-sm">
                         {msg.content}
                       </div>
                     ) : (
-                      <div className="bg-white border border-[#D2DCE8] rounded-2xl rounded-tl-sm px-4 py-3 font-dm text-sm text-[#3A4A5C] whitespace-pre-wrap">
+                      <div className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] rounded-tl-sm px-4 py-3 font-dm text-sm text-[var(--a-ink-2)] whitespace-pre-wrap">
                         {msg.content}
                       </div>
                     )}
@@ -523,7 +523,7 @@ export default function AriaPage() {
                 >
                   {AGENT.avatar}
                 </div>
-                <div className="bg-white border border-[#D2DCE8] rounded-2xl px-4 py-3">
+                <div className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] px-4 py-3">
                   <div className="flex gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-[#7A8FA6] animate-bounce [animation-delay:0ms]" />
                     <span className="w-2 h-2 rounded-full bg-[#7A8FA6] animate-bounce [animation-delay:150ms]" />
@@ -535,7 +535,7 @@ export default function AriaPage() {
             <div ref={bottomRef} />
           </div>
 
-          <div className="bg-white border border-[#D2DCE8] rounded-2xl p-3 flex items-end gap-2">
+          <div className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-3 flex items-end gap-2">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -547,13 +547,13 @@ export default function AriaPage() {
               }}
               rows={1}
               placeholder="Ask Aria to write a post, draft an email, create a content calendar…"
-              className="flex-1 resize-none outline-none font-dm text-sm text-[#0D1B2A] placeholder:text-[#7A8FA6] max-h-32 overflow-y-auto bg-transparent"
+              className="flex-1 resize-none outline-none font-dm text-sm text-[var(--a-ink)] placeholder:text-[var(--a-ink-3)] max-h-32 overflow-y-auto bg-transparent"
               style={{ fieldSizing: "content" } as React.CSSProperties}
             />
             <button
               onClick={() => sendChat()}
               disabled={!input.trim() || chatLoading}
-              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors disabled:opacity-40"
+              className="w-9 h-9 rounded-[var(--a-radius-control)] flex items-center justify-center flex-shrink-0 transition-colors disabled:opacity-40"
               style={{ backgroundColor: AGENT.color }}
             >
               <Send size={15} className="text-white" />

@@ -38,6 +38,7 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [statusLink, setStatusLink] = useState("");
   const [busy, setBusy] = useState(false);
 
   async function submit(e: React.FormEvent) {
@@ -47,7 +48,11 @@ function LoginForm() {
 
     const res = await signIn("student", { email, password, redirect: false });
     if (res?.error) {
-      setError(t("learn.auth.badCredentials"));
+      // Suspended or blocked (lib/learn/account-status): say so, and link to
+      // the page with the reason (the code carries a short-lived token).
+      const locked = /^Account(Suspended|Blocked):(.*)$/.exec(res.error);
+      setStatusLink(locked ? `/learn/account-status?t=${encodeURIComponent(locked[2])}` : "");
+      setError(locked ? t(locked[1] === "Blocked" ? "authStatus.blocked" : "authStatus.suspended") : t("learn.auth.badCredentials"));
       setBusy(false);
       return;
     }
@@ -91,6 +96,14 @@ function LoginForm() {
       {error && (
         <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
           {error}
+          {statusLink && (
+            <>
+              {" "}
+              <Link href={statusLink} className="font-semibold underline underline-offset-2">
+                {t("authStatus.details")}
+              </Link>
+            </>
+          )}
         </p>
       )}
 
@@ -125,7 +138,7 @@ export default function StudentLoginPage() {
       <div className="w-full max-w-sm">
         <div className="text-center">
           <Link href="/learning-box" className="inline-block">
-            <ArfaWordmark size="md" />
+            <ArfaWordmark size="md" academyLabel={t("learn.brand.academy")} />
           </Link>
           <p className="mt-1.5 text-xs text-[var(--ink3)]">
             {t("learn.brand.by")}{" "}
@@ -136,7 +149,7 @@ export default function StudentLoginPage() {
         </div>
 
         <div className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-7 shadow-sm">
-          <h1 className="text-xl font-bold text-[var(--ink)]">{t("learn.auth.welcomeBack")}</h1>
+          <h1 className="text-xl font-bold text-[var(--ink)]">{t("learn.auth.signInTitle")}</h1>
           <p className="mt-1 text-sm text-[var(--ink3)]">{t("learn.auth.signInToContinue")}</p>
 
           <div className="mt-6">

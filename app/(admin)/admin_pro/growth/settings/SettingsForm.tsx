@@ -93,7 +93,7 @@ export default function SettingsForm({ initial }: { initial: GrowthSettingsData 
       >
         <div className="grid gap-3 lg:grid-cols-2">
           {s.audiences.map((a, i) => (
-            <div key={i} className="rounded-xl border border-[#D2DCE8] p-3 space-y-2">
+            <div key={i} className="rounded-[12px] border border-[var(--a-border-strong)] p-3 space-y-2">
               <div className="flex gap-2">
                 <div className="flex-1">
                   <label className={label} htmlFor={`a-name-${i}`}>Name</label>
@@ -129,7 +129,7 @@ export default function SettingsForm({ initial }: { initial: GrowthSettingsData 
                 <legend className={label}>Channels</legend>
                 <div className="flex flex-wrap gap-2">
                   {PLATFORMS.map((p) => (
-                    <label key={p} className="inline-flex items-center gap-1 font-dm text-xs text-[#3A4A5C]">
+                    <label key={p} className="inline-flex items-center gap-1 font-dm text-xs text-[var(--a-ink-2)]">
                       <input
                         type="checkbox"
                         checked={a.channels.includes(p)}
@@ -146,9 +146,9 @@ export default function SettingsForm({ initial }: { initial: GrowthSettingsData 
         <datalist id="gs-zones">{ZONES.map((z) => <option key={z} value={z} />)}</datalist>
       </Card>
 
-      <div className="sticky bottom-0 -mx-1 flex items-center gap-3 bg-[#F4F7FB]/95 px-1 py-3 backdrop-blur">
+      <div className="sticky bottom-0 -mx-1 flex items-center gap-3 bg-[var(--a-surface-2)]/95 px-1 py-3 backdrop-blur">
         <button className={btn.primary} disabled={busy} onClick={save}>{busy ? "Saving…" : "Save settings"}</button>
-        {msg && <p role="status" className={`font-dm text-sm ${msg.ok ? "text-[#0F6E56]" : "text-[#B42318]"}`}>{msg.text}</p>}
+        {msg && <p role="status" className={`font-dm text-sm ${msg.ok ? "text-[var(--a-success)]" : "text-[var(--a-danger)]"}`}>{msg.text}</p>}
       </div>
     </div>
   );

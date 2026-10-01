@@ -10,6 +10,14 @@ import prisma from "@/lib/prisma";
 // go when their team, learner or track is deleted. Team.ownerStudentId has no
 // foreign key on purpose: deleting an account must not silently drop a paid
 // team record that Stripe still bills.
+//
+// Two helper tables have no Prisma model on purpose (prisma/schema.prisma is
+// shared; these are read with raw SQL in ./plan.ts and ./claims.ts):
+//   TeamInvitePlan  what an invitation carries until it is accepted: the
+//                   invitee's name, role, the tracks to assign (with a due
+//                   date) and the language of the email. One row per seat row.
+//   TeamEmailClaim  claim-before-send keys for team emails (weekly digest),
+//                   so a retried or overlapping cron run never sends twice.
 
 const STATEMENTS = [
   `CREATE TABLE IF NOT EXISTS "Team" (
@@ -57,6 +65,26 @@ const STATEMENTS = [
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "TeamAssignment_pkey" PRIMARY KEY ("id")
   )`,
+  `CREATE TABLE IF NOT EXISTS "TeamInvitePlan" (
+    "memberId" TEXT NOT NULL,
+    "teamId" TEXT NOT NULL,
+    "name" TEXT,
+    "role" TEXT NOT NULL DEFAULT 'member',
+    "trackIds" JSONB NOT NULL DEFAULT '[]',
+    "dueAt" TIMESTAMP(3),
+    "locale" TEXT,
+    "source" TEXT NOT NULL DEFAULT 'invite',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "TeamInvitePlan_pkey" PRIMARY KEY ("memberId")
+  )`,
+  `CREATE TABLE IF NOT EXISTS "TeamEmailClaim" (
+    "key" TEXT NOT NULL,
+    "teamId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "TeamEmailClaim_pkey" PRIMARY KEY ("key")
+  )`,
+  `CREATE INDEX IF NOT EXISTS "TeamInvitePlan_teamId_idx" ON "TeamInvitePlan"("teamId")`,
+  `CREATE INDEX IF NOT EXISTS "TeamEmailClaim_teamId_idx" ON "TeamEmailClaim"("teamId")`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "Team_stripeSubscriptionId_key" ON "Team"("stripeSubscriptionId")`,
   `CREATE INDEX IF NOT EXISTS "Team_ownerStudentId_idx" ON "Team"("ownerStudentId")`,
   `CREATE INDEX IF NOT EXISTS "Team_status_idx" ON "Team"("status")`,
@@ -70,6 +98,8 @@ const STATEMENTS = [
     ["TeamMember_studentId_fkey", `ALTER TABLE "TeamMember" ADD CONSTRAINT "TeamMember_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE CASCADE ON UPDATE CASCADE`],
     ["TeamAssignment_teamId_fkey", `ALTER TABLE "TeamAssignment" ADD CONSTRAINT "TeamAssignment_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "Team"("id") ON DELETE CASCADE ON UPDATE CASCADE`],
     ["TeamAssignment_studentId_fkey", `ALTER TABLE "TeamAssignment" ADD CONSTRAINT "TeamAssignment_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE CASCADE ON UPDATE CASCADE`],
+    ["TeamInvitePlan_memberId_fkey", `ALTER TABLE "TeamInvitePlan" ADD CONSTRAINT "TeamInvitePlan_memberId_fkey" FOREIGN KEY ("memberId") REFERENCES "TeamMember"("id") ON DELETE CASCADE ON UPDATE CASCADE`],
+    ["TeamEmailClaim_teamId_fkey", `ALTER TABLE "TeamEmailClaim" ADD CONSTRAINT "TeamEmailClaim_teamId_fkey" FOREIGN KEY ("teamId") REFERENCES "Team"("id") ON DELETE CASCADE ON UPDATE CASCADE`],
     ["TeamAssignment_trackId_fkey", `ALTER TABLE "TeamAssignment" ADD CONSTRAINT "TeamAssignment_trackId_fkey" FOREIGN KEY ("trackId") REFERENCES "LearnTrack"("id") ON DELETE CASCADE ON UPDATE CASCADE`],
   ].map(
     ([name, sql]) =>

@@ -24,12 +24,12 @@ export default async function GrowthContentPage() {
   ]);
   const q = new Map(queued.map((r) => [r.kitId, r._count._all]));
   return (
-    <div className="space-y-5 max-w-[1400px]">
-      <GrowthTabs />
+    <div className="mx-auto max-w-[1400px] space-y-5">
       <PageHeader
         title="Product marketing kits"
         subtitle="Pick anything you sell. One click writes positioning, hero copy, 10 platform-native posts, a 3-email launch sequence, 3 ads, a reel script and a 2-week calendar from the product's own data. Review, edit, then queue."
       />
+      <GrowthTabs />
       <ContentClient
         catalog={catalog}
         types={TYPE_LABEL}

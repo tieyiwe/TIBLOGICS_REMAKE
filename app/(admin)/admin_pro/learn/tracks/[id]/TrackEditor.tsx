@@ -36,14 +36,14 @@ const LEVELS = ["starter", "beginner", "intermediate", "advanced"];
 function Section({ title, icon: Icon, children, defaultOpen = true, right }: { title: string; icon: typeof BookOpen; children: React.ReactNode; defaultOpen?: boolean; right?: React.ReactNode }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="bg-white border border-[#D2DCE8] rounded-2xl">
+    <section className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)]">
       <div className="flex items-center justify-between gap-3 px-5 py-4">
-        <button type="button" onClick={() => setOpen(!open)} className="flex items-center gap-2 font-syne font-bold text-base text-[#0D1B2A]">
+        <button type="button" onClick={() => setOpen(!open)} className="flex items-center gap-2 font-syne font-bold text-base text-[var(--a-ink)]">
           {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}<Icon size={17} className="text-[#B8500A]" /> {title}
         </button>
         {right}
       </div>
-      {open && <div className="px-5 pb-5 border-t border-[#F4F7FB] pt-4">{children}</div>}
+      {open && <div className="px-5 pb-5 border-t border-[var(--a-border)] pt-4">{children}</div>}
     </section>
   );
 }
@@ -53,17 +53,17 @@ export default function TrackEditor(props: { track: Track; modules: ModuleRow[];
   return (
     <div className="space-y-5 max-w-5xl">
       <div>
-        <Link href="/admin_pro/learn" className="inline-flex items-center gap-1 font-dm text-sm text-[#2251A3]"><ArrowLeft size={14} /> Learning Box</Link>
+        <Link href="/admin_pro/learn" className="inline-flex items-center gap-1 font-dm text-sm text-[var(--a-blue)]"><ArrowLeft size={14} /> ARFA · AI Academy</Link>
         <div className="flex flex-wrap items-end justify-between gap-3 mt-2">
           <div>
-            <h1 className="font-syne font-bold text-2xl text-[#0D1B2A]">{t.title}</h1>
-            <p className="font-dm text-sm text-[#7A8FA6]">
+            <h1 className="font-syne font-bold text-[24px] leading-tight text-[var(--a-ink)] sm:text-[26px]">{t.title}</h1>
+            <p className="font-dm text-sm text-[var(--a-ink-3)]">
               {props.modules.length} modules · {props.modules.reduce((n, m) => n + m.lessons.length, 0)} lessons · {props.labs.length} labs · status <strong>{t.status.replace("_", " ")}</strong>
             </p>
           </div>
           <a href={`/learn/track/${t.slug}`} target="_blank" rel="noopener noreferrer" className={btnGhost}><ExternalLink size={14} /> View as learner</a>
         </div>
-        <p className="font-dm text-xs text-[#7A8FA6] mt-2">
+        <p className="font-dm text-xs text-[var(--a-ink-3)] mt-2">
           Changes here are live for learners as soon as they are saved. Anything you edit, add or delete here is kept when the
           built-in content is re-seeded.
         </p>
@@ -139,14 +139,14 @@ function TrackSettings({ track }: { track: Track }) {
             value={f.priceUsd} onChange={(e) => set("priceUsd", e.target.value)}
             placeholder={String(trackPriceCents(f.level) / 100)}
           />
-          <p className="font-dm text-xs text-[#7A8FA6] mt-1">
+          <p className="font-dm text-xs text-[var(--a-ink-3)] mt-1">
             Lifetime access to this track, paid once. Leave empty to use the level price
             (${trackPriceCents(f.level) / 100} for {f.level}). The all-tracks subscription is separate.
           </p>
         </div>
         <div><label className={labelCls}>Order on the catalogue</label><input className={inputCls} type="number" min="0" value={f.sortOrder} onChange={(e) => set("sortOrder", e.target.value)} /></div>
         <div><label className={labelCls}>Accent colour</label>
-          <div className="flex gap-2"><input type="color" value={f.accentColor} onChange={(e) => set("accentColor", e.target.value)} className="h-9 w-12 rounded border border-[#D2DCE8]" /><input className={inputCls} value={f.accentColor} onChange={(e) => set("accentColor", e.target.value)} /></div>
+          <div className="flex gap-2"><input type="color" value={f.accentColor} onChange={(e) => set("accentColor", e.target.value)} className="h-9 w-12 rounded border border-[var(--a-border)]" /><input className={inputCls} value={f.accentColor} onChange={(e) => set("accentColor", e.target.value)} /></div>
         </div>
         <div className="sm:col-span-2"><label className={labelCls}>Who it&apos;s for</label><input className={inputCls} value={f.audience} onChange={(e) => set("audience", e.target.value)} /></div>
         <div className="sm:col-span-2"><label className={labelCls}>Hero image URL (optional)</label><input className={inputCls} value={f.heroImage} onChange={(e) => set("heroImage", e.target.value)} placeholder="https://…" /></div>
@@ -172,7 +172,7 @@ function Modules({ trackId, modules, labs }: { trackId: string; modules: ModuleR
         {modules.map((m, i) => (
           <ModuleCard key={m.id} module={m} index={i} last={i === modules.length - 1} labs={labs.filter((l) => l.moduleId === m.id)} />
         ))}
-        {modules.length === 0 && <p className="font-dm text-sm text-[#7A8FA6]">No modules yet.</p>}
+        {modules.length === 0 && <p className="font-dm text-sm text-[var(--a-ink-3)]">No modules yet.</p>}
         <div className="flex gap-2">
           <input className={inputCls} value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="New module title" />
           <button type="button" disabled={!newTitle.trim() || !!busy} onClick={async () => { if (await run({ op: "module.create", trackId, title: newTitle })) setNewTitle(""); }} className={`${btnPrimary} shrink-0`}><Plus size={14} /> Add module</button>
@@ -193,8 +193,8 @@ function ModuleCard({ module: m, index, last, labs }: { module: ModuleRow; index
   const [quiz, setQuiz] = useState({ passScore: m.quiz?.passScore ?? 80, questionsServed: m.quiz?.questionsServed ?? 8 });
 
   return (
-    <div className="rounded-xl border border-[#E6EBF1]">
-      <div className="flex flex-wrap items-start justify-between gap-2 bg-[#F8FAFD] rounded-t-xl px-4 py-3">
+    <div className="rounded-[var(--a-radius-control)] border border-[#E6EBF1]">
+      <div className="flex flex-wrap items-start justify-between gap-2 bg-[var(--a-surface-2)] rounded-t-xl px-4 py-3">
         {editing ? (
           <div className="flex-1 min-w-[240px] space-y-2">
             <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -206,8 +206,8 @@ function ModuleCard({ module: m, index, last, labs }: { module: ModuleRow; index
           </div>
         ) : (
           <div className="min-w-0">
-            <p className="font-dm font-semibold text-[#0D1B2A]">Module {index + 1}: {m.title}</p>
-            <p className="font-dm text-xs text-[#7A8FA6]">{m.lessons.length} lessons · {m.estimatedMinutes} min · quiz {m.quiz ? `${m.quiz.questions.length} questions` : "none"}</p>
+            <p className="font-dm font-semibold text-[var(--a-ink)]">Module {index + 1}: {m.title}</p>
+            <p className="font-dm text-xs text-[var(--a-ink-3)]">{m.lessons.length} lessons · {m.estimatedMinutes} min · quiz {m.quiz ? `${m.quiz.questions.length} questions` : "none"}</p>
           </div>
         )}
         {!editing && (
@@ -220,14 +220,14 @@ function ModuleCard({ module: m, index, last, labs }: { module: ModuleRow; index
         )}
       </div>
 
-      <ul className="divide-y divide-[#F4F7FB]">
+      <ul className="divide-y divide-[var(--a-border)]">
         {m.lessons.map((l, li) => (
           <li key={l.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5">
             <div className="min-w-0">
-              <Link href={`/admin_pro/learn/lessons/${l.id}`} className="font-dm text-sm font-medium text-[#0D1B2A] hover:text-[#2251A3] hover:underline">
+              <Link href={`/admin_pro/learn/lessons/${l.id}`} className="font-dm text-sm font-medium text-[var(--a-ink)] hover:text-[var(--a-blue)] hover:underline">
                 {index + 1}.{li + 1} {l.title}
               </Link>
-              <p className="font-dm text-xs text-[#7A8FA6] flex flex-wrap gap-x-3">
+              <p className="font-dm text-xs text-[var(--a-ink-3)] flex flex-wrap gap-x-3">
                 <span>{l.durationMinutes} min</span>
                 {l.hasVideo && <span className="inline-flex items-center gap-1"><Video size={11} /> video</span>}
                 <span>{l.resources} resources</span>
@@ -247,7 +247,7 @@ function ModuleCard({ module: m, index, last, labs }: { module: ModuleRow; index
         ))}
       </ul>
 
-      <div className="px-4 py-3 space-y-3 border-t border-[#F4F7FB]">
+      <div className="px-4 py-3 space-y-3 border-t border-[var(--a-border)]">
         <div className="flex gap-2">
           <input className={inputCls} value={newLesson} onChange={(e) => setNewLesson(e.target.value)} placeholder="New lesson title" />
           <button
@@ -262,9 +262,9 @@ function ModuleCard({ module: m, index, last, labs }: { module: ModuleRow; index
         </div>
 
         {labs.length > 0 && (
-          <p className="font-dm text-xs text-[#3A4A5C] flex flex-wrap gap-2 items-center">
+          <p className="font-dm text-xs text-[var(--a-ink-2)] flex flex-wrap gap-2 items-center">
             <FlaskConical size={13} className="text-[#7c3aed]" /> Labs:
-            {labs.map((lab) => <Link key={lab.id} href={`/admin_pro/learn/labs/${lab.id}`} className="text-[#2251A3] hover:underline">{lab.title}</Link>)}
+            {labs.map((lab) => <Link key={lab.id} href={`/admin_pro/learn/labs/${lab.id}`} className="text-[var(--a-blue)] hover:underline">{lab.title}</Link>)}
           </p>
         )}
 
@@ -272,13 +272,13 @@ function ModuleCard({ module: m, index, last, labs }: { module: ModuleRow; index
           <ListChecks size={14} /> {showQuiz ? "Hide" : "Edit"} module quiz ({m.quiz?.questions.length ?? 0} questions)
         </button>
         {showQuiz && (
-          <div className="rounded-xl border border-[#E6EBF1] p-4 space-y-4">
+          <div className="rounded-[var(--a-radius-control)] border border-[#E6EBF1] p-4 space-y-4">
             <div className="flex flex-wrap items-end gap-3">
               <div><label className={labelCls}>Pass score %</label><input className={`${inputCls} w-24`} type="number" min="0" max="100" value={quiz.passScore} onChange={(e) => setQuiz({ ...quiz, passScore: Number(e.target.value) })} /></div>
               <div><label className={labelCls}>Questions per attempt</label><input className={`${inputCls} w-24`} type="number" min="1" value={quiz.questionsServed} onChange={(e) => setQuiz({ ...quiz, questionsServed: Number(e.target.value) })} /></div>
               <button type="button" disabled={!!busy} onClick={() => run({ op: "bank.settings", bank: "quiz", parentId: m.id, ...quiz })} className={btnPrimary}><Save size={14} /> Save quiz settings</button>
             </div>
-            <p className="font-dm text-xs text-[#7A8FA6]">Each attempt draws this many questions at random from the bank below, so a bigger bank gives better retakes.</p>
+            <p className="font-dm text-xs text-[var(--a-ink-3)]">Each attempt draws this many questions at random from the bank below, so a bigger bank gives better retakes.</p>
             <QuestionBank bank="quiz" parentId={m.id} questions={m.quiz?.questions ?? []} />
           </div>
         )}
@@ -299,14 +299,14 @@ function Labs({ trackId, labs, modules }: { trackId: string; labs: LabRow[]; mod
       right={<Link href={`/admin_pro/learn/labs/new?track=${trackId}`} className={btnGhost}><Plus size={14} /> New lab</Link>}
     >
       {labs.length === 0 ? (
-        <p className="font-dm text-sm text-[#7A8FA6]">No labs yet.</p>
+        <p className="font-dm text-sm text-[var(--a-ink-3)]">No labs yet.</p>
       ) : (
-        <ul className="divide-y divide-[#F4F7FB]">
+        <ul className="divide-y divide-[var(--a-border)]">
           {labs.map((l) => (
             <li key={l.id} className="flex items-center justify-between gap-3 py-2.5 font-dm text-sm">
               <div>
-                <Link href={`/admin_pro/learn/labs/${l.id}`} className="font-medium text-[#0D1B2A] hover:text-[#2251A3] hover:underline">{l.title}</Link>
-                <p className="text-xs text-[#7A8FA6]">
+                <Link href={`/admin_pro/learn/labs/${l.id}`} className="font-medium text-[var(--a-ink)] hover:text-[var(--a-blue)] hover:underline">{l.title}</Link>
+                <p className="text-xs text-[var(--a-ink-3)]">
                   {l.labType} · {l.estimatedMinutes} min · {modules.find((m) => m.id === l.moduleId)?.title ?? "no module"} {l.isPublished ? "" : "· unpublished"}
                 </p>
               </div>
@@ -347,7 +347,7 @@ function ExamEditor({ trackId, exam, modules }: { trackId: string; exam: Exam | 
       <button type="button" disabled={!!busy} onClick={() => run({ op: "exam.settings", trackId, data: f })} className={`${btnPrimary} mt-3`}><Save size={14} /> {exam ? "Save exam settings" : "Create exam"}</button>
       {exam && (
         <div className="mt-5">
-          <p className="font-dm text-xs text-[#7A8FA6] mb-2">Map each question to the module it tests so learners see their results by module.</p>
+          <p className="font-dm text-xs text-[var(--a-ink-3)] mb-2">Map each question to the module it tests so learners see their results by module.</p>
           <QuestionBank bank="exam" parentId={trackId} questions={exam.questions} modules={modules} />
         </div>
       )}

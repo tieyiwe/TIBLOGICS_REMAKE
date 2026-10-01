@@ -59,8 +59,8 @@ export default function AgentsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="font-syne font-extrabold text-2xl text-[#0D1B2A]">AI Agent Team</h1>
-        <p className="font-dm text-sm text-[#7A8FA6] mt-1">
+        <h1 className="font-syne font-bold text-[24px] leading-tight sm:text-[26px] text-[var(--a-ink)]">AI Agent Team</h1>
+        <p className="font-dm text-sm text-[var(--a-ink-3)] mt-1">
           Your virtual TIBLOGICS employees — each specialized in a key business function.
         </p>
       </div>
@@ -71,12 +71,12 @@ export default function AgentsPage() {
           <Link
             key={agent.slug}
             href={`/admin_pro/agents/${agent.slug}`}
-            className="bg-white border border-[#D2DCE8] rounded-2xl p-6 flex flex-col gap-4 hover:shadow-[0_4px_24px_rgba(27,58,107,0.12)] hover:-translate-y-0.5 transition-all duration-200 group"
+            className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-6 flex flex-col gap-4 hover:shadow-[0_4px_24px_rgba(27,58,107,0.12)] hover:-translate-y-0.5 transition-all duration-200 group"
           >
             {/* Avatar + badge */}
             <div className="flex items-start justify-between">
               <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"
+                className="w-14 h-14 rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] flex items-center justify-center text-2xl"
                 style={{ backgroundColor: agent.bg }}
               >
                 {agent.avatar}
@@ -91,19 +91,19 @@ export default function AgentsPage() {
 
             {/* Name + title */}
             <div>
-              <h2 className="font-syne font-bold text-xl text-[#0D1B2A]">{agent.name}</h2>
+              <h2 className="font-syne font-bold text-xl text-[var(--a-ink)]">{agent.name}</h2>
               <p className="font-dm text-sm font-medium mt-0.5" style={{ color: agent.color }}>
                 {agent.title}
               </p>
             </div>
 
             {/* Description */}
-            <p className="font-dm text-sm text-[#7A8FA6] leading-relaxed">{agent.desc}</p>
+            <p className="font-dm text-sm text-[var(--a-ink-3)] leading-relaxed">{agent.desc}</p>
 
             {/* Capabilities */}
             <ul className="space-y-1.5 flex-1">
               {agent.capabilities.map((cap) => (
-                <li key={cap} className="flex items-start gap-2 font-dm text-xs text-[#3A4A5C]">
+                <li key={cap} className="flex items-start gap-2 font-dm text-xs text-[var(--a-ink-2)]">
                   <span style={{ color: agent.color }} className="mt-0.5 flex-shrink-0">✓</span>
                   {cap}
                 </li>
@@ -122,11 +122,11 @@ export default function AgentsPage() {
       </div>
 
       {/* Info banner */}
-      <div className="bg-[#F4F7FB] border border-[#D2DCE8] rounded-2xl p-5 flex items-start gap-4">
+      <div className="bg-[var(--a-surface-2)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-5 flex items-start gap-4">
         <span className="text-2xl flex-shrink-0">💡</span>
         <div>
-          <p className="font-syne font-bold text-sm text-[#0D1B2A]">About your AI team</p>
-          <p className="font-dm text-sm text-[#7A8FA6] mt-1">
+          <p className="font-syne font-bold text-sm text-[var(--a-ink)]">About your AI team</p>
+          <p className="font-dm text-sm text-[var(--a-ink-3)] mt-1">
             Each agent is powered by Claude and specialized with deep TIBLOGICS context.
             Aria can prepare social media posts ready for publishing — live social media API connections
             (LinkedIn, X, Facebook, Instagram) will be activated once you provide your credentials in Settings.

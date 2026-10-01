@@ -103,7 +103,7 @@ export default async function VerifyBadgePage({ params }: { params: Promise<{ id
                 <div>
                   <dt className="text-xs uppercase tracking-wide text-[var(--ink3)]">{t("badges.verify.issuer")}</dt>
                   <dd className="mt-0.5 font-bold text-[var(--ink)]">
-                    TIB<span className="text-[#F47C20]">LOGICS</span>
+                    AR<span className="text-[#F47C20]">FA</span>, {t("badges.verify.issuerName")}
                   </dd>
                 </div>
                 <div>

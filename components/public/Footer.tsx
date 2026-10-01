@@ -86,7 +86,20 @@ export default async function Footer() {
                     href={p.href}
                     className="text-[#9DB9D6] hover:text-white text-sm font-dm transition-colors"
                   >
-                    {p.label}
+                    {p.href === "/learning-box" ? (
+                      // The AI Academy runs on ARFA (AI Readiness For All).
+                      <>
+                        {t("site.nav.learningBox")}
+                        <span
+                          className="ml-1.5 inline-block rounded-full bg-white/10 px-1.5 py-px align-middle text-[10px] font-black leading-tight tracking-tight text-white"
+                          title="ARFA: AI Readiness For All"
+                        >
+                          AR<span className="text-[#F47C20]">FA</span>
+                        </span>
+                      </>
+                    ) : (
+                      p.label
+                    )}
                   </Link>
                 </li>
               ))}

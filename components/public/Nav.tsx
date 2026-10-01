@@ -23,6 +23,19 @@ const navLinks = [
   { key: "about", href: "/about" },
 ];
 
+// "AI Academy" runs on ARFA (AI Readiness For All): the small tag makes the
+// platform name visible wherever the academy is linked.
+function ArfaPill() {
+  return (
+    <span
+      className="ml-1.5 inline-block rounded-full border border-[#F47C20]/40 bg-[#FFF4EA] px-1.5 py-px align-middle text-[10px] font-black leading-tight tracking-tight text-[#1B2A5E]"
+      title="ARFA: AI Readiness For All"
+    >
+      AR<span className="text-[#F47C20]">FA</span>
+    </span>
+  );
+}
+
 export default function Nav() {
   const pathname = usePathname();
   const t = useT();
@@ -107,6 +120,7 @@ export default function Nav() {
                     )}
                   >
                     {label}
+                    {link.key === "learningBox" && <ArfaPill />}
                     {isActive(link.href) && (
                       <span className="block h-0.5 bg-[#F47C20] rounded-full mt-0.5" />
                     )}
@@ -212,6 +226,7 @@ export default function Nav() {
                   )}
                 >
                   {label}
+                  {link.key === "learningBox" && <ArfaPill />}
                 </Link>
               );
             })}
