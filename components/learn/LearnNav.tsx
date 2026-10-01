@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import ArfaWordmark from "@/components/learn/ArfaWordmark";
 import ReadingPrefsPanel from "@/components/a11y/ReadingPrefsPanel";
 import { POINTS_PER_LEVEL } from "@/lib/learn/points";
 import { fmtNumber, rankName } from "@/lib/learn/format";
@@ -97,10 +98,20 @@ export default function LearnNav({
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
-        <Link href="/learn" className="shrink-0 text-base font-black tracking-tight text-[var(--ink)]">
-          TIB<span className="text-[var(--orange)]">LOGICS</span>
-          <span className="ml-1 text-xs font-semibold text-[var(--ink3)]">Learn</span>
-        </Link>
+        <div className="flex shrink-0 items-center gap-2.5">
+          <Link href="/learn" className="inline-block">
+            <ArfaWordmark size="sm" />
+          </Link>
+          <Link
+            href="/"
+            className="hidden border-l border-[var(--border)] pl-2.5 text-[11px] leading-tight text-[var(--ink3)] hover:text-[var(--ink)] sm:block"
+          >
+            {t("learn.brand.by")}
+            <span className="block font-black tracking-tight text-[var(--ink)]">
+              TIB<span className="text-[var(--orange)]">LOGICS</span>
+            </span>
+          </Link>
+        </div>
 
         <nav aria-label={t("learn.nav.label")} className="ml-1 hidden min-w-0 items-center xl:flex">
           {LINKS.slice(0, PRIMARY).map((l) => {

@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import GoogleSignIn from "@/components/learn/GoogleSignIn";
+import ArfaWordmark from "@/components/learn/ArfaWordmark";
 import { useRouter, useSearchParams } from "next/navigation";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useT } from "@/lib/i18n/client";
@@ -122,10 +123,17 @@ export default function StudentLoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--s2)] px-4 py-12">
       <div className="w-full max-w-sm">
-        <Link href="/" className="block text-center text-lg font-black tracking-tight text-[var(--ink)]">
-          TIB<span className="text-[var(--orange)]">LOGICS</span>
-          <span className="ml-1.5 text-sm font-semibold text-[var(--ink3)]">Learn</span>
-        </Link>
+        <div className="text-center">
+          <Link href="/learning-box" className="inline-block">
+            <ArfaWordmark size="md" />
+          </Link>
+          <p className="mt-1.5 text-xs text-[var(--ink3)]">
+            {t("learn.brand.by")}{" "}
+            <Link href="/" className="font-black tracking-tight text-[var(--ink)] hover:underline">
+              TIB<span className="text-[var(--orange)]">LOGICS</span>
+            </Link>
+          </p>
+        </div>
 
         <div className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-7 shadow-sm">
           <h1 className="text-xl font-bold text-[var(--ink)]">{t("learn.auth.welcomeBack")}</h1>

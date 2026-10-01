@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import PlanPicker from "@/components/learn/PlanPicker";
+import ArfaWordmark from "@/components/learn/ArfaWordmark";
 import { getLearnContext } from "@/lib/learn/session";
 import { getCatalog } from "@/lib/learn/catalog";
 import { PLANS } from "@/lib/payments/provider";
@@ -82,10 +83,14 @@ export default async function SubscribePage({
     <div className="min-h-screen bg-[var(--s2)]">
       <header className="border-b border-[var(--border)] bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
-          <Link href="/" className="text-base font-black tracking-tight text-[var(--ink)]">
-            TIB<span className="text-[var(--orange)]">LOGICS</span>
-            <span className="ml-1.5 text-xs font-semibold text-[var(--ink3)]">Learn</span>
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/learn" className="inline-block">
+              <ArfaWordmark size="sm" />
+            </Link>
+            <Link href="/" className="hidden border-l border-[var(--border)] pl-3 text-xs text-[var(--ink3)] hover:text-[var(--ink)] sm:inline">
+              {t("learn.brand.by")} <span className="font-black tracking-tight text-[var(--ink)]">TIB<span className="text-[var(--orange)]">LOGICS</span></span>
+            </Link>
+          </div>
           <LanguageSwitcher />
         </div>
       </header>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import LevelPicker from "@/components/learn/LevelPicker";
 import Reveal from "@/components/learn/Reveal";
+import ArfaWordmark from "@/components/learn/ArfaWordmark";
 import HowItWorks from "@/components/learn/method/HowItWorks";
 import { getCatalog } from "@/lib/learn/catalog";
 import { fmtPrice } from "@/lib/learn/format";
@@ -52,12 +53,18 @@ export default async function LearningBoxPage() {
           the white header sits on top of the eyebrow and headline. */}
       <section className="bg-[var(--ink)] px-4 pb-16 pt-32 text-white sm:pb-20 sm:pt-44">
         <div className="learn-hero mx-auto max-w-6xl">
-          <p
-            className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--orange)]"
+          <div
+            className="flex flex-wrap items-center gap-x-4 gap-y-3"
             style={{ "--stagger-index": 0 } as React.CSSProperties}
           >
-            TIBLOGICS Learn
-          </p>
+            <ArfaWordmark size="md" tone="dark" subtitle={false} />
+            <div className="border-l border-white/20 pl-4">
+              <p className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--orange)]">
+                {t("learn.box.heroEyebrow")}
+              </p>
+              <p className="mt-1 text-xs text-white/70">{t("learn.box.poweredBy")}</p>
+            </div>
+          </div>
           <h1
             className="mt-3 max-w-3xl text-3xl font-black leading-tight sm:text-5xl"
             style={{ "--stagger-index": 1 } as React.CSSProperties}
@@ -130,7 +137,7 @@ export default async function LearningBoxPage() {
         </div>
       </section>
 
-      {/* How TIBLOGICS Learn works: the Learning Loop, Daily Review, Portfolio */}
+      {/* How ARFA works: the Learning Loop, Daily Review, Portfolio */}
       <HowItWorks />
 
       {tracks.length === 0 && (
