@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { requirePermission } from "@/lib/require-admin";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { ensureOutreachTables } from "./db";
 
 // Growth leads/outreach is admin-only. Collaborators can be let in to the
@@ -30,6 +31,21 @@ export async function requireGrowth(): Promise<NextResponse | null> {
 /** Approving and sending: admin or "*" only. */
 export async function requireSender(): Promise<NextResponse | null> {
   return (await requirePermission("*")) ?? (await tablesOr500());
+}
+
+/**
+ * Per-user hourly cap on the AI calls the "growth" permission can trigger
+ * (drafts, personalisation, enrichment). Without it a collaborator could loop
+ * these endpoints and run up model spend; the admin-only routes have their own.
+ */
+export async function limitGrowthAi(bucket: string, max: number): Promise<NextResponse | null> {
+  let who = "anon";
+  try {
+    const s = await getServerSession(authOptions);
+    who = s?.user?.id ?? s?.user?.email ?? "anon";
+  } catch { /* keyed as anon */ }
+  if (await checkRateLimit(`growth-ai:${bucket}:${who}`, max, 3_600_000)) return null;
+  return NextResponse.json({ error: "Too many AI requests this hour. Try again later." }, { status: 429 });
 }
 
 export async function actorName(): Promise<string> {

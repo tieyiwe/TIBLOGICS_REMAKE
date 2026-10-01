@@ -30,23 +30,33 @@ function safeHref(raw: string): string | null {
   return null;
 }
 
-function inline(escaped: string, style: MdStyle): string {
-  const a = style.a ? ` style="${style.a}"` : "";
-  let out = escaped
-    // [text](url)
-    .replace(/\[([^\]\n]{1,200})\]\(([^)\s]{1,500})\)/g, (m, text: string, href: string) => {
-      const h = safeHref(href);
-      return h ? `<a href="${h}" target="_blank" rel="noopener noreferrer nofollow"${a}>${text}</a>` : m;
-    })
+const emphasis = (s: string) =>
+  s
     .replace(/\*\*([^*\n]{1,500})\*\*/g, "<strong>$1</strong>")
     .replace(/(^|[\s(])\*([^*\n]{1,500})\*(?=[\s).,!?:;]|$)/g, "$1<em>$2</em>");
-  // Bare URLs not already inside a link.
-  out = out.replace(/(^|[\s(])(https?:\/\/[^\s<"]{3,500})/g, (m, pre: string, url: string) => {
+
+function inline(escaped: string, style: MdStyle): string {
+  const a = style.a ? ` style="${style.a}"` : "";
+  // Links are swapped for placeholders (\u0000N\u0000, a character the
+  // escaped text cannot hold) before the other passes run, so emphasis and
+  // bare-URL linking never rewrite text inside an href attribute. Running
+  // them over finished tags let a crafted href such as
+  // "https://a/(https://x/onmouseover=..." close the attribute and inject one.
+  const links: string[] = [];
+  let out = escaped.replace(/\u0000/g, "").replace(/\[([^\]\n]{1,200})\]\(([^)\s]{1,500})\)/g, (m, text: string, href: string) => {
+    const h = safeHref(href);
+    if (!h) return m;
+    links.push(`<a href="${h}" target="_blank" rel="noopener noreferrer nofollow"${a}>${emphasis(text)}</a>`);
+    return `\u0000${links.length - 1}\u0000`;
+  });
+  out = emphasis(out);
+  // Bare URLs (links are placeholders by now, so never inside one).
+  out = out.replace(/(^|[\s(])(https?:\/\/[^\s<"\u0000]{3,500})/g, (m, pre: string, url: string) => {
     const trimmed = url.replace(/[.,!?:;)]+$/, "");
     const rest = url.slice(trimmed.length);
     return `${pre}<a href="${trimmed}" target="_blank" rel="noopener noreferrer nofollow"${a}>${trimmed}</a>${rest}`;
   });
-  return out;
+  return out.replace(/\u0000(\d+)\u0000/g, (_, i: string) => links[Number(i)] ?? "");
 }
 
 /** Text to HTML. The input is untrusted; the output is safe to inject. */

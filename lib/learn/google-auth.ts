@@ -44,8 +44,34 @@ export async function studentForGoogle(profile: GoogleProfileLike | undefined) {
   const existing = await prisma.student.findUnique({ where: { email } });
   if (existing) {
     // Google proved the address, so an unverified account is verified now.
+    // Sign-up does not verify addresses, so an unverified account may have
+    // been opened by someone else with this address ("pre-hijacking"): its
+    // password is replaced with a random one and its sessions are ended, so
+    // only the Google owner keeps access ("Forgot password" sets a new one).
     if (!existing.emailVerified) {
-      await prisma.student.update({ where: { id: existing.id }, data: { emailVerified: new Date() } }).catch(() => {});
+      const claimed = await prisma.student
+        .updateMany({
+          where: { id: existing.id, emailVerified: null },
+          data: {
+            emailVerified: new Date(),
+            passwordHash: await bcrypt.hash(randomBytes(32).toString("hex"), 12),
+            resetToken: null,
+            resetTokenExpires: null,
+          },
+        })
+        .catch(() => ({ count: 0 }));
+      if (claimed.count) {
+        await import("@/lib/learn/account-status/db")
+          .then(({ ensureAccountTables }) => ensureAccountTables())
+          .then(() =>
+            prisma.learnerAccount.upsert({
+              where: { studentId: existing.id },
+              create: { studentId: existing.id, sessionVersion: 1, updatedAt: new Date() },
+              update: { sessionVersion: { increment: 1 }, updatedAt: new Date() },
+            }),
+          )
+          .catch((err) => console.error("[learn/google] session reset", err));
+      }
     }
     return { student: existing, created: false };
   }

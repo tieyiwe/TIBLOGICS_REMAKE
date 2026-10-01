@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireGrowth } from "@/lib/growth/outreach/auth";
+import { limitGrowthAi, requireGrowth } from "@/lib/growth/outreach/auth";
 import { enrollLeads } from "@/lib/growth/outreach/sequences";
 
 export const maxDuration = 120;
@@ -8,6 +8,9 @@ export const maxDuration = 120;
 export async function POST(req: NextRequest) {
   const deny = await requireGrowth();
   if (deny) return deny;
+  // Each request personalises up to 25 emails with the model.
+  const limited = await limitGrowthAi("enroll", 20);
+  if (limited) return limited;
   const b = (await req.json().catch(() => null)) as { sequenceId?: unknown; leadIds?: unknown } | null;
   const sequenceId = typeof b?.sequenceId === "string" ? b.sequenceId : "";
   const leadIds = Array.isArray(b?.leadIds) ? b!.leadIds.filter((x): x is string => typeof x === "string") : [];

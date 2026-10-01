@@ -2,7 +2,7 @@ export const maxDuration = 30;
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
-import { requireAdmin } from "@/lib/require-admin";
+import { requirePermission } from "@/lib/require-admin";
 import { checkTargetUrl, safeFetch } from "@/lib/ssrf";
 
 /**
@@ -23,7 +23,7 @@ async function safeTargetUrl(website: string | null): Promise<URL | null> {
 export async function POST(req: NextRequest) {
   // Staff only. A bare session check passed here for TIBLOGICS Learn students
   // too, since learners share this NextAuth instance — requireAdmin rejects them.
-  const unauth = await requireAdmin();
+  const unauth = await requirePermission("agents");
   if (unauth) return unauth;
 
   const { leadId } = await req.json();

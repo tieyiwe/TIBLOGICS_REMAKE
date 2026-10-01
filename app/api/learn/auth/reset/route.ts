@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/require-admin";
 import { clearRateLimit } from "@/lib/rate-limit";
 import { getT } from "@/lib/i18n/server";
+import { ensureAccountTables } from "@/lib/learn/account-status/db";
 
 // Completes a password reset. The token works once: it is cleared in the same
 // update that sets the new password, and only while it has not expired.
@@ -37,6 +38,19 @@ export async function POST(req: NextRequest) {
     data: { passwordHash: await bcrypt.hash(password, 12), resetToken: null, resetTokenExpires: null },
   });
   if (updated.count === 0) return expired;
+
+  // A reset is how a learner recovers a compromised account: every existing
+  // session ends (session version, lib/learn/account-status), and the new
+  // password they chose replaces any admin temporary one.
+  await ensureAccountTables()
+    .then(() =>
+      prisma.learnerAccount.upsert({
+        where: { studentId: student.id },
+        create: { studentId: student.id, sessionVersion: 1, updatedAt: new Date() },
+        update: { sessionVersion: { increment: 1 }, mustChangePassword: false, updatedAt: new Date() },
+      }),
+    )
+    .catch((err) => console.error("[learn/reset] session reset", err));
 
   // Lift any sign-in lockout the forgotten password caused.
   await clearRateLimit(`login:student:${student.email.toLowerCase().trim()}`).catch(() => {});

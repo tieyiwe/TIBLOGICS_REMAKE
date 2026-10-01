@@ -6,7 +6,7 @@ import { getT } from "@/lib/i18n/server";
 import { requireTeamOwner, teamRateLimit } from "@/lib/learn/team/guard";
 import { seatsUsed } from "@/lib/learn/team/service";
 import { getTeamPricing } from "@/lib/learn/team/settings";
-import { TEAM_MAX_SEATS } from "@/lib/learn/team/config";
+import { TEAM_CURRENCY, TEAM_MAX_SEATS, seatPriceFor } from "@/lib/learn/team/config";
 
 const Body = z.object({ seats: z.number().int().min(1).max(TEAM_MAX_SEATS) });
 
@@ -30,9 +30,18 @@ export async function POST(req: NextRequest) {
   const seats = parsed.data.seats;
   if (seats < pricing.minSeats) return NextResponse.json({ error: t("team.api.minSeats", { n: pricing.minSeats }) }, { status: 400 });
   if (seats < used) return NextResponse.json({ error: t("team.api.belowUsed", { n: used }) }, { status: 409 });
+  // A volume band's price is locked on the team at checkout. Buying 50 seats
+  // at the 50-seat price and then dropping to 5 must not keep that price:
+  // when the locked price is a band the new count no longer reaches, the
+  // seat price moves to the price for the new size (never down).
+  const locked = team.seatPriceCents;
+  const band = locked != null ? pricing.tiers.find((x) => x.seatPriceCents === locked) : undefined;
+  const sizePrice = seatPriceFor(pricing, seats);
+  const reprice = band && locked != null && seats < band.minSeats && sizePrice > locked ? sizePrice : null;
   try {
     await payments.updateTeamSeats(team.stripeSubscriptionId, seats);
-    await prisma.team.update({ where: { id: team.id }, data: { seats } });
+    if (reprice != null) await payments.updateTeamSeatPrice(team.stripeSubscriptionId, reprice, TEAM_CURRENCY);
+    await prisma.team.update({ where: { id: team.id }, data: { seats, ...(reprice != null ? { seatPriceCents: reprice } : {}) } });
     return NextResponse.json({ ok: true, seats });
   } catch (err) {
     console.error("[POST /api/learn/team/seats]", err);

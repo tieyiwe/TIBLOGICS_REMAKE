@@ -2,7 +2,7 @@ export const maxDuration = 60;
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
-import { requireAdmin } from "@/lib/require-admin";
+import { requirePermission } from "@/lib/require-admin";
 
 type Lead = Record<string, string | undefined>;
 
@@ -45,7 +45,7 @@ async function placesLeads(key: string, location: string, industry: string, inst
 }
 
 export async function POST(req: NextRequest) {
-  const unauth = await requireAdmin();
+  const unauth = await requirePermission("agents");
   if (unauth) return unauth;
 
   try {

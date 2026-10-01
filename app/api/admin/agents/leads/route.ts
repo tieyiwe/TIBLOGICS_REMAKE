@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/require-admin";
+import { requirePermission } from "@/lib/require-admin";
 import { listLimit } from "@/lib/admin/list-limit";
 
 export async function GET(req: NextRequest) {
-  const unauth = await requireAdmin();
+  const unauth = await requirePermission("agents");
   if (unauth) return unauth;
 
   const { searchParams } = new URL(req.url);
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const unauth = await requireAdmin();
+  const unauth = await requirePermission("agents");
   if (unauth) return unauth;
 
   const body = await req.json();

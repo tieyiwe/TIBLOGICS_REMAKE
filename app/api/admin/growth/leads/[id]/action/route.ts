@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireGrowth } from "@/lib/growth/outreach/auth";
+import { limitGrowthAi, requireGrowth } from "@/lib/growth/outreach/auth";
 import { leadDetail } from "@/lib/growth/outreach/detail";
 import { enrichLead } from "@/lib/growth/outreach/enrich";
 import { addEvent, convertLead, handoverToProspect, handoverToRex, setStage } from "@/lib/growth/outreach/leads";
@@ -55,7 +55,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     case "convert":
       await convertLead(lead);
       break;
-    case "enrich_now":
+    case "enrich_now": {
+      // Bypasses the queue's global limiter, so it gets its own per-user cap.
+      const limited = await limitGrowthAi("enrich-now", 60);
+      if (limited) return limited;
       await prisma.growthLead.update({ where: { id }, data: { enrichStatus: "running" } });
       try {
         await enrichLead(lead);
@@ -65,6 +68,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         return NextResponse.json({ error: msg }, { status: 502 });
       }
       break;
+    }
     default:
       return NextResponse.json({ error: "Unknown action" }, { status: 400 });
   }

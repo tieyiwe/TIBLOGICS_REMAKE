@@ -17,7 +17,9 @@ import { getPrefs, updatePrefs, type TeamLinkSettings } from "./prefs";
 //     seated straight away: we email a normal single-use invitation to that
 //     address, so only someone who reads that mailbox can join;
 //   - a verified address (Google sign-in) joins at once;
-//   - seats are counted under the team row lock, exactly like invitations.
+//   - seats are counted under the team row lock, exactly like invitations;
+//   - an address the team removed (or that left) is refused: only a named
+//     invitation re-admits it.
 
 export const newLinkToken = () => randomBytes(24).toString("base64url");
 
@@ -82,7 +84,7 @@ export async function previewTeamLink(token: string): Promise<TeamLinkPreview | 
 export type LinkJoinResult =
   | { kind: "joined"; teamId: string }
   | { kind: "emailSent"; email: string; memberId: string; token: string; teamId: string; inviterId: string }
-  | { kind: "invalid" | "inactive" | "wrongDomain" | "otherTeam" | "full" | "already" };
+  | { kind: "invalid" | "inactive" | "wrongDomain" | "otherTeam" | "full" | "already" | "removed" };
 
 /**
  * Uses the team link for the signed-in learner. A verified address takes a
@@ -99,6 +101,12 @@ export async function joinViaTeamLink(token: string, student: { id: string; emai
   const current = await getMembership(student.id);
   if (current?.team.id === team.id) return { kind: "already" };
   if (current && current.entitled) return { kind: "otherTeam" };
+
+  // Someone the team removed (or who left) cannot put themselves back with
+  // the shared link, by either path below: only a named invitation from a
+  // manager re-admits them.
+  const prior = await prisma.teamMember.findUnique({ where: { teamId_email: { teamId: team.id, email } }, select: { status: true } });
+  if (prior?.status === "removed") return { kind: "removed" };
 
   const plan = { trackIds: link.trackIds, dueAt: link.dueAt ? new Date(link.dueAt) : null };
   const inviterId = link.createdById || team.ownerStudentId;
@@ -124,6 +132,7 @@ export async function joinViaTeamLink(token: string, student: { id: string; emai
     if (seats == null) return "invalid" as const;
     const row = await tx.teamMember.findUnique({ where: { teamId_email: { teamId: team.id, email } } });
     if (row?.status === "active") return "already" as const;
+    if (row?.status === "removed") return "removed" as const;
     const holdsSeat = row?.status === "invited" && !!row.inviteExpiresAt && row.inviteExpiresAt > new Date();
     if (!holdsSeat) {
       const used = await tx.teamMember.count({
@@ -150,7 +159,7 @@ export async function joinViaTeamLink(token: string, student: { id: string; emai
     }
     return m.id;
   });
-  if (seated === "invalid" || seated === "already" || seated === "full") return { kind: seated };
+  if (seated === "invalid" || seated === "already" || seated === "full" || seated === "removed") return { kind: seated };
   await applyPlan(team.id, seated, student.id).catch((err) => console.error("[learn/team] link plan", err));
   return { kind: "joined", teamId: team.id };
 }

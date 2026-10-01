@@ -1,7 +1,7 @@
 export const maxDuration = 30;
 import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/claude";
-import { requireAdmin } from "@/lib/require-admin";
+import { requirePermission } from "@/lib/require-admin";
 import { postToFacebook, postToLinkedIn, postToTwitter } from "@/lib/growth/content/publish";
 
 const PLATFORMS = ["linkedin", "twitter", "facebook", "instagram"] as const;
@@ -11,9 +11,11 @@ type Platform = (typeof PLATFORMS)[number];
 // the Growth scheduler.
 
 export async function POST(req: NextRequest) {
-  // Staff only. A bare session check passed here for TIBLOGICS Learn students
-  // too, since learners share this NextAuth instance — requireAdmin rejects them.
-  const unauth = await requireAdmin();
+  // Posts LIVE to the company's social accounts with no approval step, so it
+  // is held to the same bar as Growth publishing (lib/growth/content-auth):
+  // admin, owner, or a collaborator holding "*". requireAdmin() alone let any
+  // staff account (e.g. one with only the "events" permission) publish.
+  const unauth = await requirePermission("*");
   if (unauth) return unauth;
 
   const { platforms, topic, tone, customContent, generate } = await req.json() as {

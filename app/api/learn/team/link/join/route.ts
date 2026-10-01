@@ -8,7 +8,7 @@ import { joinViaTeamLink } from "@/lib/learn/team/link";
 import { deliverInvite } from "@/lib/learn/team/emails";
 
 const Body = z.object({ token: z.string().regex(/^[A-Za-z0-9_-]{20,64}$/) });
-const STATUS: Record<string, number> = { invalid: 404, inactive: 402, wrongDomain: 403, otherTeam: 409, full: 409, already: 409 };
+const STATUS: Record<string, number> = { invalid: 404, inactive: 402, wrongDomain: 403, otherTeam: 409, full: 409, already: 409, removed: 403 };
 
 /**
  * Use the team's domain-restricted join link with the signed-in account.

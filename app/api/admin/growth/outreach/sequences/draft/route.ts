@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireGrowth } from "@/lib/growth/outreach/auth";
+import { limitGrowthAi, requireGrowth } from "@/lib/growth/outreach/auth";
 import { draftSequenceWithAI } from "@/lib/growth/outreach/sequences";
 
 export const maxDuration = 60;
@@ -8,6 +8,8 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   const deny = await requireGrowth();
   if (deny) return deny;
+  const limited = await limitGrowthAi("sequence-draft", 30);
+  if (limited) return limited;
   const b = (await req.json().catch(() => null)) as { audience?: unknown; offerKey?: unknown; goal?: unknown; steps?: unknown } | null;
   const audience = typeof b?.audience === "string" ? b.audience.trim() : "";
   if (!audience) return NextResponse.json({ error: "Describe the audience" }, { status: 400 });

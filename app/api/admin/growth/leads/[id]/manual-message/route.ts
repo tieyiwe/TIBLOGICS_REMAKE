@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { runClaude } from "@/lib/claude";
-import { requireGrowth } from "@/lib/growth/outreach/auth";
+import { limitGrowthAi, requireGrowth } from "@/lib/growth/outreach/auth";
 import { offerName } from "@/lib/growth/outreach/offers";
 import { outreachConfig } from "@/lib/growth/outreach/config";
 import { utm } from "@/lib/growth/outreach/templates";
@@ -14,6 +14,8 @@ import { utm } from "@/lib/growth/outreach/templates";
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const deny = await requireGrowth();
   if (deny) return deny;
+  const limited = await limitGrowthAi("manual-message", 60);
+  if (limited) return limited;
   const { id } = await ctx.params;
   const lead = await prisma.growthLead.findUnique({ where: { id } });
   if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });

@@ -174,8 +174,16 @@ export async function deleteLearner(
   await scrub("LearnerNote", `DELETE FROM "LearnerNote" WHERE "studentId" = $1`, id, done);
   await scrub("CommsRecipient", `UPDATE "CommsRecipient" SET "email" = '${anonEmail}' WHERE "studentId" = $1`, id, done);
   await scrub("TeamMember", `UPDATE "TeamMember" SET "email" = '${anonEmail}' WHERE "studentId" = $1`, id, done);
-  // Earlier audit entries named the learner by email.
-  await scrub("AdminAuditLog", `UPDATE "AdminAuditLog" SET "targetLabel" = 'Deleted learner' WHERE "targetType" = 'learner' AND "targetId" = $1`, id, done);
+  // Open Badges credentials carry the holder's name unhashed and are public
+  // by default (/badges/[id]); hide them like the certificate name above.
+  await scrub("SkillBadgeAward", `UPDATE "SkillBadgeAward" SET "isPublic" = false WHERE "studentId" = $1`, id, done);
+  // A direct message stored "Name <email>" as its audience label, and the
+  // comms.send / comms.schedule audit entry copied it into its meta.
+  await scrub("AdminAuditLog", `UPDATE "AdminAuditLog" SET "meta" = jsonb_set("meta", '{audience}', '"One learner (deleted)"') WHERE "targetType" = 'campaign' AND "meta"->'audience' IS NOT NULL AND "targetId" IN (SELECT "id" FROM "CommsCampaign" WHERE "audience"->>'type' = 'one' AND "audience"->>'studentId' = $1)`, id, done);
+  await scrub("CommsCampaign", `UPDATE "CommsCampaign" SET "audienceLabel" = 'One learner (deleted)' WHERE "audience"->>'type' = 'one' AND "audience"->>'studentId' = $1`, id, done);
+  // Earlier audit entries named the learner by email (label, and the old and
+  // new address of an email change in meta).
+  await scrub("AdminAuditLog", `UPDATE "AdminAuditLog" SET "targetLabel" = 'Deleted learner', "meta" = "meta" - 'from' - 'to' WHERE "targetType" = 'learner' AND "targetId" = $1`, id, done);
 
   // 4. Marked deleted: every session ends, sign-in refused.
   await ensureAccountTables();
