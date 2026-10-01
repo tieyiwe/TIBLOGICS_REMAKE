@@ -6,7 +6,7 @@ import { brandCard, ogFonts, OG_SIZE } from "@/lib/og/brand-card";
 export const runtime = "nodejs";
 export const size = OG_SIZE;
 export const contentType = "image/png";
-export const alt = "TIBLOGICS: AI solutions, real business impact. AI implementation, Learning Box certificate tracks, free AI tools and Toolkit Live.";
+export const alt = "TIBLOGICS: AI solutions, real business impact. AI implementation, AI Academy certificate tracks, free AI tools and Toolkit Live.";
 
 export default async function Image() {
   return new ImageResponse(await brandCard(), { ...size, fonts: await ogFonts() });

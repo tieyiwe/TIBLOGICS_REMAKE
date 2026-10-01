@@ -1,9 +1,9 @@
 import type { Messages } from "./types";
 
-// Namespace "method": the TIBLOGICS Learn method. Daily Review (spaced
+// Namespace "method": the ARFA learning method. Daily Review (spaced
 // retrieval practice), the Learning Loop on every lesson (Understand, Try,
 // Play, Apply, Reflect), the Proof-of-Skill Portfolio and its public page,
-// and the "How TIBLOGICS Learn works" section of /learning-box.
+// and the "How ARFA works" section of /learning-box.
 // Also holds the text for the two Daily Review badges and toast reasons,
 // under the "game." keys the badge shelf and toasts already read (the
 // dictionary is merged, so they work from here).
@@ -183,11 +183,11 @@ const messages: Messages = {
     "method.share.publicNow": "Your portfolio is public.",
 
     // ── Public page ───────────────────────────────────────────────────────
-    "method.public.metaTitle": "{name}: TIBLOGICS Learn portfolio",
-    "method.public.metaDescription": "{name}'s proof of skill from TIBLOGICS Learn. Labs passed: {labs}. Certificates: {certs}. Badges: {badges}.",
-    "method.public.eyebrow": "TIBLOGICS Learn portfolio",
+    "method.public.metaTitle": "{name}: ARFA portfolio",
+    "method.public.metaDescription": "{name}'s proof of skill from ARFA (AI Readiness For All), the TIBLOGICS AI Academy. Labs passed: {labs}. Certificates: {certs}. Badges: {badges}.",
+    "method.public.eyebrow": "ARFA portfolio",
     "method.public.title": "{name}'s proof of skill",
-    "method.public.intro": "Every item below comes from TIBLOGICS Learn records: labs graded against published criteria, Studio challenges completed, and certificates anyone can verify.",
+    "method.public.intro": "Every item below comes from ARFA records: labs graded against published criteria, Studio challenges completed, and certificates anyone can verify.",
     "method.public.notFoundTitle": "Portfolio not found",
     "method.public.notFoundBody": "This portfolio is private or the link has changed.",
     "method.public.cta": "Learn with TIBLOGICS",
@@ -195,7 +195,7 @@ const messages: Messages = {
 
     // ── /learning-box section ─────────────────────────────────────────────
     "method.box.eyebrow": "The method",
-    "method.box.title": "How TIBLOGICS Learn works",
+    "method.box.title": "How ARFA works",
     "method.box.body": "Every lesson follows the same loop, built on well-established learning principles: a clear explanation, practice with feedback, real application, reflection, and recall spread over time.",
     "method.box.step.understand.title": "Understand",
     "method.box.step.understand.body": "A short, plain lesson with a clear objective and examples from real work.",
@@ -386,18 +386,18 @@ const messages: Messages = {
     "method.share.privateNow": "Votre portfolio est privé. Vous seul pouvez voir cette page.",
     "method.share.publicNow": "Votre portfolio est public.",
 
-    "method.public.metaTitle": `{name}${NB}: portfolio TIBLOGICS Learn`,
-    "method.public.metaDescription": `Les compétences prouvées de {name} sur TIBLOGICS Learn. Ateliers réussis${NB}: {labs}. Certificats${NB}: {certs}. Badges${NB}: {badges}.`,
-    "method.public.eyebrow": "Portfolio TIBLOGICS Learn",
+    "method.public.metaTitle": `{name}${NB}: portfolio ARFA`,
+    "method.public.metaDescription": `Les compétences prouvées de {name} sur ARFA (AI Readiness For All), l'Académie IA de TIBLOGICS. Ateliers réussis${NB}: {labs}. Certificats${NB}: {certs}. Badges${NB}: {badges}.`,
+    "method.public.eyebrow": "Portfolio ARFA",
     "method.public.title": "Les compétences prouvées de {name}",
-    "method.public.intro": `Chaque élément ci-dessous provient des dossiers de TIBLOGICS Learn${NB}: ateliers notés selon des critères publiés, défis du Studio terminés et certificats vérifiables par tous.`,
+    "method.public.intro": `Chaque élément ci-dessous provient des dossiers d'ARFA${NB}: ateliers notés selon des critères publiés, défis du Studio terminés et certificats vérifiables par tous.`,
     "method.public.notFoundTitle": "Portfolio introuvable",
     "method.public.notFoundBody": "Ce portfolio est privé ou le lien a changé.",
     "method.public.cta": "Apprendre avec TIBLOGICS",
     "method.public.ctaBody": "Des compétences pratiques en IA et en technologie, avec la preuve de ce que vous savez faire.",
 
     "method.box.eyebrow": "La méthode",
-    "method.box.title": "Comment fonctionne TIBLOGICS Learn",
+    "method.box.title": "Comment fonctionne ARFA",
     "method.box.body": `Chaque leçon suit la même boucle, fondée sur des principes d'apprentissage reconnus${NB}: une explication claire, de la pratique avec retour, une application réelle, de la réflexion et des rappels répartis dans le temps.`,
     "method.box.step.understand.title": "Comprendre",
     "method.box.step.understand.body": "Une leçon courte et claire, avec un objectif précis et des exemples tirés du travail réel.",
@@ -587,18 +587,18 @@ const messages: Messages = {
     "method.share.privateNow": "Portfolio yako ni ya binafsi. Ni wewe tu unayeweza kuona ukurasa huu.",
     "method.share.publicNow": "Portfolio yako ni ya umma.",
 
-    "method.public.metaTitle": "{name}: portfolio ya TIBLOGICS Learn",
-    "method.public.metaDescription": "Ushahidi wa ujuzi wa {name} kutoka TIBLOGICS Learn. Maabara yaliyofaulu: {labs}. Vyeti: {certs}. Beji: {badges}.",
-    "method.public.eyebrow": "Portfolio ya TIBLOGICS Learn",
+    "method.public.metaTitle": "{name}: portfolio ya ARFA",
+    "method.public.metaDescription": "Ushahidi wa ujuzi wa {name} kutoka ARFA (AI Readiness For All), Chuo cha AI cha TIBLOGICS. Maabara yaliyofaulu: {labs}. Vyeti: {certs}. Beji: {badges}.",
+    "method.public.eyebrow": "Portfolio ya ARFA",
     "method.public.title": "Ushahidi wa ujuzi wa {name}",
-    "method.public.intro": "Kila kipengele hapa chini kinatoka kwenye kumbukumbu za TIBLOGICS Learn: maabara yaliyopimwa kwa vigezo vilivyochapishwa, changamoto za Studio zilizokamilika, na vyeti ambavyo yeyote anaweza kuthibitisha.",
+    "method.public.intro": "Kila kipengele hapa chini kinatoka kwenye kumbukumbu za ARFA: maabara yaliyopimwa kwa vigezo vilivyochapishwa, changamoto za Studio zilizokamilika, na vyeti ambavyo yeyote anaweza kuthibitisha.",
     "method.public.notFoundTitle": "Portfolio haikupatikana",
     "method.public.notFoundBody": "Portfolio hii ni ya binafsi au kiungo kimebadilika.",
     "method.public.cta": "Jifunze na TIBLOGICS",
     "method.public.ctaBody": "Ujuzi wa vitendo wa akili bandia (AI) na teknolojia, pamoja na ushahidi wa unachoweza kufanya.",
 
     "method.box.eyebrow": "Mbinu",
-    "method.box.title": "Jinsi TIBLOGICS Learn inavyofanya kazi",
+    "method.box.title": "Jinsi ARFA inavyofanya kazi",
     "method.box.body": "Kila somo linafuata mzunguko uleule, uliojengwa juu ya kanuni za kujifunza zinazotambulika vyema: maelezo yaliyo wazi, mazoezi yenye mrejesho, matumizi halisi, tafakari, na kukumbuka kwa muda.",
     "method.box.step.understand.title": "Elewa",
     "method.box.step.understand.body": "Somo fupi na wazi, lenye lengo mahususi na mifano kutoka kazini.",

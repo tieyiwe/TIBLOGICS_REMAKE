@@ -7,7 +7,7 @@ import { codeOwner, CODE_RE, recordReferralEvent, REF_COOKIE, REF_MAX_AGE, visit
 // A learner's referral link. Sets the 60-day referral cookie (the code only)
 // and the campaign cookie (utm_campaign "learner-referral", so sign-ups and
 // purchases also show in Growth → Links & attribution), then lands on the
-// Learning Box page. Always redirects to a fixed same-site path: never an
+// AI Academy page (/learning-box). Always redirects to a fixed same-site path: never an
 // open redirect. Unknown codes land on the same page without cookies.
 export const dynamic = "force-dynamic";
 

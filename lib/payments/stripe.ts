@@ -39,7 +39,7 @@ export const stripeProvider: PaymentProvider = {
             unit_amount: plan.amount,
             recurring: { interval: plan.interval },
             product_data: {
-              name: `TIBLOGICS Learn — All-Access (${plan.label})`,
+              name: `ARFA by TIBLOGICS: All-Access (${plan.label})`,
               description: plan.blurb,
             },
           },
@@ -76,7 +76,7 @@ export const stripeProvider: PaymentProvider = {
             currency: req.currency.toLowerCase(),
             unit_amount: req.amount,
             product_data: {
-              name: `TIBLOGICS Learning Box: ${req.trackTitle}`,
+              name: `ARFA by TIBLOGICS: ${req.trackTitle}`,
               description: "One-time payment. Lifetime access to this track.",
             },
           },
@@ -110,7 +110,7 @@ export const stripeProvider: PaymentProvider = {
             unit_amount: req.seatPriceCents,
             recurring: { interval: "month" as const },
             product_data: {
-              name: "TIBLOGICS Learn: Team seat",
+              name: "ARFA by TIBLOGICS: Team seat",
               description: "One seat, every track. Billed monthly per seat.",
             },
           },

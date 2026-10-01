@@ -39,7 +39,7 @@ const SHAPES: Record<MagnetType, string> = {
 };
 
 function productBlock(item: CatalogItem | null): string {
-  if (!item) return "PRODUCT: none chosen. Recommend the TIBLOGICS Learning Box in general terms only.";
+  if (!item) return "PRODUCT: none chosen. Recommend the TIBLOGICS AI Academy (ARFA: AI Readiness For All) in general terms only.";
   return [
     `RECOMMENDED PRODUCT: ${item.title} (${TYPE_LABEL[item.type]})`,
     item.price ? `PRICE: ${item.price}` : "",

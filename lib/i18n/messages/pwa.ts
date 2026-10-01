@@ -33,7 +33,7 @@ const messages: Messages = {
     "pwa.download.offlineNow": "You are offline. Connect to download lessons.",
 
     "pwa.install.title": "App and offline reading",
-    "pwa.install.body": "Add TIBLOGICS Learn to your home screen. It opens like an app and keeps the lessons you download for reading without a connection.",
+    "pwa.install.body": "Add ARFA to your home screen. It opens like an app and keeps the lessons you download for reading without a connection.",
     "pwa.install.button": "Install the app",
     "pwa.install.installed": "The app is installed on this device.",
     "pwa.install.ios": "On iPhone or iPad, open this page in Safari, tap the Share button, then choose \"Add to Home Screen\".",
@@ -89,8 +89,8 @@ const messages: Messages = {
     "pwa.reminders.email.why": "You get this email because you turned on study reminders.",
     "pwa.reminders.email.manage": "Change or stop reminders",
     "pwa.reminders.email.cta": "Continue learning",
-    "pwa.reminders.wa.stopped": "You will no longer get study reminders from TIBLOGICS Learn. Reply START to turn them back on.",
-    "pwa.reminders.wa.started": "Study reminders from TIBLOGICS Learn are back on. Reply STOP at any time to stop them.",
+    "pwa.reminders.wa.stopped": "You will no longer get study reminders from ARFA. Reply START to turn them back on.",
+    "pwa.reminders.wa.started": "Study reminders from ARFA are back on. Reply STOP at any time to stop them.",
   },
   fr: {
     "pwa.offline.banner": "Vous êtes hors ligne. Les leçons téléchargées s’ouvrent toujours.",
@@ -117,7 +117,7 @@ const messages: Messages = {
     "pwa.download.offlineNow": "Vous êtes hors ligne. Connectez-vous pour télécharger des leçons.",
 
     "pwa.install.title": "Application et lecture hors ligne",
-    "pwa.install.body": "Ajoutez TIBLOGICS Learn à votre écran d’accueil. Elle s’ouvre comme une application et garde les leçons téléchargées pour les lire sans connexion.",
+    "pwa.install.body": "Ajoutez ARFA à votre écran d’accueil. Elle s’ouvre comme une application et garde les leçons téléchargées pour les lire sans connexion.",
     "pwa.install.button": "Installer l’application",
     "pwa.install.installed": "L’application est installée sur cet appareil.",
     "pwa.install.ios": `Sur iPhone ou iPad, ouvrez cette page dans Safari, touchez le bouton Partager, puis choisissez «${NB}Sur l’écran d’accueil${NB}».`,
@@ -173,8 +173,8 @@ const messages: Messages = {
     "pwa.reminders.email.why": "Vous recevez cet e-mail car vous avez activé les rappels d’étude.",
     "pwa.reminders.email.manage": "Modifier ou arrêter les rappels",
     "pwa.reminders.email.cta": "Continuer à apprendre",
-    "pwa.reminders.wa.stopped": "Vous ne recevrez plus de rappels d’étude de TIBLOGICS Learn. Répondez START pour les réactiver.",
-    "pwa.reminders.wa.started": "Les rappels d’étude de TIBLOGICS Learn sont réactivés. Répondez STOP à tout moment pour les arrêter.",
+    "pwa.reminders.wa.stopped": "Vous ne recevrez plus de rappels d’étude d’ARFA. Répondez START pour les réactiver.",
+    "pwa.reminders.wa.started": "Les rappels d’étude d’ARFA sont réactivés. Répondez STOP à tout moment pour les arrêter.",
   },
   sw: {
     "pwa.offline.banner": "Uko nje ya mtandao. Masomo uliyopakua bado yanafunguka.",
@@ -201,7 +201,7 @@ const messages: Messages = {
     "pwa.download.offlineNow": "Uko nje ya mtandao. Unganisha ili kupakua masomo.",
 
     "pwa.install.title": "Programu na kusoma nje ya mtandao",
-    "pwa.install.body": "Ongeza TIBLOGICS Learn kwenye skrini yako ya mwanzo. Inafunguka kama programu na inahifadhi masomo unayopakua ili uyasome bila mtandao.",
+    "pwa.install.body": "Ongeza ARFA kwenye skrini yako ya mwanzo. Inafunguka kama programu na inahifadhi masomo unayopakua ili uyasome bila mtandao.",
     "pwa.install.button": "Sakinisha programu",
     "pwa.install.installed": "Programu imesakinishwa kwenye kifaa hiki.",
     "pwa.install.ios": "Kwenye iPhone au iPad, fungua ukurasa huu kwenye Safari, gusa kitufe cha Shiriki, kisha uchague \"Add to Home Screen\".",

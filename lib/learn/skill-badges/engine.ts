@@ -262,12 +262,12 @@ function resolveAll(s: Structure, f: Facts): ResolvedBadge[] {
       family: "studio",
       glyph: "studio",
       name: `${name} Challenge Set`,
-      description: `Completed every challenge of the ${name} tool in the TIBLOGICS Learning Studio.`,
+      description: `Completed every challenge of the ${name} tool in the ARFA Learning Studio (TIBLOGICS AI Academy).`,
       criteria:
-        `Complete all ${n} challenges of the ${name} tool in the TIBLOGICS Learning Studio. ` +
+        `Complete all ${n} challenges of the ${name} tool in the ARFA Learning Studio (TIBLOGICS AI Academy). ` +
         `Studio challenges are practice exercises unlocked in order from easy to hard. Completion is recorded by the learner's browser and is not proctored or independently verified by TIBLOGICS; it shows practice, not assessed mastery.`,
       trackSlugs: [],
-      alignments: [{ targetName: `TIBLOGICS Learning Studio: ${name}`, targetUrl: `${siteBase()}/learning-box` }],
+      alignments: [{ targetName: `ARFA Learning Studio: ${name}`, targetUrl: `${siteBase()}/learning-box` }],
       reqs: [{ kind: "challenges", need: n, have: done, items: [] }],
       earned: done >= n,
       evidence: [{ name: `${name} challenges`, description: `${done} of ${n} challenges completed, ${perfect} with all three stars.` }],
@@ -348,7 +348,7 @@ function resolveAll(s: Structure, f: Facts): ResolvedBadge[] {
       glyph: def.glyph,
       name: def.name,
       description: def.description,
-      criteria: `Across the TIBLOGICS Learning Box, ${criteriaParts.join("; and ")}; with passes from at least ${minTracks} different tracks. Labs are hands-on tasks scored against published criteria.`,
+      criteria: `Across ARFA, the TIBLOGICS AI Academy, ${criteriaParts.join("; and ")}; with passes from at least ${minTracks} different tracks. Labs are hands-on tasks scored against published criteria.`,
       trackSlugs: [...usedTracks],
       alignments: trackSlugs.map((slug) => ({ targetName: s.tracks.get(slug)?.title ?? slug, targetUrl: trackUrl(slug) })),
       reqs,

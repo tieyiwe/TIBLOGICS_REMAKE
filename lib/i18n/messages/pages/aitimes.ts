@@ -209,9 +209,9 @@ export default tri({
     "Jifunze hili ipasavyo, si kupitia mitandao ya kijamii",
   ],
   "pages.promo.learn.body": [
-    "The Learning Box runs structured AI tracks that end in a certificate you can defend: quizzes, a timed exam and a capstone reviewed by a human.",
-    "La Learning Box propose des parcours IA structurés qui mènent à un certificat solide : quiz, examen chronométré et projet final évalué par une personne.",
-    "Learning Box inaendesha mafunzo ya AI yaliyopangwa yanayohitimishwa kwa cheti unachoweza kukitetea: majaribio, mtihani wenye muda maalum, na mradi wa mwisho unaopitiwa na mtu.",
+    "The TIBLOGICS AI Academy runs structured AI tracks that end in a certificate you can defend: quizzes, a timed exam and a capstone reviewed by a human.",
+    "L'Académie IA de TIBLOGICS propose des parcours IA structurés qui mènent à un certificat solide : quiz, examen chronométré et projet final évalué par une personne.",
+    "Chuo cha AI cha TIBLOGICS kinaendesha mafunzo ya AI yaliyopangwa yanayohitimishwa kwa cheti unachoweza kukitetea: majaribio, mtihani wenye muda maalum, na mradi wa mwisho unaopitiwa na mtu.",
   ],
   "pages.promo.learn.cta": ["See the tracks", "Voir les parcours", "Tazama mafunzo"],
   "pages.promo.toolkit.title": ["Skip the blank page", "Fini la page blanche", "Epuka ukurasa mtupu"],

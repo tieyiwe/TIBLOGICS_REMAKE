@@ -184,7 +184,10 @@ export async function sendRescheduleEmail(data: {
   });
 }
 
-const ARFA_FROM = `ARFA by TIBLOGICS <${process.env.ARFA_SMTP_USER ?? "arfa_edu@tiblogics.com"}>`;
+// ARFA = AI Readiness For All, the AI Academy of TIBLOGICS. Every
+// learner-facing email sends from (and takes replies at) this address.
+const ARFA_ADDRESS = process.env.ARFA_SMTP_USER ?? "arfa_edu@tiblogics.com";
+const ARFA_FROM = { name: "ARFA · AI Readiness For All", address: ARFA_ADDRESS };
 
 function getArfaTransport() {
   // NEVER fall back to TITAN_SMTP_USER — that's info@tiblogics.com with a different password
@@ -766,6 +769,7 @@ export const arfaMailer = {
     send(msg: { to: string | string[]; subject: string; html: string }) {
       return getArfaTransport().sendMail({
         from: ARFA_FROM,
+        replyTo: ARFA_ADDRESS,
         to: Array.isArray(msg.to) ? msg.to.join(", ") : msg.to,
         subject: msg.subject,
         html: msg.html,

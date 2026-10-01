@@ -53,7 +53,7 @@ Rules:
 - Keep Markdown structure exactly: headings, lists, tables, bold, links (translate link text, never URLs), and fenced blocks.
 - Inside \`\`\`playground and other code fences: keep all code exactly as it is; translate only human-readable text that a user would see on screen and code comments.
 - Inside \`\`\`try, \`\`\`text and \`\`\`prompt fences: translate the prompt, and translate placeholders in [SQUARE BRACKETS] too, keeping the brackets and capitals.
-- Keep these names untranslated: TIBLOGICS, Learning Box, Code Studio, Toolkit Live, Compliance Guard, In-Story, and product, company and tool names (ChatGPT, Claude, Git, HTML, JavaScript, etc.).
+- Keep these names untranslated: TIBLOGICS, ARFA, AI Readiness For All, Learning Box, Code Studio, Toolkit Live, Compliance Guard, In-Story, and product, company and tool names (ChatGPT, Claude, Git, HTML, JavaScript, etc.).
 - Keep {placeholders} in curly braces unchanged.
 - Use plain punctuation: no em dashes.
 - Return ONLY a JSON object with exactly the same keys, each value translated. No commentary, no code fence.`;

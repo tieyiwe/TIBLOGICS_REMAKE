@@ -108,7 +108,7 @@ export default async function LearningBoxPage() {
 
       {/* The certification path, the specialist tracks, and the questions
           that point at one of them */}
-      <section className="mx-auto max-w-6xl px-4 pt-14">
+      <section id="path" className="mx-auto max-w-6xl scroll-mt-32 px-4 pt-14">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#B8500A]">{t("learn.box.pathEyebrow")}</p>
         <h2 className="mt-2 text-2xl font-black text-[var(--ink)] sm:text-3xl">{t("learn.box.pathTitle")}</h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--ink2)]">{t("learn.box.pathBody")}</p>

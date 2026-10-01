@@ -11,7 +11,7 @@ const products = [
   { label: "InStory School", href: "#" },
   { label: "CareFlow AI", href: "#" },
   { label: "ShipFrica", href: "#" },
-  { label: "AI Academy", href: "#" },
+  { label: "AI Academy", href: "/learning-box" },
   { label: "RoofGuard", href: "#" },
   { label: "Tibintel", href: "https://tibintel.com" },
   { label: "Goal Tester", href: "#" },

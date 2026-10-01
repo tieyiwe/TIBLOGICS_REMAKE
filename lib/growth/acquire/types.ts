@@ -214,7 +214,7 @@ export const CTA_KINDS = ["buy", "track", "booking", "newsletter", "custom"] as 
 export type CtaKind = (typeof CTA_KINDS)[number];
 export const CTA_LABEL: Record<CtaKind, string> = {
   buy: "Buy the product",
-  track: "Start the Learning Box track",
+  track: "Start the AI Academy track",
   booking: "Book a call",
   newsletter: "Join the newsletter (lead form)",
   custom: "Custom link",

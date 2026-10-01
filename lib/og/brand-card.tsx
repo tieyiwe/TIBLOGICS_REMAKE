@@ -23,7 +23,7 @@ async function logoDataUrl(): Promise<string | null> {
 
 const PILLARS: Array<{ title: string; body: string; color: string }> = [
   { title: "AI Implementation", body: "Agents, automation and integrations built for your business", color: "#F47C20" },
-  { title: "Learning Box", body: "7 certificate tracks with hands-on labs and a built-in AI practice pad", color: "#60A5FA" },
+  { title: "AI Academy", body: "Certificate tracks with hands-on labs, powered by ARFA: AI Readiness For All", color: "#60A5FA" },
   { title: "Free AI tools", body: "Website readiness scan and AI product cost calculator", color: "#34D399" },
   { title: "Toolkit Live", body: "1,100+ expert prompts for 12 industries, with Compliance Guard", color: "#F472B6" },
 ];

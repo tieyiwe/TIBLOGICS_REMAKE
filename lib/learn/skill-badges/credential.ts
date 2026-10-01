@@ -47,7 +47,7 @@ export interface CredentialFacts {
 export function publicDisplayName(full: string): string {
   // An address typed as a name never goes into a public, signed credential.
   const parts = full.trim().split(/\s+/).filter((p) => p && !p.includes("@"));
-  if (parts.length === 0) return "TIBLOGICS Learner";
+  if (parts.length === 0) return "ARFA Learner";
   if (parts.length === 1) return parts[0];
   const last = parts[parts.length - 1];
   return `${parts[0]} ${last.charAt(0).toUpperCase()}.`;
@@ -71,9 +71,10 @@ export function issuerProfile() {
   return {
     id: issuerDid(),
     type: ["Profile"],
-    name: "TIBLOGICS",
+    // Credentials already signed keep the old name; only new ones carry this.
+    name: "TIBLOGICS AI Academy (ARFA)",
     url: base + "/",
-    description: "TIBLOGICS Learning Box: AI skills training with assessed labs, exams and capstone projects.",
+    description: "ARFA: AI Readiness For All, the AI Academy of TIBLOGICS. AI skills training with assessed labs, exams and capstone projects.",
     image: { id: `${base}/icon.svg`, type: "Image" },
   };
 }

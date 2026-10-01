@@ -114,7 +114,7 @@ const messages: Messages = {
       "This badge is an Open Badges 3.0 verifiable credential. TIBLOGICS signs it with an Ed25519 key (a Data Integrity proof, eddsa-jcs-2022) and publishes the public key in its did:web document. This page checks the signature on the server each time it is opened, so any change to the badge after it was issued shows as not valid. The earner is identified by a salted hash of their email address.",
     "badges.verify.didDoc": "Issuer public key (did.json)",
     "badges.verify.share": "Share this badge",
-    "badges.verify.explore": "Explore the Learning Box",
+    "badges.verify.explore": "Explore the AI Academy",
   },
   fr: {
     "badges.nav": "Badges de compétences",
@@ -223,7 +223,7 @@ const messages: Messages = {
       "Ce badge est un titre vérifiable Open Badges 3.0. TIBLOGICS le signe avec une clé Ed25519 (une preuve Data Integrity, eddsa-jcs-2022) et publie la clé publique dans son document did:web. Cette page vérifie la signature sur le serveur à chaque ouverture : toute modification du badge après sa délivrance apparaît comme non valide. La personne est identifiée par une empreinte salée de son adresse e-mail.",
     "badges.verify.didDoc": "Clé publique de l'émetteur (did.json)",
     "badges.verify.share": "Partager ce badge",
-    "badges.verify.explore": "Découvrir la Learning Box",
+    "badges.verify.explore": "Découvrir l'Académie IA",
   },
   sw: {
     "badges.nav": "Beji za ujuzi",
@@ -332,7 +332,7 @@ const messages: Messages = {
       "Beji hii ni hati inayoweza kuthibitishwa ya Open Badges 3.0. TIBLOGICS huitia saini kwa ufunguo wa Ed25519 (uthibitisho wa Data Integrity, eddsa-jcs-2022) na huchapisha ufunguo wa umma katika hati yake ya did:web. Ukurasa huu hukagua saini kwenye seva kila unapofunguliwa, kwa hivyo mabadiliko yoyote baada ya kutolewa huonekana kuwa si halali. Aliyeipata hutambulishwa kwa hash yenye chumvi ya anwani yake ya email.",
     "badges.verify.didDoc": "Ufunguo wa umma wa mtoaji (did.json)",
     "badges.verify.share": "Shiriki beji hii",
-    "badges.verify.explore": "Gundua Learning Box",
+    "badges.verify.explore": "Gundua Chuo cha AI",
   },
 };
 

@@ -1,12 +1,12 @@
 import { createHash, randomBytes } from "crypto";
 import prisma from "@/lib/prisma";
 import { escapeHtml } from "@/lib/require-admin";
-import { mailTransport, MAIL_FROM } from "@/lib/resend";
+import { arfaMailer, mailTransport, MAIL_FROM } from "@/lib/resend";
 import { translatorFor } from "@/lib/i18n/server";
 import { isLocale, learnLocale } from "@/lib/i18n/config";
 import { ensureReferralTables } from "./db";
 
-// Learning Box referral program.
+// ARFA (the AI Academy of TIBLOGICS) learner referral program.
 //
 // Every learner gets a personal link, /r/[code]. Opening it sets a 60-day
 // cookie (REF_COOKIE) holding only the code. When the visitor signs up, the
@@ -241,7 +241,7 @@ async function notifyOwner(referrerEmail: string, capped: boolean) {
     to: ADMIN_EMAIL(),
     subject: `Referral reward to review: ${referrerEmail}`,
     html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0D1B2A">
-<p style="font-size:15px;margin:0 0 12px">A learner referred by <strong>${escapeHtml(referrerEmail)}</strong> just paid for the Learning Box.</p>
+<p style="font-size:15px;margin:0 0 12px">A learner referred by <strong>${escapeHtml(referrerEmail)}</strong> just paid for ARFA, the AI Academy.</p>
 <p style="font-size:14px;color:#3A4A5C;margin:0 0 16px">${capped ? "This referrer is over the monthly cap, so the reward is held for you to decide." : "A free month for the referrer is waiting for your approval."}</p>
 <a href="${escapeHtml(url)}" style="display:inline-block;background:#B8500A;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:700;font-size:14px">Review referral rewards</a></div>`,
   });
@@ -320,15 +320,15 @@ async function emailReferrer(studentId: string, grant: string) {
   const t = translatorFor(learnLocale(isLocale(s.locale) ? s.locale : "en"));
   const first = escapeHtml(s.name.split(" ")[0] || s.name);
   const body = grant === "manual_credit" ? t("referrals.email.credit") : t("referrals.email.comp", { days: REWARD_DAYS });
-  await mailTransport().sendMail({
-    from: MAIL_FROM,
+  // Learner-facing: sent from the ARFA mailbox (arfa_edu@tiblogics.com).
+  await arfaMailer.emails.send({
     to: s.email,
     subject: t("referrals.email.subject"),
     html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#0D1B2A">
 <p style="font-size:16px;margin:0 0 12px">${escapeHtml(t("referrals.email.hi", { name: "__N__" })).replace("__N__", first)}</p>
 <p style="font-size:15px;line-height:1.6;margin:0 0 16px">${escapeHtml(body)}</p>
 <a href="${escapeHtml(`${siteUrl()}/learn/referrals`)}" style="display:inline-block;background:#B8500A;color:#fff;text-decoration:none;padding:11px 20px;border-radius:8px;font-weight:700;font-size:14px">${escapeHtml(t("referrals.email.cta"))}</a>
-<p style="font-size:12px;color:#5A6E84;margin:24px 0 0">TIBLOGICS Learning Box</p></div>`,
+<p style="font-size:12px;color:#5A6E84;margin:24px 0 0">${escapeHtml(t("referrals.email.footer"))}</p></div>`,
   });
 }
 

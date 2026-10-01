@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 
-// Creates the Learning Box referral tables if they are missing, once per
+// Creates the ARFA referral tables if they are missing, once per
 // process (no migrations in this project). Mirrors the LearnReferral* models
 // in prisma/schema.prisma; keep the two in step. No foreign keys: a deleted
 // learner's referral history stays for the owner's records.

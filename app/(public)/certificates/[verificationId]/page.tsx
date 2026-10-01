@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import CertificateActions from "@/components/learn/CertificateActions";
+import ArfaWordmark from "@/components/learn/ArfaWordmark";
 import { getT } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
@@ -103,10 +104,8 @@ export default async function VerifyCertificatePage({
         >
           <div className="h-2" style={{ background: cert.track.accentColor }} />
           <div className="px-8 py-10 text-center sm:px-12 sm:py-14">
-            <p className="text-lg font-black tracking-tight text-[var(--ink)]">
-              TIB<span className="text-[var(--orange)]">LOGICS</span>
-            </p>
-            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink3)]">
+            <ArfaWordmark size="md" />
+            <p className="mt-3 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink3)]">
               Certificate of Completion
             </p>
 
@@ -148,6 +147,13 @@ export default async function VerifyCertificatePage({
                 </p>
               </div>
             </div>
+            <p className="mt-8 text-xs font-semibold text-[var(--ink2)]">
+              ARFA: AI Readiness For All, a{" "}
+              <span className="font-black tracking-tight text-[var(--ink)]">
+                TIB<span className="text-[var(--orange)]">LOGICS</span>
+              </span>{" "}
+              academy
+            </p>
           </div>
         </article>
 
