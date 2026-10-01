@@ -8,6 +8,7 @@ import prisma from "@/lib/prisma";
 import { ensureLearnEditColumns } from "@/lib/learn/admin/columns";
 import { getT } from "@/lib/i18n/server";
 import { purchasedTrackIds } from "@/lib/learn/purchases";
+import { getMembership } from "@/lib/learn/team/access";
 
 export interface StudentSession {
   id: string;
@@ -59,6 +60,8 @@ export type Entitlement = {
   graceUntil: Date | null;
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;
+  /** Set when access comes from a team seat (lib/learn/team). */
+  team?: { id: string; name: string; role: string };
 };
 
 const NONE: Entitlement = {
@@ -77,6 +80,31 @@ const COMPED: Entitlement = { ...NONE, entitled: true, status: "comped" };
  * tested without paying; a paid subscription on it still takes precedence.
  */
 export async function getEntitlement(studentId: string | null | undefined): Promise<Entitlement> {
+  if (!studentId) return NONE;
+  const own = await getIndividualEntitlement(studentId);
+  if (own.entitled && !own.inGrace) return own;
+  // Team plans: an active seat on an active team (or one in its grace
+  // window) counts like a subscription. The learner's own subscription, when
+  // healthy, still wins (it carries their billing details).
+  const m = await getMembership(studentId);
+  if (m?.entitled) {
+    return {
+      entitled: true,
+      status: "active",
+      // Billing is the team owner's business: no grace banner or renewal
+      // date for members (the team page shows the owner a warning).
+      inGrace: false,
+      graceUntil: null,
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+      team: { id: m.team.id, name: m.team.name, role: m.role },
+    };
+  }
+  return own;
+}
+
+/** The learner's own subscription (or the owner's comp), ignoring teams. */
+export async function getIndividualEntitlement(studentId: string | null | undefined): Promise<Entitlement> {
   if (!studentId) return NONE;
   const sub = await prisma.learnSubscription.findUnique({ where: { studentId } }).catch(() => null);
   if (!sub || sub.status === "canceled") {
