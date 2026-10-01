@@ -9,6 +9,11 @@ import labs from "./labs";
 import toolkit from "./toolkit";
 import calculator from "./calculator";
 import pages from "./pages";
+import tutorMsgs from "./tutor";
+import masteryMsgs from "./mastery";
+import communityMsgs from "./community";
+import videoMsgs from "./video";
+import teamMsgs from "./team";
 import studio from "./studio";
 import studioAutomation from "./studio-automation-builder";
 import studioLoops from "./studio-loop-mapper";
@@ -22,7 +27,7 @@ import studioBench from "./studio-test-bench";
 import game from "./game";
 import method from "./method";
 
-const ALL: Messages[] = [common, home, site, tools, learn, labs, toolkit, calculator, pages, game, studio, studioAutomation, studioLoops, studioPrompt, studioSorter, studioRisk, studioWireframe, studioArena, studioCritic, studioBench, method];
+const ALL: Messages[] = [common, home, site, tools, learn, labs, toolkit, calculator, pages, game, studio, studioAutomation, studioLoops, studioPrompt, studioSorter, studioRisk, studioWireframe, studioArena, studioCritic, studioBench, method, tutorMsgs, masteryMsgs, communityMsgs, videoMsgs, teamMsgs];
 
 const cache = new Map<Locale, Record<string, string>>();
 
