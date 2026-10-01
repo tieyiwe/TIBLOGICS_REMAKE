@@ -6,7 +6,7 @@ import { translatorFor } from "@/lib/i18n/server";
 import { isLocale, learnLocale } from "@/lib/i18n/config";
 import { ensureReferralTables } from "./db";
 
-// ARFA (the AI Academy of TIBLOGICS) learner referral program.
+// ARFA (the TIBLOGICS AI Academy) learner referral program.
 //
 // Every learner gets a personal link, /r/[code]. Opening it sets a 60-day
 // cookie (REF_COOKIE) holding only the code. When the visitor signs up, the
@@ -241,7 +241,7 @@ async function notifyOwner(referrerEmail: string, capped: boolean) {
     to: ADMIN_EMAIL(),
     subject: `Referral reward to review: ${referrerEmail}`,
     html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0D1B2A">
-<p style="font-size:15px;margin:0 0 12px">A learner referred by <strong>${escapeHtml(referrerEmail)}</strong> just paid for ARFA, the AI Academy.</p>
+<p style="font-size:15px;margin:0 0 12px">A learner referred by <strong>${escapeHtml(referrerEmail)}</strong> just paid for ARFA · AI Academy.</p>
 <p style="font-size:14px;color:#3A4A5C;margin:0 0 16px">${capped ? "This referrer is over the monthly cap, so the reward is held for you to decide." : "A free month for the referrer is waiting for your approval."}</p>
 <a href="${escapeHtml(url)}" style="display:inline-block;background:#B8500A;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:700;font-size:14px">Review referral rewards</a></div>`,
   });
