@@ -158,7 +158,7 @@ export default function CertificationLadder({
                   <p className="font-semibold text-[var(--ink)]">{tr("learn.offer.trackLine", { price: fmtPrice(t.priceCents, locale) })}</p>
                   {monthlyCents != null && (
                     <p className="mt-0.5">
-                      {tr("learn.offer.or")} {tr("learn.offer.allLine", { price: fmtPrice(monthlyCents, locale) })}
+                      {tr("learn.offer.orAllLine", { price: fmtPrice(monthlyCents, locale) })}
                     </p>
                   )}
                 </div>

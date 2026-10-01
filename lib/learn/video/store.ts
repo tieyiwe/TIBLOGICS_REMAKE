@@ -54,6 +54,7 @@ export async function lessonVideoFor(
     chapters: meta.chapters,
     captions: meta.captions,
     resumeAt: progress?.positionSec ?? 0,
+    coverage: progress?.coverage?.length === COVERAGE_BUCKETS ? progress.coverage : emptyCoverage(),
     watched: !!progress?.watchedAt,
   };
 }

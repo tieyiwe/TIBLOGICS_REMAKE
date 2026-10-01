@@ -28,7 +28,7 @@ export default function BuyTrackButton({ slug, label }: { slug: string; label: s
   }
 
   return (
-    <div className="flex flex-col items-end">
+    <div className="flex flex-col items-start sm:items-end">
       <button
         type="button"
         onClick={buy}

@@ -110,12 +110,22 @@ function TutorPanel({ kind, refId }: { kind: Exclude<TutorDockKind, "exam">; ref
     }
   }, [open, desktop]);
 
-  // Docked on desktop: make room for the panel instead of covering the page.
+  // Docked on desktop: sits under the sticky site header and makes room for
+  // itself in <main> instead of covering the page.
+  const [top, setTop] = useState(0);
   useEffect(() => {
     const root = document.documentElement;
     if (open && desktop) root.classList.add("tutor-docked");
     else root.classList.remove("tutor-docked");
-    return () => root.classList.remove("tutor-docked");
+    const measure = () => setTop(Math.max(0, Math.round(document.querySelector("body header")?.getBoundingClientRect().bottom ?? 0)));
+    if (open && desktop) {
+      measure();
+      window.addEventListener("resize", measure);
+    }
+    return () => {
+      root.classList.remove("tutor-docked");
+      window.removeEventListener("resize", measure);
+    };
   }, [open, desktop]);
 
   // Mobile sheet: Escape closes, the page behind does not scroll.
@@ -288,18 +298,17 @@ function TutorPanel({ kind, refId }: { kind: Exclude<TutorDockKind, "exam">; ref
 
   // "Ask Tutor" on selected text: open the panel, then send once the
   // conversation has loaded.
-  const pendingSelection = useRef<string | null>(null);
+  const [pendingSelection, setPendingSelection] = useState<string | null>(null);
   const askSelection = useCallback((text: string) => {
-    pendingSelection.current = text;
+    setPendingSelection(text);
     setOpen(true);
   }, []);
   useEffect(() => {
-    if (open && state && !busy && pendingSelection.current) {
-      const text = pendingSelection.current;
-      pendingSelection.current = null;
-      send({ action: "explain", selection: text });
+    if (open && state && !busy && pendingSelection) {
+      setPendingSelection(null);
+      send({ action: "explain", selection: pendingSelection });
     }
-  });
+  }, [open, state, busy, pendingSelection, send]);
 
   const out = !!state && state.remaining <= 0;
   const canSend = !!state && state.available && !busy && !out && !disabledNote;
@@ -338,10 +347,10 @@ function TutorPanel({ kind, refId }: { kind: Exclude<TutorDockKind, "exam">; ref
       data-tutor-ignore
       className={
         desktop
-          ? "fixed bottom-0 right-0 top-0 z-50 flex flex-col border-l border-[var(--border)] bg-white shadow-xl"
+          ? "fixed bottom-0 right-0 z-30 flex flex-col border-l border-[var(--border)] bg-white shadow-xl"
           : "fixed inset-x-0 bottom-0 z-50 flex h-[85dvh] flex-col rounded-t-2xl border-t border-[var(--border)] bg-white shadow-2xl"
       }
-      style={desktop ? { width: PANEL_W } : undefined}
+      style={desktop ? { width: PANEL_W, top } : undefined}
     >
       {!desktop && <div aria-hidden="true" className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-[var(--border)]" />}
       <header className="flex shrink-0 items-start justify-between gap-2 border-b border-[var(--border)] px-4 py-3">
@@ -513,7 +522,7 @@ function TutorPanel({ kind, refId }: { kind: Exclude<TutorDockKind, "exam">; ref
 
   return (
     <>
-      <style>{`@media (min-width: 1024px) { html.tutor-docked body { padding-right: ${PANEL_W}px; } }`}</style>
+      <style>{`@media (min-width: 1024px) { html.tutor-docked main { padding-right: ${PANEL_W + 16}px; } }`}</style>
       {!desktop && open && <div aria-hidden="true" className="fixed inset-0 z-50 bg-[rgba(13,27,42,0.35)]" onClick={() => setOpen(false)} />}
       {launcher}
       {panel}

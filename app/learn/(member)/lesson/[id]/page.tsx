@@ -14,6 +14,7 @@ import LessonReflection from "@/components/learn/method/LessonReflection";
 import LessonPosition from "@/components/learn/LessonPosition";
 import { readDraft } from "@/lib/learn/drafts/server";
 import TutorDock from "@/components/learn/tutor/TutorDock";
+import { lessonVideoFor } from "@/lib/learn/video/store";
 
 export const dynamic = "force-dynamic";
 
@@ -120,6 +121,9 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
       ? Math.round((savedPos.value as { pct: number }).pct)
       : null;
 
+  // The lesson video (chapters, captions, the learner's place); null without one.
+  const video = await lessonVideoFor(student.id, lesson).catch(() => null);
+
   // Flatten for prev/next
   const flat = modules.flatMap((m) => m.lessons.map((l) => l.id));
   const idx = flat.indexOf(lesson.id);
@@ -156,6 +160,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
           bodyMd: text.bodyMd,
           sourceMd: lesson.bodyMd,
           videoUrl: lesson.videoUrl,
+          video,
           contentType: lesson.contentType,
           durationMinutes: lesson.durationMinutes,
           objective: text.objective,

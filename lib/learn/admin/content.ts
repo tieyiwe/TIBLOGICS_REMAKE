@@ -313,7 +313,8 @@ export async function runOp(op: ContentOp): Promise<Record<string, unknown>> {
       const d = op.data;
       const row = await prisma.lesson.update({
         where: { id: op.id },
-        data: { ...d, videoUrl: d.videoUrl || null, objective: d.objective || null, editedAt: t },
+        // videoUrl is left alone when not sent (the Video section saves it itself).
+        data: { ...d, videoUrl: d.videoUrl === undefined ? undefined : d.videoUrl || null, objective: d.objective || null, editedAt: t },
       });
       await recomputeModuleMinutes(row.moduleId);
       return {};

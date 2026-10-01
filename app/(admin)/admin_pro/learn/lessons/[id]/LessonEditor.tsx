@@ -3,7 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowDown, ArrowLeft, ArrowUp, Eye, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import Markdown from "@/components/learn/Markdown";
-import LessonVideo from "@/components/learn/LessonVideo";
+import VideoAdmin from "@/components/learn/video/admin/VideoAdmin";
 import QuestionBank, { type BankQuestion } from "../../_editor/QuestionBank";
 import { useOp, inputCls, labelCls, btnPrimary, btnGhost, btnDanger } from "../../_editor/useOp";
 
@@ -34,7 +34,7 @@ export default function LessonEditor(props: {
     const ok = await run({
       op: "lesson.update", id: f.id,
       data: {
-        title: f.title, objective: f.objective || null, contentType: f.contentType, videoUrl: f.videoUrl.trim() || null,
+        title: f.title, objective: f.objective || null, contentType: f.contentType,
         bodyMd: f.bodyMd, durationMinutes: Number(f.durationMinutes), isPreview: f.isPreview,
       },
     });
@@ -66,11 +66,7 @@ export default function LessonEditor(props: {
           </div>
         </div>
         <div><label className={labelCls}>Learning objective (one sentence)</label><input className={inputCls} value={f.objective} onChange={(e) => set("objective", e.target.value)} placeholder="By the end of this lesson you can…" /></div>
-        <div>
-          <label className={labelCls}>Video link (YouTube, Vimeo, or a direct .mp4 link)</label>
-          <input className={inputCls} value={f.videoUrl} onChange={(e) => set("videoUrl", e.target.value)} placeholder="https://www.youtube.com/watch?v=…" />
-          {f.videoUrl.trim().startsWith("https://") && <div className="mt-3 max-w-xl"><LessonVideo url={f.videoUrl.trim()} title={f.title} /></div>}
-        </div>
+        <p className="font-dm text-xs text-[#7A8FA6]">The lesson video is set in the Video section below.</p>
         <label className="flex items-center gap-2 font-dm text-sm text-[#0D1B2A]">
           <input type="checkbox" checked={f.isPreview} onChange={(e) => set("isPreview", e.target.checked)} className="accent-[#F47C20] w-4 h-4" />
           Free preview: visible to people who have not subscribed
@@ -94,6 +90,9 @@ export default function LessonEditor(props: {
           {dirty && <span className="font-dm text-xs text-amber-700">Unsaved changes</span>}
         </div>
       </section>
+
+      {/* Video link, chapters, captions and script (saved on their own; components/learn/video/admin). */}
+      <VideoAdmin lessonId={f.id} lessonTitle={f.title} initialUrl={props.lesson.videoUrl} />
 
       <Resources lessonId={f.id} resources={props.resources} />
 

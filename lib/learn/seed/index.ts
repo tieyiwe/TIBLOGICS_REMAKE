@@ -108,7 +108,7 @@ export async function seedTrack(track: SeedTrack, tombstones?: Set<string>): Pro
     }),
     prisma.lesson.findMany({
       where: { module: { trackId: row.id } },
-      select: { id: true, moduleId: true, sortOrder: true, editedAt: true, title: true },
+      select: { id: true, moduleId: true, sortOrder: true, editedAt: true, title: true, videoUrl: true },
     }),
   ]);
   // Matching keeps learners' progress attached to the right content when a
@@ -126,6 +126,8 @@ export async function seedTrack(track: SeedTrack, tombstones?: Set<string>): Pro
   const moduleTitleById = new Map(existingModules.map((m) => [m.id, m.title]));
   const editedModules = new Set(existingModules.filter((m) => m.editedAt).map((m) => m.id));
   const editedLessons = new Set(existingLessons.filter((l) => l.editedAt).map((l) => l.id));
+  // A video added in the admin is never removed by a re-seed (the seed rarely has one).
+  const existingVideo = new Map(existingLessons.map((l) => [l.id, l.videoUrl]));
 
   for (const [mi, mod] of track.modules.entries()) {
     // Deleted by staff in the admin: stays deleted.
@@ -166,7 +168,7 @@ export async function seedTrack(track: SeedTrack, tombstones?: Set<string>): Pro
         sortOrder: li,
         title: lesson.title,
         contentType: lesson.contentType ?? (lesson.videoUrl ? "mixed" : "article"),
-        videoUrl: lesson.videoUrl ?? null,
+        videoUrl: lesson.videoUrl ?? (existingLessonId ? existingVideo.get(existingLessonId) : null) ?? null,
         bodyMd: lesson.bodyMd,
         durationMinutes: lesson.durationMinutes,
         objective: lesson.objective ?? null,

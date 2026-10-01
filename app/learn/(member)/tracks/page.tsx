@@ -111,7 +111,7 @@ export default async function MyTracksPage() {
                 {!open && time.get(track.slug) && (
                   <p className="mt-2 text-xs font-semibold text-[var(--ink2)]">
                     🔒 {t("learn.locked.badge")} · {t("learn.offer.trackLine", { price: fmtPrice(time.get(track.slug)!.priceCents, locale) })} ·{" "}
-                    {t("learn.offer.or")} {t("learn.offer.allLine", { price: fmtPrice(PLANS.monthly.amount, locale) })}
+                    {t("learn.offer.orAllLine", { price: fmtPrice(PLANS.monthly.amount, locale) })}
                   </p>
                 )}
               </div>

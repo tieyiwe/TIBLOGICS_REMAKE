@@ -16,6 +16,9 @@ import { POINT_VALUES } from "@/lib/learn/points";
 import { moduleStars } from "@/lib/learn/badge-defs";
 import { toolsForTrack } from "@/lib/learn/studio/catalog";
 import QuestMap, { type QuestFinal, type QuestModule, type StageState } from "@/components/learn/game/QuestMap";
+import { trackMastery } from "@/lib/learn/mastery/overview";
+import { masteredLessonIds } from "@/lib/learn/mastery/testout";
+import TrackMasteryPanel, { ModuleMasteryTag } from "@/components/learn/mastery/TrackMasteryPanel";
 import { getResumeTarget } from "@/lib/learn/resume";
 import { newLessonsInTrack } from "@/lib/learn/track-updates";
 import { NewLessonsPanel, NewPill } from "@/components/learn/NewLessons";
@@ -177,12 +180,21 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
 
   const doneIds = new Set(done.map((d) => d.lessonId));
   const passedQuizIds = new Set(quizPasses.map((q) => q.quizId));
+  // Mastery paths: diagnostic estimates, tested-out modules and lessons.
+  const [mastery, masteredIds] = await Promise.all([
+    trackMastery(student.id, track.id).catch((err) => {
+      console.error("[track] mastery", err);
+      return [];
+    }),
+    masteredLessonIds(student.id, track.id),
+  ]);
+  const masteryOf = new Map(mastery.map((m) => [m.moduleId, m]));
 
   const quest = await buildQuest({
     studentId: student.id,
     track,
     titles: { modules: text?.modules ?? {}, exam: text?.examTitle ?? track.finalExam?.title ?? "" },
-    doneIds,
+    doneIds: new Set([...doneIds, ...masteredIds]),
     passedQuizIds,
     passedLabIds,
     nextLessonId: progress.nextLessonId,
@@ -193,6 +205,8 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
     console.error("[track] quest map", err);
     return null;
   });
+  // Mastery paths: tested-out modules show as mastered on the map.
+  for (const qm of quest?.modules ?? []) qm.mastered = !!masteryOf.get(qm.id)?.testedOut;
 
   // "Continue where you left off" (the exact next thing in this track) and
   // lessons added to modules the learner had already finished.
@@ -254,6 +268,21 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
           </Link>
         </p>
       )}
+
+      <TrackMasteryPanel
+        studentId={student.id}
+        trackId={track.id}
+        slug={track.slug}
+        accent={track.accentColor}
+        mastery={mastery}
+        modules={track.modules.map((m) => ({
+          id: m.id,
+          title: text?.modules[m.id]?.title ?? m.title,
+          summary: text?.modules[m.id]?.summary ?? m.summary,
+          quizId: m.quiz?.id ?? null,
+          lessonId: (m.lessons.find((l) => !doneIds.has(l.id) && !masteredIds.has(l.id)) ?? m.lessons[0])?.id ?? null,
+        }))}
+      />
 
       {quest && <QuestMap {...quest} accent={track.accentColor} />}
 
@@ -330,6 +359,7 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
                     {t("learn.dash.lessonsFraction", { done: complete, total })}
                   </span>
                 </div>
+                <ModuleMasteryTag t={t} mastery={masteryOf.get(m.id)} quizId={m.quiz?.id ?? null} quizPassed={quizPassed} allDone={allDone} />
 
                 <ul className="mt-3 space-y-1">
                   {m.lessons.map((l) => (
@@ -340,13 +370,13 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
                       >
                         <span
                           aria-hidden="true"
-                          style={{ color: doneIds.has(l.id) ? "#22A387" : "var(--ink3)" }}
+                          style={{ color: doneIds.has(l.id) || masteredIds.has(l.id) ? "#22A387" : "var(--ink3)" }}
                         >
-                          {doneIds.has(l.id) ? "✓" : "○"}
+                          {doneIds.has(l.id) ? "✓" : masteredIds.has(l.id) ? "★" : "○"}
                         </span>
                         <span className="min-w-0 flex-1 truncate">{text?.lessons[l.id]?.title ?? l.title}</span>
                         {newIds.has(l.id) && <NewPill t={t} accentColor={track.accentColor} />}
-                        <span className="sr-only">{doneIds.has(l.id) ? t("learn.lesson.completed") : ""}</span>
+                        <span className="sr-only">{doneIds.has(l.id) ? t("learn.lesson.completed") : masteredIds.has(l.id) ? t("mastery.lessonMastered") : ""}</span>
                         <span className="shrink-0 text-xs text-[var(--ink3)]">
                           {fmtMinutes(t, l.durationMinutes)}
                         </span>

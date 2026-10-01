@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import LessonVideo from "./LessonVideo";
+import LessonMedia from "./video/LessonMedia";
+import type { LessonVideoData } from "@/lib/learn/video/shared";
 import MicroCheck from "./MicroCheck";
 import PracticePanel from "./PracticePanel";
 import PracticePad from "./PracticePad";
@@ -19,6 +21,8 @@ interface LessonView {
   /** The English body, when bodyMd is a translation (finds the task section). */
   sourceMd?: string;
   videoUrl: string | null;
+  /** The video with chapters, captions and the learner's place (lib/learn/video/store.ts). */
+  video?: LessonVideoData | null;
   contentType: string;
   durationMinutes: number;
   objective: string | null;
@@ -129,16 +133,29 @@ export default function LessonPlayer({
           {loop}
         </header>
 
-        {lesson.videoUrl && (
-          <div className="mt-6">
-            <LessonVideo url={lesson.videoUrl} title={lesson.title} />
-          </div>
-        )}
+        {/* A lesson with a video gets the Video / Read switch (components/learn/video). */}
+        {lesson.video ? (
+          <LessonMedia lessonId={lesson.id} title={lesson.title} video={lesson.video} accentColor={accentColor}>
+            {lesson.bodyMd && (
+              <div className="rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
+                <Markdown source={lesson.bodyMd} />
+              </div>
+            )}
+          </LessonMedia>
+        ) : (
+          <>
+            {lesson.videoUrl && (
+              <div className="mt-6">
+                <LessonVideo url={lesson.videoUrl} title={lesson.title} />
+              </div>
+            )}
 
-        {lesson.bodyMd && (
-          <div className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
-            <Markdown source={lesson.bodyMd} />
-          </div>
+            {lesson.bodyMd && (
+              <div className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
+                <Markdown source={lesson.bodyMd} />
+              </div>
+            )}
+          </>
         )}
 
         {/* Practice It — the tools/resources for this lesson */}

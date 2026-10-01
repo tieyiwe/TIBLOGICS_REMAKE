@@ -114,7 +114,7 @@ export default function TrackCard({ track }: { track: CatalogTrack }) {
           <div className="mt-4 rounded-xl bg-[var(--s2)] px-3 py-2.5 text-xs leading-snug text-[var(--ink2)]">
             <p className="font-semibold text-[var(--ink)]">{t("learn.offer.trackLine", { price: fmtPrice(track.priceCents, locale) })}</p>
             <p className="mt-0.5">
-              {t("learn.offer.or")} {t("learn.offer.allLine", { price: fmtPrice(PLANS.monthly.amount, locale) })}
+              {t("learn.offer.orAllLine", { price: fmtPrice(PLANS.monthly.amount, locale) })}
             </p>
           </div>
         )}

@@ -12,6 +12,7 @@
 //   node scripts/cron.mjs monitor
 //   node scripts/cron.mjs blueprints
 //   node scripts/cron.mjs translate
+//   node scripts/cron.mjs cohorts
 //   node scripts/cron.mjs all
 //
 // Needs two environment variables:
@@ -34,6 +35,9 @@ const JOBS = {
   // French and Swahili pre-translation of courses, labs, prompts and articles.
   // Bounded per run (TRANSLATE_BATCH, default 20 model calls); free once done.
   translate: { path: "/api/cron/translate", suggested: "hourly" },
+  // Learn community: cohort live-session reminders (24h before), weekly
+  // "falling behind" nudges and discussion reply digests. Idempotent.
+  cohorts: { path: "/api/cron/cohorts", suggested: "hourly" },
 };
 
 /**

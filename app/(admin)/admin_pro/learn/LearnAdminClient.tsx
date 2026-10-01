@@ -199,7 +199,12 @@ export default function LearnAdminClient({
       <section className="rounded-xl border border-[var(--border)] bg-white p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-sm font-bold text-[var(--ink)]">Tracks</h2>
-          <NewTrack />
+          <div className="flex flex-wrap items-center gap-3">
+            <Link href="/admin_pro/learn/videos" className="text-xs font-semibold text-[var(--blue2)] underline">
+              Lesson videos: which have one, which are missing
+            </Link>
+            <NewTrack />
+          </div>
         </div>
         <p className="mt-1 text-xs text-[var(--ink3)]">
           Open a track to edit its lessons, videos, resources, quizzes, labs, final exam and capstone. Your edits are kept when the

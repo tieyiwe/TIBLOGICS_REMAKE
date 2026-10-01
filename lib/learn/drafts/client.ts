@@ -84,6 +84,11 @@ function claimOwner(owner: string | undefined): boolean {
   return false;
 }
 
+interface ServerCopy {
+  value: unknown;
+  updatedAt: string;
+}
+
 export interface ServerDraftOptions<T> {
   /** Debounce before saving to the server, in ms. */
   delay?: number;
@@ -206,11 +211,11 @@ export function useServerDraft<T>(
         }
       }
       let reached = false;
-      let server: { value: unknown; updatedAt: string } | null = null;
+      let server = null as ServerCopy | null;
       try {
         const res = await fetch(`/api/learn/drafts?key=${encodeURIComponent(key)}`, { cache: "no-store" });
         if (res.ok) {
-          const d = (await res.json()) as { owner?: string; draft: typeof server };
+          const d = (await res.json()) as { owner?: string; draft: ServerCopy | null };
           reached = true;
           if (claimOwner(d.owner)) return;
           owner.current = d.owner;

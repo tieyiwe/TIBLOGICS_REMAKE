@@ -96,7 +96,7 @@ export default async function SubscribePage({
             <p className="mt-1 text-sm text-[var(--ink3)]">{t("learn.subscribe.singleBody")}</p>
             <ul className="mt-4 divide-y divide-[var(--border)]">
               {others.map((c) => (
-                <li key={c.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <li key={c.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold text-[var(--ink)]">{c.title}</p>
                     <p className="text-xs text-[var(--ink3)]">

@@ -12,6 +12,8 @@ export interface QuestModule {
   lessonsTotal: number;
   stars: { lessons: boolean; quiz: boolean; lab: boolean; count: number };
   state: StageState;
+  /** Mastery paths: tested out of (shown as Mastered, distinct from studied). */
+  mastered?: boolean;
 }
 
 export interface QuestFinal {
@@ -52,6 +54,7 @@ export default async function QuestMap({
       lessonsDone: 0,
       lessonsTotal: 0,
       stars: null as QuestModule["stars"] | null,
+      mastered: false,
     })),
   ];
 
@@ -126,15 +129,17 @@ export default async function QuestMap({
                       ? "border-2 bg-white text-[var(--ink)]"
                       : "border-2 border-dashed border-[var(--border)] bg-[var(--s2)] text-[var(--ink3)]"
                   }`}
-                  style={
-                    s.state === "complete"
+                  style={{
+                    ...(s.state === "complete"
                       ? { background: accent }
                       : s.state === "current" || s.state === "started"
                       ? { borderColor: accent }
-                      : undefined
-                  }
+                      : {}),
+                    // Mastered (tested out): a green double ring and a star.
+                    ...(s.mastered ? { boxShadow: "0 0 0 3px #fff, 0 0 0 6px #15803d" } : {}),
+                  }}
                 >
-                  {s.state === "complete" ? "✓" : s.icon ?? s.number}
+                  {s.mastered ? "★" : s.state === "complete" ? "✓" : s.icon ?? s.number}
                   {s.state === "future" && (
                     <span className="absolute -bottom-1 -right-1 rounded-full bg-white px-0.5 text-xs">🔒</span>
                   )}
@@ -172,6 +177,11 @@ export default async function QuestMap({
                     : t("game.quest.capstone")}
                   {" · "}
                   {t(`game.quest.state.${s.state}`)}
+                  {s.mastered && (
+                    <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-green-600 bg-green-50 px-2 py-0.5 normal-case tracking-normal text-green-900">
+                      <span aria-hidden="true">★</span> {t("mastery.quest.mastered")}
+                    </span>
+                  )}
                 </p>
                 <p className={`mt-0.5 text-sm font-bold ${s.state === "future" ? "text-[var(--ink2)]" : "text-[var(--ink)]"}`}>
                   {s.title}

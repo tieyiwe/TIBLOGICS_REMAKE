@@ -28,6 +28,8 @@ export interface LessonVideoData {
   captions: Captions;
   /** Saved position in seconds (0 when none). */
   resumeAt: number;
+  /** Parts already seen ("0"/"1" buckets). */
+  coverage: string;
   watched: boolean;
 }
 

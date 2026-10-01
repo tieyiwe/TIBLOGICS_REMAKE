@@ -7,6 +7,7 @@ import prisma from "@/lib/prisma";
 import { canAccessTrack, getAccess, getStudent } from "@/lib/learn/session";
 import TrackPaywall from "@/components/learn/TrackPaywall";
 import QuizRunner from "@/components/learn/QuizRunner";
+import TestOutNotice from "@/components/learn/mastery/TestOutNotice";
 import { getLocale } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTrack } from "@/lib/i18n/sources/learn";
 
@@ -85,6 +86,8 @@ export default async function QuizPage({ params }: { params: Promise<{ id: strin
         </span>
         <span>{moduleTitle}</span>
       </nav>
+
+      <TestOutNotice studentId={student.id} moduleId={quiz.module.id} />
 
       <QuizRunner
         quizId={quiz.id}

@@ -95,6 +95,7 @@ export default async function ExamPage({ params }: { params: Promise<{ slug: str
         >
           {t("labs.exam.backToTrack")}
         </Link>
+        <TutorDock kind="exam" />
       </div>
     );
   }

@@ -55,7 +55,7 @@ export default function StickyEnrollBar({
                 <strong className="text-[var(--ink2)]">
                   {t("learn.offer.trackLine", { price: fmtPrice(priceCents, locale) })}
                 </strong>{" "}
-                · {t("learn.offer.or")} {t("learn.offer.allLine", { price: fmtPrice(PLANS.monthly.amount, locale) })}
+                · {t("learn.offer.orAllLine", { price: fmtPrice(PLANS.monthly.amount, locale) })}
               </>
             )}
           </p>
