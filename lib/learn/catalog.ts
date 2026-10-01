@@ -31,6 +31,8 @@ export interface CatalogTrack {
   handsOnMinutes: number;
   /** One-time price for lifetime access to this track, in cents. */
   priceCents: number;
+  /** Price under a live automatic sale (lib/promotions/display.ts), display only. */
+  salePriceCents?: number | null;
 }
 
 // Time to complete, beyond reading the lessons. Labs carry their own

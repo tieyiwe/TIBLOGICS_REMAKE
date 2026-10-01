@@ -1,3 +1,4 @@
+import { pageSales, withProductSales } from "@/lib/promotions/display";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { cache } from "react";
@@ -67,5 +68,8 @@ export default async function ProductPage({ params }: Props) {
     })
     .catch(() => []);
 
-  return <ProductDetail product={toShopProduct(p)} related={related.map(toShopProduct)} />;
+  // Live automatic sale prices (admin: /admin_pro/promotions), display only.
+  const sales = await pageSales();
+  const [shown] = withProductSales([p], sales);
+  return <ProductDetail product={toShopProduct(shown)} related={withProductSales(related, sales).map(toShopProduct)} />;
 }

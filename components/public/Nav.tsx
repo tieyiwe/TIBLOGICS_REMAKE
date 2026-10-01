@@ -1,5 +1,6 @@
 "use client";
 
+import PromoBanner from "@/components/promo/PromoBanner";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -80,6 +81,8 @@ export default function Nav() {
             : "border-b border-transparent"
         )}
       >
+        {/* Live promotion banner (admin: /admin_pro/promotions). */}
+        <PromoBanner />
         <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-10">
           <div className="flex items-center justify-between min-h-[5.5rem] sm:min-h-[7.5rem] py-0 sm:py-2">
             <Link href="/" className="flex items-center flex-shrink-0" aria-label={t("site.nav.home")}>

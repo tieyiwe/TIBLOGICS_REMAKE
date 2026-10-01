@@ -45,6 +45,7 @@ import {
   Magnet,
   MessageSquareText,
   ScrollText,
+  TicketPercent,
 } from "lucide-react";
 
 export interface NavSubItem {
@@ -182,6 +183,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: "Commerce",
     items: [
       { label: "Store", href: "/admin_pro/shop", icon: ShoppingBag, keywords: "shop products orders" },
+      { label: "Promotions", href: "/admin_pro/promotions", icon: TicketPercent, keywords: "discount sale coupon promo code referral" },
       { label: "Revenue", href: "/admin_pro/revenue", icon: DollarSign, keywords: "money sales" },
       { label: "Toolkit Live", href: "/admin_pro/toolkit", icon: Wand2 },
       { label: "Blueprints", href: "/admin_pro/blueprints", icon: FileText, keywords: "automation blueprints" },
@@ -268,6 +270,9 @@ export const NAV_PERMISSION_MAP: Record<string, string> = {
   // People / ops: owner and admin only.
   "/admin_pro/communications": "__admin_only__",
   "/admin_pro/audit": "__admin_only__",
+  // Promotions change what customers pay: owner and admin only.
+  "/admin_pro/promotions": "__admin_only__",
+  "/admin_pro/promotions/new": "__admin_only__",
 };
 
 export type NavViewer = { isAdmin: boolean; permissions: string[] };

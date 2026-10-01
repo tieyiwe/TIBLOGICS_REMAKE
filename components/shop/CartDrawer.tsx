@@ -5,6 +5,8 @@ import { ShoppingBag, X, Plus, Minus, Trash2, Loader2, Check } from "lucide-reac
 import { useCart } from "./CartContext";
 import { formatMoney } from "./types";
 import { useLocale, useT } from "@/lib/i18n/client";
+import PromoCodeField from "@/components/promo/PromoCodeField";
+import { getStoredCode } from "@/lib/promotions/client-code";
 
 const EMAIL_KEY = "tiblogics_cart_email";
 const isEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
@@ -55,7 +57,13 @@ export default function CartDrawer() {
       const res = await fetch("/api/shop/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: lines.map((l) => ({ id: l.id, quantity: l.quantity })) }),
+        // A promo code applied below is checked again on the server; prices
+        // and any automatic sale come from the server only.
+        body: JSON.stringify({
+          items: lines.map((l) => ({ id: l.id, quantity: l.quantity })),
+          ...(getStoredCode() ? { promoCode: getStoredCode() } : {}),
+          ...(isEmail(email) ? { email } : {}),
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.checkoutUrl) {
@@ -215,7 +223,15 @@ export default function CartDrawer() {
               </p>
             </div>
 
-            {error && <p style={{ color: "#F87171", fontSize: ".82rem", marginBottom: "12px", textAlign: "center" }}>{error}</p>}
+            <div style={{ marginBottom: "14px" }}>
+              <PromoCodeField
+                tone="dark"
+                email={isEmail(email) ? email : undefined}
+                targets={[{ kind: "store", items: lines.slice(0, 50).map((l) => ({ id: l.id, quantity: Math.min(99, l.quantity) })) }]}
+              />
+            </div>
+
+            {error && <p role="alert" style={{ color: "#F87171", fontSize: ".82rem", marginBottom: "12px", textAlign: "center" }}>{error}</p>}
             <button
               onClick={checkout}
               disabled={loading}

@@ -13,7 +13,7 @@ import { rejectionMessage } from "@/lib/promotions/http";
 // cannot be guessed by brute force.
 const Body = z.object({
   code: z.string().trim().min(1).max(40),
-  targets: z.array(Target).min(1).max(4),
+  targets: z.array(Target).min(1).max(12),
   email: z.string().trim().email().max(320).optional(),
 });
 

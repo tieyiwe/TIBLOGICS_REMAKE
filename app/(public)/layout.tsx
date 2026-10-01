@@ -17,7 +17,7 @@ export default function PublicLayout({
       <UtmCapture />
       <SkipLink />
       <Nav />
-      <main id="main-content" tabIndex={-1} className="min-h-screen pb-[76px] focus:outline-none sm:pb-0">{children}</main>
+      <main id="main-content" tabIndex={-1} className="min-h-screen pb-[76px] pt-[var(--promo-bar,0px)] focus:outline-none sm:pb-0">{children}</main>
       <Footer />
       <MobileBottomNav />
       <EchelonFloatClient />

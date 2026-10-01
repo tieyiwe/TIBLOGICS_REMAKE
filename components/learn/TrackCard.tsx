@@ -8,6 +8,7 @@ import { PLANS } from "@/lib/payments/provider";
 import type { CatalogTrack } from "@/lib/learn/catalog";
 import { useLocale, useT } from "@/lib/i18n/client";
 import { readableOn } from "@/lib/a11y/contrast";
+import SalePrice from "@/components/promo/SalePrice";
 
 export default function TrackCard({ track }: { track: CatalogTrack }) {
   const t = useT();
@@ -113,7 +114,10 @@ export default function TrackCard({ track }: { track: CatalogTrack }) {
         {/* Both ways to buy */}
         {!comingSoon && (
           <div className="mt-4 rounded-xl bg-[var(--s2)] px-3 py-2.5 text-xs leading-snug text-[var(--ink2)]">
-            <p className="font-semibold text-[var(--ink)]">{t("learn.offer.trackLine", { price: fmtPrice(track.priceCents, locale) })}</p>
+            {track.salePriceCents != null && track.salePriceCents < track.priceCents ? (
+              <SalePrice sale={{ saleCents: track.salePriceCents, originalCents: track.priceCents }} className="mb-1" />
+            ) : null}
+            <p className="font-semibold text-[var(--ink)]">{t("learn.offer.trackLine", { price: fmtPrice(track.salePriceCents ?? track.priceCents, locale) })}</p>
             <p className="mt-0.5">
               {t("learn.offer.orAllLine", { price: fmtPrice(PLANS.monthly.amount, locale) })}
             </p>

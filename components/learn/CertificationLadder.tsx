@@ -5,6 +5,7 @@ import { CERT_LEVELS } from "@/lib/learn/levels";
 import { fmtBreakdown, fmtPrice } from "@/lib/learn/format";
 import { useLocale, useT } from "@/lib/i18n/client";
 import { readableOn } from "@/lib/a11y/contrast";
+import SalePrice from "@/components/promo/SalePrice";
 
 /**
  * The Basic → Intermediate → Expert path, as three connected steps.
@@ -29,6 +30,8 @@ export interface LadderTrack {
   status?: string;
   /** One-time price for this track, in cents (shown when given). */
   priceCents?: number;
+  /** Price under a live automatic sale, display only. */
+  salePriceCents?: number | null;
   /** Learner mode: not unlocked on this account. */
   locked?: boolean;
 }
@@ -157,7 +160,10 @@ export default function CertificationLadder({
               {live && t?.priceCents != null && (mode === "public" || locked) && (
                 <div className="mt-3 rounded-xl bg-[var(--s2)] px-3 py-2.5 text-xs leading-snug text-[var(--ink2)]">
                   {locked && <p className="mb-1 font-bold text-[var(--ink)]">🔒 {tr("learn.locked.badge")}</p>}
-                  <p className="font-semibold text-[var(--ink)]">{tr("learn.offer.trackLine", { price: fmtPrice(t.priceCents, locale) })}</p>
+                  {t.salePriceCents != null && t.salePriceCents < t.priceCents ? (
+                    <SalePrice sale={{ saleCents: t.salePriceCents, originalCents: t.priceCents }} className="mb-1" />
+                  ) : null}
+                  <p className="font-semibold text-[var(--ink)]">{tr("learn.offer.trackLine", { price: fmtPrice(t.salePriceCents ?? t.priceCents, locale) })}</p>
                   {monthlyCents != null && (
                     <p className="mt-0.5">
                       {tr("learn.offer.orAllLine", { price: fmtPrice(monthlyCents, locale) })}

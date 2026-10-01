@@ -5,6 +5,10 @@ import { useState } from "react";
 import { FOUNDING_PRICING } from "@/lib/payments/provider";
 import { fmtPrice } from "@/lib/learn/format";
 import { useLocale, useT } from "@/lib/i18n/client";
+import SalePrice, { type SaleInfo } from "@/components/promo/SalePrice";
+import PromoCodeField from "@/components/promo/PromoCodeField";
+import { getStoredCode } from "@/lib/promotions/client-code";
+import type { TargetT } from "@/lib/promotions/lines";
 
 export interface PurchaseTrack {
   slug: string;
@@ -13,6 +17,8 @@ export interface PurchaseTrack {
   priceCents: number;
   /** Already bought: the one-time option shows as owned. */
   owned?: boolean;
+  /** Price under a live automatic sale (server-computed), display only. */
+  salePriceCents?: number | null;
 }
 
 /**
@@ -31,10 +37,16 @@ export default function PurchaseOptions({
   mode,
   showSubscribe = true,
   accentColor,
+  monthlySale,
+  extraPromoTargets,
 }: {
   track?: PurchaseTrack | null;
   monthlyCents: number;
   monthlyCompareAtCents?: number;
+  /** Live automatic sale on the monthly plan (server-computed), display only. */
+  monthlySale?: SaleInfo | null;
+  /** More things on the same page a code may be for (e.g. the track grid). */
+  extraPromoTargets?: TargetT[];
   mode: "checkout" | "link";
   showSubscribe?: boolean;
   accentColor?: string;
@@ -52,7 +64,11 @@ export default function PurchaseOptions({
       const res = await fetch("/api/learn/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(kind === "track" ? { trackSlug: track!.slug } : { plan: "monthly", track: track?.slug }),
+        // A code applied in the field below goes along; the server checks it again.
+        body: JSON.stringify({
+          ...(kind === "track" ? { trackSlug: track!.slug } : { plan: "monthly", track: track?.slug }),
+          ...(getStoredCode() ? { promoCode: getStoredCode() } : {}),
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.url) throw new Error(data.error ?? t("learn.plan.checkoutFailed"));
@@ -66,6 +82,17 @@ export default function PurchaseOptions({
   const btnBase =
     "mt-5 block w-full rounded-full px-4 py-3 text-center text-sm font-bold transition-opacity hover:opacity-90 disabled:opacity-50";
   const accent = accentColor ?? "var(--ink)";
+  const trackSale =
+    track && track.salePriceCents != null && track.salePriceCents < track.priceCents
+      ? { saleCents: track.salePriceCents, originalCents: track.priceCents }
+      : null;
+  const trackPrice = trackSale?.saleCents ?? track?.priceCents ?? 0;
+  const monthlyPrice = monthlySale?.saleCents ?? monthlyCents;
+  const promoTargets: TargetT[] = [
+    ...(track && !track.owned ? [{ kind: "track" as const, slug: track.slug }] : []),
+    ...(showSubscribe ? [{ kind: "arfa_monthly" as const }] : []),
+    ...(extraPromoTargets ?? []),
+  ].slice(0, 12);
 
   return (
     <div>
@@ -76,8 +103,9 @@ export default function PurchaseOptions({
             <p className="mt-1 truncate text-sm font-semibold text-[var(--ink)]" title={track.title}>
               {track.title}
             </p>
-            <p className="mt-3 flex flex-wrap items-baseline gap-x-2">
-              <span className="text-3xl font-black text-[var(--ink)]">{fmtPrice(track.priceCents, locale)}</span>
+            {trackSale ? <SalePrice sale={trackSale} className="mt-3" /> : null}
+            <p className={`${trackSale ? "mt-1" : "mt-3"} flex flex-wrap items-baseline gap-x-2`}>
+              <span className="text-3xl font-black text-[var(--ink)]">{fmtPrice(trackPrice, locale)}</span>
               <span className="text-sm text-[var(--ink3)]">{t("learn.offer.oneTime")}</span>
             </p>
             <p className="mt-3 flex-1 text-sm leading-relaxed text-[var(--ink2)]">{t("learn.offer.track.blurb")}</p>
@@ -87,7 +115,7 @@ export default function PurchaseOptions({
               </p>
             ) : mode === "link" ? (
               <Link href={signupHref} className={`${btnBase} text-white`} style={{ background: accent }}>
-                {t("learn.offer.track.buy", { price: fmtPrice(track.priceCents, locale) })}
+                {t("learn.offer.track.buy", { price: fmtPrice(trackPrice, locale) })}
               </Link>
             ) : (
               <button
@@ -97,7 +125,7 @@ export default function PurchaseOptions({
                 className={`${btnBase} text-white`}
                 style={{ background: accent }}
               >
-                {busy === "track" ? t("learn.plan.opening") : t("learn.offer.track.buy", { price: fmtPrice(track.priceCents, locale) })}
+                {busy === "track" ? t("learn.plan.opening") : t("learn.offer.track.buy", { price: fmtPrice(trackPrice, locale) })}
               </button>
             )}
           </div>
@@ -107,11 +135,12 @@ export default function PurchaseOptions({
           <div className="flex min-w-0 flex-col rounded-2xl border border-[var(--border)] bg-white p-6">
             <h3 className="text-sm font-bold uppercase tracking-wide text-[var(--ink3)]">{t("learn.offer.all.title")}</h3>
             <p className="mt-1 text-sm font-semibold text-[var(--ink)]">{t("learn.billing.everyTrack")}</p>
-            <p className="mt-3 flex flex-wrap items-baseline gap-x-2">
-              <span className="text-3xl font-black text-[var(--ink)]">{fmtPrice(monthlyCents, locale)}</span>
+            {monthlySale ? <SalePrice sale={monthlySale} recurring className="mt-3" /> : null}
+            <p className={`${monthlySale ? "mt-1" : "mt-3"} flex flex-wrap items-baseline gap-x-2`}>
+              <span className="text-3xl font-black text-[var(--ink)]">{fmtPrice(monthlyPrice, locale)}</span>
               <span className="text-sm text-[var(--ink3)]">{t("learn.plan.per.month")}</span>
             </p>
-            {monthlyCompareAtCents != null && FOUNDING_PRICING && (
+            {monthlyCompareAtCents != null && FOUNDING_PRICING && !monthlySale && (
               <p className="mt-1 text-xs text-[var(--ink3)]">
                 <span className="line-through">{fmtPrice(monthlyCompareAtCents, locale)}</span>{" "}
                 <span className="font-bold text-[var(--orange2)]">{t("learn.billing.foundingRate")}</span>
@@ -123,7 +152,7 @@ export default function PurchaseOptions({
                 href={signupHref}
                 className={`${btnBase} bg-gradient-to-r from-[var(--orange)] to-[#F9A738] text-[var(--ink)]`}
               >
-                {t("learn.offer.all.cta", { price: fmtPrice(monthlyCents, locale) })}
+                {t("learn.offer.all.cta", { price: fmtPrice(monthlyPrice, locale) })}
               </Link>
             ) : (
               <button
@@ -132,13 +161,20 @@ export default function PurchaseOptions({
                 disabled={busy !== null}
                 className={`${btnBase} bg-gradient-to-r from-[var(--orange)] to-[#F9A738] text-[var(--ink)]`}
               >
-                {busy === "monthly" ? t("learn.plan.opening") : t("learn.offer.all.cta", { price: fmtPrice(monthlyCents, locale) })}
+                {busy === "monthly" ? t("learn.plan.opening") : t("learn.offer.all.cta", { price: fmtPrice(monthlyPrice, locale) })}
               </button>
             )}
           </div>
         )}
       </div>
 
+      {mode === "checkout" && promoTargets.length > 0 && (
+        <div className="mt-4 flex justify-center">
+          <div className="w-full max-w-md text-center">
+            <PromoCodeField targets={promoTargets} />
+          </div>
+        </div>
+      )}
       {error && (
         <p role="alert" className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-center text-sm text-red-700">
           {error}

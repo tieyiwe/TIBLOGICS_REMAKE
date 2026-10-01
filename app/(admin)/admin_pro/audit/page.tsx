@@ -20,6 +20,7 @@ const GROUPS: Array<[string, string]> = [
   ["certificate", "Certificates"],
   ["capstone", "Capstone reviews"],
   ["product", "Products"],
+  ["promotion", "Promotions"],
   ["audit", "Audit exports"],
 ];
 
@@ -48,6 +49,7 @@ function targetHref(r: AuditRow): string | null {
   if (r.targetType === "learner") return `/admin_pro/learn/learners/${r.targetId}`;
   if (r.targetType === "campaign") return `/admin_pro/communications/${r.targetId}`;
   if (r.targetType === "thread") return `/admin_pro/communications/inbox/${r.targetId}`;
+  if (r.targetType === "promotion") return `/admin_pro/promotions/${r.targetId}`;
   return null;
 }
 

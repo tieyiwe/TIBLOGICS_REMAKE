@@ -18,6 +18,7 @@ import {
   Search,
   ShoppingBag,
   Sparkles,
+  TicketPercent,
   Upload,
   User,
   UserSearch,
@@ -39,6 +40,7 @@ export const QUICK_ACTIONS: QuickAction[] = [
   { label: "New tracked link", href: "/admin_pro/growth/links", icon: Link2, keywords: "utm attribution short link" },
   { label: "New live session", href: "/admin_pro/learn/live", icon: Radio, keywords: "learn webinar arfa academy" },
   { label: "New blog post", href: "/admin_pro/blog", icon: FilePlus2, keywords: "ai times article write" },
+  { label: "New promotion", href: "/admin_pro/promotions/new", icon: TicketPercent, keywords: "discount sale coupon promo code" },
   { label: "Message learners", href: "/admin_pro/communications", icon: MessageSquareText, keywords: "email broadcast arfa academy students" },
 ];
 

@@ -13,6 +13,7 @@ import { PLANS } from "@/lib/payments/provider";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTrack, trackText, type TrackText } from "@/lib/i18n/sources/learn";
 import type { Locale } from "@/lib/i18n/config";
+import { pageSales } from "@/lib/promotions/display";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +48,7 @@ export default async function TrackLandingPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [track, t, locale] = await Promise.all([getTrackBySlug(slug), getT(), getLocale()]);
+  const [track, t, locale, sales] = await Promise.all([getTrackBySlug(slug), getT(), getLocale(), pageSales()]);
   if (!track) notFound();
   const { text: loaded, pending } = await textFor(slug, locale);
 
@@ -73,6 +74,8 @@ export default async function TrackLandingPage({
   const firstQuiz = track.modules[0]?.quiz;
   // One-time price for this track (level default or the track's own).
   const priceCents = trackPriceCents(track.level, track.priceCents);
+  // A live automatic sale (admin: /admin_pro/promotions), display only.
+  const trackSale = sales.track(track.id, priceCents);
 
   const faqs = [
     {
@@ -245,9 +248,10 @@ export default async function TrackLandingPage({
             <div className="mt-5">
               <PurchaseOptions
                 mode="link"
-                track={{ slug: track.slug, title: text.title, priceCents }}
+                track={{ slug: track.slug, title: text.title, priceCents, salePriceCents: trackSale?.saleCents ?? null }}
                 monthlyCents={PLANS.monthly.amount}
                 monthlyCompareAtCents={PLANS.monthly.compareAtAmount}
+                monthlySale={sales.monthly}
                 accentColor={track.accentColor}
               />
             </div>
@@ -301,6 +305,7 @@ export default async function TrackLandingPage({
         comingSoon={comingSoon}
         trackSlug={track.slug}
         priceCents={priceCents}
+        salePriceCents={trackSale?.saleCents ?? null}
       />
     </div>
   );

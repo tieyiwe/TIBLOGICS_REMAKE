@@ -6,6 +6,7 @@ import { trackPriceCents } from "@/lib/learn/pricing";
 import { fmtPrice } from "@/lib/learn/format";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTrack } from "@/lib/i18n/sources/learn";
+import { pageSales } from "@/lib/promotions/display";
 
 /**
  * Shown in place of a lesson, quiz, lab, exam or capstone the learner has not
@@ -13,18 +14,20 @@ import { loadTrackSources, localizedTrack } from "@/lib/i18n/sources/learn";
  * Server component; the buttons start checkout.
  */
 export default async function TrackPaywall({ trackId, compact = false }: { trackId: string; compact?: boolean }) {
-  const [track, t, locale] = await Promise.all([
+  const [track, t, locale, sales] = await Promise.all([
     prisma.learnTrack
       .findUnique({ where: { id: trackId }, select: { slug: true, title: true, level: true, priceCents: true, accentColor: true, status: true } })
       .catch(() => null),
     getT(),
     getLocale(),
+    pageSales(),
   ]);
   if (!track) return null;
   const [src] = await loadTrackSources({ id: trackId });
   const title = src && locale !== "en" ? (await localizedTrack(src, locale)).text.title : track.title;
   const price = trackPriceCents(track.level, track.priceCents);
   const forSale = track.status === "live";
+  const sale = sales.track(trackId, price);
 
   return (
     <section
@@ -48,7 +51,8 @@ export default async function TrackPaywall({ trackId, compact = false }: { track
       </div>
       <div className="mt-6">
         <PlanPicker
-          track={forSale ? { slug: track.slug, title, priceCents: price } : null}
+          track={forSale ? { slug: track.slug, title, priceCents: price, salePriceCents: sale?.saleCents ?? null } : null}
+          monthlySale={sales.monthly}
         />
       </div>
     </section>

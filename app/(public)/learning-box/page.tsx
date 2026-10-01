@@ -11,6 +11,8 @@ import { getLocale, getT } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTracks, withTrackText } from "@/lib/i18n/sources/learn";
 import TeamsOffer from "@/components/learn/team/TeamsOffer";
 import { getTeamPricing } from "@/lib/learn/team/settings";
+import { pageSales, withTrackSales } from "@/lib/promotions/display";
+import SalePrice from "@/components/promo/SalePrice";
 
 export const dynamic = "force-dynamic";
 
@@ -29,16 +31,17 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LearningBoxPage() {
-  const [catalog, locale, t, teamPricing] = await Promise.all([getCatalog(), getLocale(), getT(), getTeamPricing()]);
+  const [catalog, locale, t, teamPricing, sales] = await Promise.all([getCatalog(), getLocale(), getT(), getTeamPricing(), pageSales()]);
   const { texts, pending } = await localizedTracks(
     locale === "en" ? [] : await loadTrackSources({ slug: { in: catalog.map((c) => c.slug) } }),
     locale,
   );
-  const tracks = catalog.map((c) => withTrackText(c, texts.get(c.slug)));
+  // Live automatic sale (admin: /admin_pro/promotions), read on the server.
+  const tracks = withTrackSales(catalog.map((c) => withTrackText(c, texts.get(c.slug))), sales);
   const brand = t("learn.box.heroBrand");
   const monthly = PLANS.monthly;
   // The lowest one-time price among the tracks on sale.
-  const onSale = tracks.filter((x) => x.status === "live").map((x) => x.priceCents);
+  const onSale = tracks.filter((x) => x.status === "live").map((x) => x.salePriceCents ?? x.priceCents);
   const fromCents = onSale.length ? Math.min(...onSale) : TRACK_BASE_PRICE_CENTS;
 
   const approach = [
@@ -107,7 +110,8 @@ export default async function LearningBoxPage() {
                   {t("learn.billing.foundingRate")}
                 </span>
               )}
-              <strong className="text-white">{t("learn.price.perMonth", { price: fmtPrice(monthly.amount, locale) })}</strong>{" "}
+              {sales.monthly ? <SalePrice sale={sales.monthly} recurring tone="dark" className="mr-2" /> : null}
+              <strong className="text-white">{t("learn.price.perMonth", { price: fmtPrice(sales.monthly?.saleCents ?? monthly.amount, locale) })}</strong>{" "}
               {t("learn.box.heroPriceTail", { from: fmtPrice(fromCents, locale) })}
             </p>
           </div>

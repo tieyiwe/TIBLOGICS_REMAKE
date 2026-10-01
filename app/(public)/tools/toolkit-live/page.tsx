@@ -7,6 +7,8 @@ import { scanText } from "@/lib/toolkit/guard/scan";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { localizedList } from "@/lib/i18n/content";
 import ToolkitWaitlist from "./ToolkitWaitlist";
+import { pageSales } from "@/lib/promotions/display";
+import SalePrice from "@/components/promo/SalePrice";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -35,7 +37,7 @@ export default async function ToolkitLivePage({ searchParams }: { searchParams: 
   const plans = toolkitPlans();
   const demo = scanText(DEMO, "realtor");
   const anyOnSale = !!(plans.toolkit.amount || plans.guard.amount);
-  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  const [t, locale, sales] = await Promise.all([getT(), getLocale(), pageSales()]);
   const price = (cents: number) => {
     const v = cents / 100;
     const digits = v % 1 === 0 ? 0 : 2;
@@ -156,6 +158,8 @@ export default async function ToolkitLivePage({ searchParams }: { searchParams: 
         <div className="grid md:grid-cols-2 gap-5 mt-5">
           {(["toolkit", "guard"] as const).map((id) => {
             const p = plans[id];
+            // Live automatic sale (admin: /admin_pro/promotions), display only.
+            const sale = p.amount ? sales.line({ key: "toolkit", id, amountCents: p.amount }) : null;
             return (
               <div key={id} className={`bg-white rounded-2xl p-6 border ${id === "toolkit" ? "border-[#B8500A] shadow-[0_8px_32px_rgba(184,80,10,0.12)]" : "border-[#D2DCE8]"}`}>
                 <div className="flex items-center gap-2">
@@ -177,9 +181,12 @@ export default async function ToolkitLivePage({ searchParams }: { searchParams: 
                 <div className="mt-6 flex flex-wrap items-end justify-between gap-3">
                   {p.amount ? (
                     <>
+                      <div>
+                        {sale ? <SalePrice sale={sale} recurring /> : null}
                       <p className="font-syne font-extrabold text-3xl text-[#0D1B2A]">
-                        {price(p.amount)}<span className="font-dm text-base font-medium text-[#7A8FA6]"> {t("tools.common.perMonth")}</span>
+                        {price(sale?.saleCents ?? p.amount)}<span className="font-dm text-base font-medium text-[#7A8FA6]"> {t("tools.common.perMonth")}</span>
                       </p>
+                      </div>
                       <Link href={`/toolkit?plan=${id}`} className="btn-primary">{t("tools.tk.getStarted")}</Link>
                     </>
                   ) : (

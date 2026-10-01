@@ -13,6 +13,9 @@ import { loadTrackSources, localizedTracks, withTrackText } from "@/lib/i18n/sou
 import BuyTrackButton from "@/components/learn/BuyTrackButton";
 import TeamsOffer from "@/components/learn/team/TeamsOffer";
 import { getTeamPricing } from "@/lib/learn/team/settings";
+import { pageSales, withTrackSales } from "@/lib/promotions/display";
+import SalePrice from "@/components/promo/SalePrice";
+import PromoBanner from "@/components/promo/PromoBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -38,12 +41,13 @@ export default async function SubscribePage({
   const { student, entitlement, access } = await getLearnContext();
   if (!student) redirect("/learn/login");
 
-  const [catalog, t, locale] = await Promise.all([getCatalog(), getT(), getLocale()]);
+  const [catalog, t, locale, sales] = await Promise.all([getCatalog(), getT(), getLocale(), pageSales()]);
   const { texts } = await localizedTracks(
     locale === "en" ? [] : await loadTrackSources({ slug: { in: catalog.map((c) => c.slug) } }),
     locale,
   );
-  const live = catalog.filter((c) => c.status === "live").map((c) => withTrackText(c, texts.get(c.slug)));
+  // Live automatic sale prices (admin: /admin_pro/promotions), display only.
+  const live = withTrackSales(catalog.filter((c) => c.status === "live").map((c) => withTrackText(c, texts.get(c.slug))), sales);
   const chosen = trackParam ? live.find((c) => c.slug === trackParam) ?? null : null;
   const owns = (id: string) => access.purchased.includes(id);
 
@@ -81,6 +85,7 @@ export default async function SubscribePage({
   // the right. On phones the plan comes first, then the tracks.
   return (
     <div className="min-h-screen bg-[var(--s2)]">
+      <PromoBanner variant="inline" />
       <header className="border-b border-[var(--border)] bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
@@ -114,7 +119,13 @@ export default async function SubscribePage({
           <aside className="order-1 space-y-4 lg:order-none lg:col-start-2 lg:row-start-1">
             {!access.all && (
               <div>
-                <PlanPicker track={null} showSubscribe />
+                <PlanPicker
+                  track={null}
+                  showSubscribe
+                  monthlySale={sales.monthly}
+                  // A code typed here may be for one of the tracks in the grid.
+                  extraPromoTargets={others.filter((c) => !owns(c.id)).slice(0, 11).map((c) => ({ kind: "track" as const, slug: c.slug }))}
+                />
                 <ul className="mt-3 space-y-1.5 rounded-2xl border border-[var(--border)] bg-white p-4">
                   {[1, 2, 3, 4, 5].map((n) => t(`learn.subscribe.item.${n}`)).map((x) => (
                     <li key={x} className="flex gap-2 text-xs leading-relaxed text-[var(--ink2)]">
@@ -142,7 +153,7 @@ export default async function SubscribePage({
             {chosen && !owns(chosen.id) && (
               <div className="mb-6">
                 <PlanPicker
-                  track={{ slug: chosen.slug, title: chosen.title, priceCents: chosen.priceCents, owned: false }}
+                  track={{ slug: chosen.slug, title: chosen.title, priceCents: chosen.priceCents, owned: false, salePriceCents: chosen.salePriceCents }}
                   showSubscribe={false}
                 />
               </div>
@@ -172,10 +183,15 @@ export default async function SubscribePage({
                   </Link>
                   {c.tagline && <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-[var(--ink2)]">{c.tagline}</p>}
                   <div className="mt-auto flex items-center justify-between gap-2 pt-3">
-                    <p className="text-sm font-black text-[var(--ink)]">
-                      {fmtPrice(c.priceCents, locale)}{" "}
-                      <span className="text-xs font-normal text-[var(--ink3)]">{t("learn.offer.oneTime")}</span>
-                    </p>
+                    <div className="min-w-0">
+                      {c.salePriceCents != null && c.salePriceCents < c.priceCents ? (
+                        <SalePrice sale={{ saleCents: c.salePriceCents, originalCents: c.priceCents }} />
+                      ) : null}
+                      <p className="text-sm font-black text-[var(--ink)]">
+                        {fmtPrice(c.salePriceCents ?? c.priceCents, locale)}{" "}
+                        <span className="text-xs font-normal text-[var(--ink3)]">{t("learn.offer.oneTime")}</span>
+                      </p>
+                    </div>
                     {owns(c.id) ? (
                       <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-800">✓</span>
                     ) : (

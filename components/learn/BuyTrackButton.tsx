@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useT } from "@/lib/i18n/client";
+import { getStoredCode } from "@/lib/promotions/client-code";
 
 /** Starts the one-time checkout for one track. The price is set on the server. */
 export default function BuyTrackButton({ slug, label }: { slug: string; label: string }) {
@@ -16,7 +17,8 @@ export default function BuyTrackButton({ slug, label }: { slug: string; label: s
       const res = await fetch("/api/learn/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ trackSlug: slug }),
+        // A code applied in the promo field on this page; checked again on the server.
+        body: JSON.stringify({ trackSlug: slug, ...(getStoredCode() ? { promoCode: getStoredCode() } : {}) }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.url) throw new Error(data.error ?? t("learn.plan.checkoutFailed"));

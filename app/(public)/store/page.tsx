@@ -1,3 +1,4 @@
+import { pageSales, withProductSales } from "@/lib/promotions/display";
 import prisma from "@/lib/prisma";
 import StoreFront from "@/components/shop/StoreFront";
 import type { ShopProduct, ShopCollection } from "@/components/shop/types";
@@ -22,7 +23,10 @@ export default async function ShopPage() {
     }),
   ]);
 
-  const products: ShopProduct[] = rawProducts.map((p) => ({
+  // A live automatic sale (admin: /admin_pro/promotions) shows as a
+  // strike-through price; checkout recomputes it on the server.
+  const sales = await pageSales();
+  const products: ShopProduct[] = withProductSales(rawProducts, sales).map((p) => ({
     id: p.id,
     slug: p.slug,
     name: p.name,

@@ -51,6 +51,7 @@ export type AiTask =
   | "growth-rewrite"
   | "growth-ideas"
   | "comms-translate"
+  | "promo-translate"
   // Sonnet
   | "code-assist"
   | "grade-code"
@@ -120,6 +121,8 @@ export const ROUTES: Record<AiTask, Route> = {
   "growth-ideas": { tier: "haiku", maxTokens: 1200 },
   // Communications center: an admin message (subject + body) into French.
   "comms-translate": { tier: "haiku", maxTokens: 4000 },
+  // Promotions: a site banner (one line) into French and Swahili.
+  "promo-translate": { tier: "haiku", maxTokens: 600 },
 
   "code-assist": { tier: "sonnet", maxTokens: 8000, thinking: "adaptive", effort: "medium", cacheSystem: true },
   "grade-code": { tier: "sonnet", maxTokens: 4000, thinking: "adaptive", effort: "medium" },

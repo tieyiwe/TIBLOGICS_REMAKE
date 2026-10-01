@@ -1,3 +1,4 @@
+import { pageSales, withProductSales } from "@/lib/promotions/display";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { cache } from "react";
@@ -41,7 +42,7 @@ export default async function CollectionPage({ params }: Props) {
     .findMany({ where: { published: true, collections: { has: slug } }, orderBy: [{ featured: "desc" }, { createdAt: "desc" }] })
     .catch(() => []);
 
-  const products: ShopProduct[] = raw.map((p) => ({
+  const products: ShopProduct[] = withProductSales(raw, await pageSales()).map((p) => ({
     id: p.id, slug: p.slug, name: p.name, tagline: p.tagline, description: p.description,
     price: p.price, compareAtPrice: p.compareAtPrice, currency: p.currency, images: p.images,
     category: p.category, collections: p.collections, tags: p.tags, stock: p.stock, digital: p.digital,

@@ -15,6 +15,7 @@ export default function StickyEnrollBar({
   comingSoon,
   trackSlug,
   priceCents,
+  salePriceCents,
 }: {
   trackTitle: string;
   accentColor: string;
@@ -22,6 +23,8 @@ export default function StickyEnrollBar({
   trackSlug: string;
   /** One-time price for lifetime access to this track. */
   priceCents: number;
+  /** Price under a live automatic sale, display only. */
+  salePriceCents?: number | null;
 }) {
   const t = useT();
   const locale = useLocale();
@@ -52,8 +55,11 @@ export default function StickyEnrollBar({
                 {FOUNDING_PRICING && (
                   <span className="mr-1.5 font-bold text-[var(--orange2)]">{t("learn.billing.foundingRate")}</span>
                 )}
+                {salePriceCents != null && salePriceCents < priceCents ? (
+                  <span className="mr-1.5 text-[var(--ink3)] line-through">{fmtPrice(priceCents, locale)}</span>
+                ) : null}
                 <strong className="text-[var(--ink2)]">
-                  {t("learn.offer.trackLine", { price: fmtPrice(priceCents, locale) })}
+                  {t("learn.offer.trackLine", { price: fmtPrice(salePriceCents ?? priceCents, locale) })}
                 </strong>{" "}
                 · {t("learn.offer.orAllLine", { price: fmtPrice(PLANS.monthly.amount, locale) })}
               </>

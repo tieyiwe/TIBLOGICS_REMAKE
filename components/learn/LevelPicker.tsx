@@ -50,6 +50,7 @@ export default function LevelPicker({ tracks }: { tracks: CatalogTrack[] }) {
           labCount: x.labCount,
           status: x.status,
           priceCents: x.priceCents,
+          salePriceCents: x.salePriceCents ?? null,
         }))}
       />
       {specialists.length > 0 && (
