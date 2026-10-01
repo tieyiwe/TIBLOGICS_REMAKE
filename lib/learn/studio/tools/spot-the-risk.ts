@@ -7,7 +7,7 @@ import type { StudioToolMeta } from "../types";
 export const spotTheRisk: StudioToolMeta = {
   id: "spot-the-risk",
   icon: "🚨",
-  tracks: ["ai-foundations", "ai-for-parents", "vibe-coding-engineer", "ai-small-business", "ai-forward-professional"],
+  tracks: ["ai-foundations", "ai-for-parents", "vibe-coding-engineer", "ai-small-business", "ai-forward-professional", "ai-ml-fundamentals", "ai-governance", "ai-apps-agents"],
   challenges: [
     { id: "privacy", difficulty: 1 },
     { id: "kids", difficulty: 1 },

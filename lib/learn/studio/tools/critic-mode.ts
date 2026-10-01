@@ -6,7 +6,7 @@ import type { StudioToolMeta } from "../types";
 export const criticMode: StudioToolMeta = {
   id: "critic-mode",
   icon: "🧐",
-  tracks: ["practical-prompt-engineering", "ai-foundations", "ai-practitioner", "ai-forward-professional", "ai-small-business"],
+  tracks: ["practical-prompt-engineering", "ai-foundations", "ai-practitioner", "ai-forward-professional", "ai-small-business", "ai-governance"],
   challenges: [
     { id: "bakery", difficulty: 1 },
     { id: "launch", difficulty: 1 },

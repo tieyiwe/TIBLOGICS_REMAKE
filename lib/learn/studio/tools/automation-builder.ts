@@ -7,7 +7,7 @@ import type { StudioToolMeta } from "../types";
 export const automationBuilder: StudioToolMeta = {
   id: "automation-builder",
   icon: "⚙️",
-  tracks: ["ai-practitioner", "ai-small-business", "ai-systems-expert", "ai-forward-professional", "vibe-coding-engineer"],
+  tracks: ["ai-practitioner", "ai-small-business", "ai-systems-expert", "ai-forward-professional", "vibe-coding-engineer", "ai-ml-fundamentals", "ai-apps-agents"],
   challenges: [
     { id: "support-triage", difficulty: 1 },
     { id: "weekly-report", difficulty: 1 },

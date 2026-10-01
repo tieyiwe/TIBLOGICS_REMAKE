@@ -6,7 +6,7 @@ import type { StudioToolMeta } from "../types";
 export const promptArena: StudioToolMeta = {
   id: "prompt-arena",
   icon: "⚔️",
-  tracks: ["practical-prompt-engineering", "ai-foundations", "ai-practitioner", "ai-forward-professional", "ai-small-business"],
+  tracks: ["practical-prompt-engineering", "ai-foundations", "ai-practitioner", "ai-forward-professional", "ai-small-business", "ai-ml-fundamentals"],
   challenges: [
     { id: "rookie", difficulty: 1 },
     { id: "pro", difficulty: 2 },

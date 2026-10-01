@@ -7,7 +7,7 @@ import type { StudioToolMeta } from "../types";
 export const loopMapper: StudioToolMeta = {
   id: "loop-mapper",
   icon: "🔁",
-  tracks: ["ai-foundations", "ai-practitioner", "ai-systems-expert", "ai-small-business", "ai-forward-professional", "ai-for-parents"],
+  tracks: ["ai-foundations", "ai-practitioner", "ai-systems-expert", "ai-small-business", "ai-forward-professional", "ai-for-parents", "ai-ml-fundamentals", "ai-governance", "ai-apps-agents"],
   challenges: [
     { id: "reviews-loop", difficulty: 1 },
     { id: "capacity-limit", difficulty: 2 },

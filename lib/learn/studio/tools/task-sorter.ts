@@ -7,7 +7,7 @@ import type { StudioToolMeta } from "../types";
 export const taskSorter: StudioToolMeta = {
   id: "task-sorter",
   icon: "🗂️",
-  tracks: ["ai-forward-professional", "ai-small-business", "ai-practitioner", "ai-foundations"],
+  tracks: ["ai-forward-professional", "ai-small-business", "ai-practitioner", "ai-foundations", "ai-ml-fundamentals", "ai-governance", "ai-apps-agents"],
   challenges: [
     { id: "office", difficulty: 1 },
     { id: "teacher", difficulty: 1 },

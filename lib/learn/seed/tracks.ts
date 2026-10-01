@@ -60,7 +60,7 @@ Assumes you're comfortable using AI tools day to day — if you're not, take AI 
   level: "beginner",
   levelEnd: "intermediate",
   status: "draft",
-  sortOrder: 10,
+  sortOrder: 14,
   accentColor: "#3B82F6",
   certificateName: "TIBLOGICS Certified — AI for Business Operations",
   audience: "Managers, operations leads and business owners deciding where AI fits in their organisation.",

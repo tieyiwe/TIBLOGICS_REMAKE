@@ -13,8 +13,7 @@ export const testBench: StudioToolMeta = {
     "ai-forward-professional",
     "ai-small-business",
     "ai-systems-expert",
-    "vibe-coding-engineer",
-  ],
+    "vibe-coding-engineer", "ai-ml-fundamentals", "ai-apps-agents"],
   challenges: [
     { id: "pick-best", difficulty: 1 },
     { id: "catch-planted", difficulty: 2 },
