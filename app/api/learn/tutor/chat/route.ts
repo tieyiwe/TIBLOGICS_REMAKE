@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
-import anthropic, { CLAUDE_MODEL } from "@/lib/claude";
+import { streamClaude } from "@/lib/claude";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { tutorGuard } from "@/lib/learn/tutor/guard";
 import {
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
   if (turns[0]?.role !== "user") turns.shift();
 
   const system = buildSystem(page, profile, thread.summary, locale);
-  const stream = anthropic.messages.stream({ model: CLAUDE_MODEL, max_tokens: REPLY_MAX_TOKENS, system, messages: turns });
+  const stream = streamClaude("tutor", { system, messages: turns, maxTokens: REPLY_MAX_TOKENS, meta: { studentId: student.id, ref: page.kind } });
   req.signal.addEventListener("abort", () => stream.abort());
 
   const encoder = new TextEncoder();
