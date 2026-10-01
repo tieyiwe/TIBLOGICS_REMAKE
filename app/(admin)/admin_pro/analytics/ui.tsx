@@ -32,8 +32,8 @@ export function Kpi({
       <p className="mt-1 font-syne font-bold text-2xl text-[#0D1B2A] tabular-nums">{value}</p>
       {pair && (
         <p className="mt-1 font-dm text-xs">
-          <Delta v={pair} invert={invert} />{" "}
-          <span className="text-[#7A8FA6]">vs {prevLabel ?? int(pair.prev)} before</span>
+          <Delta v={pair} invert={invert} />
+          {pair.prev !== 0 && <span className="text-[#7A8FA6]"> vs {prevLabel ?? int(pair.prev)} before</span>}
         </p>
       )}
       {note && <p className="mt-1 font-dm text-[11px] text-[#7A8FA6] leading-snug">{note}</p>}

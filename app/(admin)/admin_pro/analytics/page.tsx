@@ -216,7 +216,7 @@ export default async function AnalyticsPage({
 
       <Card
         title="Tracks"
-        subtitle={`Enrolled = touched the track (lesson, quiz, lab, exam or placement), all time. Completed = every lesson done or tested out. Median days = first activity to last lesson, for completers. Stalled = not completed and no activity for ${STALL_DAYS}+ days; the drop-off module is where their next lesson sits. Pass rates are for the last ${range} days.`}
+        subtitle={`Enrolled = touched the track (lesson, quiz, lab, exam or placement), all time. Completed = certificate earned, or every lesson done or tested out. Median days = first activity to certificate (or last lesson), for completers. Stalled = not completed and no activity for ${STALL_DAYS}+ days; the drop-off module is where their next lesson sits. Pass rates are for the last ${range} days.`}
         csv="tracks"
         range={range}
       >

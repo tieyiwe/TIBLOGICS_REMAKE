@@ -21,6 +21,9 @@
 //     one-time track purchase.
 //   - Learn MRR: active subscriptions at today's plan prices (PLANS), annual
 //     divided by 12, plus team seats (teamMrr). An estimate, labelled so.
+//   - Track completed: holds a certificate for it, or every lesson is done
+//     (LessonProgress) or tested out (LessonMastery). Days to complete run
+//     from first activity in the track to the certificate (or last lesson).
 //   - Paid one-time revenue: Order paid|fulfilled, EventRegistration paid,
 //     Appointment paid, Blueprint paidAt, TrackPurchase: stored amounts.
 import { Prisma } from "@prisma/client";
