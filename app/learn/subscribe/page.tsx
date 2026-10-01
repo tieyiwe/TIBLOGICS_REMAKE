@@ -124,7 +124,7 @@ export default async function SubscribePage({
                   showSubscribe
                   monthlySale={sales.monthly}
                   // A code typed here may be for one of the tracks in the grid.
-                  extraPromoTargets={others.filter((c) => !owns(c.id)).slice(0, 11).map((c) => ({ kind: "track" as const, slug: c.slug }))}
+                  extraPromoTargets={live.filter((c) => !owns(c.id)).slice(0, 11).map((c) => ({ kind: "track" as const, slug: c.slug }))}
                 />
                 <ul className="mt-3 space-y-1.5 rounded-2xl border border-[var(--border)] bg-white p-4">
                   {[1, 2, 3, 4, 5].map((n) => t(`learn.subscribe.item.${n}`)).map((x) => (
