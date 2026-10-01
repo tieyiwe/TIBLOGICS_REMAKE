@@ -97,7 +97,9 @@ const messages: Messages = {
     "mastery.grid.diagnostic": "Check: {c} of {n}",
     "mastery.grid.missed.one": "{n} idea to revisit",
     "mastery.grid.missed.other": "{n} ideas to revisit",
-    "mastery.grid.trackSummary": "{n} of {total} modules mastered",
+    "mastery.grid.trackSummary.one": "{n} of {total} modules mastered",
+    "mastery.grid.trackSummary.other": "{n} of {total} modules mastered",
+    "mastery.grid.sep": ": ",
     "mastery.grid.empty": "Start a track to see your mastery here.",
     "mastery.grid.browse": "Browse tracks",
 
@@ -200,7 +202,9 @@ const messages: Messages = {
     "mastery.grid.diagnostic": "Test : {c} sur {n}",
     "mastery.grid.missed.one": "{n} notion à revoir",
     "mastery.grid.missed.other": "{n} notions à revoir",
-    "mastery.grid.trackSummary": "{n} modules maîtrisés sur {total}",
+    "mastery.grid.trackSummary.one": "{n} module maîtrisé sur {total}",
+    "mastery.grid.trackSummary.other": "{n} modules maîtrisés sur {total}",
+    "mastery.grid.sep": " : ",
     "mastery.grid.empty": "Commencez un parcours pour voir votre maîtrise ici.",
     "mastery.grid.browse": "Voir les parcours",
 
@@ -303,7 +307,9 @@ const messages: Messages = {
     "mastery.grid.diagnostic": "Jaribio: {c} kati ya {n}",
     "mastery.grid.missed.one": "Wazo {n} la kurudia",
     "mastery.grid.missed.other": "Mawazo {n} ya kurudia",
-    "mastery.grid.trackSummary": "Moduli {n} kati ya {total} umemudu",
+    "mastery.grid.trackSummary.one": "Moduli {n} kati ya {total} umemudu",
+    "mastery.grid.trackSummary.other": "Moduli {n} kati ya {total} umemudu",
+    "mastery.grid.sep": ": ",
     "mastery.grid.empty": "Anza kozi ili kuona umahiri wako hapa.",
     "mastery.grid.browse": "Tazama kozi",
 

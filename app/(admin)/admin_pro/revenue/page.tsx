@@ -45,7 +45,7 @@ export default async function RevenuePage() {
         <MetricCard label="This Month" value={money(r.thisMonth.total)} change={pct(r.thisMonth.total, r.lastMonth.total)} icon={TrendingUp} iconColor="#F47C20" />
         <MetricCard label="Last Month" value={money(r.lastMonth.total)} icon={Calendar} iconColor="#2251A3" />
         <MetricCard
-          label={`Est. Learn MRR (${r.mrr.activeSubscribers} active)`}
+          label={`Est. Learn MRR (${r.mrr.activeSubscribers} active, ${r.mrr.activeTeams} teams)`}
           value={money(r.mrr.cents)}
           icon={Repeat}
           iconColor="#0F6E56"
@@ -53,7 +53,8 @@ export default async function RevenuePage() {
       </div>
       <p className="-mt-3 font-dm text-xs text-[#7A8FA6]">
         Learn MRR is estimated from active subscriptions at today&apos;s plan prices. Founding rates and discounts are
-        not stored per subscriber, so check Stripe for the exact figure.
+        not stored per subscriber, so check Stripe for the exact figure. Includes {money(r.mrr.teamCents)} from{" "}
+        {r.mrr.teamSeats} team seats.
       </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -40,6 +40,20 @@ export interface TrackCheckoutRequest {
   cancelUrl: string;
 }
 
+/** Team plan: a monthly subscription, quantity = seats (lib/learn/team). */
+export interface TeamCheckoutRequest {
+  teamId: string;
+  teamName: string;
+  ownerStudentId: string;
+  email: string;
+  seats: number;
+  /** Cents per seat per month, from lib/learn/team/settings.ts. Never from the client. */
+  seatPriceCents: number;
+  currency: string;
+  successUrl: string;
+  cancelUrl: string;
+}
+
 export interface PaymentProvider {
   readonly name: string;
   /** Plans to display and sell. */
@@ -50,6 +64,15 @@ export interface PaymentProvider {
   createTrackCheckout(req: TrackCheckoutRequest): Promise<{ url: string }>;
   /** Hosted billing/self-service portal for an existing customer. */
   createBillingPortal(customerId: string, returnUrl: string): Promise<{ url: string }>;
+  /** Hosted subscription checkout for a team's seats. */
+  createTeamCheckout(req: TeamCheckoutRequest): Promise<{ url: string; sessionId: string }>;
+  /** Change a team subscription's seat count (Stripe's default proration). */
+  updateTeamSeats(subscriptionId: string, seats: number): Promise<void>;
+  /**
+   * New per-seat price for a team subscription, from the next renewal (no
+   * proration). Ignored when STRIPE_LEARN_TEAM_PRICE_ID is set.
+   */
+  updateTeamSeatPrice(subscriptionId: string, seatPriceCents: number, currency: string): Promise<void>;
 }
 
 // ── Pricing (Part E1) ───────────────────────────────────────────────────────

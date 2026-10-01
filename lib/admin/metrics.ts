@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { PLANS } from "@/lib/payments/provider";
 import { ensureTrackPurchaseTable } from "@/lib/learn/purchases";
+import { teamMrr } from "@/lib/learn/team/admin";
 
 // Real figures for the admin dashboard and the revenue page.
 //
@@ -64,7 +65,15 @@ async function paidRevenueBetween(
  * plan prices. An ESTIMATE: subscriptions do not record what each person
  * actually pays (founding rates, discounts), so this is labelled as such.
  */
-async function estimatedLearnMrr(): Promise<{ cents: number; activeSubscribers: number }> {
+async function estimatedLearnMrr(): Promise<{
+  cents: number;
+  activeSubscribers: number;
+  /** Team plans (included in cents): seats x per-seat price, active paying teams. */
+  teamCents: number;
+  activeTeams: number;
+  teamSeats: number;
+}> {
+  const teams = await teamMrr();
   const subs = await prisma.learnSubscription.groupBy({
     by: ["plan"],
     where: { status: "active" },
@@ -76,7 +85,7 @@ async function estimatedLearnMrr(): Promise<{ cents: number; activeSubscribers: 
     n += s._count._all;
     cents += s.plan === "annual" ? Math.round((PLANS.annual.amount / 12) * s._count._all) : PLANS.monthly.amount * s._count._all;
   }
-  return { cents, activeSubscribers: n };
+  return { cents: cents + teams.cents, activeSubscribers: n, teamCents: teams.cents, activeTeams: teams.teams, teamSeats: teams.seats };
 }
 
 function pctChange(now: number, before: number): number | undefined {

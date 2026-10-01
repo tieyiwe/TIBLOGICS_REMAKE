@@ -2,6 +2,7 @@
 import prisma from "@/lib/prisma";
 import { awardPoints } from "./points";
 import { certificationStatus } from "./assessments";
+import { draftTableReady } from "./drafts/db";
 import { lessonMastered, masteredLessonIds, moduleTestedOut, testOutOpen } from "./mastery/testout";
 
 /**
@@ -151,8 +152,15 @@ export async function quizUnlocked(studentId: string, quizId: string, moduleId: 
   return tried > 0 || (await moduleLessonsComplete(studentId, moduleId)) || testOutOpen(studentId, moduleId);
 }
 
-/** Same rule for a module's lab. */
+/**
+ * Same rule for a module's lab. Work in progress counts as having started it:
+ * a learner with an autosaved draft keeps their lab open too.
+ */
 export async function labUnlocked(studentId: string, labId: string): Promise<boolean> {
   const tried = await prisma.labAttempt.count({ where: { studentId, labId } });
-  return tried > 0 || moduleLessonsComplete(studentId, await labModuleId(labId));
+  if (tried > 0) return true;
+  const drafted = await draftTableReady()
+    .then((ok) => (ok ? prisma.learnerDraft.count({ where: { studentId, key: { in: [`lab:${labId}`, `code:${labId}`] } } }) : 0))
+    .catch(() => 0);
+  return drafted > 0 || moduleLessonsComplete(studentId, await labModuleId(labId));
 }

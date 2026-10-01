@@ -75,7 +75,7 @@ export const WEAK_HALF_LIFE_DAYS = 21;
 /** Signals needed before a module can be called weak. */
 export const WEAK_MIN_SIGNALS = 3;
 /** Weighted share of wrong answers at or above which a module is weak. */
-export const WEAK_THRESHOLD = 0.3;
+export const WEAK_THRESHOLD = 0.4;
 /** How far a weak module's cards move up in Daily Review (in boxes, at weakness 1). */
 export const WEAK_REVIEW_BOOST = 2;
 

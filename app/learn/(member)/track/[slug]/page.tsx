@@ -229,7 +229,7 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
     <div className="space-y-8">
       <header className="flex flex-wrap items-center gap-6 rounded-2xl border border-[var(--border)] bg-white p-6">
         <ProgressRing percent={progress.percent} color={track.accentColor} size={76} />
-        <div className="min-w-0 flex-1">
+        <div className="min-w-[180px] flex-1">
           <h1 className="text-xl font-black text-[var(--ink)]">{text?.title ?? track.title}</h1>
           <p className="mt-1 text-sm text-[var(--ink3)]">
             {t("learn.dash.lessonsDone", { done: progress.completedLessons, total: progress.totalLessons })} ·{" "}

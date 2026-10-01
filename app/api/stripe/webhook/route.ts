@@ -12,6 +12,7 @@ import { TOOLKIT_PRODUCT } from "@/lib/toolkit/config";
 import { markBlueprintPaid } from "@/lib/blueprint/billing";
 import { BLUEPRINT_PRODUCT } from "@/lib/blueprint/config";
 import { recordTrackPurchase } from "@/lib/learn/purchases";
+import { isTeamSubscription, markTeamPaymentFailed, syncTeamSubscription } from "@/lib/learn/team/service";
 
 const SITE_URL = (
   process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
@@ -65,12 +66,21 @@ export async function POST(req: Request) {
       if (sub.metadata?.product === TOOLKIT_PRODUCT && sub.metadata?.studentId) {
         await upsertToolkitSubscription(sub);
       }
+      // ── TIBLOGICS Learn team plan: seats, status, grace ──────────────────
+      if (isTeamSubscription(sub.metadata)) {
+        await syncTeamSubscription(sub).catch((err) => {
+          console.error("[stripe/webhook] Learn team sync FAILED, asking Stripe to retry", err);
+          retry = true;
+        });
+      }
     }
 
     if (event.type === "invoice.payment_failed") {
       const invoice = event.data.object as Stripe.Invoice;
       const subId = (invoice as unknown as { subscription?: string }).subscription;
       if (subId) {
+        // Team plans get the same 7-day grace (no-op for other subscriptions).
+        await markTeamPaymentFailed(subId).catch((err) => console.error("[stripe/webhook] team payment_failed", err));
         const existing = await prisma.learnSubscription
           .findUnique({ where: { stripeSubscriptionId: subId } })
           .catch(() => null);
@@ -110,6 +120,20 @@ export async function POST(req: Request) {
           const full = await stripe.subscriptions.retrieve(subId);
           await upsertLearnSubscription(full, studentId);
           console.log(`[stripe/webhook] ✓ Learn subscription active for student ${studentId}`);
+        }
+      }
+
+      // ── Learn team plan checkout: activate the team ─────────────────────
+      if (isTeamSubscription(session.metadata) && session.mode === "subscription") {
+        const subId = typeof session.subscription === "string" ? session.subscription : null;
+        if (subId) {
+          await stripe.subscriptions
+            .retrieve(subId)
+            .then((full) => syncTeamSubscription(full, { teamId: session.metadata?.teamId, checkoutSessionId: session.id }))
+            .catch((err) => {
+              console.error("[stripe/webhook] Learn team activation FAILED, asking Stripe to retry", err);
+              retry = true;
+            });
         }
       }
 

@@ -6,6 +6,7 @@ import {
   type CheckoutRequest,
   type PaymentProvider,
   type PlanDefinition,
+  type TeamCheckoutRequest,
   type TrackCheckoutRequest,
 } from "./provider";
 
@@ -91,6 +92,67 @@ export const stripeProvider: PaymentProvider = {
     });
     if (!session.url) throw new Error("Stripe did not return a checkout URL");
     return { url: session.url };
+  },
+
+  // ── Team plans ──────────────────────────────────────────────────────────
+  // STRIPE_LEARN_TEAM_PRICE_ID (optional): a monthly per-seat Price. Without
+  // it the seat price is sent inline, so per-team prices set by staff apply.
+  async createTeamCheckout(req: TeamCheckoutRequest) {
+    const metadata = { product: "learn-team", teamId: req.teamId, ownerStudentId: req.ownerStudentId };
+    const priceId = process.env.STRIPE_LEARN_TEAM_PRICE_ID;
+    const lineItem = priceId
+      ? { price: priceId, quantity: req.seats }
+      : {
+          quantity: req.seats,
+          price_data: {
+            currency: req.currency.toLowerCase(),
+            unit_amount: req.seatPriceCents,
+            recurring: { interval: "month" as const },
+            product_data: {
+              name: "TIBLOGICS Learn: Team seat",
+              description: "One seat, every track. Billed monthly per seat.",
+            },
+          },
+        };
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      line_items: [lineItem as never],
+      customer_email: req.email,
+      allow_promotion_codes: true,
+      success_url: req.successUrl,
+      cancel_url: req.cancelUrl,
+      client_reference_id: req.ownerStudentId,
+      metadata,
+      subscription_data: { metadata },
+    });
+    if (!session.url) throw new Error("Stripe did not return a checkout URL");
+    return { url: session.url, sessionId: session.id };
+  },
+
+  async updateTeamSeats(subscriptionId: string, seats: number) {
+    const sub = await stripe.subscriptions.retrieve(subscriptionId);
+    const item = sub.items?.data?.[0];
+    if (!item) throw new Error("Team subscription has no item");
+    await stripe.subscriptions.update(subscriptionId, { items: [{ id: item.id, quantity: seats }] });
+  },
+
+  async updateTeamSeatPrice(subscriptionId: string, seatPriceCents: number, currency: string) {
+    if (process.env.STRIPE_LEARN_TEAM_PRICE_ID) return;
+    const sub = await stripe.subscriptions.retrieve(subscriptionId);
+    const item = sub.items?.data?.[0];
+    if (!item) throw new Error("Team subscription has no item");
+    const product = typeof item.price?.product === "string" ? item.price.product : item.price?.product?.id;
+    if (!product) throw new Error("Team subscription item has no product");
+    await stripe.subscriptions.update(subscriptionId, {
+      items: [
+        {
+          id: item.id,
+          quantity: item.quantity ?? 1,
+          price_data: { currency: currency.toLowerCase(), unit_amount: seatPriceCents, recurring: { interval: "month" }, product },
+        },
+      ],
+      proration_behavior: "none",
+    });
   },
 
   async createBillingPortal(customerId: string, returnUrl: string) {

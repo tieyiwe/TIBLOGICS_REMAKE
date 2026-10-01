@@ -85,7 +85,7 @@ export default function LessonPosition({
       role="region"
       aria-label={t("resume.jumpBack")}
       data-jump-back={savedPct}
-      className="fixed inset-x-4 bottom-4 z-40 rounded-2xl border border-[var(--border)] bg-white p-4 shadow-lg sm:left-auto sm:right-6 sm:max-w-sm"
+      className="fixed inset-x-4 bottom-20 z-40 rounded-2xl border border-[var(--border)] bg-white p-4 shadow-lg sm:bottom-6 sm:left-auto sm:right-24 sm:max-w-sm"
     >
       <p className="text-sm text-[var(--ink2)]">{t("resume.jumpBackBody", { pct: savedPct })}</p>
       <div className="mt-3 flex flex-wrap gap-2">

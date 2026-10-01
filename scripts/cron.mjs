@@ -13,6 +13,7 @@
 //   node scripts/cron.mjs blueprints
 //   node scripts/cron.mjs translate
 //   node scripts/cron.mjs cohorts
+//   node scripts/cron.mjs teams
 //   node scripts/cron.mjs all
 //
 // Needs two environment variables:
@@ -38,6 +39,9 @@ const JOBS = {
   // Learn community: cohort live-session reminders (24h before), weekly
   // "falling behind" nudges and discussion reply digests. Idempotent.
   cohorts: { path: "/api/cron/cohorts", suggested: "hourly" },
+  // Team plans: weekly reminder emails for overdue track assignments.
+  // Idempotent (each assignment at most once every 7 days).
+  teams: { path: "/api/cron/teams", suggested: "daily" },
 };
 
 /**

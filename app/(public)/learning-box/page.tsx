@@ -9,6 +9,8 @@ import { PLANS, FOUNDING_PRICING } from "@/lib/payments/provider";
 import { TRACK_BASE_PRICE_CENTS } from "@/lib/learn/pricing";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTracks, withTrackText } from "@/lib/i18n/sources/learn";
+import TeamsOffer from "@/components/learn/team/TeamsOffer";
+import { getTeamPricing } from "@/lib/learn/team/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +23,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LearningBoxPage() {
-  const [catalog, locale, t] = await Promise.all([getCatalog(), getLocale(), getT()]);
+  const [catalog, locale, t, teamPricing] = await Promise.all([getCatalog(), getLocale(), getT(), getTeamPricing()]);
   const { texts, pending } = await localizedTracks(
     locale === "en" ? [] : await loadTrackSources({ slug: { in: catalog.map((c) => c.slug) } }),
     locale,
@@ -162,6 +164,11 @@ export default async function LearningBoxPage() {
           </div>
         </div>
       </section>
+
+      {/* Team plans: seats for a company */}
+      <div className="mx-auto max-w-6xl px-4 py-14">
+        <TeamsOffer mode="link" seatPriceCents={teamPricing.seatPriceCents} minSeats={teamPricing.minSeats} />
+      </div>
     </div>
   );
 }

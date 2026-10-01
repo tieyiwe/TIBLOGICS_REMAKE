@@ -43,8 +43,10 @@ export default async function MasteryGrid({ studentId, trackIds }: { studentId: 
         {STATES.map((s) => (
           <li key={s} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-semibold ${GRID_STYLE[s].cls}`}>
             <span aria-hidden="true" className="font-black">{GRID_STYLE[s].mark}</span>
-            {t(`mastery.grid.state.${s}`)}
-            <span className="font-normal">: {t(`mastery.grid.stateHint.${s}`)}</span>
+            <span>
+              {t(`mastery.grid.state.${s}`)}
+              <span className="font-normal">{t("mastery.grid.sep")}{t(`mastery.grid.stateHint.${s}`)}</span>
+            </span>
           </li>
         ))}
       </ul>
@@ -71,7 +73,7 @@ export default async function MasteryGrid({ studentId, trackIds }: { studentId: 
                     {text?.title ?? tr.title}
                   </Link>
                 </h2>
-                <p className="text-xs font-semibold text-[var(--ink3)]">{t("mastery.grid.trackSummary", { n: mastered, total: mods.length })}</p>
+                <p className="text-xs font-semibold text-[var(--ink3)]">{t(mastered === 1 ? "mastery.grid.trackSummary.one" : "mastery.grid.trackSummary.other", { n: mastered, total: mods.length })}</p>
               </div>
               <ul className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {mods.map((m) => {

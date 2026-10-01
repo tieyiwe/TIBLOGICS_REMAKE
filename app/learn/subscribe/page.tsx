@@ -10,6 +10,8 @@ import { fmtPrice } from "@/lib/learn/format";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTracks, withTrackText } from "@/lib/i18n/sources/learn";
 import BuyTrackButton from "@/components/learn/BuyTrackButton";
+import TeamsOffer from "@/components/learn/team/TeamsOffer";
+import { getTeamPricing } from "@/lib/learn/team/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -27,9 +29,11 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function SubscribePage({
   searchParams,
 }: {
-  searchParams: Promise<{ track?: string }>;
+  searchParams: Promise<{ track?: string; team?: string; seats?: string }>;
 }) {
-  const { track: trackParam } = await searchParams;
+  const { track: trackParam, team: teamParam, seats: seatsParam } = await searchParams;
+  // ?team=1: the Teams option is what they came for (from the public page).
+  const wantsTeam = teamParam === "1";
   const { student, entitlement, access } = await getLearnContext();
   if (!student) redirect("/learn/login");
 
@@ -44,18 +48,19 @@ export default async function SubscribePage({
 
   // Every track is already open: only buying a chosen track to keep it
   // forever is left to do here.
-  if (access.all && (!chosen || owns(chosen.id))) redirect("/learn");
+  if (access.all && !wantsTeam && (!chosen || owns(chosen.id))) redirect("/learn");
+  const teamPricing = await getTeamPricing();
 
   const lapsed = entitlement.status === "canceled" || entitlement.status === "past_due";
   const heading = access.all
-    ? t("learn.locked.keepForever", { price: fmtPrice(chosen!.priceCents, locale) })
+    ? chosen ? t("learn.locked.keepForever", { price: fmtPrice(chosen.priceCents, locale) }) : t("team.offer.title")
     : access.any
       ? t("learn.subscribe.upgradeTitle")
       : lapsed
         ? t("learn.subscribe.reactivate")
         : t("learn.subscribe.youreIn", { name: student.name.split(" ")[0] });
   const body = access.all
-    ? t("learn.locked.keepForeverBody")
+    ? chosen ? t("learn.locked.keepForeverBody") : t("team.offer.subscribedBody")
     : access.any
       ? t("learn.subscribe.upgradeBody")
       : lapsed
@@ -87,6 +92,16 @@ export default async function SubscribePage({
           <PlanPicker
             track={chosen ? { slug: chosen.slug, title: chosen.title, priceCents: chosen.priceCents, owned: owns(chosen.id) } : null}
             showSubscribe={!access.all}
+          />
+        </div>
+
+        <div className="mt-10">
+          <TeamsOffer
+            mode="checkout"
+            seatPriceCents={teamPricing.seatPriceCents}
+            minSeats={teamPricing.minSeats}
+            initialSeats={Number(seatsParam) || undefined}
+            defaultOpen={wantsTeam}
           />
         </div>
 
