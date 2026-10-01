@@ -16,6 +16,7 @@ import { rankIcon } from "@/lib/learn/badge-defs";
 import DailyPanel from "@/components/learn/game/DailyPanel";
 import BadgeShelf from "@/components/learn/game/BadgeShelf";
 import MethodDashboardCards from "@/components/learn/method/MethodDashboardCards";
+import DashboardCommunityCards from "@/components/learn/community/DashboardCommunityCards";
 import MasteryDashboard from "@/components/learn/mastery/MasteryDashboard";
 import ResumeCard from "@/components/learn/ResumeCard";
 import { NewLessonsChip } from "@/components/learn/NewLessons";
@@ -159,6 +160,9 @@ export default async function LearnDashboard() {
 
       {/* Daily Review + Portfolio (the TIBLOGICS Learn method) */}
       <MethodDashboardCards studentId={student.id} />
+
+      {/* Cohorts and community (components/learn/community) */}
+      <DashboardCommunityCards studentId={student.id} />
 
       {/* Weak spots + "My mastery" (mastery paths) */}
       <MasteryDashboard studentId={student.id} />

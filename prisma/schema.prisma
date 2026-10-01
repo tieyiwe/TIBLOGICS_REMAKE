@@ -1693,3 +1693,66 @@ model VideoScript {
 
   @@unique([lessonId, version])
 }
+
+// ── Team plans (lib/learn/team) ─────────────────────────────────────────────
+// Created at runtime (lib/learn/team/db.ts); keep the two in step. Plain id
+// columns, no Prisma relations; the runtime SQL adds the foreign keys.
+
+/// A company's seats. status: pending | active | trialing | past_due |
+/// canceled | comped. seatPriceCents null = the default (lib/learn/team/settings.ts).
+model Team {
+  id                      String    @id @default(cuid())
+  name                    String
+  ownerStudentId          String
+  seats                   Int       @default(5)
+  status                  String    @default("pending")
+  seatPriceCents          Int?
+  comped                  Boolean   @default(false)
+  stripeCustomerId        String?
+  stripeSubscriptionId    String?   @unique
+  stripeCheckoutSessionId String?
+  currentPeriodEnd        DateTime?
+  graceUntil              DateTime?
+  cancelAtPeriodEnd       Boolean   @default(false)
+  settings                Json      @default("{}")
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @default(now()) @updatedAt
+
+  @@index([ownerStudentId])
+  @@index([status])
+}
+
+/// A seat. studentId is null until the invitation is accepted.
+/// role: owner | manager | member. status: invited | active | removed.
+model TeamMember {
+  id              String    @id @default(cuid())
+  teamId          String
+  studentId       String?
+  email           String
+  role            String    @default("member")
+  status          String    @default("invited")
+  inviteTokenHash String?   @unique
+  inviteExpiresAt DateTime?
+  invitedById     String?
+  invitedAt       DateTime  @default(now())
+  joinedAt        DateTime?
+  removedAt       DateTime?
+
+  @@unique([teamId, email])
+  @@index([studentId])
+}
+
+/// A track a manager assigned to a member, with an optional due date.
+model TeamAssignment {
+  id             String    @id @default(cuid())
+  teamId         String
+  studentId      String
+  trackId        String
+  dueAt          DateTime?
+  assignedById   String?
+  lastRemindedAt DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@unique([teamId, studentId, trackId])
+  @@index([studentId])
+}

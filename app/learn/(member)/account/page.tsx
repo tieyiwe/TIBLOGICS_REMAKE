@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { getLearnContext } from "@/lib/learn/session";
 import AccountSettings from "@/components/learn/AccountSettings";
+import CommunitySettings from "@/components/learn/community/CommunitySettings";
+import { getProfile } from "@/lib/learn/community/discussion";
 import BillingPortalButton from "@/components/learn/BillingPortalButton";
 import type { Metadata } from "next";
 import { fmtDate } from "@/lib/learn/format";
@@ -71,6 +73,11 @@ export default async function AccountPage() {
       <AccountSettings
         accessibilityMode={profile?.accessibilityMode ?? false}
         leaderboardOptIn={profile?.leaderboardOptIn ?? false}
+      />
+
+      {/* Community: reply digest opt-out (components/learn/community) */}
+      <CommunitySettings
+        replyDigest={await getProfile(student.id).then((p) => p.replyDigest).catch(() => true)}
       />
 
       <section className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6">

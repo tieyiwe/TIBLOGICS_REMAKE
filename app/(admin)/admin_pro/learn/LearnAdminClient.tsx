@@ -110,6 +110,18 @@ export default function LearnAdminClient({
           >
             Tutor usage
           </Link>
+          <Link
+            href="/admin_pro/learn/cohorts"
+            className="rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)]"
+          >
+            Cohorts
+          </Link>
+          <Link
+            href="/admin_pro/learn/community"
+            className="rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)]"
+          >
+            Community
+          </Link>
           <button
             onClick={() => run("sync")}
             disabled={busy !== null}

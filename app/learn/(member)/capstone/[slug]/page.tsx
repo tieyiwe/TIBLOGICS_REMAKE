@@ -7,6 +7,7 @@ import { finalExamPassed } from "@/lib/learn/assessments";
 import Markdown from "@/components/learn/Markdown";
 import CapstoneSubmitForm from "@/components/learn/CapstoneSubmitForm";
 import CapstoneStatus from "@/components/learn/CapstoneStatus";
+import PeerReviewSection from "@/components/learn/community/PeerReviewSection";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTrack } from "@/lib/i18n/sources/learn";
 import { localizeCapstone } from "@/lib/i18n/sources/labs";
@@ -82,6 +83,9 @@ export default async function CapstonePage({ params }: { params: Promise<{ slug:
           />
         </div>
       )}
+
+      {/* Peer review (advisory; components/learn/community) */}
+      {latest && <PeerReviewSection studentId={student.id} capstone={{ id: capstone.id, trackId: track.id }} rubric={rubric} />}
 
       {/* Brief */}
       <section className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">

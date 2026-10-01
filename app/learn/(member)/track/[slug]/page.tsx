@@ -23,6 +23,7 @@ import { getResumeTarget } from "@/lib/learn/resume";
 import { newLessonsInTrack } from "@/lib/learn/track-updates";
 import { NewLessonsPanel, NewPill } from "@/components/learn/NewLessons";
 import { resumeTitle } from "@/components/learn/ResumeCard";
+import TrackCommunityCards from "@/components/learn/community/TrackCommunityCards";
 
 export const dynamic = "force-dynamic";
 
@@ -286,6 +287,9 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
 
       {quest && <QuestMap {...quest} accent={track.accentColor} />}
 
+      {/* Cohorts and discussion (components/learn/community) */}
+      <TrackCommunityCards studentId={student.id} trackId={track.id} slug={track.slug} accent={track.accentColor} />
+
       {toolsForTrack(track.slug).length > 0 && (
         <Link
           href={`/learn/studio?track=${track.slug}`}
@@ -545,6 +549,8 @@ async function buildQuest({
   const microIds = track.modules.flatMap((m) => m.lessons.map((l) => l.microCheck?.id).filter(Boolean) as string[]);
   const quizIds = track.modules.map((m) => m.quiz?.id).filter(Boolean) as string[];
   const refs = [...lessonIds, ...microIds, ...quizIds, ...track.labs.map((l) => l.id), track.id];
+  // Mastery paths: the "tested out" award is keyed on the module id.
+  refs.push(...track.modules.map((m) => m.id));
   if (track.finalExam) refs.push(track.finalExam.id);
   const earnedRows = await prisma.pointsLedger.findMany({
     where: { studentId, refId: { in: refs }, source: { not: "streak_bonus" } },

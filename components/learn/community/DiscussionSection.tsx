@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { hasTrackAccess } from "@/lib/learn/session";
 import { communityTablesReady } from "@/lib/learn/community/db";
 import { myCohorts } from "@/lib/learn/community/cohorts";
 import { getProfile, isSuspended } from "@/lib/learn/community/discussion";
@@ -28,6 +29,9 @@ export default async function DiscussionSection({
   heading?: string;
   initialOpen?: string;
 }) {
+  // Discussion belongs to the track: a free-preview lesson shows none to a
+  // learner who cannot open the track.
+  if (!(await hasTrackAccess(studentId, trackId))) return null;
   if (!(await communityTablesReady())) return null;
   try {
     const [cohorts, profile, student] = await Promise.all([

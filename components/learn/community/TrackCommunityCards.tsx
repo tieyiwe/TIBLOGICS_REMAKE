@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getLocale, getT } from "@/lib/i18n/server";
-import { accessibleTrackIds } from "@/lib/learn/session";
+import { accessibleTrackIds, hasTrackAccess } from "@/lib/learn/session";
 import { communityTablesReady } from "@/lib/learn/community/db";
 import { cohortEnded, listCohorts, myCohorts } from "@/lib/learn/community/cohorts";
 import { threadCounts } from "@/lib/learn/community/discussion";
@@ -21,6 +21,7 @@ export default async function TrackCommunityCards({
   slug: string;
   accent: string;
 }) {
+  if (!(await hasTrackAccess(studentId, trackId))) return null;
   if (!(await communityTablesReady())) return null;
   try {
     const open = await accessibleTrackIds(studentId);

@@ -14,6 +14,7 @@ import LessonReflection from "@/components/learn/method/LessonReflection";
 import LessonPosition from "@/components/learn/LessonPosition";
 import { readDraft } from "@/lib/learn/drafts/server";
 import TutorDock from "@/components/learn/tutor/TutorDock";
+import DiscussionSection from "@/components/learn/community/DiscussionSection";
 import { lessonVideoFor } from "@/lib/learn/video/store";
 
 export const dynamic = "force-dynamic";
@@ -221,6 +222,9 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
           )
         }
       />
+      <div className="mt-8">
+        <DiscussionSection studentId={student.id} trackId={trackId} lessonId={lesson.id} />
+      </div>
       <TutorDock kind="lesson" refId={lesson.id} />
     </div>
   );

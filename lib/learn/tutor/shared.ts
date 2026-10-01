@@ -55,7 +55,7 @@ export function redactSecrets(input: string): { text: string; redacted: boolean 
     .replace(/\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g, mark)
     .replace(/\b(bearer)\s+[A-Za-z0-9._~+/=-]{20,}/gi, (_m, b: string) => `${b} ${mark()}`)
     .replace(
-      /\b(password|passwd|pwd|mot de passe|nenosiri|api[_ -]?key|secret|token)(\s*[:=]\s*)(\S{4,})/gi,
+      /\b(password|passwd|pwd|mot de passe|nenosiri|api[_ -]?key|secret|token)(\s*[:=]\s*)([^\s,;]{4,})/gi,
       (_m, k: string, sep: string) => `${k}${sep}${mark()}`,
     );
   // Card numbers: 13 to 19 digits (spaces or dashes allowed) passing Luhn.
