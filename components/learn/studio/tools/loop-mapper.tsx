@@ -12,6 +12,7 @@ import { LOOP_CHALLENGES, LOOP_CHALLENGE_BY_ID, type LoopChallenge } from "./loo
 import { checkReq, findLoops, H, isMapState, W, type Hint, type Link, type LoopKind, type MapState, type Variable } from "./loops/model";
 import { Stars, type T } from "./automation/ui";
 import { ChallengeBar, keyList, LockedNotice, Measure, useDebounced, useUnlocks } from "./automation/kit";
+import { useStudioDraft } from "../useStudioDraft";
 
 const TOOL = "loop-mapper";
 const P = "studio.loop-mapper";
@@ -94,6 +95,17 @@ export default function LoopMapper({ challengeId, onComplete, progress }: Studio
     const stored = load<unknown>(mapKey(mode), null);
     setMaps((m) => ({ ...m, [mode]: isMapState(stored) ? stored : starter(ch) }));
   }, [mode, maps, ch]);
+  // Also kept on the server, so the map follows the learner to any device.
+  useStudioDraft<MapState>(
+    TOOL,
+    mode,
+    maps[mode],
+    (v) => {
+      setMaps((m) => ({ ...m, [mode]: v }));
+      save(mapKey(mode), v);
+    },
+    { validate: isMapState, legacyKey: mapKey(mode) },
+  );
   const map: MapState = maps[mode] ?? { vars: [], links: [], labels: {}, simulated: false };
 
   const [selection, setSelection] = useState<Selection>(null);

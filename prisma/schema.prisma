@@ -1435,3 +1435,62 @@ model TutorProfile {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 }
+
+// ── Mastery-based learning paths ────────────────────────────────────────────
+// Created at runtime (lib/learn/mastery/db.ts); keep the two in step. Plain id
+// columns, no Prisma relations, so these models never edit Student, Lesson or
+// LearnModule; the runtime SQL adds cascading foreign keys.
+
+/// Per learner, per module: how much of the module the learner already knows
+/// (level: mastered | partial | new), from the placement diagnostic.
+model MasteryEstimate {
+  id        String   @id @default(cuid())
+  studentId String
+  trackId   String
+  moduleId  String
+  level     String
+  /// 0..100: share of the module's diagnostic questions answered correctly.
+  score     Int
+  correct   Int      @default(0)
+  asked     Int      @default(0)
+  /// diagnostic
+  source    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, moduleId])
+  @@index([studentId, trackId])
+}
+
+/// One run of a track's placement diagnostic. plan: the questions picked per
+/// module (ids only); answers: what was answered and whether it was right.
+model DiagnosticSession {
+  id          String    @id @default(cuid())
+  studentId   String
+  trackId     String
+  /// in_progress | completed | abandoned
+  status      String    @default("in_progress")
+  plan        Json
+  answers     Json
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([studentId, trackId, createdAt])
+}
+
+/// A lesson counted as known without being studied: the learner tested out of
+/// its module (passed the module quiz from a Mastered estimate). Distinct from
+/// LessonProgress (completed), so analytics can tell the two apart.
+model LessonMastery {
+  studentId  String
+  lessonId   String
+  moduleId   String
+  trackId    String
+  /// test_out
+  source     String   @default("test_out")
+  masteredAt DateTime @default(now())
+
+  @@id([studentId, lessonId])
+  @@index([studentId, moduleId])
+  @@index([trackId])
+}

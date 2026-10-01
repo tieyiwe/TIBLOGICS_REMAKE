@@ -7,6 +7,7 @@ import { useT } from "@/lib/i18n/client";
 import { promptBuilder } from "@/lib/learn/studio/tools/prompt-builder";
 import type { StudioToolProps } from "@/lib/learn/studio/types";
 import StudioFrame, { type StudioGuide } from "../StudioFrame";
+import { useStudioDraft } from "../useStudioDraft";
 import {
   BLOCK_EMOJI,
   BLOCK_TYPES,
@@ -37,6 +38,14 @@ import {
 const NS = "studio.prompt-builder";
 let seq = 0;
 const newKey = () => `b${++seq}`;
+/** A saved list of blocks, as restored from a draft. */
+const isBlockList = (v: unknown): v is Block[] =>
+  Array.isArray(v) &&
+  v.every((b) => b && typeof b.key === "string" && typeof b.text === "string" && (BLOCK_TYPES as readonly string[]).includes(b.type));
+/** Restored blocks keep their keys; new ones must not reuse them. */
+const keepKeysUnique = (bs: Block[]) => {
+  for (const b of bs) seq = Math.max(seq, Number(/^b(\d+)$/.exec(b.key)?.[1] ?? 0));
+};
 
 export default function PromptBuilder({ challengeId, embedded, onComplete, progress }: StudioToolProps) {
   const flow = useChallengeFlow({ toolId: promptBuilder.id, challenges: promptBuilder.challenges, challengeId, progress, freePlay: true, onComplete });
@@ -73,6 +82,11 @@ function Workbench({
   const [blocks, setBlocks] = useState<Block[]>(() =>
     sc ? [{ key: newKey(), type: "task", text: t(`${NS}.sc.${sc.id}.naive`) }] : [],
   );
+  // The blocks in progress follow the learner to any device.
+  useStudioDraft<Block[]>(promptBuilder.id, scenarioId ?? "free", blocks, (v) => {
+    keepKeysUnique(v);
+    setBlocks(v);
+  }, { validate: isBlockList });
   const [result, setResult] = useState<{ stars: number } | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [announce, setAnnounce] = useState("");

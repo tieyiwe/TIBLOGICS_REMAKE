@@ -12,6 +12,7 @@ import { labelOf } from "./wireframe/spec";
 import { Mock, Phone } from "./wireframe/Mock";
 import WireframeLive from "./wireframe/Live";
 import { ChallengeBar, keyList, LockedNotice, Measure, useDebounced, useUnlocks } from "./automation/kit";
+import { useStudioDraft } from "../useStudioDraft";
 
 const TOOL = "wireframe-builder";
 const NS = "studio.wireframe-builder";
@@ -54,6 +55,7 @@ export default function WireframeBuilder({ challengeId, onComplete, progress }: 
   const [cid, setCid] = useState<string>(() => (challengeId && WF_BY_ID.has(challengeId) ? challengeId : unlocks.firstOpen() ?? WF_CHALLENGES[0].id));
   const [design, setDesign] = useState<Design | null>(null);
   const loadedFor = useRef<string | null>(null);
+  const [loadedCid, setLoadedCid] = useState<string | null>(null);
   const [screenId, setScreenId] = useState<string>("");
   const [sel, setSel] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(0);
@@ -70,6 +72,7 @@ export default function WireframeBuilder({ challengeId, onComplete, progress }: 
     const stored = load(cid);
     const d: Design = stored ?? { app: "", screens: [newScreen(cid === FREE ? k("freeScreen") : k(`ch.${cid}.screen`))] };
     loadedFor.current = cid;
+    setLoadedCid(cid);
     setDesign(d);
     setScreenId(d.screens[0].id);
     setSel(null);
@@ -81,6 +84,19 @@ export default function WireframeBuilder({ challengeId, onComplete, progress }: 
     // Only save a design under the challenge it was loaded for.
     if (design && loadedFor.current === cid) save(cid, design);
   }, [cid, design]);
+  // Also kept on the server, so the design follows the learner to any device.
+  useStudioDraft<Design>(
+    TOOL,
+    cid,
+    loadedCid === cid && design ? design : undefined,
+    (v) => {
+      const d = parseDesign(v);
+      if (!d) return;
+      setDesign(d);
+      setScreenId(d.screens[0]?.id ?? "");
+    },
+    { validate: (v) => !!parseDesign(v), legacyKey: storeKey(cid) },
+  );
 
   const screen = design?.screens.find((s) => s.id === screenId) ?? design?.screens[0];
   const selComp = screen?.comps.find((c) => c.id === sel) ?? null;

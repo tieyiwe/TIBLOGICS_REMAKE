@@ -91,8 +91,14 @@ export interface ServerDraftOptions<T> {
   validate?: (v: unknown) => boolean;
   /** Shrinks the value for the server if it is over the size limit. */
   fit?: (v: T) => T;
-  /** An older localStorage key holding this draft, read once if nothing newer exists. */
+  /**
+   * A localStorage key where the component already keeps this work (or used
+   * to). Read when there is no local copy yet, so work saved before drafts
+   * reached the server is uploaded once.
+   */
   legacyKey?: string;
+  /** Remove legacyKey after reading it (it is no longer used). */
+  dropLegacy?: boolean;
 }
 
 /**
@@ -194,7 +200,7 @@ export function useServerDraft<T>(
         try {
           const raw = window.localStorage.getItem(latest.current.opts.legacyKey);
           if (raw) mirror = { v: JSON.parse(raw), at: 0, synced: false };
-          window.localStorage.removeItem(latest.current.opts.legacyKey);
+          if (latest.current.opts.dropLegacy) window.localStorage.removeItem(latest.current.opts.legacyKey);
         } catch {
           /* unreadable: ignore */
         }
@@ -263,11 +269,6 @@ export function useServerDraft<T>(
       readyFor.current = key;
       if (push && chosen) {
         pending.current = { key, value: chosen.v as T };
-        flush();
-      } else if (!chosen && reached && current !== undefined && !isEmptyDraft(current)) {
-        // Work this component already holds from elsewhere (an older local
-        // copy): give the server a copy too.
-        pending.current = { key, value: current };
         flush();
       }
     })();

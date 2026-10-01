@@ -7,6 +7,7 @@ import { useT } from "@/lib/i18n/client";
 import { testBench } from "@/lib/learn/studio/tools/test-bench";
 import type { StudioToolProps } from "@/lib/learn/studio/types";
 import StudioFrame, { useStudioLayout, type StudioGuide } from "../StudioFrame";
+import { useStudioDraft } from "../useStudioDraft";
 import {
   CASES,
   CASE_EMOJI,
@@ -78,6 +79,17 @@ interface Setup {
   custom: string;
 }
 
+/** A saved bench setup, as restored from a draft. */
+const isSetup = (v: unknown): v is Setup => {
+  const r = v as Partial<Setup> | null;
+  return (
+    !!r &&
+    Array.isArray(r.cases) && r.cases.every((c) => (CASES as readonly string[]).includes(c)) &&
+    Array.isArray(r.checks) && r.checks.every((c) => (CHECKS as readonly string[]).includes(c)) &&
+    typeof r.custom === "string"
+  );
+};
+
 function Bench({
   challengeId,
   task,
@@ -131,6 +143,12 @@ function Bench({
 
   // The live bench: the setup ~300ms after the last change.
   const setup = useMemo<Setup>(() => ({ cases, checks, custom }), [cases, checks, custom]);
+  // The setup in progress follows the learner to any device.
+  useStudioDraft<Setup>(testBench.id, challengeId ?? `free-${task.id}`, setup, (v) => {
+    setCases(v.cases);
+    setChecks(v.checks);
+    setCustom(v.custom);
+  }, { validate: isSetup });
   const liveSetup = useDebounced(setup, 300);
   const liveRan: Setup | null = liveSetup.cases.length && liveSetup.checks.length ? liveSetup : null;
   // Blind mode: until the challenge is won, the revealed grid shows exactly what was submitted.

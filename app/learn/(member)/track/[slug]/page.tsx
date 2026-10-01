@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
-import { getStudent } from "@/lib/learn/session";
+import { canAccessTrack, getAccess, getStudent } from "@/lib/learn/session";
+import TrackPaywall from "@/components/learn/TrackPaywall";
+import { trackPriceCents } from "@/lib/learn/pricing";
 import { getTrackProgress, getTrackGates } from "@/lib/learn/progress";
 import type { Metadata } from "next";
 import { LAB_TYPE_META, type LabType } from "@/lib/learn/labs/types";
 import ProgressRing from "@/components/learn/ProgressRing";
 import { handsOnMinutes } from "@/lib/learn/catalog";
-import { fmtBreakdown, fmtMinutes } from "@/lib/learn/format";
+import { fmtBreakdown, fmtMinutes, fmtPrice } from "@/lib/learn/format";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTrack, trackText } from "@/lib/i18n/sources/learn";
 import { POINT_VALUES } from "@/lib/learn/points";
@@ -39,7 +41,7 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
           include: {
             lessons: {
               orderBy: { sortOrder: "asc" },
-              select: { id: true, title: true, durationMinutes: true, microCheck: { select: { id: true } } },
+              select: { id: true, title: true, durationMinutes: true, isPreview: true, microCheck: { select: { id: true } } },
             },
             quiz: { select: { id: true, passScore: true } },
           },
@@ -66,6 +68,71 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
       ? { text: trackText(src), pending: false }
       : await localizedTrack(src, locale)
     : { text: null, pending: false };
+
+  // Per-track access. Without it the outline stays visible as a preview,
+  // lessons are locked (free-preview ones excepted) and the two ways to
+  // unlock are offered.
+  const access = await getAccess(student.id);
+  if (!canAccessTrack(access, track.id)) {
+    return (
+      <div className="space-y-8">
+        <header className="rounded-2xl border border-[var(--border)] bg-white p-6">
+          <p className="text-xs font-bold uppercase tracking-wide" style={{ color: track.accentColor }}>
+            🔒 {t("learn.locked.badge")}
+          </p>
+          <h1 className="mt-1 text-xl font-black text-[var(--ink)]">{text?.title ?? track.title}</h1>
+          <p className="mt-2 text-sm text-[var(--ink2)]">{t("learn.locked.outline")}</p>
+        </header>
+        <TrackPaywall trackId={track.id} compact />
+        <section>
+          <h2 className="text-base font-bold text-[var(--ink)]">{t("learn.catalog.modules")}</h2>
+          <div className="mt-4 space-y-4">
+            {track.modules.map((m, mi) => (
+              <div key={m.id} className="rounded-2xl border border-[var(--border)] bg-white p-5">
+                <h3 className="text-sm font-bold text-[var(--ink)]">
+                  {mi + 1}. {text?.modules[m.id]?.title ?? m.title}
+                </h3>
+                <ul className="mt-3 space-y-1">
+                  {m.lessons.map((l) => {
+                    const title = text?.lessons[l.id]?.title ?? l.title;
+                    return (
+                      <li key={l.id}>
+                        {l.isPreview ? (
+                          <Link
+                            href={`/learn/lesson/${l.id}`}
+                            className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-[var(--ink2)] hover:bg-[var(--s2)]"
+                          >
+                            <span aria-hidden="true" style={{ color: track.accentColor }}>▶</span>
+                            <span className="min-w-0 flex-1 truncate">{title}</span>
+                            <span className="shrink-0 rounded-full bg-[var(--s2)] px-2 py-0.5 text-[11px] font-bold text-[var(--ink2)]">
+                              {t("learn.catalog.freePreview")}
+                            </span>
+                          </Link>
+                        ) : (
+                          <span className="flex items-center gap-2.5 px-2 py-1.5 text-sm text-[var(--ink3)]">
+                            <span aria-hidden="true">🔒</span>
+                            <span className="min-w-0 flex-1 truncate">{title}</span>
+                            <span className="sr-only">{t("learn.locked.badge")}</span>
+                            <span className="shrink-0 text-xs">{fmtMinutes(t, l.durationMinutes)}</span>
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    );
+  }
+  // A subscriber who has not bought this track can keep it for life.
+  const keepForever =
+    access.all && !access.purchased.includes(track.id) && track.status === "live" && access.entitlement.status !== "comped"
+      ? fmtPrice(trackPriceCents(track.level, track.priceCents), locale)
+      : null;
+
   const time = {
     lessonMinutes: track.modules.reduce((n, m) => n + m.lessons.reduce((a, l) => a + l.durationMinutes, 0), 0),
     handsOnMinutes: handsOnMinutes({
@@ -157,6 +224,14 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
           </Link>
         )}
       </header>
+
+      {keepForever && (
+        <p className="-mt-4 text-right text-xs text-[var(--ink3)]">
+          <Link href={`/learn/subscribe?track=${track.slug}`} className="font-semibold text-[var(--blue2)] underline" title={t("learn.locked.keepForeverBody")}>
+            {t("learn.locked.keepForever", { price: keepForever })}
+          </Link>
+        </p>
+      )}
 
       {quest && <QuestMap {...quest} accent={track.accentColor} />}
 

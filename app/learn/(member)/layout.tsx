@@ -5,12 +5,14 @@ import GameCelebrations from "@/components/learn/game/GameCelebrations";
 import { getLearnContext } from "@/lib/learn/session";
 import { getTotalPoints, levelFor } from "@/lib/learn/points";
 
-// Server-side entitlement gate. The proxy only blocks signed-out visitors;
-// this is where a lapsed subscription is actually caught.
+// Server-side access gate. The proxy only blocks signed-out visitors; this is
+// where a learner with no open track (no subscription, nothing bought) is
+// sent to the plan step. A learner who bought one track gets in: each page
+// and API then checks the track itself (lib/learn/session.ts).
 export default async function MemberLayout({ children }: { children: React.ReactNode }) {
-  const { student, entitlement } = await getLearnContext();
+  const { student, entitlement, access } = await getLearnContext();
   if (!student) redirect("/learn/login");
-  if (!entitlement.entitled) redirect("/learn/subscribe");
+  if (!access.any) redirect("/learn/subscribe");
 
   const total = await getTotalPoints(student.id);
 

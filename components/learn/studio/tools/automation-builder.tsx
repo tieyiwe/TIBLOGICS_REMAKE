@@ -14,6 +14,7 @@ import { findRisks, OUTCOME_EMOJI, runAll, type Run } from "./automation/engine"
 import { findNode, isFlowNode, newId, removeNode, setSlot, updateNode, type FlowNode, type NodeKind, type SlotName } from "./automation/model";
 import { KIND_STYLE, P, useMediaQuery, type T } from "./automation/ui";
 import { ChallengeBar, keyList, LockedNotice, Measure, useDebounced, useUnlocks } from "./automation/kit";
+import { useStudioDraft } from "../useStudioDraft";
 
 const TOOL = "automation-builder";
 const SANDBOX = "sandbox";
@@ -115,6 +116,17 @@ export default function AutomationBuilder({ challengeId, embedded, onComplete, p
     const initial = stored === null ? null : isFlowNode(stored) ? stored : starter(ch);
     setFlows((f) => ({ ...f, [mode]: initial }));
   }, [mode, flows, ch]);
+  // Also kept on the server, so the design follows the learner to any device.
+  useStudioDraft<FlowNode | null>(
+    TOOL,
+    mode,
+    mode in flows ? flows[mode] : undefined,
+    (v) => {
+      setFlows((f) => ({ ...f, [mode]: v }));
+      save(flowKey(mode), v);
+    },
+    { validate: (v) => v === null || isFlowNode(v), legacyKey: flowKey(mode) },
+  );
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [armed, setArmed] = useState<NodeKind | null>(null);

@@ -9,6 +9,9 @@ import { STUDIO_BY_ID } from "@/lib/learn/studio/catalog";
 import type { StudioResult } from "@/lib/learn/studio/types";
 import { STUDIO_COMPONENTS } from "./registry";
 import { StudioLayoutContext } from "./StudioFrame";
+import { StudioDraftContext } from "./useStudioDraft";
+import DraftStatus from "../DraftStatus";
+import type { DraftSaveStatus } from "@/lib/learn/drafts/client";
 
 type ToolProgress = Record<string, { done: boolean; perfect: boolean }>;
 
@@ -33,6 +36,8 @@ export default function StudioHost({
   const Tool = STUDIO_COMPONENTS[toolId];
   const [progress, setProgress] = useState<ToolProgress>(initialProgress ?? {});
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "failed">("idle");
+  // The design in progress, autosaved by the tool (useStudioDraft).
+  const [draftStatus, setDraftStatus] = useState<DraftSaveStatus>("idle");
   // Full screen is the SAME component tree restyled as an overlay, so nothing
   // the learner has built is lost when it opens or closes.
   const [full, setFull] = useState(false);
@@ -139,8 +144,15 @@ export default function StudioHost({
         )}
         {!embedded && !full && <div className="mb-3 flex justify-end">{toggle}</div>}
         <div className={full ? "flex min-h-0 flex-1 flex-col overflow-auto p-3 sm:p-5 lg:overflow-hidden" : embedded ? "p-3 sm:p-4" : ""}>
-          <Tool challengeId={challengeId} embedded={embedded && !full} onComplete={onComplete} progress={progress} />
+          <StudioDraftContext.Provider value={setDraftStatus}>
+            <Tool challengeId={challengeId} embedded={embedded && !full} onComplete={onComplete} progress={progress} />
+          </StudioDraftContext.Provider>
         </div>
+        {draftStatus !== "idle" && (
+          <p className={`px-4 ${status !== "idle" ? "" : "pb-3"} pt-1 text-right`}>
+            <DraftStatus status={draftStatus} />
+          </p>
+        )}
         {status !== "idle" && (
           <p role="status" className={`px-4 pb-3 text-xs ${status === "failed" ? "text-red-600" : "text-[var(--ink3)]"}`}>
             {status === "saving" ? t("studio.saving") : status === "saved" ? t("studio.saved") : t("studio.saveFailed")}
