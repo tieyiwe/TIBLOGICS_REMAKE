@@ -2,6 +2,7 @@ import type { SeedTrack } from "../types";
 import { spreadAnswer, spreadModule } from "../balance";
 import { AI_FORWARD_MODULES_1_TO_3 } from "./modules-1-3";
 import { AI_FORWARD_MODULES_4_TO_6 } from "./modules-4-6";
+import { AGENTS_LESSON_PROFESSIONAL } from "../agents-2026";
 import { AI_FORWARD_CAPSTONE, AI_FORWARD_FINAL_EXAM, AI_FORWARD_LABS } from "./assessments";
 
 // Specialist track for experienced professionals who feel behind on AI.
@@ -31,10 +32,13 @@ Every lesson has prompts you run on the page with your own (non-confidential) wo
     "Run a small AI pilot and make a case your manager can approve",
     "Help colleagues adopt AI and build a 90-day plan for your own career",
   ],
-  // Lessons total 583 minutes.
-  estimatedHours: 9.75,
+  // Lessons total 609 minutes (583 plus the personal-agents lesson).
+  estimatedHours: 10,
   estimatedWeeksAt3Hrs: 5,
-  modules: [...AI_FORWARD_MODULES_1_TO_3, ...AI_FORWARD_MODULES_4_TO_6].map(spreadModule),
+  // Module 2 ("The Key AI Tools to Learn") ends with personal AI agents.
+  modules: [...AI_FORWARD_MODULES_1_TO_3, ...AI_FORWARD_MODULES_4_TO_6]
+    .map((m, i) => (i === 1 ? { ...m, lessons: [...m.lessons, AGENTS_LESSON_PROFESSIONAL] } : m))
+    .map(spreadModule),
   labs: AI_FORWARD_LABS,
   finalExam: { ...AI_FORWARD_FINAL_EXAM, questions: AI_FORWARD_FINAL_EXAM.questions.map(spreadAnswer) },
   capstone: AI_FORWARD_CAPSTONE,
