@@ -1387,3 +1387,51 @@ model LearnerDraft {
   @@unique([studentId, key])
   @@index([studentId, updatedAt])
 }
+
+/// Tutor, the AI tutor side panel: one open conversation per learner per
+/// page (lesson, lab, Studio tool, Daily Review). "New conversation" closes
+/// the open one. Older messages are folded into `summary` so the context sent
+/// to the model stays bounded. Created at runtime (lib/learn/tutor/db.ts),
+/// with foreign keys to Student and TutorThread there; keep the two in step.
+model TutorThread {
+  id              String    @id @default(cuid())
+  studentId       String
+  /// lesson:<lessonId> | lab:<labId> | studio:<toolId> | review
+  contextKey      String
+  kind            String
+  lessonId        String?
+  trackId         String?
+  summary         String    @default("") @db.Text
+  /// How many of the oldest messages `summary` already covers.
+  summarizedCount Int       @default(0)
+  closedAt        DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
+
+  @@index([studentId, contextKey, closedAt])
+  @@index([lessonId])
+}
+
+model TutorMessage {
+  id        String   @id @default(cuid())
+  threadId  String
+  /// user | assistant
+  role      String
+  content   String   @db.Text
+  /// Quick action or "explain" (selected text), for usage stats.
+  action    String?
+  createdAt DateTime @default(now())
+
+  @@index([threadId, createdAt])
+  @@index([createdAt])
+}
+
+/// "Tell Tutor about you": optional, so examples fit the learner's field.
+model TutorProfile {
+  studentId String   @id
+  role      String   @default("")
+  goal      String   @default("")
+  level     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
