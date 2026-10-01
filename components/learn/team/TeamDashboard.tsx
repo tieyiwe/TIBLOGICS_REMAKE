@@ -119,7 +119,7 @@ export default function TeamDashboard(p: TeamDashboardProps) {
     });
   };
 
-  const card = "rounded-2xl border border-[var(--border)] bg-white p-5 sm:p-6";
+  const card = "min-w-0 rounded-2xl border border-[var(--border)] bg-white p-5 sm:p-6";
   const btn = "rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-semibold text-[var(--ink2)] hover:border-[var(--ink3)] disabled:opacity-50";
   const primary = "rounded-full bg-[var(--ink)] px-5 py-2.5 text-sm font-bold text-white hover:opacity-90 disabled:opacity-50";
   const label = "block text-sm font-semibold text-[var(--ink)]";

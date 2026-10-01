@@ -956,6 +956,22 @@ You are done when quality and cost both have metrics and alerts, the kill switch
         objective: "Produce the documentation and system map another engineer needs to run, change and safely hand over an AI feature.",
         durationMinutes: 25,
         contentType: "article",
+        resources: [
+          {
+            title: "Claude (free account)",
+            url: "https://claude.ai",
+            resourceType: "account_signup",
+            isFree: true,
+            notes: "Can be used to develop and test your capstone's prompts and eval cases by hand. Free-tier limits change. Do not paste confidential data, real personal data or API keys.",
+          },
+          {
+            title: "ChatGPT (free account)",
+            url: "https://chatgpt.com",
+            resourceType: "account_signup",
+            isFree: true,
+            notes: "An alternative or second opinion for capstone testing. Free-tier limits change. Do not paste confidential data, real personal data or API keys.",
+          },
+        ],
         bodyMd: `## Why AI features are hard to hand over
 
 A normal feature's behaviour is in its code. An AI feature's behaviour is spread across the code, the prompts, the tool descriptions, the model version, the retrieval index and its source documents, the eval set, the guardrails and the provider's settings. If only one person knows how those fit together, the feature is fragile, however good the code.

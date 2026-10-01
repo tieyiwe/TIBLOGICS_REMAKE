@@ -29,6 +29,7 @@ interface CertRow {
 }
 
 export default function LearnAdminClient({
+  learnersWidget,
   tablesReady,
   tracks,
   studentCount,
@@ -41,6 +42,8 @@ export default function LearnAdminClient({
   queue,
   recentCertificates,
 }: {
+  /** Sign-ups / activity / conversion panel (server-rendered LearnersWidget). */
+  learnersWidget?: React.ReactNode;
   tablesReady: boolean;
   tracks: TrackRow[];
   studentCount: number;
@@ -104,6 +107,12 @@ export default function LearnAdminClient({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link
+            href="/admin_pro/learn/learners"
+            className="rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)]"
+          >
+            Learners
+          </Link>
           <Link
             href="/admin_pro/learn/tutor"
             className="rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)]"
@@ -177,6 +186,8 @@ export default function LearnAdminClient({
           </div>
         ))}
       </div>
+
+      {learnersWidget}
 
       {/* Capstone review queue */}
       <section className="rounded-xl border border-[var(--border)] bg-white p-5">

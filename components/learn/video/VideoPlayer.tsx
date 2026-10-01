@@ -121,6 +121,14 @@ export default function VideoPlayer({
     else if (savedCc && langs.includes(savedCc as CaptionLang)) {
       setCcOn(true);
       setLang(savedCc as CaptionLang);
+    } else {
+      // The language the learner chose on the site, even where this page is
+      // only offered in English and French (Swahili captions still apply).
+      const chosen = /(?:^|;\s*)tib_lang=([a-z]{2})/.exec(document.cookie)?.[1] as CaptionLang | undefined;
+      if (chosen && chosen !== locale && langs.includes(chosen)) {
+        setLang(chosen);
+        setCcOn(chosen !== "en");
+      }
     }
     if (SPEEDS.includes(savedRate) && savedRate !== 1) setRateState(savedRate);
     if (store("tib:video:transcript") === "1") setTranscriptOpen(true);
@@ -226,6 +234,32 @@ export default function VideoPlayer({
       setHlsUnsupported(true);
     }
   }, [source]);
+
+  // Native: once the metadata is in, apply the speed and resume. The browser
+  // can load the metadata before React attaches its handlers (server-rendered
+  // <video>), so this also runs on mount when it is already there.
+  const metaDone = useRef(false);
+  const onMeta = useCallback(
+    (v: HTMLVideoElement) => {
+      if (metaDone.current) return;
+      metaDone.current = true;
+      const d = finite(v.duration);
+      setDuration(d);
+      v.playbackRate = rate;
+      if (startAt > 0 && startAt < d - 3) {
+        v.currentTime = startAt;
+        setTime(startAt);
+        progress.seeked(startAt);
+        showResumed();
+      }
+    },
+    [rate, startAt, progress, showResumed],
+  );
+  useEffect(() => {
+    const v = video.current;
+    if (native && v && v.readyState >= 1) onMeta(v);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [native]);
 
   // Fullscreen state
   useEffect(() => {
@@ -348,23 +382,14 @@ export default function VideoPlayer({
             playsInline
             className="h-full w-full bg-black"
             onClick={toggle}
-            onLoadedMetadata={(e) => {
-              const v = e.currentTarget;
-              setDuration(v.duration || 0);
-              v.playbackRate = rate;
-              if (startAt > 0 && startAt < (v.duration || 0) - 3) {
-                v.currentTime = startAt;
-                setTime(startAt);
-                progress.seeked(startAt);
-                showResumed();
-              }
-            }}
-            onDurationChange={(e) => setDuration(e.currentTarget.duration || 0)}
+            onLoadedMetadata={(e) => onMeta(e.currentTarget)}
+            onDurationChange={(e) => setDuration(finite(e.currentTarget.duration))}
             onTimeUpdate={(e) => {
               const v = e.currentTarget;
               setTime(v.currentTime);
-              progress.tick(v.currentTime, v.duration || null, !v.paused);
+              progress.tick(v.currentTime, finite(v.duration) || null, !v.paused);
             }}
+            onSeeked={(e) => setTime(e.currentTarget.currentTime)}
             onPlay={() => {
               setPaused(false);
               setStarted(true);
@@ -629,6 +654,11 @@ export default function VideoPlayer({
       )}
     </section>
   );
+}
+
+/** Some files (live recordings, fragmented MP4) report Infinity or NaN at first. */
+function finite(n: number): number {
+  return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
 function CtrlButton({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {

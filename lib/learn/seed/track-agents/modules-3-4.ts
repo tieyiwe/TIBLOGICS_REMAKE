@@ -181,7 +181,7 @@ Here is the ranking step in miniature. The similarity function is a crude word-o
 </body></html>
 \`\`\`
 
-Try "annual leave allowance", then "reset password". Notice that "holiday" finds leave-2 but not leave-1, which says "annual leave": word overlap misses synonyms. Real embeddings handle that far better, which is exactly why they exist.
+Try "annual leave allowance", then "reset password". Then try "vacation entitlement": every chunk scores zero, even though leave-1 is exactly about that, because it says "annual leave" instead. Word overlap misses synonyms. Real embeddings handle that far better, which is exactly why they exist.
 
 ## Where vector search struggles
 
@@ -191,7 +191,7 @@ Keyword search (classic full-text search, often using a scoring method called BM
 
 ## Hybrid search and reranking
 
-**Hybrid search** runs both and merges the results. A common merging method is **reciprocal rank fusion**: each result scores according to its rank in each list, so items that rank well in both rise to the top. Hybrid search is a sensible default for business documents, which mix natural language with codes and names.
+**Hybrid search** runs both and merges the results. A common merging method is **reciprocal rank fusion**: each result scores based on its rank in each list, so items that rank well in both rise to the top. Hybrid search is a sensible default for business documents, which mix natural language with codes and names.
 
 **Reranking** adds a second stage: retrieve a generous candidate set (say 20 to 50 chunks), then use a reranker model that reads the question and each candidate together and scores relevance more accurately. It costs a little time and money per query and often improves the final top few noticeably.
 

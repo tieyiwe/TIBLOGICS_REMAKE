@@ -63,7 +63,7 @@ export default async function CommunityHub() {
             {mine.map((c) => {
               const s = nextSession(c);
               return (
-                <li key={c.id}>
+                <li key={c.id} className="min-w-0">
                   <Link href={`/learn/community/cohort/${c.id}`} className="learn-lift block rounded-2xl border border-[var(--border)] bg-white p-5">
                     <p className="text-sm font-bold text-[var(--ink)]">{c.name}</p>
                     <p className="mt-0.5 text-xs text-[var(--ink3)]">
@@ -89,7 +89,7 @@ export default async function CommunityHub() {
             {open.map((c) => {
               const full = c.memberCount >= c.capacity;
               return (
-                <li key={c.id} className="rounded-2xl border border-[var(--border)] bg-white p-5">
+                <li key={c.id} className="min-w-0 rounded-2xl border border-[var(--border)] bg-white p-5">
                   <p className="text-sm font-bold text-[var(--ink)]">
                     <Link href={`/learn/community/cohort/${c.id}`} className="hover:underline">
                       {c.name}
@@ -116,7 +116,7 @@ export default async function CommunityHub() {
         <h2 className="text-base font-bold text-[var(--ink)]">{t("community.hub.discussions")}</h2>
         <ul className="mt-3 grid gap-3 sm:grid-cols-2">
           {tracks.map((tr, i) => (
-            <li key={tr.id}>
+            <li key={tr.id} className="min-w-0">
               <Link
                 href={`/learn/community/track/${tr.slug}`}
                 className="learn-lift flex items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-white p-5"

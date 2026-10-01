@@ -92,7 +92,7 @@ export function extractJson(text: string): unknown {
 
 /** Replace dashes used as punctuation, in case the model slips. */
 function tidy(s: string): string {
-  return s.replace(/\s*[—]\s*/g, ", ").replace(/\s[–]\s/g, ", ").replace(/…/g, ".");
+  return s.replace(/\s*[\u2014]\s*/g, ", ").replace(/\s[\u2013]\s/g, ", ").replace(/\u2026/g, ".");
 }
 
 function tidyScript(s: VideoScript): VideoScript {

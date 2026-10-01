@@ -15,6 +15,7 @@ import { AI_SMALL_BUSINESS } from "./track-smb";
 import { PROMPT_SPECIALIST } from "./track-prompt";
 import { AI_ML_FUNDAMENTALS } from "./track-ml";
 import { AI_GOVERNANCE } from "./track-governance";
+import { AI_APPS_AGENTS } from "./track-agents";
 
 // Track 1 (Level 1 · Basic) is assembled from its content files. Module 8,
 // "Seeing the Whole System", is appended rather than inserted so the existing
@@ -165,6 +166,7 @@ export const TRACKS: SeedTrack[] = [
   PROMPT_SPECIALIST,
   AI_ML_FUNDAMENTALS,
   AI_GOVERNANCE,
+  AI_APPS_AGENTS,
   AI_AUTOMATION,
   AI_STRATEGY,
 ];

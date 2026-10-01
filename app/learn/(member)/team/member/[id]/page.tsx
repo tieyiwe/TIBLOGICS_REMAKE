@@ -29,7 +29,7 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ id:
   if (!d) notFound();
   const [t, locale] = await Promise.all([getT(), getLocale()]);
   const s = d.member;
-  const card = "rounded-2xl border border-[var(--border)] bg-white p-5 sm:p-6";
+  const card = "min-w-0 rounded-2xl border border-[var(--border)] bg-white p-5 sm:p-6";
 
   return (
     <div className="space-y-6">

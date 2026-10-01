@@ -4,6 +4,8 @@ import { requireAdminPage } from "../_lib/admin-page-auth";
 import { ensureLearnEditColumns } from "@/lib/learn/admin/columns";
 import { ensureTrackPurchaseTable } from "@/lib/learn/purchases";
 import { trackPriceCents } from "@/lib/learn/pricing";
+import { learnerStats } from "@/lib/learn/admin/learners";
+import LearnersWidget from "./LearnersWidget";
 
 export const dynamic = "force-dynamic";
 
@@ -76,6 +78,8 @@ export default async function LearnAdminPage() {
   const trackTitle = new Map((tracks ?? []).map((t) => [t.id, t.title]));
 
   const tablesReady = tracks !== null;
+  // Sign-ups, active learners and conversion (null when unavailable).
+  const stats = tablesReady ? await learnerStats() : null;
 
   const subCounts = (subs ?? []).reduce<Record<string, number>>((acc, s) => {
     acc[s.status] = s._count._all;
@@ -84,6 +88,7 @@ export default async function LearnAdminPage() {
 
   return (
     <LearnAdminClient
+      learnersWidget={<LearnersWidget stats={stats} />}
       tablesReady={tablesReady}
       tracks={(tracks ?? []).map((t) => ({
         id: t.id,

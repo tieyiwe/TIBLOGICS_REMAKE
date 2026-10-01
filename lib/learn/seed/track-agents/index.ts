@@ -1,0 +1,48 @@
+import type { SeedTrack } from "../types";
+import { spreadAnswer, spreadModule } from "../balance";
+import { TRACK_AGENTS_MODULES_1_TO_2 } from "./modules-1-2";
+import { TRACK_AGENTS_MODULES_3_TO_4 } from "./modules-3-4";
+import { TRACK_AGENTS_MODULES_5_TO_6 } from "./modules-5-6";
+import { TRACK_AGENTS_CAPSTONE, TRACK_AGENTS_FINAL_EXAM, TRACK_AGENTS_LABS } from "./assessments";
+
+// Specialist track for developers: building AI features and agents that hold
+// up in production. It covers the skills behind developer-level AI
+// certifications (calling models, structured outputs, tool use, MCP, RAG,
+// agents, evaluation, security, deployment) in TIBLOGICS's own words. It is
+// vendor-neutral, not affiliated with any provider, and not exam preparation
+// for any vendor's certificate. Code labs run in the built-in Code Studio
+// against in-page mock models (no network); reference solutions are in
+// ./solutions.ts, used only for testing.
+
+export const AI_APPS_AGENTS: SeedTrack = {
+  slug: "ai-apps-agents",
+  title: "Building AI Apps and Agents",
+  tagline: "Build AI features and agents that hold up in production: tools, retrieval, evaluation, security and cost, done properly.",
+  description: `Getting a model to produce something impressive once takes an afternoon. Building an AI feature that is reliable, safe, affordable and understandable by the next developer is engineering, and that is what this track teaches.
+
+You will call models from code the professional way (messages, system prompts, tokens and cost, streaming, retries with backoff, keys kept on the server), get structured output you can trust, give models tools and run the agent loop with proper stop conditions, connect tools and data through the Model Context Protocol, build retrieval-augmented generation with citations and access control, and decide when an agent is the right design at all. Then you will prove it works with eval sets and regression tests, defend it against prompt injection and data exfiltration, and ship and operate it with sensible architecture, cost control, monitoring and handover.
+
+It is vendor-neutral, with examples from several providers and open-source models, and hands-on throughout: Code Studio labs where you build a retry-safe client, a JSON validator with repair, a tool-calling loop with a step budget and a mini RAG pipeline against mock models, plus design reviews and an evaluation plan. The capstone is a small AI feature or agent of your own, documented with an eval set, a security review, a cost estimate and a system map, reviewed by a person.`,
+  level: "advanced",
+  status: "live",
+  sortOrder: 10,
+  accentColor: "#6366F1",
+  certificateName: "TIBLOGICS Certified AI App and Agent Builder",
+  audience:
+    "Developers and technical builders who are comfortable with basic JavaScript or Python and want to build reliable AI features and agents: product engineers adding AI to an app, technical founders, data and automation engineers, and solution builders.",
+  outcomes: [
+    "Call model APIs from server code with correct messages, sensible parameters, retries with backoff and cost tracked from token usage",
+    "Get structured output you can trust, and design tools, agent loops and MCP connections with clear stop conditions and least privilege",
+    "Build retrieval-augmented generation with sound chunking, hybrid search, citations and access control, and evaluate retrieval and generation separately",
+    "Choose between workflows and agents, and add memory, human approval, guardrails and budgets so agents fail safely",
+    "Evaluate AI features with eval sets, calibrated judges and regression tests, and defend them against prompt injection and data leaks",
+    "Ship and operate AI features with the right architecture, cost controls, monitoring, incident response and a system map for handover",
+  ],
+  // Lessons total 656 minutes.
+  estimatedHours: 11,
+  estimatedWeeksAt3Hrs: 6,
+  modules: [...TRACK_AGENTS_MODULES_1_TO_2, ...TRACK_AGENTS_MODULES_3_TO_4, ...TRACK_AGENTS_MODULES_5_TO_6].map(spreadModule),
+  labs: TRACK_AGENTS_LABS,
+  finalExam: { ...TRACK_AGENTS_FINAL_EXAM, questions: TRACK_AGENTS_FINAL_EXAM.questions.map(spreadAnswer) },
+  capstone: TRACK_AGENTS_CAPSTONE,
+};

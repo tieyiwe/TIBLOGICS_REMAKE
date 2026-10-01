@@ -37,6 +37,20 @@ export const TRACK_AGENTS_MODULES_1_TO_2: SeedModule[] = [
             isFree: true,
             notes: "Official entry point for the OpenAI API. Request shapes and features change; treat it as the source of truth.",
           },
+          {
+            title: "Claude (free account)",
+            url: "https://claude.ai",
+            resourceType: "account_signup",
+            isFree: true,
+            notes: "Useful for drafting and testing prompts by hand before you code them. Free-tier limits and features change. Never paste confidential data, real customers' personal data or API keys.",
+          },
+          {
+            title: "ChatGPT (free account)",
+            url: "https://chatgpt.com",
+            resourceType: "account_signup",
+            isFree: true,
+            notes: "A second assistant for comparing how different models handle the same prompt. Free-tier limits and features change. Never paste confidential data, real customers' personal data or API keys.",
+          },
         ],
         bodyMd: `## A model call is a stateless function
 
