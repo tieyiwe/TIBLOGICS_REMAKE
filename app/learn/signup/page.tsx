@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import GoogleSignIn from "@/components/learn/GoogleSignIn";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PLANS, FOUNDING_PRICING } from "@/lib/payments/provider";
 import { TRACK_BASE_PRICE_CENTS } from "@/lib/learn/pricing";
@@ -106,7 +107,13 @@ function SignupForm() {
             </p>
           )}
 
-          <form onSubmit={submit} className="mt-6 space-y-4">
+          <div className="mt-6">
+            <GoogleSignIn
+              next={next ?? (track ? `/learn/subscribe?track=${encodeURIComponent(track)}` : "/learn/subscribe")}
+            />
+          </div>
+
+          <form onSubmit={submit} className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-semibold text-[var(--ink)]">
                 {t("learn.auth.fullName")}

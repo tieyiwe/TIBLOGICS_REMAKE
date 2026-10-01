@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import { checkRateLimit, clearRateLimit } from "@/lib/rate-limit";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { randomBytes, timingSafeEqual } from "crypto";
 
@@ -252,11 +253,57 @@ export const authOptions: NextAuthOptions = {
         }
       },
     }),
+    // ── TIBLOGICS Learn: "Continue with Google" ──────────────────────────
+    // Only when the OAuth client is configured. Learner sessions only; see
+    // the signIn and jwt callbacks and lib/learn/google-auth.ts.
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            authorization: { params: { prompt: "select_account" } },
+          }),
+        ]
+      : []),
   ],
   session: { strategy: "jwt" },
-  pages: { signIn: "/admin_pro/login" },
+  // Errors only ever redirect from the Google flow (staff and learner
+  // passwords use redirect: false), so they land on the learner login, which
+  // shows a "Google sign-in didn't work" note for any ?error=.
+  pages: { signIn: "/admin_pro/login", error: "/learn/login" },
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ account, profile }) {
+      if (account?.provider !== "google") return true;
+      // A verified Google address signs into (or creates) that learner
+      // account. Anything else goes back to the learner login with an error,
+      // never to the admin login page.
+      try {
+        const { studentForGoogle } = await import("@/lib/learn/google-auth");
+        const found = await studentForGoogle(profile as Parameters<typeof studentForGoogle>[0]);
+        return found ? true : "/learn/login?error=google";
+      } catch (err) {
+        console.error("[auth] google sign-in", err);
+        return "/learn/login?error=google";
+      }
+    },
+    async jwt({ token, user, account, profile }) {
+      if (account?.provider === "google") {
+        // The OAuth "user" is Google's profile; the session is the learner's.
+        const { studentForGoogle, recordGoogleLogin } = await import("@/lib/learn/google-auth");
+        const found = await studentForGoogle(profile as Parameters<typeof studentForGoogle>[0]);
+        if (!found) throw new Error("Google account not usable");
+        const s = found.student;
+        await recordGoogleLogin(s.id);
+        token.id = s.id;
+        token.email = s.email;
+        token.name = s.name;
+        token.isAdmin = false;
+        token.isOwner = false;
+        token.collaboratorId = undefined;
+        token.studentId = s.id;
+        token.permissions = [];
+        return token;
+      }
       if (user) {
         token.id = user.id;
         token.isAdmin = user.isAdmin;

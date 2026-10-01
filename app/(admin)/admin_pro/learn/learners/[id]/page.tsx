@@ -21,6 +21,7 @@ const METHOD: Record<string, string> = {
   password: "Password",
   "owner-admin-password": "Owner admin password",
   invite: "Team invitation",
+  google: "Google",
 };
 
 const dt = (d: Date | null | undefined) =>

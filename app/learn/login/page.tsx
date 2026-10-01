@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import GoogleSignIn from "@/components/learn/GoogleSignIn";
 import { useRouter, useSearchParams } from "next/navigation";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useT } from "@/lib/i18n/client";
@@ -54,6 +55,8 @@ function LoginForm() {
   }
 
   return (
+    <>
+    <GoogleSignIn next={next} error={!!params.get("error")} />
     <form onSubmit={submit} className="space-y-4">
       <div>
         <label htmlFor="email" className="block text-sm font-semibold text-[var(--ink)]">
@@ -98,6 +101,7 @@ function LoginForm() {
         {busy ? t("learn.auth.signingIn") : t("learn.nav.signIn")}
       </button>
     </form>
+    </>
   );
 }
 

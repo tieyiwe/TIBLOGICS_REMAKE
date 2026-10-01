@@ -59,7 +59,7 @@ export async function loginEventsReady(): Promise<boolean> {
 }
 
 export const LOGIN_RETENTION_DAYS = 400;
-export type LoginMethod = "password" | "owner-admin-password" | "invite";
+export type LoginMethod = "password" | "owner-admin-password" | "invite" | "google";
 
 type HeaderBag = Record<string, unknown> | Headers | undefined | null;
 
