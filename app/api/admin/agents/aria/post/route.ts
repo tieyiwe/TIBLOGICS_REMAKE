@@ -2,83 +2,13 @@ export const maxDuration = 30;
 import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/claude";
 import { requireAdmin } from "@/lib/require-admin";
+import { postToFacebook, postToLinkedIn, postToTwitter } from "@/lib/growth/content/publish";
 
 const PLATFORMS = ["linkedin", "twitter", "facebook", "instagram"] as const;
 type Platform = (typeof PLATFORMS)[number];
 
-async function postToLinkedIn(text: string, imageUrl?: string): Promise<{ success: boolean; url?: string; error?: string }> {
-  const token = process.env.LINKEDIN_ACCESS_TOKEN;
-  const urn = process.env.LINKEDIN_PERSON_URN; // urn:li:person:xxx or urn:li:organization:xxx
-  if (!token || !urn) return { success: false, error: "LINKEDIN_ACCESS_TOKEN or LINKEDIN_PERSON_URN not set" };
-
-  const body: Record<string, unknown> = {
-    author: urn,
-    lifecycleState: "PUBLISHED",
-    specificContent: {
-      "com.linkedin.ugc.ShareContent": {
-        shareCommentary: { text },
-        shareMediaCategory: imageUrl ? "IMAGE" : "NONE",
-        ...(imageUrl ? { media: [{ status: "READY", description: { text: "TIBLOGICS" }, media: imageUrl, title: { text: "TIBLOGICS" } }] } : {}),
-      },
-    },
-    visibility: { "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC" },
-  };
-
-  const res = await fetch("https://api.linkedin.com/v2/ugcPosts", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "X-Restli-Protocol-Version": "2.0.0" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    return { success: false, error: err };
-  }
-  return { success: true };
-}
-
-async function postToTwitter(text: string): Promise<{ success: boolean; url?: string; error?: string }> {
-  const bearerToken = process.env.TWITTER_BEARER_TOKEN;
-  const apiKey = process.env.TWITTER_API_KEY;
-  const apiSecret = process.env.TWITTER_API_SECRET;
-  const accessToken = process.env.TWITTER_ACCESS_TOKEN;
-  const accessSecret = process.env.TWITTER_ACCESS_TOKEN_SECRET;
-  if (!bearerToken && !(apiKey && apiSecret && accessToken && accessSecret)) {
-    return { success: false, error: "Twitter API credentials not configured" };
-  }
-
-  // Use OAuth 1.0a with user access token for posting
-  const res = await fetch("https://api.twitter.com/2/tweets", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${bearerToken}`,
-    },
-    body: JSON.stringify({ text }),
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    return { success: false, error: err };
-  }
-  const data = await res.json();
-  return { success: true, url: `https://twitter.com/tiblogics/status/${data.data?.id}` };
-}
-
-async function postToFacebook(text: string): Promise<{ success: boolean; url?: string; error?: string }> {
-  const pageId = process.env.FACEBOOK_PAGE_ID;
-  const pageToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
-  if (!pageId || !pageToken) return { success: false, error: "FACEBOOK_PAGE_ID or FACEBOOK_PAGE_ACCESS_TOKEN not set" };
-
-  const res = await fetch(`https://graph.facebook.com/${pageId}/feed`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message: text, access_token: pageToken }),
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    return { success: false, error: err };
-  }
-  return { success: true };
-}
+// The publishing functions live in lib/growth/content/publish.ts, shared with
+// the Growth scheduler.
 
 export async function POST(req: NextRequest) {
   // Staff only. A bare session check passed here for TIBLOGICS Learn students

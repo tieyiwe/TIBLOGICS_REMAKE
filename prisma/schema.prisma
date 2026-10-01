@@ -1977,3 +1977,262 @@ model ExpertSessionVote {
   @@id([questionId, studentId])
   @@index([studentId])
 }
+
+// ── Growth: leads + outreach (lib/growth/outreach) ─────────────────────────
+// Created idempotently at runtime by lib/growth/outreach/db.ts (no
+// migrations in this project). No Prisma relations, so the shared models
+// stay untouched; keep the SQL there in step with these.
+
+/// One row per business in the unified lead workspace (Aria, Prospects, CSV, manual).
+model GrowthLead {
+  id              String    @id @default(cuid())
+  source          String    @default("manual")
+  sourceId        String?
+  companyName     String
+  contactName     String?
+  role            String?
+  email           String?
+  phone           String?
+  phoneNorm       String?
+  website         String?
+  domain          String?
+  industry        String?
+  area            String?
+  linkedinUrl     String?
+  stage           String    @default("new")
+  score           Int?
+  scoreReasons    Json      @default("[]")
+  bestOffer       String?
+  offerReason     String?
+  opener          String?
+  signals         Json      @default("{}")
+  socials         Json      @default("{}")
+  publicEmails    Json      @default("[]")
+  emailStatus     String    @default("unknown")
+  enrichStatus    String    @default("idle")
+  enrichError     String?
+  enrichedAt      DateTime?
+  consentBasis    String    @default("unset")
+  consentNote     String?
+  doNotContact    Boolean   @default(false)
+  notes           String?   @db.Text
+  tags            Json      @default("[]")
+  lastContactedAt DateTime?
+  repliedAt       DateTime?
+  handedOverAt    DateTime?
+  handoverRef     String?
+  convertedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
+
+  @@unique([source, sourceId])
+  @@index([stage])
+  @@index([domain])
+  @@index([email])
+  @@index([phoneNorm])
+  @@index([enrichStatus])
+}
+
+/// Lead timeline: enriched, emailed, replied, handed over...
+model GrowthLeadEvent {
+  id        String   @id @default(cuid())
+  leadId    String
+  type      String
+  detail    String?  @db.Text
+  meta      Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  @@index([leadId, createdAt])
+  @@index([type, createdAt])
+}
+
+/// A multi-step email sequence. steps: [{dayOffset, subject, body, personalise}]
+model OutreachSequence {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  status      String   @default("active")
+  offerKey    String?
+  steps       Json     @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+}
+
+model OutreachEnrollment {
+  id         String    @id @default(cuid())
+  sequenceId String
+  leadId     String
+  status     String    @default("pending_approval")
+  stopReason String?
+  approvedAt DateTime?
+  /// Tracked /go short link for this lead's booking CTA (lib/growth/links), if created.
+  linkCode   String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now()) @updatedAt
+
+  @@unique([sequenceId, leadId])
+  @@index([leadId])
+  @@index([status])
+}
+
+/// One email of one enrollment. Nothing sends until status is "approved".
+model OutreachMessage {
+  id            String    @id @default(cuid())
+  enrollmentId  String
+  sequenceId    String
+  leadId        String
+  stepIndex     Int
+  dayOffset     Int       @default(0)
+  toEmail       String?
+  subject       String
+  bodyText      String    @db.Text
+  personalised  Boolean   @default(false)
+  status        String    @default("draft")
+  approvedAt    DateTime?
+  approvedBy    String?
+  scheduledFor  DateTime?
+  claimId       String?
+  claimedAt     DateTime?
+  sentAt        DateTime?
+  error         String?
+  smtpMessageId String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+
+  @@unique([enrollmentId, stepIndex])
+  @@index([status, scheduledFor])
+  @@index([leadId])
+  @@index([sentAt])
+}
+
+/// Global do-not-email list: an address, or "@domain" for a whole domain.
+model OutreachSuppression {
+  value     String   @id
+  reason    String
+  source    String?
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+/// Sender run lock (one row, id "sender").
+model OutreachState {
+  id          String    @id
+  lockedUntil DateTime?
+  lastRunAt   DateTime?
+  lastResult  Json      @default("{}")
+}
+
+// ── Growth: content, scheduling + attribution (lib/growth/content, links) ──
+// Created idempotently at runtime by lib/growth/db.ts (no migrations in this
+// project). No Prisma relations; keep the SQL there in step with these.
+
+/// Brand voice, audiences, offers, proof points, banned claims (one row, id "default").
+model GrowthSettings {
+  id        String   @id
+  data      Json     @default("{}")
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+/// A product marketing kit: positioning, posts, emails, ads, video script, calendar.
+model GrowthKit {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  productKey   String
+  productType  String
+  productTitle String
+  productUrl   String?
+  language     String   @default("en")
+  audienceId   String?
+  content      Json     @default("{}")
+  warnings     Json     @default("[]")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+
+  @@index([productKey])
+  @@index([createdAt])
+}
+
+/// One social post in the queue. status: draft | scheduled | publishing |
+/// published | ready (manual post due) | failed | rejected.
+model GrowthPost {
+  id          String    @id @default(cuid())
+  kitId       String?
+  source      String    @default("manual")
+  sourceKey   String?   @unique
+  platform    String
+  language    String    @default("en")
+  body        String    @db.Text
+  hashtags    Json      @default("[]")
+  linkCode    String?
+  status      String    @default("draft")
+  scheduledAt DateTime?
+  claimedAt   DateTime?
+  publishedAt DateTime?
+  externalUrl String?
+  error       String?
+  attempts    Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  @@index([status, scheduledAt])
+  @@index([kitId])
+}
+
+/// A tracked short link (/go/[code]); UTM parameters are appended on redirect.
+model GrowthLink {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  targetUrl   String
+  utmSource   String
+  utmMedium   String
+  utmCampaign String
+  utmContent  String?
+  label       String?
+  kitId       String?
+  createdAt   DateTime @default(now())
+
+  @@index([utmCampaign])
+}
+
+/// One counted click: unique per link, visitor hash (IP+UA, salted) and day.
+model GrowthClick {
+  id          String   @id @default(cuid())
+  linkCode    String
+  visitorHash String
+  day         String
+  referrer    String?
+  country     String?
+  createdAt   DateTime @default(now())
+
+  @@unique([linkCode, visitorHash, day])
+  @@index([linkCode, createdAt])
+  @@index([createdAt])
+}
+
+/// Where a conversion came from (the 30-day first-party UTM cookie).
+/// kind: learn_signup | track_checkout | learn_subscription_checkout |
+/// toolkit_checkout | blueprint | order | event_registration | appointment
+model ConversionAttribution {
+  id          String   @id @default(cuid())
+  kind        String
+  refId       String
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmContent  String?
+  linkCode    String?
+  amountCents Int?
+  createdAt   DateTime @default(now())
+
+  @@unique([kind, refId])
+  @@index([utmCampaign])
+  @@index([linkCode])
+  @@index([createdAt])
+}
+
+/// Small key/value state for the growth cron (repurpose cursor).
+model GrowthContentState {
+  key       String   @id
+  value     Json     @default("{}")
+  updatedAt DateTime @default(now()) @updatedAt
+}

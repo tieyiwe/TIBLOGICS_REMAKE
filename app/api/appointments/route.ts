@@ -7,6 +7,7 @@ import { createMeeting, calcEndTime } from "@/lib/meeting-providers";
 import { isValidEmail, escapeHtml, requireAdmin, checkRateLimit } from "@/lib/require-admin";
 import { listLimit } from "@/lib/admin/list-limit";
 import { findTopicByName } from "@/lib/booking/services";
+import { recordAttribution } from "@/lib/growth/attribution";
 import {
   getAvailability,
   parseBookingDate,
@@ -271,6 +272,8 @@ export async function POST(req: Request) {
         },
       });
 
+      await recordAttribution({ kind: "appointment", refId: appointment.id, cookieHeader: req.headers.get("cookie"), amountCents: 0 });
+
       // Link chat session to this appointment for expert intelligence
       if (sessionId && typeof sessionId === "string") {
         prisma.adminSettings.upsert({
@@ -331,6 +334,7 @@ export async function POST(req: Request) {
     });
 
     const appointmentId = appointment.id;
+    await recordAttribution({ kind: "appointment", refId: appointmentId, cookieHeader: req.headers.get("cookie"), amountCents: totalAmount });
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],

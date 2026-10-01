@@ -6,6 +6,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { ensureToolkitTables } from "@/lib/toolkit/db";
 import { toolkitPlans, TOOLKIT_PRODUCT, type ToolkitPlan } from "@/lib/toolkit/config";
 import { getT } from "@/lib/i18n/server";
+import { recordAttribution } from "@/lib/growth/attribution";
 
 // Starts a Toolkit Live or Compliance Guard subscription for the signed-in
 // account. The price comes only from server configuration.
@@ -63,6 +64,7 @@ export async function POST(req: NextRequest) {
       subscription_data: { metadata },
     });
     if (!session.url) throw new Error("Stripe did not return a checkout URL");
+    await recordAttribution({ kind: "toolkit_checkout", refId: student.id, cookieHeader: req.headers.get("cookie"), amountCents: plan.amount });
     return NextResponse.json({ url: session.url });
   } catch (err) {
     console.error("[toolkit/checkout]", err instanceof Error ? err.message : err);

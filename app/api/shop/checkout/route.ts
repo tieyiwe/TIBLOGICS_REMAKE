@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import stripe from "@/lib/stripe";
 import { checkRateLimit } from "@/lib/require-admin";
 import type Stripe from "stripe";
+import { recordAttribution } from "@/lib/growth/attribution";
 
 function orderNumber() {
   const d = new Date();
@@ -118,6 +119,7 @@ export async function POST(req: NextRequest) {
       metadata: { orderId: order.id, orderNumber: order.orderNumber },
     });
 
+    await recordAttribution({ kind: "order", refId: order.id, cookieHeader: req.headers.get("cookie"), amountCents: order.total });
     return NextResponse.json({ checkoutUrl: session.url });
   } catch (err) {
     // Public endpoint — a raw Stripe error names our price ids, key mode and

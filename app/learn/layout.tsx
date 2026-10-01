@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import ReadingPrefsApplier from "@/components/a11y/ReadingPrefsApplier";
 import { READING_PREFS_BOOT } from "@/lib/a11y/reading-prefs";
 import { atkinson, openDyslexic } from "@/lib/a11y/fonts";
+import UtmCapture from "@/components/public/UtmCapture";
 
 export const metadata: Metadata = {
   title: { default: "TIBLOGICS Learn", template: "%s | TIBLOGICS Learn" },
@@ -26,6 +27,7 @@ export default function LearnRootLayout({ children }: { children: React.ReactNod
       <style>{`:root{--rp-font-atkinson:${atkinson.style.fontFamily};--rp-font-dyslexic:${openDyslexic.style.fontFamily}}`}</style>
       <span hidden className={`${atkinson.className} ${openDyslexic.className}`} />
       <ReadingPrefsApplier />
+      <UtmCapture />
       {children}
     </>
   );

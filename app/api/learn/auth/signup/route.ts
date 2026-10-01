@@ -8,6 +8,7 @@ import { getLocale, getT } from "@/lib/i18n/server";
 import { isLocale } from "@/lib/i18n/config";
 import { sendSignupNotification } from "@/lib/learn/admin/signup-notify";
 import { OWNER_EMAIL } from "@/lib/auth";
+import { recordAttribution } from "@/lib/growth/attribution";
 
 const SignupSchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -78,6 +79,9 @@ export async function POST(req: NextRequest) {
       data: { name, email, passwordHash, locale },
       select: { id: true, email: true, name: true, createdAt: true },
     });
+
+    // Campaign attribution (Growth): no-op without the UTM cookie, never throws.
+    await recordAttribution({ kind: "learn_signup", refId: student.id, cookieHeader: req.headers.get("cookie") });
 
     // Tell the owner (ADMIN_NOTIFY_EMAIL). Fire and forget: never blocks or
     // fails the sign-up.

@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import stripe from "@/lib/stripe";
 import { requireAdmin } from "@/lib/require-admin";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { recordAttribution } from "@/lib/growth/attribution";
 
 
 function generateConfirmationNumber(): string {
@@ -123,6 +124,8 @@ export async function POST(req: NextRequest) {
         confirmationNumber,
       },
     });
+
+    await recordAttribution({ kind: "event_registration", refId: registration.id, cookieHeader: req.headers.get("cookie"), amountCents: priceInt });
 
     // Create registrations for additional participants (non-blocking, fire-and-forget)
     const rawExtras = Array.isArray(additionalParticipants) ? additionalParticipants : [];

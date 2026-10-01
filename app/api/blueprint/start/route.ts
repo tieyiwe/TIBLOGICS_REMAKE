@@ -8,6 +8,7 @@ import { blueprintPrice, BLUEPRINT_PRODUCT } from "@/lib/blueprint/config";
 import { FIELD_KEYS, IntakeSchema, ISSUE_KEYS } from "@/lib/blueprint/intake";
 import { getLocale, translatorFor, type T } from "@/lib/i18n/server";
 import { blueprintToken, hashToken, newCreditCode, newSalt } from "@/lib/blueprint/token";
+import { recordAttribution } from "@/lib/growth/attribution";
 
 // Saves the intake as a draft and opens Stripe checkout. The draft is only
 // written up after payment settles (the webhook), and the price comes from
@@ -96,6 +97,7 @@ export async function POST(req: NextRequest) {
     });
     if (!session.url) throw new Error("Stripe did not return a checkout URL");
     await prisma.blueprint.update({ where: { id: bp.id }, data: { stripeSessionId: session.id } });
+    await recordAttribution({ kind: "blueprint", refId: bp.id, cookieHeader: req.headers.get("cookie"), amountCents: price });
     return NextResponse.json({ url: session.url });
   } catch (err) {
     console.error("[blueprint/start]", err instanceof Error ? err.message : err);

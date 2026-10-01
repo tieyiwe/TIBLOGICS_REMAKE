@@ -16,6 +16,8 @@
 //   node scripts/cron.mjs teams
 //   node scripts/cron.mjs reminders
 //   node scripts/cron.mjs live
+//   node scripts/cron.mjs growth
+//   node scripts/cron.mjs outreach
 //   node scripts/cron.mjs all
 //
 // Needs two environment variables:
@@ -51,6 +53,14 @@ const JOBS = {
   // Live expert sessions: 24h and 1h reminders, "recording available"
   // emails. Idempotent (each send is claimed per learner before it goes out).
   live: { path: "/api/cron/live", suggested: "every 15 minutes" },
+  // Growth content: publishes approved posts whose time has come (claimed
+  // first, never double-posted; platforms without tokens become "ready to
+  // post"), and drafts posts for new articles/tracks/products/events.
+  growth: { path: "/api/cron/growth", suggested: "every 15 minutes" },
+  // Growth outreach: drains the lead-enrichment queue and sends APPROVED,
+  // due cold emails within the daily cap (OUTREACH_DAILY_CAP), sending hours
+  // and suppression list. Each email is claimed before sending; idempotent.
+  outreach: { path: "/api/cron/outreach", suggested: "every 15 minutes" },
 };
 
 /**
@@ -104,7 +114,7 @@ for (const name of names) {
     const res = await fetch(url, {
       headers: { authorization: `Bearer ${secret}` },
       // A news run generates several articles; give it room.
-      signal: AbortSignal.timeout(name === "news" ? 600_000 : name === "monitor" || name === "blueprints" || name === "translate" ? 330_000 : 120_000),
+      signal: AbortSignal.timeout(name === "news" ? 600_000 : name === "monitor" || name === "blueprints" || name === "translate" || name === "growth" || name === "outreach" ? 330_000 : 120_000),
     });
     const body = await res.text();
     const secs = ((Date.now() - started) / 1000).toFixed(1);

@@ -7,6 +7,8 @@ import { checkRateLimit } from "@/lib/require-admin";
 import { getT } from "@/lib/i18n/server";
 import { ensureLearnEditColumns } from "@/lib/learn/admin/columns";
 import { TRACK_CURRENCY, trackPriceCents } from "@/lib/learn/pricing";
+import { PLANS } from "@/lib/payments/provider";
+import { recordAttribution } from "@/lib/growth/attribution";
 
 // Slugs become part of a redirect URL; an unvalidated value here would be an
 // open-redirect vector, so they are constrained to a slug shape.
@@ -71,6 +73,8 @@ export async function POST(req: NextRequest) {
         successUrl: `${SITE}/learn/track/${track.slug}?welcome=1`,
         cancelUrl: `${SITE}/learn/subscribe?track=${track.slug}&checkout=cancelled`,
       });
+      // Growth attribution; paid status is resolved from TrackPurchase at report time.
+      await recordAttribution({ kind: "track_checkout", refId: `${student.id}:${track.id}`, cookieHeader: req.headers.get("cookie"), amountCents: amount });
       return NextResponse.json({ url });
     }
 
@@ -84,6 +88,7 @@ export async function POST(req: NextRequest) {
         : `${SITE}/learn?welcome=1`,
       cancelUrl: `${SITE}/learning-box?checkout=cancelled`,
     });
+    await recordAttribution({ kind: "learn_subscription_checkout", refId: student.id, cookieHeader: req.headers.get("cookie"), amountCents: PLANS.monthly.amount });
     return NextResponse.json({ url });
   } catch (err) {
     // Any signed-up learner can reach this, and a Stripe error names our price
