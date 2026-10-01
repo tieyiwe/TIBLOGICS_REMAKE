@@ -11,16 +11,19 @@ import { fmtNumber, rankName } from "@/lib/learn/format";
 import { LOCALE_COOKIE, isLocale } from "@/lib/i18n/config";
 import { useLocale, useSetLocale, useT } from "@/lib/i18n/client";
 
+// Wide screens show the first PRIMARY links in the bar and the rest under
+// "More"; the mobile panel lists everything.
+const PRIMARY = 5;
 const LINK_KEYS = [
   { href: "/learn", key: "learn.nav.dashboard" },
   { href: "/learn/tracks", key: "learn.nav.myTracks" },
+  { href: "/learn/studio", key: "studio.nav" },
+  { href: "/learn/community", key: "community.nav" },
+  { href: "/learn/live", key: "live.nav" },
   { href: "/learn/review", key: "method.nav.review" },
   { href: "/learn/certificates", key: "learn.nav.certificates" },
   { href: "/learn/badges", key: "badges.nav" },
   { href: "/learn/portfolio", key: "method.nav.portfolio" },
-  { href: "/learn/studio", key: "studio.nav" },
-  { href: "/learn/community", key: "community.nav" },
-  { href: "/learn/live", key: "live.nav" },
   { href: "/learn/leaderboard", key: "game.nav.leaderboard" },
   { href: "/learn/account", key: "learn.nav.account" },
 ];
@@ -39,6 +42,7 @@ export default function LearnNav({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const t = useT();
   const locale = useLocale();
   const setLocale = useSetLocale();
@@ -64,15 +68,25 @@ export default function LearnNav({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Escape closes the account panel.
+  // Escape closes the account panel and the More list.
   useEffect(() => {
-    if (!open) return;
+    if (!open && !moreOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        setOpen(false);
+        setMoreOpen(false);
+      }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, moreOpen]);
+
+  // Navigating closes the More list.
+  useEffect(() => setMoreOpen(false), [pathname]);
+
+  const isActive = (href: string) => (href === "/learn" ? pathname === "/learn" : pathname.startsWith(href));
+  const moreLinks = LINKS.slice(PRIMARY);
+  const moreActive = moreLinks.some((l) => isActive(l.href));
 
   const levelHint =
     level.next == null
@@ -87,15 +101,15 @@ export default function LearnNav({
           <span className="ml-1 text-xs font-semibold text-[var(--ink3)]">Learn</span>
         </Link>
 
-        <nav aria-label={t("learn.nav.label")} className="ml-1 hidden min-w-0 overflow-x-auto xl:flex">
-          {LINKS.map((l) => {
-            const active = l.href === "/learn" ? pathname === "/learn" : pathname.startsWith(l.href);
+        <nav aria-label={t("learn.nav.label")} className="ml-1 hidden min-w-0 items-center xl:flex">
+          {LINKS.slice(0, PRIMARY).map((l) => {
+            const active = isActive(l.href);
             return (
               <Link
                 key={l.href}
                 href={l.href}
                 aria-current={active ? "page" : undefined}
-                className={`whitespace-nowrap rounded-lg px-2 py-2 text-[13px] font-semibold transition-colors ${
+                className={`whitespace-nowrap rounded-lg px-2.5 py-2 text-[13px] font-semibold transition-colors ${
                   active ? "bg-[var(--s2)] text-[var(--ink)]" : "text-[var(--ink3)] hover:text-[var(--ink)]"
                 }`}
               >
@@ -103,6 +117,51 @@ export default function LearnNav({
               </Link>
             );
           })}
+          <div
+            className="relative"
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setMoreOpen(false);
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setMoreOpen((v) => !v)}
+              aria-expanded={moreOpen}
+              aria-controls="learn-nav-more"
+              className={`flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-2 text-[13px] font-semibold transition-colors ${
+                moreActive ? "bg-[var(--s2)] text-[var(--ink)]" : "text-[var(--ink3)] hover:text-[var(--ink)]"
+              }`}
+            >
+              {t("learn.nav.more")}
+              <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" className={moreOpen ? "rotate-180" : ""}>
+                <path d="M1 3l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.6" />
+              </svg>
+            </button>
+            {moreOpen && (
+              <ul
+                id="learn-nav-more"
+                className="absolute left-0 top-full z-50 mt-1 w-52 rounded-xl border border-[var(--border)] bg-white p-1.5 shadow-lg"
+              >
+                {moreLinks.map((l) => {
+                  const active = isActive(l.href);
+                  return (
+                    <li key={l.href}>
+                      <Link
+                        href={l.href}
+                        aria-current={active ? "page" : undefined}
+                        onClick={() => setMoreOpen(false)}
+                        className={`block rounded-lg px-3 py-2 text-sm font-semibold ${
+                          active ? "bg-[var(--s2)] text-[var(--ink)]" : "text-[var(--ink2)] hover:bg-[var(--s2)]"
+                        }`}
+                      >
+                        {l.label}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </nav>
 
         <div className="ml-auto flex items-center gap-3">
