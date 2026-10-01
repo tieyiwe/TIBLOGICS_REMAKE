@@ -120,16 +120,23 @@ function presentForRound(q: BankQuestion, studentId: string, round: string) {
 
 const QUESTION_SELECT = { id: true, question: true, options: true, correctIndex: true, explanation: true } as const;
 
+/**
+ * Tracks whose questions may be reviewed: null = every track (subscription),
+ * else the ids of the tracks the learner bought.
+ */
+export type ReviewScope = string[] | null;
+
 /** Two queries whatever the learner's history. */
-async function eligibleBanks(studentId: string, withText: boolean): Promise<Bank[]> {
+async function eligibleBanks(studentId: string, withText: boolean, scope: ReviewScope = null): Promise<Bank[]> {
   const questions = withText ? { select: QUESTION_SELECT } : { select: { id: true } };
+  const inScope = scope ? { module: { trackId: { in: scope } } } : {};
   const [micro, quiz] = await Promise.all([
     prisma.microCheck.findMany({
-      where: { lesson: { progress: { some: { studentId } } } },
+      where: { lesson: { progress: { some: { studentId } }, ...inScope } },
       select: { id: true, lesson: { select: { module: { select: { trackId: true } } } }, questions },
     }),
     prisma.quiz.findMany({
-      where: { attempts: { some: { studentId, passed: true } } },
+      where: { attempts: { some: { studentId, passed: true } }, ...inScope },
       select: { id: true, module: { select: { trackId: true } }, questions },
     }),
   ]);
@@ -158,9 +165,9 @@ interface CardRow {
   trackId: string;
 }
 
-async function loadCards(studentId: string): Promise<CardRow[]> {
+async function loadCards(studentId: string, scope: ReviewScope = null): Promise<CardRow[]> {
   return prisma.reviewCard.findMany({
-    where: { studentId },
+    where: { studentId, ...(scope ? { trackId: { in: scope } } : {}) },
     select: { id: true, questionId: true, box: true, dueAt: true, createdAt: true, trackId: true },
   });
 }
@@ -191,12 +198,12 @@ export interface ReviewStatus {
   doneToday: boolean;
 }
 
-export async function reviewStatus(studentId: string): Promise<ReviewStatus> {
+export async function reviewStatus(studentId: string, scope: ReviewScope = null): Promise<ReviewStatus> {
   await ensureMethodTables();
   const now = new Date();
   const [cards, banks, done] = await Promise.all([
-    loadCards(studentId),
-    eligibleBanks(studentId, false),
+    loadCards(studentId, scope),
+    eligibleBanks(studentId, false, scope),
     // The award is keyed on the learner's local date, which the server does
     // not know here; one in the last 20 hours is "today" for display.
     prisma.pointsLedger.findFirst({
@@ -219,10 +226,11 @@ export async function buildSession(
   studentId: string,
   locale: Locale,
   round: string,
+  scope: ReviewScope = null,
 ): Promise<{ questions: ServedReviewQuestion[]; pending: boolean; remaining: number }> {
   await ensureMethodTables();
   const now = new Date();
-  const [cards, banks] = await Promise.all([loadCards(studentId), eligibleBanks(studentId, true)]);
+  const [cards, banks] = await Promise.all([loadCards(studentId, scope), eligibleBanks(studentId, true, scope)]);
   const { due, fresh, allowance } = plan(cards, banks, now);
 
   const bankOf = new Map<string, Bank>();
@@ -302,12 +310,16 @@ export async function answerCard(
   choice: number,
   round: string,
   locale: Locale,
+  scope: ReviewScope = null,
 ): Promise<ReviewAnswerResult | null> {
   await ensureMethodTables();
   const card = await prisma.reviewCard.findUnique({
     where: { studentId_questionId: { studentId, questionId } },
   });
   if (!card) return null;
+  // A card from a track the learner can no longer open (a lapsed
+  // subscription, with only purchased tracks left) is not served or graded.
+  if (scope && !scope.includes(card.trackId)) return null;
 
   const kind = card.kind === "quiz" ? "quiz" : "micro";
   const bank: BankQuestion[] =

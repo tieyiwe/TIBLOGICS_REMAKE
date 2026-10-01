@@ -7,7 +7,15 @@ import { useState } from "react";
 interface TrackRow {
   id: string; slug: string; title: string; status: string; level: string;
   estimatedHours: number; moduleCount: number; lessonCount: number;
+  /** One-time price in cents (level default or the track's override). */
+  priceCents: number; priceOverridden: boolean;
 }
+
+interface PurchaseRow {
+  id: string; email: string; trackTitle: string; amountCents: number; currency: string; createdAt: string;
+}
+
+const usd = (cents: number) => `$${(cents / 100).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
 
 interface QueueRow {
   id: string; status: string; createdAt: string;
@@ -26,6 +34,9 @@ export default function LearnAdminClient({
   studentCount,
   subCounts,
   certificateCount,
+  purchaseCount,
+  purchaseCents,
+  recentPurchases,
   waitlist,
   queue,
   recentCertificates,
@@ -35,6 +46,9 @@ export default function LearnAdminClient({
   studentCount: number;
   subCounts: Record<string, number>;
   certificateCount: number;
+  purchaseCount: number;
+  purchaseCents: number;
+  recentPurchases: PurchaseRow[];
   waitlist: Array<{ trackSlug: string; count: number }>;
   queue: QueueRow[];
   recentCertificates: CertRow[];
@@ -125,10 +139,11 @@ export default function LearnAdminClient({
       )}
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {[
           ["Students", studentCount],
           ["Active subscriptions", active],
+          ["Tracks bought (one-time)", `${purchaseCount} · ${usd(purchaseCents)}`],
           ["Certificates issued", certificateCount],
           ["Awaiting review", queue.length],
         ].map(([label, value]) => (
@@ -199,6 +214,7 @@ export default function LearnAdminClient({
                   <th className="pb-2 text-right">Modules</th>
                   <th className="pb-2 text-right">Lessons</th>
                   <th className="pb-2 text-right">Hours</th>
+                  <th className="pb-2 text-right">One-time price</th>
                   <th className="pb-2" />
                 </tr>
               </thead>
@@ -225,6 +241,10 @@ export default function LearnAdminClient({
                     <td className="py-2.5 text-right text-[var(--ink2)]">{t.moduleCount}</td>
                     <td className="py-2.5 text-right text-[var(--ink2)]">{t.lessonCount}</td>
                     <td className="py-2.5 text-right text-[var(--ink2)]">{t.estimatedHours}</td>
+                    <td className="py-2.5 text-right text-[var(--ink2)]" title={t.priceOverridden ? "Set on this track" : "From the track level"}>
+                      {usd(t.priceCents)}
+                      {t.priceOverridden && <span className="ml-1 text-[10px] font-bold text-[var(--orange2)]">custom</span>}
+                    </td>
                     <td className="py-2.5 pl-4 text-right whitespace-nowrap">
                       <Link href={`/admin_pro/learn/tracks/${t.id}`} className="mr-3 text-xs font-semibold text-[var(--blue2)] underline">
                         Edit content
@@ -236,6 +256,42 @@ export default function LearnAdminClient({
                       >
                         View
                       </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* One-time track purchases */}
+      <section className="rounded-xl border border-[var(--border)] bg-white p-5">
+        <h2 className="text-sm font-bold text-[var(--ink)]">Track purchases (one-time, lifetime access)</h2>
+        <p className="mt-1 text-xs text-[var(--ink3)]">
+          Prices follow the track level ($297 starter/beginner, +$190 per level) unless a track sets its own in the track editor.
+        </p>
+        {recentPurchases.length === 0 ? (
+          <p className="mt-3 text-sm text-[var(--ink3)]">No track purchases yet.</p>
+        ) : (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[var(--border)] text-left text-xs uppercase tracking-wide text-[var(--ink3)]">
+                  <th className="pb-2">Date</th>
+                  <th className="pb-2">Learner</th>
+                  <th className="pb-2">Track</th>
+                  <th className="pb-2 text-right">Paid</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border)]">
+                {recentPurchases.map((p) => (
+                  <tr key={p.id}>
+                    <td className="py-2 pr-4 text-[var(--ink2)]">{new Date(p.createdAt).toLocaleDateString()}</td>
+                    <td className="py-2 pr-4 text-[var(--ink2)]">{p.email}</td>
+                    <td className="py-2 pr-4 text-[var(--ink)]">{p.trackTitle}</td>
+                    <td className="py-2 text-right font-semibold text-[var(--ink)]">
+                      {usd(p.amountCents)} {p.currency.toUpperCase()}
                     </td>
                   </tr>
                 ))}

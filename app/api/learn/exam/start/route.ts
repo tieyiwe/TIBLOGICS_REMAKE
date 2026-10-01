@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { requireEntitledStudent } from "@/lib/learn/session";
+import { denyTrack, requireEntitledStudent } from "@/lib/learn/session";
 import { allModuleQuizzesPassed, presentQuestion, seededShuffle, serveQuestion } from "@/lib/learn/assessments";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 import type { Locale } from "@/lib/i18n/config";
@@ -14,7 +14,7 @@ import { localizeQuestions } from "@/lib/i18n/sources/labs";
 const Body = z.object({ trackSlug: z.string().min(1) });
 
 export async function POST(req: NextRequest) {
-  const { error, student } = await requireEntitledStudent();
+  const { error, student, access } = await requireEntitledStudent();
   if (error) return error;
   const locale = await getLocale();
   const t = translatorFor(locale);
@@ -29,6 +29,8 @@ export async function POST(req: NextRequest) {
     });
     const exam = track?.finalExam;
     if (!track || !exam) return NextResponse.json({ error: t("labs.api.examNotFound") }, { status: 404 });
+    const denied = await denyTrack(access, track.id);
+    if (denied) return denied;
 
     // Gate: all module quizzes must be passed first
     if (!(await allModuleQuizzesPassed(student.id, track.id))) {

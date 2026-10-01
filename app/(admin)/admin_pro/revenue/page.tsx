@@ -27,6 +27,7 @@ export default async function RevenuePage() {
     { label: "Events & training", cents: r.allTime.events, color: "#F47C20" },
     { label: "Paid bookings", cents: r.allTime.bookings, color: "#0F6E56" },
     { label: "Automation Blueprints", cents: r.allTime.blueprints, color: "#7c3aed" },
+    { label: "Learning Box tracks (one-time)", cents: r.allTime.learnTracks, color: "#0EA5E9" },
   ];
   const maxSource = Math.max(1, ...sources.map((s) => s.cents));
 
@@ -35,7 +36,7 @@ export default async function RevenuePage() {
       <div>
         <h1 className="font-syne font-bold text-2xl text-[#0D1B2A]">Revenue</h1>
         <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">
-          Money actually received: paid store orders, event registrations, bookings and Automation Blueprints.
+          Money actually received: paid store orders, event registrations, bookings, Automation Blueprints and Learning Box track purchases.
         </p>
       </div>
 

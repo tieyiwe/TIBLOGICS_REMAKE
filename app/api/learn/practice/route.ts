@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { requireEntitledStudent } from "@/lib/learn/session";
+import { denyTrack, requireEntitledStudent } from "@/lib/learn/session";
+import { trackOfLesson } from "@/lib/learn/track-of";
 import { checkRateLimit } from "@/lib/require-admin";
 import { withinDailyAiBudget } from "@/lib/learn/ai-budget";
 import { streamChat } from "@/lib/claude";
@@ -22,7 +23,7 @@ const Body = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const { error, student } = await requireEntitledStudent();
+  const { error, student, access } = await requireEntitledStudent();
   if (error) return error;
   const [t, locale] = await Promise.all([getT(), getLocale()]);
 
@@ -30,6 +31,13 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     const tooLong = parsed.error.issues[0]?.code === "too_big";
     return NextResponse.json({ error: t(tooLong ? "learn.api.promptTooLong" : "learn.api.promptEmpty") }, { status: 400 });
+  }
+  // The pad under a lesson needs that lesson's track (or a free preview).
+  if (parsed.data.lessonId) {
+    const lt = await trackOfLesson(parsed.data.lessonId);
+    if (!lt) return NextResponse.json({ error: t("learn.api.lessonNotFound") }, { status: 404 });
+    const denied = lt.isPreview ? null : await denyTrack(access, lt.trackId);
+    if (denied) return denied;
   }
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: t("learn.api.padOff") }, { status: 503 });

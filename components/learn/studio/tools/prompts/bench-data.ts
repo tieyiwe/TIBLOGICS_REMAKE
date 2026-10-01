@@ -54,6 +54,15 @@ export const CHALLENGE_TASK: Record<string, string> = {
   "expose-weak": "ticket",
 };
 
+/**
+ * "Catch the planted failure": V2 of the policy task guesses on the ambiguous
+ * question and cites a section that does not exist. Only the checks in
+ * failingChecks() for this cell can expose it.
+ */
+export const PLANTED: { variant: string; case: Case } = { variant: "v2", case: "ambiguous" };
+/** Most checks the learner may pick in that challenge (so "tick everything" is not an option). */
+export const PLANTED_MAX_CHECKS = 3;
+
 export type Cell = "pass" | "fail" | "na";
 
 /** Result of one check on one cell. */
@@ -69,6 +78,11 @@ export function cellResult(task: BenchTask, variant: string, c: Case, checks: Ch
   const rs = checks.map((k) => checkResult(task, variant, c, k)).filter((r) => r !== "na");
   if (rs.length === 0) return "na";
   return rs.every((r) => r === "pass") ? "pass" : "fail";
+}
+
+/** The checks that fail on one cell: the ones that would catch its problem. */
+export function failingChecks(task: BenchTask, variant: string, c: Case): Check[] {
+  return CHECKS.filter((k) => checkResult(task, variant, c, k) === "fail");
 }
 
 /** Passed and applicable check counts for a variant over the chosen cases and checks. */

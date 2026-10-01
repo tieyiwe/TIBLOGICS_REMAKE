@@ -3,7 +3,8 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { quizUnlocked } from "@/lib/learn/progress";
-import { requireEntitledStudent } from "@/lib/learn/session";
+import { denyTrack, requireEntitledStudent } from "@/lib/learn/session";
+import { trackOfMicroCheck, trackOfQuiz } from "@/lib/learn/track-of";
 import { presentQuestion, scoreAnswers } from "@/lib/learn/assessments";
 import { awardPoints, getTotalPoints } from "@/lib/learn/points";
 import { checkLevelUp, notifyMilestone } from "@/lib/learn/milestones";
@@ -21,7 +22,7 @@ const Body = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const { error, student } = await requireEntitledStudent();
+  const { error, student, access } = await requireEntitledStudent();
   if (error) return error;
   const locale = await getLocale();
   const t = translatorFor(locale);
@@ -29,6 +30,18 @@ export async function POST(req: NextRequest) {
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: t("labs.api.invalidSubmission") }, { status: 400 });
   const { mode, id, answers } = parsed.data;
+
+  if (mode === "micro") {
+    const lt = await trackOfMicroCheck(id);
+    if (!lt) return NextResponse.json({ error: t("labs.api.notFound") }, { status: 404 });
+    const denied = lt.isPreview ? null : await denyTrack(access, lt.trackId);
+    if (denied) return denied;
+  } else {
+    const trackId = await trackOfQuiz(id);
+    if (!trackId) return NextResponse.json({ error: t("labs.api.notFound") }, { status: 404 });
+    const denied = await denyTrack(access, trackId);
+    if (denied) return denied;
+  }
 
   const answeredIds = Object.keys(answers);
   if (answeredIds.length === 0) {

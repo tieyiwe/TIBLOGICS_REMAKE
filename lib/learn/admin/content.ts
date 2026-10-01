@@ -41,6 +41,8 @@ const TrackFields = z.object({
   audience: s(600).nullable().optional(),
   outcomes: z.array(s(300).min(1)).max(12),
   estimatedHours: z.coerce.number().min(0).max(500),
+  /** One-time price in cents; null = from the level (lib/learn/pricing.ts). */
+  priceCents: z.number().int().min(100, "Price must be at least $1").max(1_000_000, "Price must be at most $10,000").nullable().optional(),
 });
 
 const LessonFields = z.object({

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { requireEntitledStudent } from "@/lib/learn/session";
+import { denyTrack, requireEntitledStudent } from "@/lib/learn/session";
+import { trackOfLesson } from "@/lib/learn/track-of";
 import { markLessonComplete } from "@/lib/learn/progress";
 import { computeStreak, getTotalPoints, levelFor } from "@/lib/learn/points";
 import { checkHalfway, checkLevelUp } from "@/lib/learn/milestones";
@@ -11,12 +12,17 @@ import { gameDelta, gameSnapshot } from "@/lib/learn/badges";
 const Body = z.object({ lessonId: z.string().min(1) });
 
 export async function POST(req: NextRequest) {
-  const { error, student } = await requireEntitledStudent();
+  const { error, student, access } = await requireEntitledStudent();
   if (error) return error;
   const t = await getT();
 
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: t("learn.api.invalidRequest") }, { status: 400 });
+
+  const lt = await trackOfLesson(parsed.data.lessonId);
+  if (!lt) return NextResponse.json({ error: t("learn.api.lessonNotFound") }, { status: 404 });
+  const denied = lt.isPreview ? null : await denyTrack(access, lt.trackId);
+  if (denied) return denied;
 
   // Capture the total BEFORE the award so a level crossing can be detected
   // (and the earned badge set, so newly earned ones can be celebrated).

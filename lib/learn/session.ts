@@ -1,11 +1,13 @@
 // Student session + entitlement. Replaces the spec's RLS `is_entitled(uid)`
 // with server-side authorization, since this app uses NextAuth + Prisma.
+import { cache } from "react";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions, OWNER_EMAIL } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { ensureLearnEditColumns } from "@/lib/learn/admin/columns";
 import { getT } from "@/lib/i18n/server";
+import { purchasedTrackIds } from "@/lib/learn/purchases";
 
 export interface StudentSession {
   id: string;
@@ -98,11 +100,55 @@ export async function getEntitlement(studentId: string | null | undefined): Prom
   };
 }
 
-/** Convenience for pages: student + entitlement in one call. */
+// ── Per-track access ──────────────────────────────────────────────────────
+//
+// Two ways in:
+//   - an all-access subscription (active | trialing | comped | past_due in
+//     grace, or the owner's account): every track;
+//   - a one-time purchase (TrackPurchase): that track, forever, whatever the
+//     subscription does later.
+// A learner with neither is sent to /learn/subscribe by the member layout.
+
+export interface LearnAccess {
+  entitlement: Entitlement;
+  /** Every track (subscription, comped or owner). */
+  all: boolean;
+  /** Tracks bought outright. */
+  purchased: string[];
+  /** At least one track is open: may enter the member area. */
+  any: boolean;
+}
+
+const NO_ACCESS: LearnAccess = { entitlement: NONE, all: false, purchased: [], any: false };
+
+/** Subscription + purchases in two queries. Cached per request in pages. */
+export const getAccess = cache(async (studentId: string | null | undefined): Promise<LearnAccess> => {
+  if (!studentId) return NO_ACCESS;
+  const [entitlement, purchased] = await Promise.all([getEntitlement(studentId), purchasedTrackIds(studentId)]);
+  return { entitlement, all: entitlement.entitled, purchased, any: entitlement.entitled || purchased.length > 0 };
+});
+
+/** Pure check against an access already loaded. */
+export function canAccessTrack(access: LearnAccess, trackId: string | null | undefined): boolean {
+  if (!trackId) return false;
+  return access.all || access.purchased.includes(trackId);
+}
+
+export async function hasTrackAccess(studentId: string | null | undefined, trackId: string): Promise<boolean> {
+  return canAccessTrack(await getAccess(studentId), trackId);
+}
+
+/** "all", or the ids of the tracks this learner may open (batched: two queries). */
+export async function accessibleTrackIds(studentId: string | null | undefined): Promise<"all" | string[]> {
+  const a = await getAccess(studentId);
+  return a.all ? "all" : a.purchased;
+}
+
+/** Convenience for pages: student + entitlement + access in one call. */
 export async function getLearnContext() {
   const student = await getStudent();
-  const entitlement = await getEntitlement(student?.id);
-  return { student, entitlement };
+  const access = await getAccess(student?.id);
+  return { student, entitlement: access.entitlement, access };
 }
 
 /** API guard — returns a NextResponse to short-circuit, or null to proceed. */
@@ -117,16 +163,32 @@ export async function requireStudent(): Promise<
   return { error: null, student };
 }
 
-/** API guard requiring an entitled (paying) student. */
+/**
+ * API guard requiring a learner with at least one open track (a subscription
+ * or a purchase). Content routes must ALSO call denyTrack() with the track the
+ * request touches.
+ */
 export async function requireEntitledStudent(): Promise<
-  { error: NextResponse; student: null } | { error: null; student: StudentSession }
+  | { error: NextResponse; student: null; access: null }
+  | { error: null; student: StudentSession; access: LearnAccess }
 > {
   const { error, student } = await requireStudent();
-  if (error) return { error, student: null };
-  const ent = await getEntitlement(student.id);
-  if (!ent.entitled) {
+  if (error) return { error, student: null, access: null };
+  const access = await getAccess(student.id);
+  if (!access.any) {
     const t = await getT();
-    return { error: NextResponse.json({ error: t("learn.api.subscriptionRequired") }, { status: 402 }), student: null };
+    return { error: NextResponse.json({ error: t("learn.api.subscriptionRequired") }, { status: 402 }), student: null, access: null };
   }
-  return { error: null, student };
+  return { error: null, student, access };
+}
+
+/**
+ * 403 when the learner cannot open this track (null = go ahead). A missing
+ * track id (unknown lesson, lab...) is treated as not found by the caller
+ * before this; here it is simply refused.
+ */
+export async function denyTrack(access: LearnAccess, trackId: string | null | undefined): Promise<NextResponse | null> {
+  if (canAccessTrack(access, trackId)) return null;
+  const t = await getT();
+  return NextResponse.json({ error: t("learn.api.trackLocked"), locked: "track", trackId: trackId ?? null }, { status: 403 });
 }

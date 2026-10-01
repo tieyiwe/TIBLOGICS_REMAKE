@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { requireEntitledStudent } from "@/lib/learn/session";
+import { denyTrack, requireEntitledStudent } from "@/lib/learn/session";
 import { finalExamPassed } from "@/lib/learn/assessments";
 import { generateCapstonePreReview } from "@/lib/learn/ai-review";
 import { getT, type T } from "@/lib/i18n/server";
@@ -14,7 +14,7 @@ const bodyFor = (t: T) =>
   });
 
 export async function POST(req: NextRequest) {
-  const { error, student } = await requireEntitledStudent();
+  const { error, student, access } = await requireEntitledStudent();
   if (error) return error;
   const t = await getT();
 
@@ -34,6 +34,8 @@ export async function POST(req: NextRequest) {
       select: { id: true, trackId: true, briefMd: true, rubric: true },
     });
     if (!capstone) return NextResponse.json({ error: t("labs.api.capstoneNotFound") }, { status: 404 });
+    const denied = await denyTrack(access, capstone.trackId);
+    if (denied) return denied;
 
     // Gate: the final exam must be passed first
     if (!(await finalExamPassed(student.id, capstone.trackId))) {

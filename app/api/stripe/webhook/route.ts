@@ -11,6 +11,7 @@ import { upsertToolkitSubscription } from "@/lib/toolkit/billing";
 import { TOOLKIT_PRODUCT } from "@/lib/toolkit/config";
 import { markBlueprintPaid } from "@/lib/blueprint/billing";
 import { BLUEPRINT_PRODUCT } from "@/lib/blueprint/config";
+import { recordTrackPurchase } from "@/lib/learn/purchases";
 
 const SITE_URL = (
   process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
@@ -38,7 +39,15 @@ export async function POST(req: Request) {
     return new Response("Webhook signature verification failed", { status: 400 });
   }
 
-  // Always return 200 after signature check — Stripe will retry on 5xx
+  // Always return 200 after signature check — Stripe will retry on 5xx.
+  // Exception: a paid Learning Box track that could not be recorded answers
+  // 500 so Stripe retries (recording is idempotent).
+  let retry = false;
+  const trackPurchase = (session: Stripe.Checkout.Session) =>
+    handleTrackPurchase(session).catch((err) => {
+      console.error("[stripe/webhook] Learn track purchase FAILED, asking Stripe to retry", err);
+      retry = true;
+    });
   try {
     // ── TIBLOGICS Learn subscription lifecycle ────────────────────────────
     if (
@@ -79,6 +88,14 @@ export async function POST(req: Request) {
       }
     }
 
+    // ── Learning Box one-time track purchase, paid later (bank debits etc.).
+    // Card payments arrive as checkout.session.completed below; this event
+    // only fires for delayed methods, and only if enabled on the endpoint.
+    if (event.type === "checkout.session.async_payment_succeeded") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      if (session.metadata?.product === "learn-track") await trackPurchase(session);
+    }
+
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
       const appointmentId = session.metadata?.appointmentId;
@@ -94,6 +111,11 @@ export async function POST(req: Request) {
           await upsertLearnSubscription(full, studentId);
           console.log(`[stripe/webhook] ✓ Learn subscription active for student ${studentId}`);
         }
+      }
+
+      // ── Learning Box: one track, one payment, lifetime access ────────────
+      if (session.metadata?.product === "learn-track" && session.mode === "payment") {
+        await trackPurchase(session);
       }
 
       // ── Automation Blueprint (one-time) ──────────────────────────────────
@@ -308,7 +330,35 @@ export async function POST(req: Request) {
     console.error("[stripe/webhook] Event handling error", error);
   }
 
+  if (retry) return new Response("Track purchase not recorded", { status: 500 });
   return new Response("ok", { status: 200 });
+}
+
+// ── Learning Box track purchase ─────────────────────────────────────────────
+// Only a paid session grants the track. Idempotent: the purchase is keyed on
+// the Stripe session id and on (student, track), so a retried event inserts
+// nothing. A failure throws so the outer handler logs it.
+async function handleTrackPurchase(session: Stripe.Checkout.Session) {
+  if (session.payment_status !== "paid") {
+    console.log(`[stripe/webhook] Learn track session ${session.id} not paid yet (${session.payment_status})`);
+    return;
+  }
+  const studentId = session.metadata?.studentId || session.client_reference_id;
+  const trackId = session.metadata?.trackId;
+  if (!studentId || !trackId) {
+    console.error(`[stripe/webhook] Learn track session ${session.id} missing studentId/trackId`);
+    return;
+  }
+  const created = await recordTrackPurchase({
+    studentId,
+    trackId,
+    amountCents: session.amount_total ?? 0,
+    currency: session.currency ?? "usd",
+    stripeSessionId: session.id,
+    stripePaymentIntent:
+      typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null,
+  });
+  console.log(`[stripe/webhook] Learn track ${trackId} for student ${studentId}: ${created ? "purchase recorded" : "already recorded"}`);
 }
 
 // ── TIBLOGICS Learn subscription sync ───────────────────────────────────────

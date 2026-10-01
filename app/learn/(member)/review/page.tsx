@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getStudent } from "@/lib/learn/session";
+import { accessibleTrackIds, getStudent } from "@/lib/learn/session";
 import { getT } from "@/lib/i18n/server";
 import { MIN_FOR_COMPLETE, reviewStatus, type ReviewStatus } from "@/lib/learn/method/review";
 import DailyReview from "@/components/learn/method/DailyReview";
@@ -18,7 +18,8 @@ export default async function ReviewPage() {
   const t = await getT();
   // The status only sets the start screen; the session itself is loaded by
   // the client. If it cannot be worked out, the learner can still start.
-  const status: ReviewStatus = await reviewStatus(student.id).catch((err) => {
+  const open = await accessibleTrackIds(student.id);
+  const status: ReviewStatus = await reviewStatus(student.id, open === "all" ? null : open).catch((err) => {
     console.error("[review] status", err);
     return { due: 0, totalCards: 0, available: true, doneToday: false };
   });

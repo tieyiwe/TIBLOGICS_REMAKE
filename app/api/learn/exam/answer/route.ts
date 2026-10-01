@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { requireEntitledStudent } from "@/lib/learn/session";
+import { denyTrack, requireEntitledStudent } from "@/lib/learn/session";
+import { trackOfExamSession } from "@/lib/learn/track-of";
 import { getT } from "@/lib/i18n/server";
 
 // Autosave a single answer into the server-side session, so a refresh,
@@ -14,7 +15,7 @@ const Body = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const { error, student } = await requireEntitledStudent();
+  const { error, student, access } = await requireEntitledStudent();
   if (error) return error;
   const t = await getT();
 
@@ -27,6 +28,8 @@ export async function POST(req: NextRequest) {
     if (!session || session.studentId !== student.id) {
       return NextResponse.json({ error: t("labs.api.sessionNotFound") }, { status: 404 });
     }
+    const denied = await denyTrack(access, await trackOfExamSession(sessionId));
+    if (denied) return denied;
     if (session.status !== "in_progress") {
       return NextResponse.json({ error: t("labs.api.examClosed") }, { status: 409 });
     }

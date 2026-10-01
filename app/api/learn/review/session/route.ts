@@ -8,7 +8,7 @@ import { getLocale, translatorFor } from "@/lib/i18n/server";
 // Serves today's Daily Review cards: question text and shuffled options only.
 // The answer key and explanations stay on the server until each answer.
 export async function GET() {
-  const { error, student } = await requireEntitledStudent();
+  const { error, student, access } = await requireEntitledStudent();
   if (error) return error;
   const locale = await getLocale();
   const t = translatorFor(locale);
@@ -18,7 +18,7 @@ export async function GET() {
   }
   try {
     const round = randomBytes(9).toString("base64url");
-    const { questions, pending, remaining } = await buildSession(student.id, locale, round);
+    const { questions, pending, remaining } = await buildSession(student.id, locale, round, access.all ? null : access.purchased);
     return NextResponse.json(
       { round, questions, pending, remaining },
       { headers: { "Cache-Control": "no-store" } },

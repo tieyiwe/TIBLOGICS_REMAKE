@@ -3,7 +3,8 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { labUnlocked } from "@/lib/learn/progress";
-import { requireEntitledStudent } from "@/lib/learn/session";
+import { denyTrack, requireEntitledStudent } from "@/lib/learn/session";
+import { trackOfLab } from "@/lib/learn/track-of";
 import { checkRateLimit } from "@/lib/require-admin";
 import { withinDailyAiBudget } from "@/lib/learn/ai-budget";
 import { awardPoints, getTotalPoints } from "@/lib/learn/points";
@@ -36,7 +37,7 @@ const Body = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const { error, student } = await requireEntitledStudent();
+  const { error, student, access } = await requireEntitledStudent();
   if (error) return error;
   const locale = await getLocale();
   const t = translatorFor(locale);
@@ -53,6 +54,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: t("labs.api.invalid") }, { status: 400 });
   }
   const { labId, prompt, selections, checked, artifactUrl, reflection, answers, code, checkResults, commits } = parsed.data;
+  const labTrack = await trackOfLab(labId);
+  if (!labTrack) return NextResponse.json({ error: t("labs.api.labNotFound") }, { status: 404 });
+  const denied = await denyTrack(access, labTrack);
+  if (denied) return denied;
   // A module's lab opens once the module's lessons are done.
   if (!(await labUnlocked(student.id, labId))) {
     return NextResponse.json({ error: (await getT())("labs.api.finishLessonsFirst"), locked: true }, { status: 403 });

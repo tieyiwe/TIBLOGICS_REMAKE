@@ -15,7 +15,7 @@ const Body = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const { error, student } = await requireEntitledStudent();
+  const { error, student, access } = await requireEntitledStudent();
   if (error) return error;
   const locale = await getLocale();
   const t = translatorFor(locale);
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: t("learn.api.invalidRequest") }, { status: 400 });
   const { questionId, choice, round } = parsed.data;
   try {
-    const result = await answerCard(student.id, questionId, choice, round, locale);
+    const result = await answerCard(student.id, questionId, choice, round, locale, access.all ? null : access.purchased);
     if (!result) return NextResponse.json({ error: t("method.api.noCard") }, { status: 404 });
     return NextResponse.json(result);
   } catch (err) {

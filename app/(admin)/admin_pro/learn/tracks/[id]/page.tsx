@@ -49,7 +49,7 @@ export default async function TrackEditorPage({ params }: { params: Promise<{ id
         level: track.level, levelEnd: track.levelEnd ?? "", status: track.status, sortOrder: track.sortOrder,
         accentColor: track.accentColor, heroImage: track.heroImage ?? "", certificateName: track.certificateName,
         audience: track.audience ?? "", outcomes: Array.isArray(track.outcomes) ? (track.outcomes as string[]) : [],
-        estimatedHours: track.estimatedHours, certificates: track._count.certificates,
+        estimatedHours: track.estimatedHours, certificates: track._count.certificates, priceCents: track.priceCents,
       }}
       modules={track.modules.map((m) => ({
         id: m.id, title: m.title, summary: m.summary ?? "", estimatedMinutes: m.estimatedMinutes,

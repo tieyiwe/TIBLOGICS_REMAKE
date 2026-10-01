@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { requireEntitledStudent } from "@/lib/learn/session";
+import { denyTrack, requireEntitledStudent } from "@/lib/learn/session";
+import { trackOfLesson } from "@/lib/learn/track-of";
 import { checkRateLimit } from "@/lib/require-admin";
 import { awardPoints, getTotalPoints } from "@/lib/learn/points";
 import { checkLevelUp } from "@/lib/learn/milestones";
@@ -19,7 +20,7 @@ const Body = z.object({
 });
 
 export async function PUT(req: NextRequest) {
-  const { error, student } = await requireEntitledStudent();
+  const { error, student, access } = await requireEntitledStudent();
   if (error) return error;
   const t = await getT();
   if (!(await checkRateLimit(`reflection:${student.id}`, 60, 3_600_000))) {
@@ -32,8 +33,10 @@ export async function PUT(req: NextRequest) {
 
   try {
     await ensureMethodTables();
-    const lesson = await prisma.lesson.findUnique({ where: { id: lessonId }, select: { id: true } });
+    const lesson = await trackOfLesson(lessonId);
     if (!lesson) return NextResponse.json({ error: t("learn.api.lessonNotFound") }, { status: 404 });
+    const denied = lesson.isPreview ? null : await denyTrack(access, lesson.trackId);
+    if (denied) return denied;
 
     const key = { studentId_lessonId: { studentId: student.id, lessonId } };
     if (!text) {

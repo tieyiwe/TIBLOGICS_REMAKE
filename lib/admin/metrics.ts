@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { PLANS } from "@/lib/payments/provider";
+import { ensureTrackPurchaseTable } from "@/lib/learn/purchases";
 
 // Real figures for the admin dashboard and the revenue page.
 //
@@ -10,8 +11,9 @@ import { PLANS } from "@/lib/payments/provider";
 // and anything that is an estimate says so.
 
 /**
- * Money actually received, in cents, from each paid source. Subscription
- * products (Learn, Readiness Monitor, Toolkit Live) are not here: individual
+ * Money actually received, in cents, from each paid source, including
+ * Learning Box one-time track purchases. Subscription products (Learn
+ * all-access, Readiness Monitor, Toolkit Live) are not here: individual
  * renewals are not recorded, so they are shown as estimates on their pages.
  */
 const PAID_ORDER_STATUSES = ["paid", "fulfilled"];
@@ -20,8 +22,11 @@ function monthStart(d: Date, offsetMonths = 0): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + offsetMonths, 1));
 }
 
-async function paidRevenueBetween(from: Date, to: Date): Promise<{ store: number; events: number; bookings: number; blueprints: number; total: number }> {
-  const [orders, events, bookings, blueprints] = await Promise.all([
+async function paidRevenueBetween(
+  from: Date,
+  to: Date,
+): Promise<{ store: number; events: number; bookings: number; blueprints: number; learnTracks: number; total: number }> {
+  const [orders, events, bookings, blueprints, learnTracks] = await Promise.all([
     prisma.order.aggregate({
       _sum: { total: true },
       where: { status: { in: PAID_ORDER_STATUSES }, createdAt: { gte: from, lt: to } },
@@ -39,12 +44,19 @@ async function paidRevenueBetween(from: Date, to: Date): Promise<{ store: number
     prisma.blueprint
       .aggregate({ _sum: { amountPaid: true }, where: { paidAt: { gte: from, lt: to } } })
       .catch(() => ({ _sum: { amountPaid: 0 } })),
+    // Learning Box one-time track purchases (lifetime access to one track).
+    ensureTrackPurchaseTable()
+      .then(() =>
+        prisma.trackPurchase.aggregate({ _sum: { amountCents: true }, where: { createdAt: { gte: from, lt: to } } }),
+      )
+      .catch(() => ({ _sum: { amountCents: 0 } })),
   ]);
   const store = orders._sum.total ?? 0;
   const ev = events._sum.price ?? 0;
   const bk = bookings._sum.totalAmount ?? 0;
   const bp = blueprints._sum.amountPaid ?? 0;
-  return { store, events: ev, bookings: bk, blueprints: bp, total: store + ev + bk + bp };
+  const lt = learnTracks._sum.amountCents ?? 0;
+  return { store, events: ev, bookings: bk, blueprints: bp, learnTracks: lt, total: store + ev + bk + bp + lt };
 }
 
 /**

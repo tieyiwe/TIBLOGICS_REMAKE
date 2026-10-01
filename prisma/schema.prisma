@@ -670,6 +670,7 @@ model Student {
   reviewCards   ReviewCard[]
   reflections   LessonReflection[]
   portfolio     PortfolioSettings?
+  trackPurchases TrackPurchase[]
 
   @@index([email])
 }
@@ -697,6 +698,9 @@ model LearnTrack {
   estimatedWeeksAt3Hrs Int?
   /// Set when staff edit this in the admin; the seed then leaves it alone.
   editedAt             DateTime?
+  /// One-time price in cents. Null = from the level (lib/learn/pricing.ts).
+  /// Added at runtime (lib/learn/admin/columns.ts).
+  priceCents           Int?
 
   modules      LearnModule[]
   finalExam    FinalExam?
@@ -742,6 +746,10 @@ model Lesson {
   hasPractice     Boolean     @default(false)
   /// Set when staff edit this in the admin; the seed then leaves it alone.
   editedAt        DateTime?
+  /// When the lesson was added. Null for lessons that predate the column
+  /// (lib/learn/admin/columns.ts adds it without back-filling), so only
+  /// lessons added later can show as "New in this track".
+  createdAt       DateTime?   @default(now())
 
   resources   LessonResource[]
   microCheck  MicroCheck?
@@ -1338,4 +1346,44 @@ model PortfolioSettings {
   hidden      String[] @default([])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+/// A one-time purchase of one Learning Box track: lifetime access to that
+/// track. Created at runtime (lib/learn/purchases.ts) by the Stripe webhook;
+/// keep the two in step. trackId is not a foreign key so a purchase record
+/// (revenue) survives a track being deleted.
+model TrackPurchase {
+  id                  String   @id @default(cuid())
+  studentId           String
+  student             Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  trackId             String
+  amountCents         Int
+  currency            String   @default("usd")
+  stripeSessionId     String?  @unique
+  stripePaymentIntent String?
+  createdAt           DateTime @default(now())
+
+  @@unique([studentId, trackId])
+  @@index([trackId])
+  @@index([createdAt])
+}
+
+/// Work in progress that has not been submitted yet: workbench and prompt lab
+/// answers, Code Studio code and versions, Learning Studio designs, capstone
+/// notes, and the last reading position in a lesson ("pos:<lessonId>").
+/// Created at runtime (lib/learn/drafts/db.ts); keep the two in step.
+model LearnerDraft {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  /// lab:<labId> | code:<labId> | studio:<toolId>:<challengeId> | capstone:<capstoneId> | pos:<lessonId>
+  key       String
+  value     Json
+  /// Bytes of the JSON value, for the per-draft limit.
+  size      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, key])
+  @@index([studentId, updatedAt])
 }

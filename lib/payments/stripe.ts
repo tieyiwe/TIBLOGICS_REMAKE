@@ -6,23 +6,26 @@ import {
   type CheckoutRequest,
   type PaymentProvider,
   type PlanDefinition,
+  type TrackCheckoutRequest,
 } from "./provider";
 
-// Optional: pre-created Stripe Price IDs. If absent we fall back to inline
-// price_data so the platform works before Stripe products are configured.
+// Optional: a pre-created Stripe Price ID for the monthly plan. If absent we
+// fall back to inline price_data (PLANS.monthly.amount, $89) so the platform
+// works before Stripe products are configured. When set, it must be an $89
+// monthly price. The annual plan is no longer sold.
 const PRICE_IDS: Record<string, string | undefined> = {
   monthly: process.env.STRIPE_LEARN_MONTHLY_PRICE_ID,
-  annual: process.env.STRIPE_LEARN_ANNUAL_PRICE_ID,
 };
 
 export const stripeProvider: PaymentProvider = {
   name: "stripe",
 
   listPlans(): PlanDefinition[] {
-    return [PLANS.monthly, PLANS.annual];
+    return [PLANS.monthly];
   },
 
   async createCheckout(req: CheckoutRequest) {
+    if (req.plan !== "monthly") throw new Error("Only the monthly plan is sold");
     const plan = PLANS[req.plan];
     const priceId = PRICE_IDS[req.plan];
 
@@ -56,6 +59,36 @@ export const stripeProvider: PaymentProvider = {
       },
     });
 
+    if (!session.url) throw new Error("Stripe did not return a checkout URL");
+    return { url: session.url };
+  },
+
+  async createTrackCheckout(req: TrackCheckoutRequest) {
+    const metadata = { product: "learn-track", studentId: req.studentId, trackId: req.trackId };
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: req.currency.toLowerCase(),
+            unit_amount: req.amount,
+            product_data: {
+              name: `TIBLOGICS Learning Box: ${req.trackTitle}`,
+              description: "One-time payment. Lifetime access to this track.",
+            },
+          },
+        },
+      ],
+      customer_email: req.email,
+      allow_promotion_codes: true,
+      success_url: req.successUrl,
+      cancel_url: req.cancelUrl,
+      client_reference_id: req.studentId,
+      // The webhook creates the TrackPurchase from these.
+      metadata,
+      payment_intent_data: { metadata },
+    });
     if (!session.url) throw new Error("Stripe did not return a checkout URL");
     return { url: session.url };
   },

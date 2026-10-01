@@ -7,11 +7,14 @@ import {
 } from "lucide-react";
 import QuestionBank, { type BankQuestion } from "../../_editor/QuestionBank";
 import { useOp, inputCls, labelCls, btnPrimary, btnGhost, btnDanger } from "../../_editor/useOp";
+import { trackPriceCents } from "@/lib/learn/pricing";
 
 interface Track {
   id: string; slug: string; title: string; tagline: string; description: string; level: string; levelEnd: string;
   status: string; sortOrder: number; accentColor: string; heroImage: string; certificateName: string; audience: string;
   outcomes: string[]; estimatedHours: number; certificates: number;
+  /** One-time price override in cents; null = from the level. */
+  priceCents: number | null;
 }
 interface LessonRow {
   id: string; title: string; durationMinutes: number; hasVideo: boolean; isPreview: boolean;
@@ -79,11 +82,24 @@ export default function TrackEditor(props: { track: Track; modules: ModuleRow[];
 
 function TrackSettings({ track }: { track: Track }) {
   const { run, busy, error } = useOp();
-  const [f, setF] = useState({ ...track, outcomesText: track.outcomes.join("\n") });
+  const [f, setF] = useState({
+    ...track,
+    outcomesText: track.outcomes.join("\n"),
+    // Dollars as typed; empty = use the level's price.
+    priceUsd: track.priceCents != null ? String(track.priceCents / 100) : "",
+  });
   const [saved, setSaved] = useState(false);
+  const [priceError, setPriceError] = useState("");
   const set = (k: string, v: string | number) => { setF((p) => ({ ...p, [k]: v })); setSaved(false); };
 
   async function save() {
+    setPriceError("");
+    const typed = f.priceUsd.trim();
+    const priceCents = typed === "" ? null : Math.round(Number(typed) * 100);
+    if (priceCents !== null && (!Number.isFinite(priceCents) || priceCents < 100)) {
+      setPriceError("One-time price must be a dollar amount of at least 1, or empty to use the level price.");
+      return;
+    }
     const ok = await run({
       op: "track.update", id: track.id,
       data: {
@@ -91,6 +107,7 @@ function TrackSettings({ track }: { track: Track }) {
         status: f.status, sortOrder: Number(f.sortOrder), accentColor: f.accentColor, heroImage: f.heroImage || null,
         certificateName: f.certificateName, audience: f.audience || null,
         outcomes: f.outcomesText.split("\n").map((s) => s.trim()).filter(Boolean), estimatedHours: Number(f.estimatedHours),
+        priceCents,
       },
     });
     if (ok) setSaved(true);
@@ -115,6 +132,18 @@ function TrackSettings({ track }: { track: Track }) {
         </div>
         <div><label className={labelCls}>Certificate name</label><input className={inputCls} value={f.certificateName} onChange={(e) => set("certificateName", e.target.value)} /></div>
         <div><label className={labelCls}>Estimated hours</label><input className={inputCls} type="number" step="0.5" min="0" value={f.estimatedHours} onChange={(e) => set("estimatedHours", e.target.value)} /></div>
+        <div>
+          <label className={labelCls} htmlFor="track-price">One-time price (USD)</label>
+          <input
+            id="track-price" className={inputCls} type="number" step="1" min="1" inputMode="decimal"
+            value={f.priceUsd} onChange={(e) => set("priceUsd", e.target.value)}
+            placeholder={String(trackPriceCents(f.level) / 100)}
+          />
+          <p className="font-dm text-xs text-[#7A8FA6] mt-1">
+            Lifetime access to this track, paid once. Leave empty to use the level price
+            (${trackPriceCents(f.level) / 100} for {f.level}). The all-tracks subscription is separate.
+          </p>
+        </div>
         <div><label className={labelCls}>Order on the catalogue</label><input className={inputCls} type="number" min="0" value={f.sortOrder} onChange={(e) => set("sortOrder", e.target.value)} /></div>
         <div><label className={labelCls}>Accent colour</label>
           <div className="flex gap-2"><input type="color" value={f.accentColor} onChange={(e) => set("accentColor", e.target.value)} className="h-9 w-12 rounded border border-[#D2DCE8]" /><input className={inputCls} value={f.accentColor} onChange={(e) => set("accentColor", e.target.value)} /></div>
@@ -123,7 +152,7 @@ function TrackSettings({ track }: { track: Track }) {
         <div className="sm:col-span-2"><label className={labelCls}>Hero image URL (optional)</label><input className={inputCls} value={f.heroImage} onChange={(e) => set("heroImage", e.target.value)} placeholder="https://…" /></div>
         <div className="sm:col-span-2"><label className={labelCls}>Outcomes (one per line)</label><textarea className={`${inputCls} min-h-[100px]`} value={f.outcomesText} onChange={(e) => set("outcomesText", e.target.value)} /></div>
       </div>
-      {error && <p className="font-dm text-sm text-red-600 mt-3">{error}</p>}
+      {(priceError || error) && <p className="font-dm text-sm text-red-600 mt-3">{priceError || error}</p>}
       <div className="flex items-center gap-3 mt-4">
         <button type="button" onClick={save} disabled={!!busy} className={btnPrimary}><Save size={14} /> {busy ? "Saving…" : "Save settings"}</button>
         {saved && <span className="font-dm text-sm text-green-700">Saved</span>}

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { quizUnlocked } from "@/lib/learn/progress";
-import { requireEntitledStudent } from "@/lib/learn/session";
+import { denyTrack, requireEntitledStudent } from "@/lib/learn/session";
+import { trackOfMicroCheck, trackOfQuiz } from "@/lib/learn/track-of";
 import { presentQuestion, seededShuffle, serveQuestion } from "@/lib/learn/assessments";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { localizeQuestions } from "@/lib/i18n/sources/labs";
@@ -14,7 +15,7 @@ import { localizeQuestions } from "@/lib/i18n/sources/labs";
 // option kept at its stored index, so the shuffle and the answer key work on
 // the same indexes in every language.
 export async function GET(req: NextRequest) {
-  const { error, student } = await requireEntitledStudent();
+  const { error, student, access } = await requireEntitledStudent();
   if (error) return error;
   const locale = await getLocale();
   const t = translatorFor(locale);
@@ -24,6 +25,20 @@ export async function GET(req: NextRequest) {
   const id = searchParams.get("id");
   if (!id || (mode !== "micro" && mode !== "quiz")) {
     return NextResponse.json({ error: t("labs.api.invalid") }, { status: 400 });
+  }
+
+  // Per-track access: a micro-check follows its lesson (free-preview lessons
+  // are open to every member), a quiz its module's track.
+  if (mode === "micro") {
+    const lt = await trackOfMicroCheck(id);
+    if (!lt) return NextResponse.json({ error: t("labs.api.notFound") }, { status: 404 });
+    const denied = lt.isPreview ? null : await denyTrack(access, lt.trackId);
+    if (denied) return denied;
+  } else {
+    const trackId = await trackOfQuiz(id);
+    if (!trackId) return NextResponse.json({ error: t("labs.api.notFound") }, { status: 404 });
+    const denied = await denyTrack(access, trackId);
+    if (denied) return denied;
   }
 
   try {

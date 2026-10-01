@@ -1,14 +1,16 @@
 import Link from "next/link";
 import { getT } from "@/lib/i18n/server";
 import { reviewStatus } from "@/lib/learn/method/review";
+import { accessibleTrackIds } from "@/lib/learn/session";
 
 // Dashboard cards for the TIBLOGICS Learn method: Daily Review (cards due,
 // start button) and the Proof-of-Skill Portfolio. Server component; if the
 // review status cannot be read the card still offers to start.
 export default async function MethodDashboardCards({ studentId }: { studentId: string }) {
+  const open = await accessibleTrackIds(studentId);
   const [t, status] = await Promise.all([
     getT(),
-    reviewStatus(studentId).catch((err) => {
+    reviewStatus(studentId, open === "all" ? null : open).catch((err) => {
       console.error("[dashboard] review status", err);
       return null;
     }),

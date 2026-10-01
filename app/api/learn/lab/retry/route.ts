@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { requireEntitledStudent } from "@/lib/learn/session";
+import { denyTrack, requireEntitledStudent } from "@/lib/learn/session";
 import { getT } from "@/lib/i18n/server";
 
 // Opens a fresh attempt. Previous attempts are kept, so a learner can see
@@ -9,7 +9,7 @@ import { getT } from "@/lib/i18n/server";
 const Body = z.object({ labId: z.string().min(1) });
 
 export async function POST(req: NextRequest) {
-  const { error, student } = await requireEntitledStudent();
+  const { error, student, access } = await requireEntitledStudent();
   if (error) return error;
   const t = await getT();
 
@@ -19,11 +19,13 @@ export async function POST(req: NextRequest) {
   try {
     const lab = await prisma.lab.findUnique({
       where: { id: parsed.data.labId },
-      select: { id: true, isPublished: true },
+      select: { id: true, isPublished: true, trackId: true },
     });
     if (!lab || !lab.isPublished) {
       return NextResponse.json({ error: t("labs.api.labNotFound") }, { status: 404 });
     }
+    const denied = await denyTrack(access, lab.trackId);
+    if (denied) return denied;
 
     // Close any attempt still open so there's exactly one in_progress row
     await prisma.labAttempt.updateMany({
