@@ -89,6 +89,9 @@ export async function studentForGoogle(profile: GoogleProfileLike | undefined) {
       recordAttribution({ kind: "learn_signup", refId: student.id, cookieHeader: hdrs?.get("cookie") }),
     )
     .catch(() => {});
+  void import("@/lib/learn/referrals/service")
+    .then(({ recordReferralSignup }) => recordReferralSignup({ studentId: student.id, email: student.email, cookieHeader: hdrs?.get("cookie") }))
+    .catch(() => {});
 
   return { student, created: true };
 }

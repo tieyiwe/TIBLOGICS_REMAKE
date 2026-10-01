@@ -116,7 +116,12 @@ export async function getIndividualEntitlement(studentId: string | null | undefi
   const now = Date.now();
   const inGrace =
     sub.status === "past_due" && !!sub.graceUntil && sub.graceUntil.getTime() > now;
-  const entitled = sub.status === "active" || sub.status === "trialing" || sub.status === "comped" || inGrace;
+  // A free month earned through the referral program (lib/learn/referrals) is
+  // comped access with an end date (plan "referral"); other comps never end.
+  const referralCompOver =
+    sub.status === "comped" && sub.plan === "referral" && !!sub.currentPeriodEnd && sub.currentPeriodEnd.getTime() <= now;
+  const entitled =
+    sub.status === "active" || sub.status === "trialing" || (sub.status === "comped" && !referralCompOver) || inGrace;
 
   return {
     entitled,

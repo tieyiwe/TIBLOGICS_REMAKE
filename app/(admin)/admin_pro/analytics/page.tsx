@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireAdminPage } from "../_lib/admin-page-auth";
 import { canViewAnalytics, getAnalytics, parseRange, RANGES, STALL_DAYS, MIN_ANSWERS } from "@/lib/admin/analytics";
+import { PageHeader } from "@/components/admin/ui";
 import { Card, DayBars, Delta, Empty, Kpi, Meter, SectionTitle, int, money, pct, td, th } from "./ui";
 
 // Per-request and session-scoped: never prerendered. The numbers themselves
@@ -36,40 +37,57 @@ export default async function AnalyticsPage({
   const prevWord = `previous ${range} days`;
 
   return (
-    <div className="space-y-6 max-w-[1400px]">
-      {/* Header + range switch */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="font-syne font-bold text-2xl text-[#0D1B2A]">Owner Analytics</h1>
-          <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">
+    <div className="space-y-6">
+      <PageHeader
+        title="Analytics"
+        subtitle={
+          <>
             Last {range} days ({fmtDate(a.from)} to today) compared with the {prevWord}. Times in UTC. Updated{" "}
             {new Date(a.generatedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC
             (cached for a minute).
-          </p>
-        </div>
-        <nav className="inline-flex rounded-xl border border-[#D2DCE8] bg-white p-1" aria-label="Date range">
-          {RANGES.map((d) => (
-            <Link
-              key={d}
-              href={`/admin_pro/analytics?range=${d}`}
-              aria-current={d === range ? "page" : undefined}
-              className={`px-3 py-1.5 rounded-lg font-dm text-sm font-medium ${
-                d === range ? "bg-[#1B3A6B] text-white" : "text-[#3A4A5C] hover:bg-[#F4F7FB]"
-              }`}
-            >
-              {d} days
-            </Link>
-          ))}
-        </nav>
-      </div>
-      <nav className="flex flex-wrap gap-2 font-dm text-xs" aria-label="Sections">
+          </>
+        }
+        className="mb-0"
+        actions={
+          <nav
+            className="inline-flex rounded-[var(--a-radius-control)] border border-[var(--a-border)] bg-[var(--a-surface-2)] p-0.5"
+            aria-label="Date range"
+          >
+            {RANGES.map((d) => (
+              <Link
+                key={d}
+                href={`/admin_pro/analytics?range=${d}`}
+                aria-current={d === range ? "page" : undefined}
+                className={`inline-flex h-8 items-center rounded-[8px] px-3 font-dm text-[13px] font-semibold ${
+                  d === range
+                    ? "bg-[var(--a-surface)] text-[var(--a-ink)] shadow-[0_1px_2px_rgba(13,27,42,.08)] ring-1 ring-[var(--a-border)]"
+                    : "text-[var(--a-ink-3)] hover:text-[var(--a-ink)]"
+                }`}
+              >
+                {d} days
+              </Link>
+            ))}
+          </nav>
+        }
+      />
+      <nav
+        className="sticky top-[-16px] z-[2] -mx-4 flex gap-1 overflow-x-auto border-b border-[var(--a-border)] bg-[var(--a-bg)]/95 px-4 backdrop-blur sm:top-[-24px] sm:-mx-6 sm:px-6"
+        aria-label="Sections"
+      >
         {SECTIONS.map(([id, label]) => (
-          <a key={id} href={`#${id}`} className="rounded-full bg-white border border-[#D2DCE8] px-3 py-1 text-[#2251A3] hover:bg-[#F4F7FB]">
+          <a
+            key={id}
+            href={`#${id}`}
+            className="inline-flex h-10 shrink-0 items-center border-b-2 border-transparent px-3 font-dm text-[13.5px] font-semibold text-[var(--a-ink-3)] hover:border-[var(--a-border-strong)] hover:text-[var(--a-ink)]"
+          >
             {label}
           </a>
         ))}
-        <Link href="/admin_pro/analytics/visitors" className="rounded-full bg-white border border-[#D2DCE8] px-3 py-1 text-[#2251A3] hover:bg-[#F4F7FB]">
-          Live visitors →
+        <Link
+          href="/admin_pro/analytics/visitors"
+          className="ml-auto inline-flex h-10 shrink-0 items-center gap-1 px-3 font-dm text-[13.5px] font-semibold text-[var(--a-blue)] hover:underline"
+        >
+          Live visitors
         </Link>
       </nav>
 

@@ -13,6 +13,7 @@ import { markBlueprintPaid } from "@/lib/blueprint/billing";
 import { BLUEPRINT_PRODUCT } from "@/lib/blueprint/config";
 import { recordTrackPurchase } from "@/lib/learn/purchases";
 import { isTeamSubscription, markTeamPaymentFailed, syncTeamSubscription } from "@/lib/learn/team/service";
+import { recordReferralPayment } from "@/lib/learn/referrals/service";
 
 const SITE_URL = (
   process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
@@ -123,6 +124,17 @@ export async function POST(req: Request) {
         if (studentId && subId) {
           const full = await stripe.subscriptions.retrieve(subId);
           await upsertLearnSubscription(full, studentId);
+          // Learning Box referral: a referred learner paid, the referrer earns a
+          // pending reward (lib/learn/referrals). Never throws; idempotent.
+          if (full.status === "active") {
+            await recordReferralPayment({
+              studentId,
+              kind: "subscription",
+              amountCents: session.amount_total,
+              payerEmail: session.customer_details?.email ?? session.customer_email,
+              customerId: typeof session.customer === "string" ? session.customer : session.customer?.id ?? null,
+            });
+          }
           console.log(`[stripe/webhook] ✓ Learn subscription active for student ${studentId}`);
         }
       }
@@ -387,6 +399,13 @@ async function handleTrackPurchase(session: Stripe.Checkout.Session) {
       typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null,
   });
   console.log(`[stripe/webhook] Learn track ${trackId} for student ${studentId}: ${created ? "purchase recorded" : "already recorded"}`);
+  await recordReferralPayment({
+    studentId,
+    kind: "track",
+    amountCents: session.amount_total,
+    payerEmail: session.customer_details?.email ?? session.customer_email,
+    customerId: typeof session.customer === "string" ? session.customer : session.customer?.id ?? null,
+  });
 }
 
 // ── TIBLOGICS Learn subscription sync ───────────────────────────────────────

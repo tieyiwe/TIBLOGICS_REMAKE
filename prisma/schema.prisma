@@ -2171,6 +2171,8 @@ model GrowthPost {
   externalUrl String?
   error       String?
   attempts    Int       @default(0)
+  /// Optional social image card spec (lib/growth/cards/spec.ts), rendered on demand.
+  image       Json?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @default(now()) @updatedAt
 
@@ -2235,4 +2237,174 @@ model GrowthContentState {
   key       String   @id
   value     Json     @default("{}")
   updatedAt DateTime @default(now()) @updatedAt
+}
+
+/// A goal-driven campaign (Campaign Copilot): the plan, and what it created
+/// (kit, sequence, links). slug is the utm_campaign every asset uses.
+model GrowthCampaign {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  name        String
+  status      String    @default("draft")
+  goalType    String
+  goalTarget  Int
+  goalLabel   String
+  productKeys Json      @default("[]")
+  audienceId  String?
+  language    String    @default("en")
+  budget      Json      @default("{}")
+  startDate   DateTime
+  endDate     DateTime
+  plan        Json      @default("{}")
+  leadFilter  Json      @default("{}")
+  kitId       String?
+  sequenceId  String?
+  assets      Json      @default("{}")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  @@index([createdAt])
+}
+
+// ── Growth: acquisition (lib/growth/acquire, lib/learn/referrals) ─────────
+// Created idempotently at runtime by lib/growth/acquire/db.ts and
+// lib/learn/referrals/db.ts (no migrations). No Prisma relations; keep the
+// SQL there in step with these.
+
+/// A lead magnet (/free/[slug]): checklist, guide, quiz or template pack.
+/// status: draft | published.
+model AcquireMagnet {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  type        String
+  language    String    @default("en")
+  title       String
+  status      String    @default("draft")
+  productKey  String?
+  content     Json      @default("{}")
+  linkCode    String?
+  noindex     Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  @@index([status])
+}
+
+/// A campaign landing page (/lp/[slug]): ordered sections, CTA, lead form.
+model AcquirePage {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  language    String    @default("en")
+  status      String    @default("draft")
+  noindex     Boolean   @default(false)
+  kitId       String?
+  productKey  String?
+  content     Json      @default("{}")
+  linkCode    String?
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  @@index([status])
+}
+
+/// One opt-in from a magnet or landing page form, with the consent given.
+model AcquireCapture {
+  id           String    @id @default(cuid())
+  refType      String
+  refId        String
+  slug         String
+  email        String
+  name         String?
+  business     String?
+  whatsapp     String?
+  locale       String    @default("en")
+  consentText  String
+  consentAt    DateTime
+  result       Json?
+  subscriberId String?
+  leadId       String?
+  utmSource    String?
+  utmMedium    String?
+  utmCampaign  String?
+  linkCode     String?
+  emailSentAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@unique([refType, refId, email])
+  @@index([createdAt])
+  @@index([email])
+}
+
+/// A counted view or CTA click: unique per page, kind, visitor hash and day.
+model AcquireEvent {
+  id          String   @id @default(cuid())
+  refType     String
+  refId       String
+  kind        String
+  visitorHash String
+  day         String
+  createdAt   DateTime @default(now())
+
+  @@unique([refType, refId, kind, visitorHash, day])
+  @@index([refType, refId, kind])
+  @@index([createdAt])
+}
+
+/// A learner's personal referral code (/r/[code]).
+model LearnReferralCode {
+  studentId String   @id
+  code      String   @unique
+  createdAt DateTime @default(now())
+}
+
+/// A referred sign-up. status: signed_up | paid | rejected.
+model LearnReferral {
+  id                String    @id @default(cuid())
+  code              String
+  referrerStudentId String
+  referredStudentId String    @unique
+  status            String    @default("signed_up")
+  reason            String?
+  paidAt            DateTime?
+  payKind           String?
+  amountCents       Int?
+  createdAt         DateTime  @default(now())
+
+  @@index([referrerStudentId])
+}
+
+/// The reward a referrer earns when the referred learner pays.
+/// status: pending | capped | approved | credit_due | applied | rejected.
+model LearnReferralReward {
+  id                String    @id @default(cuid())
+  referralId        String    @unique
+  referrerStudentId String
+  referredStudentId String
+  kind              String    @default("free_month")
+  status            String    @default("pending")
+  grant             String?
+  note              String?
+  decidedAt         DateTime?
+  decidedBy         String?
+  createdAt         DateTime  @default(now())
+
+  @@index([status])
+  @@index([referrerStudentId, createdAt])
+}
+
+/// Referral link visits and share-button clicks (per code, visitor and day).
+model LearnReferralEvent {
+  id          String   @id @default(cuid())
+  code        String
+  kind        String
+  channel     String?
+  visitorHash String
+  day         String
+  createdAt   DateTime @default(now())
+
+  @@unique([code, kind, visitorHash, day])
+  @@index([code, kind])
 }

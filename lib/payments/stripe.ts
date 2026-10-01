@@ -49,7 +49,8 @@ export const stripeProvider: PaymentProvider = {
       mode: "subscription",
       line_items: [lineItem as never],
       customer_email: req.email,
-      allow_promotion_codes: true,
+      // A referral coupon replaces the promotion-code box (Stripe allows one or the other).
+      ...(req.couponId ? { discounts: [{ coupon: req.couponId }] } : { allow_promotion_codes: true }),
       success_url: req.successUrl,
       cancel_url: req.cancelUrl,
       // studentId is the join key the webhook uses to attach the subscription.
@@ -82,7 +83,7 @@ export const stripeProvider: PaymentProvider = {
         },
       ],
       customer_email: req.email,
-      allow_promotion_codes: true,
+      ...(req.couponId ? { discounts: [{ coupon: req.couponId }] } : { allow_promotion_codes: true }),
       success_url: req.successUrl,
       cancel_url: req.cancelUrl,
       client_reference_id: req.studentId,

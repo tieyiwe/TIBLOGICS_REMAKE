@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import { Gauge } from "lucide-react";
+import { EmptyState, PageHeader, StatCard } from "@/components/admin/ui";
 import prisma from "@/lib/prisma";
 import { requireAdminPage } from "../_lib/admin-page-auth";
 import { ensureAiUsageTable } from "@/lib/ai-usage";
@@ -101,46 +103,37 @@ export default async function AiUsagePage() {
     taskTotals.set(r.task, t);
   }
 
-  const card = "bg-white border border-[#D2DCE8] rounded-2xl p-6";
+  const card = "min-w-0 rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] p-5 shadow-[var(--a-shadow-card)]";
   const th = "py-2 pr-4 font-semibold";
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-syne font-bold text-2xl text-[#0D1B2A]">AI usage</h1>
-        <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">
-          Claude API calls over the last 30 days, by task and model. Costs are estimates at list prices; the Anthropic
-          Console shows the billed amount.
-        </p>
-      </div>
+      <PageHeader
+        title="AI usage"
+        subtitle="Claude API calls over the last 30 days, by task and model. Costs are estimates at list prices; the Anthropic Console shows the billed amount."
+        className="mb-0"
+      />
 
       {!data && (
         <p className={`${card} font-dm text-sm text-[#B42318]`}>The usage log could not be read. Check the server log.</p>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          ["Estimated spend, 30 days", usd(total)],
-          ["Calls", num(calls)],
-          ["Average per call", calls ? usd(total / calls) : "—"],
-          ["Input served from cache", input ? `${Math.round((cacheRead / input) * 100)}%` : "—"],
-        ].map(([label, value]) => (
-          <div key={label} className={card}>
-            <p className="font-dm text-xs uppercase tracking-wider text-[#7A8FA6]">{label}</p>
-            <p className="mt-2 font-syne font-bold text-2xl text-[#0D1B2A]">{value}</p>
-          </div>
-        ))}
+      <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Estimated spend, 30 days" value={usd(total)} tone="orange" />
+        <StatCard label="Calls" value={num(calls)} />
+        <StatCard label="Average per call" value={calls ? usd(total / calls) : "None"} />
+        <StatCard label="Input served from cache" value={input ? `${Math.round((cacheRead / input) * 100)}%` : "None"} tone="success" />
       </div>
 
       <div className={card}>
-        <h3 className="font-syne font-bold text-base text-[#0D1B2A]">By task and model</h3>
+        <h3 className="font-dm text-[14px] font-semibold text-[var(--a-ink)]">By task and model</h3>
         {rows.length === 0 ? (
-          <p className="py-8 text-center font-dm text-sm text-[#7A8FA6]">No calls logged in the last 30 days.</p>
+          <EmptyState icon={Gauge} title="No calls logged in the last 30 days" body="Claude calls from the site, Learn and Growth are logged here as they happen." compact />
         ) : (
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-sm font-dm">
               <thead>
-                <tr className="border-b border-[#F4F7FB] text-left text-xs uppercase tracking-wider text-[#7A8FA6]">
+                <tr className="border-b border-[var(--a-border)] text-left text-[11px] uppercase tracking-[.08em] text-[var(--a-ink-3)]">
                   <th className={th}>Task</th>
                   <th className={th}>Model</th>
                   <th className={`${th} text-right`}>Calls</th>
@@ -153,22 +146,22 @@ export default async function AiUsagePage() {
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={`${r.task}|${r.model}`} className="border-b border-[#F4F7FB] last:border-0">
-                    <td className="py-2.5 pr-4 font-medium text-[#0D1B2A]">
+                  <tr key={`${r.task}|${r.model}`} className="border-b border-[var(--a-border)] last:border-0 hover:bg-[#f8fafd]">
+                    <td className="py-2.5 pr-4 font-medium text-[var(--a-ink)]">
                       {r.task}
-                      {r.batched > 0 && <span className="ml-1 text-xs text-[#7A8FA6]">({num(r.batched)} batch)</span>}
+                      {r.batched > 0 && <span className="ml-1 text-xs text-[var(--a-ink-3)]">({num(r.batched)} batch)</span>}
                     </td>
-                    <td className="py-2.5 pr-4 text-[#3A4A5C]">{r.model}</td>
-                    <td className="py-2.5 pr-4 text-right text-[#3A4A5C]">{num(r.calls)}</td>
-                    <td className="py-2.5 pr-4 text-right text-[#3A4A5C]">{num(r.input)}</td>
-                    <td className="py-2.5 pr-4 text-right text-[#3A4A5C]">
+                    <td className="py-2.5 pr-4 text-[var(--a-ink-2)]">{r.model}</td>
+                    <td className="py-2.5 pr-4 text-right text-[var(--a-ink-2)]">{num(r.calls)}</td>
+                    <td className="py-2.5 pr-4 text-right text-[var(--a-ink-2)]">{num(r.input)}</td>
+                    <td className="py-2.5 pr-4 text-right text-[var(--a-ink-2)]">
                       {num(r.cacheRead)} / {num(r.cacheWrite)}
                     </td>
-                    <td className="py-2.5 pr-4 text-right text-[#3A4A5C]">{num(r.output)}</td>
-                    <td className={`py-2.5 pr-4 text-right ${r.truncated ? "text-[#B42318]" : "text-[#7A8FA6]"}`}>
+                    <td className="py-2.5 pr-4 text-right text-[var(--a-ink-2)]">{num(r.output)}</td>
+                    <td className={`py-2.5 pr-4 text-right ${r.truncated ? "text-[#B42318]" : "text-[var(--a-ink-3)]"}`}>
                       {r.truncated ? `${Math.round((r.truncated / r.calls) * 100)}%` : "0"}
                     </td>
-                    <td className="py-2.5 text-right font-semibold text-[#0D1B2A]">{usd(r.cents)}</td>
+                    <td className="py-2.5 text-right font-semibold text-[var(--a-ink)]">{usd(r.cents)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -179,19 +172,19 @@ export default async function AiUsagePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className={card}>
-          <h3 className="font-syne font-bold text-base text-[#0D1B2A]">Daily totals</h3>
+          <h3 className="font-dm text-[14px] font-semibold text-[var(--a-ink)]">Daily totals</h3>
           {(data?.daily ?? []).length === 0 ? (
-            <p className="py-8 text-center font-dm text-sm text-[#7A8FA6]">Nothing yet.</p>
+            <p className="py-8 text-center font-dm text-sm text-[var(--a-ink-3)]">Nothing yet.</p>
           ) : (
             <ul className="mt-4 space-y-2">
               {data!.daily.map((d) => (
                 <li key={new Date(d.day).toISOString()} className="font-dm text-sm">
                   <div className="flex justify-between">
-                    <span className="text-[#3A4A5C]">
+                    <span className="text-[var(--a-ink-2)]">
                       {new Date(d.day).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}
-                      <span className="ml-2 text-xs text-[#7A8FA6]">{num(d.calls)} calls</span>
+                      <span className="ml-2 text-xs text-[var(--a-ink-3)]">{num(d.calls)} calls</span>
                     </span>
-                    <span className="font-semibold text-[#0D1B2A]">{usd(d.cents)}</span>
+                    <span className="font-semibold text-[var(--a-ink)]">{usd(d.cents)}</span>
                   </div>
                   <div className="mt-1 h-1.5 rounded-full bg-[#F4F7FB] overflow-hidden">
                     <div className="h-full rounded-full bg-[#2251A3]" style={{ width: `${(d.cents / maxDay) * 100}%` }} />
@@ -204,49 +197,49 @@ export default async function AiUsagePage() {
 
         <div className="space-y-6">
           <div className={card}>
-            <h3 className="font-syne font-bold text-base text-[#0D1B2A]">By task</h3>
+            <h3 className="font-dm text-[14px] font-semibold text-[var(--a-ink)]">By task</h3>
             <ul className="mt-4 space-y-1.5 font-dm text-sm">
               {[...taskTotals.entries()]
                 .sort((a, b) => b[1].cents - a[1].cents)
                 .map(([task, v]) => (
                   <li key={task} className="flex justify-between">
-                    <span className="text-[#3A4A5C]">
-                      {task} <span className="text-xs text-[#7A8FA6]">{num(v.calls)} calls</span>
+                    <span className="text-[var(--a-ink-2)]">
+                      {task} <span className="text-xs text-[var(--a-ink-3)]">{num(v.calls)} calls</span>
                     </span>
-                    <span className="font-semibold text-[#0D1B2A]">{usd(v.cents)}</span>
+                    <span className="font-semibold text-[var(--a-ink)]">{usd(v.cents)}</span>
                   </li>
                 ))}
-              {taskTotals.size === 0 && <li className="text-[#7A8FA6]">Nothing yet.</li>}
+              {taskTotals.size === 0 && <li className="text-[var(--a-ink-3)]">Nothing yet.</li>}
             </ul>
           </div>
 
           <div className={card}>
-            <h3 className="font-syne font-bold text-base text-[#0D1B2A]">Top learners by spend</h3>
+            <h3 className="font-dm text-[14px] font-semibold text-[var(--a-ink)]">Top learners by spend</h3>
             <ul className="mt-4 space-y-1.5 font-dm text-sm">
               {(data?.learners ?? []).map((l) => (
                 <li key={l.studentId} className="flex justify-between">
-                  <span className="text-[#3A4A5C] font-mono text-xs">
-                    {l.studentId} <span className="font-dm text-[#7A8FA6]">{num(l.calls)} calls</span>
+                  <span className="text-[var(--a-ink-2)] font-mono text-xs">
+                    {l.studentId} <span className="font-dm text-[var(--a-ink-3)]">{num(l.calls)} calls</span>
                   </span>
-                  <span className="font-semibold text-[#0D1B2A]">{usd(l.cents)}</span>
+                  <span className="font-semibold text-[var(--a-ink)]">{usd(l.cents)}</span>
                 </li>
               ))}
-              {(data?.learners ?? []).length === 0 && <li className="text-[#7A8FA6]">Nothing yet.</li>}
+              {(data?.learners ?? []).length === 0 && <li className="text-[var(--a-ink-3)]">Nothing yet.</li>}
             </ul>
           </div>
         </div>
       </div>
 
       <div className={card}>
-        <h3 className="font-syne font-bold text-base text-[#0D1B2A]">Current routing</h3>
-        <p className="mt-1 font-dm text-xs text-[#7A8FA6]">
+        <h3 className="font-dm text-[14px] font-semibold text-[var(--a-ink)]">Current routing</h3>
+        <p className="mt-1 font-dm text-xs text-[var(--a-ink-3)]">
           From lib/claude.ts, with environment overrides applied (CLAUDE_MODEL_&lt;TASK&gt;, CLAUDE_THINKING_&lt;TASK&gt;,
           CLAUDE_EFFORT_&lt;TASK&gt;, CLAUDE_MAX_TOKENS_&lt;TASK&gt;).
         </p>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm font-dm">
             <thead>
-              <tr className="border-b border-[#F4F7FB] text-left text-xs uppercase tracking-wider text-[#7A8FA6]">
+              <tr className="border-b border-[var(--a-border)] text-left text-[11px] uppercase tracking-[.08em] text-[var(--a-ink-3)]">
                 <th className={th}>Task</th>
                 <th className={th}>Model</th>
                 <th className={th}>Thinking</th>
@@ -259,14 +252,14 @@ export default async function AiUsagePage() {
               {(Object.keys(ROUTES) as AiTask[]).map((task) => {
                 const r = routeFor(task);
                 return (
-                  <tr key={task} className="border-b border-[#F4F7FB] last:border-0">
-                    <td className="py-2 pr-4 font-medium text-[#0D1B2A]">{task}</td>
-                    <td className="py-2 pr-4 text-[#3A4A5C]">{r.model}</td>
-                    <td className="py-2 pr-4 text-[#3A4A5C]">{r.thinking ?? "model default"}</td>
-                    <td className="py-2 pr-4 text-[#3A4A5C]">{r.effort ?? "—"}</td>
-                    <td className="py-2 pr-4 text-right text-[#3A4A5C]">{num(r.maxTokens)}</td>
-                    <td className="py-2 text-[#3A4A5C]">
-                      {[r.cacheSystem && "system", r.cacheHistory && "history"].filter(Boolean).join(" + ") || "—"}
+                  <tr key={task} className="border-b border-[var(--a-border)] last:border-0 hover:bg-[#f8fafd]">
+                    <td className="py-2 pr-4 font-medium text-[var(--a-ink)]">{task}</td>
+                    <td className="py-2 pr-4 text-[var(--a-ink-2)]">{r.model}</td>
+                    <td className="py-2 pr-4 text-[var(--a-ink-2)]">{r.thinking ?? "model default"}</td>
+                    <td className="py-2 pr-4 text-[var(--a-ink-2)]">{r.effort ?? "default"}</td>
+                    <td className="py-2 pr-4 text-right text-[var(--a-ink-2)]">{num(r.maxTokens)}</td>
+                    <td className="py-2 text-[var(--a-ink-2)]">
+                      {[r.cacheSystem && "system", r.cacheHistory && "history"].filter(Boolean).join(" + ") || "off"}
                     </td>
                   </tr>
                 );

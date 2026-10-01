@@ -25,6 +25,8 @@ export interface CheckoutRequest {
   email: string;
   successUrl: string;
   cancelUrl: string;
+  /** Stripe coupon applied automatically (referral welcome discount). */
+  couponId?: string | null;
 }
 
 /** One-time purchase of one track: lifetime access to it. */
@@ -38,6 +40,8 @@ export interface TrackCheckoutRequest {
   currency: string;
   successUrl: string;
   cancelUrl: string;
+  /** Stripe coupon applied automatically (referral welcome discount). */
+  couponId?: string | null;
 }
 
 /** Team plan: a monthly subscription, quantity = seats (lib/learn/team). */

@@ -2,7 +2,9 @@ import prisma from "@/lib/prisma";
 import { ensureGrowthTables } from "../db";
 import { shortUrl } from "../links";
 import { composePost, isPlatform, PLATFORM_INFO } from "./platforms";
-import { platformConfigured, publishTo } from "./publish";
+import { platformConfigured, publishTo, type PublishImage } from "./publish";
+import { normalizeCard } from "../cards/spec";
+import { signedCardUrl } from "../cards/sign";
 import { runRepurpose, type RepurposeReport } from "./repurpose";
 
 // The growth cron (app/api/cron/growth, every 15 minutes):
@@ -73,7 +75,11 @@ export async function publishDuePosts(now = new Date()): Promise<PublishReport> 
       report.failed++;
       continue;
     }
-    const res = await publishTo(post.platform, text);
+    const card = normalizeCard(post.image);
+    const image: PublishImage | null = card && (post.platform === "linkedin" || post.platform === "facebook")
+      ? { url: signedCardUrl(post.id, 0), png: async () => (await import("../cards/render")).renderCardPng(card, 0) }
+      : null;
+    const res = await publishTo(post.platform, text, image);
     if (res.success) {
       await prisma.growthPost.update({
         where: { id: post.id },

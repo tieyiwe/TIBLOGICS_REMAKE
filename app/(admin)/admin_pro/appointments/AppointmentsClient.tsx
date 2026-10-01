@@ -3,8 +3,9 @@ import { useState, useEffect, useRef } from "react";
 import {
   MoreVertical, Download, Search, Loader2, X, CheckCircle,
   Video, Trash2, Ban, CheckCheck, Clock, AlertCircle, ExternalLink, Send, CalendarClock,
-  Brain, Mic, MicOff, RefreshCw, Sparkles, MessageSquare,
+  Brain, Mic, MicOff, RefreshCw, Sparkles, MessageSquare, CalendarDays, Settings2,
 } from "lucide-react";
+import { Button, DataTable, EmptyState, PageHeader, SearchInput, Segmented, Toolbar } from "@/components/admin/ui";
 
 interface Appointment {
   id: string;
@@ -44,15 +45,19 @@ function fmtMoney(cents: number) {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  PENDING:   "bg-[#FEF0E3] text-[#F47C20]",
-  CONFIRMED: "bg-[#EBF0FA] text-[#2251A3]",
-  COMPLETED: "bg-green-100 text-green-700",
-  CANCELLED: "bg-gray-100 text-gray-500",
-  NO_SHOW:   "bg-red-100 text-red-500",
+  PENDING:   "bg-[var(--a-warn-bg)] text-[var(--a-warn)] ring-[#f7dcb5]",
+  CONFIRMED: "bg-[var(--a-info-bg)] text-[var(--a-info)] ring-[#d3def3]",
+  COMPLETED: "bg-[var(--a-success-bg)] text-[var(--a-success)] ring-[#c8ead6]",
+  CANCELLED: "bg-[var(--a-surface-2)] text-[var(--a-ink-3)] ring-[var(--a-border)]",
+  NO_SHOW:   "bg-[var(--a-danger-bg)] text-[var(--a-danger)] ring-[#f6cccc]",
 };
 
 function Badge({ label, cls }: { label: string; cls: string }) {
-  return <span className={`${cls} text-xs font-medium px-2.5 py-0.5 rounded-full font-dm`}>{label}</span>;
+  return (
+    <span className={`${cls} inline-flex rounded-full px-2 py-0.5 font-dm text-[12px] font-semibold leading-5 ring-1 ring-inset`}>
+      {label.charAt(0) + label.slice(1).toLowerCase().replace(/_/g, " ")}
+    </span>
+  );
 }
 
 function ActionMenu({
@@ -820,128 +825,142 @@ export default function AppointmentsClient({
         <DetailPanel appt={selected} onClose={() => setSelected(null)} onUpdated={handleUpdated} />
       )}
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-syne font-bold text-2xl text-[#0D1B2A]">Appointments</h1>
-          <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">Manage client bookings, confirm meetings, and send links</p>
-        </div>
-        <button
-          onClick={exportCSV}
-          className="flex items-center gap-2 border border-[#D2DCE8] bg-white rounded-xl px-4 py-2 text-sm font-dm text-[#0D1B2A] hover:bg-[#F4F7FB] transition-colors"
-        >
-          <Download size={14} /> Export CSV
-        </button>
-      </div>
+      <PageHeader
+        title="Appointments"
+        subtitle="Manage client bookings, confirm meetings, and send links"
+        actions={
+          <>
+            <Button href="/admin_pro/appointments/availability" variant="secondary" icon={Settings2}>
+              Availability
+            </Button>
+            <Button onClick={exportCSV} variant="secondary" icon={Download}>
+              Export CSV
+            </Button>
+          </>
+        }
+        className="mb-0"
+      />
 
-      {/* Stat pills */}
-      <div className="flex flex-wrap gap-3">
-        {[
-          { label: "Pending", count: counts.PENDING, cls: "bg-[#FEF0E3] text-[#F47C20]", icon: <Clock size={13} /> },
-          { label: "Confirmed", count: counts.CONFIRMED, cls: "bg-[#EBF0FA] text-[#2251A3]", icon: <CheckCircle size={13} /> },
-          { label: "Completed", count: counts.COMPLETED, cls: "bg-green-100 text-green-700", icon: <CheckCheck size={13} /> },
-        ].map(({ label, count, cls, icon }) => (
-          <div key={label} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-dm font-semibold ${cls}`}>
-            {icon} {count} {label}
-          </div>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7A8FA6]" />
-          <input
-            type="text"
-            placeholder="Search by name, email or service…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 bg-white border border-[#D2DCE8] rounded-xl text-sm font-dm text-[#0D1B2A] placeholder-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3]"
+      <Toolbar
+        className="mb-0"
+        end={
+          <Segmented
+            ariaLabel="Filter by status"
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={STATUS_OPTIONS.map((s) => ({
+              value: s,
+              label: s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase(),
+              count: s === "ALL" ? appointments.length : s === "CANCELLED" ? appointments.filter((a) => a.status === "CANCELLED").length : counts[s],
+            }))}
           />
-        </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-white border border-[#D2DCE8] rounded-xl px-4 py-2.5 text-sm font-dm text-[#0D1B2A] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3]"
-        >
-          {STATUS_OPTIONS.map((s) => (
-            <option key={s} value={s}>{s === "ALL" ? "All Statuses" : s}</option>
-          ))}
-        </select>
-      </div>
+        }
+      >
+        <SearchInput
+          label="Search appointments"
+          placeholder="Search by name, email or service"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </Toolbar>
 
-      {/* Table */}
-      <div className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[#D2DCE8] bg-[#F4F7FB]">
-                {["Date & Time", "Client", "Service", "Amount", "Status", "Meeting", ""].map((h) => (
-                  <th key={h} className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#F4F7FB]">
-              {/* No loading row: the list is server-rendered, so the first
-                  paint is either the rows or the empty state below. */}
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-12 font-dm text-sm text-[#7A8FA6]">
-                    {appointments.length === 0 ? "No appointments yet." : "No appointments match your filters."}
-                  </td>
-                </tr>
+      {/* Table: server-rendered list, so the first paint is rows or the empty state. */}
+      <DataTable
+        caption="Appointments"
+        rows={filtered}
+        rowKey={(a) => a.id}
+        onRowClick={(a) => setSelected(a)}
+        empty={
+          <EmptyState
+            icon={CalendarDays}
+            title={appointments.length === 0 ? "No appointments yet" : "No appointments match your filters"}
+            body={appointments.length === 0 ? "Bookings made on the website appear here." : "Try a different status or search."}
+            action={
+              appointments.length === 0 ? (
+                <Button href="/admin_pro/appointments/availability" variant="primary">
+                  Set availability
+                </Button>
               ) : (
-                filtered.map((a) => (
-                  <tr
-                    key={a.id}
-                    className="hover:bg-[#F4F7FB]/60 transition-colors cursor-pointer"
-                    onClick={() => setSelected(a)}
-                  >
-                    <td className="px-5 py-4">
-                      <p className="font-dm text-sm font-medium text-[#0D1B2A]">{fmtDate(a.date)}</p>
-                      <p className="font-dm text-xs text-[#7A8FA6]">{a.timeSlot}</p>
-                    </td>
-                    <td className="px-5 py-4">
-                      <p className="font-dm text-sm font-medium text-[#0D1B2A]">{a.firstName} {a.lastName}</p>
-                      <p className="font-dm text-xs text-[#7A8FA6]">{a.email}</p>
-                    </td>
-                    <td className="px-5 py-4">
-                      <p className="font-dm text-sm text-[#0D1B2A]">{fmt(a.serviceType)}</p>
-                      <p className="font-dm text-xs text-[#7A8FA6]">{a.serviceDuration}</p>
-                    </td>
-                    <td className="px-5 py-4 font-dm text-sm font-semibold text-[#0D1B2A]">
-                      {fmtMoney(a.totalAmount)}
-                    </td>
-                    <td className="px-5 py-4">
-                      <Badge label={a.status} cls={STATUS_COLOR[a.status] ?? "bg-gray-100 text-gray-500"} />
-                    </td>
-                    <td className="px-5 py-4">
-                      {a.zoomLink ? (
-                        <a
-                          href={a.zoomLink}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="flex items-center gap-1 text-xs text-[#2251A3] font-dm hover:underline"
-                        >
-                          <Video size={12} /> Join
-                        </a>
-                      ) : (
-                        <span className="text-xs text-[#B0BEC5] font-dm">—</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
-                      <ActionMenu appt={a} onSelect={setSelected} />
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                <Button variant="secondary" onClick={() => { setSearch(""); setStatusFilter("ALL"); }}>
+                  Clear filters
+                </Button>
+              )
+            }
+          />
+        }
+        columns={[
+          {
+            key: "client",
+            header: "Client",
+            primary: true,
+            render: (a) => (
+              <div className="min-w-0">
+                <p className="font-dm text-sm font-semibold text-[var(--a-ink)]">{a.firstName} {a.lastName}</p>
+                <p className="font-dm text-xs text-[var(--a-ink-3)] break-all">{a.email}</p>
+              </div>
+            ),
+          },
+          {
+            key: "date",
+            header: "Date & time",
+            render: (a) => (
+              <div>
+                <p className="font-dm text-sm text-[var(--a-ink)] tabular-nums">{fmtDate(a.date)}</p>
+                <p className="font-dm text-xs text-[var(--a-ink-3)]">{a.timeSlot}</p>
+              </div>
+            ),
+          },
+          {
+            key: "service",
+            header: "Service",
+            render: (a) => (
+              <div>
+                <p className="font-dm text-sm text-[var(--a-ink)]">{fmt(a.serviceType)}</p>
+                <p className="font-dm text-xs text-[var(--a-ink-3)]">{a.serviceDuration}</p>
+              </div>
+            ),
+          },
+          {
+            key: "amount",
+            header: "Amount",
+            align: "right",
+            render: (a) => <span className="font-semibold text-[var(--a-ink)] tabular-nums">{fmtMoney(a.totalAmount)}</span>,
+          },
+          {
+            key: "status",
+            header: "Status",
+            render: (a) => <Badge label={a.status} cls={STATUS_COLOR[a.status] ?? "bg-gray-100 text-gray-500"} />,
+          },
+          {
+            key: "meeting",
+            header: "Meeting",
+            render: (a) =>
+              a.zoomLink ? (
+                <a
+                  href={a.zoomLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-1 font-dm text-xs font-semibold text-[var(--a-blue)] hover:underline"
+                >
+                  <Video size={12} /> Join
+                </a>
+              ) : (
+                <span className="font-dm text-xs text-[var(--a-ink-3)]">None</span>
+              ),
+          },
+          {
+            key: "actions",
+            header: <span className="sr-only">Actions</span>,
+            hideOnMobile: true,
+            render: (a) => (
+              <div onClick={(e) => e.stopPropagation()}>
+                <ActionMenu appt={a} onSelect={setSelected} />
+              </div>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 }

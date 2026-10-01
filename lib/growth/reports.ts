@@ -37,6 +37,8 @@ export interface Row {
 export interface LinkReport {
   days: number;
   from: string;
+  /** Per UTC day (oldest first): clicks, sign-ups, conversions. */
+  daily: { day: string; clicks: number; signups: number; conversions: number; revenueCents: number }[];
   totals: Row;
   byLink: Row[];
   byCampaign: Row[];
@@ -46,6 +48,7 @@ export interface LinkReport {
 
 interface Resolved {
   kind: string;
+  day: string;
   linkCode: string | null;
   campaign: string;
   source: string;
@@ -62,8 +65,8 @@ async function tryMany<T>(fn: () => Promise<T[]>): Promise<T[]> {
   }
 }
 
-async function resolveAttributions(from: Date): Promise<Resolved[]> {
-  const rows = await prisma.conversionAttribution.findMany({ where: { createdAt: { gte: from } }, take: 50_000 });
+async function resolveAttributions(from: Date, to?: Date): Promise<Resolved[]> {
+  const rows = await prisma.conversionAttribution.findMany({ where: { createdAt: { gte: from, ...(to ? { lt: to } : {}) } }, take: 50_000 });
   const ids = (kind: string) => rows.filter((r) => r.kind === kind).map((r) => r.refId);
 
   const trackPairs = ids("track_checkout").map((r) => r.split(":"));
@@ -126,6 +129,7 @@ async function resolveAttributions(from: Date): Promise<Resolved[]> {
     }
     return {
       kind: r.kind,
+      day: r.createdAt.toISOString().slice(0, 10),
       linkCode: r.linkCode,
       campaign: r.utmCampaign ?? "(none)",
       source: r.utmSource ?? "(none)",
@@ -139,20 +143,46 @@ async function resolveAttributions(from: Date): Promise<Resolved[]> {
 const blank = (key: string, label: string): Row => ({ key, label, clicks: 0, signups: 0, conversions: 0, revenueCents: 0 });
 
 export async function getLinkReport(days: number): Promise<LinkReport> {
+  return buildReport(new Date(Date.now() - days * DAY), undefined, undefined, days);
+}
+
+/** The same report for any window (weekly goals) and, optionally, one campaign. */
+export async function getReportRange(opts: { from: Date; to?: Date; campaign?: string }): Promise<LinkReport> {
+  return buildReport(opts.from, opts.to, opts.campaign, Math.max(1, Math.round(((opts.to?.getTime() ?? Date.now()) - opts.from.getTime()) / DAY)));
+}
+
+async function buildReport(from: Date, to: Date | undefined, campaign: string | undefined, days: number): Promise<LinkReport> {
   await ensureGrowthTables();
-  const from = new Date(Date.now() - days * DAY);
-  const [links, clicks, resolved] = await Promise.all([
-    prisma.growthLink.findMany({ orderBy: { createdAt: "desc" }, take: 5000 }),
-    prisma.$queryRaw<{ linkCode: string; n: bigint }[]>`SELECT "linkCode", COUNT(*)::bigint AS n FROM "GrowthClick" WHERE "createdAt" >= ${from} GROUP BY "linkCode"`,
-    resolveAttributions(from),
+  const toBound = to ?? new Date(Date.now() + DAY);
+  const [allLinks, clicks, allResolved] = await Promise.all([
+    prisma.growthLink.findMany({ where: campaign ? { utmCampaign: campaign } : undefined, orderBy: { createdAt: "desc" }, take: 5000 }),
+    prisma.$queryRaw<{ linkCode: string; day: string; n: bigint }[]>`SELECT "linkCode", "day", COUNT(*)::bigint AS n FROM "GrowthClick" WHERE "createdAt" >= ${from} AND "createdAt" < ${toBound} GROUP BY "linkCode", "day"`,
+    resolveAttributions(from, to),
   ]);
-  const clickMap = new Map(clicks.map((c) => [c.linkCode, Number(c.n)]));
+  const links = allLinks;
   const linkMap = new Map(links.map((l) => [l.code, l]));
+  const clickMap = new Map<string, number>();
+  const daily = new Map<string, { day: string; clicks: number; signups: number; conversions: number; revenueCents: number }>();
+  const dayRow = (d: string) => {
+    let r = daily.get(d);
+    if (!r) daily.set(d, (r = { day: d, clicks: 0, signups: 0, conversions: 0, revenueCents: 0 }));
+    return r;
+  };
+  for (const c of clicks) {
+    if (campaign && !linkMap.has(c.linkCode)) continue;
+    const n = Number(c.n);
+    clickMap.set(c.linkCode, (clickMap.get(c.linkCode) ?? 0) + n);
+    if (linkMap.has(c.linkCode)) dayRow(c.day).clicks += n;
+  }
+  // Attributions for a campaign: through one of its links, or its utm_campaign.
+  const resolved = campaign
+    ? allResolved.filter((r) => (r.linkCode && linkMap.has(r.linkCode)) || (!r.linkCode && r.campaign === campaign))
+    : allResolved;
 
   const byLink = new Map<string, Row>();
   const byCampaign = new Map<string, Row>();
   const byPlatform = new Map<string, Row>();
-  const totals = blank("total", "All campaigns");
+  const totals = blank("total", campaign ?? "All campaigns");
   const get = (m: Map<string, Row>, key: string, label: string) => {
     let r = m.get(key);
     if (!r) m.set(key, (r = blank(key, label)));
@@ -172,9 +202,9 @@ export async function getLinkReport(days: number): Promise<LinkReport> {
   const byKind = new Map<string, { kind: string; label: string; count: number; converted: number; revenueCents: number }>();
   for (const r of resolved) {
     const link = r.linkCode ? linkMap.get(r.linkCode) : undefined;
-    const campaign = link?.utmCampaign ?? r.campaign;
+    const camp = link?.utmCampaign ?? r.campaign;
     const source = link?.utmSource ?? r.source;
-    const targets = [get(byCampaign, campaign, campaign), get(byPlatform, source, source), totals];
+    const targets = [get(byCampaign, camp, camp), get(byPlatform, source, source), totals, dayRow(r.day) as unknown as Row];
     if (link) targets.push(get(byLink, link.code, link.label || link.code));
     for (const t of targets) {
       if (r.signup) t.signups++;
@@ -192,12 +222,18 @@ export async function getLinkReport(days: number): Promise<LinkReport> {
   return {
     days,
     from: from.toISOString(),
+    daily: [...daily.values()].sort((a, b) => a.day.localeCompare(b.day)),
     totals,
     byLink: [...byLink.values()].sort(sort),
     byCampaign: [...byCampaign.values()].sort(sort),
     byPlatform: [...byPlatform.values()].sort(sort),
     byKind: [...byKind.values()].sort((a, b) => b.count - a.count),
   };
+}
+
+/** Per-kind counts for one campaign or window (goal progress: calls, sales). */
+export function kindCount(r: LinkReport, kinds: string[], field: "converted" | "count" = "converted"): number {
+  return r.byKind.filter((k) => kinds.includes(k.kind)).reduce((s, k) => s + k[field], 0);
 }
 
 const csvCell = (v: unknown) => {

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useMemo } from "react";
-import { Search, Download, Mail, Phone, Building2, ExternalLink } from "lucide-react";
+import { Download, Mail, Phone, Building2, ExternalLink, Users } from "lucide-react";
+import { Badge, Button, DataTable, EmptyState, PageHeader, SearchInput, Segmented, StatCard, Toolbar, type BadgeTone } from "@/components/admin/ui";
 
 export interface Contact {
   id: string;
@@ -12,14 +13,6 @@ export interface Contact {
   detail: string;
   createdAt: string;
 }
-
-const SOURCE_COLORS: Record<string, string> = {
-  "Service Request": "bg-[#EBF0FA] text-[#2251A3]",
-  "Booking":         "bg-green-100 text-green-700",
-  "Prospect":        "bg-[#FEF0E3] text-[#F47C20]",
-  "Scanner Lead":    "bg-purple-100 text-purple-700",
-  "Newsletter":      "bg-gray-100 text-gray-600",
-};
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -64,125 +57,130 @@ export default function ContactsClient({ contacts }: { contacts: Contact[] }) {
     const a = document.createElement("a"); a.href = url; a.download = "tiblogics-contacts.csv"; a.click();
   }
 
+  const SOURCE_TONE: Record<string, BadgeTone> = {
+    "Service Request": "info",
+    Booking: "success",
+    Prospect: "orange",
+    "Scanner Lead": "warn",
+    Newsletter: "neutral",
+  };
+
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-syne font-extrabold text-2xl text-[#0D1B2A]">Contacts</h1>
-          <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">
-            Everyone who has interacted with TIBLOGICS across all channels.
-          </p>
-        </div>
-        <button
-          onClick={exportCSV}
-          className="flex items-center gap-2 text-sm font-dm font-medium text-[#2251A3] hover:text-[#1B3A6B] border border-[#D2DCE8] rounded-xl px-4 py-2 hover:bg-[#EBF0FA] transition-colors"
-        >
-          <Download size={14} /> Export CSV
-        </button>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7A8FA6]" />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search name, email, company…"
-            className="w-full pl-9 pr-4 py-2 border border-[#D2DCE8] rounded-xl text-sm font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3]"
-          />
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          {sources.map(s => (
-            <button
-              key={s}
-              onClick={() => setSourceFilter(s)}
-              className={`text-xs font-dm font-medium px-3 py-1.5 rounded-full border transition-colors ${
-                sourceFilter === s
-                  ? "bg-[#1B3A6B] text-white border-[#1B3A6B]"
-                  : "bg-white text-[#3A4A5C] border-[#D2DCE8] hover:border-[#2251A3]"
-              }`}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      </div>
+      <PageHeader
+        title="Contacts"
+        subtitle="Everyone who has interacted with TIBLOGICS across all channels."
+        actions={
+          <Button onClick={exportCSV} variant="secondary" icon={Download}>
+            Export CSV
+          </Button>
+        }
+        className="mb-0"
+      />
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {["Service Request", "Booking", "Prospect", "Newsletter"].map(src => {
-          const count = contacts.filter(c => c.source === src).length;
-          return (
-            <div key={src} className="bg-white border border-[#D2DCE8] rounded-xl p-3 text-center">
-              <p className="font-syne font-bold text-xl text-[#0D1B2A]">{count}</p>
-              <p className="font-dm text-xs text-[#7A8FA6] mt-0.5">{src}</p>
-            </div>
-          );
-        })}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {["Service Request", "Booking", "Prospect", "Newsletter"].map((src) => (
+          <StatCard key={src} label={src} value={contacts.filter((c) => c.source === src).length} />
+        ))}
       </div>
 
-      {/* Table */}
-      <div className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden">
-        {filtered.length === 0 ? (
-          <div className="p-10 text-center font-dm text-sm text-[#7A8FA6]">No contacts found.</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm font-dm">
-              <thead>
-                <tr className="border-b border-[#F4F7FB] bg-[#F8FAFD]">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-[#7A8FA6] uppercase tracking-wider">Contact</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-[#7A8FA6] uppercase tracking-wider hidden md:table-cell">Details</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-[#7A8FA6] uppercase tracking-wider">Source</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-[#7A8FA6] uppercase tracking-wider hidden sm:table-cell">Date</th>
-                  <th className="px-4 py-3"/>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((c, i) => (
-                  <tr key={c.id} className={`border-b border-[#F4F7FB] hover:bg-[#F8FAFD] transition-colors ${i === filtered.length - 1 ? "border-b-0" : ""}`}>
-                    <td className="px-5 py-3.5">
-                      <p className="font-medium text-[#0D1B2A]">{c.name}</p>
-                      <a href={`mailto:${c.email}`} className="text-xs text-[#2251A3] hover:underline flex items-center gap-1 mt-0.5">
-                        <Mail size={11} />{c.email}
-                      </a>
-                    </td>
-                    <td className="px-4 py-3.5 hidden md:table-cell">
-                      {c.phone && (
-                        <p className="text-xs text-[#3A4A5C] flex items-center gap-1 mb-0.5">
-                          <Phone size={11} />{c.phone}
-                        </p>
-                      )}
-                      {c.company && (
-                        <p className="text-xs text-[#3A4A5C] flex items-center gap-1 mb-0.5">
-                          <Building2 size={11} />{c.company}
-                        </p>
-                      )}
-                      <p className="text-xs text-[#7A8FA6] truncate max-w-[200px]">{c.detail}</p>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${SOURCE_COLORS[c.source] ?? "bg-gray-100 text-gray-600"}`}>
-                        {c.source}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3.5 hidden sm:table-cell text-xs text-[#7A8FA6]">
-                      {formatDate(c.createdAt)}
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <a href={`mailto:${c.email}`} className="text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors">
-                        <ExternalLink size={14} />
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <Toolbar className="mb-0">
+        <SearchInput
+          label="Search contacts"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search name, email, company"
+        />
+        <Segmented
+          ariaLabel="Filter by source"
+          value={sourceFilter}
+          onChange={setSourceFilter}
+          options={sources.map((s) => ({ value: s, label: s === "ALL" ? "All" : s }))}
+        />
+      </Toolbar>
 
-      <p className="font-dm text-xs text-[#7A8FA6] text-right">{filtered.length} of {contacts.length} contacts</p>
+      <DataTable
+        caption="Contacts"
+        rows={filtered}
+        rowKey={(c) => c.id}
+        empty={
+          <EmptyState
+            icon={Users}
+            title={contacts.length === 0 ? "No contacts yet" : "No contacts match"}
+            body={contacts.length === 0 ? "Bookings, service requests, prospects and newsletter sign-ups appear here." : "Try a different search or source."}
+            action={
+              contacts.length > 0 ? (
+                <Button variant="secondary" onClick={() => { setSearch(""); setSourceFilter("ALL"); }}>
+                  Clear filters
+                </Button>
+              ) : undefined
+            }
+          />
+        }
+        columns={[
+          {
+            key: "contact",
+            header: "Contact",
+            primary: true,
+            render: (c) => (
+              <div className="min-w-0">
+                <p className="font-semibold text-[var(--a-ink)]">{c.name}</p>
+                <a href={`mailto:${c.email}`} className="mt-0.5 flex items-center gap-1 break-all text-xs font-normal text-[var(--a-blue)] hover:underline">
+                  <Mail size={11} aria-hidden />
+                  {c.email}
+                </a>
+              </div>
+            ),
+          },
+          {
+            key: "details",
+            header: "Details",
+            render: (c) => (
+              <div className="min-w-0">
+                {c.phone && (
+                  <p className="mb-0.5 flex items-center gap-1 text-xs text-[var(--a-ink-2)]">
+                    <Phone size={11} aria-hidden />
+                    {c.phone}
+                  </p>
+                )}
+                {c.company && (
+                  <p className="mb-0.5 flex items-center gap-1 text-xs text-[var(--a-ink-2)]">
+                    <Building2 size={11} aria-hidden />
+                    {c.company}
+                  </p>
+                )}
+                <p className="max-w-[260px] truncate text-xs text-[var(--a-ink-3)]">{c.detail}</p>
+              </div>
+            ),
+          },
+          { key: "source", header: "Source", render: (c) => <Badge tone={SOURCE_TONE[c.source] ?? "neutral"}>{c.source}</Badge> },
+          {
+            key: "date",
+            header: "Date",
+            render: (c) => <span className="text-xs text-[var(--a-ink-3)] tabular-nums">{formatDate(c.createdAt)}</span>,
+          },
+          {
+            key: "mail",
+            header: <span className="sr-only">Email</span>,
+            hideOnMobile: true,
+            align: "right",
+            render: (c) => (
+              <a
+                href={`mailto:${c.email}`}
+                aria-label={`Email ${c.name}`}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-[var(--a-ink-3)] hover:bg-[var(--a-surface-2)] hover:text-[var(--a-ink)]"
+              >
+                <ExternalLink size={14} aria-hidden />
+              </a>
+            ),
+          },
+        ]}
+      />
+
+      <p className="text-right font-dm text-xs text-[var(--a-ink-3)]">
+        {filtered.length} of {contacts.length} contacts
+      </p>
     </div>
   );
 }

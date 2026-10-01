@@ -6,6 +6,7 @@ import {
   DollarSign, FileText, ChevronRight, Clock, CheckCircle2,
   AlertCircle, StickyNote, Plus
 } from "lucide-react";
+import { Button, DataTable, EmptyState, PageHeader, SearchInput, Segmented, Toolbar } from "@/components/admin/ui";
 
 type ProspectStatus = "NEW" | "CONTACTED" | "QUALIFIED" | "PROPOSAL_SENT" | "NEGOTIATING" | "CLOSED_WON" | "CLOSED_LOST" | "ON_HOLD";
 
@@ -486,40 +487,38 @@ export default function ProspectsClient({
         />
       )}
 
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="font-syne font-bold text-2xl text-[#0D1B2A]">Prospects</h1>
-          <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">
-            {loading ? "Loading…" : `${filtered.length} ${showArchived ? "archived" : "active"} prospects · Pipeline: ${fmt(filtered.reduce((s,p) => s+(p.estimatedValue??0),0))}`}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setShowArchived(v => !v)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-dm transition-colors ${
-              showArchived ? "bg-amber-100 border-amber-300 text-amber-700" : "bg-white border-[#D2DCE8] text-[#7A8FA6] hover:bg-[#F4F7FB]"
-            }`}>
-            <Archive size={14} /> {showArchived ? "Viewing Archived" : "View Archived"}
-          </button>
-          <button onClick={() => setView("kanban")}
-            className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-colors ${
-              view === "kanban" ? "bg-[#1B3A6B] border-[#1B3A6B] text-white" : "bg-white border-[#D2DCE8] text-[#7A8FA6] hover:bg-[#F4F7FB]"
-            }`}><LayoutGrid size={15} /></button>
-          <button onClick={() => setView("table")}
-            className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-colors ${
-              view === "table" ? "bg-[#1B3A6B] border-[#1B3A6B] text-white" : "bg-white border-[#D2DCE8] text-[#7A8FA6] hover:bg-[#F4F7FB]"
-            }`}><List size={15} /></button>
-        </div>
-      </div>
+      <PageHeader
+        title="Prospects"
+        subtitle={loading ? "Loading prospects" : `${filtered.length} ${showArchived ? "archived" : "active"} prospects · Pipeline ${fmt(filtered.reduce((s, p) => s + (p.estimatedValue ?? 0), 0))}`}
+        className="mb-0"
+        actions={
+          <Button
+            onClick={() => setShowArchived((v) => !v)}
+            variant={showArchived ? "primary" : "secondary"}
+            icon={Archive}
+            aria-pressed={showArchived}
+          >
+            {showArchived ? "Viewing archived" : "View archived"}
+          </Button>
+        }
+      />
 
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7A8FA6]" />
-        <input type="text" placeholder="Search prospects…" value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="w-full pl-9 pr-4 py-2.5 bg-white border border-[#D2DCE8] rounded-xl text-sm font-dm text-[#0D1B2A] placeholder-[#7A8FA6] focus:outline-none focus:ring-2 focus:ring-[#2251A3]/20 focus:border-[#2251A3]"
-        />
-      </div>
+      <Toolbar
+        className="mb-0"
+        end={
+          <Segmented
+            ariaLabel="Layout"
+            value={view}
+            onChange={(v) => setView(v as typeof view)}
+            options={[
+              { value: "kanban", label: <><LayoutGrid size={14} aria-hidden /> Board</> },
+              { value: "table", label: <><List size={14} aria-hidden /> Table</> },
+            ]}
+          />
+        }
+      >
+        <SearchInput label="Search prospects" placeholder="Search prospects" value={search} onChange={(e) => setSearch(e.target.value)} />
+      </Toolbar>
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
@@ -609,60 +608,52 @@ export default function ProspectsClient({
 
           {/* ── Table View ── */}
           {view === "table" && (
-            <div className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-[#D2DCE8] bg-[#F4F7FB]">
-                      <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Name</th>
-                      <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Business</th>
-                      <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Industry</th>
-                      <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Status</th>
-                      <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Deal Value</th>
-                      <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Follow-up</th>
-                      <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Added</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#F4F7FB]">
-                    {filtered.length === 0 ? (
-                      <tr><td colSpan={7} className="text-center py-12 font-dm text-sm text-[#7A8FA6]">No prospects found.</td></tr>
+            <DataTable
+              caption="Prospects"
+              rows={filtered}
+              rowKey={(p) => p.id}
+              onRowClick={(p) => setSelected(p)}
+              empty={<EmptyState title={showArchived ? "No archived prospects" : "No prospects found"} body="Prospects come from the website advisor and your own entries." />}
+              columns={[
+                {
+                  key: "name",
+                  header: "Name",
+                  primary: true,
+                  render: (p) => (
+                    <div className="min-w-0">
+                      <p className="font-dm text-sm font-semibold text-[var(--a-ink)]">{p.name}</p>
+                      {p.email && <p className="break-all font-dm text-xs font-normal text-[var(--a-ink-3)]">{p.email}</p>}
+                      {p.notes && <p className="mt-0.5 line-clamp-1 font-dm text-xs font-normal italic text-[var(--a-ink-3)]"><FileText size={10} className="mr-1 inline" aria-hidden />{p.notes}</p>}
+                    </div>
+                  ),
+                },
+                { key: "business", header: "Business", render: (p) => <span className="text-[var(--a-ink)]">{p.business}</span> },
+                { key: "industry", header: "Industry", render: (p) => p.industry },
+                { key: "status", header: "Status", render: (p) => <StatusBadge status={p.status} /> },
+                {
+                  key: "value",
+                  header: "Deal value",
+                  align: "right",
+                  render: (p) => (p.estimatedValue ? <span className="font-semibold text-[var(--a-success)] tabular-nums">${p.estimatedValue.toLocaleString()}</span> : <span className="text-[var(--a-ink-3)]">None</span>),
+                },
+                {
+                  key: "followup",
+                  header: "Follow-up",
+                  render: (p) => {
+                    const fu = followUpStatus(p.followUpDate);
+                    return p.followUpDate ? (
+                      <span className={`flex items-center gap-1 font-dm text-xs ${fu === "overdue" ? "text-[var(--a-danger)]" : fu === "soon" ? "text-[var(--a-warn)]" : "text-[var(--a-ink-3)]"}`}>
+                        <Clock size={11} aria-hidden />
+                        {new Date(p.followUpDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </span>
                     ) : (
-                      filtered.map(p => {
-                        const fu = followUpStatus(p.followUpDate);
-                        return (
-                          <tr key={p.id}
-                            onClick={() => setSelected(p)}
-                            className="hover:bg-[#F4F7FB]/60 transition-colors cursor-pointer">
-                            <td className="px-5 py-4">
-                              <p className="font-dm text-sm font-medium text-[#0D1B2A] hover:text-[#2251A3]">{p.name}</p>
-                              {p.email && <p className="font-dm text-xs text-[#7A8FA6]">{p.email}</p>}
-                              {p.notes && <p className="font-dm text-xs text-[#7A8FA6] italic mt-0.5 line-clamp-1"><FileText size={10} className="inline mr-1" />{p.notes}</p>}
-                            </td>
-                            <td className="px-5 py-4 font-dm text-sm text-[#0D1B2A]">{p.business}</td>
-                            <td className="px-5 py-4 font-dm text-sm text-[#7A8FA6]">{p.industry}</td>
-                            <td className="px-5 py-4"><StatusBadge status={p.status} /></td>
-                            <td className="px-5 py-4 font-dm text-sm font-semibold text-[#0F6E56]">
-                              {p.estimatedValue ? `$${p.estimatedValue.toLocaleString()}` : <span className="text-[#D2DCE8]">—</span>}
-                            </td>
-                            <td className="px-5 py-4">
-                              {p.followUpDate ? (
-                                <span className={`text-xs font-dm flex items-center gap-1 ${
-                                  fu === "overdue" ? "text-red-500" : fu === "soon" ? "text-amber-600" : "text-[#7A8FA6]"
-                                }`}>
-                                  <Clock size={11} />
-                                  {new Date(p.followUpDate).toLocaleDateString("en-US",{month:"short",day:"numeric"})}
-                                </span>
-                              ) : <span className="text-[#D2DCE8] text-sm">—</span>}
-                            </td>
-                            <td className="px-5 py-4 font-dm text-xs text-[#7A8FA6]">{daysAgo(p.createdAt)}d ago</td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                      <span className="text-xs text-[var(--a-ink-3)]">None</span>
+                    );
+                  },
+                },
+                { key: "added", header: "Added", render: (p) => <span className="text-xs text-[var(--a-ink-3)] tabular-nums">{daysAgo(p.createdAt)}d ago</span> },
+              ]}
+            />
           )}
         </>
       )}

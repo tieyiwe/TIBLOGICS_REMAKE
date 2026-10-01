@@ -9,6 +9,7 @@ import { isLocale } from "@/lib/i18n/config";
 import { sendSignupNotification } from "@/lib/learn/admin/signup-notify";
 import { OWNER_EMAIL } from "@/lib/auth";
 import { recordAttribution } from "@/lib/growth/attribution";
+import { recordReferralSignup } from "@/lib/learn/referrals/service";
 
 const SignupSchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -82,6 +83,8 @@ export async function POST(req: NextRequest) {
 
     // Campaign attribution (Growth): no-op without the UTM cookie, never throws.
     await recordAttribution({ kind: "learn_signup", refId: student.id, cookieHeader: req.headers.get("cookie") });
+    // Learning Box referral (60-day cookie from /r/[code]): no-op without it, never throws.
+    await recordReferralSignup({ studentId: student.id, email: student.email, cookieHeader: req.headers.get("cookie") });
 
     // Tell the owner (ADMIN_NOTIFY_EMAIL). Fire and forget: never blocks or
     // fails the sign-up.

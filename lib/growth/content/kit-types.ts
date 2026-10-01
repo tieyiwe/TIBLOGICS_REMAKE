@@ -1,10 +1,13 @@
 // Shape of a product marketing kit (GrowthKit.content). Client-safe.
 import { isPlatform, type Platform } from "./platforms";
+import { normalizeCard, type CardSpec } from "../cards/spec";
 
 export interface KitPost {
   platform: Platform;
   text: string;
   hashtags: string[];
+  /** Optional image card, copied onto the queued post. */
+  image?: CardSpec | null;
 }
 export interface KitEmail {
   subject: string;
@@ -59,11 +62,13 @@ export function normalizeKit(raw: unknown): KitContent {
       const o = (p && typeof p === "object" ? p : {}) as Record<string, unknown>;
       const platform = o.platform === "twitter" ? "x" : o.platform;
       if (!isPlatform(platform)) return null;
+      const image = normalizeCard(o.image);
       return {
         platform,
         text: s(o.text, 3000),
         hashtags: strs(o.hashtags, 15, 60).map(cleanHashtag).filter(Boolean),
-      };
+        ...(image ? { image } : {}),
+      } as KitPost;
     })
     .filter((p): p is KitPost => !!p && !!p.text)
     .slice(0, 20);

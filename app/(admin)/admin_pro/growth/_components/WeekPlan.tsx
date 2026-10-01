@@ -30,15 +30,15 @@ export default function WeekPlan({ initial, audiences }: { initial: PostView[]; 
         {days.map((d) => {
           const list = (byDay.get(key(d)) ?? []).sort((a, b) => (a.scheduledAt ?? "").localeCompare(b.scheduledAt ?? ""));
           return (
-            <div key={key(d)} className={`rounded-xl border p-2 min-h-[90px] ${key(d) === today ? "border-[#F47C20] bg-[#FFF8F2]" : "border-[#E6ECF3] bg-[#FAFBFD]"}`}>
-              <p className={`font-dm text-xs mb-1 ${key(d) === today ? "font-bold text-[#F47C20]" : "text-[#7A8FA6]"}`}>
+            <div key={key(d)} className={`rounded-xl border p-2 min-h-[90px] ${key(d) === today ? "border-[var(--a-orange)] bg-[var(--a-orange-bg)]/40" : "border-[var(--a-border)] bg-[var(--a-surface-2)]/50"}`}>
+              <p className={`font-dm text-xs mb-1 ${key(d) === today ? "font-bold text-[var(--a-orange-text)]" : "text-[var(--a-ink-3)]"}`}>
                 {d.toLocaleDateString("en-US", { weekday: "short", day: "numeric" })}
               </p>
               <ul className="space-y-1">
                 {(expanded.has(key(d)) ? list : list.slice(0, 6)).map((p) => (
                   <li key={p.id}>
-                    <button onClick={() => setOpen(p)} className="w-full text-left rounded-md bg-white border border-[#E6ECF3] px-1.5 py-1 hover:shadow-sm" style={{ borderLeft: `3px solid ${PLATFORM_INFO[p.platform].color}` }}>
-                      <span className="block font-dm text-[11px] font-semibold text-[#0D1B2A] truncate">
+                    <button onClick={() => setOpen(p)} className="w-full text-left rounded-md bg-white border border-[var(--a-border)] px-1.5 py-1 hover:shadow-sm hover:border-[var(--a-border-strong)]" style={{ borderLeft: `3px solid ${PLATFORM_INFO[p.platform].color}` }}>
+                      <span className="block font-dm text-[11px] font-semibold text-[var(--a-ink)] truncate">
                         {new Date(p.scheduledAt!).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })} {PLATFORM_INFO[p.platform].label}
                       </span>
                       <StatusPill status={p.status} label={STATUS_LABEL[p.status as PostStatus] ?? p.status} />
@@ -46,9 +46,9 @@ export default function WeekPlan({ initial, audiences }: { initial: PostView[]; 
                   </li>
                 ))}
                 {list.length > 6 && !expanded.has(key(d)) && (
-                  <li><button className="font-dm text-[11px] text-[#2251A3] underline" onClick={() => setExpanded((x) => new Set(x).add(key(d)))}>+{list.length - 6} more</button></li>
+                  <li><button className="font-dm text-[11px] text-[var(--a-blue)] underline" onClick={() => setExpanded((x) => new Set(x).add(key(d)))}>+{list.length - 6} more</button></li>
                 )}
-                {list.length === 0 && <li className="font-dm text-[11px] text-[#9AAABB]">—</li>}
+                {list.length === 0 && <li className="font-dm text-[11px] text-[var(--a-ink-3)]">Free</li>}
               </ul>
             </div>
           );

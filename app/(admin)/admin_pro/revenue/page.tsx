@@ -1,5 +1,5 @@
-import { DollarSign, TrendingUp, Calendar, Repeat } from "lucide-react";
-import MetricCard from "@/components/admin/MetricCard";
+import { DollarSign, TrendingUp, Calendar, Repeat, ShoppingBag } from "lucide-react";
+import { Button, Card, DataTable, EmptyState, PageHeader, SectionTitle, StatCard } from "@/components/admin/ui";
 import RevenueChart from "@/components/admin/RevenueChart";
 import { requireAdminPage } from "../_lib/admin-page-auth";
 import { getRevenue } from "@/lib/admin/metrics";
@@ -33,85 +33,98 @@ export default async function RevenuePage() {
 
   return (
     <div className="space-y-6">
+      <PageHeader
+        title="Revenue"
+        subtitle="Money actually received: paid store orders, event registrations, bookings, Automation Blueprints and Learning Box track purchases."
+        className="mb-0"
+      />
+
       <div>
-        <h1 className="font-syne font-bold text-2xl text-[#0D1B2A]">Revenue</h1>
-        <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">
-          Money actually received: paid store orders, event registrations, bookings, Automation Blueprints and Learning Box track purchases.
+        <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Paid revenue, all time" value={money(r.allTime.total)} icon={DollarSign} tone="navy" />
+          <StatCard
+            label="This month"
+            value={money(r.thisMonth.total)}
+            delta={pct(r.thisMonth.total, r.lastMonth.total) ?? null}
+            deltaLabel={pct(r.thisMonth.total, r.lastMonth.total) === undefined ? undefined : "vs last month"}
+            icon={TrendingUp}
+            tone="orange"
+          />
+          <StatCard label="Last month" value={money(r.lastMonth.total)} icon={Calendar} />
+          <StatCard
+            label="Est. Learn MRR"
+            value={money(r.mrr.cents)}
+            hint={`${r.mrr.activeSubscribers} active, ${r.mrr.activeTeams} teams`}
+            icon={Repeat}
+            tone="success"
+          />
+        </div>
+        <p className="mt-2 font-dm text-xs text-[var(--a-ink-3)]">
+          Learn MRR is estimated from active subscriptions at today&apos;s plan prices. Founding rates and discounts are
+          not stored per subscriber, so check Stripe for the exact figure. Includes {money(r.mrr.teamCents)} from{" "}
+          {r.mrr.teamSeats} team seats.
         </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard label="Paid Revenue, All Time" value={money(r.allTime.total)} icon={DollarSign} iconColor="#1B3A6B" />
-        <MetricCard label="This Month" value={money(r.thisMonth.total)} change={pct(r.thisMonth.total, r.lastMonth.total)} icon={TrendingUp} iconColor="#F47C20" />
-        <MetricCard label="Last Month" value={money(r.lastMonth.total)} icon={Calendar} iconColor="#2251A3" />
-        <MetricCard
-          label={`Est. Learn MRR (${r.mrr.activeSubscribers} active, ${r.mrr.activeTeams} teams)`}
-          value={money(r.mrr.cents)}
-          icon={Repeat}
-          iconColor="#0F6E56"
-        />
-      </div>
-      <p className="-mt-3 font-dm text-xs text-[#7A8FA6]">
-        Learn MRR is estimated from active subscriptions at today&apos;s plan prices. Founding rates and discounts are
-        not stored per subscriber, so check Stripe for the exact figure. Includes {money(r.mrr.teamCents)} from{" "}
-        {r.mrr.teamSeats} team seats.
-      </p>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white border border-[#D2DCE8] rounded-2xl p-6">
-          <h3 className="font-syne font-bold text-base text-[#0D1B2A] mb-4">By Source, All Time</h3>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Card title="By source, all time">
           <ul className="space-y-4">
             {sources.map((s) => (
               <li key={s.label}>
-                <div className="flex justify-between font-dm text-sm">
-                  <span className="text-[#3A4A5C]">{s.label}</span>
-                  <span className="font-semibold text-[#0D1B2A]">{money(s.cents)}</span>
+                <div className="flex justify-between gap-3 font-dm text-sm">
+                  <span className="text-[var(--a-ink-2)]">{s.label}</span>
+                  <span className="font-semibold text-[var(--a-ink)] tabular-nums">{money(s.cents)}</span>
                 </div>
-                <div className="mt-1.5 h-2 rounded-full bg-[#F4F7FB] overflow-hidden">
+                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-[var(--a-surface-2)]">
                   <div className="h-full rounded-full" style={{ width: `${(s.cents / maxSource) * 100}%`, background: s.color }} />
                 </div>
               </li>
             ))}
           </ul>
-        </div>
-        <div className="lg:col-span-2">
-          <RevenueChart data={r.trend} title="Monthly Trend" subtitle="Last 12 months" />
+        </Card>
+        <div className="min-w-0 lg:col-span-2">
+          <RevenueChart data={r.trend} title="Monthly trend" subtitle="Last 12 months" />
         </div>
       </div>
 
-      <div className="bg-white border border-[#D2DCE8] rounded-2xl p-6">
-        <h3 className="font-syne font-bold text-base text-[#0D1B2A]">Recent Paid Orders</h3>
-        {r.recentOrders.length === 0 ? (
-          <p className="py-8 text-center font-dm text-sm text-[#7A8FA6]">No paid store orders yet.</p>
-        ) : (
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-sm font-dm">
-              <thead>
-                <tr className="border-b border-[#F4F7FB] text-left text-xs uppercase tracking-wider text-[#7A8FA6]">
-                  <th className="py-2 pr-4 font-semibold">Order</th>
-                  <th className="py-2 pr-4 font-semibold">Customer</th>
-                  <th className="py-2 pr-4 font-semibold">Items</th>
-                  <th className="py-2 pr-4 font-semibold">Date</th>
-                  <th className="py-2 text-right font-semibold">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {r.recentOrders.map((o) => {
-                  const items = Array.isArray(o.items) ? (o.items as Array<{ name?: string }>) : [];
-                  return (
-                    <tr key={o.id} className="border-b border-[#F4F7FB] last:border-0">
-                      <td className="py-3 pr-4 font-medium text-[#0D1B2A]">{o.orderNumber}</td>
-                      <td className="py-3 pr-4 text-[#3A4A5C]">{o.email}</td>
-                      <td className="py-3 pr-4 text-[#3A4A5C]">{items.map((i) => i.name).filter(Boolean).join(", ") || "—"}</td>
-                      <td className="py-3 pr-4 text-[#7A8FA6]">{o.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</td>
-                      <td className="py-3 text-right font-semibold text-[#0D1B2A]">{money(o.total)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+      <div>
+        <SectionTitle
+          action={
+            <Button href="/admin_pro/shop" variant="ghost" size="sm">
+              Open store
+            </Button>
+          }
+        >
+          Recent paid orders
+        </SectionTitle>
+        <DataTable
+          caption="Recent paid orders"
+          rows={r.recentOrders}
+          rowKey={(o) => o.id}
+          empty={<EmptyState icon={ShoppingBag} title="No paid store orders yet" body="Paid and fulfilled orders show up here." />}
+          columns={[
+            { key: "order", header: "Order", primary: true, render: (o) => o.orderNumber },
+            { key: "customer", header: "Customer", render: (o) => <span className="break-all">{o.email}</span> },
+            {
+              key: "items",
+              header: "Items",
+              render: (o) => {
+                const items = Array.isArray(o.items) ? (o.items as Array<{ name?: string }>) : [];
+                return items.map((i) => i.name).filter(Boolean).join(", ") || "None";
+              },
+            },
+            {
+              key: "date",
+              header: "Date",
+              render: (o) => (
+                <span className="text-[var(--a-ink-3)] tabular-nums">
+                  {o.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </span>
+              ),
+            },
+            { key: "amount", header: "Amount", align: "right", render: (o) => <span className="font-semibold text-[var(--a-ink)] tabular-nums">{money(o.total)}</span> },
+          ]}
+        />
       </div>
     </div>
   );

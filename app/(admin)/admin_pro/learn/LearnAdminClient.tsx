@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { Database, Sprout } from "lucide-react";
+import { Button, PageHeader, StatCard } from "@/components/admin/ui";
+import { LEARN_TABS } from "./tabs";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -99,66 +102,23 @@ export default function LearnAdminClient({
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-[var(--ink)]">TIBLOGICS Learn</h1>
-          <p className="mt-1 text-sm text-[var(--ink3)]">
-            Learning Box — content, learners and capstone reviews.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/admin_pro/learn/learners"
-            className="rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)]"
-          >
-            Learners
-          </Link>
-          <Link
-            href="/admin_pro/learn/tutor"
-            className="rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)]"
-          >
-            Tutor usage
-          </Link>
-          <Link
-            href="/admin_pro/learn/teams"
-            className="rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)]"
-          >
-            Teams
-          </Link>
-          <Link
-            href="/admin_pro/learn/cohorts"
-            className="rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)]"
-          >
-            Cohorts
-          </Link>
-          <Link
-            href="/admin_pro/learn/live"
-            className="rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)]"
-          >
-            Live sessions
-          </Link>
-          <Link
-            href="/admin_pro/learn/community"
-            className="rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)]"
-          >
-            Community
-          </Link>
-          <button
-            onClick={() => run("sync")}
-            disabled={busy !== null}
-            className="rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)] disabled:opacity-50"
-          >
-            {busy === "sync" ? "Syncing…" : "1 · Sync Database"}
-          </button>
-          <button
-            onClick={() => run("seed")}
-            disabled={busy !== null || !tablesReady}
-            className="rounded-lg bg-[var(--ink)] px-4 py-2 text-sm font-bold text-white hover:opacity-90 disabled:opacity-50"
-          >
-            {busy === "seed" ? "Seeding…" : "2 · Seed Learning Box Content"}
-          </button>
-        </div>
-      </header>
+      <PageHeader
+        title="Learning Box"
+        subtitle="Content, learners and capstone reviews."
+        className="mb-0"
+        tabs={LEARN_TABS}
+        activeTab="/admin_pro/learn"
+        actions={
+          <>
+            <Button onClick={() => run("sync")} disabled={busy !== null} loading={busy === "sync"} variant="secondary" icon={Database}>
+              {busy === "sync" ? "Syncing" : "1. Sync database"}
+            </Button>
+            <Button onClick={() => run("seed")} disabled={busy !== null || !tablesReady} loading={busy === "seed"} variant="primary" icon={Sprout}>
+              {busy === "seed" ? "Seeding" : "2. Seed content"}
+            </Button>
+          </>
+        }
+      />
 
       {!tablesReady && (
         <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-5">
@@ -178,26 +138,19 @@ export default function LearnAdminClient({
       )}
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {[
-          ["Students", studentCount],
-          ["Active subscriptions", active],
-          ["Tracks bought (one-time)", `${purchaseCount} · ${usd(purchaseCents)}`],
-          ["Certificates issued", certificateCount],
-          ["Awaiting review", queue.length],
-        ].map(([label, value]) => (
-          <div key={String(label)} className="rounded-xl border border-[var(--border)] bg-white p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink3)]">{label}</p>
-            <p className="mt-1 text-2xl font-black text-[var(--ink)]">{value}</p>
-          </div>
-        ))}
+      <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-5">
+        <StatCard label="Students" value={studentCount} href="/admin_pro/learn/learners" />
+        <StatCard label="Active subscriptions" value={active} tone="success" />
+        <StatCard label="Tracks bought" value={purchaseCount} hint={`${usd(purchaseCents)} one-time`} />
+        <StatCard label="Certificates issued" value={certificateCount} />
+        <StatCard label="Awaiting review" value={queue.length} tone={queue.length > 0 ? "orange" : "default"} href="#capstone-queue" />
       </div>
 
       {learnersWidget}
 
       {/* Capstone review queue */}
-      <section className="rounded-xl border border-[var(--border)] bg-white p-5">
-        <h2 className="text-sm font-bold text-[var(--ink)]">Capstone review queue</h2>
+      <section id="capstone-queue" className="min-w-0 rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] p-5 shadow-[var(--a-shadow-card)]">
+        <h2 className="font-dm text-[14px] font-semibold text-[var(--a-ink)]">Capstone review queue</h2>
         {queue.length === 0 ? (
           <p className="mt-3 text-sm text-[var(--ink3)]">Nothing awaiting review.</p>
         ) : (
@@ -206,7 +159,7 @@ export default function LearnAdminClient({
               <li key={s.id} className="rounded-xl border border-[var(--border)] p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-bold text-[var(--ink)]">{s.studentName}</p>
+                    <p className="font-dm text-[14px] font-semibold text-[var(--a-ink)]">{s.studentName}</p>
                     <p className="text-xs text-[var(--ink3)]">
                       {s.trackTitle} · submitted {new Date(s.createdAt).toLocaleDateString()} ·{" "}
                       <span className="capitalize">{s.status.replace("_", " ")}</span>
@@ -231,9 +184,9 @@ export default function LearnAdminClient({
       <CertificatesPanel tracks={tracks} recentCertificates={recentCertificates} />
 
       {/* Tracks */}
-      <section className="rounded-xl border border-[var(--border)] bg-white p-5">
+      <section className="min-w-0 rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] p-5 shadow-[var(--a-shadow-card)]">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-sm font-bold text-[var(--ink)]">Tracks</h2>
+          <h2 className="font-dm text-[14px] font-semibold text-[var(--a-ink)]">Tracks</h2>
           <div className="flex flex-wrap items-center gap-3">
             <Link href="/admin_pro/learn/videos" className="text-xs font-semibold text-[var(--blue2)] underline">
               Lesson videos: which have one, which are missing
@@ -312,8 +265,8 @@ export default function LearnAdminClient({
       </section>
 
       {/* One-time track purchases */}
-      <section className="rounded-xl border border-[var(--border)] bg-white p-5">
-        <h2 className="text-sm font-bold text-[var(--ink)]">Track purchases (one-time, lifetime access)</h2>
+      <section className="min-w-0 rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] p-5 shadow-[var(--a-shadow-card)]">
+        <h2 className="font-dm text-[14px] font-semibold text-[var(--a-ink)]">Track purchases (one-time, lifetime access)</h2>
         <p className="mt-1 text-xs text-[var(--ink3)]">
           Prices follow the track level ($297 starter/beginner, +$190 per level) unless a track sets its own in the track editor.
         </p>
@@ -349,8 +302,8 @@ export default function LearnAdminClient({
 
       {/* Waitlist */}
       {waitlist.length > 0 && (
-        <section className="rounded-xl border border-[var(--border)] bg-white p-5">
-          <h2 className="text-sm font-bold text-[var(--ink)]">Waitlist</h2>
+        <section className="min-w-0 rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] p-5 shadow-[var(--a-shadow-card)]">
+          <h2 className="font-dm text-[14px] font-semibold text-[var(--a-ink)]">Waitlist</h2>
           <ul className="mt-3 divide-y divide-[var(--border)]">
             {waitlist.map((w) => (
               <li key={w.trackSlug} className="flex justify-between py-2 text-sm">
@@ -577,8 +530,8 @@ function CertificatesPanel({
   }
 
   return (
-    <section className="rounded-xl border border-[var(--border)] bg-white p-5">
-      <h2 className="text-sm font-bold text-[var(--ink)]">Certificates</h2>
+    <section className="min-w-0 rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] p-5 shadow-[var(--a-shadow-card)]">
+      <h2 className="font-dm text-[14px] font-semibold text-[var(--a-ink)]">Certificates</h2>
       <p className="mt-1 text-xs text-[var(--ink3)]">
         Certificates normally issue automatically once all four gates are met. Use this only for
         support cases — a data issue that blocked automatic issuance, or correcting a mistake.

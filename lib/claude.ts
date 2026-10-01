@@ -48,6 +48,8 @@ export type AiTask =
   | "lead-score"
   | "outreach-personalise"
   | "growth-post"
+  | "growth-rewrite"
+  | "growth-ideas"
   // Sonnet
   | "code-assist"
   | "grade-code"
@@ -65,6 +67,9 @@ export type AiTask =
   | "video-script"
   | "outreach-strategy"
   | "growth-kit"
+  | "growth-campaign"
+  | "acquire-magnet"
+  | "acquire-page"
   // Opus
   | "blueprint";
 
@@ -108,6 +113,10 @@ export const ROUTES: Record<AiTask, Route> = {
   "outreach-personalise": { tier: "haiku", maxTokens: 700 },
   // Growth: repurposed social posts for new articles/tracks/products/events.
   "growth-post": { tier: "haiku", maxTokens: 1800 },
+  // Growth: per-item kit rewrites (shorter, punchier, local, A/B variants, EN<->FR).
+  "growth-rewrite": { tier: "haiku", maxTokens: 1800 },
+  // Growth: trend post ideas from AI Times articles, and the mission control summary.
+  "growth-ideas": { tier: "haiku", maxTokens: 1200 },
 
   "code-assist": { tier: "sonnet", maxTokens: 8000, thinking: "adaptive", effort: "medium", cacheSystem: true },
   "grade-code": { tier: "sonnet", maxTokens: 4000, thinking: "adaptive", effort: "medium" },
@@ -127,6 +136,11 @@ export const ROUTES: Record<AiTask, Route> = {
   "outreach-strategy": { tier: "sonnet", maxTokens: 2500, thinking: "off", effort: "low" },
   // Growth: a whole product marketing kit (posts, emails, ads, script, calendar) as JSON.
   "growth-kit": { tier: "sonnet", maxTokens: 9000, thinking: "off", effort: "low" },
+  // Growth: Campaign Copilot plan (channel mix, cadence, outreach criteria, KPIs) as JSON.
+  "growth-campaign": { tier: "sonnet", maxTokens: 5000, thinking: "off", effort: "low" },
+  // Growth acquisition: a lead magnet (checklist, guide, quiz, template pack) and a landing page draft, as JSON.
+  "acquire-magnet": { tier: "sonnet", maxTokens: 6000, thinking: "off", effort: "low" },
+  "acquire-page": { tier: "sonnet", maxTokens: 4000, thinking: "off", effort: "low" },
 
   blueprint: { tier: "opus", maxTokens: 16000, thinking: "adaptive", effort: "medium" },
 };

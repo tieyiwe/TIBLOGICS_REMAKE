@@ -6,8 +6,9 @@ import { ensureGrowthTables } from "../db";
 import { getCatalogItem, TYPE_LABEL, type CatalogItem } from "../catalog";
 import { brandBrief, findAudience, getGrowthSettings, type GrowthSettingsData } from "../settings";
 import { createLink, shortUrl } from "../links";
-import { composePost, PLATFORM_INFO, PLATFORMS, type Language } from "./platforms";
+import { PLATFORM_INFO, PLATFORMS, type Language } from "./platforms";
 import { normalizeKit, type KitContent } from "./kit-types";
+import { checkKit as checkKitRules } from "./claims";
 import { addDays, slotOnDay, ymdIn } from "./times";
 
 // Product marketing kits: one Sonnet call turns a catalog item into
@@ -77,57 +78,10 @@ function productBlock(item: CatalogItem, settings: GrowthSettingsData): string {
     .join("\n\n");
 }
 
-// ── Claim checks ────────────────────────────────────────────────────────────
+// ── Claim checks (lib/growth/content/claims.ts, shared with the editor) ─────
 
-const NUMBER_RE = /(?:[$€£]\s?\d[\d,.]*\s?[kKmM]?|\d[\d,.]*\s?(?:%|percent|pour ?cent|x\b|×|FCFA|CFA|USD|dollars?|k\b))|\b\d{3,}[\d,.]*\b/g;
-
-function normNum(s: string): string {
-  return s.toLowerCase().replace(/\s|,/g, "").replace(/percent|pourcent/, "%").replace(/\.0+(?=\D|$)/, "");
-}
-
-function kitTexts(k: KitContent): [string, string][] {
-  const out: [string, string][] = [
-    ["Positioning", k.positioning],
-    ...k.pains.map((p, i): [string, string] => [`Pain ${i + 1}`, p]),
-    ...k.benefits.map((p, i): [string, string] => [`Benefit ${i + 1}`, p]),
-    ["Hero", [k.hero.headline, k.hero.subheadline, ...k.hero.bullets].join(" ")],
-    ...k.posts.map((p, i): [string, string] => [`Post ${i + 1} (${PLATFORM_INFO[p.platform].label})`, p.text]),
-    ...k.emails.map((e, i): [string, string] => [`Email ${i + 1}`, [e.subject, e.preview, e.body].join(" ")]),
-    ...k.ads.map((a, i): [string, string] => [`Ad ${i + 1} (${a.network})`, [a.headline, a.primaryText, a.description].join(" ")]),
-    ["Video script", [k.video.hook, k.video.script, ...k.video.onScreenText].join(" ")],
-  ];
-  return out;
-}
-
-/**
- * Warnings for the editor: numbers that are not in the product facts or
- * proof points, banned claims, and posts over the platform limit.
- */
 export function checkKit(k: KitContent, facts: string[], settings: GrowthSettingsData): string[] {
-  const allowed = new Set<string>();
-  for (const src of [...facts, ...settings.proofPoints]) for (const m of src.match(NUMBER_RE) ?? []) allowed.add(normNum(m));
-  const allowedText = [...facts, ...settings.proofPoints].join(" ").toLowerCase();
-  const warnings: string[] = [];
-  for (const [where, text] of kitTexts(k)) {
-    const seen = new Set<string>();
-    for (const m of text.match(NUMBER_RE) ?? []) {
-      const n = normNum(m);
-      if (allowed.has(n) || seen.has(n) || allowedText.includes(m.toLowerCase().trim())) continue;
-      seen.add(n);
-      warnings.push(`${where}: "${m.trim()}" is not in the product data or proof points. Check it or remove it.`);
-    }
-    const lower = text.toLowerCase();
-    for (const b of settings.bannedClaims) {
-      if (b && lower.includes(b.toLowerCase())) warnings.push(`${where}: uses the banned claim "${b}".`);
-    }
-  }
-  k.posts.forEach((p, i) => {
-    const len = composePost({ platform: p.platform, body: p.text, hashtags: p.hashtags, shortUrl: "https://tiblogics.com/go/xxxxxxx" }).length;
-    if (len > PLATFORM_INFO[p.platform].maxChars) {
-      warnings.push(`Post ${i + 1} (${PLATFORM_INFO[p.platform].label}) is ${len} characters with link and hashtags; the limit is ${PLATFORM_INFO[p.platform].maxChars}.`);
-    }
-  });
-  return warnings.slice(0, 60);
+  return checkKitRules(k, facts, settings);
 }
 
 // ── Generate ────────────────────────────────────────────────────────────────
@@ -237,6 +191,7 @@ export async function queueKitPosts(kitId: string, startYmd?: string) {
           linkCode: link.code,
           status: "draft",
           scheduledAt: at,
+          ...(p.image ? { image: JSON.parse(JSON.stringify(p.image)) } : {}),
         },
       });
       created++;

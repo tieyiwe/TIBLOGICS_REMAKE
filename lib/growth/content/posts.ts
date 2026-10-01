@@ -1,4 +1,4 @@
-import type { GrowthPost } from "@prisma/client";
+import { Prisma, type GrowthPost } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { ensureGrowthTables } from "../db";
 import { createLink, shortUrl } from "../links";
@@ -7,6 +7,7 @@ import { cleanHashtag } from "./kit-types";
 import { composePost, deepLink, isLanguage, isPlatform, PLATFORM_INFO, type Platform } from "./platforms";
 import { configuredPlatforms } from "./publish";
 import { suggestSlots } from "./times";
+import { normalizeCard, slideCount, type CardSpec } from "../cards/spec";
 
 // The post queue: list, create, edit and move posts through
 //   draft → scheduled (approved, with a time) → publishing → published
@@ -35,6 +36,9 @@ export interface PostView {
   maxChars: number;
   deepLink: string;
   autoPublish: boolean;
+  /** Image card attached to the post (rendered by /api/admin/growth/cards/post/[id]). */
+  image: CardSpec | null;
+  slides: number;
 }
 
 export function toView(p: GrowthPost, configured = configuredPlatforms()): PostView {
@@ -42,6 +46,7 @@ export function toView(p: GrowthPost, configured = configuredPlatforms()): PostV
   const url = p.linkCode ? shortUrl(p.linkCode) : null;
   const hashtags = Array.isArray(p.hashtags) ? (p.hashtags as unknown[]).filter((h): h is string => typeof h === "string") : [];
   const text = composePost({ platform, body: p.body, hashtags, shortUrl: url });
+  const card = normalizeCard(p.image);
   return {
     id: p.id,
     kitId: p.kitId,
@@ -62,6 +67,8 @@ export function toView(p: GrowthPost, configured = configuredPlatforms()): PostV
     maxChars: PLATFORM_INFO[platform].maxChars,
     deepLink: deepLink(platform, text, url),
     autoPublish: PLATFORM_INFO[platform].api && configured[platform],
+    image: card,
+    slides: card ? slideCount(card) : 0,
   };
 }
 
@@ -130,6 +137,7 @@ export async function createPost(b: Record<string, unknown>) {
       linkCode,
       status: "draft",
       scheduledAt,
+      ...(normalizeCard(b.image) ? { image: JSON.parse(JSON.stringify(normalizeCard(b.image))) } : {}),
     },
   });
   return toView(p);
@@ -146,7 +154,7 @@ export async function updatePost(id: string, b: Record<string, unknown>) {
   if (!post) throw new PostError("Post not found.", 404);
 
   const data: Record<string, unknown> = {};
-  const wantsEdit = b.body !== undefined || b.hashtags !== undefined || b.platform !== undefined || b.scheduledAt !== undefined;
+  const wantsEdit = b.body !== undefined || b.hashtags !== undefined || b.platform !== undefined || b.scheduledAt !== undefined || b.image !== undefined;
   if (wantsEdit && !EDITABLE.includes(post.status)) throw new PostError(`A ${post.status} post cannot be edited.`, 409);
   if (b.body !== undefined) {
     const body = typeof b.body === "string" ? b.body.trim().slice(0, 5000) : "";
@@ -154,6 +162,11 @@ export async function updatePost(id: string, b: Record<string, unknown>) {
     data.body = body;
   }
   if (b.hashtags !== undefined) data.hashtags = tagsFrom(b.hashtags);
+  if (b.image !== undefined) {
+    const card = normalizeCard(b.image);
+    if (b.image !== null && !card) throw new PostError("That image card is not valid.");
+    data.image = card ? JSON.parse(JSON.stringify(card)) : Prisma.DbNull;
+  }
   if (b.platform !== undefined) {
     if (!isPlatform(b.platform)) throw new PostError("Unknown platform.");
     data.platform = b.platform;
@@ -236,4 +249,22 @@ export async function statusCounts(): Promise<Record<string, number>> {
   await ensureGrowthTables();
   const rows = await prisma.growthPost.groupBy({ by: ["status"], _count: { _all: true } });
   return Object.fromEntries(rows.map((r) => [r.status, r._count._all]));
+}
+
+/**
+ * The same transition for many posts (bulk approve from the calendar and the
+ * mission control "approve all"). Each post goes through updatePost, so the
+ * length check and the status guards still apply one by one.
+ */
+export async function bulkUpdatePosts(ids: string[], action: PostAction) {
+  const ok: PostView[] = [];
+  const failed: { id: string; error: string }[] = [];
+  for (const id of [...new Set(ids)].slice(0, 200)) {
+    try {
+      ok.push(await updatePost(id, { action }));
+    } catch (err) {
+      failed.push({ id, error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+  return { ok, failed };
 }

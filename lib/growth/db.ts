@@ -86,6 +86,29 @@ const TABLES = [
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "ConversionAttribution_pkey" PRIMARY KEY ("id")
   )`,
+  `CREATE TABLE IF NOT EXISTS "GrowthCampaign" (
+    "id" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'draft',
+    "goalType" TEXT NOT NULL,
+    "goalTarget" INTEGER NOT NULL,
+    "goalLabel" TEXT NOT NULL,
+    "productKeys" JSONB NOT NULL DEFAULT '[]',
+    "audienceId" TEXT,
+    "language" TEXT NOT NULL DEFAULT 'en',
+    "budget" JSONB NOT NULL DEFAULT '{}',
+    "startDate" TIMESTAMP(3) NOT NULL,
+    "endDate" TIMESTAMP(3) NOT NULL,
+    "plan" JSONB NOT NULL DEFAULT '{}',
+    "leadFilter" JSONB NOT NULL DEFAULT '{}',
+    "kitId" TEXT,
+    "sequenceId" TEXT,
+    "assets" JSONB NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "GrowthCampaign_pkey" PRIMARY KEY ("id")
+  )`,
   `CREATE TABLE IF NOT EXISTS "GrowthContentState" (
     "key" TEXT NOT NULL,
     "value" JSONB NOT NULL DEFAULT '{}',
@@ -110,9 +133,16 @@ const INDEXES = [
   `CREATE INDEX IF NOT EXISTS "ConversionAttribution_utmCampaign_idx" ON "ConversionAttribution"("utmCampaign")`,
   `CREATE INDEX IF NOT EXISTS "ConversionAttribution_linkCode_idx" ON "ConversionAttribution"("linkCode")`,
   `CREATE INDEX IF NOT EXISTS "ConversionAttribution_createdAt_idx" ON "ConversionAttribution"("createdAt")`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "GrowthCampaign_slug_key" ON "GrowthCampaign"("slug")`,
+  `CREATE INDEX IF NOT EXISTS "GrowthCampaign_createdAt_idx" ON "GrowthCampaign"("createdAt")`,
 ];
 
-const STATEMENTS = [...TABLES, ...INDEXES];
+// Columns added after the first release (tables created earlier lack them).
+const COLUMNS = [
+  `ALTER TABLE "GrowthPost" ADD COLUMN IF NOT EXISTS "image" JSONB`,
+];
+
+const STATEMENTS = [...TABLES, ...COLUMNS, ...INDEXES];
 
 let ready: Promise<void> | null = null;
 

@@ -8,16 +8,16 @@ import type { DayPoint, Pair, RangeDays } from "@/lib/admin/analytics";
 export const money = (cents: number) =>
   `$${(cents / 100).toLocaleString("en-US", { maximumFractionDigits: cents % 100 === 0 || cents >= 100_000 ? 0 : 2 })}`;
 export const int = (n: number) => n.toLocaleString("en-US");
-export const pct = (n: number, d: number) => (d ? `${Math.round((n / d) * 100)}%` : "–");
+export const pct = (n: number, d: number) => (d ? `${Math.round((n / d) * 100)}%` : "n/a");
 
 /** Change vs the previous period. No percentage "up from nothing". */
 export function Delta({ v, invert = false }: { v: Pair; invert?: boolean }) {
-  if (v.cur === v.prev) return <span className="text-[#7A8FA6]">no change</span>;
-  if (v.prev === 0) return <span className="text-[#7A8FA6]">from 0</span>;
+  if (v.cur === v.prev) return <span className="text-[var(--a-ink-3)]">no change</span>;
+  if (v.prev === 0) return <span className="text-[var(--a-ink-3)]">from 0</span>;
   const p = Math.round(((v.cur - v.prev) / v.prev) * 100);
   const good = invert ? p < 0 : p > 0;
   return (
-    <span className={good ? "text-[#0F6E56]" : "text-[#B42318]"}>
+    <span className={good ? "text-[var(--a-success)]" : "text-[var(--a-danger)]"}>
       {p > 0 ? "▲" : "▼"} {Math.abs(p)}%
     </span>
   );
@@ -27,16 +27,16 @@ export function Kpi({
   label, value, pair, note, invert, prevLabel,
 }: { label: string; value: string; pair?: Pair; note?: ReactNode; invert?: boolean; prevLabel?: string }) {
   return (
-    <div className="bg-white border border-[#D2DCE8] rounded-2xl p-4 min-w-0">
-      <p className="font-dm text-xs text-[#7A8FA6] leading-snug">{label}</p>
-      <p className="mt-1 font-syne font-bold text-2xl text-[#0D1B2A] tabular-nums">{value}</p>
+    <div className="min-w-0 rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] shadow-[var(--a-shadow-card)] p-4">
+      <p className="a-micro leading-snug">{label}</p>
+      <p className="mt-2 font-dm text-[24px] font-bold leading-none tracking-tight text-[var(--a-ink)] tabular-nums">{value}</p>
       {pair && (
         <p className="mt-1 font-dm text-xs">
           <Delta v={pair} invert={invert} />
-          {pair.prev !== 0 && <span className="text-[#7A8FA6]"> vs {prevLabel ?? int(pair.prev)} before</span>}
+          {pair.prev !== 0 && <span className="text-[var(--a-ink-3)]"> vs {prevLabel ?? int(pair.prev)} before</span>}
         </p>
       )}
-      {note && <p className="mt-1 font-dm text-[11px] text-[#7A8FA6] leading-snug">{note}</p>}
+      {note && <p className="mt-1 font-dm text-[11px] text-[var(--a-ink-3)] leading-snug">{note}</p>}
     </div>
   );
 }
@@ -45,16 +45,16 @@ export function Card({
   title, subtitle, csv, range, children, className = "",
 }: { title: string; subtitle?: ReactNode; csv?: string; range: RangeDays; children: ReactNode; className?: string }) {
   return (
-    <section className={`bg-white border border-[#D2DCE8] rounded-2xl p-4 sm:p-6 min-w-0 ${className}`}>
+    <section className={`min-w-0 rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] shadow-[var(--a-shadow-card)] p-4 sm:p-5 ${className}`}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="font-syne font-bold text-base text-[#0D1B2A]">{title}</h3>
-          {subtitle && <p className="font-dm text-xs text-[#7A8FA6] mt-0.5">{subtitle}</p>}
+          <h3 className="font-dm text-[14px] font-semibold text-[var(--a-ink)]">{title}</h3>
+          {subtitle && <p className="font-dm text-xs text-[var(--a-ink-3)] mt-0.5">{subtitle}</p>}
         </div>
         {csv && (
           <a
             href={`/api/admin/analytics/export?table=${csv}&range=${range}`}
-            className="inline-flex items-center gap-1 rounded-lg border border-[#D2DCE8] px-2.5 py-1 font-dm text-xs text-[#2251A3] hover:bg-[#F4F7FB]"
+            className="inline-flex h-8 items-center gap-1 rounded-[8px] border border-[var(--a-border-strong)] px-2.5 font-dm text-xs font-semibold text-[var(--a-ink-2)] hover:bg-[var(--a-surface-2)]"
           >
             <Download size={12} /> CSV
           </a>
@@ -67,7 +67,7 @@ export function Card({
 
 export function SectionTitle({ children, id }: { children: ReactNode; id: string }) {
   return (
-    <h2 id={id} className="font-syne font-bold text-lg text-[#0D1B2A] pt-2 scroll-mt-4">
+    <h2 id={id} className="scroll-mt-14 pt-2 font-syne text-[18px] font-bold text-[var(--a-ink)]">
       {children}
     </h2>
   );
@@ -80,12 +80,12 @@ const shortDay = (d: string) =>
 export function DayBars({ data, format = int, label }: { data: DayPoint[]; format?: (n: number) => string; label: string }) {
   const max = Math.max(1, ...data.map((d) => d.value));
   const total = data.reduce((n, d) => n + d.value, 0);
-  if (total === 0) return <p className="py-8 text-center font-dm text-sm text-[#7A8FA6]">Nothing in this period.</p>;
+  if (total === 0) return <p className="py-8 text-center font-dm text-sm text-[var(--a-ink-3)]">Nothing in this period.</p>;
   const gap = data.length > 45 ? "gap-px" : "gap-0.5";
   return (
     <figure>
       <div className="flex items-stretch gap-2">
-        <div className="flex flex-col justify-between font-dm text-[10px] text-[#7A8FA6] tabular-nums text-right w-12 shrink-0">
+        <div className="flex flex-col justify-between font-dm text-[10px] text-[var(--a-ink-3)] tabular-nums text-right w-12 shrink-0">
           <span>{format(max)}</span>
           <span>0</span>
         </div>
@@ -101,7 +101,7 @@ export function DayBars({ data, format = int, label }: { data: DayPoint[]; forma
           ))}
         </div>
       </div>
-      <div className="ml-14 mt-1 flex justify-between font-dm text-[10px] text-[#7A8FA6]">
+      <div className="ml-14 mt-1 flex justify-between font-dm text-[10px] text-[var(--a-ink-3)]">
         <span>{shortDay(data[0].day)}</span>
         {data.length > 2 && <span>{shortDay(data[Math.floor(data.length / 2)].day)}</span>}
         <span>{shortDay(data[data.length - 1].day)}</span>
@@ -120,7 +120,7 @@ export function Meter({ value, max, color = "#2251A3" }: { value: number; max: n
 }
 
 export function Empty({ children }: { children: ReactNode }) {
-  return <p className="py-6 text-center font-dm text-sm text-[#7A8FA6]">{children}</p>;
+  return <p className="py-6 text-center font-dm text-sm text-[var(--a-ink-3)]">{children}</p>;
 }
 
 export const th = "py-2 pr-4 font-semibold whitespace-nowrap";

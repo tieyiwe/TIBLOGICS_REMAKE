@@ -6,6 +6,7 @@ import {
   ShoppingBag, Plus, Pencil, Trash2, X, Star, Tag, Eye, EyeOff,
   Package, Loader2, ExternalLink, Layers, TrendingUp, Check,
 } from "lucide-react";
+import { Button, EmptyState, PageHeader, StatCard, Tabs, tableStyles } from "@/components/admin/ui";
 
 export type Product = {
   id: string; slug: string; name: string; tagline: string | null; description: string;
@@ -168,33 +169,21 @@ export default function ShopClient(initial: {
   const productCountFor = (slug: string) => products.filter((p) => p.collections?.includes(slug)).length;
 
   return (
-    <div className="max-w-6xl mx-auto pb-10">
-      {/* Premium gradient header */}
-      <div className="relative overflow-hidden rounded-3xl mb-6 p-7 md:p-8"
-        style={{ background: "linear-gradient(135deg,#0C1112 0%,#131A1B 55%,#1C2526 100%)" }}>
-        <div className="absolute -top-16 -right-10 w-64 h-64 rounded-full blur-3xl opacity-40" style={{ background: "radial-gradient(circle,#F47C4C,transparent 70%)" }} />
-        <div className="relative flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-3" style={{ background: "rgba(244,124,76,.15)", border: "1px solid rgba(244,124,76,.3)" }}>
-              <ShoppingBag size={13} className="text-[#F9A738]" />
-              <span className="font-dm text-xs font-semibold text-[#F9A738]">Store Management</span>
-            </div>
-            <h1 className="font-syne font-extrabold text-2xl md:text-3xl text-white">TIBLOGICS Store</h1>
-            <p className="font-dm text-sm text-white/50 mt-1">Products, collections, sales & orders — everything in one place.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <a href="/store" target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-dm font-semibold text-white/90 bg-white/10 hover:bg-white/15 transition-colors backdrop-blur">
-              <ExternalLink size={15} /> View Store
-            </a>
-            <button onClick={() => (tab === "collections" ? setEditingCol("new") : setEditing("new"))}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-dm font-bold text-[#131A1B] transition-transform hover:-translate-y-0.5"
-              style={{ background: "linear-gradient(135deg,#F47C4C,#F9A738)" }}>
-              <Plus size={16} /> {tab === "collections" ? "New Collection" : "New Product"}
-            </button>
-          </div>
-        </div>
-      </div>
+    <div className="pb-10">
+      <PageHeader
+        title="Store"
+        subtitle="Products, collections, sales and orders in one place."
+        actions={
+          <>
+            <Button href="/store" external variant="secondary" icon={ExternalLink}>
+              View store
+            </Button>
+            <Button onClick={() => (tab === "collections" ? setEditingCol("new") : setEditing("new"))} variant="primary" icon={Plus}>
+              {tab === "collections" ? "New collection" : "New product"}
+            </Button>
+          </>
+        }
+      />
 
       {needsSync && (
         <div className="mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between gap-3 flex-wrap">
@@ -232,31 +221,25 @@ export default function ShopClient(initial: {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {[
-          { label: "Products", value: stats.products, icon: Package, from: "#2251A3" },
-          { label: "Published", value: stats.published, icon: Eye, from: "#22A387" },
-          { label: "Paid Orders", value: stats.orders, icon: ShoppingBag, from: "#8B5CF6" },
-          { label: "Revenue", value: money(stats.revenue), icon: TrendingUp, from: "#F47C4C" },
-        ].map((s) => (
-          <div key={s.label} className="bg-white border border-[#E4EBF3] rounded-2xl p-4 relative overflow-hidden">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 text-white" style={{ background: s.from }}>
-              <s.icon size={17} />
-            </div>
-            <div className="font-syne font-extrabold text-2xl text-[#0D1B2A]">{s.value}</div>
-            <div className="font-dm text-xs text-[#7A8FA6] uppercase tracking-wide mt-0.5">{s.label}</div>
-          </div>
-        ))}
+      <div className="mb-6 grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 md:grid-cols-4">
+        <StatCard label="Products" value={stats.products} icon={Package} />
+        <StatCard label="Published" value={stats.published} icon={Eye} tone="success" />
+        <StatCard label="Paid orders" value={stats.orders} icon={ShoppingBag} />
+        <StatCard label="Revenue" value={money(stats.revenue)} icon={TrendingUp} tone="orange" />
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1.5 mb-5 bg-[#EEF2F7] p-1 rounded-xl w-fit">
-        {([["products", "Products", products.length], ["collections", "Collections", collections.length], ["orders", "Orders", orders.length]] as const).map(([t, lbl, n]) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 rounded-lg font-dm text-sm font-semibold transition-colors ${tab === t ? "bg-white text-[#0D1B2A] shadow-sm" : "text-[#7A8FA6] hover:text-[#0D1B2A]"}`}>
-            {lbl} <span className="opacity-50">({n})</span>
-          </button>
-        ))}
+      <div className="mb-5 border-b border-[var(--a-border)]">
+        <Tabs
+          ariaLabel="Store sections"
+          active={tab}
+          onChange={(id) => setTab(id as typeof tab)}
+          items={[
+            { id: "products", label: "Products", count: products.length },
+            { id: "collections", label: "Collections", count: collections.length },
+            { id: "orders", label: "Orders", count: orders.length },
+          ]}
+        />
       </div>
 
       {loading ? (
@@ -269,7 +252,7 @@ export default function ShopClient(initial: {
             {products.map((p) => {
               const onSale = p.onSale && p.compareAtPrice && p.compareAtPrice > p.price;
               return (
-                <div key={p.id} className="bg-white border border-[#E4EBF3] rounded-2xl overflow-hidden group">
+                <div key={p.id} className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] overflow-hidden group">
                   <div className="relative aspect-[16/10] bg-[#F4F7FB] flex items-center justify-center overflow-hidden">
                     {p.images[0] ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -317,7 +300,7 @@ export default function ShopClient(initial: {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {collections.map((c) => (
-              <div key={c.id} className="bg-white border border-[#E4EBF3] rounded-2xl overflow-hidden">
+              <div key={c.id} className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] overflow-hidden">
                 <div className="relative aspect-[16/9] bg-[#F4F7FB] flex items-center justify-center overflow-hidden">
                   {c.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -347,27 +330,27 @@ export default function ShopClient(initial: {
       ) : orders.length === 0 ? (
         <Empty icon={ShoppingBag} text="No orders yet." sub="Orders appear here once shoppers check out." />
       ) : (
-        <div className="bg-white border border-[#E4EBF3] rounded-2xl overflow-x-auto">
-          <table className="w-full min-w-[640px]">
+        <div className={tableStyles.wrap}>
+          <table className={`${tableStyles.table} min-w-[640px]`}>
             <thead>
-              <tr className="border-b border-[#F4F7FB]">
+              <tr className={tableStyles.thead}>
                 {["Order", "Customer", "Items", "Total", "Status", "Date"].map((h) => (
-                  <th key={h} className="text-left px-5 py-3 font-dm text-xs text-[#7A8FA6] font-semibold uppercase tracking-wide">{h}</th>
+                  <th key={h} scope="col" className={tableStyles.th}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {orders.map((o, i) => (
-                <tr key={o.id} className={i % 2 === 0 ? "bg-white" : "bg-[#FAFBFD]"}>
+                <tr key={o.id} className={tableStyles.tr}>
                   <td className="px-5 py-3 font-dm text-sm text-[#0D1B2A] font-semibold">{o.orderNumber}</td>
                   <td className="px-5 py-3 font-dm text-sm text-[#0D1B2A]">
-                    <div>{o.customerName || "—"}</div>
-                    <div className="text-xs text-[#7A8FA6]">{o.email || "—"}</div>
+                    <div>{o.customerName || "Guest"}</div>
+                    <div className="text-xs text-[var(--a-ink-3)]">{o.email || "No email"}</div>
                   </td>
                   <td className="px-5 py-3 font-dm text-xs text-[#7A8FA6]">{(o.items ?? []).reduce((n, it) => n + (it.quantity ?? 0), 0)}</td>
                   <td className="px-5 py-3 font-dm text-sm font-bold text-[#0D1B2A]">{money(o.total, o.currency)}</td>
                   <td className="px-5 py-3">
-                    <select value={o.status} onChange={(e) => setOrderStatus(o, e.target.value)}
+                    <select aria-label={`Status for order ${o.orderNumber}`} value={o.status} onChange={(e) => setOrderStatus(o, e.target.value)}
                       className={`text-xs font-dm font-semibold px-2 py-1 rounded-full border-0 cursor-pointer ${ORDER_STATUS[o.status] ?? "bg-gray-100 text-gray-600"}`}>
                       {Object.keys(ORDER_STATUS).map((s) => <option key={s} value={s}>{s}</option>)}
                     </select>
@@ -394,10 +377,8 @@ export default function ShopClient(initial: {
 
 function Empty({ icon: Icon, text, sub }: { icon: React.ElementType; text: string; sub: string }) {
   return (
-    <div className="text-center py-16 text-[#7A8FA6] font-dm bg-white border border-[#E4EBF3] rounded-2xl">
-      <Icon size={40} className="mx-auto mb-3 opacity-40" />
-      <p className="font-syne font-bold text-[#0D1B2A]">{text}</p>
-      <p className="text-sm mt-1">{sub}</p>
+    <div className="rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)]">
+      <EmptyState icon={Icon} title={text.replace(/\.$/, "")} body={sub} />
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { ensureLearnEditColumns } from "@/lib/learn/admin/columns";
 import { TRACK_CURRENCY, trackPriceCents } from "@/lib/learn/pricing";
 import { PLANS } from "@/lib/payments/provider";
 import { recordAttribution } from "@/lib/growth/attribution";
+import { referralCouponFor } from "@/lib/learn/referrals/service";
 
 // Slugs become part of a redirect URL; an unvalidated value here would be an
 // open-redirect vector, so they are constrained to a slug shape.
@@ -66,6 +67,8 @@ export async function POST(req: NextRequest) {
       const { url } = await payments.createTrackCheckout({
         studentId: student.id,
         email: student.email,
+        // Referred learners get the welcome coupon when STRIPE_REFERRAL_COUPON_ID is set.
+        couponId: await referralCouponFor(student.id),
         trackId: track.id,
         trackTitle: track.title,
         amount,
@@ -83,6 +86,7 @@ export async function POST(req: NextRequest) {
       plan: "monthly",
       studentId: student.id,
       email: student.email,
+      couponId: await referralCouponFor(student.id),
       successUrl: parsed.data.track
         ? `${SITE}/learn/track/${parsed.data.track}?welcome=1`
         : `${SITE}/learn?welcome=1`,

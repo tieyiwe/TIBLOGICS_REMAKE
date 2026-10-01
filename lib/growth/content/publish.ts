@@ -95,6 +95,64 @@ export async function postToFacebook(text: string): Promise<PublishResult> {
   return { success: true, url: data?.id ? `https://www.facebook.com/${data.id}` : undefined };
 }
 
+// ── Images (Growth image cards) ────────────────────────────────────────────
+
+/** An image to attach: a public (signed) URL and a way to get the PNG bytes. */
+export interface PublishImage {
+  url: string;
+  png: () => Promise<ArrayBuffer>;
+}
+
+/** Uploads a PNG to LinkedIn (registerUpload, then PUT) and returns the asset URN. */
+async function linkedInAsset(png: ArrayBuffer): Promise<string | null> {
+  const token = process.env.LINKEDIN_ACCESS_TOKEN;
+  const owner = process.env.LINKEDIN_PERSON_URN;
+  if (!token || !owner) return null;
+  const reg = await fetch("https://api.linkedin.com/v2/assets?action=registerUpload", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", "X-Restli-Protocol-Version": "2.0.0" },
+    body: JSON.stringify({
+      registerUploadRequest: {
+        recipes: ["urn:li:digitalmediaRecipe:feedshare-image"],
+        owner,
+        serviceRelationships: [{ relationshipType: "OWNER", identifier: "urn:li:userGeneratedContent" }],
+      },
+    }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!reg.ok) return null;
+  const j = (await reg.json().catch(() => ({}))) as {
+    value?: { asset?: string; uploadMechanism?: Record<string, { uploadUrl?: string }> };
+  };
+  const uploadUrl = j.value?.uploadMechanism?.["com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"]?.uploadUrl;
+  const asset = j.value?.asset;
+  if (!uploadUrl || !asset || !/^https:\/\//.test(uploadUrl)) return null;
+  const up = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "image/png" },
+    body: png,
+    signal: AbortSignal.timeout(60_000),
+  });
+  return up.ok ? asset : null;
+}
+
+/** A Facebook Page photo post (the image is fetched by Facebook from `url`). */
+export async function postPhotoToFacebook(text: string, url: string): Promise<PublishResult> {
+  const pageId = process.env.FACEBOOK_PAGE_ID;
+  const pageToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+  if (!pageId || !pageToken) return { success: false, error: "FACEBOOK_PAGE_ID or FACEBOOK_PAGE_ACCESS_TOKEN not set" };
+  const res = await fetch(`https://graph.facebook.com/${encodeURIComponent(pageId)}/photos`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url, caption: text, access_token: pageToken }),
+    signal: AbortSignal.timeout(60_000),
+  });
+  if (!res.ok) return { success: false, error: (await res.text()).slice(0, 1000) };
+  const data = await res.json().catch(() => ({}));
+  const id = data?.post_id ?? data?.id;
+  return { success: true, url: id ? `https://www.facebook.com/${id}` : undefined };
+}
+
 /** Whether the server holds the credentials to publish to this platform. */
 export function platformConfigured(platform: Platform): boolean {
   const e = process.env;
@@ -120,12 +178,28 @@ export function configuredPlatforms(): Record<Platform, boolean> {
   };
 }
 
-/** Publish one post. Only call after platformConfigured() is true. */
-export async function publishTo(platform: Platform, text: string): Promise<PublishResult> {
+/**
+ * Publish one post. Only call after platformConfigured() is true. With an
+ * image, LinkedIn and Facebook post it with the text; if the image step
+ * fails the text still goes out on its own (the image can be added by hand).
+ */
+export async function publishTo(platform: Platform, text: string, image?: PublishImage | null): Promise<PublishResult> {
   try {
-    if (platform === "linkedin") return await postToLinkedIn(text);
+    if (platform === "linkedin") {
+      if (image) {
+        const asset = await linkedInAsset(await image.png()).catch(() => null);
+        if (asset) return await postToLinkedIn(text, asset);
+      }
+      return await postToLinkedIn(text);
+    }
     if (platform === "x") return await postToTwitter(text);
-    if (platform === "facebook") return await postToFacebook(text);
+    if (platform === "facebook") {
+      if (image) {
+        const r = await postPhotoToFacebook(text, image.url).catch(() => null);
+        if (r?.success) return r;
+      }
+      return await postToFacebook(text);
+    }
     return { success: false, error: `${platform} has no publishing API; post it by hand` };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : String(err) };

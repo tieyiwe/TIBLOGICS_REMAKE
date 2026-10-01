@@ -25,6 +25,7 @@ const LINK_KEYS = [
   { href: "/learn/badges", key: "badges.nav" },
   { href: "/learn/portfolio", key: "method.nav.portfolio" },
   { href: "/learn/leaderboard", key: "game.nav.leaderboard" },
+  { href: "/learn/referrals", key: "referrals.nav" },
   { href: "/learn/account", key: "learn.nav.account" },
 ];
 

@@ -22,13 +22,13 @@ export default function RevenueChart({
 }) {
   const empty = data.every((d) => d.revenue === 0);
   return (
-    <div className="bg-white border border-[#D2DCE8] rounded-2xl p-6 col-span-2">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-syne font-bold text-base text-[#0D1B2A]">{title}</h3>
-        <span className="text-[#7A8FA6] text-xs font-dm">{subtitle}</span>
+    <div className="col-span-2 min-w-0 rounded-[var(--a-radius-card,14px)] border border-[var(--a-border,#E3E9F1)] bg-[var(--a-surface,#fff)] p-5 shadow-[0_1px_2px_rgba(13,27,42,.04)]">
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="font-dm text-[14px] font-semibold text-[var(--a-ink,#0D1B2A)]">{title}</h3>
+        <span className="font-dm text-xs text-[var(--a-ink-3,#5A6E84)]">{subtitle}</span>
       </div>
       {empty && (
-        <p className="mb-2 text-xs font-dm text-[#7A8FA6]">
+        <p className="mb-2 font-dm text-xs text-[var(--a-ink-3,#5A6E84)]">
           No paid revenue recorded in this period. Store orders, paid event registrations and paid bookings appear here once they come in.
         </p>
       )}

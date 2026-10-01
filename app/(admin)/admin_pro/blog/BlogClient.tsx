@@ -8,6 +8,7 @@ import {
   RefreshCw, Plus, Trash2, Eye, EyeOff, Star, Loader2,
   Zap, Bot, BarChart2, FileText, ImageIcon,
 } from "lucide-react";
+import { Button, EmptyState, PageHeader, StatCard } from "@/components/admin/ui";
 
 export interface Post {
   id: string;
@@ -209,51 +210,47 @@ export default function BlogClient(initial: {
   return (
     <div className="space-y-6">
       <ArticleTranslations />
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-syne font-bold text-2xl text-[#0D1B2A]">Blog Manager</h1>
-          <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">
-            Content auto-refreshes every 48 hours from Hacker News & DEV.to
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/admin_pro/blog/news-agent"
-            className="flex items-center gap-2 bg-[#F47C20] hover:bg-[#d96b18] text-white rounded-xl px-4 py-2 text-sm font-dm font-semibold transition-colors"
-          >
-            <Bot size={15} /> News Agent
-          </Link>
-          <button
-            onClick={repairThinPosts}
-            disabled={repairing || refreshing}
-            className="flex items-center gap-2 border border-[#F47C20] bg-white rounded-xl px-4 py-2 text-sm font-dm text-[#F47C20] hover:bg-orange-50 disabled:opacity-50 transition-colors"
-            title="Find and regenerate incomplete articles"
-          >
-            <Loader2 size={14} className={repairing ? "animate-spin" : "hidden"} />
-            <FileText size={14} className={repairing ? "hidden" : ""} />
-            {repairing ? "Repairing…" : "Fix Incomplete"}
-          </button>
-          <button
-            onClick={fixCoverImages}
-            disabled={fixingImages || repairing || refreshing}
-            className="flex items-center gap-2 border border-[#2251A3] bg-white rounded-xl px-4 py-2 text-sm font-dm text-[#2251A3] hover:bg-blue-50 disabled:opacity-50 transition-colors"
-            title="Give every article a cover image, and make sure no two articles share one"
-          >
-            <Loader2 size={14} className={fixingImages ? "animate-spin" : "hidden"} />
-            <ImageIcon size={14} className={fixingImages ? "hidden" : ""} />
-            {fixingImages ? "Fixing…" : "Fix Cover Images"}
-          </button>
-          <button
-            onClick={triggerRefresh}
-            disabled={refreshing || repairing || fixingImages}
-            className="flex items-center gap-2 border border-[#D2DCE8] bg-white rounded-xl px-4 py-2 text-sm font-dm text-[#0D1B2A] hover:bg-[#F4F7FB] disabled:opacity-50 transition-colors"
-          >
-            <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
-            {refreshing ? "Refreshing…" : "Refresh Now"}
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="AI Times blog"
+        subtitle="Content auto-refreshes every 48 hours from Hacker News and DEV.to."
+        className="mb-0"
+        actions={
+          <>
+            <Button
+              onClick={repairThinPosts}
+              disabled={repairing || refreshing}
+              loading={repairing}
+              icon={FileText}
+              variant="secondary"
+              title="Find and regenerate incomplete articles"
+            >
+              {repairing ? "Repairing" : "Fix incomplete"}
+            </Button>
+            <Button
+              onClick={fixCoverImages}
+              disabled={fixingImages || repairing || refreshing}
+              loading={fixingImages}
+              icon={ImageIcon}
+              variant="secondary"
+              title="Give every article a cover image, and make sure no two articles share one"
+            >
+              {fixingImages ? "Fixing" : "Fix cover images"}
+            </Button>
+            <Button
+              onClick={triggerRefresh}
+              disabled={refreshing || repairing || fixingImages}
+              icon={RefreshCw}
+              variant="secondary"
+              className={refreshing ? "[&>svg]:animate-spin" : ""}
+            >
+              {refreshing ? "Refreshing" : "Refresh now"}
+            </Button>
+            <Button href="/admin_pro/blog/news-agent" icon={Bot} variant="primary">
+              News Agent
+            </Button>
+          </>
+        }
+      />
 
       {imageResult && (
         <div className="bg-blue-50 border border-blue-200 text-blue-900 rounded-xl px-4 py-3 text-sm font-dm flex items-center justify-between">
@@ -277,39 +274,29 @@ export default function BlogClient(initial: {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Total Posts", value: stats.total, icon: FileText, color: "#2251A3" },
-          { label: "Published", value: stats.published, icon: Eye, color: "#0F6E56" },
-          { label: "AI Generated", value: stats.aiGenerated, icon: Bot, color: "#7c3aed" },
-          { label: "Total Views", value: stats.totalViews, icon: BarChart2, color: "#F47C20" },
-        ].map((s) => (
-          <div key={s.label} className="bg-white border border-[#D2DCE8] rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-2">
-              <p className="font-dm text-sm text-[#7A8FA6]">{s.label}</p>
-              <s.icon size={16} style={{ color: s.color }} />
-            </div>
-            <p className="font-syne font-extrabold text-2xl text-[#0D1B2A]">{s.value}</p>
-          </div>
-        ))}
+      <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Total posts" value={stats.total} icon={FileText} />
+        <StatCard label="Published" value={stats.published} icon={Eye} tone="success" hint={stats.total - stats.published > 0 ? `${stats.total - stats.published} unpublished` : undefined} />
+        <StatCard label="AI generated" value={stats.aiGenerated} icon={Bot} />
+        <StatCard label="Total views" value={stats.totalViews.toLocaleString("en-US")} icon={BarChart2} tone="orange" />
       </div>
 
       {/* Refresh status + Breaking news */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white border border-[#D2DCE8] rounded-2xl p-5">
-          <h3 className="font-syne font-bold text-sm text-[#0D1B2A] mb-3 flex items-center gap-2">
+        <div className="min-w-0 rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] shadow-[var(--a-shadow-card)] p-5">
+          <h3 className="mb-3 flex items-center gap-2 font-dm text-[14px] font-semibold text-[var(--a-ink)]">
             <RefreshCw size={14} className="text-[#2251A3]" /> Auto-Refresh Status
           </h3>
           {refreshStatus ? (
             <div className="space-y-2 font-dm text-sm">
               <div className="flex justify-between">
-                <span className="text-[#7A8FA6]">Status</span>
+                <span className="text-[var(--a-ink-3)]">Status</span>
                 <span className={`font-medium ${refreshStatus.needsRefresh ? "text-[#F47C20]" : "text-green-600"}`}>
                   {refreshStatus.needsRefresh ? "Needs refresh" : "Up to date"}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#7A8FA6]">Last refresh</span>
+                <span className="text-[var(--a-ink-3)]">Last refresh</span>
                 <span className="text-[#3A4A5C]">
                   {refreshStatus.lastRefresh
                     ? new Date(refreshStatus.lastRefresh).toLocaleString()
@@ -317,7 +304,7 @@ export default function BlogClient(initial: {
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#7A8FA6]">Next auto-refresh</span>
+                <span className="text-[var(--a-ink-3)]">Next auto-refresh</span>
                 <span className="text-[#3A4A5C]">
                   {refreshStatus.nextRefresh
                     ? new Date(refreshStatus.nextRefresh).toLocaleString()
@@ -327,13 +314,13 @@ export default function BlogClient(initial: {
             </div>
           ) : (
             <div className="h-16 flex items-center justify-center">
-              <Loader2 size={18} className="animate-spin text-[#7A8FA6]" />
+              <Loader2 size={18} className="animate-spin text-[var(--a-ink-3)]" />
             </div>
           )}
         </div>
 
-        <div className="bg-white border border-[#D2DCE8] rounded-2xl p-5">
-          <h3 className="font-syne font-bold text-sm text-[#0D1B2A] mb-3 flex items-center gap-2">
+        <div className="min-w-0 rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] shadow-[var(--a-shadow-card)] p-5">
+          <h3 className="mb-3 flex items-center gap-2 font-dm text-[14px] font-semibold text-[var(--a-ink)]">
             <Zap size={14} className="text-red-500" /> Breaking News Banner
           </h3>
           {breaking ? (
@@ -341,7 +328,7 @@ export default function BlogClient(initial: {
               <p className="font-dm text-sm text-[#0D1B2A] font-medium line-clamp-2 mb-1">
                 {breaking.headline}
               </p>
-              <p className="font-dm text-xs text-[#7A8FA6] mb-3">
+              <p className="font-dm text-xs text-[var(--a-ink-3)] mb-3">
                 {breaking.source} · {new Date(breaking.createdAt).toLocaleString()}
               </p>
               <button
@@ -353,7 +340,7 @@ export default function BlogClient(initial: {
             </div>
           ) : (
             <div className="text-center py-4">
-              <p className="font-dm text-sm text-[#7A8FA6] mb-3">No active breaking news</p>
+              <p className="font-dm text-sm text-[var(--a-ink-3)] mb-3">No active breaking news</p>
               <Link
                 href="/admin_pro/blog/news-agent"
                 className="text-xs text-[#2251A3] font-dm hover:underline"
@@ -366,37 +353,42 @@ export default function BlogClient(initial: {
       </div>
 
       {/* Posts table */}
-      <div className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden">
+      <div className="min-w-0 rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] shadow-[var(--a-shadow-card)] overflow-hidden">
         <div className="px-5 py-4 border-b border-[#D2DCE8] flex items-center justify-between">
-          <h3 className="font-syne font-bold text-base text-[#0D1B2A]">All Posts</h3>
-          <span className="text-xs font-dm text-[#7A8FA6]">{posts.length} posts</span>
+          <h3 className="font-dm text-[14px] font-semibold text-[var(--a-ink)]">All posts</h3>
+          <span className="text-xs font-dm text-[var(--a-ink-3)]">{posts.length} posts</span>
         </div>
         <div className="overflow-x-auto">
           {loading ? (
             <div className="flex justify-center py-12">
-              <Loader2 size={20} className="animate-spin text-[#7A8FA6]" />
+              <Loader2 size={20} className="animate-spin text-[var(--a-ink-3)]" />
             </div>
           ) : posts.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="font-dm text-sm text-[#7A8FA6]">
-                No posts yet. Click &quot;Refresh Now&quot; to fetch from AI news sources.
-              </p>
-            </div>
+            <EmptyState
+              icon={FileText}
+              title="No posts yet"
+              body="Fetch the latest stories from AI news sources, or draft one with the News Agent."
+              action={
+                <Button onClick={triggerRefresh} variant="primary" icon={RefreshCw}>
+                  Refresh now
+                </Button>
+              }
+            />
           ) : (
             <table className="w-full">
               <thead>
-                <tr className="bg-[#F4F7FB] border-b border-[#D2DCE8]">
-                  <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Post</th>
-                  <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Category</th>
-                  <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Views</th>
-                  <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Status</th>
-                  <th className="text-left px-5 py-3 font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wide">Date</th>
+                <tr className="border-b border-[var(--a-border)] bg-[var(--a-surface-2)]">
+                  <th className="text-left px-5 py-3 font-dm text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--a-ink-3)]">Post</th>
+                  <th className="text-left px-5 py-3 font-dm text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--a-ink-3)]">Category</th>
+                  <th className="text-left px-5 py-3 font-dm text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--a-ink-3)]">Views</th>
+                  <th className="text-left px-5 py-3 font-dm text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--a-ink-3)]">Status</th>
+                  <th className="text-left px-5 py-3 font-dm text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--a-ink-3)]">Date</th>
                   <th className="px-5 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#F4F7FB]">
+              <tbody className="divide-y divide-[var(--a-border)]">
                 {posts.map((p) => (
-                  <tr key={p.id} className="hover:bg-[#F4F7FB]/50 transition-colors">
+                  <tr key={p.id} className="transition-colors hover:bg-[#f8fafd]">
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">{p.coverEmoji}</span>
@@ -422,13 +414,13 @@ export default function BlogClient(initial: {
                         {CATEGORY_LABELS[p.category] ?? p.category}
                       </span>
                     </td>
-                    <td className="px-5 py-3 font-dm text-sm text-[#7A8FA6]">{p.viewCount}</td>
+                    <td className="px-5 py-3 font-dm text-sm text-[var(--a-ink-3)]">{p.viewCount}</td>
                     <td className="px-5 py-3">
                       <span className={`text-xs font-medium font-dm px-2 py-0.5 rounded-full ${p.published ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                         {p.published ? "Published" : "Draft"}
                       </span>
                     </td>
-                    <td className="px-5 py-3 font-dm text-xs text-[#7A8FA6]">
+                    <td className="px-5 py-3 font-dm text-xs text-[var(--a-ink-3)]">
                       {new Date(p.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                     </td>
                     <td className="px-5 py-3">
@@ -436,7 +428,7 @@ export default function BlogClient(initial: {
                         <Link
                           href={`/ai-times/${p.slug}`}
                           target="_blank"
-                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#EBF0FA] text-[#7A8FA6] hover:text-[#2251A3] transition-colors"
+                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#EBF0FA] text-[var(--a-ink-3)] hover:text-[#2251A3] transition-colors"
                           title="View post"
                         >
                           <Eye size={14} />
@@ -446,7 +438,7 @@ export default function BlogClient(initial: {
                           className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
                             !p.coverImage || p.coverImage.startsWith("/")
                               ? "text-red-400 hover:bg-red-50 hover:text-red-600"
-                              : "text-[#7A8FA6] hover:bg-[#F4F7FB] hover:text-[#2251A3]"
+                              : "text-[var(--a-ink-3)] hover:bg-[#F4F7FB] hover:text-[#2251A3]"
                           }`}
                           title={
                             !p.coverImage || p.coverImage.startsWith("/")
@@ -464,7 +456,7 @@ export default function BlogClient(initial: {
                               className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
                                 p.featured
                                   ? "bg-[#FEF0E3] text-[#F47C20] hover:bg-orange-100"
-                                  : "hover:bg-[#FEF0E3] text-[#7A8FA6] hover:text-[#F47C20]"
+                                  : "hover:bg-[#FEF0E3] text-[var(--a-ink-3)] hover:text-[#F47C20]"
                               }`}
                               title={p.featured ? "Unfeature" : featuredCount >= 2 ? "Feature this post (replaces oldest featured)" : "Feature this post"}
                             >
@@ -474,14 +466,14 @@ export default function BlogClient(initial: {
                         })()}
                         <button
                           onClick={() => togglePublish(p.id, p.published)}
-                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#F4F7FB] text-[#7A8FA6] transition-colors"
+                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#F4F7FB] text-[var(--a-ink-3)] transition-colors"
                           title={p.published ? "Unpublish" : "Publish"}
                         >
                           {p.published ? <EyeOff size={14} /> : <Eye size={14} />}
                         </button>
                         <button
                           onClick={() => deletePost(p.id)}
-                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-[#7A8FA6] hover:text-red-500 transition-colors"
+                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-[var(--a-ink-3)] hover:text-red-500 transition-colors"
                           title="Delete post"
                         >
                           <Trash2 size={14} />

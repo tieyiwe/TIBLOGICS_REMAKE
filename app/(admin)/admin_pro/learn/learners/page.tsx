@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { Download, Users } from "lucide-react";
+import { Button, EmptyState, PageHeader, buttonClasses } from "@/components/admin/ui";
+import { LEARN_TABS } from "../tabs";
 import { redirect } from "next/navigation";
 import { requireAdminPage } from "../../_lib/admin-page-auth";
 import {
@@ -13,12 +16,12 @@ export const dynamic = "force-dynamic";
 
 const LANG: Record<string, string> = { en: "EN", fr: "FR", sw: "SW" };
 const STATUS_STYLE: Record<string, string> = {
-  active: "bg-green-50 text-green-700",
-  trial: "bg-blue-50 text-blue-700",
-  lifetime: "bg-emerald-50 text-emerald-700",
-  "past due": "bg-amber-50 text-amber-800",
-  cancelled: "bg-red-50 text-red-700",
-  none: "bg-[var(--s2)] text-[var(--ink3)]",
+  active: "bg-[var(--a-success-bg)] text-[var(--a-success)]",
+  trial: "bg-[var(--a-info-bg)] text-[var(--a-info)]",
+  lifetime: "bg-[var(--a-success-bg)] text-[var(--a-success)]",
+  "past due": "bg-[var(--a-warn-bg)] text-[var(--a-warn)]",
+  cancelled: "bg-[var(--a-danger-bg)] text-[var(--a-danger)]",
+  none: "bg-[var(--a-surface-2)] text-[var(--a-ink-3)]",
 };
 
 const date = (d: Date) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
@@ -44,9 +47,9 @@ export default async function LearnersPage({
   const sortLink = (key: SortKey) =>
     filterQuery(f, { sort: key, dir: f.sort === key && f.dir === "desc" ? "asc" : "desc", page: 1 });
   const th = (key: SortKey | null, label: string, right = false) => (
-    <th className={`whitespace-nowrap pb-2 pr-3 ${right ? "text-right" : ""}`}>
+    <th scope="col" className={`whitespace-nowrap px-3 py-2.5 font-semibold ${right ? "text-right" : ""}`}>
       {key ? (
-        <Link href={`/admin_pro/learn/learners${sortLink(key)}`} className="hover:text-[var(--ink)]">
+        <Link href={`/admin_pro/learn/learners${sortLink(key)}`} className="hover:text-[var(--a-ink)]" aria-sort={f.sort === key ? (f.dir === "desc" ? "descending" : "ascending") : undefined}>
           {label}
           {f.sort === key ? (f.dir === "desc" ? " ↓" : " ↑") : ""}
         </Link>
@@ -55,36 +58,33 @@ export default async function LearnersPage({
       )}
     </th>
   );
-  const input = "rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm text-[var(--ink)]";
+  const input =
+    "h-9 rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] bg-[var(--a-surface)] px-3 font-dm text-[13.5px] text-[var(--a-ink)] focus:border-[var(--a-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20";
   const exportHref = `/api/admin/learn/learners/export${filterQuery(f, { page: 1 })}`;
   const filtered = !!(f.q || f.plan || f.active || f.never || f.cert || f.track);
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <Link href="/admin_pro/learn" className="text-sm text-[var(--blue2)] hover:underline">
-            ← TIBLOGICS Learn
-          </Link>
-          <h1 className="mt-2 text-2xl font-black text-[var(--ink)]">Learners</h1>
-          <p className="mt-1 text-sm text-[var(--ink3)]">
-            Everyone who signed up for TIBLOGICS Learn: plan, progress, placement check and sign-ins.
-          </p>
-        </div>
-        <a
-          href={exportHref}
-          className="rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)]"
-        >
-          Download CSV ({total.toLocaleString("en")})
-        </a>
-      </header>
+      <PageHeader
+        title="Learners"
+        subtitle="Everyone who signed up for TIBLOGICS Learn: plan, progress, placement check and sign-ins."
+        tabs={LEARN_TABS}
+        activeTab="/admin_pro/learn/learners"
+        className="mb-0"
+        actions={
+          <a href={exportHref} className={buttonClasses("secondary")}>
+            <Download size={16} aria-hidden />
+            Download CSV ({total.toLocaleString("en")})
+          </a>
+        }
+      />
 
-      <form method="get" className="flex flex-wrap items-end gap-3 rounded-xl border border-[var(--border)] bg-white p-4">
-        <label className="flex min-w-[220px] flex-1 flex-col gap-1 text-xs font-semibold text-[var(--ink3)]">
+      <form method="get" aria-label="Filter learners" className="flex flex-wrap items-end gap-3 rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] p-4 shadow-[var(--a-shadow-card)]">
+        <label className="flex min-w-[220px] flex-1 flex-col gap-1 text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--a-ink-3)]">
           Search
           <input name="q" defaultValue={f.q} placeholder="Name or email" className={input} />
         </label>
-        <label className="flex flex-col gap-1 text-xs font-semibold text-[var(--ink3)]">
+        <label className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--a-ink-3)]">
           Plan
           <select name="plan" defaultValue={f.plan ?? ""} className={input}>
             <option value="">Any plan</option>
@@ -97,7 +97,7 @@ export default async function LearnersPage({
             <option value="none">None</option>
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-xs font-semibold text-[var(--ink3)]">
+        <label className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--a-ink-3)]">
           Activity
           <select name="active" defaultValue={f.active ? String(f.active) : ""} className={input}>
             <option value="">Any time</option>
@@ -105,7 +105,7 @@ export default async function LearnersPage({
             <option value="30">Active in last 30 days</option>
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-xs font-semibold text-[var(--ink3)]">
+        <label className="flex flex-col gap-1 text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--a-ink-3)]">
           Track
           <select name="track" defaultValue={f.track ?? ""} className={input}>
             <option value="">Any track</option>
@@ -122,7 +122,7 @@ export default async function LearnersPage({
         </label>
         {f.sort !== "created" && <input type="hidden" name="sort" value={f.sort} />}
         {f.dir !== "desc" && <input type="hidden" name="dir" value={f.dir} />}
-        <button className="rounded-lg bg-[var(--ink)] px-4 py-2 text-sm font-bold text-white hover:opacity-90">Apply</button>
+        <button type="submit" className={buttonClasses("primary")}>Apply</button>
         {filtered && (
           <Link href="/admin_pro/learn/learners" className="pb-2 text-sm text-[var(--blue2)] underline">
             Clear
@@ -130,9 +130,9 @@ export default async function LearnersPage({
         )}
       </form>
 
-      <section className="rounded-xl border border-[var(--border)] bg-white p-5">
+      <section className="min-w-0 rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] p-5 shadow-[var(--a-shadow-card)]">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 className="text-sm font-bold text-[var(--ink)]">
+          <h2 className="font-dm text-[14px] font-semibold text-[var(--a-ink)]">
             {total.toLocaleString("en")} learner{total === 1 ? "" : "s"}
             {filtered ? " match" : ""}
           </h2>
@@ -141,12 +141,18 @@ export default async function LearnersPage({
           </p>
         </div>
         {rows.length === 0 ? (
-          <p className="mt-3 text-sm text-[var(--ink3)]">No learners {filtered ? "match these filters" : "yet"}.</p>
+          <EmptyState
+            icon={Users}
+            title={filtered ? "No learners match these filters" : "No learners yet"}
+            body={filtered ? "Try widening the plan, activity or track filter." : "Sign-ups to TIBLOGICS Learn appear here."}
+            action={filtered ? <Button href="/admin_pro/learn/learners" variant="secondary">Clear filters</Button> : undefined}
+            compact
+          />
         ) : (
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[1280px] text-sm">
+            <table className="w-full min-w-[1280px] font-dm text-[13.5px]">
               <thead>
-                <tr className="border-b border-[var(--border)] text-left text-xs uppercase tracking-wide text-[var(--ink3)]">
+                <tr className="border-b border-[var(--a-border)] bg-[var(--a-surface-2)] text-left text-[11px] uppercase tracking-[.08em] text-[var(--a-ink-3)]">
                   {th("name", "Learner")}
                   {th("created", "Signed up")}
                   {th(null, "Lang")}
@@ -177,8 +183,8 @@ export default async function LearnersPage({
 
 function Row({ r }: { r: LearnerRow }) {
   return (
-    <tr className="align-top">
-      <td className="min-w-[220px] max-w-[280px] py-2.5 pr-3">
+    <tr className="align-top transition-colors hover:bg-[#f8fafd]">
+      <td className="min-w-[220px] max-w-[280px] px-3 py-2.5">
         <Link href={`/admin_pro/learn/learners/${r.id}`} className="font-semibold text-[var(--ink)] hover:text-[var(--blue2)] hover:underline">
           {r.name}
         </Link>
@@ -187,25 +193,25 @@ function Row({ r }: { r: LearnerRow }) {
           {!r.emailVerified && <span title="Email not verified"> · unverified</span>}
         </p>
       </td>
-      <td className="whitespace-nowrap py-2.5 pr-3 text-[var(--ink2)]">{date(r.createdAt)}</td>
-      <td className="py-2.5 pr-3 text-[var(--ink2)]">{LANG[r.locale] ?? r.locale}</td>
-      <td className="py-2.5 pr-3 text-[var(--ink2)]">
+      <td className="whitespace-nowrap px-3 py-2.5 text-[var(--ink2)]">{date(r.createdAt)}</td>
+      <td className="px-3 py-2.5 text-[var(--ink2)]">{LANG[r.locale] ?? r.locale}</td>
+      <td className="px-3 py-2.5 text-[var(--ink2)]">
         {r.plan.labels.map((l) => (
           <p key={l} className="whitespace-nowrap">{l}</p>
         ))}
       </td>
-      <td className="py-2.5 pr-3">
+      <td className="px-3 py-2.5">
         <span className={`whitespace-nowrap rounded px-2 py-0.5 text-xs font-bold capitalize ${STATUS_STYLE[r.plan.status]}`}>
-          {r.plan.status === "none" ? "—" : r.plan.status}
+          {r.plan.status === "none" ? "None" : r.plan.status}
         </span>
       </td>
-      <td className="py-2.5 pr-3 text-[var(--ink2)]">
+      <td className="px-3 py-2.5 text-[var(--ink2)]">
         {r.tracksStarted.length ? r.tracksStarted.join(", ") : <span className="text-[var(--ink3)]">None</span>}
       </td>
-      <td className="py-2.5 pr-3 text-right font-semibold text-[var(--ink)]">{r.tracksStarted.length ? `${r.progress}%` : "—"}</td>
-      <td className="py-2.5 pr-3 text-xs text-[var(--ink2)]">
+      <td className="px-3 py-2.5 text-right font-semibold text-[var(--ink)]">{r.tracksStarted.length ? `${r.progress}%` : "None"}</td>
+      <td className="px-3 py-2.5 text-xs text-[var(--ink2)]">
         {r.placement.length === 0 ? (
-          <span className="text-[var(--ink3)]">—</span>
+          <span className="text-[var(--ink3)]">None</span>
         ) : (
           r.placement.map((p) => (
             <p key={p.track}>
@@ -215,10 +221,10 @@ function Row({ r }: { r: LearnerRow }) {
           ))
         )}
       </td>
-      <td className="whitespace-nowrap py-2.5 pr-3 text-[var(--ink2)]" title={r.lastLoginAt?.toISOString()}>{ago(r.lastLoginAt)}</td>
-      <td className="py-2.5 pr-3 text-right text-[var(--ink2)]">{r.logins30}</td>
-      <td className="py-2.5 pr-3 text-right text-[var(--ink2)]">{r.xp.toLocaleString("en")}</td>
-      <td className="py-2.5 pr-3 text-right text-[var(--ink2)]">{r.certificates}</td>
+      <td className="whitespace-nowrap px-3 py-2.5 text-[var(--ink2)]" title={r.lastLoginAt?.toISOString()}>{ago(r.lastLoginAt)}</td>
+      <td className="px-3 py-2.5 text-right text-[var(--ink2)]">{r.logins30}</td>
+      <td className="px-3 py-2.5 text-right text-[var(--ink2)]">{r.xp.toLocaleString("en")}</td>
+      <td className="px-3 py-2.5 text-right text-[var(--ink2)]">{r.certificates}</td>
     </tr>
   );
 }
@@ -234,11 +240,11 @@ function Pager({ f, page, pages }: { f: LearnerFilters; page: number; pages: num
     );
   return (
     <div className="mt-4 flex items-center justify-between gap-3">
-      {link(page - 1, "← Previous", page <= 1)}
+      {link(page - 1, "Previous", page <= 1)}
       <span className="text-xs text-[var(--ink3)]">
         Page {page} of {pages}
       </span>
-      {link(page + 1, "Next →", page >= pages)}
+      {link(page + 1, "Next", page >= pages)}
     </div>
   );
 }
