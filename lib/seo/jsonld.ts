@@ -26,8 +26,8 @@ export function serializeJsonLd(data: unknown): string {
     .replace(/</g, "\\u003c")
     .replace(/>/g, "\\u003e")
     .replace(/&/g, "\\u0026")
-    .replace(/ /g, "\\u2028")
-    .replace(/ /g, "\\u2029");
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
 }
 
 /** Wrap one node, or several as an @graph, in a document with @context. */
@@ -239,7 +239,7 @@ export function courseNode(c: CourseInput): JsonLdNode {
     name: c.name,
     description: c.description,
     courseCode: c.slug,
-    provider: { "@type": "EducationalOrganization", "@id": ARFA_ID, name: "ARFA AI Academy", sameAs: SITE_URL },
+    provider: { "@type": "EducationalOrganization", "@id": ARFA_ID, name: "ARFA AI Academy", url: `${SITE_URL}/learning-box` },
     publisher: ref(ORG_ID),
     inLanguage: ["en", "fr"],
     availableLanguage: ["English", "French"],
@@ -324,6 +324,8 @@ export function softwareAppNode(o: {
   name: string;
   description: string;
   path: string;
+  /** Distinct fragment when two apps share a page ("compliance-guard"). */
+  fragment?: string;
   category?: string;
   priceCents?: number | null;
   recurring?: "month" | null;
@@ -345,7 +347,7 @@ export function softwareAppNode(o: {
       : undefined;
   return {
     "@type": "SoftwareApplication",
-    "@id": `${url}#app`,
+    "@id": `${url}#${o.fragment ?? "app"}`,
     name: o.name,
     description: o.description,
     url,

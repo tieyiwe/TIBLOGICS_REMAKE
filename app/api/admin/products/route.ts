@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/require-admin";
 import { auditFromRequest } from "@/lib/admin/audit";
 import { revalidateShop } from "@/lib/shop/revalidate";
 import { parseDeliveryFields } from "@/lib/shop/delivery-fields";
+import { INDEXNOW_SECTIONS, indexNowSoon } from "@/lib/seo/indexnow";
 
 function slugify(name: string) {
   return name
@@ -86,6 +87,7 @@ export async function POST(req: NextRequest) {
     });
 
     revalidateShop();
+    if (product.published) indexNowSoon(INDEXNOW_SECTIONS.product(product.slug));
     if (product.published) await auditFromRequest("product.publish", { type: "product", id: product.id, label: product.name }, { created: true });
     return NextResponse.json({ product });
   } catch (err) {

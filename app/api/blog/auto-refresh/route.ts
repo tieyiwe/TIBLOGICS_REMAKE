@@ -21,6 +21,7 @@ import { requireAdmin, secretEquals } from "@/lib/require-admin";
 import { CURATED_ARTICLES, renderSources } from "@/lib/blog/content/curated";
 import { RETRACTIONS } from "@/lib/blog/content/retractions";
 import { applyCorrections } from "@/lib/blog/content/apply-corrections";
+import { INDEXNOW_SECTIONS, indexNowSoon } from "@/lib/seo/indexnow";
 
 
 
@@ -801,6 +802,7 @@ async function publishCurated(): Promise<string[]> {
           sourceTitle: a.sources[0]?.label,
         },
       });
+      indexNowSoon(INDEXNOW_SECTIONS.article(a.slug));
       published.push(a.slug);
       for (const lang of ["fr", "sw"] as const) {
         translatePostContent(a.slug, { title: a.title, excerpt: a.excerpt, content }, lang).catch(() => {});
@@ -1084,6 +1086,7 @@ export async function GET(req: NextRequest) {
             featured: sp.featured, published: true, aiGenerated: false,
           },
         });
+        indexNowSoon(INDEXNOW_SECTIONS.article(slug));
         postsAdded++;
         existingTitles.add(sp.title.toLowerCase().trim());
         // Fire translations in background — don't block the refresh response
@@ -1142,6 +1145,7 @@ export async function GET(req: NextRequest) {
             featured: idx === 0, published: true, aiGenerated: false,
           },
         });
+        indexNowSoon(INDEXNOW_SECTIONS.article(slug));
         postsAdded++;
         existingTitles.add(sp.title.toLowerCase().trim());
         const seedPost = { title: sp.title, excerpt: sp.excerpt, content: sp.content };
@@ -1286,6 +1290,7 @@ export async function GET(req: NextRequest) {
             sourceTitle: item.category ? undefined : item.sourceLabel,
           },
         });
+        indexNowSoon(INDEXNOW_SECTIONS.article(slug));
         postsAdded++;
         const newPost = { title: headline, excerpt: generated.excerpt, content: generated.content + tipsHtml };
         for (const lang of ["fr", "sw"] as const) {

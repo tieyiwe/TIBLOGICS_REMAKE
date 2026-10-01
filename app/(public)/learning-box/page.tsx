@@ -13,21 +13,24 @@ import TeamsOffer from "@/components/learn/team/TeamsOffer";
 import { getTeamPricing } from "@/lib/learn/team/settings";
 import { pageSales, withTrackSales } from "@/lib/promotions/display";
 import SalePrice from "@/components/promo/SalePrice";
+import { pageMetadata } from "@/lib/seo/meta";
+import JsonLd from "@/components/seo/JsonLd";
+import { FaqBlock, KeyTakeaways } from "@/components/seo/AnswerBlocks";
+import { academyFaq, academySummary, academyTakeaways } from "@/lib/seo/academy";
+import { arfaNode, breadcrumbNode, itemListNode } from "@/lib/seo/jsonld";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getT();
-  const title = t("learn.box.metaTitle");
-  const description = t("learn.box.metaDescription");
-  return {
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  return pageMetadata({
+    path: "/learning-box",
+    locale,
     // Absolute: the brand lockup already names TIBLOGICS.
-    title: { absolute: title },
-    description,
-    // Page-level openGraph/twitter replace the root ones, so keep the image.
-    openGraph: { type: "website", url: "/learning-box", siteName: "TIBLOGICS", title, description, images: ["/opengraph-image?v=3"] },
-    twitter: { card: "summary_large_image", title, description, images: ["/opengraph-image?v=3"] },
-  };
+    title: t("learn.box.metaTitle"),
+    absoluteTitle: true,
+    description: t("learn.box.metaDescription"),
+  });
 }
 
 export default async function LearningBoxPage() {
@@ -43,6 +46,10 @@ export default async function LearningBoxPage() {
   // The lowest one-time price among the tracks on sale.
   const onSale = tracks.filter((x) => x.status === "live").map((x) => x.salePriceCents ?? x.priceCents);
   const fromCents = onSale.length ? Math.min(...onSale) : TRACK_BASE_PRICE_CENTS;
+  // Takeaways and FAQ: the facts people ask AI assistants about ARFA, from
+  // the same catalog and prices this page shows (lib/seo/academy.ts).
+  const money = (c: number) => fmtPrice(c, locale);
+  const summary = await academySummary(tracks, sales.monthly?.saleCents ?? monthly.amount);
 
   const approach = [
     { l: t("learn.certLevel.1.name"), t: t("learn.box.approach.1.title"), d: t("learn.box.approach.1.body") },
@@ -117,6 +124,10 @@ export default async function LearningBoxPage() {
           </div>
         </div>
       </section>
+
+      <div className="mx-auto max-w-6xl px-4 pt-10">
+        <KeyTakeaways title={t("seo.takeaways")} items={academyTakeaways(t, summary, money)} />
+      </div>
 
       {pending && (
         <p role="status" className="mx-auto mt-6 max-w-6xl px-4 text-xs text-[var(--ink3)]">
@@ -194,6 +205,25 @@ export default async function LearningBoxPage() {
       <div className="mx-auto max-w-6xl px-4 py-14">
         <TeamsOffer mode="link" seatPriceCents={teamPricing.seatPriceCents} minSeats={teamPricing.minSeats} />
       </div>
+
+      {/* FAQ: visible answers, repeated as FAQPage structured data */}
+      <div className="mx-auto max-w-4xl px-4 pb-16">
+        <FaqBlock title={t("seo.faq")} path="/learning-box" items={academyFaq(t, summary, money)} />
+      </div>
+      <JsonLd
+        data={[
+          arfaNode(),
+          itemListNode({
+            name: t("learn.box.metaTitle"),
+            path: "/learning-box",
+            items: tracks.filter((x) => x.status === "live").map((x) => ({ url: `/learning-box/${x.slug}`, name: x.title })),
+          }),
+          breadcrumbNode([
+            { name: t("seo.home"), path: "/" },
+            { name: t("seo.academy"), path: "/learning-box" },
+          ]),
+        ]}
+      />
     </div>
   );
 }

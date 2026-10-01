@@ -4,14 +4,19 @@ import { Radar, Swords, BellRing, LineChart, Check } from "lucide-react";
 import { monitorPricing, formatMonitorPrice, MAX_COMPETITORS, SCAN_INTERVAL_DAYS } from "@/lib/monitor/config";
 import { getLocale, getT } from "@/lib/i18n/server";
 import MonitorSignup from "./MonitorSignup";
+import { pageMetadata } from "@/lib/seo/meta";
+import JsonLd from "@/components/seo/JsonLd";
+import { breadcrumbNode, softwareAppNode } from "@/lib/seo/jsonld";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getT();
-  return {
-    title: t("tools.monitor.meta.title"),
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  return pageMetadata({
+    path: "/tools/readiness-monitor",
+    locale,
+    title: t("seo.meta.monitor.title"),
+    socialTitle: t("tools.monitor.meta.title"),
     description: t("tools.monitor.meta.description"),
-    alternates: { canonical: "https://tiblogics.com/tools/readiness-monitor" },
-  };
+  });
 }
 
 // Price comes from server configuration at request time, so setting it in
@@ -96,6 +101,22 @@ export default async function ReadinessMonitorPage({
             maxCompetitors={MAX_COMPETITORS}
           />
         </div>
+        <JsonLd
+          data={[
+            softwareAppNode({
+              name: "Readiness Monitor",
+              description: t("tools.monitor.meta.description"),
+              path: "/tools/readiness-monitor",
+              priceCents: pricing?.amount ?? null,
+              recurring: "month",
+            }),
+            breadcrumbNode([
+              { name: t("seo.home"), path: "/" },
+              { name: t("seo.tools"), path: "/tools" },
+              { name: "Readiness Monitor", path: "/tools/readiness-monitor" },
+            ]),
+          ]}
+        />
       </div>
     </div>
   );

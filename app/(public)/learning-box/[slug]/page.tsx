@@ -14,6 +14,11 @@ import { getLocale, getT } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTrack, trackText, type TrackText } from "@/lib/i18n/sources/learn";
 import type { Locale } from "@/lib/i18n/config";
 import { pageSales } from "@/lib/promotions/display";
+import { fitTitle, pageMetadata } from "@/lib/seo/meta";
+import JsonLd from "@/components/seo/JsonLd";
+import { KeyTakeaways } from "@/components/seo/AnswerBlocks";
+import { breadcrumbNode, courseNode, faqNode } from "@/lib/seo/jsonld";
+import { levelText } from "@/lib/seo/academy";
 
 export const dynamic = "force-dynamic";
 
@@ -32,14 +37,30 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const [track, t, locale] = await Promise.all([getTrackBySlug(slug), getT(), getLocale()]);
-  if (!track) return { title: t("learn.track.notFoundTitle") };
+  // A real 404 (not a 200 with a "not found" title) for crawlers that get
+  // blocking metadata; see htmlLimitedBots in next.config.js.
+  if (!track) notFound();
   const { text } = await textFor(slug, locale);
   const title = text?.title ?? track.title;
-  const tagline = text?.tagline ?? track.tagline;
-  return {
-    title: t("learn.track.metaTitle", { title }),
-    description: tagline ?? (text?.description ?? track.description).slice(0, 155),
-  };
+  const time = trackTime(track);
+  const hours = totalHours(time.lessonMinutes, time.handsOnMinutes, track.estimatedHours);
+  return pageMetadata({
+    path: `/learning-box/${track.slug}`,
+    locale,
+    // Long track names would push "· ARFA AI Academy | TIBLOGICS" past what
+    // search results show; fitTitle drops the suffixes until it fits.
+    title: fitTitle([t("learn.track.metaTitle", { title }), `${title} · ARFA`, title]),
+    absoluteTitle: true,
+    description: t("seo.meta.track.description", {
+      tagline: text?.tagline ?? track.tagline ?? "",
+      level: levelText(t, track.level, track.levelEnd),
+      hours: hours.toLocaleString(locale),
+      price: fmtPrice(trackPriceCents(track.level, track.priceCents), locale),
+      monthly: fmtPrice(PLANS.monthly.amount, locale),
+    }),
+    socialDescription: text?.tagline ?? track.tagline ?? undefined,
+    image: track.heroImage ? { url: track.heroImage } : undefined,
+  });
 }
 
 export default async function TrackLandingPage({
@@ -93,6 +114,10 @@ export default async function TrackLandingPage({
     {
       q: t("learn.track.faq.worth.q"),
       a: t("learn.track.faq.worth.a"),
+    },
+    {
+      q: t("seo.track.faq.lang.q"),
+      a: t("seo.track.faq.lang.a"),
     },
     {
       q: t("learn.track.faq.cost.q"),
@@ -213,6 +238,22 @@ export default async function TrackLandingPage({
           </Reveal>
         )}
 
+        {/* Key takeaways: the short answers search and AI engines quote */}
+        <div className="mt-8">
+          <KeyTakeaways
+            title={t("seo.takeaways")}
+            items={[
+              t("seo.track.tldr.what", { title: text.title, level: levelText(t, track.level, track.levelEnd) }),
+              t("seo.track.tldr.size", { hours: hours.toLocaleString(locale), modules: track.modules.length, lessons: lessonCount }),
+              ...(comingSoon
+                ? []
+                : [t("seo.track.tldr.price", { price: fmtPrice(trackSale?.saleCents ?? priceCents, locale), monthly: fmtPrice(PLANS.monthly.amount, locale) })]),
+              t("seo.track.tldr.cert", { cert: track.certificateName }),
+              t("seo.track.tldr.lang"),
+            ]}
+          />
+        </div>
+
         {/* Curriculum */}
         <Reveal as="section" className="mt-8">
           <h2 className="text-xl font-bold text-[var(--ink)]">{t("learn.catalog.curriculum")}</h2>
@@ -299,6 +340,31 @@ export default async function TrackLandingPage({
         </Reveal>
       </div>
 
+      <JsonLd
+        data={[
+          courseNode({
+            slug: track.slug,
+            name: text.title,
+            description: text.description || text.tagline || track.description,
+            level: track.level,
+            levelEnd: track.levelEnd,
+            estimatedHours: hours,
+            priceCents: trackSale?.saleCents ?? priceCents,
+            certificateName: track.certificateName,
+            outcomes,
+            audience: text.audience,
+            image: track.heroImage,
+            available: !comingSoon,
+          }),
+          // The questions shown in the FAQ section above, word for word.
+          faqNode(faqs.map((f) => ({ q: f.q, a: f.a })), `/learning-box/${track.slug}`),
+          breadcrumbNode([
+            { name: t("seo.home"), path: "/" },
+            { name: t("seo.academy"), path: "/learning-box" },
+            { name: text.title, path: `/learning-box/${track.slug}` },
+          ]),
+        ]}
+      />
       <StickyEnrollBar
         trackTitle={text.title}
         accentColor={track.accentColor}

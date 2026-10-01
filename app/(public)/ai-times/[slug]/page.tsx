@@ -6,7 +6,12 @@ import path from "path";
 import BlogPostClient from "./BlogPostClient";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { cachedPostSummaries, localizedPost, postMetaFor } from "@/lib/i18n/sources/blog";
-import { isLocale } from "@/lib/i18n/config";
+import { isLocale, type Locale } from "@/lib/i18n/config";
+import { fitTitle, pageMetadata, plain } from "@/lib/seo/meta";
+import JsonLd from "@/components/seo/JsonLd";
+import { breadcrumbNode, type JsonLdNode } from "@/lib/seo/jsonld";
+import { LOGO_URL, ORG_ID, SITE_NAME, WEBSITE_ID } from "@/lib/seo/site";
+import { articleAlternates, articleLanguages, articleUrl, authorNode } from "@/lib/seo/articles";
 
 export const revalidate = 3600;
 
@@ -25,10 +30,9 @@ export async function generateStaticParams() {
   }
 }
 
-const SITE_URL = (process.env.NEXTAUTH_URL || "https://tiblogics.com").replace(/\/$/, "");
+// Canonical origin, whatever host served the request.
+const SITE_URL = "https://tiblogics.com";
 const FALLBACK_IMAGE = `${SITE_URL}/opengraph-image?v=3`;
-
-const LOCALE_MAP: Record<string, string> = { en: "en_US", fr: "fr_FR", sw: "sw_KE" };
 
 const CATEGORY_OG_FALLBACK: Record<string, string> = {
   "breaking":     "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&h=630&q=80",
@@ -72,63 +76,62 @@ function toOgImage(coverImage: string | null, category?: string | null): string 
   }
 }
 
-// No searchParams here, deliberately: the language comes from the visitor's
-// setting (cookie or browser), not a query string. The canonical URL is the
-// same for every language.
+// Each language version has its own URL (?lang=fr, ?lang=sw: the article's
+// language buttons), so each is its own canonical, and they point at each
+// other with hreflang. Only languages whose translation is ready are listed;
+// without ?lang= the page is the English article's URL.
 export async function generateMetadata(
-  { params }: { params: Promise<{ slug: string }> }
+  { params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ lang?: string }> }
 ): Promise<Metadata> {
   const t = await getT();
-  try {
-    const { slug } = await params;
-    const locale = await getLocale();
-
-    const { prisma } = await import("@/lib/prisma");
-    // findFirst with published, not findUnique: an unpublished (e.g. retracted)
-    // article must not keep its title and summary in search metadata.
-    const post = await prisma.blogPost.findFirst({
+  const { slug } = await params;
+  const { lang } = await searchParams;
+  const { prisma } = await import("@/lib/prisma");
+  // findFirst with published, not findUnique: an unpublished (e.g. retracted)
+  // article must not keep its title and summary in search metadata.
+  // undefined = the database failed (not the same as "no such article").
+  const post = await prisma.blogPost
+    .findFirst({
       where: { slug, published: true },
-      select: { slug: true, title: true, excerpt: true, content: true, coverImage: true, tags: true, author: true, category: true, createdAt: true },
-    });
+      select: { slug: true, title: true, excerpt: true, content: true, coverImage: true, tags: true, author: true, category: true, createdAt: true, updatedAt: true },
+    })
+    .catch(() => undefined);
+  // A real 404 for crawlers that get blocking metadata (next.config.js).
+  if (post === null) notFound();
+  if (!post) return { title: t("pages.aiTimes.meta.title") };
 
-    if (!post) return { title: t("pages.article.metaNotFound") };
+  try {
+    const siteLocale = await getLocale();
+    const langs = (await articleLanguages([slug])).get(slug) ?? ["en"];
+    const asked = isLocale(lang) && lang !== "en" && langs.includes(lang) ? lang : null;
+    const locale: Locale = asked ?? siteLocale;
 
     // Translated title and summary when the cache already has them; never
     // waits on the model, so crawlers get an answer straight away.
     const meta = await postMetaFor(post, locale);
-    const title = meta.title;
-    const description = meta.excerpt.slice(0, 200);
-
-    const canonicalUrl = `${SITE_URL}/ai-times/${slug}`;
     const ogImage = toOgImage(post.coverImage, post.category);
 
-    return {
-      title: t("pages.article.metaTitle", { title }),
-      description,
+    const base = pageMetadata({
+      path: articleUrl(slug, asked ?? "en"),
+      locale,
+      title: fitTitle([`${meta.title} | AI Times`, meta.title]),
+      absoluteTitle: true,
+      description: meta.excerpt,
+      type: "article",
+      image: { url: ogImage, width: 1200, height: 630, alt: meta.title },
       keywords: post.tags,
-      alternates: { canonical: canonicalUrl },
-      authors: [{ name: post.author }],
-      openGraph: {
-        title,
-        description,
-        type: "article",
-        url: canonicalUrl,
-        siteName: "AI Times | TIBLOGICS",
-        locale: LOCALE_MAP[locale] ?? "en_US",
+      article: {
         publishedTime: post.createdAt.toISOString(),
+        modifiedTime: post.updatedAt.toISOString(),
         authors: [post.author],
         section: post.category,
         tags: post.tags,
-        images: [{ url: ogImage, width: 1200, height: 630, alt: title, type: ogImage.toLowerCase().includes(".png") ? "image/png" : "image/jpeg" }],
       },
-      twitter: {
-        card: "summary_large_image",
-        title,
-        description,
-        images: [ogImage],
-        creator: "@tiblogics",
-        site: "@tiblogics",
-      },
+    });
+    return {
+      ...base,
+      alternates: { ...base.alternates, languages: langs.length > 1 ? articleAlternates(slug, langs) : undefined },
+      authors: [{ name: post.author }],
     };
   } catch {
     return { title: t("pages.aiTimes.meta.title") };
@@ -142,12 +145,14 @@ export default async function BlogPostPage(
   // The article's own language buttons set ?lang= and switch only the article;
   // the rest of the page stays in the visitor's site language.
   const { lang } = await searchParams;
-  const SITE_URL_LOCAL = (process.env.NEXTAUTH_URL || "https://tiblogics.com").replace(/\/$/, "");
 
   const siteLocale = await getLocale();
   const locale = isLocale(lang) ? lang : siteLocale;
 
-  let jsonLd: object | null = null;
+  let jsonLd: JsonLdNode[] | null = null;
+  // The article itself, server-rendered so crawlers and AI engines that do
+  // not run JavaScript read the full text (the client used to fetch it).
+  let initialPost: Parameters<typeof BlogPostClient>[0]["initialPost"] = null;
   let heroCoverUrl: string | null = null;
   // The article in the visitor's language, when it is not English.
   let translation: { title: string; excerpt: string; content: string } | null = null;
@@ -158,7 +163,11 @@ export default async function BlogPostPage(
     const { prisma } = await import("@/lib/prisma");
     const post = await prisma.blogPost.findFirst({
       where: { slug, published: true },
-      select: { slug: true, title: true, excerpt: true, content: true, coverImage: true, category: true, author: true, createdAt: true, updatedAt: true, tags: true },
+      select: {
+        id: true, slug: true, title: true, excerpt: true, content: true, coverImage: true, coverEmoji: true,
+        coverGradient: true, category: true, author: true, readingTime: true, aiGenerated: true, sourceUrl: true,
+        sourceTitle: true, viewCount: true, createdAt: true, updatedAt: true, tags: true,
+      },
     });
     postLookupRan = true;
     if (post && locale !== "en") {
@@ -180,26 +189,42 @@ export default async function BlogPostPage(
     if (post) {
       heroCoverUrl = post.coverImage ?? null;
       const ogImage = toOgImage(post.coverImage, post.category);
-      jsonLd = {
-        "@context": "https://schema.org",
-        "@type": "Article",
-        "headline": post.title,
-        "description": post.excerpt.slice(0, 200),
-        "image": ogImage,
-        "datePublished": post.createdAt.toISOString(),
-        "dateModified": post.updatedAt.toISOString(),
-        "url": `${SITE_URL_LOCAL}/ai-times/${slug}`,
-        "author": { "@type": "Person", "name": post.author, "url": SITE_URL_LOCAL },
-        "publisher": {
-          "@type": "Organization",
-          "name": "TIBLOGICS",
-          "url": SITE_URL_LOCAL,
-          "logo": { "@type": "ImageObject", "url": `${SITE_URL_LOCAL}/logo.png` },
-        },
-        "keywords": post.tags.join(", "),
-        "mainEntityOfPage": { "@type": "WebPage", "@id": `${SITE_URL_LOCAL}/ai-times/${slug}` },
-        "isPartOf": { "@type": "Blog", "name": "AI Times by TIBLOGICS", "url": `${SITE_URL_LOCAL}/ai-times` },
+      initialPost = {
+        ...post,
+        coverImage: post.coverImage ?? undefined,
+        sourceUrl: post.sourceUrl ?? undefined,
+        sourceTitle: post.sourceTitle ?? undefined,
+        createdAt: post.createdAt.toISOString(),
       };
+      const shown = translation && !pending ? translation : post;
+      const url = articleUrl(slug, locale === "en" || !lang ? "en" : locale);
+      const text = plain(shown.content);
+      jsonLd = [
+        {
+          "@type": "BlogPosting",
+          "@id": `${url}#article`,
+          headline: shown.title.slice(0, 110),
+          description: plain(shown.excerpt).slice(0, 300),
+          image: [ogImage],
+          datePublished: post.createdAt.toISOString(),
+          dateModified: post.updatedAt.toISOString(),
+          inLanguage: translation && !pending ? locale : "en",
+          url,
+          mainEntityOfPage: { "@type": "WebPage", "@id": url },
+          author: authorNode(post.author),
+          publisher: { "@type": "Organization", "@id": ORG_ID, name: SITE_NAME, logo: { "@type": "ImageObject", url: LOGO_URL } },
+          articleSection: post.category,
+          keywords: post.tags.join(", "),
+          wordCount: text ? text.split(/\s+/).length : undefined,
+          isPartOf: { "@type": "Blog", "@id": `${SITE_URL}/ai-times#blog`, name: "AI Times by TIBLOGICS", url: `${SITE_URL}/ai-times`, publisher: { "@id": ORG_ID }, isPartOf: { "@id": WEBSITE_ID } },
+          ...(post.sourceUrl ? { citation: post.sourceUrl } : {}),
+        },
+        breadcrumbNode([
+          { name: "Home", path: "/" },
+          { name: "AI Times", path: "/ai-times" },
+          { name: shown.title, path: `/ai-times/${slug}` },
+        ]),
+      ];
     }
   } catch { /* non-blocking */ }
 
@@ -222,14 +247,9 @@ export default async function BlogPostPage(
           fetchPriority="high"
         />
       )}
-      {jsonLd && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
-      )}
+      {jsonLd && <JsonLd data={jsonLd} />}
       <Suspense fallback={null}>
-        <BlogPostClient translation={pending ? null : translation} pending={pending} relatedTitles={relatedTitles} articleLocale={locale} />
+        <BlogPostClient initialPost={initialPost} translation={pending ? null : translation} pending={pending} relatedTitles={relatedTitles} articleLocale={locale} />
       </Suspense>
     </>
   );

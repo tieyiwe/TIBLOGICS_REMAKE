@@ -3,6 +3,7 @@ import Image from "next/image";
 import { getLocale, getT } from "@/lib/i18n/server";
 import doc from "@/lib/i18n/messages/pages/terms";
 import LegalDoc from "../_i18n/LegalDoc";
+import { pageMetadata } from "@/lib/seo/meta";
 
 // The text lives in lib/i18n/messages/pages/terms.ts. English is the legally
 // binding version; French and Swahili carry a note saying so.
@@ -10,11 +11,13 @@ const EFFECTIVE = new Date(Date.UTC(2026, 3, 20));
 const UPDATED = new Date(Date.UTC(2026, 3, 20));
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getT();
-  return {
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  return pageMetadata({
+    path: "/terms",
+    locale,
     title: t("pages.terms.meta.title"),
     description: t("pages.terms.meta.description"),
-  };
+  });
 }
 
 export default async function TermsPage() {

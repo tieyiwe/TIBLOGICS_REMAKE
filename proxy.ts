@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { isMissingContent } from "@/lib/seo/exists";
 
 // Single edge proxy for both gated areas. Uses getToken directly (rather than
 // withAuth) because the two areas need different sign-in destinations:
@@ -96,7 +97,16 @@ async function gate(req: NextRequest) {
 /** The Learning Box is offered in English and French only (see lib/i18n/config). */
 const LEARN_AREA = /^\/(learn|learning-box|api\/learn|p|certificates|badges)(\/|$)/;
 
+/** Content pages whose slug is checked before the page streams (lib/seo/exists.ts). */
+const CONTENT = /^\/(learning-box|store|ai-times|free|lp)\/[^/]+(\/[^/]+)?$/;
+
 export async function proxy(req: NextRequest) {
+  // A missing track, product, article, magnet or landing page gets a real
+  // 404 status. The public layout streams (loading.tsx), so the page itself
+  // could only send a 200 with a noindex tag.
+  if (CONTENT.test(req.nextUrl.pathname) && (await isMissingContent(req.nextUrl.pathname))) {
+    return NextResponse.rewrite(new URL("/__missing__", req.url), { status: 404 });
+  }
   const res = await gate(req);
   if (!LEARN_AREA.test(req.nextUrl.pathname) || res.headers.get("location")) return res;
   // Mark Learning Box requests so getLocale() can serve English instead of
@@ -107,5 +117,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin_pro/:path*", "/learn/:path*", "/learning-box/:path*", "/api/learn/:path*", "/p/:path*", "/certificates/:path*", "/badges/:path*"],
+  matcher: ["/admin_pro/:path*", "/learn/:path*", "/learning-box/:path*", "/api/learn/:path*", "/p/:path*", "/certificates/:path*", "/badges/:path*", "/store/:path*", "/ai-times/:path*", "/free/:path*", "/lp/:path*"],
 };

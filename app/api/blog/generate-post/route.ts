@@ -6,6 +6,7 @@ import { streamChat } from "@/lib/claude";
 import { requireAdmin } from "@/lib/require-admin";
 import { assignCoverImage } from "@/lib/blog-cover";
 import { escapeAiText, sanitizeAiHtml } from "@/lib/ai-html";
+import { INDEXNOW_SECTIONS, indexNowSoon } from "@/lib/seo/indexnow";
 
 const CATEGORY_MAP: Record<string, { emoji: string; gradient: string }> = {
   "breaking":    { emoji: "⚡", gradient: "from-red-600 to-orange-500" },
@@ -147,6 +148,8 @@ category must be one of: breaking, ai-business, tips, tools, case-studies, indus
       },
     });
     translateArticleSoon(post);
+    // Tell Bing/ChatGPT search and other IndexNow engines (no-op without INDEXNOW_KEY).
+    indexNowSoon(INDEXNOW_SECTIONS.article(post.slug));
 
     return NextResponse.json({ post }, { status: 201 });
   } catch (err) {

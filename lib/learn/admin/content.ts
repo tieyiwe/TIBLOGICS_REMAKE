@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { LAB_TYPES } from "@/lib/learn/labs/types";
 import { ensureLearnEditColumns } from "./columns";
 import { addTombstone } from "./tombstones";
+import { INDEXNOW_SECTIONS, indexNowSoon } from "@/lib/seo/indexnow";
 
 // Every change the Learning Box editor can make, validated.
 //
@@ -248,10 +249,11 @@ export async function runOp(op: ContentOp): Promise<Record<string, unknown>> {
         const lessons = await prisma.lesson.count({ where: { module: { trackId: op.id } } });
         if (lessons === 0) throw new ContentError("Add at least one lesson before making a track live");
       }
-      await prisma.learnTrack.update({
+      const saved = await prisma.learnTrack.update({
         where: { id: op.id },
         data: { ...d, tagline: d.tagline || null, audience: d.audience || null, heroImage: d.heroImage || null, levelEnd: d.levelEnd || null, outcomes: d.outcomes, editedAt: t },
       });
+      if (saved.status === "live" || saved.status === "coming_soon") indexNowSoon(INDEXNOW_SECTIONS.track(saved.slug));
       return {};
     }
     case "track.delete": {

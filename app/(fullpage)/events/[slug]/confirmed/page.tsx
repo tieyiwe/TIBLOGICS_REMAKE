@@ -2,6 +2,11 @@ import { notFound } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { TRAINING_EVENT_SLUG } from "@/lib/event-seeds";
 import ConfirmedPage from "./ConfirmedPage";
+import type { Metadata } from "next";
+import { privateMetadata } from "@/lib/seo/meta";
+
+// A confirmation page for one buyer: never in search results.
+export const metadata: Metadata = privateMetadata();
 
 interface Props {
   params: Promise<{ slug: string }>;

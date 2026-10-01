@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
+import { fitTitle, pageMetadata } from "@/lib/seo/meta";
 import { CheckCircle2, ClipboardCheck, BookOpen, Gauge, LayoutGrid } from "lucide-react";
 import { getPublishedMagnet } from "@/lib/growth/acquire/store";
 import { magnetView } from "@/lib/growth/acquire/public";
@@ -24,17 +25,16 @@ const load = cache(async (slug: string) => {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const v = await load(slug);
-  if (!v) return { title: "Not found", robots: { index: false, follow: false } };
+  if (!v) notFound();
   const title = v.content.headline || v.magnet.title;
   const description = v.content.subheadline || v.content.intro.slice(0, 160);
-  return {
-    title,
+  return pageMetadata({
+    path: `/free/${v.magnet.slug}`,
+    title: fitTitle([title]),
+    absoluteTitle: true,
     description,
-    alternates: { canonical: `/free/${v.magnet.slug}` },
-    robots: v.magnet.noindex ? { index: false, follow: true } : undefined,
-    openGraph: { title, description, type: "website", url: `/free/${v.magnet.slug}` },
-    twitter: { card: "summary_large_image", title, description },
-  };
+    noindex: v.magnet.noindex,
+  });
 }
 
 const ICON: Record<MagnetType, typeof ClipboardCheck> = { checklist: ClipboardCheck, guide: BookOpen, quiz: Gauge, templates: LayoutGrid };

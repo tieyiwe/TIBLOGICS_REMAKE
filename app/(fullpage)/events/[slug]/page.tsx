@@ -5,6 +5,10 @@ import type { Event } from "@prisma/client";
 import TrainingLandingPage from "./TrainingLandingPage";
 import { TRAINING_EVENT_SEED, TRAINING_EVENT_SLUG, PARENTS_EVENT_SEED, PARENTS_EVENT_SLUG } from "@/lib/event-seeds";
 import { mergeContent, DEFAULT_TRAINING_CONTENT, PARENTS_TRAINING_CONTENT } from "@/lib/training-content";
+import { fitTitle, pageMetadata, plain } from "@/lib/seo/meta";
+import JsonLd from "@/components/seo/JsonLd";
+import { breadcrumbNode, priceFromCents, type JsonLdNode } from "@/lib/seo/jsonld";
+import { OG_IMAGE, ORG_ID, SITE_NAME, absUrl } from "@/lib/seo/site";
 
 export const revalidate = 60; // edits made in admin appear within ~1 min
 
@@ -13,7 +17,6 @@ interface Props {
   searchParams: Promise<{ payment?: string; conf?: string }>;
 }
 
-const SITE_URL = (process.env.NEXTAUTH_URL ?? "https://tiblogics.com").replace(/\/$/, "");
 
 export async function generateStaticParams() {
   try {
@@ -31,31 +34,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   try {
     const event = await prisma.event.findUnique({ where: { slug } });
-    if (!event || !event.published) return {};
-
-    const title = `${event.title} | TIBLOGICS Events`;
-    const description = event.description.slice(0, 160);
-    const image = event.coverImage ?? `${SITE_URL}/opengraph-image?v=3`;
-    const url = `${SITE_URL}/events/${slug}`;
-
-    return {
-      title,
-      description,
-      openGraph: {
-        title,
-        description,
-        url,
-        type: "website",
-        images: [{ url: image, width: 1200, height: 630, alt: event.title }],
-      },
-      twitter: {
-        card: "summary_large_image",
-        title,
-        description,
-        images: [image],
-      },
-      alternates: { canonical: url },
-    };
+    if (!event || !event.published) return { robots: { index: false, follow: true } };
+    return pageMetadata({
+      path: `/events/${slug}`,
+      // Event names are long; drop the brand suffix rather than truncate.
+      title: fitTitle([event.title]),
+      absoluteTitle: true,
+      description: event.description,
+      image: event.coverImage ? { url: event.coverImage, width: 1200, height: 630, alt: event.title } : undefined,
+    });
   } catch {
     return {};
   }
@@ -101,47 +88,50 @@ export default async function EventPage({ params, searchParams }: Props) {
   const comingSoon = isParents || (!event.registrationOpen && event.date == null);
   const contentBase = isParents ? PARENTS_TRAINING_CONTENT : DEFAULT_TRAINING_CONTENT;
 
-  const eventUrl = `${SITE_URL}/events/${event.slug}`;
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": event.type === "TRAINING" ? "EducationEvent" : "Event",
-    name: event.title,
-    description: event.description,
-    url: eventUrl,
-    startDate: event.date?.toISOString(),
-    endDate: event.endDate?.toISOString(),
-    location: {
-      "@type": event.location?.toLowerCase().includes("zoom") || event.location?.toLowerCase() === "online"
-        ? "VirtualLocation"
-        : "Place",
-      name: event.location,
-      url: event.location?.toLowerCase().includes("zoom") ? "https://zoom.us" : undefined,
-    },
-    organizer: {
-      "@type": "Organization",
-      name: "TIBLOGICS",
-      url: SITE_URL,
-    },
-    offers: {
-      "@type": "Offer",
-      price: (event.price / 100).toFixed(2),
-      priceCurrency: event.currency ?? "USD",
-      availability: event.registrationOpen
-        ? "https://schema.org/InStock"
-        : "https://schema.org/SoldOut",
+  // Event structured data (Google requires a start date, so an undated
+  // "coming soon" event gets only its breadcrumb).
+  const eventUrl = absUrl(`/events/${event.slug}`);
+  const online = /online|zoom|virtual|meet/i.test(event.location ?? "");
+  const jsonLd: JsonLdNode[] = [
+    breadcrumbNode([
+      { name: "Home", path: "/" },
+      { name: "Events", path: "/events" },
+      { name: event.title, path: `/events/${event.slug}` },
+    ]),
+  ];
+  if (event.date) {
+    jsonLd.unshift({
+      "@type": event.type === "TRAINING" ? "EducationEvent" : "Event",
+      "@id": `${eventUrl}#event`,
+      name: event.title,
+      description: plain(event.description),
       url: eventUrl,
-    },
-    image: event.coverImage ?? `${SITE_URL}/opengraph-image?v=3`,
-    ...(event.capacity != null && { maximumAttendeeCapacity: event.capacity }),
-    ...(event.spots != null && { remainingAttendeeCapacity: event.spots }),
-  };
+      startDate: event.date.toISOString(),
+      endDate: event.endDate?.toISOString(),
+      eventStatus: "https://schema.org/EventScheduled",
+      eventAttendanceMode: online ? "https://schema.org/OnlineEventAttendanceMode" : "https://schema.org/OfflineEventAttendanceMode",
+      location: online
+        ? { "@type": "VirtualLocation", url: eventUrl }
+        : { "@type": "Place", name: event.location, address: event.location },
+      image: event.coverImage ? absUrl(event.coverImage) : OG_IMAGE,
+      organizer: { "@type": "Organization", "@id": ORG_ID, name: SITE_NAME, url: absUrl("/") },
+      offers: {
+        "@type": "Offer",
+        price: priceFromCents(event.price),
+        priceCurrency: event.currency ?? "USD",
+        availability: event.registrationOpen && spotsLeft > 0 ? "https://schema.org/InStock" : "https://schema.org/SoldOut",
+        validFrom: event.createdAt.toISOString(),
+        url: eventUrl,
+      },
+      maximumAttendeeCapacity: event.capacity ?? event.spots ?? undefined,
+      remainingAttendeeCapacity: event.spots != null ? spotsLeft : undefined,
+      inLanguage: "en",
+    });
+  }
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
       <TrainingLandingPage
         eventSlug={event.slug}
         eventTitle={event.title}

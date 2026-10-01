@@ -3,6 +3,11 @@ import prisma from "@/lib/prisma";
 import ClearCartOnMount from "@/components/shop/ClearCartOnMount";
 import { formatMoney } from "@/components/shop/types";
 import { getLocale, getT } from "@/lib/i18n/server";
+import type { Metadata } from "next";
+import { privateMetadata } from "@/lib/seo/meta";
+
+// A confirmation page for one buyer: never in search results.
+export const metadata: Metadata = privateMetadata();
 
 interface Props {
   searchParams: Promise<{ order?: string }>;

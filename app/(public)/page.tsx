@@ -4,42 +4,36 @@ import Hero from "@/components/public/Hero";
 import AIBanner from "@/components/public/AIBanner";
 import { Bot, Zap, Brain, BookOpen, HeartPulse, Package, GraduationCap } from "lucide-react";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
+import { pageMetadata } from "@/lib/seo/meta";
+import { FaqBlock } from "@/components/seo/AnswerBlocks";
+import JsonLd from "@/components/seo/JsonLd";
+import { webPageNode } from "@/lib/seo/jsonld";
+import { ORG_ID } from "@/lib/seo/site";
 
-const OG_IMAGE = "https://tiblogics.com/opengraph-image?v=3";
-const OG_LOCALE = { en: "en_US", fr: "fr_FR", sw: "sw_KE" } as const;
 const SERVICE_COUNT = 9;
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const t = translatorFor(locale);
-  return {
+  return pageMetadata({
+    path: "/",
+    locale,
     // The layout template appends " | TIBLOGICS", so naming the brand here
     // repeated it in every search result.
     title: t("home.meta.title"),
     description: t("home.meta.description"),
+    socialTitle: t("home.meta.ogTitle"),
+    socialDescription: t("home.meta.ogDescription"),
     keywords: [
       "AI implementation agency", "AI agents", "workflow automation", "AI consulting",
       "digital transformation", "AI for small business", "LLM integration", "AI strategy",
       "web development", "mobile development", "cybersecurity", "data analytics", "TIBLOGICS",
     ],
-    alternates: { canonical: "https://tiblogics.com" },
-    openGraph: {
-      title: t("home.meta.ogTitle"),
-      description: t("home.meta.ogDescription"),
-      url: "https://tiblogics.com",
-      type: "website",
-      locale: OG_LOCALE[locale],
-      images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: "TIBLOGICS" }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: t("home.meta.ogTitle"),
-      description: t("home.meta.twitterDescription"),
-      creator: "@tiblogics",
-      images: [OG_IMAGE],
-    },
-  };
+  });
 }
+
+/** The questions people ask search and AI assistants about the company. */
+const HOME_FAQ = [1, 2, 3, 4];
 
 // Text lives in home.services.<key>.name / .desc
 const featuredServices = [
@@ -160,6 +154,18 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
+
+      {/* FAQ: visible answers, repeated as FAQPage structured data */}
+      <section className="py-16 bg-white">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <FaqBlock
+            title={t("seo.faq")}
+            path="/"
+            items={HOME_FAQ.map((n) => ({ q: t(`seo.home.faq.${n}.q`), a: t(`seo.home.faq.${n}.a`) }))}
+          />
+        </div>
+      </section>
+      <JsonLd data={webPageNode({ path: "/", name: t("home.meta.ogTitle"), description: t("home.meta.description"), about: ORG_ID, inLanguage: locale })} />
 
       {/* Booking CTA */}
       <section className="py-16 bg-white">

@@ -4,18 +4,19 @@ import { getLocale, getT } from "@/lib/i18n/server";
 import { PRICES_AS_OF } from "@/lib/calculator/pricing";
 import { makeFormatters } from "@/lib/calculator/format";
 import CalculatorApp from "./CalculatorApp";
+import { pageMetadata } from "@/lib/seo/meta";
+import JsonLd from "@/components/seo/JsonLd";
+import { breadcrumbNode, softwareAppNode } from "@/lib/seo/jsonld";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getT();
-  const title = t("calculator.meta.title");
-  const description = t("calculator.meta.description");
-  return {
-    title,
-    description,
-    alternates: { canonical: "https://tiblogics.com/tools/calculator" },
-    openGraph: { title, description, url: "https://tiblogics.com/tools/calculator", type: "website" },
-    twitter: { card: "summary_large_image", title, description },
-  };
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  return pageMetadata({
+    path: "/tools/calculator",
+    locale,
+    title: t("seo.meta.calculator.title"),
+    socialTitle: t("calculator.meta.title"),
+    description: t("calculator.meta.description"),
+  });
 }
 
 export default async function CalculatorPage() {
@@ -50,6 +51,22 @@ export default async function CalculatorPage() {
         </div>
         <CalculatorApp />
       </div>
+      <JsonLd
+        data={[
+          softwareAppNode({
+            name: t("tools.index.calculator.name"),
+            description: t("calculator.meta.description"),
+            path: "/tools/calculator",
+            category: "FinanceApplication",
+            free: true,
+          }),
+          breadcrumbNode([
+            { name: t("seo.home"), path: "/" },
+            { name: t("seo.tools"), path: "/tools" },
+            { name: t("tools.index.calculator.name"), path: "/tools/calculator" },
+          ]),
+        ]}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getLocale, getT } from "@/lib/i18n/server";
+import { pageMetadata } from "@/lib/seo/meta";
 
 // Public accessibility statement. Text in lib/i18n/messages/a11y.ts
 // (a11y.page.*), in English, French and Swahili. Update REVIEWED when the
@@ -8,12 +9,13 @@ const REVIEWED = new Date(Date.UTC(2026, 9, 1));
 const EMAIL = "info@tiblogics.com";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getT();
-  return {
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  return pageMetadata({
+    path: "/accessibility",
+    locale,
     title: t("a11y.page.meta.title"),
     description: t("a11y.page.meta.description"),
-    alternates: { canonical: "https://tiblogics.com/accessibility" },
-  };
+  });
 }
 
 const FEATURES = ["listen", "prefs", "mode", "keyboard", "captions", "language"];

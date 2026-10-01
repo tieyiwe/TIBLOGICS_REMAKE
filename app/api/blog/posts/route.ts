@@ -2,6 +2,7 @@ import { translateArticleSoon } from "@/lib/i18n/sources/blog";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
+import { INDEXNOW_SECTIONS, indexNowSoon } from "@/lib/seo/indexnow";
 
 function slugify(title: string): string {
   return title
@@ -112,6 +113,8 @@ export async function POST(req: NextRequest) {
 
     // Stored in French and Swahili straight away, not on first view.
     translateArticleSoon(post);
+    // Tell Bing/ChatGPT search and other IndexNow engines (no-op without INDEXNOW_KEY).
+    indexNowSoon(INDEXNOW_SECTIONS.article(post.slug));
     return NextResponse.json({ post }, { status: 201 });
   } catch (err) {
     console.error("Blog POST error:", err);

@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo/meta";
 
-export const metadata: Metadata = {
-  title: "Terms & Conditions — TIBLOGICS AI Practical Training",
-  description: "Terms and Conditions for the TIBLOGICS AI Practical Training — June Cohort.",
-};
+export const metadata: Metadata = pageMetadata({
+  path: "/training-terms",
+  title: "AI Practical Training: Terms & Conditions",
+  description: "Terms and Conditions for the TIBLOGICS AI Practical Training, June cohort: registration, payment, refunds, conduct and recordings.",
+});
 
 const syne = "'Syne', sans-serif";
 const dm = "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif";

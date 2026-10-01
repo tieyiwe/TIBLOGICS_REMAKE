@@ -12,6 +12,8 @@ import { OG_IMAGE, OG_IMAGE_SIZE, OG_LOCALE, ORG, SITE_NAME, absUrl } from "./si
 
 export const TITLE_MAX = 60;
 export const DESCRIPTION_MAX = 155;
+/** What the root layout's title template adds (app/layout.tsx). */
+export const TITLE_SUFFIX = " | TIBLOGICS";
 
 /** Cut text at a word boundary to fit `max` characters, with an ellipsis. */
 export function clip(text: string, max: number): string {
@@ -20,6 +22,19 @@ export function clip(text: string, max: number): string {
   const cut = s.slice(0, max - 1);
   const at = cut.lastIndexOf(" ");
   return `${(at > max * 0.6 ? cut.slice(0, at) : cut).replace(/[\s,;:.\-–—]+$/, "")}…`;
+}
+
+/**
+ * The first candidate title that fits in TITLE_MAX characters once the
+ * " | TIBLOGICS" suffix is counted, as an absolute title. Candidates go from
+ * most to least descriptive; when none fits, the last one is clipped.
+ */
+export function fitTitle(candidates: string[], suffix = TITLE_SUFFIX): string {
+  for (const c of candidates) {
+    if (`${c}${suffix}`.length <= TITLE_MAX) return `${c}${suffix}`;
+  }
+  for (const c of candidates) if (c.length <= TITLE_MAX) return c;
+  return clip(candidates[candidates.length - 1], TITLE_MAX);
 }
 
 /** Plain text from a little HTML or Markdown (descriptions, excerpts). */
@@ -67,8 +82,12 @@ export function pageMetadata(i: PageMetaInput): Metadata {
     ? { url: absUrl(img.url), width: img.width, height: img.height, alt: img.alt ?? socialTitle }
     : { url: OG_IMAGE, ...OG_IMAGE_SIZE, alt: socialTitle };
 
+  // Keep the title within what search results show: drop the " | TIBLOGICS"
+  // suffix when it would overflow, and clip as a last resort.
+  const bare = i.title.length <= TITLE_MAX ? i.title : clip(i.title, TITLE_MAX);
+  const withSuffix = !i.absoluteTitle && `${i.title}${TITLE_SUFFIX}`.length <= TITLE_MAX;
   const meta: Metadata = {
-    title: i.absoluteTitle ? { absolute: i.title } : i.title,
+    title: withSuffix ? i.title : { absolute: bare },
     description,
     alternates: { canonical: url },
     openGraph: {

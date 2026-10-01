@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/require-admin";
 import { revalidateShop } from "@/lib/shop/revalidate";
 import { parseDeliveryFields } from "@/lib/shop/delivery-fields";
 import { auditFromRequest } from "@/lib/admin/audit";
+import { INDEXNOW_SECTIONS, indexNowSoon } from "@/lib/seo/indexnow";
 
 // PATCH — update a product
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -46,6 +47,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const product = await prisma.product.update({ where: { id }, data });
     revalidateShop(product.slug);
+    // Published, unpublished or edited: the URL changed either way.
+    if (product.published || current.published) indexNowSoon(INDEXNOW_SECTIONS.product(product.slug));
     if (current.published !== product.published) await auditFromRequest(product.published ? "product.publish" : "product.unpublish", { type: "product", id: product.id, label: product.name }, null);
     return NextResponse.json({ product });
   } catch (err) {

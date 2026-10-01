@@ -1,35 +1,30 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Mail, Globe, Zap, Users, Shield, Target, Lightbulb, TrendingUp } from "lucide-react";
-import { getT } from "@/lib/i18n/server";
+import { getLocale, getT } from "@/lib/i18n/server";
+import { pageMetadata } from "@/lib/seo/meta";
+import JsonLd from "@/components/seo/JsonLd";
+import { breadcrumbNode, webPageNode } from "@/lib/seo/jsonld";
+import { ORG_ID } from "@/lib/seo/site";
 import Html from "../_i18n/Html";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getT();
-  return {
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  return pageMetadata({
+    path: "/about",
+    locale,
+    // Already names the brand, so no " | TIBLOGICS" suffix.
     title: t("pages.about.meta.title"),
+    absoluteTitle: true,
     description: t("pages.about.meta.description"),
+    socialTitle: t("pages.about.meta.ogTitle"),
+    socialDescription: t("pages.about.meta.ogDescription"),
     keywords: [
       "about TIBLOGICS", "AI agency mission", "AI implementation company", "Tieyiwe Bassole",
       "AI consulting firm", "digital solutions agency", "AI for African businesses",
       "bilingual AI agency", "AI first principles",
     ],
-    alternates: { canonical: "https://tiblogics.com/about" },
-    openGraph: {
-      title: t("pages.about.meta.ogTitle"),
-      description: t("pages.about.meta.ogDescription"),
-      url: "https://tiblogics.com/about",
-      type: "website",
-      images: [{ url: "https://tiblogics.com/opengraph-image?v=3", width: 1200, height: 630, alt: t("pages.about.hero.tag") }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: t("pages.about.hero.tag"),
-      description: t("pages.about.meta.twitterDescription"),
-      creator: "@tiblogics",
-      images: ["https://tiblogics.com/opengraph-image?v=3"],
-    },
-  };
+  });
 }
 
 const principles = [
@@ -59,9 +54,15 @@ const services = [
 ];
 
 export default async function AboutPage() {
-  const t = await getT();
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
   return (
     <div className="pt-32 sm:pt-44 pb-20 min-h-screen">
+      <JsonLd
+        data={[
+          webPageNode({ path: "/about", type: "AboutPage", name: t("pages.about.meta.ogTitle"), description: t("pages.about.meta.description"), about: ORG_ID, inLanguage: locale }),
+          breadcrumbNode([{ name: t("seo.home"), path: "/" }, { name: t("seo.about"), path: "/about" }]),
+        ]}
+      />
 
       {/* Hero */}
       <div className="bg-[#1B3A6B] py-20">
@@ -74,6 +75,9 @@ export default async function AboutPage() {
           <p className="font-dm text-white/75 text-lg mt-5 max-w-3xl leading-relaxed">
             {t("pages.about.hero.body")}
           </p>
+          <Link href="/about/facts" className="mt-5 inline-flex font-dm text-sm font-semibold text-[#F9A738] underline-offset-4 hover:underline">
+            {t("seo.facts.link")} →
+          </Link>
         </div>
       </div>
 

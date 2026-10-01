@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import CertificateActions from "@/components/learn/CertificateActions";
 import ArfaWordmark from "@/components/learn/ArfaWordmark";
 import { getT } from "@/lib/i18n/server";
+import { pageMetadata } from "@/lib/seo/meta";
 
 export const dynamic = "force-dynamic";
 
@@ -16,16 +17,21 @@ export async function generateMetadata({
   const cert = await prisma.learnCertificate
     .findUnique({
       where: { verificationId },
-      select: { recipientName: true, certificateName: true },
+      select: { recipientName: true, certificateName: true, revoked: true },
     })
     .catch(() => null);
 
   const t = await getT();
-  if (!cert) return { title: t("learn.verify.notFoundMeta") };
-  return {
-    title: t("learn.verify.metaTitle", { cert: cert.certificateName, name: cert.recipientName }),
-    description: t("learn.verify.metaDescription", { cert: cert.certificateName, name: cert.recipientName }),
-  };
+  if (!cert) return { title: t("learn.verify.notFoundMeta"), robots: { index: false, follow: false } };
+  const vars = { cert: cert.certificateName, name: cert.recipientName };
+  return pageMetadata({
+    path: `/certificates/${verificationId}`,
+    title: t("learn.verify.metaTitle", vars),
+    description: t("learn.verify.metaDescription", vars),
+    // A revoked certificate's page stays reachable for verifiers, but out
+    // of search results.
+    noindex: cert.revoked,
+  });
 }
 
 export default async function VerifyCertificatePage({

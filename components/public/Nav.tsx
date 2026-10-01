@@ -86,7 +86,9 @@ export default function Nav() {
         <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-10">
           <div className="flex items-center justify-between min-h-[5.5rem] sm:min-h-[7.5rem] py-0 sm:py-2">
             <Link href="/" className="flex items-center flex-shrink-0" aria-label={t("site.nav.home")}>
-              <img src={NEW_LOGO} alt="TIBLOGICS" className="h-[5.5rem] sm:h-[7.5rem] w-auto" />
+              {/* Intrinsic size reserves the space (no layout shift); the logo is in
+                every first screen, so it is fetched first. */}
+              <img src={NEW_LOGO} alt="TIBLOGICS" width={500} height={500} fetchPriority="high" decoding="async" className="h-[5.5rem] sm:h-[7.5rem] w-auto" />
             </Link>
 
             {/* Desktop Nav */}

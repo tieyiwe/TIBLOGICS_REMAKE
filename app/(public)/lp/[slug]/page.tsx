@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
+import { fitTitle, pageMetadata } from "@/lib/seo/meta";
 import { getPublishedPage } from "@/lib/growth/acquire/store";
 import { pageView } from "@/lib/growth/acquire/public";
 import PageBeacon from "../../free/_components/PageBeacon";
@@ -18,18 +19,18 @@ const load = cache(async (slug: string) => {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const v = await load(slug);
-  if (!v) return { title: "Not found", robots: { index: false, follow: false } };
+  if (!v) notFound();
   const hero = v.content.sections.find((s) => s.type === "hero" && s.enabled);
   const title = hero?.title || v.page.title;
   const description = v.content.description || hero?.body || "";
-  return {
-    title,
+  return pageMetadata({
+    path: `/lp/${v.page.slug}`,
+    title: fitTitle([title]),
+    absoluteTitle: true,
     description,
-    alternates: { canonical: `/lp/${v.page.slug}` },
-    robots: v.page.noindex ? { index: false, follow: false } : undefined,
-    openGraph: { title, description, type: "website", url: `/lp/${v.page.slug}` },
-    twitter: { card: "summary_large_image", title, description },
-  };
+    noindex: v.page.noindex,
+    nofollow: v.page.noindex,
+  });
 }
 
 export default async function LandingPage({ params }: { params: Promise<{ slug: string }> }) {

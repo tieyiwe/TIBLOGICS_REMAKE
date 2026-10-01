@@ -67,7 +67,7 @@ function ArticleLanguageBar({ pending, articleLocale }: { pending: boolean; arti
   );
 }
 
-interface BlogPost {
+export interface BlogPost {
   id: string;
   slug: string;
   title: string;
@@ -160,12 +160,19 @@ function RelatedCard({ post: r }: { post: RelatedPost }) {
 type Translation = { title: string; excerpt: string; content: string };
 
 export default function BlogPostPage({
+  initialPost = null,
   translation = null,
   pending = false,
   relatedTitles = {},
   articleLocale,
 }: {
   articleLocale: Locale;
+  /**
+   * The article from the server, so its full text is in the first HTML
+   * (search and AI crawlers often do not run JavaScript). The client still
+   * fetches it once, which counts the view and refreshes it.
+   */
+  initialPost?: BlogPost | null;
   /** The article in the visitor's language, from the server; null for English or while pending. */
   translation?: Translation | null;
   /** True while the translation is being made: English is shown with a notice. */
@@ -177,9 +184,9 @@ export default function BlogPostPage({
   const locale = useLocale();
   const params = useParams();
   const slug = params?.slug as string;
-  const [post, setPost] = useState<BlogPost | null>(null);
+  const [post, setPost] = useState<BlogPost | null>(initialPost);
   const [related, setRelated] = useState<RelatedPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialPost);
   const [copied, setCopied] = useState(false);
   const [widgetVisible, setWidgetVisible] = useState(false);
   const [widgetDismissed, setWidgetDismissed] = useState(false);
@@ -260,7 +267,8 @@ export default function BlogPostPage({
     fetch(`/api/blog/posts/${slug}`)
       .then((r) => r.json())
       .then((d) => {
-        setPost(d.post ?? null);
+        // Keep the server's copy if the refresh fails.
+        setPost((prev) => d.post ?? prev);
         // Fetch related posts
         if (d.post) {
           return fetch(`/api/blog/posts?category=${d.post.category}&limit=4`);
@@ -352,7 +360,10 @@ export default function BlogPostPage({
 
       {/* Hero cover + Article card */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 mt-6 relative z-10">
-        <article ref={articleRef} className="bg-white border border-[#D2DCE8] rounded-3xl overflow-hidden shadow-sm">
+        {/* lang: the article's own language, which can differ from the site's
+            (?lang= switches only the article). Screen readers and search
+            engines read it with the right language. */}
+        <article ref={articleRef} lang={translation ? articleLocale : "en"} className="bg-white border border-[#D2DCE8] rounded-3xl overflow-hidden shadow-sm">
 
           {/* Cover image — constrained to card width */}
           {post.coverImage && !heroCoverFailed ? (

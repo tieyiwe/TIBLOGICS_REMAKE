@@ -9,7 +9,8 @@ const getCollection = cache(async (slug: string) =>
   prisma.collection.findUnique({ where: { slug } }).catch(() => null),
 );
 import CollectionView from "@/components/shop/CollectionView";
-import { getT } from "@/lib/i18n/server";
+import { getLocale, getT } from "@/lib/i18n/server";
+import { fitTitle, pageMetadata } from "@/lib/seo/meta";
 import type { ShopProduct } from "@/components/shop/types";
 
 // Rendered on every request. A cached listing went stale on the hosted
@@ -24,13 +25,16 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const c = await getCollection(slug);
-  if (!c || !c.published) return {};
-  const t = await getT();
-  return {
-    title: t("pages.store.meta.productTitle", { name: c.name }),
-    description: (c.description || t("pages.store.meta.collectionDescription", { name: c.name })).slice(0, 160),
-    openGraph: { title: c.name, description: c.description.slice(0, 160), images: c.image ? [{ url: c.image }] : undefined },
-  };
+  if (!c || !c.published) notFound();
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  return pageMetadata({
+    path: `/store/collections/${c.slug}`,
+    locale,
+    title: fitTitle([c.name]),
+    absoluteTitle: true,
+    description: c.description || t("pages.store.meta.collectionDescription", { name: c.name }),
+    image: c.image ? { url: c.image, alt: c.name } : undefined,
+  });
 }
 
 export default async function CollectionPage({ params }: Props) {

@@ -4,14 +4,20 @@ import { blueprintPrice, creditDays, formatMoney } from "@/lib/blueprint/config"
 import { getLocale, getT } from "@/lib/i18n/server";
 import BlueprintForm from "./BlueprintForm";
 import { ownerSession } from "@/lib/admin/test-access";
+import { pageMetadata } from "@/lib/seo/meta";
+import JsonLd from "@/components/seo/JsonLd";
+import { FaqBlock, KeyTakeaways } from "@/components/seo/AnswerBlocks";
+import { breadcrumbNode, softwareAppNode } from "@/lib/seo/jsonld";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getT();
-  return {
-    title: t("tools.bp.meta.title"),
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  return pageMetadata({
+    path: "/tools/automation-blueprint",
+    locale,
+    title: t("seo.meta.blueprint.title"),
+    socialTitle: t("tools.bp.meta.title"),
     description: t("tools.bp.meta.description"),
-    alternates: { canonical: "https://tiblogics.com/tools/automation-blueprint" },
-  };
+  });
 }
 
 export const dynamic = "force-dynamic";
@@ -64,9 +70,47 @@ export default async function AutomationBlueprintPage({ searchParams }: { search
           ))}
         </div>
 
+        <KeyTakeaways
+          className="mt-10 max-w-3xl"
+          title={t("seo.takeaways")}
+          items={[
+            t("seo.bp.tldr.1"),
+            t("seo.bp.tldr.2"),
+            price
+              ? t("seo.bp.tldr.price", { price: formatMoney(price, locale), days: creditDays() })
+              : t("seo.bp.tldr.noPrice", { days: creditDays() }),
+          ]}
+        />
+
         <div className="mt-12">
           <BlueprintForm price={price ? formatMoney(price, locale) : null} creditDays={creditDays()} testMode={testMode} />
         </div>
+
+        <FaqBlock
+          className="mt-12 max-w-3xl"
+          title={t("seo.faq")}
+          path="/tools/automation-blueprint"
+          items={[
+            { q: t("seo.bp.faq.get.q"), a: t("seo.bp.faq.get.a") },
+            { q: t("seo.bp.faq.time.q"), a: t("seo.bp.faq.time.a") },
+            { q: t("seo.bp.faq.credit.q"), a: t("seo.bp.faq.credit.a", { days: creditDays() }) },
+          ]}
+        />
+        <JsonLd
+          data={[
+            softwareAppNode({
+              name: "Automation Blueprint",
+              description: t("tools.bp.meta.description"),
+              path: "/tools/automation-blueprint",
+              priceCents: price,
+            }),
+            breadcrumbNode([
+              { name: t("seo.home"), path: "/" },
+              { name: t("seo.tools"), path: "/tools" },
+              { name: "Automation Blueprint", path: "/tools/automation-blueprint" },
+            ]),
+          ]}
+        />
       </div>
     </div>
   );

@@ -13,7 +13,10 @@ const getProduct = cache(async (slug: string) =>
   prisma.product.findUnique({ where: { slug } }).catch(() => null),
 );
 import ProductDetail from "@/components/shop/ProductDetail";
-import { getT } from "@/lib/i18n/server";
+import { getLocale, getT } from "@/lib/i18n/server";
+import { fitTitle, pageMetadata, plain } from "@/lib/seo/meta";
+import JsonLd from "@/components/seo/JsonLd";
+import { breadcrumbNode, productNode } from "@/lib/seo/jsonld";
 import type { ShopProduct } from "@/components/shop/types";
 
 // Rendered on every request. A cached listing went stale on the hosted
@@ -42,17 +45,17 @@ function toShopProduct(p: {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const p = await getProduct(slug);
-  if (!p || !p.published) return {};
-  const t = await getT();
-  return {
-    title: t("pages.store.meta.productTitle", { name: p.name }),
-    description: (p.tagline ?? p.description).slice(0, 160),
-    openGraph: {
-      title: p.name,
-      description: (p.tagline ?? p.description).slice(0, 160),
-      images: p.images?.[0] ? [{ url: p.images[0] }] : undefined,
-    },
-  };
+  // A real 404 for crawlers that get blocking metadata (next.config.js).
+  if (!p || !p.published) notFound();
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  return pageMetadata({
+    path: `/store/${p.slug}`,
+    locale,
+    title: fitTitle([p.name]),
+    absoluteTitle: true,
+    description: (p.tagline ? `${p.tagline} ${plain(p.description)}` : plain(p.description)) || `${p.name}. ${t("seo.meta.store.description")}`,
+    image: p.images?.[0] ? { url: p.images[0], alt: p.name } : undefined,
+  });
 }
 
 export default async function ProductPage({ params }: Props) {
@@ -71,5 +74,33 @@ export default async function ProductPage({ params }: Props) {
   // Live automatic sale prices (admin: /admin_pro/promotions), display only.
   const sales = await pageSales();
   const [shown] = withProductSales([p], sales);
-  return <ProductDetail product={toShopProduct(shown)} related={withProductSales(related, sales).map(toShopProduct)} />;
+  const t = await getT();
+  return (
+    <>
+      {/* Product + Offer with the price shown on the page. No ratings:
+          there are no real reviews to mark up. */}
+      <JsonLd
+        data={[
+          productNode({
+            slug: p.slug,
+            name: p.name,
+            description: plain(p.tagline ? `${p.tagline} ${p.description}` : p.description).slice(0, 5000),
+            priceCents: shown.price,
+            currency: p.currency,
+            images: p.images,
+            category: p.category,
+            sku: p.sku,
+            inStock: p.stock == null || p.stock > 0,
+            digital: p.digital,
+          }),
+          breadcrumbNode([
+            { name: t("seo.home"), path: "/" },
+            { name: t("seo.store"), path: "/store" },
+            { name: p.name, path: `/store/${p.slug}` },
+          ]),
+        ]}
+      />
+      <ProductDetail product={toShopProduct(shown)} related={withProductSales(related, sales).map(toShopProduct)} />
+    </>
+  );
 }

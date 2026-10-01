@@ -1,59 +1,163 @@
-import { MetadataRoute } from "next";
+import type { MetadataRoute } from "next";
 import prisma from "@/lib/prisma";
+import { ensureLearnEditColumns } from "@/lib/learn/admin/columns";
+import { ensureAcquireTables } from "@/lib/growth/acquire/db";
+import { articleAlternates, articleLanguages, articleUrl } from "@/lib/seo/articles";
+import { absUrl } from "@/lib/seo/site";
 
-const BASE = "https://tiblogics.com";
+// The sitemap lists every public, indexable URL: the static pages, every
+// live or coming-soon ARFA track, published store products and collections,
+// published AI Times articles (with hreflang alternates for their ?lang=
+// translations), published events, and published lead magnets and landing
+// pages that are not flagged noindex. Private, noindex and confirmation pages
+// are left out (see app/robots.ts).
+//
+// Rendered on request so a newly published item appears at once (it is a
+// few cheap queries). Well under the 50,000-URL limit; split with
+// generateSitemaps if it ever gets close.
+export const dynamic = "force-dynamic";
 
-const STATIC_ROUTES: MetadataRoute.Sitemap = [
-  { url: BASE, lastModified: new Date(), changeFrequency: "weekly", priority: 1.0 },
-  { url: `${BASE}/services`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.9 },
-  { url: `${BASE}/ai-times`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
-  { url: `${BASE}/tools`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
-  { url: `${BASE}/tools/scanner`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
-  { url: `${BASE}/tools/advisor`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
-  { url: `${BASE}/tools/calculator`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
-  { url: `${BASE}/products`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
-  { url: `${BASE}/about`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
-  { url: `${BASE}/contact`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.6 },
-  { url: `${BASE}/book`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.8 },
-  { url: `${BASE}/services/get-started`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.7 },
-  { url: `${BASE}/events`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.85 },
+type Entry = MetadataRoute.Sitemap[number];
+
+const STATIC: Array<[path: string, priority: number, freq: Entry["changeFrequency"]]> = [
+  ["/", 1.0, "weekly"],
+  ["/services", 0.9, "monthly"],
+  ["/learning-box", 0.95, "weekly"],
+  ["/ai-times", 0.9, "daily"],
+  ["/tools", 0.8, "monthly"],
+  ["/tools/scanner", 0.8, "monthly"],
+  ["/tools/toolkit-live", 0.8, "monthly"],
+  ["/tools/automation-blueprint", 0.75, "monthly"],
+  ["/tools/readiness-monitor", 0.75, "monthly"],
+  ["/tools/calculator", 0.7, "monthly"],
+  ["/store", 0.8, "weekly"],
+  ["/events", 0.8, "weekly"],
+  ["/about", 0.7, "monthly"],
+  ["/about/facts", 0.8, "monthly"],
+  ["/book", 0.8, "monthly"],
+  ["/contact", 0.6, "yearly"],
+  ["/services/get-started", 0.6, "monthly"],
+  ["/products", 0.6, "monthly"],
+  ["/accessibility", 0.3, "yearly"],
+  ["/privacy", 0.3, "yearly"],
+  ["/terms", 0.3, "yearly"],
+  ["/training-terms", 0.2, "yearly"],
 ];
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  let blogRoutes: MetadataRoute.Sitemap = [];
-  let eventRoutes: MetadataRoute.Sitemap = [];
+/**
+ * Next writes sitemap URLs into the XML as given, without escaping, so an
+ * "&" in an image URL (Unsplash query strings) made the whole sitemap
+ * invalid XML. Escape it here.
+ */
+const xml = (u: string) => u.replace(/&(?!amp;|lt;|gt;|quot;|apos;)/g, "&amp;");
 
+/** Absolute https image URLs only (sitemaps reject relative ones). */
+const images = (list: Array<string | null | undefined>) => {
+  const out = list
+    .filter((x): x is string => !!x)
+    .map((x) => (x.startsWith("/") ? absUrl(x) : x))
+    .filter((x) => /^https:\/\//.test(x))
+    .map(xml);
+  return out.length ? out.slice(0, 5) : undefined;
+};
+
+const latest = (dates: Date[]) => (dates.length ? new Date(Math.max(...dates.map((d) => d.getTime()))) : undefined);
+
+async function safe<T>(p: Promise<T>, fallback: T): Promise<T> {
   try {
-    const [posts, events] = await Promise.all([
+    return await p;
+  } catch (err) {
+    console.error("[sitemap]", err);
+    return fallback;
+  }
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  await Promise.all([ensureLearnEditColumns().catch(() => {}), ensureAcquireTables().catch(() => {})]);
+  const [tracks, products, collections, posts, events, magnets, pages] = await Promise.all([
+    safe(
+      prisma.learnTrack.findMany({
+        where: { status: { in: ["live", "coming_soon"] } },
+        orderBy: { sortOrder: "asc" },
+        select: { slug: true, status: true, updatedAt: true, heroImage: true },
+      }),
+      [],
+    ),
+    safe(
+      prisma.product.findMany({
+        where: { published: true },
+        orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
+        select: { slug: true, updatedAt: true, images: true, featured: true },
+      }),
+      [],
+    ),
+    safe(prisma.collection.findMany({ where: { published: true }, select: { slug: true, updatedAt: true, image: true } }), []),
+    safe(
       prisma.blogPost.findMany({
         where: { published: true },
-        select: { slug: true, updatedAt: true, featured: true },
         orderBy: { createdAt: "desc" },
-        take: 200,
+        take: 5000,
+        select: { slug: true, updatedAt: true, featured: true, coverImage: true },
       }),
-      prisma.event.findMany({
-        where: { published: true },
-        select: { slug: true, updatedAt: true, featured: true },
-        orderBy: { date: "asc" },
-      }),
-    ]);
+      [],
+    ),
+    safe(prisma.event.findMany({ where: { published: true }, select: { slug: true, updatedAt: true, featured: true, coverImage: true } }), []),
+    safe(prisma.acquireMagnet.findMany({ where: { status: "published", noindex: false }, select: { slug: true, updatedAt: true } }), []),
+    safe(prisma.acquirePage.findMany({ where: { status: "published", noindex: false }, select: { slug: true, updatedAt: true } }), []),
+  ]);
 
-    blogRoutes = posts.map((p: { slug: string; updatedAt: Date; featured: boolean }) => ({
-      url: `${BASE}/ai-times/${p.slug}`,
-      lastModified: p.updatedAt,
-      changeFrequency: "weekly" as const,
-      priority: p.featured ? 0.9 : 0.8,
-    }));
+  // Section pages change when their items do.
+  const sectionDate: Record<string, Date | undefined> = {
+    "/learning-box": latest(tracks.map((t) => t.updatedAt)),
+    "/store": latest(products.map((p) => p.updatedAt)),
+    "/ai-times": latest(posts.map((p) => p.updatedAt)),
+    "/events": latest(events.map((e) => e.updatedAt)),
+  };
 
-    eventRoutes = events.map((e: { slug: string; updatedAt: Date; featured: boolean }) => ({
-      url: `${BASE}/events/${e.slug}`,
-      lastModified: e.updatedAt,
-      changeFrequency: "weekly" as const,
-      priority: e.featured ? 0.9 : 0.8,
-    }));
-  } catch {
-    // DB not available during build
+  const out: MetadataRoute.Sitemap = STATIC.map(([path, priority, changeFrequency]) => ({
+    url: absUrl(path),
+    lastModified: sectionDate[path],
+    changeFrequency,
+    priority,
+  }));
+
+  for (const t of tracks) {
+    out.push({
+      url: absUrl(`/learning-box/${t.slug}`),
+      lastModified: t.updatedAt,
+      changeFrequency: "monthly",
+      priority: t.status === "live" ? 0.9 : 0.6,
+      images: images([t.heroImage]),
+    });
   }
 
-  return [...STATIC_ROUTES, ...blogRoutes, ...eventRoutes];
+  for (const p of products) {
+    out.push({ url: absUrl(`/store/${p.slug}`), lastModified: p.updatedAt, changeFrequency: "weekly", priority: p.featured ? 0.8 : 0.7, images: images(p.images) });
+  }
+  for (const c of collections) {
+    out.push({ url: absUrl(`/store/collections/${c.slug}`), lastModified: c.updatedAt, changeFrequency: "weekly", priority: 0.6, images: images([c.image]) });
+  }
+
+  // Articles: each translation has its own URL (?lang=), listed as
+  // alternates so search engines show the right language.
+  const langs = await safe(articleLanguages(posts.map((p) => p.slug)), new Map());
+  for (const p of posts) {
+    const l = langs.get(p.slug) ?? ["en"];
+    out.push({
+      url: articleUrl(p.slug),
+      lastModified: p.updatedAt,
+      changeFrequency: "weekly",
+      priority: p.featured ? 0.8 : 0.7,
+      images: images([p.coverImage]),
+      alternates: l.length > 1 ? { languages: articleAlternates(p.slug, l) } : undefined,
+    });
+  }
+
+  for (const e of events) {
+    out.push({ url: absUrl(`/events/${e.slug}`), lastModified: e.updatedAt, changeFrequency: "weekly", priority: e.featured ? 0.8 : 0.7, images: images([e.coverImage]) });
+  }
+  for (const m of magnets) out.push({ url: absUrl(`/free/${m.slug}`), lastModified: m.updatedAt, changeFrequency: "monthly", priority: 0.6 });
+  for (const p of pages) out.push({ url: absUrl(`/lp/${p.slug}`), lastModified: p.updatedAt, changeFrequency: "monthly", priority: 0.5 });
+
+  return out;
 }

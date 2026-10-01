@@ -1,31 +1,17 @@
 import type { Metadata } from "next";
-import { getT } from "@/lib/i18n/server";
+import { getLocale, getT } from "@/lib/i18n/server";
+import { pageMetadata } from "@/lib/seo/meta";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getT();
-  return {
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  return pageMetadata({
+    path: "/contact",
+    locale,
     title: t("pages.contact.meta.title"),
     description: t("pages.contact.meta.description"),
-    keywords: [
-      "contact TIBLOGICS", "AI agency contact", "get AI quote", "AI implementation inquiry",
-      "hire AI agency", "AI consulting contact",
-    ],
-    alternates: { canonical: "https://tiblogics.com/contact" },
-    openGraph: {
-      title: t("pages.contact.meta.ogTitle"),
-      description: t("pages.contact.meta.ogDescription"),
-      url: "https://tiblogics.com/contact",
-      type: "website",
-      images: [{ url: "https://tiblogics.com/opengraph-image?v=3", width: 1200, height: 630, alt: t("pages.contact.meta.ogTitle") }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: t("pages.contact.meta.ogTitle"),
-      description: t("pages.contact.meta.ogDescription"),
-      creator: "@tiblogics",
-      images: ["https://tiblogics.com/opengraph-image?v=3"],
-    },
-  };
+    socialTitle: t("pages.contact.meta.ogTitle"),
+    socialDescription: t("pages.contact.meta.ogDescription"),
+  });
 }
 
 export default function ContactLayout({ children }: { children: React.ReactNode }) {

@@ -20,7 +20,19 @@ if (!process.env.NEXTAUTH_URL) {
   }
 }
 
+// Crawlers that must get the page's <title>, meta tags and canonical in the
+// <head> of the first response (blocking metadata) rather than streamed in
+// later. Next's default list covers the classic search engines; the AI
+// crawlers that read pages for ChatGPT, Claude, Perplexity, Meta AI, Copilot
+// and others are added here. Keep the default list first: setting this
+// option replaces it (next/dist/shared/lib/router/utils/html-bots.js).
+const DEFAULT_HTML_LIMITED_BOTS =
+  "[\\w-]+-Google|Google-[\\w-]+|Chrome-Lighthouse|Slurp|DuckDuckBot|baiduspider|yandex|sogou|bitlybot|tumblr|vkShare|quora link preview|redditbot|ia_archiver|Bingbot|BingPreview|applebot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|Slackbot|Discordbot|WhatsApp|SkypeUriPreview|Yeti|googleweblight";
+const AI_CRAWLERS =
+  "GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|Claude-User|Claude-SearchBot|anthropic-ai|PerplexityBot|Perplexity-User|CCBot|Meta-ExternalAgent|Meta-ExternalFetcher|Amazonbot|DuckAssistBot|MistralAI-User|Bytespider|cohere-ai|YouBot|Diffbot|PetalBot|Applebot-Extended";
+
 const nextConfig = {
+  htmlLimitedBots: new RegExp(`${DEFAULT_HTML_LIMITED_BOTS}|${AI_CRAWLERS}`, "i"),
   allowedDevOrigins: [process.env.REPLIT_DEV_DOMAIN].filter(Boolean),
   compress: true,
   poweredByHeader: false,
@@ -41,6 +53,15 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // One canonical host: www.tiblogics.com → tiblogics.com (301-equivalent
+      // 308, path and query kept), so search engines never split signals
+      // between two hosts.
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.tiblogics.com" }],
+        destination: "https://tiblogics.com/:path*",
+        permanent: true,
+      },
       { source: "/blog", destination: "/ai-times", permanent: true },
       { source: "/blog/:slug", destination: "/ai-times/:slug", permanent: true },
       // "Courses" became "Learning Box". Certificates issued before the rename
@@ -59,8 +80,29 @@ const nextConfig = {
       { source: "/shop/:slug", destination: "/store/:slug", permanent: true },
     ];
   },
+  async rewrites() {
+    return {
+      // IndexNow key file: /<INDEXNOW_KEY>.txt (lib/seo/indexnow.ts). An
+      // afterFiles rewrite, so real files and routes (robots.txt, llms.txt)
+      // always win; the route 404s for any other key.
+      afterFiles: [
+        { source: "/:key([A-Za-z0-9-]{8,128}).txt", destination: "/api/indexnow-key/:key" },
+      ],
+    };
+  },
   async headers() {
     return [
+      // Private and machine-only paths never belong in search results,
+      // whatever their content type (JSON, redirects, PDFs). Article cover
+      // images under /api/blog/cover stay indexable for image search.
+      {
+        source: "/api/:path((?!blog/cover/).*)",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
+      ...["/admin_pro", "/admin_pro/:path*", "/learn", "/learn/:path*", "/go/:path*", "/r/:path*", "/toolkit", "/blueprint/:path*", "/monitor/:path*"].map((source) => ({
+        source,
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      })),
       {
         source: "/fonts/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],

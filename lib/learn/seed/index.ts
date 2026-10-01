@@ -13,6 +13,7 @@ import {
   type SeedTrack,
 } from "./types";
 import { TRACKS } from "./tracks";
+import { INDEXNOW_SECTIONS, indexNowSoon } from "@/lib/seo/indexnow";
 
 export interface SeedReport {
   track: string;
@@ -88,6 +89,8 @@ export async function seedTrack(track: SeedTrack, tombstones?: Set<string>): Pro
     create: { slug: track.slug, ...trackData },
     update: existing?.editedAt ? {} : trackData,
   });
+  // Public track pages: tell IndexNow engines (no-op without INDEXNOW_KEY).
+  if (row.status === "live" || row.status === "coming_soon") indexNowSoon(INDEXNOW_SECTIONS.track(row.slug));
 
   let lessonCount = 0;
   let microQuestions = 0;

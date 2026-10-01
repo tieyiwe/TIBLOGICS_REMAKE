@@ -8,12 +8,15 @@ export default async function BlogLoading() {
         {/* Real header — visible immediately so nav feels instant */}
         <div className="text-center py-12">
           <span className="section-tag">TIBLOGICS</span>
-          <h1
+          {/* Not an h1: this placeholder stays in the streamed HTML next to the
+              page's own h1, and crawlers without JavaScript would read two. */}
+          <p
+            aria-hidden="true"
             className="text-4xl sm:text-5xl md:text-7xl text-[#0D1B2A] mt-3 tracking-widest font-bold"
             style={{ fontFamily: "var(--font-masthead)" }}
           >
             AI TIMES
-          </h1>
+          </p>
           <p className="font-syne font-bold text-[#F47C20] text-xl md:text-2xl mt-2 tracking-wide">
             {t("pages.aiTimes.tagline")}
           </p>

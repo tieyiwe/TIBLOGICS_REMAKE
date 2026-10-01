@@ -16,6 +16,7 @@ import {
   type MagnetType,
   type PageContent,
 } from "./types";
+import { INDEXNOW_SECTIONS, indexNowSoon } from "@/lib/seo/indexnow";
 
 // Storage for lead magnets and landing pages. Slugs are the public URL
 // (/free/[slug], /lp/[slug]) and the utm_campaign ("magnet-<slug>",
@@ -104,10 +105,12 @@ export async function setMagnetStatus(id: string, publish: boolean) {
     const problems = magnetProblems(m.type as MagnetType, normalizeMagnet(m.content));
     if (problems.length) throw new AcquireError(`Fix before publishing: ${problems.join(" ")}`);
   }
-  return prisma.acquireMagnet.update({
+  const saved = await prisma.acquireMagnet.update({
     where: { id },
     data: { status: publish ? "published" : "draft", publishedAt: publish ? (m.publishedAt ?? new Date()) : m.publishedAt },
   });
+  if (!saved.noindex) indexNowSoon(INDEXNOW_SECTIONS.magnet(saved.slug));
+  return saved;
 }
 
 export async function getPublishedMagnet(slug: string): Promise<AcquireMagnet | null> {
@@ -179,10 +182,12 @@ export async function setPageStatus(id: string, publish: boolean) {
     const problems = pageProblems(normalizePage(p.content));
     if (problems.length) throw new AcquireError(`Fix before publishing: ${problems.join(" ")}`);
   }
-  return prisma.acquirePage.update({
+  const saved = await prisma.acquirePage.update({
     where: { id },
     data: { status: publish ? "published" : "draft", publishedAt: publish ? (p.publishedAt ?? new Date()) : p.publishedAt },
   });
+  if (!saved.noindex) indexNowSoon(INDEXNOW_SECTIONS.page(saved.slug));
+  return saved;
 }
 
 export async function getPublishedPage(slug: string): Promise<AcquirePage | null> {

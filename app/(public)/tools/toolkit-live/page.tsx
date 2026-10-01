@@ -9,14 +9,19 @@ import { localizedList } from "@/lib/i18n/content";
 import ToolkitWaitlist from "./ToolkitWaitlist";
 import { pageSales } from "@/lib/promotions/display";
 import SalePrice from "@/components/promo/SalePrice";
+import { pageMetadata } from "@/lib/seo/meta";
+import JsonLd from "@/components/seo/JsonLd";
+import { KeyTakeaways } from "@/components/seo/AnswerBlocks";
+import { breadcrumbNode, faqNode, softwareAppNode } from "@/lib/seo/jsonld";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getT();
-  return {
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  return pageMetadata({
+    path: "/tools/toolkit-live",
+    locale,
     title: t("tools.tk.meta.title"),
     description: t("tools.tk.meta.description"),
-    alternates: { canonical: "https://tiblogics.com/tools/toolkit-live" },
-  };
+  });
 }
 
 // Prices are read from server configuration per request.
@@ -114,6 +119,42 @@ export default async function ToolkitLivePage({ searchParams }: { searchParams: 
             ))}
           </dl>
         </section>
+
+        {/* Key takeaways: the short answers search and AI engines quote */}
+        <KeyTakeaways
+          className="mt-8"
+          title={t("seo.takeaways")}
+          items={[
+            t("seo.tk.tldr.1", { n: LIBRARY_SIZE.toLocaleString(locale), fields: LIBRARY_VERTICALS.length }),
+            t("seo.tk.tldr.2"),
+            t("seo.tk.tldr.3"),
+          ]}
+        />
+        <JsonLd
+          data={[
+            softwareAppNode({
+              name: "Toolkit Live",
+              description: t("tools.tk.meta.description"),
+              path: "/tools/toolkit-live",
+              priceCents: plans.toolkit.amount ?? null,
+              recurring: "month",
+            }),
+            softwareAppNode({
+              name: "Compliance Guard",
+              description: t("tools.tk.plan.guard.blurb"),
+              path: "/tools/toolkit-live",
+              fragment: "compliance-guard",
+              priceCents: plans.guard.amount ?? null,
+              recurring: "month",
+            }),
+            faqNode(FAQ.map((n) => ({ q: t(`tools.tk.faq.${n}.q`), a: t(`tools.tk.faq.${n}.a`) })), "/tools/toolkit-live"),
+            breadcrumbNode([
+              { name: t("seo.home"), path: "/" },
+              { name: t("seo.tools"), path: "/tools" },
+              { name: "Toolkit Live", path: "/tools/toolkit-live" },
+            ]),
+          ]}
+        />
 
         {/* Why not a blank chat box */}
         <section className="mt-14">
