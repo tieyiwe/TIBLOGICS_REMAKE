@@ -9,6 +9,13 @@ import {
   type TeamCheckoutRequest,
   type TrackCheckoutRequest,
 } from "./provider";
+import type { CheckoutDiscountFields } from "./provider";
+
+/** One coupon, or Stripe's code box, never both (Stripe allows one or the other). */
+function discountParams(req: CheckoutDiscountFields) {
+  if (req.couponId) return { discounts: [{ coupon: req.couponId }] };
+  return req.allowPromotionCodes === false ? {} : { allow_promotion_codes: true };
+}
 
 // Optional: a pre-created Stripe Price ID for the monthly plan. If absent we
 // fall back to inline price_data (PLANS.monthly.amount, $89) so the platform
@@ -49,13 +56,13 @@ export const stripeProvider: PaymentProvider = {
       mode: "subscription",
       line_items: [lineItem as never],
       customer_email: req.email,
-      // A referral coupon replaces the promotion-code box (Stripe allows one or the other).
-      ...(req.couponId ? { discounts: [{ coupon: req.couponId }] } : { allow_promotion_codes: true }),
+      // A promotion or referral coupon replaces the promotion-code box.
+      ...discountParams(req),
       success_url: req.successUrl,
       cancel_url: req.cancelUrl,
       // studentId is the join key the webhook uses to attach the subscription.
       client_reference_id: req.studentId,
-      metadata: { studentId: req.studentId, plan: req.plan, product: "learn" },
+      metadata: { ...req.promoMetadata, studentId: req.studentId, plan: req.plan, product: "learn" },
       subscription_data: {
         metadata: { studentId: req.studentId, plan: req.plan, product: "learn" },
       },
@@ -83,12 +90,12 @@ export const stripeProvider: PaymentProvider = {
         },
       ],
       customer_email: req.email,
-      ...(req.couponId ? { discounts: [{ coupon: req.couponId }] } : { allow_promotion_codes: true }),
+      ...discountParams(req),
       success_url: req.successUrl,
       cancel_url: req.cancelUrl,
       client_reference_id: req.studentId,
       // The webhook creates the TrackPurchase from these.
-      metadata,
+      metadata: { ...req.promoMetadata, ...metadata },
       payment_intent_data: { metadata },
     });
     if (!session.url) throw new Error("Stripe did not return a checkout URL");
@@ -119,11 +126,11 @@ export const stripeProvider: PaymentProvider = {
       mode: "subscription",
       line_items: [lineItem as never],
       customer_email: req.email,
-      allow_promotion_codes: true,
+      ...discountParams(req),
       success_url: req.successUrl,
       cancel_url: req.cancelUrl,
       client_reference_id: req.ownerStudentId,
-      metadata,
+      metadata: { ...req.promoMetadata, ...metadata },
       subscription_data: { metadata },
     });
     if (!session.url) throw new Error("Stripe did not return a checkout URL");

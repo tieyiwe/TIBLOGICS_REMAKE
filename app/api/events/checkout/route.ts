@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import stripe from "@/lib/stripe";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { resolveCheckoutDiscount } from "@/lib/promotions/service";
 
 export async function POST(req: NextRequest) {
   // Public; each call creates a Stripe checkout session.
@@ -33,14 +34,22 @@ export async function POST(req: NextRequest) {
       "https://tiblogics.com"
     ).replace(/\/$/, "");
 
+    // The seat price lives on the Stripe Price; read it for the promotion's math.
+    const unit = await stripe.prices.retrieve(priceId).then((p) => p.unit_amount ?? 0).catch(() => 0);
+    const promo = await resolveCheckoutDiscount({
+      lines: [{ key: "events", id: reg.eventSlug, amountCents: unit }],
+      recurring: false,
+      buyer: { email: reg.email },
+    });
     const session = await stripe.checkout.sessions.create({
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "payment",
-      allow_promotion_codes: true,
+      ...(promo.couponId ? { discounts: [{ coupon: promo.couponId }] } : promo.allowPromotionCodes ? { allow_promotion_codes: true } : {}),
       customer_email: reg.email,
       success_url: `${baseUrl}/events/${reg.eventSlug}/confirmed?conf=${reg.confirmationNumber}`,
       cancel_url: `${baseUrl}/events/${reg.eventSlug}?payment=cancelled&conf=${reg.confirmationNumber}`,
       metadata: {
+        ...promo.metadata,
         registrationId: reg.id,
         confirmationNumber: reg.confirmationNumber ?? "",
         eventSlug: reg.eventSlug,

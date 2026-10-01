@@ -10,6 +10,8 @@ import { TRACK_CURRENCY, trackPriceCents } from "@/lib/learn/pricing";
 import { PLANS } from "@/lib/payments/provider";
 import { recordAttribution } from "@/lib/growth/attribution";
 import { referralCouponFor } from "@/lib/learn/referrals/service";
+import { resolveCheckoutDiscount } from "@/lib/promotions/service";
+import { promoCheckoutError } from "@/lib/promotions/http";
 
 // Slugs become part of a redirect URL; an unvalidated value here would be an
 // open-redirect vector, so they are constrained to a slug shape.
@@ -20,9 +22,12 @@ const Slug = z.string().trim().regex(/^[a-z0-9-]{1,64}$/, "Invalid track");
 //                                (track = where checkout returns them)
 //   { trackSlug }                one track, one payment, lifetime access
 // The annual plan is no longer sold.
+// promoCode: a code typed in our field (lib/promotions). Checked again here;
+// an invalid one is refused with a 400 rather than silently dropped.
+const PromoCode = z.string().trim().max(40).optional();
 const Body = z.union([
-  z.object({ trackSlug: Slug }),
-  z.object({ plan: z.literal("monthly"), track: Slug.optional() }),
+  z.object({ trackSlug: Slug, promoCode: PromoCode }),
+  z.object({ plan: z.literal("monthly"), track: Slug.optional(), promoCode: PromoCode }),
 ]);
 
 const SITE = (
@@ -64,11 +69,21 @@ export async function POST(req: NextRequest) {
       }
       // Price from the server only.
       const amount = trackPriceCents(track.level, track.priceCents);
+      // One discount: a typed code, else an automatic sale, else the
+      // referral welcome coupon (claimed only when it is the one used).
+      const discount = await resolveCheckoutDiscount({
+        lines: [{ key: "tracks", id: track.id, amountCents: amount }],
+        recurring: false,
+        code: parsed.data.promoCode,
+        buyer: { studentId: student.id, email: student.email },
+        referral: () => referralCouponFor(student.id),
+      });
       const { url } = await payments.createTrackCheckout({
         studentId: student.id,
         email: student.email,
-        // Referred learners get the welcome coupon when STRIPE_REFERRAL_COUPON_ID is set.
-        couponId: await referralCouponFor(student.id),
+        couponId: discount.couponId,
+        allowPromotionCodes: discount.allowPromotionCodes,
+        promoMetadata: discount.metadata,
         trackId: track.id,
         trackTitle: track.title,
         amount,
@@ -77,24 +92,35 @@ export async function POST(req: NextRequest) {
         cancelUrl: `${SITE}/learn/subscribe?track=${track.slug}&checkout=cancelled`,
       });
       // Growth attribution; paid status is resolved from TrackPurchase at report time.
-      await recordAttribution({ kind: "track_checkout", refId: `${student.id}:${track.id}`, cookieHeader: req.headers.get("cookie"), amountCents: amount });
+      await recordAttribution({ kind: "track_checkout", refId: `${student.id}:${track.id}`, cookieHeader: req.headers.get("cookie"), amountCents: amount - discount.discountCents });
       return NextResponse.json({ url });
     }
 
     // ── All tracks, monthly ─────────────────────────────────────────────
+    const discount = await resolveCheckoutDiscount({
+      lines: [{ key: "arfa_monthly", id: "monthly", amountCents: PLANS.monthly.amount }],
+      recurring: true,
+      code: parsed.data.promoCode,
+      buyer: { studentId: student.id, email: student.email },
+      referral: () => referralCouponFor(student.id),
+    });
     const { url } = await payments.createCheckout({
       plan: "monthly",
       studentId: student.id,
       email: student.email,
-      couponId: await referralCouponFor(student.id),
+      couponId: discount.couponId,
+      allowPromotionCodes: discount.allowPromotionCodes,
+      promoMetadata: discount.metadata,
       successUrl: parsed.data.track
         ? `${SITE}/learn/track/${parsed.data.track}?welcome=1`
         : `${SITE}/learn?welcome=1`,
       cancelUrl: `${SITE}/learning-box?checkout=cancelled`,
     });
-    await recordAttribution({ kind: "learn_subscription_checkout", refId: student.id, cookieHeader: req.headers.get("cookie"), amountCents: PLANS.monthly.amount });
+    await recordAttribution({ kind: "learn_subscription_checkout", refId: student.id, cookieHeader: req.headers.get("cookie"), amountCents: PLANS.monthly.amount - discount.discountCents });
     return NextResponse.json({ url });
   } catch (err) {
+    const promoErr = promoCheckoutError(t, err);
+    if (promoErr) return promoErr;
     // Any signed-up learner can reach this, and a Stripe error names our price
     // ids and key mode. Log the detail, hand back a fixed message.
     console.error("[POST /api/learn/checkout]", err);

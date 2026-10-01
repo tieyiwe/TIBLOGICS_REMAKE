@@ -7,6 +7,7 @@ import { ensureToolkitTables } from "@/lib/toolkit/db";
 import { toolkitPlans, TOOLKIT_PRODUCT, type ToolkitPlan } from "@/lib/toolkit/config";
 import { getT } from "@/lib/i18n/server";
 import { recordAttribution } from "@/lib/growth/attribution";
+import { resolveCheckoutDiscount } from "@/lib/promotions/service";
 
 // Starts a Toolkit Live or Compliance Guard subscription for the signed-in
 // account. The price comes only from server configuration.
@@ -51,16 +52,21 @@ export async function POST(req: NextRequest) {
   const metadata = { product: TOOLKIT_PRODUCT, studentId: student.id, plan: plan.id };
 
   try {
+    const discount = await resolveCheckoutDiscount({
+      lines: [{ key: "toolkit", id: plan.id, amountCents: plan.amount }],
+      recurring: true,
+      buyer: { studentId: student.id, email: student.email },
+    });
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [lineItem as never],
       customer: existing?.stripeCustomerId ?? undefined,
       customer_email: existing?.stripeCustomerId ? undefined : student.email,
-      allow_promotion_codes: true,
+      ...(discount.couponId ? { discounts: [{ coupon: discount.couponId }] } : discount.allowPromotionCodes ? { allow_promotion_codes: true } : {}),
       client_reference_id: student.id,
       success_url: `${SITE}/toolkit?welcome=1`,
       cancel_url: `${SITE}/tools/toolkit-live?canceled=1`,
-      metadata,
+      metadata: { ...discount.metadata, ...metadata },
       subscription_data: { metadata },
     });
     if (!session.url) throw new Error("Stripe did not return a checkout URL");

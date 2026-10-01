@@ -8,6 +8,7 @@ import { teamRateLimit } from "@/lib/learn/team/guard";
 import { getTeamPricing, quoteNewTeam } from "@/lib/learn/team/settings";
 import { createPendingTeam, ownedLiveTeam } from "@/lib/learn/team/service";
 import { TEAM_CURRENCY, TEAM_MAX_SEATS } from "@/lib/learn/team/config";
+import { resolveCheckoutDiscount } from "@/lib/promotions/service";
 
 // Team plan checkout: { seats, name } -> Stripe Checkout (subscription,
 // quantity = seats). The seat price comes from the server only, through
@@ -42,8 +43,17 @@ export async function POST(req: NextRequest) {
     if (await ownedLiveTeam(student.id)) {
       return NextResponse.json({ error: t("team.api.alreadyOwner") }, { status: 409 });
     }
+    // An automatic sale on team seats applies here (no code field on this form).
+    const discount = await resolveCheckoutDiscount({
+      lines: [{ key: "team", amountCents: quote.seatPriceCents * parsed.data.seats }],
+      recurring: true,
+      buyer: { studentId: student.id, email: student.email },
+    });
     const team = await createPendingTeam({ ownerStudentId: student.id, name: parsed.data.name, seats: parsed.data.seats });
     const { url, sessionId } = await payments.createTeamCheckout({
+      couponId: discount.couponId,
+      allowPromotionCodes: discount.allowPromotionCodes,
+      promoMetadata: discount.metadata,
       teamId: team.id,
       teamName: team.name,
       ownerStudentId: student.id,

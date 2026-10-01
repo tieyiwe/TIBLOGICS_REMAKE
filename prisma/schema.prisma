@@ -2572,3 +2572,70 @@ model InboxMessage {
 
   @@index([threadId, createdAt])
 }
+
+// ── Promotions (admin: /admin_pro/promotions; lib/promotions) ──────────────
+// Tables are created at runtime by lib/promotions/db.ts (no migrations).
+// No relations, so they never touch the shared models.
+
+/// A discount the owner runs from admin. state: draft | published | paused | ended
+/// ("live" and "scheduled" are computed from the dates). kind: percent | amount.
+/// mode: code (customers type `code`) | auto (applied at checkout, no code).
+/// scope: [{ key, ids? }] (lib/promotions/shared.ts ScopeEntry).
+model Promotion {
+  id                    String    @id
+  name                  String
+  state                 String    @default("draft")
+  kind                  String
+  percentOff            Float?
+  amountOffCents        Int?
+  duration              String    @default("once")
+  durationMonths        Int?
+  scope                 Json      @default("[]")
+  mode                  String
+  code                  String?
+  startsAt              DateTime?
+  endsAt                DateTime?
+  maxRedemptions        Int?
+  firstTimeOnly         Boolean   @default(false)
+  minimumCents          Int?
+  bannerEn              String?
+  bannerFr              String?
+  bannerSw              String?
+  stripeCouponId        String?
+  stripePromotionCodeId String?
+  stripeCodeActive      Boolean   @default(false)
+  publishedAt           DateTime?
+  endedAt               DateTime?
+  createdBy             String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @default(now())
+
+  @@index([state])
+  @@index([code])
+}
+
+/// One paid checkout that used a promotion (Stripe webhook, checkout.session.completed).
+model PromotionRedemption {
+  id              String   @id
+  promotionId     String
+  stripeSessionId String   @unique
+  source          String   @default("auto")
+  product         String?
+  email           String?
+  studentId       String?
+  subtotalCents   Int      @default(0)
+  discountCents   Int      @default(0)
+  totalCents      Int      @default(0)
+  currency        String   @default("usd")
+  createdAt       DateTime @default(now())
+
+  @@index([promotionId, createdAt])
+}
+
+/// Promotion settings, e.g. key "referral": the referral welcome discount.
+model PromotionSetting {
+  key       String   @id
+  value     Json
+  updatedBy String?
+  updatedAt DateTime @default(now())
+}

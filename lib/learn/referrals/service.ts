@@ -5,6 +5,7 @@ import { arfaMailer, mailTransport, MAIL_FROM } from "@/lib/resend";
 import { translatorFor } from "@/lib/i18n/server";
 import { isLocale, learnLocale } from "@/lib/i18n/config";
 import { ensureReferralTables } from "./db";
+import { effectiveReferralCouponId } from "@/lib/promotions/service";
 
 // ARFA (the TIBLOGICS AI Academy) learner referral program.
 //
@@ -37,9 +38,18 @@ export function monthlyCap(): number {
   return Number.isInteger(n) && n >= 0 && n <= 100 ? n : 3;
 }
 
+/** The welcome coupon from the environment only. Prefer activeReferralCouponId(). */
 export function referralCouponId(): string | null {
   const c = process.env.STRIPE_REFERRAL_COUPON_ID?.trim();
   return c && /^[A-Za-z0-9_-]{1,100}$/.test(c) ? c : null;
+}
+
+/**
+ * The welcome coupon in force: the "Referral welcome discount" set in
+ * /admin_pro/promotions when on, else STRIPE_REFERRAL_COUPON_ID.
+ */
+export function activeReferralCouponId(): Promise<string | null> {
+  return effectiveReferralCouponId(referralCouponId);
 }
 
 function siteUrl(): string {
@@ -163,7 +173,7 @@ export async function recordReferralSignup(opts: { studentId: string; email: str
 
 /** Stripe coupon for a referred learner's first checkout, when configured. */
 export async function referralCouponFor(studentId: string): Promise<string | null> {
-  const coupon = referralCouponId();
+  const coupon = await activeReferralCouponId();
   if (!coupon) return null;
   try {
     await ensureReferralTables();
@@ -369,7 +379,7 @@ export async function learnerStats(studentId: string): Promise<LearnerReferralSt
     paid: refs.filter((r) => r.status === "paid").length,
     rewardsEarned: rewards.filter((r) => r.status === "applied" || r.status === "credit_due").length,
     rewardsPending: rewards.filter((r) => r.status === "pending" || r.status === "capped" || r.status === "processing").length,
-    couponActive: !!referralCouponId(),
+    couponActive: !!(await activeReferralCouponId()),
   };
 }
 
@@ -449,6 +459,6 @@ export async function adminReferralOverview() {
       .sort((a, b) => b.paid - a.paid || b.signups - a.signups)
       .slice(0, 10),
     cap: monthlyCap(),
-    couponId: referralCouponId(),
+    couponId: await activeReferralCouponId(),
   };
 }

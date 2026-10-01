@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import stripe from "@/lib/stripe";
+import { resolveCheckoutDiscount } from "@/lib/promotions/service";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { ensureBlueprintTables } from "@/lib/blueprint/db";
 import { blueprintPrice, BLUEPRINT_PRODUCT } from "@/lib/blueprint/config";
@@ -72,6 +73,11 @@ export async function POST(req: NextRequest) {
 
   const metadata = { product: BLUEPRINT_PRODUCT, blueprintId: bp.id };
   try {
+    const discount = await resolveCheckoutDiscount({
+      lines: [{ key: "blueprint", amountCents: price }],
+      recurring: false,
+      buyer: { email: intake.email },
+    });
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: [{
@@ -86,13 +92,13 @@ export async function POST(req: NextRequest) {
         },
       }],
       customer_email: intake.email,
-      allow_promotion_codes: true,
+      ...(discount.couponId ? { discounts: [{ coupon: discount.couponId }] } : discount.allowPromotionCodes ? { allow_promotion_codes: true } : {}),
       client_reference_id: bp.id,
       // Stripe has French; for Swahili it follows the browser.
       locale: locale === "fr" ? "fr" : "auto",
       success_url: `${SITE}/tools/automation-blueprint?paid=1`,
       cancel_url: `${SITE}/tools/automation-blueprint?canceled=1`,
-      metadata,
+      metadata: { ...discount.metadata, ...metadata },
       payment_intent_data: { metadata },
     });
     if (!session.url) throw new Error("Stripe did not return a checkout URL");

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import stripe from "@/lib/stripe";
+import { stripeCodeBoxAllowed } from "@/lib/promotions/service";
 import { checkRateLimit, isValidEmail } from "@/lib/require-admin";
 import { ensureMonitorTables } from "@/lib/monitor/db";
 import { monitorPricing, MONITOR_PRODUCT } from "@/lib/monitor/config";
@@ -86,11 +87,14 @@ export async function POST(req: NextRequest) {
 
   const metadata = { product: MONITOR_PRODUCT, monitorId: sub.id };
   try {
+    // Not a promotion scope: Stripe's code box shows only when no admin code
+    // could be misapplied here (lib/promotions stripeCodeBoxAllowed).
+    const codeBox = await stripeCodeBoxAllowed([{ key: "other", amountCents: 0 }]);
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [lineItem as never],
       customer_email: email,
-      allow_promotion_codes: true,
+      ...(codeBox ? { allow_promotion_codes: true } : {}),
       client_reference_id: sub.id,
       // Stripe has French; for Swahili it follows the browser.
       locale: locale === "fr" ? "fr" : "auto",

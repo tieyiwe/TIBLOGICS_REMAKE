@@ -19,18 +19,30 @@ export interface PlanDefinition {
   blurb: string;
 }
 
-export interface CheckoutRequest {
+/**
+ * The discount decided by lib/promotions (resolveCheckoutDiscount): at most
+ * one coupon per checkout, Stripe's code box only when allowed, and the
+ * metadata the webhook records redemptions from.
+ */
+export interface CheckoutDiscountFields {
+  /** Stripe coupon to apply (promotion, automatic sale or referral welcome). */
+  couponId?: string | null;
+  /** Show Stripe's promotion code box. Ignored when couponId is set. Default true. */
+  allowPromotionCodes?: boolean;
+  /** Added to the Checkout Session metadata (promotionId, promoSource, promoCode). */
+  promoMetadata?: Record<string, string>;
+}
+
+export interface CheckoutRequest extends CheckoutDiscountFields {
   plan: PlanId;
   studentId: string;
   email: string;
   successUrl: string;
   cancelUrl: string;
-  /** Stripe coupon applied automatically (referral welcome discount). */
-  couponId?: string | null;
 }
 
 /** One-time purchase of one track: lifetime access to it. */
-export interface TrackCheckoutRequest {
+export interface TrackCheckoutRequest extends CheckoutDiscountFields {
   studentId: string;
   email: string;
   trackId: string;
@@ -40,12 +52,10 @@ export interface TrackCheckoutRequest {
   currency: string;
   successUrl: string;
   cancelUrl: string;
-  /** Stripe coupon applied automatically (referral welcome discount). */
-  couponId?: string | null;
 }
 
 /** Team plan: a monthly subscription, quantity = seats (lib/learn/team). */
-export interface TeamCheckoutRequest {
+export interface TeamCheckoutRequest extends CheckoutDiscountFields {
   teamId: string;
   teamName: string;
   ownerStudentId: string;

@@ -14,6 +14,7 @@ import { BLUEPRINT_PRODUCT } from "@/lib/blueprint/config";
 import { recordTrackPurchase } from "@/lib/learn/purchases";
 import { isTeamSubscription, markTeamPaymentFailed, syncTeamSubscription } from "@/lib/learn/team/service";
 import { recordReferralPayment } from "@/lib/learn/referrals/service";
+import { recordRedemption } from "@/lib/promotions/service";
 
 const SITE_URL = (
   process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
@@ -109,6 +110,7 @@ export async function POST(req: Request) {
     if (event.type === "checkout.session.async_payment_succeeded") {
       const session = event.data.object as Stripe.Checkout.Session;
       if (session.metadata?.product === "learn-track") await trackPurchase(session);
+      await recordRedemption(session);
     }
 
     if (event.type === "checkout.session.completed") {
@@ -116,6 +118,11 @@ export async function POST(req: Request) {
       const appointmentId = session.metadata?.appointmentId;
       const registrationId = session.metadata?.registrationId;
       const orderId = session.metadata?.orderId;
+
+      // ── Promotions: a discounted checkout counts as a redemption once paid
+      // (delayed methods are recorded on async_payment_succeeded above).
+      // Idempotent per session; never throws.
+      if (session.payment_status !== "unpaid") await recordRedemption(session);
 
       // ── Learn subscription checkout ─────────────────────────────────────
       if (session.metadata?.product === "learn" && session.mode === "subscription") {
@@ -193,6 +200,8 @@ export async function POST(req: Request) {
           data: {
             status: "paid",
             stripeSessionId: session.id,
+            // What was actually charged (after any promotion).
+            ...(typeof session.amount_total === "number" ? { total: session.amount_total } : {}),
             email,
             customerName: name,
             phone,

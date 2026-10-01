@@ -2,6 +2,7 @@ import { randomInt } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import stripe from "@/lib/stripe";
+import { resolveCheckoutDiscount } from "@/lib/promotions/service";
 import { requireAdmin } from "@/lib/require-admin";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { recordAttribution } from "@/lib/growth/attribution";
@@ -206,15 +207,25 @@ export async function POST(req: NextRequest) {
           });
         }
 
+        // Seat total as charged above (seat 1 at the event price).
+        let seatTotal = priceInt;
+        for (let i = 1; i < Math.min(seats, 4); i++) seatTotal += Math.round(priceInt * discounts[i - 1].rate);
+        if (seats > 4) seatTotal += priceInt * (seats - 4);
+        const promo = await resolveCheckoutDiscount({
+          lines: [{ key: "events", id: eventSlug, amountCents: seatTotal }],
+          recurring: false,
+          buyer: { email: cleanEmail },
+        });
         const session = await stripe.checkout.sessions.create({
           line_items: lineItems,
           mode: "payment",
-          allow_promotion_codes: true,
+          ...(promo.couponId ? { discounts: [{ coupon: promo.couponId }] } : promo.allowPromotionCodes ? { allow_promotion_codes: true } : {}),
           customer_email: cleanEmail,
           // Google Pay is auto-shown in Stripe Checkout when card is enabled and browser supports it
           success_url: `${baseUrl}/events/${eventSlug}/confirmed?conf=${confirmationNumber}`,
           cancel_url: `${baseUrl}/events/${eventSlug}?payment=cancelled&conf=${confirmationNumber}`,
           metadata: {
+            ...promo.metadata,
             registrationId: registration.id,
             confirmationNumber,
             eventSlug,
