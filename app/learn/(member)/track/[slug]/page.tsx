@@ -160,9 +160,8 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
       select: { lessonId: true },
     }),
     prisma.quizAttempt.findMany({
-      where: { studentId: student.id, passed: true, quiz: { module: { trackId: track.id } } },
-      select: { quizId: true },
-      distinct: ["quizId"],
+      where: { studentId: student.id, quiz: { module: { trackId: track.id } } },
+      select: { quizId: true, passed: true },
     }),
     prisma.learnCertificate.findFirst({
       where: { studentId: student.id, trackId: track.id, revoked: false },
@@ -180,7 +179,9 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
   const passedLabIds = new Set(labPasses.map((l) => l.labId));
 
   const doneIds = new Set(done.map((d) => d.lessonId));
-  const passedQuizIds = new Set(quizPasses.map((q) => q.quizId));
+  const passedQuizIds = new Set(quizPasses.filter((q) => q.passed).map((q) => q.quizId));
+  // A quiz already attempted stays open even if a lesson was added since.
+  const triedQuizIds = new Set(quizPasses.map((q) => q.quizId));
   // Mastery paths: diagnostic estimates, tested-out modules and lessons.
   const [mastery, masteredIds] = await Promise.all([
     trackMastery(student.id, track.id).catch((err) => {
@@ -229,7 +230,7 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
     <div className="space-y-8">
       <header className="flex flex-wrap items-center gap-6 rounded-2xl border border-[var(--border)] bg-white p-6">
         <ProgressRing percent={progress.percent} color={track.accentColor} size={76} />
-        <div className="min-w-[180px] flex-1">
+        <div className="min-w-0 flex-1" style={{ flexBasis: 180 }}>
           <h1 className="text-xl font-black text-[var(--ink)]">{text?.title ?? track.title}</h1>
           <p className="mt-1 text-sm text-[var(--ink3)]">
             {t("learn.dash.lessonsDone", { done: progress.completedLessons, total: progress.totalLessons })} ·{" "}
@@ -398,7 +399,7 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
                           {t("learn.trackHome.retake")}
                         </Link>
                       </p>
-                    ) : allDone ? (
+                    ) : allDone || triedQuizIds.has(m.quiz.id) ? (
                       <Link
                         href={`/learn/quiz/${m.quiz.id}`}
                         className="text-xs font-bold text-[var(--blue2)] underline"

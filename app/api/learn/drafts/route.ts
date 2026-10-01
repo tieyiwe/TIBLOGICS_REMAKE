@@ -1,3 +1,5 @@
+import prisma from "@/lib/prisma";
+import { labOpenWithoutDrafts } from "@/lib/learn/progress";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireEntitledStudent, requireStudent } from "@/lib/learn/session";
@@ -63,6 +65,18 @@ async function save(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: t("learn.api.invalidRequest") }, { status: 400 });
   if (draftBytes(parsed.data.value) > DRAFT_MAX_BYTES) {
     return NextResponse.json({ error: t("learn.api.invalidRequest"), tooLarge: true }, { status: 413 });
+  }
+  // A NEW lab draft can only be started once the lab itself is open, so a
+  // draft can never be used to unlock a lab early. Existing drafts (work saved
+  // before a lesson was added to the module) can still be updated.
+  const labKey = /^(?:lab|code):(.+)$/.exec(parsed.data.key);
+  if (labKey && parsed.data.value != null) {
+    const existing = await prisma.learnerDraft
+      .count({ where: { studentId: student.id, key: parsed.data.key } })
+      .catch(() => 0);
+    if (existing === 0 && !(await labOpenWithoutDrafts(student.id, labKey[1]))) {
+      return NextResponse.json({ error: t("labs.api.finishLessonsFirst"), locked: true }, { status: 403 });
+    }
   }
   try {
     const out = await saveDraft(student.id, parsed.data.key, parsed.data.value ?? null);

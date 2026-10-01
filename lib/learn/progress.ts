@@ -164,3 +164,9 @@ export async function labUnlocked(studentId: string, labId: string): Promise<boo
     .catch(() => 0);
   return drafted > 0 || moduleLessonsComplete(studentId, await labModuleId(labId));
 }
+
+/** Lab lock ignoring drafts: an attempt, or the module's lessons done. */
+export async function labOpenWithoutDrafts(studentId: string, labId: string): Promise<boolean> {
+  const tried = await prisma.labAttempt.count({ where: { studentId, labId } });
+  return tried > 0 || moduleLessonsComplete(studentId, await labModuleId(labId));
+}
