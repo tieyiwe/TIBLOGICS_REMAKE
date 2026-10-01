@@ -265,7 +265,7 @@ function resolveAll(s: Structure, f: Facts): ResolvedBadge[] {
       description: `Completed every challenge of the ${name} tool in the TIBLOGICS Learning Studio.`,
       criteria:
         `Complete all ${n} challenges of the ${name} tool in the TIBLOGICS Learning Studio. ` +
-        `Studio challenges are interactive exercises checked automatically in the browser, unlocked in order from easy to hard.`,
+        `Studio challenges are practice exercises unlocked in order from easy to hard. Completion is recorded by the learner's browser and is not proctored or independently verified by TIBLOGICS; it shows practice, not assessed mastery.`,
       trackSlugs: [],
       alignments: [{ targetName: `TIBLOGICS Learning Studio: ${name}`, targetUrl: `${siteBase()}/learning-box` }],
       reqs: [{ kind: "challenges", need: n, have: done, items: [] }],
