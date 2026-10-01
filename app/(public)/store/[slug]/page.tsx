@@ -15,7 +15,10 @@ import ProductDetail from "@/components/shop/ProductDetail";
 import { getT } from "@/lib/i18n/server";
 import type { ShopProduct } from "@/components/shop/types";
 
-export const revalidate = 30;
+// Rendered on every request. A cached listing went stale on the hosted
+// deployment (publishing a product in admin did not show it in the store),
+// and the store is small enough that a live query costs nothing noticeable.
+export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ slug: string }>;

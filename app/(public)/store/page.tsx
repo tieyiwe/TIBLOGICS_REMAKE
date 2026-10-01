@@ -3,23 +3,14 @@ import StoreFront from "@/components/shop/StoreFront";
 import type { ShopProduct, ShopCollection } from "@/components/shop/types";
 import { pickSpotlight, daysUntilRotation } from "@/lib/shop/spotlight";
 
-// Short enough that a rotation cutover appears promptly, long enough that the
-// listing is still cached for ordinary traffic.
-export const revalidate = 300;
+// Rendered on every request. A cached listing went stale on the hosted
+// deployment (publishing a product in admin did not show it in the store),
+// and the store is small enough that a live query costs nothing noticeable.
+export const dynamic = "force-dynamic";
 
 export default async function ShopPage() {
-  // Deliberately NOT wrapped in .catch(() => []).
-  //
-  // This page is prerendered and then cached for `revalidate` seconds. With a
-  // fallback, a build that could not reach the database — no DATABASE_URL in
-  // the build step, database asleep — baked an empty storefront into the cache
-  // and the build still reported success. That is how the store came up with
-  // nothing on it while every product sat published in admin.
-  //
-  // Letting it throw is the better failure on both paths: at build time the
-  // deploy fails with the actual Prisma error instead of shipping an empty
-  // shop, and during a revalidation Next keeps serving the last good page
-  // rather than replacing it with one.
+  // Not wrapped in .catch(() => []): a failed query shows the error page
+  // instead of an empty storefront that looks like the shop has no products.
   const [rawProducts, rawCollections] = await Promise.all([
     prisma.product.findMany({
       where: { published: true },

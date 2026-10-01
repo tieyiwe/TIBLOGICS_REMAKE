@@ -68,19 +68,34 @@ export default async function SubscribePage({
         : t("learn.subscribe.body");
   const others = live.filter((c) => c.id !== chosen?.id);
 
-  return (
-    <div className="min-h-screen bg-[var(--s2)] px-4 py-12">
-      <div className="mx-auto max-w-3xl">
-        <Link href="/" className="block text-center text-lg font-black tracking-tight text-[var(--ink)]">
-          TIB<span className="text-[var(--orange)]">LOGICS</span>
-          <span className="ml-1.5 text-sm font-semibold text-[var(--ink3)]">Learn</span>
-        </Link>
+  const levelLabel = (c: (typeof live)[number]) =>
+    c.levelEnd && c.levelEnd !== c.level
+      ? `${t(`learn.level.${c.level}`)} → ${t(`learn.level.${c.levelEnd}`)}`
+      : t(`learn.level.${c.level}`);
+  const hoursLabel = (h: number) => t(h === 1 ? "learn.time.hours.one" : "learn.time.hours.other", { n: h });
 
-        <div className="mt-8 text-center">
+  // Layout: a short header, then two columns on wide screens. The tracks
+  // (the thing people compare) fill the left as a compact grid that fits
+  // above the fold; the all-tracks plan and Teams sit in a sticky column on
+  // the right. On phones the plan comes first, then the tracks.
+  return (
+    <div className="min-h-screen bg-[var(--s2)]">
+      <header className="border-b border-[var(--border)] bg-white">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+          <Link href="/" className="text-base font-black tracking-tight text-[var(--ink)]">
+            TIB<span className="text-[var(--orange)]">LOGICS</span>
+            <span className="ml-1.5 text-xs font-semibold text-[var(--ink3)]">Learn</span>
+          </Link>
+          <LanguageSwitcher />
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
+        <div className="max-w-3xl">
           <h1 className="text-2xl font-black text-[var(--ink)] sm:text-3xl">{heading}</h1>
-          <p className="mx-auto mt-3 max-w-lg text-sm leading-relaxed text-[var(--ink2)]">{body}</p>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--ink2)]">{body}</p>
           {access.any && (
-            <p className="mt-3 text-sm">
+            <p className="mt-2 text-sm">
               <Link href="/learn/tracks" className="font-semibold text-[var(--blue2)] underline">
                 {t("learn.subscribe.goToTracks")} →
               </Link>
@@ -88,77 +103,95 @@ export default async function SubscribePage({
           )}
         </div>
 
-        <div className="mt-10">
-          <PlanPicker
-            track={chosen ? { slug: chosen.slug, title: chosen.title, priceCents: chosen.priceCents, owned: owns(chosen.id) } : null}
-            showSubscribe={!access.all}
-          />
-        </div>
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+          {/* Phones: plan, tracks, Teams. Wide screens: tracks on the left, plan
+              and Teams stacked on the right. */}
+          <aside className="order-1 space-y-4 lg:order-none lg:col-start-2 lg:row-start-1">
+            {!access.all && (
+              <div>
+                <PlanPicker track={null} showSubscribe />
+                <ul className="mt-3 space-y-1.5 rounded-2xl border border-[var(--border)] bg-white p-4">
+                  {[1, 2, 3, 4, 5].map((n) => t(`learn.subscribe.item.${n}`)).map((x) => (
+                    <li key={x} className="flex gap-2 text-xs leading-relaxed text-[var(--ink2)]">
+                      <span aria-hidden="true" className="font-bold text-[var(--orange2)]">✓</span>
+                      {x}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </aside>
 
-        <div className="mt-10">
-          <TeamsOffer
-            mode="checkout"
-            seatPriceCents={teamPricing.seatPriceCents}
-            minSeats={teamPricing.minSeats}
-            initialSeats={Number(seatsParam) || undefined}
-            defaultOpen={wantsTeam}
-          />
-        </div>
+          <aside className="order-3 lg:order-none lg:col-start-2 lg:row-start-2">
+            <TeamsOffer
+              mode="checkout"
+              seatPriceCents={teamPricing.seatPriceCents}
+              minSeats={teamPricing.minSeats}
+              initialSeats={Number(seatsParam) || undefined}
+              defaultOpen={wantsTeam}
+            />
+          </aside>
 
-        {!access.all && others.length > 0 && (
-          <section className="mt-10 rounded-2xl border border-[var(--border)] bg-white p-6">
-            <h2 className="text-base font-bold text-[var(--ink)]">{t("learn.subscribe.singleTitle")}</h2>
-            <p className="mt-1 text-sm text-[var(--ink3)]">{t("learn.subscribe.singleBody")}</p>
-            <ul className="mt-4 divide-y divide-[var(--border)]">
+          {/* Left column: the chosen track (if any), then every track as a compact grid. */}
+          <section className="order-2 min-w-0 lg:order-none lg:col-start-1 lg:row-span-2 lg:row-start-1">
+            {chosen && !owns(chosen.id) && (
+              <div className="mb-6">
+                <PlanPicker
+                  track={{ slug: chosen.slug, title: chosen.title, priceCents: chosen.priceCents, owned: false }}
+                  showSubscribe={false}
+                />
+              </div>
+            )}
+
+            {!access.all && others.length > 0 && (
+            <>
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="text-base font-bold text-[var(--ink)]">{t(chosen ? "learn.subscribe.singleTitle" : "learn.subscribe.pickTitle")}</h2>
+              <p className="text-xs text-[var(--ink3)]">{t("learn.subscribe.singleBody")}</p>
+            </div>
+            <ul className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {others.map((c) => (
-                <li key={c.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-[var(--ink)]">{c.title}</p>
-                    <p className="text-xs text-[var(--ink3)]">
-                      {t("learn.offer.trackLine", { price: fmtPrice(c.priceCents, locale) })}
+                <li
+                  key={c.id}
+                  className="flex min-w-0 flex-col rounded-xl border border-[var(--border)] border-t-4 bg-white p-4"
+                  style={{ borderTopColor: c.accentColor }}
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink3)]">
+                    {levelLabel(c)} · {hoursLabel(c.estimatedHours)}
+                  </p>
+                  <Link
+                    href={`/learning-box/${c.slug}`}
+                    className="mt-1 text-sm font-bold leading-snug text-[var(--ink)] hover:underline"
+                  >
+                    {c.title}
+                  </Link>
+                  {c.tagline && <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-[var(--ink2)]">{c.tagline}</p>}
+                  <div className="mt-auto flex items-center justify-between gap-2 pt-3">
+                    <p className="text-sm font-black text-[var(--ink)]">
+                      {fmtPrice(c.priceCents, locale)}{" "}
+                      <span className="text-xs font-normal text-[var(--ink3)]">{t("learn.offer.oneTime")}</span>
                     </p>
+                    {owns(c.id) ? (
+                      <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-800">✓</span>
+                    ) : (
+                      <BuyTrackButton slug={c.slug} label={t("learn.subscribe.buyShort")} />
+                    )}
                   </div>
-                  {owns(c.id) ? (
-                    <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-800">
-                      ✓ {t("learn.offer.owned")}
-                    </span>
-                  ) : (
-                    <BuyTrackButton slug={c.slug} label={t("learn.offer.track.buy", { price: fmtPrice(c.priceCents, locale) })} />
-                  )}
                 </li>
               ))}
             </ul>
+            </>
+            )}
+
+            <p className="mt-6 text-xs text-[var(--ink3)]">
+              {t("learn.subscribe.notReady")}{" "}
+              <Link href="/learning-box" className="underline">
+                {t("learn.subscribe.browse")}
+              </Link>
+            </p>
           </section>
-        )}
-
-        {!access.all && (
-          <div className="mx-auto mt-10 max-w-lg rounded-2xl border border-[var(--border)] bg-white p-6">
-            <h2 className="text-sm font-bold text-[var(--ink)]">
-              {t("learn.subscribe.included")} · {t("learn.offer.allLine", { price: fmtPrice(PLANS.monthly.amount, locale) })}
-            </h2>
-            <ul className="mt-4 space-y-2.5">
-              {[1, 2, 3, 4, 5].map((n) => t(`learn.subscribe.item.${n}`)).map((x) => (
-                <li key={x} className="flex gap-2.5 text-sm text-[var(--ink2)]">
-                  <span aria-hidden="true" className="font-bold text-[var(--orange)]">
-                    ✓
-                  </span>
-                  {x}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        <p className="mt-8 text-center text-xs text-[var(--ink3)]">
-          {t("learn.subscribe.notReady")}{" "}
-          <Link href="/learning-box" className="underline">
-            {t("learn.subscribe.browse")}
-          </Link>
-        </p>
-        <div className="mt-4 flex justify-center">
-          <LanguageSwitcher />
         </div>
-      </div>
+      </main>
     </div>
   );
 }
