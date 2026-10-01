@@ -39,15 +39,9 @@ export async function POST(req: NextRequest) {
     const messages = boundChatMessages((await req.json().catch(() => ({})))?.messages);
     if (!messages) return NextResponse.json({ error: t("tools.api.invalidRequest") }, { status: 400 });
 
-    const anthropic = (await import("@/lib/claude")).default;
-    const { CLAUDE_MODEL } = await import("@/lib/claude");
+    const { streamClaude } = await import("@/lib/claude");
 
-    const stream = anthropic.messages.stream({
-      model: CLAUDE_MODEL,
-      max_tokens: 1024,
-      system,
-      messages,
-    });
+    const stream = streamClaude("chat-advisor", { system, messages, maxTokens: 1024, meta: { ref: "advisor" } });
 
     const encoder = new TextEncoder();
     const readable = new ReadableStream({

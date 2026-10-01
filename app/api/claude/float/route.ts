@@ -1,7 +1,7 @@
 import { checkRateLimit } from "@/lib/rate-limit";
 export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
-import { streamChat } from "@/lib/claude";
+import { streamClaude } from "@/lib/claude";
 import { getLocale } from "@/lib/i18n/server";
 import { replyInLanguage } from "@/lib/i18n/config";
 import { boundChatMessages } from "@/lib/chat-bounds";
@@ -107,8 +107,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid messages" }, { status: 400 });
     }
 
-    const anthropic = (await import("@/lib/claude")).default;
-    const { CLAUDE_MODEL } = await import("@/lib/claude");
 
     // The site is in English, French or Swahili; answer in the visitor's
     // language. The booking marker is parsed by the widget, so it must stay
@@ -119,12 +117,7 @@ export async function POST(req: NextRequest) {
       ? `${FLOAT_SYSTEM_PROMPT}\n\n== LANGUAGE ==\n${language} Keep the marker [BOOK_APPOINTMENT] and the page paths exactly as written.`
       : FLOAT_SYSTEM_PROMPT;
 
-    const stream = anthropic.messages.stream({
-      model: CLAUDE_MODEL,
-      max_tokens: 512,
-      system,
-      messages,
-    });
+    const stream = streamClaude("chat-sales", { system, messages, maxTokens: 512, meta: { ref: "float" } });
 
     const encoder = new TextEncoder();
     const readable = new ReadableStream({
