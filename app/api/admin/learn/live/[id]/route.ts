@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/require-admin";
+import { requirePermission } from "@/lib/require-admin";
 import {
   deleteQuestion,
   deleteSession,
@@ -16,7 +16,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 /** Edit the session. A raised capacity moves learners up from the waitlist. */
 export async function PATCH(req: NextRequest, { params }: Ctx) {
-  const authErr = await requireAdmin();
+  const authErr = await requirePermission("events");
   if (authErr) return authErr;
   const id = (await params).id;
   if (!(await getSession(id))) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -29,7 +29,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 }
 
 export async function DELETE(_req: NextRequest, { params }: Ctx) {
-  const authErr = await requireAdmin();
+  const authErr = await requirePermission("events");
   if (authErr) return authErr;
   await deleteSession((await params).id);
   return NextResponse.json({ ok: true });
@@ -38,7 +38,7 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
 // POST { action: "answered" | "unanswered" | "hide" | "unhide" | "deleteQuestion", questionId }
 //    | { action: "removeAttendee", studentId }
 export async function POST(req: NextRequest, { params }: Ctx) {
-  const authErr = await requireAdmin();
+  const authErr = await requirePermission("events");
   if (authErr) return authErr;
   const id = (await params).id;
   const session = await getSession(id);

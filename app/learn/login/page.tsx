@@ -16,7 +16,15 @@ function safeNext(raw: string | null): string {
   if (!raw) return "/learn";
   if (!raw.startsWith("/")) return "/learn";
   if (raw.startsWith("//") || raw.startsWith("/\\")) return "/learn";
-  return raw;
+  // Browsers drop tabs and newlines, so "/%09/evil.com" becomes "//evil.com":
+  // resolve it and keep it only if it stays on this site.
+  try {
+    const u = new URL(raw, "https://same.site.invalid");
+    if (u.origin !== "https://same.site.invalid") return "/learn";
+    return u.pathname + u.search + u.hash;
+  } catch {
+    return "/learn";
+  }
 }
 
 function LoginForm() {

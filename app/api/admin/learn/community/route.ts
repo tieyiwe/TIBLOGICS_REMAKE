@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireAdmin } from "@/lib/require-admin";
+import { requirePermission } from "@/lib/require-admin";
 import { ensureCommunityTables } from "@/lib/learn/community/db";
 import { deletePost, deleteThread, getPost, setAnswer, setHidden } from "@/lib/learn/community/discussion";
 import { setPeerHidden } from "@/lib/learn/community/peer";
@@ -13,7 +13,7 @@ import { setPeerHidden } from "@/lib/learn/community/peer";
 //   { action: "answer", threadId, postId | null }  mark the accepted answer
 //   { action: "hidePeer" | "unhidePeer", reviewId }
 export async function POST(req: NextRequest) {
-  const authErr = await requireAdmin();
+  const authErr = await requirePermission("events");
   if (authErr) return authErr;
   await ensureCommunityTables();
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { checkRateLimit, requireAdmin } from "@/lib/require-admin";
+import { checkRateLimit, requirePermission } from "@/lib/require-admin";
 import { createCompedTeam, listTeamsForAdmin } from "@/lib/learn/team/admin";
 import { getTeamPricing, setTeamPricing } from "@/lib/learn/team/settings";
 import { TEAM_MAX_SEATS } from "@/lib/learn/team/config";
 
 export async function GET() {
-  const authErr = await requireAdmin();
+  const authErr = await requirePermission("*");
   if (authErr) return authErr;
   const [teams, pricing] = await Promise.all([listTeamsForAdmin(), getTeamPricing()]);
   return NextResponse.json({ teams, pricing });
@@ -20,7 +20,7 @@ const Create = z.object({
 
 /** Comp a new team (free seats for a partner or pilot). */
 export async function POST(req: NextRequest) {
-  const authErr = await requireAdmin();
+  const authErr = await requirePermission("*");
   if (authErr) return authErr;
   if (!(await checkRateLimit("admin-teams:write", 60, 60_000))) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   const parsed = Create.safeParse(await req.json().catch(() => ({})));
@@ -37,7 +37,7 @@ const Defaults = z.object({
 
 /** Defaults for new teams: price per seat per month and the minimum seats. */
 export async function PUT(req: NextRequest) {
-  const authErr = await requireAdmin();
+  const authErr = await requirePermission("*");
   if (authErr) return authErr;
   const parsed = Defaults.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: "Seat price (cents, at least 100) and minimum seats are required." }, { status: 400 });

@@ -64,6 +64,11 @@ export async function POST(req: NextRequest) {
       const bank = await localizeQuestions("micro", check.id, check.questions, locale, answeredIds);
       const served = bank.questions.filter((q) => answeredIds.includes(q.id));
       if (served.length === 0) return NextResponse.json({ error: t("labs.api.noMatching") }, { status: 400 });
+      // The score is over the answered questions only, so a full served set
+      // must be answered: otherwise one known answer would score 100%.
+      if (served.length < Math.min(check.questionsServed, check.questions.length)) {
+        return NextResponse.json({ error: t("labs.api.noAnswers") }, { status: 400 });
+      }
 
       const { score, graded } = scoreAnswers(served.map((q) => presentQuestion(q, student.id)), answers);
       const passed = score >= check.passScore;
@@ -104,6 +109,10 @@ export async function POST(req: NextRequest) {
     const bank = await localizeQuestions("quiz", quiz.id, quiz.questions, locale, answeredIds);
     const served = bank.questions.filter((q) => answeredIds.includes(q.id));
     if (served.length === 0) return NextResponse.json({ error: t("labs.api.noMatching") }, { status: 400 });
+    // Same rule as micro-checks: a pass needs a full served set answered.
+    if (served.length < Math.min(quiz.questionsServed, quiz.questions.length)) {
+      return NextResponse.json({ error: t("labs.api.noAnswers") }, { status: 400 });
+    }
 
     const { score, graded } = scoreAnswers(served.map((q) => presentQuestion(q, student.id)), answers);
     const passed = score >= quiz.passScore;

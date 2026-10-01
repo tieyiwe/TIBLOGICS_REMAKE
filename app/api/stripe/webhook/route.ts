@@ -84,13 +84,17 @@ export async function POST(req: Request) {
         const existing = await prisma.learnSubscription
           .findUnique({ where: { stripeSubscriptionId: subId } })
           .catch(() => null);
-        if (existing) {
-          // 7-day read-only grace window (Part E1)
+        if (existing && existing.status !== "canceled") {
+          // 7-day read-only grace window (Part E1), started once. Every retry
+          // failure fires this event again; restarting the window each time
+          // would let an unpaid subscription keep access for the whole dunning
+          // cycle instead of seven days.
+          const keepGrace = existing.status === "past_due" && existing.graceUntil;
           await prisma.learnSubscription.update({
             where: { id: existing.id },
             data: {
               status: "past_due",
-              graceUntil: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+              graceUntil: keepGrace ? existing.graceUntil : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             },
           });
           console.log(`[stripe/webhook] Learn sub ${subId} → past_due (7-day grace)`);
@@ -393,6 +397,15 @@ async function upsertLearnSubscription(sub: Stripe.Subscription, studentIdArg?: 
   if (!studentId) return;
 
   const raw = sub.status; // trialing|active|past_due|canceled|incomplete|unpaid|...
+  // A subscription whose first payment never settled was never paid for. It
+  // used to fall through to past_due below, which carries a 7-day grace, so
+  // an abandoned checkout granted a week of every track. Leave the row as it
+  // is: an existing healthy subscription is not overwritten, and nothing is
+  // granted to a new one. incomplete_expired still maps to canceled.
+  if (raw === "incomplete") {
+    console.log(`[stripe/webhook] Learn sub ${sub.id} incomplete (first payment not settled): no access`);
+    return;
+  }
   const status =
     raw === "active" || raw === "trialing" || raw === "past_due"
       ? raw
@@ -406,8 +419,20 @@ async function upsertLearnSubscription(sub: Stripe.Subscription, studentIdArg?: 
   const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id ?? null;
 
   // Entering past_due starts a 7-day grace; returning to healthy clears it.
-  const graceUntil =
-    status === "past_due" ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) : null;
+  // Staying past_due keeps the original deadline: any change to the
+  // subscription (the learner toggling cancel-at-period-end in the billing
+  // portal, say) fires customer.subscription.updated, and restarting the
+  // window on each one would extend unpaid access indefinitely.
+  let graceUntil: Date | null = null;
+  if (status === "past_due") {
+    const prev = await prisma.learnSubscription
+      .findUnique({ where: { studentId }, select: { status: true, graceUntil: true, stripeSubscriptionId: true } })
+      .catch(() => null);
+    graceUntil =
+      prev?.status === "past_due" && prev.graceUntil && prev.stripeSubscriptionId === sub.id
+        ? prev.graceUntil
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  }
 
   const data = {
     stripeCustomerId: customerId,

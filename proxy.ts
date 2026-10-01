@@ -59,9 +59,18 @@ async function gate(req: NextRequest) {
       if (token?.studentId && !pathname.startsWith("/learn/forgot") && !pathname.startsWith("/learn/reset")) {
         // Honour ?next= (same-site paths only), so a signed-in account sent
         // here from the paid tools goes back to them rather than to Learn.
+        // Resolved, then checked by origin: string prefix checks alone let
+        // "/\t/evil.com" through (the URL parser drops tabs and newlines,
+        // leaving "//evil.com", a different host).
         const next = req.nextUrl.searchParams.get("next");
-        const safe = next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : "/learn";
-        return NextResponse.redirect(new URL(safe, req.url));
+        let dest = new URL("/learn", req.url);
+        if (next && next.startsWith("/")) {
+          try {
+            const u = new URL(next, req.url);
+            if (u.origin === req.nextUrl.origin) dest = u;
+          } catch { /* keep /learn */ }
+        }
+        return NextResponse.redirect(dest);
       }
       return NextResponse.next();
     }

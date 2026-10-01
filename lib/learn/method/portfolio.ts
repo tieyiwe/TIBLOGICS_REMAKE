@@ -64,7 +64,8 @@ function clip(s: string, n = EXCERPT): string {
 
 /** "Jane Doe" → "Jane D."; one word stays as it is. */
 export function publicName(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
+  // An email typed as a name never goes public.
+  const parts = name.trim().split(/\s+/).filter((w) => w && !w.includes("@"));
   if (parts.length === 0) return "";
   if (parts.length === 1) return parts[0];
   return `${parts[0]} ${parts[parts.length - 1].charAt(0).toUpperCase()}.`;

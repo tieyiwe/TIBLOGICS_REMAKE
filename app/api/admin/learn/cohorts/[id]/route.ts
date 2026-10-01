@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/require-admin";
+import { requirePermission } from "@/lib/require-admin";
 import {
   addAnnouncement,
   deleteAnnouncement,
@@ -15,7 +15,7 @@ type Ctx = { params: Promise<{ id: string }> };
 
 /** Edit the cohort (the track cannot change). */
 export async function PATCH(req: NextRequest, { params }: Ctx) {
-  const authErr = await requireAdmin();
+  const authErr = await requirePermission("events");
   if (authErr) return authErr;
   const id = (await params).id;
   const cohort = await getCohort(id);
@@ -28,7 +28,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 }
 
 export async function DELETE(_req: NextRequest, { params }: Ctx) {
-  const authErr = await requireAdmin();
+  const authErr = await requirePermission("events");
   if (authErr) return authErr;
   await deleteCohort((await params).id);
   return NextResponse.json({ ok: true });
@@ -38,7 +38,7 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
 //    | { action: "addRecording", title, url } | { action: "removeRecording", index }
 //    | { action: "removeMember", studentId }
 export async function POST(req: NextRequest, { params }: Ctx) {
-  const authErr = await requireAdmin();
+  const authErr = await requirePermission("events");
   if (authErr) return authErr;
   const id = (await params).id;
   const cohort = await getCohort(id);

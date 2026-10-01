@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/require-admin";
+import { requirePermission } from "@/lib/require-admin";
 import { attendanceCsv, attendees, getSession } from "@/lib/learn/live/sessions";
 
 export const dynamic = "force-dynamic";
 
 // CSV of a live session's RSVPs, waitlist and attendance. Staff only; never cached.
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const authErr = await requireAdmin();
+  const authErr = await requirePermission("events");
   if (authErr) return authErr;
   const id = (await params).id;
   const s = await getSession(id);

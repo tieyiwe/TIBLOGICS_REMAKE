@@ -7,7 +7,15 @@ const stamp = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}
 
 /** RFC 5545 text escaping, then folding at 74 octets-ish (by characters). */
 function text(v: string): string {
-  return v.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+  // A lone CR (or any other control character) could start a new property
+  // line in lenient calendar parsers, so only "\n" survives, as an escape.
+  return v
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\r\n|\r|\n|\u2028|\u2029/g, "\\n")
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u001f\u007f]/g, "");
 }
 function fold(line: string): string {
   const out: string[] = [];

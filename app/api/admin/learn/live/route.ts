@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/require-admin";
+import { requirePermission } from "@/lib/require-admin";
 import { createSession } from "@/lib/learn/live/sessions";
 import { parseSessionInput } from "@/lib/learn/live/admin-input";
 
 /** Create a live expert session. */
 export async function POST(req: NextRequest) {
-  const authErr = await requireAdmin();
+  const authErr = await requirePermission("events");
   if (authErr) return authErr;
   const parsed = parseSessionInput(await req.json().catch(() => ({})));
   if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 });

@@ -185,7 +185,11 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const throttleKey = `student:${credentials.email.toLowerCase().trim()}`;
+        // The owner's email accepts the admin password here too, so it shares
+        // the staff provider's counter: separate buckets would double the
+        // guesses allowed against the master credential.
+        const attempted = credentials.email.toLowerCase().trim();
+        const throttleKey = attempted === OWNER_EMAIL.toLowerCase() ? `staff:${attempted}` : `student:${attempted}`;
         if (!(await loginAllowed(throttleKey))) return null;
 
         let prisma: Awaited<typeof import("@/lib/prisma")>["prisma"];

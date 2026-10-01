@@ -9,7 +9,12 @@ import { getT, type T } from "@/lib/i18n/server";
 const bodyFor = (t: T) =>
   z.object({
     capstoneId: z.string().min(1),
-    submissionUrl: z.string().url(t("labs.api.validUrl")).nullable().optional(),
+    submissionUrl: z
+      .string()
+      .url(t("labs.api.validUrl"))
+      .refine((u) => /^https?:\/\//i.test(u), t("labs.api.validUrl"))
+      .nullable()
+      .optional(),
     submissionMd: z.string().max(20000).nullable().optional(),
   });
 

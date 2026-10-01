@@ -17,11 +17,12 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const b = await loadVerifiedBadge(id);
   const show = !!b && b.award.isPublic && b.status !== "invalid";
   const v = show ? readCredential(b!.credential) : null;
-  const name = v?.achievementName || b?.award.name || "Verified skill badge";
+  // A private badge gets the generic card: not even its name.
+  const name = (show && (v?.achievementName || b?.award.name)) || "Verified skill badge";
   const svg = show
     ? badgeSvg({ glyph: glyphFor(b!.award.badgeKey), kicker: FAMILY_LABEL_EN[b!.award.family], name, footer: String(b!.award.issuedAt.getUTCFullYear()) })
     : null;
-  const status = !b ? "" : b.status === "verified" ? "Verified" : b.status === "revoked" ? "Revoked" : b.status === "unsigned" ? "Unsigned" : "";
+  const status = !show ? "" : b.status === "verified" ? "Verified" : b.status === "revoked" ? "Revoked" : b.status === "unsigned" ? "Unsigned" : "";
 
   return new ImageResponse(
     (

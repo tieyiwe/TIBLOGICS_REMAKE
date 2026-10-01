@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireAdminPage } from "../../_lib/admin-page-auth";
 import {
   filterQuery, listLearners, parseFilters, type LearnerFilters, type LearnerRow, type SortKey,
@@ -34,7 +35,9 @@ export default async function LearnersPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requireAdminPage();
+  const session = await requireAdminPage();
+  // Learner PII: the Learn ("events") permission, as in the sidebar.
+  if (!(session.user.isAdmin || session.user.permissions?.some((p) => p === "*" || p === "events"))) redirect("/admin_pro");
   const f = parseFilters(await searchParams);
   const { rows, total, page, pages, tracks } = await listLearners(f);
 

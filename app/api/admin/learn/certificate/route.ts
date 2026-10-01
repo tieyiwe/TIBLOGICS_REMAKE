@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { requireAdmin } from "@/lib/require-admin";
+import { requirePermission } from "@/lib/require-admin";
 import { issueCertificate } from "@/lib/learn/certificates";
 
 // Manual override for support cases — e.g. a learner completed everything
@@ -14,7 +14,7 @@ const Body = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const authErr = await requireAdmin();
+  const authErr = await requirePermission("events");
   if (authErr) return authErr;
 
   const parsed = Body.safeParse(await req.json().catch(() => ({})));

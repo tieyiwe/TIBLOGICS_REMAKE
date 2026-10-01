@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/require-admin";
+import { requirePermission } from "@/lib/require-admin";
 import { seedAll } from "@/lib/learn/seed";
 
 // Idempotent. Re-running updates content in place and never duplicates —
@@ -7,7 +7,7 @@ import { seedAll } from "@/lib/learn/seed";
 export const maxDuration = 300;
 
 export async function POST() {
-  const authErr = await requireAdmin();
+  const authErr = await requirePermission("events");
   if (authErr) return authErr;
 
   try {

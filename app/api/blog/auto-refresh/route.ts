@@ -1,6 +1,7 @@
 export const maxDuration = 300;
 import { postFields, postKey, translateArticlesSoon } from "@/lib/i18n/sources/blog";
 import { translated } from "@/lib/i18n/content";
+import { escapeAiText, sanitizeAiHtml } from "@/lib/ai-html";
 import { NextRequest, NextResponse } from "next/server";
 import { REFRESH_INTERVAL_MS } from "@/lib/blog/schedule";
 import { revalidatePath } from "next/cache";
@@ -370,7 +371,10 @@ Return a JSON object:
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON");
     const parsed = JSON.parse(jsonMatch[0]);
-    if (!parsed.content || parsed.content.length < 200) throw new Error("Content too short");
+    if (typeof parsed.content !== "string" || parsed.content.length < 200) throw new Error("Content too short");
+    // Written from a third-party page and published as HTML: keep only plain
+    // article markup (lib/ai-html.ts).
+    parsed.content = sanitizeAiHtml(parsed.content);
     return parsed;
   } catch {
     return null;
@@ -379,7 +383,7 @@ Return a JSON object:
 
 function buildTipsHtml(tips: string[]): string {
   const items = tips
-    .map((t, i) => `<li><span class="tip-num">${i + 1}</span>${t}</li>`)
+    .map((t, i) => `<li><span class="tip-num">${i + 1}</span>${escapeAiText(t)}</li>`)
     .join("");
   return `<div class="tips-section"><div class="tips-header">💡 Tip of the Day</div><ul class="tips-list">${items}</ul></div>`;
 }

@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
 import { requireAdmin } from "@/lib/require-admin";
 import { assignCoverImage } from "@/lib/blog-cover";
+import { escapeAiText, sanitizeAiHtml } from "@/lib/ai-html";
 
 const CATEGORY_MAP: Record<string, { emoji: string; gradient: string }> = {
   "breaking":    { emoji: "⚡", gradient: "from-red-600 to-orange-500" },
@@ -81,13 +82,15 @@ category must be one of: breaking, ai-business, tips, tools, case-studies, indus
       const jsonMatch = clean.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error("No JSON found");
       generated = JSON.parse(jsonMatch[0]);
-      if (!generated.content || generated.content.length < 100) throw new Error("Content too short");
+      if (typeof generated.content !== "string" || generated.content.length < 100) throw new Error("Content too short");
+      // Model-written HTML is published as-is on the public article page.
+      generated.content = sanitizeAiHtml(generated.content);
       // Enforce category whitelist
       if (!VALID_CATEGORIES.has(generated.category)) generated.category = "industry";
     } catch {
       generated = {
         excerpt: `${title.slice(0, 155)} — a key development in AI worth knowing about.`,
-        content: `<p>${title}</p><h2>Overview</h2><p>This topic is rapidly evolving. Stay tuned for our full coverage.</p>`,
+        content: `<p>${escapeAiText(title)}</p><h2>Overview</h2><p>This topic is rapidly evolving. Stay tuned for our full coverage.</p>`,
         category: "industry",
         tags: ["ai", "technology"],
       };

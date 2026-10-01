@@ -191,6 +191,11 @@ async function networkFirstPage(req) {
         .then((c) => c.put(pageKey(req.url), copy))
         .then(trimBrowsedPages)
         .catch(() => {});
+    } else if (res && res.redirected && /^\/learn\/login\/?$/.test(new URL(res.url).pathname)) {
+      // Signed out without the sign-out button (session expired, cookies
+      // cleared): nobody is signed in now, so the last learner's saved pages
+      // must not be served to whoever uses this device offline next.
+      clearEverything().catch(() => {});
     }
     return res;
   } catch {

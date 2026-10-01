@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { requireAdmin } from "@/lib/require-admin";
+import { requirePermission } from "@/lib/require-admin";
 import { CAPSTONE_STATUSES } from "@/lib/learn/types";
 import { awardPoints } from "@/lib/learn/points";
 import { maybeIssueCertificate } from "@/lib/learn/certificates";
@@ -17,7 +17,7 @@ const Body = z.object({
 });
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const authErr = await requireAdmin();
+  const authErr = await requirePermission("events");
   if (authErr) return authErr;
 
   const { id } = await params;

@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { checkRateLimit, requireAdmin } from "@/lib/require-admin";
+import { checkRateLimit, requirePermission } from "@/lib/require-admin";
 import { adminTeamDetail, updateTeamAdmin } from "@/lib/learn/team/admin";
 import { TEAM_MAX_SEATS } from "@/lib/learn/team/config";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function GET(_req: NextRequest, { params }: Ctx) {
-  const authErr = await requireAdmin();
+  const authErr = await requirePermission("*");
   if (authErr) return authErr;
   const d = await adminTeamDetail((await params).id);
   if (!d) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -23,7 +23,7 @@ const Patch = z.object({
 });
 
 export async function PATCH(req: NextRequest, { params }: Ctx) {
-  const authErr = await requireAdmin();
+  const authErr = await requirePermission("*");
   if (authErr) return authErr;
   if (!(await checkRateLimit("admin-teams:write", 60, 60_000))) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   const parsed = Patch.safeParse(await req.json().catch(() => ({})));

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
-import { requireAdmin } from "@/lib/require-admin";
+import { requirePermission } from "@/lib/require-admin";
 import { ContentError, Op, runOp } from "@/lib/learn/admin/content";
 
 // The Learning Box editor's single write endpoint: { op: "lesson.update", ... }.
 // Staff only; every operation is validated in lib/learn/admin/content.ts.
 export async function POST(req: NextRequest) {
-  const denied = await requireAdmin();
+  const denied = await requirePermission("events");
   if (denied) return denied;
 
   const parsed = Op.safeParse(await req.json().catch(() => null));

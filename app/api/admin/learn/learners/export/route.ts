@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/require-admin";
+import { requirePermission } from "@/lib/require-admin";
 import { learnersCsv, parseFilters } from "@/lib/learn/admin/learners";
 
 export const dynamic = "force-dynamic";
 
 // CSV of the TIBLOGICS Learn learners list, with the same filters and sort as
-// /admin_pro/learn/learners (all pages). Staff only; never cached.
+// /admin_pro/learn/learners (all pages). Staff with the Learn ("events")
+// permission only, the same key that shows the page in the sidebar: every
+// learner's name and email is in it. Never cached.
 export async function GET(req: NextRequest) {
-  const authErr = await requireAdmin();
+  const authErr = await requirePermission("events");
   if (authErr) return authErr;
   try {
     const { csv } = await learnersCsv(parseFilters(req.nextUrl.searchParams));

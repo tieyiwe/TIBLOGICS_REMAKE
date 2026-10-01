@@ -10,6 +10,18 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { fmtPrice } from "@/lib/learn/format";
 import { useLocale, useT } from "@/lib/i18n/client";
 
+
+/** A same-site path, or null. Resolved so "/%09/evil.com" (read as "//evil.com") is refused. */
+function sameSitePath(raw: string | null): string | null {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) return null;
+  try {
+    const u = new URL(raw, "https://same.site.invalid");
+    return u.origin === "https://same.site.invalid" ? u.pathname + u.search + u.hash : null;
+  } catch {
+    return null;
+  }
+}
+
 function SignupForm() {
   const t = useT();
   const locale = useLocale();
@@ -21,7 +33,7 @@ function SignupForm() {
   // Where to go after sign-up when arriving from somewhere other than Learn
   // (the paid tools). Same-site paths only, as on the login page.
   const rawNext = params.get("next");
-  const next = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") && !rawNext.startsWith("/\\") ? rawNext : null;
+  const next = sameSitePath(rawNext);
   const [name, setName] = useState("");
   // Prefilled from a team invitation link (/join-team/...).
   const [email, setEmail] = useState(params.get("email") ?? "");

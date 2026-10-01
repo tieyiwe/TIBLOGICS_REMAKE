@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
 import { requireAdmin } from "@/lib/require-admin";
+import { sanitizeAiHtml } from "@/lib/ai-html";
 
 const VALID_CATEGORIES = new Set([
   "breaking", "ai-business", "tips", "tools", "case-studies", "industry",
@@ -43,8 +44,10 @@ category must be exactly one of: breaking, ai-business, tips, tools, case-studie
   const jsonMatch = clean.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error("No JSON in response");
   const parsed = JSON.parse(jsonMatch[0]);
-  if (!parsed.content || parsed.content.length < 200) throw new Error("Content too short");
+  if (typeof parsed.content !== "string" || parsed.content.length < 200) throw new Error("Content too short");
   if (!VALID_CATEGORIES.has(parsed.category)) parsed.category = "industry";
+  // Model-written HTML is published as-is on the public article page.
+  parsed.content = sanitizeAiHtml(parsed.content);
   return parsed as { excerpt: string; content: string; category: string; tags: string[] };
 }
 

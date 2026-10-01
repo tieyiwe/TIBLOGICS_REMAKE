@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/require-admin";
+import { requirePermission } from "@/lib/require-admin";
 
 // Creates every TIBLOGICS Learn table. Managed DB — no migrations, so this
 // mirrors the events/shop sync pattern. Fully idempotent.
 export async function POST() {
-  const authErr = await requireAdmin();
+  const authErr = await requirePermission("events");
   if (authErr) return authErr;
 
   const log: string[] = [];

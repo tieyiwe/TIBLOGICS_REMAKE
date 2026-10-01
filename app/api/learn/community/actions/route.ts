@@ -21,7 +21,8 @@ export async function POST(req: NextRequest) {
     let threadId = targetId;
     if (targetType === "post") {
       const post = await getPost(targetId);
-      if (!post || post.deletedAt) return fail(t, "community.err.notFound", 404);
+      // A hidden reply is visible to its author only (as in getThread).
+      if (!post || post.deletedAt || (post.hidden && post.authorId !== student.id)) return fail(t, "community.err.notFound", 404);
       threadId = post.threadId;
     }
     if (!(await visibleThread(student.id, tracks, threadId))) return fail(t, "community.err.notFound", 404);

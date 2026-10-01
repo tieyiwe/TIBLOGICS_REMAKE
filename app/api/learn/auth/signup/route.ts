@@ -60,6 +60,14 @@ export async function POST(req: NextRequest) {
   const locale = isLocale(parsed.data.locale) ? parsed.data.locale : await getLocale();
 
   try {
+    // The owner's learner account is always entitled (lib/learn/session.ts,
+    // by email) and sign-up does not verify addresses, so a self-service
+    // sign-up with the owner's email would hand a stranger free access to
+    // every track. That account is created only by the owner's own sign-in
+    // with the admin password (lib/auth.ts). Same answer as a taken address.
+    if (email === OWNER_EMAIL.toLowerCase()) {
+      return NextResponse.json({ error: t("learn.api.emailExists") }, { status: 409 });
+    }
     const existing = await prisma.student.findUnique({ where: { email }, select: { id: true } });
     if (existing) {
       return NextResponse.json({ error: t("learn.api.emailExists") }, { status: 409 });
@@ -72,17 +80,15 @@ export async function POST(req: NextRequest) {
     });
 
     // Tell the owner (ADMIN_NOTIFY_EMAIL). Fire and forget: never blocks or
-    // fails the sign-up. The owner's own learner account is not announced.
-    if (email !== OWNER_EMAIL.toLowerCase()) {
-      sendSignupNotification({
-        studentId: student.id,
-        name: student.name,
-        email: student.email,
-        locale,
-        createdAt: student.createdAt,
-        ...signupSource(parsed.data, req.headers.get("referer")),
-      }).catch((err) => console.error("[learn/signup] owner notification", err));
-    }
+    // fails the sign-up.
+    sendSignupNotification({
+      studentId: student.id,
+      name: student.name,
+      email: student.email,
+      locale,
+      createdAt: student.createdAt,
+      ...signupSource(parsed.data, req.headers.get("referer")),
+    }).catch((err) => console.error("[learn/signup] owner notification", err));
 
     sendStudentWelcomeEmail({ email: student.email, name: student.name, locale })
       .catch((err) => console.error("[learn/signup] welcome email", err));

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
-import { checkRateLimit, requireAdmin } from "@/lib/require-admin";
+import { checkRateLimit, requirePermission } from "@/lib/require-admin";
 import { ensureVideoTables } from "@/lib/learn/video/db";
 import { generateScript, lessonBrief, readScript } from "@/lib/learn/video/script";
 
@@ -19,7 +19,7 @@ async function staffKey(): Promise<string> {
 }
 
 export async function GET(req: NextRequest) {
-  const denied = await requireAdmin();
+  const denied = await requirePermission("events");
   if (denied) return denied;
   const lessonId = req.nextUrl.searchParams.get("lessonId") ?? "";
   const v = Number(req.nextUrl.searchParams.get("version"));
@@ -64,7 +64,7 @@ async function saveVersion(lessonId: string, content: unknown, source: "ai" | "e
 }
 
 export async function POST(req: NextRequest) {
-  const denied = await requireAdmin();
+  const denied = await requirePermission("events");
   if (denied) return denied;
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid request" }, { status: 400 });

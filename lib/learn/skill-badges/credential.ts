@@ -45,7 +45,8 @@ export interface CredentialFacts {
 
 /** "Jane Mary Doe" → "Jane D."; one word stays as it is. */
 export function publicDisplayName(full: string): string {
-  const parts = full.trim().split(/\s+/).filter(Boolean);
+  // An address typed as a name never goes into a public, signed credential.
+  const parts = full.trim().split(/\s+/).filter((p) => p && !p.includes("@"));
   if (parts.length === 0) return "TIBLOGICS Learner";
   if (parts.length === 1) return parts[0];
   const last = parts[parts.length - 1];

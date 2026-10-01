@@ -144,7 +144,8 @@ export default function PeerReviewPanel({
                   {t("community.peer.submissionN", { n: i + 1 })}
                   {a.status === "submitted" && <span className="ml-2 text-xs font-semibold text-green-700">✓ {t("community.peer.sent")}</span>}
                 </p>
-                {a.submissionUrl && (
+                {/* Learner-supplied: only http(s) links (the capstone form accepts any URL scheme). */}
+                {a.submissionUrl && /^https?:\/\//i.test(a.submissionUrl) && (
                   <p className="mt-1 text-sm">
                     <a href={a.submissionUrl} target="_blank" rel="noopener noreferrer nofollow" className="font-semibold text-[var(--blue2)] underline [overflow-wrap:anywhere]">
                       {t("community.peer.openWork")} ↗

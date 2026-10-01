@@ -44,10 +44,11 @@ function renderInline(text: string, keyPrefix: string): Inline[] {
         const [, label, href] = link;
         // Only http(s), mailto and same-site paths — blocks javascript: and
         // data: URLs. Protocol-relative "//evil.com" is rejected too: it
-        // starts with "/" but navigates off-site.
+        // starts with "/" but navigates off-site. So is "/\evil.com", which
+        // browsers normalise to "//evil.com".
         const h = href.trim();
         const safe =
-          /^(https?:\/\/|mailto:)/i.test(h) || (h.startsWith("/") && !h.startsWith("//"));
+          /^(https?:\/\/|mailto:)/i.test(h) || (h.startsWith("/") && !/^\/[/\\]/.test(h));
         nodes.push(
           safe ? (
             <a

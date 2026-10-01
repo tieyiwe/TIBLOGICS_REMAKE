@@ -151,53 +151,81 @@ export type InviteOutcome =
  */
 export async function inviteMembers(team: TeamRow, inviterId: string, emails: string[]): Promise<InviteOutcome[]> {
   await ensureTeamTables();
-  const out: InviteOutcome[] = [];
-  let used = await seatsUsed(team.id);
-  const existing = await prisma.teamMember.findMany({ where: { teamId: team.id, email: { in: emails } } });
-  for (const email of emails) {
-    const row = existing.find((r) => r.email === email);
-    if (row?.status === "active") { out.push({ email, ok: false, reason: "member" }); continue; }
-    const live = row?.status === "invited" && row.inviteExpiresAt && row.inviteExpiresAt > new Date();
-    if (live) { out.push({ email, ok: false, reason: "invited" }); continue; }
-    if (used >= team.seats) { out.push({ email, ok: false, reason: "full" }); continue; }
-    const token = newToken();
-    const data = {
-      status: "invited",
-      role: "member",
-      studentId: null,
-      inviteTokenHash: hashToken(token),
-      inviteExpiresAt: inviteExpiry(),
-      invitedById: inviterId,
-      invitedAt: new Date(),
-      joinedAt: null,
-      removedAt: null,
-    };
-    const m = row
-      ? await prisma.teamMember.update({ where: { id: row.id }, data })
-      : await prisma.teamMember.create({ data: { teamId: team.id, email, ...data } });
-    used++;
-    out.push({ email, ok: true, memberId: m.id, token });
-  }
-  return out;
+  // One transaction holding the team's row lock: without it, parallel invite
+  // requests each read the same "seats used" and together hand out more
+  // seats than the team pays for. The seat count is re-read under the lock.
+  return prisma.$transaction(
+    async (tx) => {
+      const seats = await lockTeamSeats(tx, team.id);
+      const out: InviteOutcome[] = [];
+      let used = await seatsUsedTx(tx, team.id);
+      const existing = await tx.teamMember.findMany({ where: { teamId: team.id, email: { in: emails } } });
+      for (const email of emails) {
+        const row = existing.find((r) => r.email === email);
+        if (row?.status === "active") { out.push({ email, ok: false, reason: "member" }); continue; }
+        const live = row?.status === "invited" && row.inviteExpiresAt && row.inviteExpiresAt > new Date();
+        if (live) { out.push({ email, ok: false, reason: "invited" }); continue; }
+        if (seats == null || used >= seats) { out.push({ email, ok: false, reason: "full" }); continue; }
+        const token = newToken();
+        const data = {
+          status: "invited",
+          role: "member",
+          studentId: null,
+          inviteTokenHash: hashToken(token),
+          inviteExpiresAt: inviteExpiry(),
+          invitedById: inviterId,
+          invitedAt: new Date(),
+          joinedAt: null,
+          removedAt: null,
+        };
+        const m = row
+          ? await tx.teamMember.update({ where: { id: row.id }, data })
+          : await tx.teamMember.create({ data: { teamId: team.id, email, ...data } });
+        used++;
+        out.push({ email, ok: true, memberId: m.id, token });
+      }
+      return out;
+    },
+    { timeout: 30_000 },
+  );
+}
+
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+/** Locks the team row for the rest of the transaction; returns its seat count (null if gone). */
+async function lockTeamSeats(tx: Tx, teamId: string): Promise<number | null> {
+  const rows = await tx.$queryRaw<Array<{ seats: number }>>`SELECT "seats" FROM "Team" WHERE "id" = ${teamId} FOR UPDATE`;
+  return rows[0] ? Number(rows[0].seats) : null;
+}
+
+function seatsUsedTx(tx: Tx, teamId: string): Promise<number> {
+  return tx.teamMember.count({
+    where: {
+      teamId,
+      OR: [{ status: "active" }, { status: "invited", inviteExpiresAt: { gt: new Date() } }],
+    },
+  });
 }
 
 /** New link and expiry for a pending invitation (the old link stops working). */
 export async function resendInvite(teamId: string, memberId: string): Promise<{ email: string; token: string } | "notFound" | "full"> {
   await ensureTeamTables();
-  const m = await prisma.teamMember.findFirst({ where: { id: memberId, teamId, status: "invited" } });
-  if (!m) return "notFound";
-  const expired = !m.inviteExpiresAt || m.inviteExpiresAt <= new Date();
-  if (expired) {
+  // Same team row lock as inviteMembers, so a renewal cannot race an invite
+  // for the last seat.
+  return prisma.$transaction(async (tx) => {
+    const seats = await lockTeamSeats(tx, teamId);
+    const m = await tx.teamMember.findFirst({ where: { id: memberId, teamId, status: "invited" } });
+    if (!m || seats == null) return "notFound" as const;
+    const expired = !m.inviteExpiresAt || m.inviteExpiresAt <= new Date();
     // An expired invitation no longer holds a seat; renewing it takes one.
-    const team = await prisma.team.findUnique({ where: { id: teamId }, select: { seats: true } });
-    if (!team || (await seatsUsed(teamId)) >= team.seats) return "full";
-  }
-  const token = newToken();
-  await prisma.teamMember.update({
-    where: { id: m.id },
-    data: { inviteTokenHash: hashToken(token), inviteExpiresAt: inviteExpiry(), invitedAt: new Date() },
+    if (expired && (await seatsUsedTx(tx, teamId)) >= seats) return "full" as const;
+    const token = newToken();
+    await tx.teamMember.update({
+      where: { id: m.id },
+      data: { inviteTokenHash: hashToken(token), inviteExpiresAt: inviteExpiry(), invitedAt: new Date() },
+    });
+    return { email: m.email, token };
   });
-  return { email: m.email, token };
 }
 
 /** Revoke an invitation or remove a member. The seat is freed; the owner cannot be removed. */

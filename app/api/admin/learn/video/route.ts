@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
-import { requireAdmin } from "@/lib/require-admin";
+import { requirePermission } from "@/lib/require-admin";
 import { ensureLearnEditColumns } from "@/lib/learn/admin/columns";
 import { ensureVideoTables } from "@/lib/learn/video/db";
 import { getVideoMeta } from "@/lib/learn/video/store";
@@ -15,7 +15,7 @@ import { CAPTION_LANGS, LIMITS, normaliseChapters, parseVtt, videoUrlProblem } f
 // never touches.
 
 export async function GET(req: NextRequest) {
-  const denied = await requireAdmin();
+  const denied = await requirePermission("events");
   if (denied) return denied;
   const lessonId = req.nextUrl.searchParams.get("lessonId") ?? "";
   const lesson = await prisma.lesson.findUnique({ where: { id: lessonId }, select: { id: true, videoUrl: true } }).catch(() => null);
@@ -46,7 +46,7 @@ const Body = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const denied = await requireAdmin();
+  const denied = await requirePermission("events");
   if (denied) return denied;
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {

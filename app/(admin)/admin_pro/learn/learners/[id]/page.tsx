@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { requireAdminPage } from "../../../_lib/admin-page-auth";
 import { loadLearnerDetail, type TrackDetail } from "@/lib/learn/admin/learner-detail";
 import { deviceLabel } from "@/lib/learn/logins";
@@ -53,6 +53,8 @@ function Field({ k, v }: { k: string; v: React.ReactNode }) {
 
 export default async function LearnerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requireAdminPage();
+  // Learner PII: the Learn ("events") permission, as in the sidebar.
+  if (!(session.user.isAdmin || session.user.permissions?.some((p) => p === "*" || p === "events"))) redirect("/admin_pro");
   const { id } = await params;
   const d = await loadLearnerDetail(id);
   if (!d) notFound();
