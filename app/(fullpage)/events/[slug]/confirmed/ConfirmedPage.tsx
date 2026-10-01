@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { DM, SYNE } from "@/lib/fonts/brand";
 
 interface Props {
   eventSlug: string;
@@ -16,7 +17,6 @@ interface Props {
 }
 
 const STYLES = `
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{background:#0F1617;overflow-x:hidden}
 @keyframes fadeUp{from{transform:translateY(32px);opacity:0}to{transform:translateY(0);opacity:1}}
@@ -36,8 +36,8 @@ body{background:#0F1617;overflow-x:hidden}
 .share-btn:hover{transform:translateY(-3px);filter:brightness(1.12)}
 `;
 
-const syne = "'Syne', sans-serif";
-const dm = "'DM Sans', sans-serif";
+const syne = SYNE;
+const dm = DM;
 const S = {
   darker: "#0F1617",
   dark: "#1A2324",

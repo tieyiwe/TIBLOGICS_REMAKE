@@ -1,8 +1,10 @@
+import { cache } from "react";
 // Single source of truth for point awards (Part B rule 2).
 // The ledger is append-only and awards are idempotent via the
 // unique(studentId, source, refId) constraint — never store a mutable total.
 import prisma from "@/lib/prisma";
 import type { PointSource } from "./types";
+import { POINTS_PER_LEVEL } from "./points-shared";
 
 export const POINT_VALUES: Record<PointSource, number> = {
   lesson_complete: 10,
@@ -42,7 +44,7 @@ export const LEVELS = [
   "TIBLOGICS Master",
 ] as const;
 
-export const POINTS_PER_LEVEL = 500;
+export { POINTS_PER_LEVEL };
 
 export function levelFor(total: number) {
   const idx = Math.min(LEVELS.length - 1, Math.floor(total / POINTS_PER_LEVEL));
@@ -77,12 +79,15 @@ export async function awardPoints(
   }
 }
 
-export async function getTotalPoints(studentId: string): Promise<number> {
+// Cached per request (React cache): the member layout and the page both read it.
+// Outside a render (API routes) it is a plain call, so a total read after
+// awarding points is always fresh there.
+export const getTotalPoints = cache(async (studentId: string): Promise<number> => {
   const agg = await prisma.pointsLedger
     .aggregate({ where: { studentId }, _sum: { points: true } })
     .catch(() => null);
   return agg?._sum.points ?? 0;
-}
+});
 
 /**
  * Consecutive days (ending today or yesterday) with at least one completed

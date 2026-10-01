@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { requireAdminPage } from "../../../_lib/admin-page-auth";
 import { ensureLearnEditColumns } from "@/lib/learn/admin/columns";
 import LessonEditor from "./LessonEditor";
+import ClientMessages from "@/components/i18n/ClientMessages";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,9 @@ export default async function LessonEditorPage({ params }: { params: Promise<{ i
   });
   if (!lesson) notFound();
 
+  // The preview renders Learn components, which need the learn texts.
   return (
+    <ClientMessages area={["learn", "member"]}>
     <LessonEditor
       lesson={{
         id: lesson.id, title: lesson.title, objective: lesson.objective ?? "", contentType: lesson.contentType,
@@ -40,5 +43,6 @@ export default async function LessonEditorPage({ params }: { params: Promise<{ i
         })),
       }}
     />
+    </ClientMessages>
   );
 }

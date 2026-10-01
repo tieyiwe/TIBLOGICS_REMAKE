@@ -432,6 +432,7 @@ model BlogPost {
   @@index([published])
   @@index([featured])
   @@index([createdAt])
+  @@index([published, createdAt])
 }
 
 model BreakingNews {
@@ -1068,6 +1069,7 @@ model PointsLedger {
 
   @@unique([studentId, source, refId])
   @@index([studentId])
+  @@index([studentId, createdAt])
 }
 
 model LearnCertificate {
@@ -2637,5 +2639,14 @@ model PromotionSetting {
   key       String   @id
   value     Json
   updatedBy String?
+  updatedAt DateTime @default(now())
+}
+
+/// Shared invalidation counter for the in-process public data cache
+/// (lib/cache/public-data.ts). A write to cached content bumps its tag; every
+/// instance compares versions every few seconds. Created at runtime too.
+model CacheVersion {
+  tag       String   @id
+  version   Int      @default(0)
   updatedAt DateTime @default(now())
 }

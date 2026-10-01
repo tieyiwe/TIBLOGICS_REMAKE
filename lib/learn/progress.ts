@@ -4,6 +4,7 @@ import { awardPoints } from "./points";
 import { certificationStatus } from "./assessments";
 import { draftTableReady } from "./drafts/db";
 import { lessonMastered, masteredLessonIds, moduleTestedOut, testOutOpen } from "./mastery/testout";
+import { ensureMasteryTables } from "./mastery/db";
 
 /**
  * Idempotent lesson completion. Returns the next lesson id in the track
@@ -102,9 +103,57 @@ export async function getAllTrackProgress(studentId: string) {
     orderBy: { sortOrder: "asc" },
     select: { id: true, slug: true, title: true, accentColor: true, certificateName: true, estimatedHours: true },
   });
-  return Promise.all(
-    tracks.map(async (t) => ({ track: t, progress: await getTrackProgress(studentId, t.id) })),
-  );
+  if (tracks.length === 0) return [];
+  // Three queries for every track at once (was three per track): the same
+  // rows getTrackProgress reads, grouped here by track.
+  const trackIds = tracks.map((t) => t.id);
+  const [lessons, done, mastered] = await Promise.all([
+    prisma.lesson.findMany({
+      where: { module: { trackId: { in: trackIds } } },
+      orderBy: [{ module: { sortOrder: "asc" } }, { sortOrder: "asc" }],
+      select: { id: true, durationMinutes: true, module: { select: { trackId: true } } },
+    }),
+    prisma.lessonProgress.findMany({
+      where: { studentId, lesson: { module: { trackId: { in: trackIds } } } },
+      select: { lessonId: true },
+    }),
+    masteredByTrack(studentId),
+  ]);
+  const trackOf = new Map(lessons.map((l) => [l.id, l.module.trackId]));
+  const doneByTrack = new Map<string, Set<string>>();
+  const add = (trackId: string | undefined, lessonId: string) => {
+    if (!trackId) return;
+    let set = doneByTrack.get(trackId);
+    if (!set) doneByTrack.set(trackId, (set = new Set()));
+    set.add(lessonId);
+  };
+  for (const d of done) add(trackOf.get(d.lessonId), d.lessonId);
+  for (const m of mastered) add(m.trackId, m.lessonId);
+  return tracks.map((t) => {
+    const trackLessons = lessons.filter((l) => l.module.trackId === t.id);
+    const doneSet = doneByTrack.get(t.id) ?? new Set<string>();
+    const remaining = trackLessons.filter((l) => !doneSet.has(l.id));
+    const progress: TrackProgress = {
+      trackId: t.id,
+      totalLessons: trackLessons.length,
+      completedLessons: doneSet.size,
+      percent: trackLessons.length === 0 ? 0 : Math.round((doneSet.size / trackLessons.length) * 100),
+      minutesRemaining: remaining.reduce((n, l) => n + l.durationMinutes, 0),
+      nextLessonId: remaining[0]?.id ?? null,
+    };
+    return { track: t, progress };
+  });
+}
+
+/** Every lesson this learner tested out of, with its track. Never throws. */
+async function masteredByTrack(studentId: string): Promise<{ lessonId: string; trackId: string }[]> {
+  try {
+    await ensureMasteryTables();
+    return await prisma.lessonMastery.findMany({ where: { studentId }, select: { lessonId: true, trackId: true } });
+  } catch (err) {
+    console.error("[mastery] mastered lessons", err);
+    return [];
+  }
 }
 
 /** Per-track gate summary for the track home screen. */

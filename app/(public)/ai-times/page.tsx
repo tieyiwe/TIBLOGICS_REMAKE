@@ -1,8 +1,10 @@
+import { Suspense } from "react";
 import prisma from "@/lib/prisma";
 import BlogPageClient, { type BlogPost } from "./BlogPageClient";
 import { SEED_POSTS } from "@/lib/blog/content/seed-posts";
 import { getLocale } from "@/lib/i18n/server";
 import { cachedPostSummaries } from "@/lib/i18n/sources/blog";
+import { cachedPublicData } from "@/lib/cache/public-data";
 
 // Cache the full page HTML for 60 seconds; regenerate in the background after.
 export const revalidate = 60;
@@ -72,13 +74,16 @@ export default async function BlogPage() {
   let initialPosts: BlogPost[] = [];
 
   {
+    // Cached in process until a post changes (lib/cache/public-data.ts);
+    // an error is never cached, and still throws as described above.
+    const rows = await cachedPublicData("blog", "list:published", async () => {
     const count = await prisma.blogPost.count({ where: { published: true } });
 
     if (count === 0) {
       await seedIfEmpty();
     }
 
-    const rows = await prisma.blogPost.findMany({
+    return prisma.blogPost.findMany({
       where: { published: true },
       orderBy: { createdAt: "desc" },
       take: 100,
@@ -99,6 +104,7 @@ export default async function BlogPage() {
         createdAt: true,
       },
     });
+    });
 
     initialPosts = rows.map((p) => ({
       ...p,
@@ -113,5 +119,12 @@ export default async function BlogPage() {
   const locale = await getLocale();
   const translations = await cachedPostSummaries(locale, initialPosts.map((p) => p.slug));
 
-  return <BlogPageClient initialPosts={initialPosts} translations={translations} />;
+  // BlogPageClient reads useSearchParams(), which needs a Suspense boundary
+  // (the section's loading.tsx used to be it). The data is loaded above, so
+  // nothing inside suspends: no fallback, no delay.
+  return (
+    <Suspense fallback={null}>
+      <BlogPageClient initialPosts={initialPosts} translations={translations} />
+    </Suspense>
+  );
 }

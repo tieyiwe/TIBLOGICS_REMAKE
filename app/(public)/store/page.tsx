@@ -1,31 +1,37 @@
 import { pageSales, withProductSales } from "@/lib/promotions/display";
 import prisma from "@/lib/prisma";
+import { cachedPublicData } from "@/lib/cache/public-data";
 import StoreFront from "@/components/shop/StoreFront";
 import type { ShopProduct, ShopCollection } from "@/components/shop/types";
 import { pickSpotlight, daysUntilRotation } from "@/lib/shop/spotlight";
 
-// Rendered on every request. A cached listing went stale on the hosted
+// Rendered on every request. A cached page went stale on the hosted
 // deployment (publishing a product in admin did not show it in the store),
-// and the store is small enough that a live query costs nothing noticeable.
+// so only the rows are cached, and a write drops them at once.
 export const dynamic = "force-dynamic";
 
 export default async function ShopPage() {
   // Not wrapped in .catch(() => []): a failed query shows the error page
   // instead of an empty storefront that looks like the shop has no products.
-  const [rawProducts, rawCollections] = await Promise.all([
-    prisma.product.findMany({
-      where: { published: true },
-      orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
-    }),
-    prisma.collection.findMany({
-      where: { published: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-    }),
+  // The rows are cached in process and dropped by any write to Product or
+  // Collection (lib/cache/public-data.ts); errors are never cached.
+  const [rawProducts, rawCollections, sales] = await Promise.all([
+    cachedPublicData("shop", "products:published", () =>
+      prisma.product.findMany({
+        where: { published: true },
+        orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
+      }),
+    ),
+    cachedPublicData("shop", "collections:published", () =>
+      prisma.collection.findMany({
+        where: { published: true },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+      }),
+    ),
+    // A live automatic sale (admin: /admin_pro/promotions) shows as a
+    // strike-through price; checkout recomputes it on the server.
+    pageSales(),
   ]);
-
-  // A live automatic sale (admin: /admin_pro/promotions) shows as a
-  // strike-through price; checkout recomputes it on the server.
-  const sales = await pageSales();
   const products: ShopProduct[] = withProductSales(rawProducts, sales).map((p) => ({
     id: p.id,
     slug: p.slug,

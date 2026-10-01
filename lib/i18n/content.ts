@@ -3,6 +3,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import prisma from "@/lib/prisma";
 import anthropic, { buildParams, recordUsage, runClaude, textOf, type AiTask } from "@/lib/claude";
 import { LANGUAGE_FOR_AI, type Locale } from "./config";
+import { cachedPublicData } from "@/lib/cache/public-data";
 
 // Translation of long content (lessons, questions, labs, blog posts, prompts).
 //
@@ -137,13 +138,19 @@ export async function translated(
   if (locale === "en") return fields;
   const hash = hashOf(fields);
   try {
-    await ensureTable();
-    const rows = await prisma.$queryRawUnsafe<Array<{ hash: string; value: Fields }>>(
-      `SELECT "hash", "value" FROM "ContentTranslation" WHERE "key" = $1 AND "locale" = $2`,
-      key,
-      locale,
-    );
-    if (rows[0]?.hash === hash) return { ...fields, ...rows[0].value };
+    // Cached in process: a page in French or Swahili reads one row per track,
+    // lesson or post, every request. Any write to ContentTranslation (a new
+    // translation, from any instance) drops these (lib/cache/public-data.ts).
+    const row = await cachedPublicData("i18n", `ct:${locale}:${key}`, async () => {
+      await ensureTable();
+      const rows = await prisma.$queryRawUnsafe<Array<{ hash: string; value: Fields }>>(
+        `SELECT "hash", "value" FROM "ContentTranslation" WHERE "key" = $1 AND "locale" = $2`,
+        key,
+        locale,
+      );
+      return rows[0] ?? null;
+    });
+    if (row?.hash === hash) return { ...fields, ...row.value };
   } catch (err) {
     console.error("[i18n] cache read failed", err instanceof Error ? err.message : err);
     return mode === "queue" ? null : fields;

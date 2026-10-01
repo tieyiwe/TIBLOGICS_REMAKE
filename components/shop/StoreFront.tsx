@@ -7,6 +7,7 @@ import Spotlight, { SPOTLIGHT_STYLES } from "./Spotlight";
 import BrandPromo from "./BrandPromo";
 import type { ShopProduct, ShopCollection } from "./types";
 import { useT } from "@/lib/i18n/client";
+import ShopImage from "./ShopImage";
 
 const S = {
   darker: "#0C1112",
@@ -123,8 +124,7 @@ export default function StoreFront({
               <button key={c.slug} onClick={() => { setCollection(c.slug); setCat("All"); }} className="col-card"
                 style={{ position: "relative", textAlign: "left", border: `1px solid ${S.border}`, borderRadius: "18px", overflow: "hidden", cursor: "pointer", padding: 0, background: S.card, aspectRatio: "16/10", color: "#fff" }}>
                 {c.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={c.image} alt={c.name} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.55 }} />
+                  <ShopImage src={c.image} alt={c.name} sizes="(max-width: 640px) 80vw, 380px" style={{ opacity: 0.55 }} />
                 ) : (
                   <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,#1C2526,#0C1112)" }} />
                 )}

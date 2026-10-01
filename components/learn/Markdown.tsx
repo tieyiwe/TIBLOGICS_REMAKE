@@ -1,7 +1,13 @@
 import React from "react";
 import TryBlock from "./TryBlock";
 import Playground from "./Playground";
-import StudioEmbed from "./studio/StudioEmbed";
+import dynamic from "next/dynamic";
+
+// Loaded only by lessons that embed a Studio tool: StudioHost brings
+// framer-motion and the tool registry, which most lessons never need.
+const StudioEmbed = dynamic(() => import("./studio/StudioEmbed"), {
+  loading: () => <div className="my-5 h-48 animate-pulse rounded-2xl bg-[var(--s2)]" />,
+});
 
 // Minimal markdown renderer for admin-authored lesson bodies.
 // Returns React nodes rather than HTML strings — there is no

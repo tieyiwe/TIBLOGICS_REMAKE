@@ -7,6 +7,7 @@ import { studioProgress } from "@/lib/learn/studio/progress";
 import { getT } from "@/lib/i18n/server";
 import StudioHost from "@/components/learn/studio/StudioHost";
 import TutorDock from "@/components/learn/tutor/TutorDock";
+import ClientMessages from "@/components/i18n/ClientMessages";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,9 @@ export default async function StudioToolPage({
       </h1>
       <p className="mt-1 max-w-3xl text-[var(--ink2)]">{t(`studio.${tool}.desc`)}</p>
       <div className="mt-6">
-        <StudioHost toolId={tool} challengeId={challenge} initialProgress={progress[tool] ?? {}} />
+        <ClientMessages area="studio">
+          <StudioHost toolId={tool} challengeId={challenge} initialProgress={progress[tool] ?? {}} />
+        </ClientMessages>
       </div>
       <TutorDock kind="studio" refId={tool} />
     </div>

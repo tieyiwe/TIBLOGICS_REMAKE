@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { Lora, Plus_Jakarta_Sans, Cormorant_Garamond, Cinzel } from "next/font/google";
 import "./globals.css";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
-import { dictionary } from "@/lib/i18n/messages";
+import { coreMessages } from "@/lib/i18n/client-messages";
 import { I18nProvider } from "@/lib/i18n/client";
 import JsonLd from "@/components/seo/JsonLd";
 import { founderNode, organizationNode, websiteNode } from "@/lib/seo/jsonld";
 import { OG_IMAGE, OG_LOCALE, SITE_NAME, SITE_URL } from "@/lib/seo/site";
+import { brandDm, brandSyne } from "@/lib/fonts/brand";
 
 const syne = Lora({
   subsets: ["latin"],
@@ -129,11 +130,9 @@ const siteJsonLd = [organizationNode(), founderNode(), websiteNode()];
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
   return (
-    <html lang={locale} className={`${syne.variable} ${dmSans.variable} ${display.variable} ${masthead.variable}`} suppressHydrationWarning>
+    <html lang={locale} className={`${syne.variable} ${dmSans.variable} ${display.variable} ${masthead.variable} ${brandSyne.variable} ${brandDm.variable}`} suppressHydrationWarning>
       <head>
         {/* Resource hints */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://api.anthropic.com" />
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
 
@@ -165,7 +164,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <JsonLd data={siteJsonLd} />
       </head>
       <body className="font-dm antialiased">
-        <I18nProvider locale={locale} dict={dictionary(locale)}>{children}</I18nProvider>
+        <I18nProvider locale={locale} dict={coreMessages(locale)}>{children}</I18nProvider>
       </body>
     </html>
   );

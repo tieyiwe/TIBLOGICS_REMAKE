@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { applyPrice, type TrainingContent } from "@/lib/training-content";
+import { DM, SYNE } from "@/lib/fonts/brand";
 
 interface Props {
   eventSlug: string;
@@ -22,7 +23,6 @@ interface Props {
 }
 
 const STYLES = `
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{overflow-x:hidden}
@@ -75,7 +75,7 @@ body{overflow-x:hidden}
 .pulsing-dot{width:9px;height:9px;border-radius:50%;background:#F47C4C;animation:pulse 2s ease infinite;display:inline-block;flex-shrink:0}
 .orb{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none}
 .count-num{animation:countFlip .3s ease both}
-input,select,textarea{font-family:'DM Sans',sans-serif}
+input,select,textarea{font-family:${DM}}
 input:focus,select:focus,textarea:focus{outline:none}
 @media(max-width:900px){
   .hero-grid{grid-template-columns:1fr!important}
@@ -125,8 +125,8 @@ const S = {
   card: "rgba(255,255,255,0.04)",
 };
 
-const syne = "'Syne', sans-serif";
-const dm = "'DM Sans', sans-serif";
+const syne = SYNE;
+const dm = DM;
 
 function pad(n: number) { return String(n).padStart(2, "0"); }
 function gradText(text: string) {

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { cache } from "react";
 import prisma from "@/lib/prisma";
+import { cachedPublicData } from "@/lib/cache/public-data";
 
 /**
  * generateMetadata and the page component both need this row, and Next calls
@@ -10,7 +11,9 @@ import prisma from "@/lib/prisma";
  * React's cache() dedupes it within a single render pass.
  */
 const getProduct = cache(async (slug: string) =>
-  prisma.product.findUnique({ where: { slug } }).catch(() => null),
+  // Public data, cached until a product changes (lib/cache/public-data.ts).
+  // Errors are not cached.
+  cachedPublicData("shop", `product:${slug}`, () => prisma.product.findUnique({ where: { slug } })).catch(() => null),
 );
 import ProductDetail from "@/components/shop/ProductDetail";
 import { getLocale, getT } from "@/lib/i18n/server";
@@ -19,9 +22,10 @@ import JsonLd from "@/components/seo/JsonLd";
 import { breadcrumbNode, productNode } from "@/lib/seo/jsonld";
 import type { ShopProduct } from "@/components/shop/types";
 
-// Rendered on every request. A cached listing went stale on the hosted
-// deployment (publishing a product in admin did not show it in the store),
-// and the store is small enough that a live query costs nothing noticeable.
+// Rendered on every request. A cached page went stale on the hosted
+// deployment (publishing a product in admin did not show it in the store).
+// Only the product rows are cached, in process, and any write to Product or
+// Collection drops them at once (lib/cache/public-data.ts).
 export const dynamic = "force-dynamic";
 
 interface Props {
@@ -63,18 +67,20 @@ export default async function ProductPage({ params }: Props) {
   const p = await getProduct(slug);
   if (!p || !p.published) return notFound();
 
-  const related = await prisma.product
-    .findMany({
-      where: { published: true, category: p.category, NOT: { id: p.id } },
-      orderBy: { createdAt: "desc" },
-      take: 4,
-    })
-    .catch(() => []);
-
-  // Live automatic sale prices (admin: /admin_pro/promotions), display only.
-  const sales = await pageSales();
+  // Related products, sale prices and texts are independent: one round.
+  const [related, sales, t] = await Promise.all([
+    cachedPublicData("shop", `related:${p.id}:${p.category}`, () =>
+      prisma.product.findMany({
+        where: { published: true, category: p.category, NOT: { id: p.id } },
+        orderBy: { createdAt: "desc" },
+        take: 4,
+      }),
+    ).catch(() => []),
+    // Live automatic sale prices (admin: /admin_pro/promotions), display only.
+    pageSales(),
+    getT(),
+  ]);
   const [shown] = withProductSales([p], sales);
-  const t = await getT();
   return (
     <>
       {/* Product + Offer with the price shown on the page. No ratings:

@@ -272,6 +272,13 @@ export default function EchelonFloat() {
     return () => window.removeEventListener("tibo:scan-complete", handleScanComplete);
   }, [t, locale]);
 
+  // The listeners above are attached: EchelonFloatClient may now replay an
+  // event that arrived before this component had loaded.
+  useEffect(() => {
+    document.documentElement.setAttribute("data-echelon-ready", "");
+    return () => document.documentElement.removeAttribute("data-echelon-ready");
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       setHasUnread(false);

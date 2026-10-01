@@ -3,6 +3,7 @@ import { createHash } from "crypto";
 import prisma from "@/lib/prisma";
 import { localized, translated, type Fields } from "@/lib/i18n/content";
 import type { Locale } from "@/lib/i18n/config";
+import { cachedPublicData } from "@/lib/cache/public-data";
 
 // AI Times articles (BlogPost rows). The article page, the listing and the
 // translate cron all build the cached unit from postFields(), so they hash the
@@ -78,6 +79,18 @@ export async function cachedPostSummaries(
 ): Promise<Record<string, { title: string; excerpt: string }>> {
   if (locale === "en" || slugs.length === 0) return {};
   try {
+    // Cached until a post or a translation changes (lib/cache/public-data.ts).
+    const key = `summaries:${locale}:${createHash("sha1").update(slugs.join("\n")).digest("base64url")}`;
+    return await cachedPublicData("i18n", key, () => readPostSummaries(locale, slugs));
+  } catch (err) {
+    console.error("[i18n] blog summaries read failed", err instanceof Error ? err.message : err);
+    return {};
+  }
+}
+
+async function readPostSummaries(locale: Locale, slugs: string[]): Promise<Record<string, { title: string; excerpt: string }>> {
+  // Throws on a database error, so a failure is never cached.
+  {
     await ensureTable();
     const rows = await prisma.$queryRawUnsafe<Array<{ slug: string; title: string | null; excerpt: string | null }>>(
       `SELECT b."slug", ct."value"->>'title' AS "title", ct."value"->>'excerpt' AS "excerpt"
@@ -91,9 +104,6 @@ export async function cachedPostSummaries(
     const out: Record<string, { title: string; excerpt: string }> = {};
     for (const r of rows) if (r.title && r.excerpt) out[r.slug] = { title: r.title, excerpt: r.excerpt };
     return out;
-  } catch (err) {
-    console.error("[i18n] blog summaries read failed", err instanceof Error ? err.message : err);
-    return {};
   }
 }
 
@@ -101,14 +111,18 @@ export async function cachedPostSummaries(
 /** An up-to-date cached translation of one post, or null. Never calls the model. */
 async function cachedPost(post: PostSource, locale: Locale): Promise<PostFields | null> {
   try {
-    await ensureTable();
     const fields = postFields(post);
-    const rows = await prisma.$queryRawUnsafe<Array<{ hash: string; value: Fields }>>(
-      `SELECT "hash", "value" FROM "ContentTranslation" WHERE "key" = $1 AND "locale" = $2`,
-      postKey(post.slug),
-      locale,
-    );
-    if (rows[0]?.hash === hashOf(fields)) return { ...fields, ...(rows[0].value as Partial<PostFields>) };
+    // Same cached row as translated() in lib/i18n/content.ts (same key).
+    const row = await cachedPublicData("i18n", `ct:${locale}:${postKey(post.slug)}`, async () => {
+      await ensureTable();
+      const rows = await prisma.$queryRawUnsafe<Array<{ hash: string; value: Fields }>>(
+        `SELECT "hash", "value" FROM "ContentTranslation" WHERE "key" = $1 AND "locale" = $2`,
+        postKey(post.slug),
+        locale,
+      );
+      return rows[0] ?? null;
+    });
+    if (row?.hash === hashOf(fields)) return { ...fields, ...(row.value as Partial<PostFields>) };
   } catch (err) {
     console.error("[i18n] blog cache read failed", err instanceof Error ? err.message : err);
   }

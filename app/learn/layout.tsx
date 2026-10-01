@@ -3,6 +3,7 @@ import ReadingPrefsApplier from "@/components/a11y/ReadingPrefsApplier";
 import { READING_PREFS_BOOT } from "@/lib/a11y/reading-prefs";
 import { atkinson, openDyslexic } from "@/lib/a11y/fonts";
 import UtmCapture from "@/components/public/UtmCapture";
+import ClientMessages from "@/components/i18n/ClientMessages";
 
 export const metadata: Metadata = {
   title: { absolute: "ARFA · TIBLOGICS AI Academy", template: "%s · ARFA AI Academy" },
@@ -28,7 +29,7 @@ export default function LearnRootLayout({ children }: { children: React.ReactNod
       <span hidden className={`${atkinson.className} ${openDyslexic.className}`} />
       <ReadingPrefsApplier />
       <UtmCapture />
-      {children}
+      <ClientMessages area={["learn", "member"]}>{children}</ClientMessages>
     </>
   );
 }

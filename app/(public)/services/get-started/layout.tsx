@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { pageMetadata } from "@/lib/seo/meta";
@@ -12,6 +13,9 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
+// The page reads useSearchParams(), which needs a Suspense boundary (the
+// section's loading.tsx used to be it). The page never suspends at request
+// time, so this adds no fallback and no delay.
 export default function GetStartedLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return <Suspense fallback={null}>{children}</Suspense>;
 }

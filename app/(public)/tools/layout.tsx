@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { pageMetadata } from "@/lib/seo/meta";
+import ClientMessages from "@/components/i18n/ClientMessages";
 
 export async function generateMetadata(): Promise<Metadata> {
   const [t, locale] = await Promise.all([getT(), getLocale()]);
@@ -19,5 +20,5 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function ToolsLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return <ClientMessages area="tools">{children}</ClientMessages>;
 }

@@ -45,7 +45,9 @@ async function isPageRequest(): Promise<boolean> {
  * belongs. Failing closed (null => unauthenticated) is both correct and safe:
  * it can only ever deny access, never grant it.
  */
-export async function getStudent(): Promise<StudentSession | null> {
+export const getStudent = cache(readStudent);
+
+async function readStudent(): Promise<StudentSession | null> {
   // The content editor added `editedAt` columns to the Learn tables. A database
   // that has not been seeded or edited since would lack them, and every query
   // that reads whole rows (the lesson page, quizzes, labs) would fail and show
@@ -64,21 +66,24 @@ export async function getStudent(): Promise<StudentSession | null> {
   }
   if (!studentId) return null;
 
-  const student = await prisma.student
-    .findUnique({
-      where: { id: studentId },
-      select: { id: true, email: true, name: true, accessibilityMode: true, locale: true },
-    })
-    .catch(() => null);
+  // Account status (admin suspend / block / delete) and "sign out
+  // everywhere": one cached query per request, read alongside the student.
+  // A locked account, or a session older than the account's session version,
+  // counts as signed out. Pages go to /learn/account-status, which explains
+  // and clears the session cookie (sending them to /learn/login would loop:
+  // the proxy sends a cookie holder from the login page back to /learn).
+  // APIs get null (401).
+  const [student, state] = await Promise.all([
+    prisma.student
+      .findUnique({
+        where: { id: studentId },
+        select: { id: true, email: true, name: true, accessibilityMode: true, locale: true },
+      })
+      .catch(() => null),
+    getAccountState(studentId),
+  ]);
   if (!student) return null;
 
-  // Account status (admin suspend / block / delete) and "sign out
-  // everywhere": one cached query per request. A locked account, or a
-  // session older than the account's session version, counts as signed out.
-  // Pages go to /learn/account-status, which explains and clears the session
-  // cookie (sending them to /learn/login would loop: the proxy sends a
-  // cookie holder from the login page back to /learn). APIs get null (401).
-  const state = await getAccountState(student.id);
   const locked = isLockedOut(state);
   if (locked || sv < state.sessionVersion) {
     refusal().reason = locked ? "locked" : "revoked";
@@ -141,10 +146,14 @@ export async function getEntitlement(studentId: string | null | undefined): Prom
 /** The learner's own subscription (or the owner's comp), ignoring teams. */
 export async function getIndividualEntitlement(studentId: string | null | undefined): Promise<Entitlement> {
   if (!studentId) return NONE;
-  const sub = await prisma.learnSubscription.findUnique({ where: { studentId } }).catch(() => null);
+  // The subscription and the email (for the owner's comp) in parallel: one
+  // round trip instead of two for learners without a subscription.
+  const [sub, row] = await Promise.all([
+    prisma.learnSubscription.findUnique({ where: { studentId } }).catch(() => null),
+    prisma.student.findUnique({ where: { id: studentId }, select: { email: true } }).catch(() => null),
+  ]);
   if (!sub || sub.status === "canceled") {
-    const s = await prisma.student.findUnique({ where: { id: studentId }, select: { email: true } }).catch(() => null);
-    if (s?.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) return COMPED;
+    if (row?.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) return COMPED;
     if (!sub) return NONE;
   }
 

@@ -8,7 +8,7 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 import ArfaWordmark from "@/components/learn/ArfaWordmark";
 import ReadingPrefsPanel from "@/components/a11y/ReadingPrefsPanel";
 import InboxBell from "@/components/learn/InboxBell";
-import { POINTS_PER_LEVEL } from "@/lib/learn/points";
+import { POINTS_PER_LEVEL } from "@/lib/learn/points-shared";
 import { fmtNumber, rankName } from "@/lib/learn/format";
 import { LOCALE_COOKIE, isLocale } from "@/lib/i18n/config";
 import { useLocale, useSetLocale, useT } from "@/lib/i18n/client";

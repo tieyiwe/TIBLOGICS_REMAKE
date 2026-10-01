@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DM, SYNE } from "@/lib/fonts/brand";
 import prisma from "@/lib/prisma";
 import ClearCartOnMount from "@/components/shop/ClearCartOnMount";
 import { formatMoney } from "@/components/shop/types";
@@ -27,11 +28,11 @@ export default async function OrderSuccessPage({ searchParams }: Props) {
     : [];
 
   return (
-    <div style={{ background: "#0C1112", color: "#fff", minHeight: "100vh", fontFamily: "'DM Sans',sans-serif", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
+    <div style={{ background: "#0C1112", color: "#fff", minHeight: "100vh", fontFamily: DM, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
       <ClearCartOnMount />
       <div style={{ maxWidth: "520px", width: "100%", background: "#1A2223", border: "1px solid rgba(255,255,255,.08)", borderRadius: "24px", padding: "clamp(28px, 7vw, 48px) clamp(20px, 6vw, 36px)", textAlign: "center" }}>
         <div style={{ width: "72px", height: "72px", borderRadius: "50%", background: "linear-gradient(135deg,#F47C4C,#F9A738)", margin: "0 auto 24px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem" }}>🎉</div>
-        <h1 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "1.9rem", marginBottom: "12px" }}>{t("pages.store.success.title")}</h1>
+        <h1 style={{ fontFamily: SYNE, fontWeight: 800, fontSize: "1.9rem", marginBottom: "12px" }}>{t("pages.store.success.title")}</h1>
         <p style={{ color: "#8A9BA0", fontSize: ".95rem", lineHeight: 1.7, marginBottom: "28px" }}>
           {t("pages.store.success.thanks")}{" "}
           {order ? (
@@ -50,14 +51,14 @@ export default async function OrderSuccessPage({ searchParams }: Props) {
               </div>
             ))}
             {order && (
-              <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "12px", marginTop: "4px", fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "1.05rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "12px", marginTop: "4px", fontFamily: SYNE, fontWeight: 800, fontSize: "1.05rem" }}>
                 <span>{t("pages.store.success.total")}</span><span>{formatMoney(order.total, order.currency, locale)}</span>
               </div>
             )}
           </div>
         )}
 
-        <Link href="/store" style={{ display: "inline-block", padding: "14px 32px", borderRadius: "50px", background: "linear-gradient(135deg,#F47C4C,#F9A738)", color: "#131A1B", fontFamily: "'Syne',sans-serif", fontWeight: 700, textDecoration: "none" }}>
+        <Link href="/store" style={{ display: "inline-block", padding: "14px 32px", borderRadius: "50px", background: "linear-gradient(135deg,#F47C4C,#F9A738)", color: "#131A1B", fontFamily: SYNE, fontWeight: 700, textDecoration: "none" }}>
           {t("pages.store.success.continue")}
         </Link>
       </div>

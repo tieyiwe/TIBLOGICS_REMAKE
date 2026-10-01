@@ -21,11 +21,12 @@ export function articleUrl(slug: string, locale: Locale = "en"): string {
 export async function articleLanguages(slugs: string[]): Promise<Map<string, Locale[]>> {
   const out = new Map<string, Locale[]>(slugs.map((s) => [s, ["en"] as Locale[]]));
   if (!slugs.length) return out;
-  for (const locale of LOCALES) {
-    if (locale === "en") continue;
-    const hits = await cachedPostSummaries(locale, slugs).catch(() => ({}) as Record<string, unknown>);
-    for (const slug of Object.keys(hits)) out.get(slug)?.push(locale);
-  }
+  // The languages are read in parallel, then added in LOCALES order.
+  const others = LOCALES.filter((l) => l !== "en");
+  const hits = await Promise.all(others.map((l) => cachedPostSummaries(l, slugs).catch(() => ({}) as Record<string, unknown>)));
+  others.forEach((locale, i) => {
+    for (const slug of Object.keys(hits[i])) out.get(slug)?.push(locale);
+  });
   return out;
 }
 

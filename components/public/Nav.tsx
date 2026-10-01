@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/client";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useFocusTrap } from "@/lib/a11y/useFocusTrap";
+import Image from "next/image";
 
 const NEW_LOGO = "/logo.png";
 
@@ -88,7 +89,7 @@ export default function Nav() {
             <Link href="/" className="flex items-center flex-shrink-0" aria-label={t("site.nav.home")}>
               {/* Intrinsic size reserves the space (no layout shift); the logo is in
                 every first screen, so it is fetched first. */}
-              <img src={NEW_LOGO} alt="TIBLOGICS" width={500} height={500} fetchPriority="high" decoding="async" className="h-[5.5rem] sm:h-[7.5rem] w-auto" />
+              <Image src={NEW_LOGO} alt="TIBLOGICS" width={120} height={120} priority className="h-[5.5rem] sm:h-[7.5rem] w-auto" />
             </Link>
 
             {/* Desktop Nav */}

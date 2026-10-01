@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, Check, Clock } from "lucide-react";
 import { formatMoney, type ShopProduct } from "./types";
 import { useLocale, useT } from "@/lib/i18n/client";
+import ShopImage from "./ShopImage";
 
 const S = {
   card: "#1A2223",
@@ -105,12 +106,10 @@ export default function Spotlight({
           {/* Cover */}
           <Link href={`/store/${product.slug}`} className="spot-cover" style={{ display: "block" }}>
             {cover ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={cover}
-                alt={product.name}
-                style={{ width: "100%", display: "block", aspectRatio: "17/22", objectFit: "cover" }}
-              />
+              // The store's largest paint: resized, modern format, fetched first.
+              <div style={{ position: "relative", width: "100%", aspectRatio: "17/22" }}>
+                <ShopImage src={cover} alt={product.name} sizes="(max-width: 760px) 90vw, 340px" priority />
+              </div>
             ) : (
               <div
                 style={{

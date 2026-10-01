@@ -90,23 +90,26 @@ async function redemptionCounts(ids?: string[]): Promise<Map<string, number>> {
 }
 
 const CACHE_MS = 10_000;
-let cache: { at: number; rows: PromotionRecord[] } | null = null;
-let settingsCache: { at: number; referral: ReferralSetting | null } | null = null;
+// On globalThis, not module variables: the admin API routes and the pages
+// are separate server bundles, each with its own copy of this module, so a
+// save cleared only the API's copy and pages kept old prices for CACHE_MS.
+type PromoCache = { cache: { at: number; rows: PromotionRecord[] } | null; settingsCache: { at: number; referral: ReferralSetting | null } | null };
+const P: PromoCache = ((globalThis as unknown as { __tibPromotions?: PromoCache }).__tibPromotions ??= { cache: null, settingsCache: null });
 
 /** Clears the in-process cache. Every save calls it. */
 export function invalidatePromotions() {
-  cache = null;
-  settingsCache = null;
+  P.cache = null;
+  P.settingsCache = null;
 }
 
 /** Published and paused promotions (what checkouts and public pages read). Cached briefly. */
 export async function activePromotions(): Promise<PromotionRecord[]> {
-  if (cache && Date.now() - cache.at < CACHE_MS) return cache.rows;
+  if (P.cache && Date.now() - P.cache.at < CACHE_MS) return P.cache.rows;
   await ensurePromotionTables();
   const rows = await prisma.promotion.findMany({ where: { state: "published" }, orderBy: { publishedAt: "desc" } });
   const counts = await redemptionCounts(rows.map((r) => r.id));
   const out = rows.map((r) => toRecord(r, counts));
-  cache = { at: Date.now(), rows: out };
+  P.cache = { at: Date.now(), rows: out };
   reconcileStripeCodes(out);
   return out;
 }
@@ -158,7 +161,7 @@ function reconcileStripeCodes(rows: PromotionRecord[]) {
     }
   })().finally(() => {
     reconciling = false;
-    cache = null;
+    P.cache = null;
   });
 }
 
@@ -698,12 +701,12 @@ export interface ReferralSetting {
 }
 
 export async function getReferralSetting(): Promise<ReferralSetting | null> {
-  if (settingsCache && Date.now() - settingsCache.at < CACHE_MS) return settingsCache.referral;
+  if (P.settingsCache && Date.now() - P.settingsCache.at < CACHE_MS) return P.settingsCache.referral;
   await ensurePromotionTables();
   const row = await prisma.promotionSetting.findUnique({ where: { key: "referral" } });
   const v = (row?.value ?? null) as ReferralSetting | null;
   const referral = v && typeof v.couponId === "string" ? { ...v, updatedAt: row!.updatedAt.toISOString(), updatedBy: row!.updatedBy } : null;
-  settingsCache = { at: Date.now(), referral };
+  P.settingsCache = { at: Date.now(), referral };
   return referral;
 }
 

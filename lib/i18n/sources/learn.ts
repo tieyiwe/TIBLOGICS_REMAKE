@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import type { Locale } from "../config";
 import { localized, translated, type Fields } from "../content";
+import { cachedPublicData } from "@/lib/cache/public-data";
 
 // Learning Box course content: tracks and lessons.
 //
@@ -104,9 +105,11 @@ export function trackText(t: TrackSource, f: Fields = trackFields(t)): TrackText
 
 /** Load the translation source for tracks (by slug or id). */
 export async function loadTrackSources(where: Prisma.LearnTrackWhereInput): Promise<TrackSource[]> {
-  return prisma.learnTrack
-    .findMany({ where, orderBy: { sortOrder: "asc" }, select: TRACK_SOURCE })
-    .catch(() => []);
+  // Public course text, cached until any track content changes
+  // (lib/cache/public-data.ts). A failed read is not cached.
+  return cachedPublicData("learn", `src:${JSON.stringify(where)}`, () =>
+    prisma.learnTrack.findMany({ where, orderBy: { sortOrder: "asc" }, select: TRACK_SOURCE }),
+  ).catch(() => []);
 }
 
 /** One track for a page: translated if cached, else English and queued. */

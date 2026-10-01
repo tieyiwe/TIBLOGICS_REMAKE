@@ -9,7 +9,11 @@ import { useEffect, useRef, useState } from "react";
 // fetches it the moment the component renders, which for a below-the-fold
 // element means paying for framer-motion and six scenes before the visitor has
 // scrolled anywhere near it. Waiting for intersection makes the deferral real.
-const VideoEmbed = dynamic(() => import("./VideoEmbed"), { ssr: false });
+// The placeholder keeps the frame's 16:9 box while the code downloads; with
+// no loading state the box collapsed to nothing for a moment and the page
+// below jumped twice (layout shift).
+const Placeholder = () => <div className="w-full rounded-2xl bg-[#0D1B2A]" style={{ aspectRatio: "16/9" }} aria-hidden="true" />;
+const VideoEmbed = dynamic(() => import("./VideoEmbed"), { ssr: false, loading: Placeholder });
 
 export default function LazyVideoEmbed() {
   const ref = useRef<HTMLDivElement>(null);
@@ -41,15 +45,7 @@ export default function LazyVideoEmbed() {
 
   return (
     <div ref={ref}>
-      {show ? (
-        <VideoEmbed />
-      ) : (
-        <div
-          className="w-full rounded-2xl bg-[#0D1B2A]"
-          style={{ aspectRatio: "16/9" }}
-          aria-hidden="true"
-        />
-      )}
+      {show ? <VideoEmbed /> : <Placeholder />}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { ShoppingBag, Check } from "lucide-react";
 import { useCart } from "./CartContext";
 import { formatMoney, type ShopProduct } from "./types";
 import { useLocale, useT } from "@/lib/i18n/client";
+import ShopImage from "./ShopImage";
 
 const S = {
   card: "#1A2223",
@@ -57,7 +58,8 @@ export function AddButton({ p }: { p: ShopProduct }) {
   );
 }
 
-export default function ProductCard({ p }: { p: ShopProduct }) {
+/** `priority` for the first cards, which are above the fold (LCP). */
+export default function ProductCard({ p, priority = false }: { p: ShopProduct; priority?: boolean }) {
   const t = useT();
   const locale = useLocale();
   const onSale = p.onSale && p.compareAtPrice && p.compareAtPrice > p.price;
@@ -80,8 +82,7 @@ export default function ProductCard({ p }: { p: ShopProduct }) {
     >
       <div style={{ position: "relative", aspectRatio: "4/5", background: "linear-gradient(135deg,#1C2526,#0C1112)", overflow: "hidden" }}>
         {p.images[0] ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={p.images[0]} alt={p.name} className="shop-card-img" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <ShopImage src={p.images[0]} alt={p.name} className="shop-card-img" sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px" priority={priority} />
         ) : (
           <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: S.muted }}>
             <ShoppingBag size={40} style={{ opacity: 0.3 }} />

@@ -1,16 +1,20 @@
 // Existence checks for proxy.ts, so a missing track, product, article,
 // collection, lead magnet or landing page answers with a real HTTP 404.
 //
-// Why here and not in the pages: the public layout has a loading.tsx, so
-// those pages start streaming (status 200) before the page can call
-// notFound(). Next then marks the page noindex, but crawlers still log a
-// "soft 404". Checking before the response starts is the documented fix
-// (node_modules/next/dist/docs: loading.md, "Status Codes").
+// Why here and not in the pages: the public layout used to have a
+// loading.tsx, so those pages started streaming (status 200) before the page
+// could call notFound(). Next then marks the page noindex, but crawlers still
+// log a "soft 404". Checking before the response starts is the documented fix
+// (node_modules/next/dist/docs: loading.md, "Status Codes"), and it stays
+// correct if a loading.tsx is added again. (The skeletons were removed for
+// speed: React reveals streamed content at least 300 ms after a fallback has
+// painted, which delayed the largest paint of pages whose data is cached.)
 //
 // Fast and fail-open: one indexed lookup per slug, cached for a minute, and
 // any database error lets the request through to the page as before.
 
 import prisma from "@/lib/prisma";
+import { onTableWrite } from "@/lib/db/write-events";
 
 type Check = (slug: string) => Promise<boolean>;
 
@@ -50,6 +54,16 @@ const TTL_FOUND_MS = 60_000;
 const TTL_MISSING_MS = 10_000;
 const MAX_ENTRIES = 2_000;
 const cache = new Map<string, { exists: boolean; at: number }>();
+
+// Publishing or unpublishing anything checked here takes effect at once on
+// this instance (lib/db/write-events.ts); the TTLs above bound the rest.
+const CHECKED_TABLES = new Set(["LearnTrack", "Collection", "Product", "BlogPost", "AcquireMagnet", "AcquirePage"]);
+onTableWrite((table, sql) => {
+  if (!CHECKED_TABLES.has(table)) return;
+  // An article view only bumps its counter.
+  if (table === "BlogPost" && /^\s*UPDATE[\s\S]*\bSET\s+"viewCount"\s*=[^,]*\bWHERE\b/i.test(sql)) return;
+  cache.clear();
+});
 
 /**
  * true when the path is a content page whose item does not exist (or is not

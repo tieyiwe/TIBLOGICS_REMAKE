@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { noteQuery } from "@/lib/db/write-events";
 
 // Accept the legacy variable name as an alias.
 //
@@ -18,12 +19,30 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+function create(): PrismaClient {
+  const dev = process.env.NODE_ENV === "development";
+  const perf = !!process.env.PRISMA_PERF_LOG;
+  // Query events feed lib/db/write-events.ts: a write to a table whose rows
+  // are cached for public pages (lib/cache/public-data.ts) drops that cache.
+  const c = new PrismaClient({
+    log: [
+      { emit: "event", level: "query" },
+      { emit: "stdout", level: "error" },
+      { emit: "stdout", level: "warn" },
+    ],
   });
+  c.$on("query", (e: { duration: number; query: string }) => {
+    noteQuery(e.query);
+    if (perf) console.log(`PQ ${e.duration} ${e.query.replace(/\s+/g, " ").slice(0, 220)}`);
+    else if (dev) console.log(`prisma:query ${e.query}`);
+  });
+  return c;
+}
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+export const prisma = globalForPrisma.prisma ?? create();
+
+// Kept on globalThis in production too: one client (and one connection pool)
+// per process, even if the bundler instantiates this module more than once.
+globalForPrisma.prisma = prisma;
 
 export default prisma;

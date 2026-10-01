@@ -3,6 +3,7 @@
 import { ensureLearnEditColumns } from "@/lib/learn/admin/columns";
 import prisma from "@/lib/prisma";
 import { trackPriceCents } from "@/lib/learn/pricing";
+import { cachedPublicData } from "@/lib/cache/public-data";
 
 export interface CatalogTrack {
   id: string;
@@ -100,15 +101,23 @@ function normalise(t: {
 
 /** One-time price per track id (live tracks), for member pages. */
 export async function trackPrices(): Promise<Map<string, number>> {
-  await ensureLearnEditColumns().catch(() => {});
-  const rows = await prisma.learnTrack
-    .findMany({ where: { status: "live" }, select: { id: true, level: true, priceCents: true } })
-    .catch(() => []);
-  return new Map(rows.map((r) => [r.id, trackPriceCents(r.level, r.priceCents)]));
+  // Public data, cached until a track changes (lib/cache/public-data.ts).
+  // A failed read is not cached: it falls back to "no prices" for this request only.
+  return cachedPublicData("learn", "trackPrices", async () => {
+    await ensureLearnEditColumns().catch(() => {});
+    const rows = await prisma.learnTrack.findMany({ where: { status: "live" }, select: { id: true, level: true, priceCents: true } });
+    return new Map(rows.map((r) => [r.id, trackPriceCents(r.level, r.priceCents)]));
+  }).catch(() => new Map<string, number>());
 }
 
 /** Every track that should appear publicly (live + coming soon). */
 export async function getCatalog(): Promise<CatalogTrack[]> {
+  // Public data, cached until any track content changes (lib/cache/public-data.ts).
+  // A failed read is not cached: it shows an empty catalog for this request only.
+  return cachedPublicData("learn", "catalog", loadCatalog).catch(() => []);
+}
+
+async function loadCatalog(): Promise<CatalogTrack[]> {
   await ensureLearnEditColumns().catch(() => {});
   const tracks = await prisma.learnTrack
     .findMany({
@@ -127,13 +136,18 @@ export async function getCatalog(): Promise<CatalogTrack[]> {
         finalExam: { select: { id: true, timeLimitMinutes: true } },
         capstone: { select: { id: true } },
       },
-    })
-    .catch(() => []);
+    });
   return tracks.map(normalise);
 }
 
 /** Full track detail for the landing page, including the module outline. */
 export async function getTrackBySlug(slug: string) {
+  // Public data, cached until any track content changes (lib/cache/public-data.ts).
+  // A failed read is not cached: it reads as "no such track" for this request only.
+  return cachedPublicData("learn", `track:${slug}`, () => loadTrackBySlug(slug)).catch(() => null);
+}
+
+async function loadTrackBySlug(slug: string) {
   await ensureLearnEditColumns().catch(() => {});
   const track = await prisma.learnTrack
     .findUnique({
@@ -162,8 +176,7 @@ export async function getTrackBySlug(slug: string) {
         capstone: { select: { briefMd: true, passThreshold: true } },
         labs: { where: { isPublished: true }, select: { estimatedMinutes: true } },
       },
-    })
-    .catch(() => null);
+    });
 
   if (!track || track.status === "draft") return null;
   return track;

@@ -12,6 +12,7 @@ import JsonLd from "@/components/seo/JsonLd";
 import { breadcrumbNode, type JsonLdNode } from "@/lib/seo/jsonld";
 import { LOGO_URL, ORG_ID, SITE_NAME, WEBSITE_ID } from "@/lib/seo/site";
 import { articleAlternates, articleLanguages, articleUrl, authorNode } from "@/lib/seo/articles";
+import { cachedPublicData } from "@/lib/cache/public-data";
 
 export const revalidate = 3600;
 
@@ -28,6 +29,20 @@ export async function generateStaticParams() {
   } catch {
     return [];
   }
+}
+
+/** A published article, cached in process until a post changes (lib/cache/public-data.ts). */
+function articlePost(prisma: typeof import("@/lib/prisma").prisma, slug: string) {
+  return cachedPublicData("blog", `article:${slug}`, () =>
+    prisma.blogPost.findFirst({
+      where: { slug, published: true },
+      select: {
+        id: true, slug: true, title: true, excerpt: true, content: true, coverImage: true, coverEmoji: true,
+        coverGradient: true, category: true, author: true, readingTime: true, aiGenerated: true, sourceUrl: true,
+        sourceTitle: true, viewCount: true, createdAt: true, updatedAt: true, tags: true,
+      },
+    }),
+  );
 }
 
 // Canonical origin, whatever host served the request.
@@ -90,12 +105,8 @@ export async function generateMetadata(
   // findFirst with published, not findUnique: an unpublished (e.g. retracted)
   // article must not keep its title and summary in search metadata.
   // undefined = the database failed (not the same as "no such article").
-  const post = await prisma.blogPost
-    .findFirst({
-      where: { slug, published: true },
-      select: { slug: true, title: true, excerpt: true, content: true, coverImage: true, tags: true, author: true, category: true, createdAt: true, updatedAt: true },
-    })
-    .catch(() => undefined);
+  // The same cached row as the page (one read for both).
+  const post = await articlePost(prisma, slug).catch(() => undefined);
   // A real 404 for crawlers that get blocking metadata (next.config.js).
   if (post === null) notFound();
   if (!post) return { title: t("pages.aiTimes.meta.title") };
@@ -161,14 +172,7 @@ export default async function BlogPostPage(
   let postLookupRan = false;
   try {
     const { prisma } = await import("@/lib/prisma");
-    const post = await prisma.blogPost.findFirst({
-      where: { slug, published: true },
-      select: {
-        id: true, slug: true, title: true, excerpt: true, content: true, coverImage: true, coverEmoji: true,
-        coverGradient: true, category: true, author: true, readingTime: true, aiGenerated: true, sourceUrl: true,
-        sourceTitle: true, viewCount: true, createdAt: true, updatedAt: true, tags: true,
-      },
-    });
+    const post = await articlePost(prisma, slug);
     postLookupRan = true;
     if (post && locale !== "en") {
       // Cached translation, or English plus a notice while one is made.

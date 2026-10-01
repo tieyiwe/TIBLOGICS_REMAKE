@@ -6,6 +6,7 @@ import { ShoppingBag, Check, ArrowLeft, ShieldCheck, Zap, Plus, Minus, ChevronDo
 import { useCart } from "./CartContext";
 import { formatMoney, type ShopProduct } from "./types";
 import { useLocale, useT } from "@/lib/i18n/client";
+import ShopImage from "./ShopImage";
 
 const S = {
   darker: "#0C1112",
@@ -158,10 +159,9 @@ export default function ProductDetail({ product: p, related }: { product: ShopPr
         <div className="pd-grid">
           {/* Gallery */}
           <div>
-            <div style={{ aspectRatio: "1/1", borderRadius: "22px", overflow: "hidden", background: "linear-gradient(135deg,#1C2526,#0C1112)", border: `1px solid ${S.border}`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "14px" }}>
+            <div style={{ position: "relative", aspectRatio: "1/1", borderRadius: "22px", overflow: "hidden", background: "linear-gradient(135deg,#1C2526,#0C1112)", border: `1px solid ${S.border}`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "14px" }}>
               {p.images[activeImg] ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={p.images[activeImg]} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <ShopImage src={p.images[activeImg]} alt={p.name} sizes="(max-width: 900px) 100vw, 560px" priority={activeImg === 0} />
               ) : (
                 <ShoppingBag size={56} style={{ opacity: 0.3 }} />
               )}
@@ -169,9 +169,8 @@ export default function ProductDetail({ product: p, related }: { product: ShopPr
             {p.images.length > 1 && (
               <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                 {p.images.map((img, i) => (
-                  <button key={i} onClick={() => setActiveImg(i)} aria-label={t("pages.store.detail.image", { n: i + 1 })} style={{ width: "68px", height: "68px", borderRadius: "12px", overflow: "hidden", border: `2px solid ${i === activeImg ? S.orange : S.border}`, cursor: "pointer", padding: 0, background: "none" }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <button key={i} onClick={() => setActiveImg(i)} aria-label={t("pages.store.detail.image", { n: i + 1 })} style={{ position: "relative", width: "68px", height: "68px", borderRadius: "12px", overflow: "hidden", border: `2px solid ${i === activeImg ? S.orange : S.border}`, cursor: "pointer", padding: 0, background: "none" }}>
+                    <ShopImage src={img} alt="" sizes="68px" />
                   </button>
                 ))}
               </div>
@@ -258,10 +257,9 @@ export default function ProductDetail({ product: p, related }: { product: ShopPr
                 const rSale = r.onSale && r.compareAtPrice && r.compareAtPrice > r.price;
                 return (
                   <Link key={r.id} href={`/store/${r.slug}`} className="rel-card" style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: "16px", overflow: "hidden", textDecoration: "none", color: "#fff" }}>
-                    <div style={{ aspectRatio: "1/1", background: "linear-gradient(135deg,#1C2526,#0C1112)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ position: "relative", aspectRatio: "1/1", background: "linear-gradient(135deg,#1C2526,#0C1112)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {r.images[0] ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={r.images[0]} alt={r.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <ShopImage src={r.images[0]} alt={r.name} sizes="(max-width: 640px) 50vw, 260px" />
                       ) : (
                         <ShoppingBag size={30} style={{ opacity: 0.3 }} />
                       )}

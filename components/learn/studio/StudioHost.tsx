@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { MotionConfig } from "framer-motion";
 import Link from "next/link";
-import { useT } from "@/lib/i18n/client";
+import { I18nProvider, useLazyMessages, useLocale, useT } from "@/lib/i18n/client";
 import { celebrate, bumpPractice } from "@/lib/learn/game-client";
 import { STUDIO_BY_ID } from "@/lib/learn/studio/catalog";
 import type { StudioResult } from "@/lib/learn/studio/types";
@@ -34,6 +34,10 @@ export default function StudioHost({
   initialProgress?: ToolProgress;
 }) {
   const t = useT();
+  const locale = useLocale();
+  // The tool texts are not embedded in every Learn page (lib/i18n/client-messages.ts):
+  // fetched here unless the page sent them (the Studio tool page does).
+  const toolMessages = useLazyMessages("studio");
   const meta = STUDIO_BY_ID.get(toolId);
   const Tool = STUDIO_COMPONENTS[toolId];
   const [progress, setProgress] = useState<ToolProgress>(initialProgress ?? {});
@@ -156,7 +160,13 @@ export default function StudioHost({
         <div className={full ? "flex min-h-0 flex-1 flex-col overflow-auto p-3 sm:p-5 lg:overflow-hidden" : embedded ? "p-3 sm:p-4" : ""}>
           <StudioDraftContext.Provider value={setDraftStatus}>
             <MotionConfig reducedMotion={stillMotion ? "always" : "user"}>
-              <Tool challengeId={challengeId} embedded={embedded && !full} onComplete={onComplete} progress={progress} />
+              {toolMessages ? (
+                <I18nProvider locale={locale} dict={toolMessages}>
+                  <Tool challengeId={challengeId} embedded={embedded && !full} onComplete={onComplete} progress={progress} />
+                </I18nProvider>
+              ) : (
+                <div className="h-48 animate-pulse rounded-xl bg-[var(--s2)]" />
+              )}
             </MotionConfig>
           </StudioDraftContext.Provider>
         </div>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo/meta";
+import { DM, SYNE } from "@/lib/fonts/brand";
 
 export const metadata: Metadata = pageMetadata({
   path: "/training-terms",
@@ -7,14 +8,13 @@ export const metadata: Metadata = pageMetadata({
   description: "Terms and Conditions for the TIBLOGICS AI Practical Training, June cohort: registration, payment, refunds, conduct and recordings.",
 });
 
-const syne = "'Syne', sans-serif";
-const dm = "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif";
+const syne = SYNE;
+const dm = DM;
 
 export default function TrainingTermsPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #0F1617; color: #E8EDEE; }
         .terms-wrap { max-width: 780px; margin: 0 auto; padding: 60px 24px 100px; font-family: ${dm}; line-height: 1.75; }
