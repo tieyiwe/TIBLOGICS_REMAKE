@@ -24,6 +24,12 @@ export const POINT_VALUES: Record<PointSource, number> = {
   // lesson reflection of 15 words or more (once per lesson).
   daily_review: 15,
   reflection: 5,
+  // Mastery paths: testing out of a module (refId: the module id). The
+  // tested-out lessons themselves award no lesson XP.
+  module_tested_out: 30,
+  // Community: a helpful capstone peer review, an accepted answer.
+  peer_review: 20,
+  community_answer: 10,
 };
 
 export const LEVELS = [

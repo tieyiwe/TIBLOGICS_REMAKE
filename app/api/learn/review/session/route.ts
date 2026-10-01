@@ -7,7 +7,7 @@ import { getLocale, translatorFor } from "@/lib/i18n/server";
 
 // Serves today's Daily Review cards: question text and shuffled options only.
 // The answer key and explanations stay on the server until each answer.
-export async function GET() {
+export async function GET(req: Request) {
   const { error, student, access } = await requireEntitledStudent();
   if (error) return error;
   const locale = await getLocale();
@@ -18,7 +18,11 @@ export async function GET() {
   }
   try {
     const round = randomBytes(9).toString("base64url");
-    const { questions, pending, remaining } = await buildSession(student.id, locale, round, access.all ? null : access.purchased);
+    // Mastery paths: ?module=<id> limits the session to one module (focused
+    // review). The banks are still scoped to the learner's open tracks.
+    const focus = new URL(req.url).searchParams.get("module");
+    const focusModuleId = focus && /^[A-Za-z0-9_-]{1,64}$/.test(focus) ? focus : null;
+    const { questions, pending, remaining } = await buildSession(student.id, locale, round, access.all ? null : access.purchased, { focusModuleId });
     return NextResponse.json(
       { round, questions, pending, remaining },
       { headers: { "Cache-Control": "no-store" } },

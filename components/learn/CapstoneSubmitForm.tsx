@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useT } from "@/lib/i18n/client";
+import { useServerDraft } from "@/lib/learn/drafts/client";
+import DraftStatus from "./DraftStatus";
 
 export default function CapstoneSubmitForm({
   capstoneId,
@@ -19,6 +21,16 @@ export default function CapstoneSubmitForm({
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // The link and notes are autosaved until submitted, on any device.
+  const draft = useServerDraft<{ url: string; notes: string }>(
+    `capstone:${capstoneId}`,
+    { url, notes },
+    (v) => {
+      setUrl(v.url);
+      setNotes(v.notes);
+    },
+    { validate: (v) => !!v && typeof (v as { url?: unknown }).url === "string" && typeof (v as { notes?: unknown }).notes === "string" },
+  );
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -36,6 +48,7 @@ export default function CapstoneSubmitForm({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? t("labs.capstone.submitError"));
+      await draft.clear();
       setUrl("");
       setNotes("");
       router.refresh();
@@ -53,6 +66,7 @@ export default function CapstoneSubmitForm({
         {isResubmission ? t("labs.capstone.resubmitTitle") : t("labs.capstone.submitTitle")}
       </h2>
       <p className="mt-1 text-sm text-[var(--ink2)]">{t("labs.capstone.formIntro")}</p>
+      <DraftStatus status={draft.status} className="mt-1 block" />
 
       <div className="mt-5 space-y-4">
         <div>

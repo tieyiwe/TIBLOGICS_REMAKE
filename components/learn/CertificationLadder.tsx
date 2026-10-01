@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { CERT_LEVELS } from "@/lib/learn/levels";
-import { fmtBreakdown } from "@/lib/learn/format";
+import { fmtBreakdown, fmtPrice } from "@/lib/learn/format";
 import { useLocale, useT } from "@/lib/i18n/client";
 
 /**
@@ -26,6 +26,10 @@ export interface LadderTrack {
   moduleCount?: number;
   labCount?: number;
   status?: string;
+  /** One-time price for this track, in cents (shown when given). */
+  priceCents?: number;
+  /** Learner mode: not unlocked on this account. */
+  locked?: boolean;
 }
 
 export interface LadderProgress {
@@ -39,8 +43,11 @@ export default function CertificationLadder({
   progress,
   mode,
   highlight,
+  monthlyCents,
 }: {
   tracks: LadderTrack[];
+  /** All-tracks monthly price; with a track price, both options are shown. */
+  monthlyCents?: number;
   progress?: Record<string, LadderProgress>;
   mode: "public" | "learner";
   /** Slug of the level the "find my level" questions recommended. */
@@ -64,8 +71,11 @@ export default function CertificationLadder({
           : null;
 
         const name = tr(`learn.certLevel.${lvl.level}.name`);
+        const locked = mode === "learner" && !!t?.locked;
         const cta = !live
           ? tr("learn.catalog.comingSoon")
+          : locked
+            ? tr("learn.locked.unlock")
           : mode === "public"
             ? i === 0
               ? tr("learn.ladder.startHere")
@@ -142,7 +152,19 @@ export default function CertificationLadder({
                 </p>
               ) : null}
 
-              {mode === "learner" && live && p && !p.certified && (
+              {live && t?.priceCents != null && (mode === "public" || locked) && (
+                <div className="mt-3 rounded-xl bg-[var(--s2)] px-3 py-2.5 text-xs leading-snug text-[var(--ink2)]">
+                  {locked && <p className="mb-1 font-bold text-[var(--ink)]">🔒 {tr("learn.locked.badge")}</p>}
+                  <p className="font-semibold text-[var(--ink)]">{tr("learn.offer.trackLine", { price: fmtPrice(t.priceCents, locale) })}</p>
+                  {monthlyCents != null && (
+                    <p className="mt-0.5">
+                      {tr("learn.offer.or")} {tr("learn.offer.allLine", { price: fmtPrice(monthlyCents, locale) })}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {mode === "learner" && live && p && !p.certified && !locked && (
                 <div className="mt-3">
                   <div className="h-1.5 overflow-hidden rounded-full bg-[var(--s2)]">
                     <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${p.percent}%`, background: accent }} />

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import LevelBadge from "./LevelBadge";
 import WaitlistForm from "./WaitlistForm";
-import { fmtBreakdown, fmtPacing, totalHours } from "@/lib/learn/format";
+import { fmtBreakdown, fmtPacing, fmtPrice, totalHours } from "@/lib/learn/format";
+import { PLANS } from "@/lib/payments/provider";
 import type { CatalogTrack } from "@/lib/learn/catalog";
 import { useLocale, useT } from "@/lib/i18n/client";
 
@@ -107,6 +108,16 @@ export default function TrackCard({ track }: { track: CatalogTrack }) {
           <span aria-hidden="true">🏅</span>
           <span className="line-clamp-2">{track.certificateName}</span>
         </p>
+
+        {/* Both ways to buy */}
+        {!comingSoon && (
+          <div className="mt-4 rounded-xl bg-[var(--s2)] px-3 py-2.5 text-xs leading-snug text-[var(--ink2)]">
+            <p className="font-semibold text-[var(--ink)]">{t("learn.offer.trackLine", { price: fmtPrice(track.priceCents, locale) })}</p>
+            <p className="mt-0.5">
+              {t("learn.offer.or")} {t("learn.offer.allLine", { price: fmtPrice(PLANS.monthly.amount, locale) })}
+            </p>
+          </div>
+        )}
 
         <div className="mt-5 pt-1">
           {comingSoon ? (

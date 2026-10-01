@@ -5,6 +5,8 @@ import LevelBadge from "@/components/learn/LevelBadge";
 import Reveal from "@/components/learn/Reveal";
 import ModuleAccordion from "@/components/learn/ModuleAccordion";
 import StickyEnrollBar from "@/components/learn/StickyEnrollBar";
+import PurchaseOptions from "@/components/learn/PurchaseOptions";
+import { trackPriceCents } from "@/lib/learn/pricing";
 import { getTrackBySlug, trackTime } from "@/lib/learn/catalog";
 import { fmtBreakdown, fmtMinutes, fmtPacing, fmtPrice, levelLabel, totalHours } from "@/lib/learn/format";
 import { PLANS } from "@/lib/payments/provider";
@@ -69,6 +71,8 @@ export default async function TrackLandingPage({
   const pacing = fmtPacing(t, hours);
   const exam = track.finalExam;
   const firstQuiz = track.modules[0]?.quiz;
+  // One-time price for this track (level default or the track's own).
+  const priceCents = trackPriceCents(track.level, track.priceCents);
 
   const faqs = [
     {
@@ -90,8 +94,8 @@ export default async function TrackLandingPage({
     {
       q: t("learn.track.faq.cost.q"),
       a: t("learn.track.faq.cost.a", {
+        track: fmtPrice(priceCents, locale),
         monthly: fmtPrice(PLANS.monthly.amount, locale),
-        annual: fmtPrice(PLANS.annual.amount, locale),
       }),
     },
   ];
@@ -234,6 +238,22 @@ export default async function TrackLandingPage({
           </div>
         </Reveal>
 
+        {/* Two ways to buy */}
+        {!comingSoon && (
+          <Reveal as="section" className="mt-8">
+            <h2 className="text-xl font-bold text-[var(--ink)]">{t("learn.subscribe.metaTitle")}</h2>
+            <div className="mt-5">
+              <PurchaseOptions
+                mode="link"
+                track={{ slug: track.slug, title: text.title, priceCents }}
+                monthlyCents={PLANS.monthly.amount}
+                monthlyCompareAtCents={PLANS.monthly.compareAtAmount}
+                accentColor={track.accentColor}
+              />
+            </div>
+          </Reveal>
+        )}
+
         {/* How you're assessed */}
         <Reveal as="section" className="mt-8 rounded-2xl border border-[var(--border)] bg-white p-7">
           <h2 className="text-xl font-bold text-[var(--ink)]">{t("learn.catalog.howAssessed")}</h2>
@@ -275,7 +295,13 @@ export default async function TrackLandingPage({
         </Reveal>
       </div>
 
-      <StickyEnrollBar trackTitle={text.title} accentColor={track.accentColor} comingSoon={comingSoon} trackSlug={track.slug} />
+      <StickyEnrollBar
+        trackTitle={text.title}
+        accentColor={track.accentColor}
+        comingSoon={comingSoon}
+        trackSlug={track.slug}
+        priceCents={priceCents}
+      />
     </div>
   );
 }

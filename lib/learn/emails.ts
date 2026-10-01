@@ -155,3 +155,7 @@ export async function sendPasswordResetEmail(s: { email: string; name: string; t
     ),
   });
 }
+
+// The same branded layout for emails sent from elsewhere in Learn
+// (community: cohorts, reply digests).
+export { shell as learnEmailShell, esc as learnEmailEsc, p as learnEmailP, SITE as LEARN_SITE };

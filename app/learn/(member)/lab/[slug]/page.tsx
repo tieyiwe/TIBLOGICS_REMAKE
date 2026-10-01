@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
-import { getStudent } from "@/lib/learn/session";
+import { canAccessTrack, getAccess, getStudent } from "@/lib/learn/session";
+import TrackPaywall from "@/components/learn/TrackPaywall";
 import LabRunner, { type LabView } from "@/components/learn/LabRunner";
 import { type LabType } from "@/lib/learn/labs/types";
 import { evaluateBuild, evaluateCritique } from "@/lib/learn/labs/evaluate";
@@ -8,6 +9,7 @@ import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { firstUnfinishedLesson, labModuleId, labUnlocked } from "@/lib/learn/progress";
 import ModuleLocked from "@/components/learn/ModuleLocked";
 import { localizeLab } from "@/lib/i18n/sources/labs";
+import TutorDock from "@/components/learn/tutor/TutorDock";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +34,9 @@ export default async function LabPage({ params }: { params: Promise<{ slug: stri
     .catch(() => null);
 
   if (!lab || !lab.isPublished) notFound();
+  if (!canAccessTrack(await getAccess(student.id), lab.trackId)) {
+    return <TrackPaywall trackId={lab.trackId} />;
+  }
 
   // A module's lab opens once the module's lessons are done.
   const lockModuleId = await labModuleId(lab.id);
@@ -138,6 +143,7 @@ export default async function LabPage({ params }: { params: Promise<{ slug: stri
   }
 
   return (
+    <>
     <LabRunner
       pending={shown.pending}
       lab={view}
@@ -160,5 +166,7 @@ export default async function LabPage({ params }: { params: Promise<{ slug: stri
           : null
       }
     />
+    <TutorDock kind="lab" refId={lab.id} />
+    </>
   );
 }

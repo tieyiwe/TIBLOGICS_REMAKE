@@ -15,6 +15,7 @@ import { evaluateCode, MAX_CODE } from "@/lib/learn/labs/code";
 import { getLocale, getT, translatorFor } from "@/lib/i18n/server";
 import { localizeLab } from "@/lib/i18n/sources/labs";
 import { gameDelta, gameSnapshot } from "@/lib/learn/badges";
+import { deleteDrafts } from "@/lib/learn/drafts/server";
 
 export const maxDuration = 120;
 
@@ -188,6 +189,11 @@ export async function POST(req: NextRequest) {
       : await prisma.labAttempt.create({
           data: { studentId: student.id, labId, ...data },
         });
+
+    // The work is submitted: its autosaved drafts are no longer needed.
+    await deleteDrafts(student.id, [`lab:${lab.id}`, `code:${lab.id}`]).catch((err) =>
+      console.error("[lab/submit] clear drafts", err),
+    );
 
     // Points on first pass only — the ledger keeps this idempotent, so a
     // retake for practice never double-awards.

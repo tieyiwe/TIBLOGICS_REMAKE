@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
-import { getStudent } from "@/lib/learn/session";
+import { canAccessTrack, getAccess, getStudent } from "@/lib/learn/session";
+import TrackPaywall from "@/components/learn/TrackPaywall";
 import { allModuleQuizzesPassed } from "@/lib/learn/assessments";
 import ExamRunner from "@/components/learn/ExamRunner";
 import { getLocale, translatorFor, type T } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTrack } from "@/lib/i18n/sources/learn";
 import { localizeExamInstructions } from "@/lib/i18n/sources/labs";
+import TutorDock from "@/components/learn/tutor/TutorDock";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +44,9 @@ export default async function ExamPage({ params }: { params: Promise<{ slug: str
     .catch(() => null);
 
   if (!track?.finalExam) notFound();
+  if (!canAccessTrack(await getAccess(student.id), track.id)) {
+    return <TrackPaywall trackId={track.id} />;
+  }
   const locale = await getLocale();
   const t = translatorFor(locale);
 
@@ -162,6 +167,7 @@ export default async function ExamPage({ params }: { params: Promise<{ slug: str
           </p>
         </section>
       )}
+      <TutorDock kind="exam" />
     </div>
   );
 }

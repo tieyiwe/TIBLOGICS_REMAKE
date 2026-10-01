@@ -16,6 +16,10 @@ import { POINT_VALUES } from "@/lib/learn/points";
 import { moduleStars } from "@/lib/learn/badge-defs";
 import { toolsForTrack } from "@/lib/learn/studio/catalog";
 import QuestMap, { type QuestFinal, type QuestModule, type StageState } from "@/components/learn/game/QuestMap";
+import { getResumeTarget } from "@/lib/learn/resume";
+import { newLessonsInTrack } from "@/lib/learn/track-updates";
+import { NewLessonsPanel, NewPill } from "@/components/learn/NewLessons";
+import { resumeTitle } from "@/components/learn/ResumeCard";
 
 export const dynamic = "force-dynamic";
 
@@ -190,6 +194,15 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
     return null;
   });
 
+  // "Continue where you left off" (the exact next thing in this track) and
+  // lessons added to modules the learner had already finished.
+  const [resume, newLessons] = await Promise.all([
+    getResumeTarget(student.id, { trackId: track.id }).catch(() => null),
+    newLessonsInTrack(student.id, track.id),
+  ]);
+  const newIds = new Set(newLessons.map((l) => l.id));
+  const resumeHref = resume?.href ?? (progress.nextLessonId ? `/learn/lesson/${progress.nextLessonId}` : null);
+
   const GATES = [
     { key: "microChecks", label: t("learn.gates.microChecks"), ok: gates.microChecks },
     { key: "quizzes", label: t("learn.gates.quizzes"), ok: gates.quizzes },
@@ -213,17 +226,26 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
               {t("common.translationPending")}
             </p>
           )}
+          {resume && (progress.completedLessons > 0 || resume.kind !== "next") && (
+            <p className="mt-2 text-xs text-[var(--ink2)]" data-resume-kind={resume.kind}>
+              <span className="font-semibold text-[var(--ink)]">{t("resume.title")}</span>
+              {" · "}
+              {t(`resume.kind.${resume.kind}`)}: {resumeTitle(t, resume, text?.lessons)}
+            </p>
+          )}
         </div>
-        {progress.nextLessonId && (
+        {resumeHref && (
           <Link
-            href={`/learn/lesson/${progress.nextLessonId}`}
+            href={resumeHref}
             className="rounded-full px-6 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
             style={{ background: track.accentColor }}
           >
-            {progress.completedLessons > 0 ? t("learn.dash.resume") : t("learn.ladder.start")} →
+            {progress.completedLessons > 0 || (resume && resume.kind !== "next") ? t("learn.dash.resume") : t("learn.ladder.start")} →
           </Link>
         )}
       </header>
+
+      <NewLessonsPanel t={t} lessons={newLessons} titles={text?.lessons} accentColor={track.accentColor} />
 
       {keepForever && (
         <p className="-mt-4 text-right text-xs text-[var(--ink3)]">
@@ -323,6 +345,7 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
                           {doneIds.has(l.id) ? "✓" : "○"}
                         </span>
                         <span className="min-w-0 flex-1 truncate">{text?.lessons[l.id]?.title ?? l.title}</span>
+                        {newIds.has(l.id) && <NewPill t={t} accentColor={track.accentColor} />}
                         <span className="sr-only">{doneIds.has(l.id) ? t("learn.lesson.completed") : ""}</span>
                         <span className="shrink-0 text-xs text-[var(--ink3)]">
                           {fmtMinutes(t, l.durationMinutes)}

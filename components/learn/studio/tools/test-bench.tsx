@@ -148,6 +148,7 @@ function Bench({
     setCases(v.cases);
     setChecks(v.checks);
     setCustom(v.custom);
+    if (v.custom.trim()) setShowCustom(true);
   }, { validate: isSetup });
   const liveSetup = useDebounced(setup, 300);
   const liveRan: Setup | null = liveSetup.cases.length && liveSetup.checks.length ? liveSetup : null;
@@ -682,7 +683,7 @@ function Bench({
   );
 
   return (
-    <StudioFrame toolbar={toolbar} guide={guide} live={live} liveTitle={t(`${NS}.live.title`)}>
+    <StudioFrame toolbar={toolbar} guide={guide} live={live} liveTitle={hidden ? t(`${NS}.blind.liveTitle`) : t(`${NS}.live.title`)}>
       <div className="space-y-4">
         <div className="rounded-2xl border-2 border-[#F47C20]/40 bg-[#FFF6EE] p-4">
           {!challengeId && (

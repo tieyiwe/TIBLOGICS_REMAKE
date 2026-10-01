@@ -5,6 +5,7 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PLANS, FOUNDING_PRICING } from "@/lib/payments/provider";
+import { TRACK_BASE_PRICE_CENTS } from "@/lib/learn/pricing";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { fmtPrice } from "@/lib/learn/format";
 import { useLocale, useT } from "@/lib/i18n/client";
@@ -77,7 +78,10 @@ function SignupForm() {
             {FOUNDING_PRICING && (
               <span className="mr-1 font-bold text-[var(--orange2)]">{t("learn.billing.foundingRate")} ·</span>
             )}
-            {t("learn.auth.priceLine", { price: fmtPrice(PLANS.monthly.amount, locale) })}
+            {t("learn.auth.priceLine", {
+              price: fmtPrice(PLANS.monthly.amount, locale),
+              from: fmtPrice(TRACK_BASE_PRICE_CENTS, locale),
+            })}
           </p>
           )}
 

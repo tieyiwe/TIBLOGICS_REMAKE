@@ -2,6 +2,7 @@
 import prisma from "@/lib/prisma";
 import { awardPoints } from "./points";
 import { certificationStatus } from "./assessments";
+import { lessonMastered, masteredLessonIds, moduleTestedOut, testOutOpen } from "./mastery/testout";
 
 /**
  * Idempotent lesson completion. Returns the next lesson id in the track
@@ -25,7 +26,9 @@ export async function markLessonComplete(studentId: string, lessonId: string) {
   // Awarding points and looking up the next lesson share no data — the second
   // only needs `lesson`, which is already in hand.
   const [pointsAwarded, nextLessonId] = await Promise.all([
-    awardPoints(studentId, "lesson_complete", lessonId),
+    // A lesson already counted through test out (mastery paths) earns no
+    // lesson XP: the module's single "tested out" award stands for it.
+    lessonMastered(studentId, lessonId).then((m) => (m ? 0 : awardPoints(studentId, "lesson_complete", lessonId))),
     findNextLesson(lesson.module.trackId, lesson.module.sortOrder, lesson.sortOrder),
   ]);
 
@@ -65,7 +68,7 @@ export async function getTrackProgress(studentId: string, trackId: string): Prom
   // `in:` list of lesson ids drops the dependency between the two queries, so
   // both go out at once. Identical row set either way — same track filter.
   // Matters here because getAllTrackProgress fans this out per track.
-  const [lessons, done] = await Promise.all([
+  const [lessons, done, mastered] = await Promise.all([
     prisma.lesson.findMany({
       where: { module: { trackId } },
       orderBy: [{ module: { sortOrder: "asc" } }, { sortOrder: "asc" }],
@@ -75,8 +78,10 @@ export async function getTrackProgress(studentId: string, trackId: string): Prom
       where: { studentId, lesson: { module: { trackId } } },
       select: { lessonId: true },
     }),
+    // Lessons tested out of (mastery paths) count as done for progress.
+    masteredLessonIds(studentId, trackId),
   ]);
-  const doneSet = new Set(done.map((d) => d.lessonId));
+  const doneSet = new Set([...done.map((d) => d.lessonId), ...mastered]);
   const remaining = lessons.filter((l) => !doneSet.has(l.id));
 
   return {
@@ -113,6 +118,8 @@ export async function getTrackGates(studentId: string, trackId: string) {
  */
 export async function moduleLessonsComplete(studentId: string, moduleId: string | null | undefined): Promise<boolean> {
   if (!moduleId) return true;
+  // A module tested out of (mastery paths) counts as complete.
+  if (await moduleTestedOut(studentId, moduleId)) return true;
   const [total, done] = await Promise.all([
     prisma.lesson.count({ where: { moduleId } }),
     prisma.lessonProgress.count({ where: { studentId, lesson: { moduleId } } }),
@@ -140,7 +147,8 @@ export async function firstUnfinishedLesson(studentId: string, moduleId: string)
  */
 export async function quizUnlocked(studentId: string, quizId: string, moduleId: string | null | undefined): Promise<boolean> {
   const tried = await prisma.quizAttempt.count({ where: { studentId, quizId } });
-  return tried > 0 || moduleLessonsComplete(studentId, moduleId);
+  // Mastery paths: a module rated Mastered may be tested out of directly.
+  return tried > 0 || (await moduleLessonsComplete(studentId, moduleId)) || testOutOpen(studentId, moduleId);
 }
 
 /** Same rule for a module's lab. */

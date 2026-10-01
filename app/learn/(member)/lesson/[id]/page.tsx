@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
-import { getStudent } from "@/lib/learn/session";
+import { canAccessTrack, getAccess, getStudent } from "@/lib/learn/session";
+import TrackPaywall from "@/components/learn/TrackPaywall";
 import LessonPlayer from "@/components/learn/LessonPlayer";
 import type { Metadata } from "next";
 import { getLocale, getT } from "@/lib/i18n/server";
@@ -10,6 +11,9 @@ import { loadLoopState } from "@/lib/learn/method/loop";
 import { POINT_VALUES } from "@/lib/learn/points";
 import LearningLoop from "@/components/learn/method/LearningLoop";
 import LessonReflection from "@/components/learn/method/LessonReflection";
+import LessonPosition from "@/components/learn/LessonPosition";
+import { readDraft } from "@/lib/learn/drafts/server";
+import TutorDock from "@/components/learn/tutor/TutorDock";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +50,21 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
   if (!lesson) notFound();
 
   const trackId = lesson.module.track.id;
+
+  // Per-track access: a lesson opens with its track (bought, or every track
+  // with the subscription). Free-preview lessons open for any member.
+  if (!lesson.isPreview && !canAccessTrack(await getAccess(student.id), trackId)) {
+    return (
+      <div>
+        <nav className="mb-4 text-sm text-[var(--ink3)]">
+          <Link href={`/learn/track/${lesson.module.track.slug}`} className="hover:text-[var(--ink)]">
+            ← {lesson.module.track.title}
+          </Link>
+        </nav>
+        <TrackPaywall trackId={trackId} />
+      </div>
+    );
+  }
 
   // Outline rail: every module + lesson in the track, with completion state
   const [modules, completed] = await Promise.all([
@@ -93,6 +112,14 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
     },
   );
 
+  // Where the learner was in this lesson last time (any device), to offer
+  // "Jump back to where you were". Never scrolls on its own.
+  const savedPos = await readDraft(student.id, `pos:${lesson.id}`);
+  const savedPct =
+    savedPos && typeof (savedPos.value as { pct?: unknown })?.pct === "number"
+      ? Math.round((savedPos.value as { pct: number }).pct)
+      : null;
+
   // Flatten for prev/next
   const flat = modules.flatMap((m) => m.lessons.map((l) => l.id));
   const idx = flat.indexOf(lesson.id);
@@ -120,6 +147,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
           {t("common.translationPending")}
         </p>
       )}
+      <LessonPosition key={lesson.id} lessonId={lesson.id} savedPct={savedPct} accentColor={lesson.module.track.accentColor} />
 
       <LessonPlayer
         lesson={{
@@ -188,6 +216,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
           )
         }
       />
+      <TutorDock kind="lesson" refId={lesson.id} />
     </div>
   );
 }

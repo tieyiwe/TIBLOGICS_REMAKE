@@ -11,6 +11,7 @@ import { checkLevelUp, notifyMilestone } from "@/lib/learn/milestones";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { localizeQuestions } from "@/lib/i18n/sources/labs";
 import { gameDelta, gameSnapshot } from "@/lib/learn/badges";
+import { applyTestOut } from "@/lib/learn/mastery/testout";
 
 // Scores micro-checks (mode: "micro") and module quizzes (mode: "quiz").
 // Correct answers are read here and NOWHERE else — the client never receives
@@ -157,7 +158,11 @@ export async function POST(req: NextRequest) {
       if (pointsAwarded > 0) game = gameDelta(before, await gameSnapshot(student.id));
     }
 
-    return NextResponse.json({ score, passed, passScore: quiz.passScore, graded, pointsAwarded, ...game });
+    // Mastery paths: a pass from a Mastered diagnostic tests out of the
+    // module's unfinished lessons (no-op otherwise).
+    const testOut = passed ? await applyTestOut(student.id, quiz.moduleId) : { testedOut: false, testOutPoints: 0 };
+
+    return NextResponse.json({ score, passed, passScore: quiz.passScore, graded, pointsAwarded, ...game, ...testOut });
   } catch (err) {
     console.error("[POST /api/learn/quiz/submit]", err);
     return NextResponse.json({ error: t("labs.api.scoreSubmissionFailed") }, { status: 500 });

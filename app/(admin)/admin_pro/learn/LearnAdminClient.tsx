@@ -104,6 +104,12 @@ export default function LearnAdminClient({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link
+            href="/admin_pro/learn/tutor"
+            className="rounded-lg border border-[var(--border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)]"
+          >
+            Tutor usage
+          </Link>
           <button
             onClick={() => run("sync")}
             disabled={busy !== null}

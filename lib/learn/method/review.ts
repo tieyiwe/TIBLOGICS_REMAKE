@@ -17,6 +17,7 @@ import { localizeQuestions, type QuestionKind } from "@/lib/i18n/sources/labs";
 import { loadTrackSources, localizedTracks } from "@/lib/i18n/sources/learn";
 import { seededShuffle, toOptions } from "@/lib/learn/assessments";
 import { ensureMethodTables } from "./db";
+import { prioritiseDue, prioritiseFresh, weakModuleWeights } from "@/lib/learn/mastery/review-weighting";
 
 /** Days until a card in box N (index N-1) is due again. */
 export const BOX_INTERVAL_DAYS = [1, 3, 7, 16, 35] as const;
@@ -48,6 +49,8 @@ interface Bank {
   kind: ReviewKind;
   sourceId: string;
   trackId: string;
+  /** For weak-spot weighting and focused review (mastery paths). */
+  moduleId?: string;
   questions: BankQuestion[];
 }
 
@@ -133,11 +136,11 @@ async function eligibleBanks(studentId: string, withText: boolean, scope: Review
   const [micro, quiz] = await Promise.all([
     prisma.microCheck.findMany({
       where: { lesson: { progress: { some: { studentId } }, ...inScope } },
-      select: { id: true, lesson: { select: { module: { select: { trackId: true } } } }, questions },
+      select: { id: true, lesson: { select: { moduleId: true, module: { select: { trackId: true } } } }, questions },
     }),
     prisma.quiz.findMany({
       where: { attempts: { some: { studentId, passed: true } }, ...inScope },
-      select: { id: true, module: { select: { trackId: true } }, questions },
+      select: { id: true, moduleId: true, module: { select: { trackId: true } }, questions },
     }),
   ]);
   return [
@@ -145,12 +148,14 @@ async function eligibleBanks(studentId: string, withText: boolean, scope: Review
       kind: "micro" as const,
       sourceId: m.id,
       trackId: m.lesson.module.trackId,
+      moduleId: m.lesson.moduleId,
       questions: m.questions as BankQuestion[],
     })),
     ...quiz.map((q) => ({
       kind: "quiz" as const,
       sourceId: q.id,
       trackId: q.module.trackId,
+      moduleId: q.moduleId,
       questions: q.questions as BankQuestion[],
     })),
   ];
@@ -227,11 +232,20 @@ export async function buildSession(
   locale: Locale,
   round: string,
   scope: ReviewScope = null,
+  // Mastery paths: a focused review keeps to one module's questions.
+  opts: { focusModuleId?: string | null } = {},
 ): Promise<{ questions: ServedReviewQuestion[]; pending: boolean; remaining: number }> {
   await ensureMethodTables();
   const now = new Date();
-  const [cards, banks] = await Promise.all([loadCards(studentId, scope), eligibleBanks(studentId, true, scope)]);
-  const { due, fresh, allowance } = plan(cards, banks, now);
+  const [cards, allBanks, weights] = await Promise.all([
+    loadCards(studentId, scope),
+    eligibleBanks(studentId, true, scope),
+    weakModuleWeights(studentId, scope),
+  ]);
+  const focus = opts.focusModuleId || null;
+  const banks = focus ? allBanks.filter((b) => b.moduleId === focus) : allBanks;
+  const planned = plan(cards, banks, now);
+  const { allowance } = planned;
 
   const bankOf = new Map<string, Bank>();
   const questionOf = new Map<string, BankQuestion>();
@@ -239,11 +253,26 @@ export async function buildSession(
     bankOf.set(q.id, b);
     questionOf.set(q.id, q);
   }
+  // Weak-spot weighting (mastery paths): weak modules' cards first.
+  const due = prioritiseDue(planned.due, (c) => bankOf.get(c.questionId)?.moduleId, weights);
+  const fresh = planned.fresh;
 
   const pickedDue = due.slice(0, SESSION_SIZE);
-  const room = Math.min(allowance, SESSION_SIZE - pickedDue.length);
+  // A focused review may introduce a few more new cards than the daily trickle.
+  const room = Math.min(focus ? Math.max(allowance, 4) : allowance, SESSION_SIZE - pickedDue.length);
   // New cards: a different mix each day, spread across banks.
-  const pickedNew = room > 0 ? seededShuffle(fresh, `${studentId}:${round}:new`).slice(0, room) : [];
+  const pickedNew =
+    room > 0
+      ? prioritiseFresh(seededShuffle(fresh, `${studentId}:${round}:new`), (f) => f.bank.moduleId, weights).slice(0, room)
+      : [];
+  // A focused review fills up with the module's cards that are not due yet,
+  // weakest box first: practice only (answering them does not move them).
+  const pickedPractice = focus
+    ? planned.current
+        .filter((c) => c.dueAt.getTime() > now.getTime())
+        .sort((a, b) => a.box - b.box)
+        .slice(0, Math.max(0, SESSION_SIZE - pickedDue.length - pickedNew.length))
+    : [];
 
   if (pickedNew.length) {
     await prisma.reviewCard.createMany({
@@ -264,6 +293,7 @@ export async function buildSession(
     [
       ...pickedDue.map((c) => ({ id: c.questionId, box: c.box, isNew: false })),
       ...pickedNew.map(({ q }) => ({ id: q.id, box: 1, isNew: true })),
+      ...pickedPractice.map((c) => ({ id: c.questionId, box: c.box, isNew: false })),
     ],
     `${studentId}:${round}:order`,
   );

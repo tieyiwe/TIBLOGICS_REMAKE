@@ -39,6 +39,14 @@ export const POINT_SOURCES = [
   // (refId: the learner's local date), once per lesson for a reflection.
   "daily_review",
   "reflection",
+  // Mastery paths: once per module, for testing out of it (passing the
+  // module quiz from a Mastered diagnostic). Replaces the lessons' XP.
+  "module_tested_out",
+  // Community: a capstone peer review its recipient marked helpful (refId:
+  // the review id), and a reply accepted as a thread's answer (refId: the
+  // thread id, so switching the answer cannot farm XP).
+  "peer_review",
+  "community_answer",
 ] as const;
 export type PointSource = (typeof POINT_SOURCES)[number];
 

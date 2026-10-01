@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { getLearnContext } from "@/lib/learn/session";
@@ -16,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AccountPage() {
-  const { student, entitlement } = await getLearnContext();
+  const { student, entitlement, access } = await getLearnContext();
   if (!student) redirect("/learn/login");
 
   await ensureLeaderboardColumn().catch(() => {});
@@ -29,6 +30,13 @@ export default async function AccountPage() {
 
   const [t, locale] = await Promise.all([getT(), getLocale()]);
   const has = (k: string) => t(k) !== k;
+
+  // Tracks bought outright (lifetime access).
+  const owned = access.purchased.length
+    ? await prisma.learnTrack
+        .findMany({ where: { id: { in: access.purchased } }, orderBy: { sortOrder: "asc" }, select: { id: true, slug: true, title: true } })
+        .catch(() => [])
+    : [];
 
   const sub = await prisma.learnSubscription
     .findUnique({ where: { studentId: student.id }, select: { plan: true, stripeCustomerId: true } })
@@ -110,6 +118,22 @@ export default async function AccountPage() {
           </div>
         )}
       </section>
+
+      {owned.length > 0 && (
+        <section className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6">
+          <h2 className="text-sm font-bold text-[var(--ink)]">{t("learn.account.owned")}</h2>
+          <p className="mt-1 text-xs text-[var(--ink3)]">{t("learn.account.ownedNote")}</p>
+          <ul className="mt-3 space-y-1.5 text-sm">
+            {owned.map((tr) => (
+              <li key={tr.id}>
+                <Link href={`/learn/track/${tr.slug}`} className="font-semibold text-[var(--blue2)] underline">
+                  {tr.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

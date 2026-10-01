@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getStudent } from "@/lib/learn/session";
+import { canAccessTrack, getAccess, getStudent } from "@/lib/learn/session";
+import { PLANS } from "@/lib/payments/provider";
+import { fmtPrice } from "@/lib/learn/format";
 import { getAllTrackProgress } from "@/lib/learn/progress";
 import type { Metadata } from "next";
 import { fmtBreakdown, fmtMinutes } from "@/lib/learn/format";
@@ -23,7 +25,8 @@ export default async function MyTracksPage() {
   const student = await getStudent();
   if (!student) redirect("/learn/login");
 
-  const [rawTracks, certs, catalog, t, locale] = await Promise.all([
+  const [access, rawTracks, certs, catalog, t, locale] = await Promise.all([
+    getAccess(student.id),
     getAllTrackProgress(student.id),
     prisma.learnCertificate.findMany({
       where: { studentId: student.id, revoked: false },
@@ -37,7 +40,11 @@ export default async function MyTracksPage() {
     locale === "en" ? [] : await loadTrackSources({ id: { in: rawTracks.map((x) => x.track.id) } }),
     locale,
   );
-  const tracks = rawTracks.map((x) => ({ ...x, track: { ...x.track, title: texts.get(x.track.slug)?.title ?? x.track.title } }));
+  const tracks = rawTracks.map((x) => ({
+    ...x,
+    open: canAccessTrack(access, x.track.id),
+    track: { ...x.track, title: texts.get(x.track.slug)?.title ?? x.track.title },
+  }));
   // Lesson and hands-on minutes, for "About X hours: Y of lessons, Z hands-on".
   const time = new Map(catalog.map((c) => [c.slug, c]));
   const certified = new Set(certs.map((c) => c.track.slug));
@@ -53,7 +60,7 @@ export default async function MyTracksPage() {
   return (
     <div>
       <h1 className="text-2xl font-black text-[var(--ink)]">{t("learn.nav.myTracks")}</h1>
-      <p className="mt-1 text-sm text-[var(--ink3)]">{t("learn.tracks.intro")}</p>
+      <p className="mt-1 text-sm text-[var(--ink3)]">{t(access.all ? "learn.tracks.intro" : "learn.tracks.introSome")}</p>
       {pending && (
         <p role="status" className="mt-2 text-xs text-[var(--ink3)]">
           {t("common.translationPending")}
@@ -64,7 +71,10 @@ export default async function MyTracksPage() {
         <CertificationLadder
           mode="learner"
           progress={progress}
-          tracks={tracks.map(({ track }) => ({
+          monthlyCents={PLANS.monthly.amount}
+          tracks={tracks.map(({ track, open }) => ({
+            locked: !open,
+            priceCents: time.get(track.slug)?.priceCents,
             slug: track.slug,
             title: track.title,
             accentColor: track.accentColor,
@@ -80,7 +90,7 @@ export default async function MyTracksPage() {
 
       {others.length > 0 && (
         <div className="mt-4 space-y-4">
-          {others.map(({ track, progress }) => (
+          {others.map(({ track, progress, open }) => (
             <Link
               key={track.id}
               href={`/learn/track/${track.slug}`}
@@ -98,9 +108,20 @@ export default async function MyTracksPage() {
                   <p className="mt-1 text-xs text-[var(--ink3)]">{fmtBreakdown(t, locale, time.get(track.slug)!)}</p>
                 )}
                 <p className="mt-1 text-xs text-[var(--ink3)]">{track.certificateName}</p>
+                {!open && time.get(track.slug) && (
+                  <p className="mt-2 text-xs font-semibold text-[var(--ink2)]">
+                    🔒 {t("learn.locked.badge")} · {t("learn.offer.trackLine", { price: fmtPrice(time.get(track.slug)!.priceCents, locale) })} ·{" "}
+                    {t("learn.offer.or")} {t("learn.offer.allLine", { price: fmtPrice(PLANS.monthly.amount, locale) })}
+                  </p>
+                )}
               </div>
               <span className="text-sm font-bold" style={{ color: track.accentColor }}>
-                {progress.completedLessons === 0 ? t("learn.ladder.start") : t("learn.ladder.continue")} →
+                {!open
+                  ? t("learn.locked.unlock")
+                  : progress.completedLessons === 0
+                    ? t("learn.ladder.start")
+                    : t("learn.ladder.continue")}{" "}
+                →
               </span>
             </Link>
           ))}

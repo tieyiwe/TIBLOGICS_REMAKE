@@ -2,6 +2,7 @@
 // question banks or answers.
 import { ensureLearnEditColumns } from "@/lib/learn/admin/columns";
 import prisma from "@/lib/prisma";
+import { trackPriceCents } from "@/lib/learn/pricing";
 
 export interface CatalogTrack {
   id: string;
@@ -28,6 +29,8 @@ export interface CatalogTrack {
   lessonMinutes: number;
   /** Labs, module quizzes, final exam and capstone (see handsOnMinutes). */
   handsOnMinutes: number;
+  /** One-time price for lifetime access to this track, in cents. */
+  priceCents: number;
 }
 
 // Time to complete, beyond reading the lessons. Labs carry their own
@@ -54,7 +57,7 @@ function normalise(t: {
   id: string; slug: string; title: string; tagline: string | null; description: string;
   level: string; levelEnd: string | null; status: string; accentColor: string;
   certificateName: string; estimatedHours: number; estimatedWeeksAt3Hrs: number | null;
-  audience: string | null; outcomes: unknown;
+  audience: string | null; outcomes: unknown; priceCents?: number | null;
   modules: Array<{ _count: { lessons: number; labs?: number }; quiz: { id: string } | null; lessons: Array<{ durationMinutes: number }> }>;
   _count: { labs: number };
   labs: Array<{ estimatedMinutes: number }>;
@@ -89,7 +92,17 @@ function normalise(t: {
       examMinutes: t.finalExam?.timeLimitMinutes,
       hasCapstone: !!t.capstone,
     }),
+    priceCents: trackPriceCents(t.level, t.priceCents),
   };
+}
+
+/** One-time price per track id (live tracks), for member pages. */
+export async function trackPrices(): Promise<Map<string, number>> {
+  await ensureLearnEditColumns().catch(() => {});
+  const rows = await prisma.learnTrack
+    .findMany({ where: { status: "live" }, select: { id: true, level: true, priceCents: true } })
+    .catch(() => []);
+  return new Map(rows.map((r) => [r.id, trackPriceCents(r.level, r.priceCents)]));
 }
 
 /** Every track that should appear publicly (live + coming soon). */

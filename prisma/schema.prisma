@@ -671,6 +671,7 @@ model Student {
   reflections   LessonReflection[]
   portfolio     PortfolioSettings?
   trackPurchases TrackPurchase[]
+  drafts        LearnerDraft[]
 
   @@index([email])
 }
@@ -1493,4 +1494,202 @@ model LessonMastery {
   @@id([studentId, lessonId])
   @@index([studentId, moduleId])
   @@index([trackId])
+}
+
+// ── Community: cohorts, discussion, peer review ─────────────────────────────
+// Created at runtime (lib/learn/community/db.ts); keep the two in step. Plain
+// id columns, no Prisma relations, so these models never edit Student,
+// LearnTrack, Lesson or CapstoneSubmission; the runtime SQL adds the foreign
+// keys (cascading on Student, LearnTrack and CapstoneSubmission).
+
+/// A cohort: a group taking one track together over set dates, with a weekly
+/// live session (sessionWeekday 0 = Sunday, sessionTime "HH:MM" in timezone).
+model Cohort {
+  id             String    @id @default(cuid())
+  trackId        String
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  sessionWeekday Int
+  sessionTime    String
+  timezone       String
+  sessionMinutes Int       @default(60)
+  meetingUrl     String?
+  capacity       Int       @default(30)
+  enrolmentOpen  Boolean   @default(true)
+  priceNote      String?
+  /// [{ title, url, addedAt }]
+  recordings     Json      @default("[]")
+  /// Start of the live session the 24h reminder was last sent for.
+  remindedFor    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+
+  @@index([trackId])
+}
+
+model CohortMember {
+  cohortId    String
+  studentId   String
+  joinedAt    DateTime  @default(now())
+  lastNudgeAt DateTime?
+
+  @@id([cohortId, studentId])
+  @@index([studentId])
+}
+
+model CohortAnnouncement {
+  id        String   @id @default(cuid())
+  cohortId  String
+  bodyMd    String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([cohortId, createdAt])
+}
+
+/// A discussion thread: on a lesson (lessonId), on a track (neither), or
+/// visible to one cohort only (cohortId).
+model CommunityThread {
+  id           String    @id @default(cuid())
+  trackId      String
+  lessonId     String?
+  cohortId     String?
+  authorId     String
+  title        String
+  bodyMd       String    @db.Text
+  answerPostId String?
+  answeredAt   DateTime?
+  score        Int       @default(0)
+  replyCount   Int       @default(0)
+  hidden       Boolean   @default(false)
+  deletedAt    DateTime?
+  editedAt     DateTime?
+  lastPostAt   DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+
+  @@index([trackId, lastPostAt])
+  @@index([lessonId])
+  @@index([cohortId])
+  @@index([authorId])
+}
+
+model CommunityPost {
+  id        String    @id @default(cuid())
+  threadId  String
+  authorId  String
+  bodyMd    String    @db.Text
+  score     Int       @default(0)
+  hidden    Boolean   @default(false)
+  deletedAt DateTime?
+  editedAt  DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([threadId, createdAt])
+  @@index([authorId])
+}
+
+/// One upvote per learner per thread or post (targetType: thread | post).
+model CommunityVote {
+  studentId  String
+  targetId   String
+  targetType String
+  createdAt  DateTime @default(now())
+
+  @@id([studentId, targetId])
+}
+
+/// status: open | resolved | dismissed
+model CommunityReport {
+  id         String    @id @default(cuid())
+  reporterId String
+  targetType String
+  targetId   String
+  reason     String
+  status     String    @default("open")
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  @@unique([reporterId, targetId])
+  @@index([status, createdAt])
+}
+
+/// Community settings and moderation state per learner.
+model CommunityProfile {
+  studentId      String    @id
+  replyDigest    Boolean   @default(true)
+  lastDigestAt   DateTime?
+  suspendedUntil DateTime?
+  suspendReason  String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+}
+
+/// A capstone submission entered into peer review by its author.
+model PeerReviewOptIn {
+  submissionId String   @id
+  studentId    String
+  trackId      String
+  createdAt    DateTime @default(now())
+
+  @@index([trackId])
+  @@index([studentId])
+}
+
+/// One peer's advisory review of a submission. feedback:
+/// [{ criterion, rating (1-5 or null), text }]. status: assigned | submitted.
+model PeerReview {
+  id           String    @id @default(cuid())
+  submissionId String
+  reviewerId   String
+  trackId      String
+  status       String    @default("assigned")
+  feedback     Json      @default("[]")
+  hidden       Boolean   @default(false)
+  helpful      Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  submittedAt  DateTime?
+
+  @@unique([submissionId, reviewerId])
+  @@index([reviewerId])
+  @@index([trackId])
+}
+
+/// Lesson video extras (lib/learn/video/db.ts creates the table). The link
+/// itself is Lesson.videoUrl. chapters: [{ time (seconds), title }];
+/// captions: { en?, fr?, sw? } WebVTT text per language.
+model LessonVideoMeta {
+  lessonId  String   @id
+  chapters  Json     @default("[]")
+  captions  Json     @default("{}")
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+/// A learner's place in a lesson video. coverage: 100 "0"/"1" buckets of the
+/// video seen; watchedAt is set once 80% has been seen.
+model VideoProgress {
+  studentId   String
+  lessonId    String
+  positionSec Float     @default(0)
+  durationSec Float     @default(0)
+  coverage    String    @default("")
+  watchedAt   DateTime?
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  @@id([studentId, lessonId])
+  @@index([lessonId])
+}
+
+/// Versions of the AI-drafted (then edited) video script for a lesson.
+/// content: { title, targetMinutes, notes, sections[] } (lib/learn/video/shared.ts).
+model VideoScript {
+  id        String   @id @default(cuid())
+  lessonId  String
+  version   Int
+  content   Json
+  /// ai | edit
+  source    String   @default("ai")
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  @@unique([lessonId, version])
 }

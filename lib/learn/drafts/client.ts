@@ -283,6 +283,9 @@ export function useServerDraft<T>(
     const json = JSON.stringify(value);
     if (json === lastJson.current) return;
     lastJson.current = json;
+    // Nothing written and nothing saved before (e.g. a form emptied after it
+    // was submitted): there is nothing to keep.
+    if (isEmptyDraft(value) && !readMirror(key)) return;
     writeMirror(key, { v: value, at: Date.now(), synced: false, owner: owner.current });
     pending.current = { key, value };
     setStatus("saving");
@@ -347,4 +350,9 @@ export function putDraft(key: string, value: unknown, background = false): void 
     body: payload,
     keepalive: payload.length < BEACON_MAX,
   }).catch(() => {});
+}
+
+/** Drops this browser's copy of a draft (the server copy is cleared separately). */
+export function forgetLocalDraft(key: string): void {
+  removeMirror(key);
 }

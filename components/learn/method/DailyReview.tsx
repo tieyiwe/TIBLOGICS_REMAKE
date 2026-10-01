@@ -49,11 +49,14 @@ export default function DailyReview({
   available,
   doneToday,
   minForComplete,
+  focusModuleId = null,
 }: {
   initialDue: number;
   available: boolean;
   doneToday: boolean;
   minForComplete: number;
+  /** Mastery paths: a focused review limited to one module's questions. */
+  focusModuleId?: string | null;
 }) {
   const t = useT();
   const locale = useLocale();
@@ -84,7 +87,10 @@ export default function DailyReview({
   const load = useCallback(async () => {
     setPhase("loading");
     setError(null);
-    const res = await fetch("/api/learn/review/session", { cache: "no-store" }).catch(() => null);
+    const res = await fetch(
+      focusModuleId ? `/api/learn/review/session?module=${encodeURIComponent(focusModuleId)}` : "/api/learn/review/session",
+      { cache: "no-store" },
+    ).catch(() => null);
     const d = res ? await res.json().catch(() => ({})) : {};
     if (!res?.ok) {
       setError(d.error ?? t("method.review.error"));
@@ -104,7 +110,7 @@ export default function DailyReview({
     setFirstTotal(0);
     setResult(null);
     setPhase(qs.length ? "card" : "clear");
-  }, [t]);
+  }, [t, focusModuleId]);
 
   // Move focus to the new question so screen readers and keyboards follow.
   useEffect(() => {

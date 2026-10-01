@@ -6,6 +6,7 @@ import HowItWorks from "@/components/learn/method/HowItWorks";
 import { getCatalog } from "@/lib/learn/catalog";
 import { fmtPrice } from "@/lib/learn/format";
 import { PLANS, FOUNDING_PRICING } from "@/lib/payments/provider";
+import { TRACK_BASE_PRICE_CENTS } from "@/lib/learn/pricing";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTracks, withTrackText } from "@/lib/i18n/sources/learn";
 
@@ -27,6 +28,9 @@ export default async function LearningBoxPage() {
   );
   const tracks = catalog.map((c) => withTrackText(c, texts.get(c.slug)));
   const monthly = PLANS.monthly;
+  // The lowest one-time price among the tracks on sale.
+  const onSale = tracks.filter((x) => x.status === "live").map((x) => x.priceCents);
+  const fromCents = onSale.length ? Math.min(...onSale) : TRACK_BASE_PRICE_CENTS;
 
   const approach = [
     { l: t("learn.certLevel.1.name"), t: t("learn.box.approach.1.title"), d: t("learn.box.approach.1.body") },
@@ -81,7 +85,7 @@ export default async function LearningBoxPage() {
                 </span>
               )}
               <strong className="text-white">{t("learn.price.perMonth", { price: fmtPrice(monthly.amount, locale) })}</strong>{" "}
-              {t("learn.box.heroPriceTail")}
+              {t("learn.box.heroPriceTail", { from: fmtPrice(fromCents, locale) })}
             </p>
           </div>
         </div>

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
-import { getStudent } from "@/lib/learn/session";
+import { canAccessTrack, getAccess, getStudent } from "@/lib/learn/session";
+import TrackPaywall from "@/components/learn/TrackPaywall";
 import { finalExamPassed } from "@/lib/learn/assessments";
 import Markdown from "@/components/learn/Markdown";
 import CapstoneSubmitForm from "@/components/learn/CapstoneSubmitForm";
@@ -28,6 +29,9 @@ export default async function CapstonePage({ params }: { params: Promise<{ slug:
     .catch(() => null);
 
   if (!track?.capstone) notFound();
+  if (!canAccessTrack(await getAccess(student.id), track.id)) {
+    return <TrackPaywall trackId={track.id} />;
+  }
   const capstone = track.capstone;
 
   const [submissions, examOk] = await Promise.all([

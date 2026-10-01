@@ -6,6 +6,7 @@ import { STUDIO_BY_ID } from "@/lib/learn/studio/catalog";
 import { studioProgress } from "@/lib/learn/studio/progress";
 import { getT } from "@/lib/i18n/server";
 import StudioHost from "@/components/learn/studio/StudioHost";
+import TutorDock from "@/components/learn/tutor/TutorDock";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,7 @@ export default async function StudioToolPage({
       <div className="mt-6">
         <StudioHost toolId={tool} challengeId={challenge} initialProgress={progress[tool] ?? {}} />
       </div>
+      <TutorDock kind="studio" refId={tool} />
     </div>
   );
 }

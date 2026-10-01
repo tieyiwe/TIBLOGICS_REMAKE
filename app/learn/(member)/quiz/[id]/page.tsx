@@ -4,7 +4,8 @@ import { translatorFor } from "@/lib/i18n/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
-import { getStudent } from "@/lib/learn/session";
+import { canAccessTrack, getAccess, getStudent } from "@/lib/learn/session";
+import TrackPaywall from "@/components/learn/TrackPaywall";
 import QuizRunner from "@/components/learn/QuizRunner";
 import { getLocale } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTrack } from "@/lib/i18n/sources/learn";
@@ -27,7 +28,7 @@ export default async function QuizPage({ params }: { params: Promise<{ id: strin
           select: {
             id: true,
             title: true,
-            track: { select: { slug: true, title: true, accentColor: true } },
+            track: { select: { id: true, slug: true, title: true, accentColor: true } },
           },
         },
       },
@@ -35,6 +36,9 @@ export default async function QuizPage({ params }: { params: Promise<{ id: strin
     .catch(() => null);
 
   if (!quiz) notFound();
+  if (!canAccessTrack(await getAccess(student.id), quiz.module.track.id)) {
+    return <TrackPaywall trackId={quiz.module.track.id} />;
+  }
 
   // Track and module names come with the track's translation (English meanwhile).
   const locale = await getLocale();

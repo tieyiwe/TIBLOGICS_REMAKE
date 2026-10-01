@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Markdown from "./Markdown";
 import { useT } from "@/lib/i18n/client";
+import { useServerDraft } from "@/lib/learn/drafts/client";
+import { DRAFT_MAX_BYTES, draftBytes } from "@/lib/learn/drafts/shared";
+import DraftStatus from "./DraftStatus";
 
 // Code Studio: build a single-file web app in the browser, the way an engineer
 // would: small steps, AI changes reviewed before they are applied, versions
@@ -26,6 +29,16 @@ export interface StudioSubmission {
 type CheckFailKind = "fail" | "timeout" | "error" | "noresponse";
 
 interface Version { message: string; at: string; code: string }
+/** The work in progress kept as a draft (this browser and the server). */
+interface CodeDraft { code: string; versions: Version[]; answers: Record<string, string>; turns: Turn[] }
+
+/** Over the server's size limit: drop the oldest saved versions, then old AI turns. */
+function fitDraft(d: CodeDraft): CodeDraft {
+  const out = { ...d, versions: [...d.versions], turns: [...d.turns] };
+  while (draftBytes(out) > DRAFT_MAX_BYTES && out.versions.length > 0) out.versions.shift();
+  while (draftBytes(out) > DRAFT_MAX_BYTES && out.turns.length > 0) out.turns.shift();
+  return out;
+}
 interface Turn {
   request: string;
   reply: string;
@@ -130,7 +143,6 @@ export default function CodeStudio({
   onSubmit: (s: StudioSubmission) => void;
 }) {
   const t = useT();
-  const storeKey = `tiblogics:code-lab:${labId}`;
   const [code, setCode] = useState(initialCode || starterCode);
   const [preview, setPreview] = useState(initialCode || starterCode);
   const [previewKey, setPreviewKey] = useState(0);
@@ -152,23 +164,37 @@ export default function CodeStudio({
   const nonce = useRef("");
   const watchdog = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Restore work saved in this browser (after mount, to keep hydration stable).
-  // The AI conversation is kept too: it used to vanish on refresh, taking any
-  // proposal not yet reviewed with it.
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(window.localStorage.getItem(storeKey) ?? "null");
-      if (saved?.code) { setCode(saved.code); setPreview(saved.code); }
-      if (Array.isArray(saved?.versions)) setVersions(saved.versions);
-      if (saved?.answers) setAnswers(saved.answers);
-      if (Array.isArray(saved?.turns)) setTurns(saved.turns);
-    } catch { /* storage unavailable */ }
-  }, [storeKey]);
-  useEffect(() => {
-    // Reviewed proposals are not needed again, so they are not stored.
-    const keep = turns.slice(-20).map((x) => (x.decision ? { ...x, proposal: null, base: undefined } : x));
-    try { window.localStorage.setItem(storeKey, JSON.stringify({ code, versions, answers, turns: keep })); } catch { /* ignore */ }
-  }, [storeKey, code, versions, answers, turns]);
+  // Code, saved versions, written answers and the AI conversation are
+  // autosaved: in this browser at once and on the server ~1.5 s after the last
+  // change, so they survive a refresh and follow the learner to any device.
+  // Restored after mount, to keep hydration stable. The AI conversation is
+  // kept too: it used to vanish on refresh, taking any proposal not yet
+  // reviewed with it. Reviewed proposals are not needed again, so not stored.
+  const draftValue = useMemo<CodeDraft>(
+    () => ({
+      code,
+      versions,
+      answers,
+      turns: turns.slice(-20).map((x) => (x.decision ? { ...x, proposal: null, base: undefined } : x)),
+    }),
+    [code, versions, answers, turns],
+  );
+  const draft = useServerDraft<CodeDraft>(
+    `code:${labId}`,
+    draftValue,
+    (saved) => {
+      if (saved.code) { setCode(saved.code); setPreview(saved.code); }
+      if (Array.isArray(saved.versions)) setVersions(saved.versions);
+      if (saved.answers && typeof saved.answers === "object") setAnswers(saved.answers);
+      if (Array.isArray(saved.turns)) setTurns(saved.turns);
+    },
+    {
+      validate: (v) => !!v && typeof v === "object" && typeof (v as CodeDraft).code === "string",
+      fit: fitDraft,
+      legacyKey: `tiblogics:code-lab:${labId}`,
+      dropLegacy: true,
+    },
+  );
   useEffect(() => () => { if (watchdog.current) clearTimeout(watchdog.current); }, []);
 
   // Live preview follows the editor after a short pause.
@@ -282,6 +308,8 @@ export default function CodeStudio({
       setError(t("labs.code.runFirst"));
       return;
     }
+    // Send any change still waiting, so nothing is saved after submitting.
+    draft.flush();
     onSubmit({
       code,
       checkResults,
@@ -293,7 +321,9 @@ export default function CodeStudio({
   return (
     <section className="mt-6 overflow-hidden rounded-2xl border border-[var(--border)] bg-white">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] px-4 py-3">
-        <h2 className="text-base font-bold text-[var(--ink)]">💻 Code Studio</h2>
+        <h2 className="flex flex-wrap items-baseline gap-x-3 text-base font-bold text-[var(--ink)]">
+          💻 Code Studio <DraftStatus status={draft.status} className="font-normal" />
+        </h2>
         <div className="flex flex-wrap gap-2">
           <button type="button" className={`${btn} border border-[var(--border)] text-[var(--ink2)]`} onClick={() => { setPreview(code); setPreviewKey((k) => k + 1); }}>
             {t("labs.code.runPreview")}

@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
-import { getStudent } from "@/lib/learn/session";
+import { canAccessTrack, getAccess, getStudent } from "@/lib/learn/session";
+import { trackPrices } from "@/lib/learn/catalog";
+import { fmtPrice } from "@/lib/learn/format";
 import { getAllTrackProgress } from "@/lib/learn/progress";
 import { computeStreak, getTotalPoints, levelFor } from "@/lib/learn/points";
 import { fmtDate, fmtMinutes, fmtNumber, rankName } from "@/lib/learn/format";
@@ -14,6 +16,9 @@ import { rankIcon } from "@/lib/learn/badge-defs";
 import DailyPanel from "@/components/learn/game/DailyPanel";
 import BadgeShelf from "@/components/learn/game/BadgeShelf";
 import MethodDashboardCards from "@/components/learn/method/MethodDashboardCards";
+import ResumeCard from "@/components/learn/ResumeCard";
+import { NewLessonsChip } from "@/components/learn/NewLessons";
+import { newLessonsByTrack } from "@/lib/learn/track-updates";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -30,6 +35,7 @@ export default async function LearnDashboard() {
   // other, so they join the same batch; each falls back to "nothing yet" so a
   // failure never takes the dashboard down with it.
   const since = new Date(Date.now() - 8 * 86_400_000);
+  const [access, prices] = await Promise.all([getAccess(student.id), trackPrices()]);
   const [rawTracks, total, streak, certificates, t, locale, badges, recentLessons, recentXp] = await Promise.all([
     getAllTrackProgress(student.id),
     getTotalPoints(student.id),
@@ -61,11 +67,22 @@ export default async function LearnDashboard() {
     locale === "en" ? [] : await loadTrackSources({ id: { in: rawTracks.map((x) => x.track.id) } }),
     locale,
   );
-  const tracks = rawTracks.map((x) => ({ ...x, track: { ...x.track, title: texts.get(x.track.slug)?.title ?? x.track.title } }));
+  const tracks = rawTracks.map((x) => ({
+    ...x,
+    open: canAccessTrack(access, x.track.id),
+    track: { ...x.track, title: texts.get(x.track.slug)?.title ?? x.track.title },
+  }));
+  // Open tracks first; locked ones follow with their price.
+  tracks.sort((a, b) => Number(b.open) - Number(a.open));
 
   const level = levelFor(total);
-  const started = tracks.filter((t) => t.progress.completedLessons > 0);
-  const continueWith = started.sort((a, b) => b.progress.percent - a.progress.percent)[0] ?? tracks[0];
+  const openTracks = tracks.filter((x) => x.open);
+  const started = openTracks.filter((t) => t.progress.completedLessons > 0);
+  const continueWith = [...started].sort((a, b) => b.progress.percent - a.progress.percent)[0] ?? openTracks[0];
+  // Lessons added to modules the learner had finished ("New" on the cards),
+  // and localized lesson titles for the resume card.
+  const newByTrack = await newLessonsByTrack(student.id, openTracks.map((x) => x.track.id));
+  const lessonTitles = new Map([...texts].map(([slug, tx]) => [slug, tx.lessons]));
 
   return (
     <div className="space-y-8">
@@ -142,25 +159,9 @@ export default async function LearnDashboard() {
       {/* Daily Review + Portfolio (the TIBLOGICS Learn method) */}
       <MethodDashboardCards studentId={student.id} />
 
-      {/* Continue learning */}
-      {continueWith && continueWith.progress.nextLessonId && (
-        <section className="rounded-2xl border border-[var(--border)] bg-[var(--ink)] p-6 text-white">
-          <p className="text-xs font-bold uppercase tracking-wide text-white/50">
-            {continueWith.progress.completedLessons > 0 ? t("learn.dash.continueLearning") : t("learn.dash.startHere")}
-          </p>
-          <h2 className="mt-2 text-xl font-bold">{continueWith.track.title}</h2>
-          <p className="mt-1 text-sm text-white/60">
-            {t("learn.dash.lessonsDone", { done: continueWith.progress.completedLessons, total: continueWith.progress.totalLessons })} ·{" "}
-            {t("learn.time.remaining", { time: fmtMinutes(t, continueWith.progress.minutesRemaining) })}
-          </p>
-          <Link
-            href={`/learn/lesson/${continueWith.progress.nextLessonId}`}
-            className="mt-5 inline-block rounded-full bg-gradient-to-r from-[var(--orange)] to-[#F9A738] px-6 py-3 text-sm font-bold text-[var(--ink)] transition-opacity hover:opacity-90"
-          >
-            {continueWith.progress.completedLessons > 0 ? t("learn.dash.resume") : t("learn.dash.begin")} →
-          </Link>
-        </section>
-      )}
+      {/* Continue where you left off: the exact next thing (lesson part-read,
+          lab, exam or Studio design in progress, else the next lesson) */}
+      <ResumeCard studentId={student.id} tracks={openTracks} fallback={continueWith} lessonTitles={lessonTitles} />
 
       {/* Track progress */}
       <section>
@@ -171,17 +172,24 @@ export default async function LearnDashboard() {
           </p>
         ) : (
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {tracks.map(({ track, progress }) => (
+            {tracks.map(({ track, progress, open }) => (
               <Link
                 key={track.id}
                 href={`/learn/track/${track.slug}`}
-                className="flex min-w-0 items-center gap-4 rounded-2xl border border-[var(--border)] bg-white p-5 transition-shadow hover:shadow-md"
+                className={`flex min-w-0 items-center gap-4 rounded-2xl border bg-white p-5 transition-shadow hover:shadow-md ${
+                  open ? "border-[var(--border)]" : "border-dashed border-[var(--border)]"
+                }`}
               >
-                <ProgressRing percent={progress.percent} color={track.accentColor} />
+                <ProgressRing percent={progress.percent} color={open ? track.accentColor : "#9AA8B8"} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-bold text-[var(--ink)]">
                     {track.title}
                   </span>
+                  {!open && (
+                    <span className="mt-1 block text-xs font-semibold text-[var(--ink2)]">
+                      🔒 {t("learn.locked.badge")} · {t("learn.offer.trackLine", { price: fmtPrice(prices.get(track.id) ?? 0, locale) })}
+                    </span>
+                  )}
                   <span className="mt-1 block text-xs text-[var(--ink3)]">
                     {t("learn.dash.lessonsFraction", { done: progress.completedLessons, total: progress.totalLessons })}
                   </span>
@@ -189,6 +197,14 @@ export default async function LearnDashboard() {
                     <span className="mt-0.5 block text-xs text-[var(--ink3)]">
                       {t("learn.time.left", { time: fmtMinutes(t, progress.minutesRemaining) })}
                     </span>
+                  )}
+                  {open && (
+                    <NewLessonsChip
+                      t={t}
+                      lessons={newByTrack.get(track.id) ?? []}
+                      titles={texts.get(track.slug)?.lessons}
+                      accentColor={track.accentColor}
+                    />
                   )}
                 </span>
               </Link>

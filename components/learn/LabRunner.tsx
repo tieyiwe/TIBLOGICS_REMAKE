@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Markdown from "./Markdown";
 import CodeStudio, { type StudioCheck, type StudioSubmission } from "./CodeStudio";
 import { LAB_TYPE_META, type LabObjective, type LabType } from "@/lib/learn/labs/types";
 import { useT } from "@/lib/i18n/client";
 import { bumpPractice, celebrate } from "@/lib/learn/game-client";
+import { forgetLocalDraft, useServerDraft } from "@/lib/learn/drafts/client";
+import DraftStatus from "./DraftStatus";
 
 interface Breakdown {
   objectiveId: string;
@@ -129,36 +131,32 @@ export default function LabRunner({
   );
 
   // ── workbench lab ───────────────────────────────────────────────────────
-  // Drafts are kept in the browser as well, so a long piece of work survives a
-  // refresh or a closed tab before it is submitted. Per-viewer convenience
-  // only; the submitted version is what the server stores.
-  const draftKey = `tiblogics:lab-draft:${lab.id}`;
   const [answers, setAnswers] = useState<Record<string, string>>(
     () => (priorAttempt?.submission?.answers as Record<string, string>) ?? {},
   );
-  // Loaded after mount, not in the initial state: the server cannot see the
-  // browser's storage, so reading it during the first render made the server
-  // and client HTML disagree (React hydration error #418).
-  useEffect(() => {
-    if (lab.labType !== "workbench") return;
-    try {
-      const saved = window.localStorage.getItem(draftKey);
-      if (saved) setAnswers((a) => ({ ...a, ...JSON.parse(saved) }));
-    } catch {
-      // Storage unavailable or corrupt: start from the submitted version.
-    }
-  }, [draftKey, lab.labType]);
   function setAnswer(id: string, value: string) {
-    setAnswers((a) => {
-      const next = { ...a, [id]: value };
-      try {
-        window.localStorage.setItem(draftKey, JSON.stringify(next));
-      } catch {
-        // Storage unavailable (private mode, blocked): the draft just isn't kept.
-      }
-      return next;
-    });
+    setAnswers((a) => ({ ...a, [id]: value }));
   }
+
+  // Work in progress (workbench answers, a prompt lab's prompt) is autosaved
+  // in this browser at once and on the server shortly after, so it survives a
+  // closed tab and follows the learner to another device. Restored after
+  // mount, never during the first render (that made the server and client
+  // HTML disagree: React hydration error #418). Cleared once submitted.
+  const draftKey = lab.labType === "workbench" || lab.labType === "prompt" ? `lab:${lab.id}` : null;
+  const draft = useServerDraft<Record<string, string>>(
+    result ? null : draftKey,
+    lab.labType === "workbench" ? answers : lab.labType === "prompt" ? { prompt } : undefined,
+    (v) => {
+      if (lab.labType === "workbench") setAnswers((a) => ({ ...a, ...v }));
+      else if (typeof v.prompt === "string") setPrompt(v.prompt);
+    },
+    {
+      validate: (v) => !!v && typeof v === "object" && Object.values(v).every((x) => typeof x === "string"),
+      legacyKey: lab.labType === "workbench" ? `tiblogics:lab-draft:${lab.id}` : undefined,
+      dropLegacy: true,
+    },
+  );
   const wordCount = (t: string) => t.trim().split(/\s+/).filter(Boolean).length;
 
   async function runSandbox() {
@@ -206,12 +204,15 @@ export default function LabRunner({
       setResult(data);
       bumpPractice();
       celebrate({ points: data.pointsAwarded, reason: "lab", newBadges: data.newBadges, levelUp: data.levelUp });
-      if (lab.labType === "workbench" || lab.labType === "code") {
-        try {
-          window.localStorage.removeItem(lab.labType === "code" ? `tiblogics:code-lab:${lab.id}` : draftKey);
-        } catch {
-          /* nothing to clear */
-        }
+      // Submitted: the drafts are done with, here and on the server (the
+      // submit route clears the server copies too).
+      void draft.clear();
+      forgetLocalDraft(`code:${lab.id}`);
+      try {
+        window.localStorage.removeItem(`tiblogics:code-lab:${lab.id}`);
+        window.localStorage.removeItem(`tiblogics:lab-draft:${lab.id}`);
+      } catch {
+        /* nothing to clear */
       }
       router.refresh();
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -407,6 +408,7 @@ export default function LabRunner({
                 </span>
               </div>
               <p className="mt-1 text-sm text-[var(--ink2)]">{t("labs.prompt.intro")}</p>
+              <DraftStatus status={draft.status} className="mt-1 block" />
 
               {lab.contextMd && (
                 <details className="mt-4 rounded-xl bg-[var(--s2)] p-4" open>
@@ -524,6 +526,7 @@ export default function LabRunner({
             <section className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
               <h2 className="text-base font-bold text-[var(--ink)]">{t("labs.workbench.title")}</h2>
               <p className="mt-1 text-sm text-[var(--ink2)]">{t("labs.workbench.intro")}</p>
+              <DraftStatus status={draft.status} className="mt-1 block" />
               <ol className="mt-5 space-y-6">
                 {(lab.fields ?? []).map((f, i) => {
                   const n = wordCount(answers[f.id] ?? "");

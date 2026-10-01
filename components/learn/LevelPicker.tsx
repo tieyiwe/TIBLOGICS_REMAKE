@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import WhereToStart from "@/components/learn/WhereToStart";
 import CertificationLadder from "@/components/learn/CertificationLadder";
+import { PLANS } from "@/lib/payments/provider";
 import CatalogBrowser from "@/components/learn/CatalogBrowser";
 import { LEVEL_SLUGS } from "@/lib/learn/levels";
 import type { CatalogTrack } from "@/lib/learn/catalog";
@@ -35,6 +36,7 @@ export default function LevelPicker({ tracks }: { tracks: CatalogTrack[] }) {
       <CertificationLadder
         mode="public"
         highlight={recommended}
+        monthlyCents={PLANS.monthly.amount}
         tracks={core.map((x) => ({
           slug: x.slug,
           title: x.title,
@@ -47,6 +49,7 @@ export default function LevelPicker({ tracks }: { tracks: CatalogTrack[] }) {
           moduleCount: x.moduleCount,
           labCount: x.labCount,
           status: x.status,
+          priceCents: x.priceCents,
         }))}
       />
       {specialists.length > 0 && (
