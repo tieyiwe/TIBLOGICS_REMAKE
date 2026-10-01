@@ -46,7 +46,7 @@ async function gate(req: NextRequest) {
   }
 
   // ── TIBLOGICS Learn member area ───────────────────────────────────────────
-  if (pathname.startsWith("/learn")) {
+  if (pathname === "/learn" || pathname.startsWith("/learn/")) {
     const isPublic =
       pathname === "/learn/login" ||
       pathname === "/learn/signup" ||
