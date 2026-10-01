@@ -78,7 +78,7 @@ export function footerText(cfg: OutreachConfig, unsubUrl: string, why: string): 
   return [
     "--",
     `${cfg.fromName}`,
-    `TIBLOGICS · ${cfg.physicalAddress}`,
+    /tiblogics/i.test(cfg.physicalAddress) ? cfg.physicalAddress : `TIBLOGICS · ${cfg.physicalAddress}`,
     `Contact: ${cfg.replyTo} · ${siteBase().replace(/^https?:\/\//, "")}`,
     why,
     `Unsubscribe (one click): ${unsubUrl}`,

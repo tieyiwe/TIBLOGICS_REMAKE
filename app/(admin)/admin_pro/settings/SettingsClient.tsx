@@ -520,6 +520,8 @@ const ALL_PERMISSIONS = [
   { key: "tools",            label: "Tool Analytics" },
   { key: "agents",           label: "AI Agents" },
   { key: "command_center",   label: "Command Center" },
+  // Lead workspace + drafting outreach. Approving/sending stays admin-only.
+  { key: "growth",           label: "Growth: leads & outreach" },
 ];
 
 const ROLE_PRESETS: Record<string, string[]> = {
