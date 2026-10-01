@@ -10,6 +10,7 @@ import { useT } from "@/lib/i18n/client";
 import { bumpPractice, celebrate } from "@/lib/learn/game-client";
 import { forgetLocalDraft, useServerDraft } from "@/lib/learn/drafts/client";
 import DraftStatus from "./DraftStatus";
+import { readableOn } from "@/lib/a11y/contrast";
 
 interface Breakdown {
   objectiveId: string;
@@ -80,6 +81,8 @@ export default function LabRunner({
 }) {
   const router = useRouter();
   const t = useT();
+  // Track accents sit under white button text: darken just enough for AA.
+  accentColor = readableOn(accentColor);
   const meta = LAB_TYPE_META[lab.labType] ?? LAB_TYPE_META.prompt;
   const typeLabel = t(`labs.type.${lab.labType in LAB_TYPE_META ? lab.labType : "prompt"}.label`);
   // Criterion names in the current language, whatever language the attempt

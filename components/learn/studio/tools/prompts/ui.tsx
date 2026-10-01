@@ -62,9 +62,9 @@ export function TryForReal({ prompt, intro }: { prompt: string; intro?: string }
   return (
     <section aria-label={t(`${UI}.real.title`)} className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--s2)] p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-black text-[var(--ink)]">
+        <h2 className="text-sm font-black text-[var(--ink)]">
           <span aria-hidden="true">🚀</span> {t(`${UI}.real.title`)}
-        </h3>
+        </h2>
         <CopyButton text={prompt} />
       </div>
       <p className="mt-1 text-xs text-[var(--ink2)]">{intro ?? t(`${UI}.real.body`)}</p>
@@ -352,7 +352,7 @@ export function ResultCard({
 }
 
 export const BTN_PRIMARY =
-  "inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-[#F47C20] px-4 py-2 text-sm font-bold text-white shadow-sm hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F47C20] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-[#B8500A] px-4 py-2 text-sm font-bold text-white shadow-sm hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F47C20] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 export const BTN_SECONDARY =
   "inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border-2 border-[var(--border)] bg-white px-4 py-2 text-sm font-bold text-[var(--ink)] hover:border-[#F47C20] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F47C20] disabled:cursor-not-allowed disabled:opacity-50";
 export const CHIP =

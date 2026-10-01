@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useT } from "@/lib/i18n/client";
 import { useFocusTrap } from "@/lib/a11y/useFocusTrap";
 import {
@@ -132,7 +133,7 @@ export default function ReadingPrefsPanel({ className = "" }: { className?: stri
         aria-haspopup="dialog"
         aria-expanded={open}
         title={t("a11y.prefs.open")}
-        className={`inline-flex h-11 min-w-[44px] items-center justify-center gap-1.5 rounded-full border border-[var(--border)] bg-white px-3 text-sm font-bold text-[var(--ink)] hover:border-[var(--ink3)] ${className}`}
+        className={`inline-flex h-11 min-w-[44px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-[var(--border)] bg-white px-3 text-sm font-bold text-[var(--ink)] hover:border-[var(--ink3)] ${className}`}
       >
         <span aria-hidden="true" className="font-serif text-base leading-none">
           Aa
@@ -140,7 +141,10 @@ export default function ReadingPrefsPanel({ className = "" }: { className?: stri
         <span className="sr-only">{t("a11y.prefs.open")}</span>
       </button>
 
-      {open && (
+      {/* Portalled to <body>: the nav header has backdrop-filter, which would
+          otherwise trap this fixed overlay inside the header's box. */}
+      {open &&
+        createPortal(
         <div className="fixed inset-0 z-[90] flex justify-end bg-[rgba(13,27,42,0.45)]" onClick={() => setOpen(false)}>
           <div
             ref={dialog}
@@ -149,9 +153,9 @@ export default function ReadingPrefsPanel({ className = "" }: { className?: stri
             aria-labelledby={titleId}
             aria-describedby={descId}
             onClick={(e) => e.stopPropagation()}
-            className="flex h-full w-full max-w-md flex-col overflow-y-auto bg-white shadow-2xl"
+            className="flex h-full w-full max-w-md flex-col bg-white shadow-2xl"
           >
-            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[var(--border)] bg-white px-5 py-4">
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--border)] bg-white px-5 py-4">
               <h2 id={titleId} className="text-lg font-black text-[var(--ink)]">
                 {t("a11y.prefs.title")}
               </h2>
@@ -165,7 +169,7 @@ export default function ReadingPrefsPanel({ className = "" }: { className?: stri
               </button>
             </div>
 
-            <div className="px-5 pb-6">
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6">
               <p id={descId} className="mt-4 text-sm leading-relaxed text-[var(--ink2)]">
                 {t("a11y.prefs.intro")}
               </p>
@@ -198,8 +202,9 @@ export default function ReadingPrefsPanel({ className = "" }: { className?: stri
               </div>
             </div>
           </div>
-        </div>
-      )}
+        </div>,
+          document.body,
+        )}
     </>
   );
 }

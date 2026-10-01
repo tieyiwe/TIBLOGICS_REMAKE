@@ -47,7 +47,7 @@ function useIsWide(): boolean {
 /** The pulsing green "LIVE" light (green dot with an orange ring). */
 export function LiveDot({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-[#15803D]">
+    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-[#4ADE80]">
       <span className="relative flex h-2.5 w-2.5">
         <span className="absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-70 motion-safe:animate-ping" />
         <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#22C55E] ring-2 ring-[#F47C20]" />
@@ -62,11 +62,11 @@ function GuideBody({ guide }: { guide: StudioGuide }) {
   return (
     <div className="space-y-4 text-sm leading-relaxed text-[var(--ink2)]">
       <div>
-        <h3 className="text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">{t("studio.frame.goal")}</h3>
+        <h2 className="text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">{t("studio.frame.goal")}</h2>
         <div className="mt-1 font-medium text-[var(--ink)]">{guide.goal}</div>
       </div>
       <div>
-        <h3 className="text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">{t("studio.frame.steps")}</h3>
+        <h2 className="text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">{t("studio.frame.steps")}</h2>
         <ol className="mt-1.5 space-y-1.5">
           {guide.steps.map((s, i) => (
             <li key={i} className="flex gap-2">
@@ -78,7 +78,7 @@ function GuideBody({ guide }: { guide: StudioGuide }) {
       </div>
       {guide.stars && (
         <div>
-          <h3 className="text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">{t("studio.frame.stars")}</h3>
+          <h2 className="text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">{t("studio.frame.stars")}</h2>
           <ul className="mt-1.5 space-y-1">
             {guide.stars.map((s, i) => (
               <li key={i} className="flex gap-2">
@@ -91,7 +91,7 @@ function GuideBody({ guide }: { guide: StudioGuide }) {
       )}
       {guide.tips && guide.tips.length > 0 && (
         <div className="rounded-xl bg-[#FEF0E3] p-3">
-          <h3 className="text-xs font-bold uppercase tracking-wide text-[#B8500A]">{t("studio.frame.tips")}</h3>
+          <h2 className="text-xs font-bold uppercase tracking-wide text-[#B8500A]">{t("studio.frame.tips")}</h2>
           <ul className="mt-1 list-disc space-y-1 pl-4 text-[#7A3E0E]">
             {guide.tips.map((tip, i) => <li key={i}>{tip}</li>)}
           </ul>
@@ -134,7 +134,7 @@ export default function StudioFrame({
         <LiveDot label={t("studio.frame.liveBadge")} />
         <span className="truncate text-xs font-semibold text-white/70">{liveTitle ?? t("studio.frame.liveDefault")}</span>
       </div>
-      <div className="flex-1 overflow-auto bg-white p-3 sm:p-4">{live}</div>
+      <div tabIndex={0} className="flex-1 overflow-auto bg-white p-3 sm:p-4">{live}</div>
     </section>
   );
 

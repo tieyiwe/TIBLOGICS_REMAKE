@@ -7,6 +7,7 @@ import { fmtBreakdown, fmtPacing, fmtPrice, totalHours } from "@/lib/learn/forma
 import { PLANS } from "@/lib/payments/provider";
 import type { CatalogTrack } from "@/lib/learn/catalog";
 import { useLocale, useT } from "@/lib/i18n/client";
+import { readableOn } from "@/lib/a11y/contrast";
 
 export default function TrackCard({ track }: { track: CatalogTrack }) {
   const t = useT();
@@ -126,7 +127,7 @@ export default function TrackCard({ track }: { track: CatalogTrack }) {
               <WaitlistForm trackSlug={track.slug} />
             </div>
           ) : (
-            <span className="inline-flex items-center gap-1 text-sm font-semibold" style={{ color: track.accentColor }}>
+            <span className="inline-flex items-center gap-1 text-sm font-semibold" style={{ color: readableOn(track.accentColor) }}>
               {t("learn.card.viewAndStart")}
               <span aria-hidden="true" className="learn-rotate group-hover:translate-x-1">
                 →

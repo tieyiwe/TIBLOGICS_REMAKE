@@ -228,8 +228,9 @@ export default function LessonListen({ targetId }: { targetId: string }) {
 
   if (!supported) return null;
 
-  const btn =
-    "inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-full border border-[var(--border)] bg-white px-3 text-sm font-semibold text-[var(--ink)] hover:border-[var(--ink3)] disabled:opacity-50";
+  const base = "inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-full border px-3 text-sm font-semibold disabled:opacity-50";
+  const btn = `${base} border-[var(--border)] bg-white text-[var(--ink)] hover:border-[var(--ink3)]`;
+  const primary = `${base} border-[var(--blue)] bg-[var(--blue)] text-white hover:border-[var(--blue2)] hover:bg-[var(--blue2)]`;
 
   return (
     <div
@@ -250,7 +251,7 @@ export default function LessonListen({ targetId }: { targetId: string }) {
         <button
           type="button"
           onClick={() => (status === "paused" ? speakAt(index) : start())}
-          className={`${btn} border-[var(--blue)] bg-[var(--blue)] text-white hover:border-[var(--blue2)] hover:bg-[var(--blue2)]`}
+          className={primary}
         >
           {status === "paused" ? <Play size={16} aria-hidden="true" /> : <Volume2 size={16} aria-hidden="true" />}
           {status === "paused" ? t("a11y.listen.resume") : t("a11y.listen.play")}

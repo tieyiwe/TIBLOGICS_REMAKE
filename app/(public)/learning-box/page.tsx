@@ -102,7 +102,7 @@ export default async function LearningBoxPage() {
       {/* The certification path, the specialist tracks, and the questions
           that point at one of them */}
       <section className="mx-auto max-w-6xl px-4 pt-14">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--orange)]">{t("learn.box.pathEyebrow")}</p>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#B8500A]">{t("learn.box.pathEyebrow")}</p>
         <h2 className="mt-2 text-2xl font-black text-[var(--ink)] sm:text-3xl">{t("learn.box.pathTitle")}</h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--ink2)]">{t("learn.box.pathBody")}</p>
         <div className="mt-8">
@@ -155,7 +155,7 @@ export default async function LearningBoxPage() {
             {includes.map((x, i) => (
               <Reveal key={x.n} delay={i * 80}>
                 <div className="learn-lift h-full rounded-2xl border border-[var(--border)] p-6">
-                  <span className="text-xs font-black text-[var(--orange)]">{x.n}</span>
+                  <span className="text-xs font-black text-[#B8500A]">{x.n}</span>
                   <h3 className="mt-2 text-base font-bold text-[var(--ink)]">{x.t}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-[var(--ink2)]">{x.d}</p>
                 </div>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CERT_LEVELS } from "@/lib/learn/levels";
 import { fmtBreakdown, fmtPrice } from "@/lib/learn/format";
 import { useLocale, useT } from "@/lib/i18n/client";
+import { readableOn } from "@/lib/a11y/contrast";
 
 /**
  * The Basic → Intermediate → Expert path, as three connected steps.
@@ -63,7 +64,8 @@ export default function CertificationLadder({
         const t = bySlug.get(lvl.slug);
         const live = !!t && (t.status === undefined || t.status === "live");
         const p = progress?.[lvl.slug];
-        const accent = t?.accentColor ?? "#7A8FA6";
+        // Darkened just enough for AA: it colours text and sits under white text.
+        const accent = readableOn(t?.accentColor ?? "#7A8FA6");
         const href = live
           ? mode === "learner"
             ? `/learn/track/${lvl.slug}`

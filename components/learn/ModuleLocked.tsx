@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Lock } from "lucide-react";
+import { readableOn } from "@/lib/a11y/contrast";
 
 // Shown in place of a module quiz or lab until the module's lessons are done.
 export default function ModuleLocked({
@@ -23,7 +24,7 @@ export default function ModuleLocked({
       <h1 className="mt-4 text-xl font-bold text-[var(--ink)]">{title}</h1>
       <p className="mt-2 text-sm leading-relaxed text-[var(--ink2)]">{body}</p>
       {href && (
-        <Link href={href} className="mt-6 inline-flex rounded-full px-6 py-2.5 text-sm font-bold text-white" style={{ background: accentColor }}>
+        <Link href={href} className="mt-6 inline-flex rounded-full px-6 py-2.5 text-sm font-bold text-white" style={{ background: readableOn(accentColor) }}>
           {cta} →
         </Link>
       )}

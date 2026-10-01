@@ -3,6 +3,7 @@
 import { LEVEL_META, type TrackLevel } from "@/lib/learn/types";
 import { levelLabel, levelMeaning } from "@/lib/learn/format";
 import { useT } from "@/lib/i18n/client";
+import { readableOn } from "@/lib/a11y/contrast";
 
 // Level badge with a plain-language meaning (Part C1) — the label alone
 // ("Intermediate") means nothing to someone new, so the meaning is always
@@ -28,7 +29,7 @@ export default function LevelBadge({
         className={`inline-flex items-center gap-1.5 rounded-full font-semibold ${
           size === "md" ? "px-3 py-1.5 text-sm" : "px-2.5 py-1 text-xs"
         }`}
-        style={{ background: meta.bg, color: meta.color }}
+        style={{ background: meta.bg, color: readableOn(meta.color, "#EEF2F7") }}
       >
         <span aria-hidden="true">{meta.emoji}</span>
         {label}

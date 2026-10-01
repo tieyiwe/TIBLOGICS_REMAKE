@@ -16,7 +16,7 @@ export default async function HowItWorks() {
   const t = await getT();
   return (
     <section className="mx-auto max-w-6xl px-4 pt-14" aria-labelledby="how-it-works">
-      <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--orange)]">{t("method.box.eyebrow")}</p>
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#B8500A]">{t("method.box.eyebrow")}</p>
       <h2 id="how-it-works" className="mt-2 text-2xl font-black text-[var(--ink)] sm:text-3xl">
         {t("method.box.title")}
       </h2>
@@ -27,7 +27,7 @@ export default async function HowItWorks() {
             key={s.id}
             className={`rounded-2xl border p-5 ${i < 5 ? "border-[var(--border)] bg-white" : "border-transparent bg-[var(--ink)] text-white"}`}
           >
-            <p className="flex items-center gap-2 text-xs font-black text-[var(--orange)]">
+            <p className={`flex items-center gap-2 text-xs font-black ${i < 5 ? "text-[#B8500A]" : "text-[var(--orange)]"}`}>
               <span aria-hidden="true" className="text-lg">
                 {s.icon}
               </span>

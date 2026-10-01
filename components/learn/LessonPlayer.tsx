@@ -15,6 +15,7 @@ import { useT } from "@/lib/i18n/client";
 import { celebrate } from "@/lib/learn/game-client";
 import { queueCompletion } from "@/lib/learn/pwa/client";
 import LessonListen from "@/components/a11y/LessonListen";
+import { readableOn } from "@/lib/a11y/contrast";
 
 interface LessonView {
   id: string;
@@ -82,6 +83,8 @@ export default function LessonPlayer({
   footer?: React.ReactNode;
 }) {
   const t = useT();
+  // Track accents sit under white button text: darken just enough for AA.
+  accentColor = readableOn(accentColor);
   const router = useRouter();
   const [done, setDone] = useState(alreadyComplete);
   const [saving, setSaving] = useState(false);

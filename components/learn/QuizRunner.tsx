@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/i18n/client";
 import { bumpPractice, celebrate } from "@/lib/learn/game-client";
 import ResultFlair from "./game/ResultFlair";
+import { readableOn } from "@/lib/a11y/contrast";
 
 interface Question {
   id: string;
@@ -43,6 +44,8 @@ export default function QuizRunner({
 }) {
   const router = useRouter();
   const t = useT();
+  // Track accents sit under white button text: darken just enough for AA.
+  accentColor = readableOn(accentColor);
   const [questions, setQuestions] = useState<Question[] | null>(null);
   const [pending, setPending] = useState(false);
   const [answers, setAnswers] = useState<Record<string, number>>({});

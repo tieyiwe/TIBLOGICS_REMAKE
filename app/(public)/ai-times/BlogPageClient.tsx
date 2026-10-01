@@ -176,7 +176,7 @@ export default function BlogPageClient({
           >
             AI TIMES
           </h1>
-          <p className="font-syne font-bold text-[#F47C20] text-xl md:text-2xl mt-2 tracking-wide">
+          <p className="font-syne font-bold text-[#B8500A] text-xl md:text-2xl mt-2 tracking-wide">
             {t("pages.aiTimes.tagline")}
           </p>
           <p className="font-dm text-[#3A4A5C] text-base mt-2 max-w-xl mx-auto">
@@ -257,7 +257,7 @@ export default function BlogPageClient({
                         <div className="p-6 flex flex-col flex-1 justify-between">
                           <div>
                             <div className="flex flex-wrap items-center gap-2 mb-3">
-                              <span className="bg-[#F47C20] text-white text-xs font-extrabold font-syne px-2.5 py-1 rounded-full uppercase tracking-wide">
+                              <span className="bg-[#B8500A] text-white text-xs font-extrabold font-syne px-2.5 py-1 rounded-full uppercase tracking-wide">
                                 {t("pages.aiTimes.featured")}
                               </span>
                               <CategoryBadge category={fp.category} />
@@ -444,7 +444,7 @@ function NewsletterSignup() {
             className="flex-[2] min-w-0 px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 font-dm text-sm focus:outline-none focus:border-white/50"
           />
           <button type="submit" disabled={status === "loading"}
-            className="flex items-center justify-center gap-2 bg-[#F47C20] hover:bg-[#D85A30] text-white font-dm font-semibold px-5 py-3 rounded-xl transition-colors disabled:opacity-70 flex-shrink-0"
+            className="flex items-center justify-center gap-2 bg-[#B8500A] hover:bg-[#9A4308] text-white font-dm font-semibold px-5 py-3 rounded-xl transition-colors disabled:opacity-70 flex-shrink-0"
           >
             {status === "loading" ? (
               <RefreshCw size={15} className="animate-spin" />

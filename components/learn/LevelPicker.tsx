@@ -54,7 +54,7 @@ export default function LevelPicker({ tracks }: { tracks: CatalogTrack[] }) {
       />
       {specialists.length > 0 && (
         <section aria-labelledby="specialist-heading" className="pt-6">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--orange)]">{t("learn.box.specialistEyebrow")}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#B8500A]">{t("learn.box.specialistEyebrow")}</p>
           <h2 id="specialist-heading" className="mt-2 text-2xl font-black text-[var(--ink)] sm:text-3xl">
             {t("learn.box.specialistTitle")}
           </h2>
