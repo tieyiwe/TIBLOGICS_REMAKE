@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { moduleLessonsComplete } from "@/lib/learn/progress";
+import { quizUnlocked } from "@/lib/learn/progress";
 import { requireEntitledStudent } from "@/lib/learn/session";
 import { presentQuestion, scoreAnswers } from "@/lib/learn/assessments";
 import { awardPoints, getTotalPoints } from "@/lib/learn/points";
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
     // ── Module quiz ────────────────────────────────────────────────────────
     const quiz = await prisma.quiz.findUnique({ where: { id }, include: { questions: true } });
     if (!quiz) return NextResponse.json({ error: t("labs.api.notFound") }, { status: 404 });
-    if (!(await moduleLessonsComplete(student.id, quiz.moduleId))) {
+    if (!(await quizUnlocked(student.id, quiz.id, quiz.moduleId))) {
       return NextResponse.json({ error: t("labs.api.finishLessonsFirst"), locked: true }, { status: 403 });
     }
 

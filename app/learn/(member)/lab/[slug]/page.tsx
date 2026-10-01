@@ -5,7 +5,7 @@ import LabRunner, { type LabView } from "@/components/learn/LabRunner";
 import { type LabType } from "@/lib/learn/labs/types";
 import { evaluateBuild, evaluateCritique } from "@/lib/learn/labs/evaluate";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
-import { firstUnfinishedLesson, labModuleId, moduleLessonsComplete } from "@/lib/learn/progress";
+import { firstUnfinishedLesson, labModuleId, labUnlocked } from "@/lib/learn/progress";
 import ModuleLocked from "@/components/learn/ModuleLocked";
 import { localizeLab } from "@/lib/i18n/sources/labs";
 
@@ -35,7 +35,7 @@ export default async function LabPage({ params }: { params: Promise<{ slug: stri
 
   // A module's lab opens once the module's lessons are done.
   const lockModuleId = await labModuleId(lab.id);
-  if (lockModuleId && !(await moduleLessonsComplete(student.id, lockModuleId))) {
+  if (lockModuleId && !(await labUnlocked(student.id, lab.id))) {
     const t0 = translatorFor(await getLocale());
     const [mod, total, done, next] = await Promise.all([
       prisma.learnModule.findUnique({ where: { id: lockModuleId }, select: { title: true } }),

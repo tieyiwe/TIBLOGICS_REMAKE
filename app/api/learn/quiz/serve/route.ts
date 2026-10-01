@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { moduleLessonsComplete } from "@/lib/learn/progress";
+import { quizUnlocked } from "@/lib/learn/progress";
 import { requireEntitledStudent } from "@/lib/learn/session";
 import { presentQuestion, seededShuffle, serveQuestion } from "@/lib/learn/assessments";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
     const quiz = await prisma.quiz.findUnique({ where: { id }, include: { questions: true } });
     if (!quiz) return NextResponse.json({ error: t("labs.api.notFound") }, { status: 404 });
     // A module quiz opens once the module's lessons are done.
-    if (!(await moduleLessonsComplete(student.id, quiz.moduleId))) {
+    if (!(await quizUnlocked(student.id, quiz.id, quiz.moduleId))) {
       return NextResponse.json({ error: t("labs.api.finishLessonsFirst"), locked: true }, { status: 403 });
     }
     const picked = seededShuffle(quiz.questions, attemptSeed).slice(0, quiz.questionsServed);

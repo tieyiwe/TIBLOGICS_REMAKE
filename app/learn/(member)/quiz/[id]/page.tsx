@@ -1,4 +1,4 @@
-import { firstUnfinishedLesson, moduleLessonsComplete } from "@/lib/learn/progress";
+import { firstUnfinishedLesson, quizUnlocked } from "@/lib/learn/progress";
 import ModuleLocked from "@/components/learn/ModuleLocked";
 import { translatorFor } from "@/lib/i18n/server";
 import Link from "next/link";
@@ -44,7 +44,7 @@ export default async function QuizPage({ params }: { params: Promise<{ id: strin
   const moduleTitle = text?.modules[quiz.module.id]?.title ?? quiz.module.title;
 
   // A module quiz opens once the module's lessons are done.
-  if (!(await moduleLessonsComplete(student.id, quiz.module.id))) {
+  if (!(await quizUnlocked(student.id, quiz.id, quiz.module.id))) {
     const t0 = translatorFor(locale);
     const [total, done, next] = await Promise.all([
       prisma.lesson.count({ where: { moduleId: quiz.module.id } }),

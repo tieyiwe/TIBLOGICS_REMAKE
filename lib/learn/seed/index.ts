@@ -104,17 +104,26 @@ export async function seedTrack(track: SeedTrack, tombstones?: Set<string>): Pro
   const [existingModules, existingLessons] = await Promise.all([
     prisma.learnModule.findMany({
       where: { trackId: row.id },
-      select: { id: true, sortOrder: true, editedAt: true },
+      select: { id: true, sortOrder: true, editedAt: true, title: true },
     }),
     prisma.lesson.findMany({
       where: { module: { trackId: row.id } },
-      select: { id: true, moduleId: true, sortOrder: true, editedAt: true },
+      select: { id: true, moduleId: true, sortOrder: true, editedAt: true, title: true },
     }),
   ]);
+  // Matching keeps learners' progress attached to the right content when a
+  // track is updated: a module or lesson is matched by TITLE first, so one
+  // inserted in the middle does not shift everyone's progress onto the wrong
+  // lesson, and by position only when no title matches (a renamed one).
   const moduleIdByOrder = new Map(existingModules.map((m) => [m.sortOrder, m.id]));
+  const moduleIdByTitle = new Map(existingModules.map((m) => [m.title, m.id]));
+  const seedModuleTitles = new Set(track.modules.map((m) => m.title));
   const lessonIdByModuleOrder = new Map(
     existingLessons.map((l) => [`${l.moduleId}:${l.sortOrder}`, l.id]),
   );
+  const lessonIdByModuleTitle = new Map(existingLessons.map((l) => [`${l.moduleId}:${l.title}`, l.id]));
+  const lessonTitleById = new Map(existingLessons.map((l) => [l.id, l.title]));
+  const moduleTitleById = new Map(existingModules.map((m) => [m.id, m.title]));
   const editedModules = new Set(existingModules.filter((m) => m.editedAt).map((m) => m.id));
   const editedLessons = new Set(existingLessons.filter((l) => l.editedAt).map((l) => l.id));
 
@@ -122,9 +131,14 @@ export async function seedTrack(track: SeedTrack, tombstones?: Set<string>): Pro
     // Deleted by staff in the admin: stays deleted.
     if (deleted.has(`module:${track.slug}#${mi}`)) continue;
     // sortOrder is the stable identity of a module within a track
-    const existingModuleId = moduleIdByOrder.get(mi);
+    const byOrder = moduleIdByOrder.get(mi);
+    const existingModuleId =
+      moduleIdByTitle.get(mod.title) ??
+      // Same position, renamed: reuse it unless its old title is still in the seed elsewhere.
+      (byOrder && !seedModuleTitles.has(moduleTitleById.get(byOrder) ?? "") ? byOrder : undefined);
 
     const modData = {
+      sortOrder: mi,
       title: mod.title,
       summary: mod.summary ?? null,
       estimatedMinutes: moduleMinutes(mod),
@@ -135,16 +149,21 @@ export async function seedTrack(track: SeedTrack, tombstones?: Set<string>): Pro
         ? { id: existingModuleId }
         : await prisma.learnModule.update({ where: { id: existingModuleId }, data: modData })
       : await prisma.learnModule.create({
-          data: { trackId: row.id, sortOrder: mi, ...modData },
+          data: { trackId: row.id, ...modData },
         });
 
     moduleIds[mi] = modRow.id;
 
     for (const [li, lesson] of mod.lessons.entries()) {
       if (deleted.has(`lesson:${track.slug}#${mi}#${li}`)) continue;
-      const existingLessonId = lessonIdByModuleOrder.get(`${modRow.id}:${li}`);
+      const seedLessonTitles = new Set(mod.lessons.map((x) => x.title));
+      const lByOrder = lessonIdByModuleOrder.get(`${modRow.id}:${li}`);
+      const existingLessonId =
+        lessonIdByModuleTitle.get(`${modRow.id}:${lesson.title}`) ??
+        (lByOrder && !seedLessonTitles.has(lessonTitleById.get(lByOrder) ?? "") ? lByOrder : undefined);
 
       const lessonData = {
+        sortOrder: li,
         title: lesson.title,
         contentType: lesson.contentType ?? (lesson.videoUrl ? "mixed" : "article"),
         videoUrl: lesson.videoUrl ?? null,
@@ -163,7 +182,7 @@ export async function seedTrack(track: SeedTrack, tombstones?: Set<string>): Pro
       const lessonRow = existingLessonId
         ? await prisma.lesson.update({ where: { id: existingLessonId }, data: lessonData })
         : await prisma.lesson.create({
-            data: { moduleId: modRow.id, sortOrder: li, ...lessonData },
+            data: { moduleId: modRow.id, ...lessonData },
           });
 
       lessonCount++;

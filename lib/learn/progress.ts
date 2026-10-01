@@ -132,3 +132,19 @@ export async function firstUnfinishedLesson(studentId: string, moduleId: string)
   const done = new Set((await prisma.lessonProgress.findMany({ where: { studentId, lesson: { moduleId } }, select: { lessonId: true } })).map((p) => p.lessonId));
   return lessons.find((l) => !done.has(l.id))?.id ?? null;
 }
+
+/**
+ * A module quiz is open when the module's lessons are done, or when the
+ * learner has already taken it (so adding a lesson to a finished module
+ * never re-locks work they have done).
+ */
+export async function quizUnlocked(studentId: string, quizId: string, moduleId: string | null | undefined): Promise<boolean> {
+  const tried = await prisma.quizAttempt.count({ where: { studentId, quizId } });
+  return tried > 0 || moduleLessonsComplete(studentId, moduleId);
+}
+
+/** Same rule for a module's lab. */
+export async function labUnlocked(studentId: string, labId: string): Promise<boolean> {
+  const tried = await prisma.labAttempt.count({ where: { studentId, labId } });
+  return tried > 0 || moduleLessonsComplete(studentId, await labModuleId(labId));
+}
