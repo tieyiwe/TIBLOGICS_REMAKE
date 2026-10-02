@@ -372,21 +372,49 @@ function auditActor(a: Actor) {
   return { email: a.email, name: a.name, role: actorRole(a) };
 }
 
+/**
+ * Pending member: a fresh single-use invitation link (new expiry).
+ * Accepted member: a single-use link to set a new password (24 hours).
+ */
 export async function resendInvite(actor: Actor, id: string, expiryDays = 7) {
   const t = await loadTarget(id);
   await checkTarget(actor, t);
-  if (t.passwordHash) throw new TeamError("This person already accepted their invitation.");
+  const reset = !!t.passwordHash;
   const token = randomBytes(32).toString("hex");
-  const expires = new Date(Date.now() + expiryDays * 86_400_000);
-  await prisma.collaborator.update({ where: { id }, data: { inviteToken: hashInviteToken(token), inviteExpires: expires, active: true } });
+  const days = reset ? 1 : expiryDays;
+  const expires = new Date(Date.now() + days * 86_400_000);
+  await prisma.collaborator.update({ where: { id }, data: { inviteToken: hashInviteToken(token), inviteExpires: expires, ...(reset ? {} : { active: true }) } });
   const row = await accessRow(id);
   const role = (row && (await roleById(row.roleId))) ?? presetRole(NO_ROLE_ID)!;
-  const url = `${appUrl()}/admin_pro/accept-invite?token=${token}`;
-  await sendInviteEmail({ to: t.email, name: t.name, inviter: actor.isOwner ? `${actor.name || "The owner"} (owner)` : actor.name || actor.email, roleName: role.name, note: row?.inviteNote ?? "", url, days: expiryDays, reminder: true }).catch((err) =>
-    console.error("[team/resend] email", err instanceof Error ? err.message : err),
-  );
-  await audit(auditActor(actor), "team.invite_resend", { type: "collaborator", id, label: t.email }, { expiresInDays: expiryDays });
-  return { inviteUrl: url };
+  const url = `${appUrl()}/admin_pro/accept-invite?token=${token}${reset ? "&reset=1" : ""}`;
+  const inviter = actor.isOwner ? `${actor.name || "The owner"} (owner)` : actor.name || actor.email;
+  try {
+    if (reset) await sendResetEmail({ to: t.email, name: t.name, inviter, url });
+    else await sendInviteEmail({ to: t.email, name: t.name, inviter, roleName: role.name, note: row?.inviteNote ?? "", url, days, reminder: true });
+  } catch (err) {
+    console.error("[team/resend] email", err instanceof Error ? err.message : err);
+  }
+  await audit(auditActor(actor), reset ? "team.password_reset" : "team.invite_resend", { type: "collaborator", id, label: t.email }, { expiresInDays: days });
+  return { inviteUrl: url, reset };
+}
+
+async function sendResetEmail(p: { to: string; name: string; inviter: string; url: string }) {
+  const { default: mailer } = await import("@/lib/resend");
+  await mailer.emails.send({
+    to: p.to,
+    subject: "Set a new password for the TIBLOGICS admin",
+    html: `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#F4F7FB;font-family:Arial,sans-serif;">
+  <div style="max-width:560px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #E3E9F1;">
+    <div style="background:linear-gradient(135deg,#1B3A6B,#2251A3);padding:28px;text-align:center;"><h1 style="color:#fff;margin:0;font-size:24px;">TIB<span style="color:#F47C20;">LOGICS</span></h1></div>
+    <div style="padding:28px 32px;">
+      <h2 style="color:#0D1B2A;margin:0 0 12px;font-size:20px;">Hi ${esc(p.name)},</h2>
+      <p style="color:#3A4A5C;line-height:1.7;font-size:15px;margin:0;">${esc(p.inviter)} sent you a link to set a new password for the TIBLOGICS admin.</p>
+      <div style="margin:26px 0;text-align:center;"><a href="${p.url}" style="display:inline-block;background:#B8500A;color:#fff;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:15px;font-weight:700;">Set a new password</a></div>
+      <p style="color:#5A6E84;font-size:13px;line-height:1.6;margin:0;">This link works once and expires in 24 hours. If you did not ask for this, tell the owner.</p>
+    </div>
+  </div>
+</body></html>`,
+  });
 }
 
 /** Withdraws a pending invitation (the pending member is removed). */
