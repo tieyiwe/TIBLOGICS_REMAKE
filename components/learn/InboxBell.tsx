@@ -8,20 +8,24 @@ import { useT } from "@/lib/i18n/client";
 
 /**
  * Inbox button for the learner nav: messages from the ARFA team, with the
- * number of unread conversations. The count is fetched (one small query) so
+ * number of unread conversations plus unread notifications. The count is fetched (one small query) so
  * the nav needs no new prop, and refreshed on navigation.
  */
 export default function InboxBell() {
   const t = useT();
   const pathname = usePathname();
   const [unread, setUnread] = useState(0);
+  // Only notifications unread: the bell opens the Notifications tab.
+  const [notifOnly, setNotifOnly] = useState(false);
 
   useEffect(() => {
     let live = true;
     fetch("/api/learn/inbox/unread", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : { unread: 0 }))
-      .then((d: { unread?: number }) => {
-        if (live) setUnread(Math.max(0, Number(d.unread) || 0));
+      .then((d: { unread?: number; messages?: number; notifications?: number }) => {
+        if (!live) return;
+        setUnread(Math.max(0, Number(d.unread) || 0));
+        setNotifOnly(!Number(d.messages) && Number(d.notifications) > 0);
       })
       .catch(() => {});
     return () => {
@@ -33,7 +37,7 @@ export default function InboxBell() {
   const label = unread > 0 ? t("inbox.navUnread", { n: unread }) : t("inbox.nav");
   return (
     <Link
-      href="/learn/inbox"
+      href={notifOnly ? "/learn/inbox?tab=notifications" : "/learn/inbox"}
       aria-label={label}
       title={label}
       aria-current={active ? "page" : undefined}

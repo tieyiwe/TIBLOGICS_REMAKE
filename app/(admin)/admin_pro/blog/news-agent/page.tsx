@@ -93,11 +93,18 @@ export default function NewsAgentPage() {
           body: JSON.stringify({ ...action.data, sentBy: "Echelon" }),
         });
         if (res.ok) {
-          setActionFeedback(`✅ Newsletter drafted: "${action.data.title}" — <a href="/admin_pro/newsletter" class="underline">View in Newsletter →</a>`);
+          setActionFeedback(`✅ Newsletter drafted: "${esc(action.data.title)}" — <a href="/admin_pro/newsletter" class="underline">View in Newsletter →</a>`);
         } else {
           setActionFeedback("❌ Failed to draft newsletter.");
         }
       } else if (action.type === "SEND_NEWSLETTER") {
+        // Irreversible and goes to every subscriber: the model may propose
+        // it, but a person must confirm.
+        if (!window.confirm("Send the newsletter to every subscriber now? This cannot be undone.")) {
+          setActionFeedback("Newsletter not sent.");
+          setTimeout(() => setActionFeedback(null), 8000);
+          return;
+        }
         const res = await fetch("/api/newsletter/send", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -105,7 +112,7 @@ export default function NewsAgentPage() {
         });
         if (res.ok) {
           const d = await res.json();
-          setActionFeedback(`✅ Newsletter sent to ${d.sent ?? "all"} subscribers!`);
+          setActionFeedback(`✅ Newsletter sent to ${esc(d.sent ?? "all")} subscribers!`);
         } else {
           setActionFeedback("❌ Failed to send newsletter.");
         }

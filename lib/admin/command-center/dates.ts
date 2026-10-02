@@ -22,7 +22,7 @@ export function localTodayKey(now = new Date()): string {
   return `${y}-${m}-${d}`;
 }
 
-export function isDayKey(s: unknown): s is string {
+export function isDayKey(s: unknown): boolean {
   return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(Date.parse(`${s}T12:00:00Z`));
 }
 

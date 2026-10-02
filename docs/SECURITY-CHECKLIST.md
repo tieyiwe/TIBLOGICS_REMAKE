@@ -173,7 +173,7 @@ handlers in 301 files:
 |--------|----------|
 | Staff (admin, owner or collaborator with permission) | 255 |
 | Learner (signed in; most also need a paid track) | 87 |
-| Cron (Bearer `CRON_SECRET`) | 18 |
+| Cron (Bearer `CRON_SECRET`) | 17 |
 | Signed link or token (unsubscribe, invite, monitor, blueprint, download) | 17 |
 | Webhook signature (Stripe, WhatsApp) | 2 |
 | Public by design (forms, free tools, public pages, sign-up) | 40 |
@@ -253,9 +253,11 @@ across instances):
 | Staff login | 10 tries per email per 15 min, **plus** 60 per address per 15 min (new) |
 | Learner login | 10 tries per email per 15 min, plus 60 per address (new) |
 | Google sign-in | 20 per Google account per 15 min (new) |
-| Learner signup, one-page join | per address, in the routes |
-| Forgot password / reset | per address and per email |
-| Owner password recovery, setup, invite acceptance | 5 per address per hour |
+| Learner signup, one-page join | 5 per address per minute |
+| Forgot password | 5 per address and 3 per email per hour (same answer for unknown emails) |
+| Password reset with the emailed link | 10 per address per hour |
+| Owner password recovery and setup | 5 per address per hour |
+| Collaborator invite acceptance | 5 per address per 15 min |
 
 **Owner check (5 minutes):** rate limits by address rely on the
 `X-Forwarded-For` header that Replit adds. Confirm Replit replaces a value
@@ -396,8 +398,10 @@ steal: no tools, no other users' data in the prompt.
 
 No `eval`, `new Function`, SQL or shell is ever built from model output. The
 admin news agent can only trigger a short fixed list of actions (fetch news,
-draft a post, set the breaking-news banner), always shown to the staff member
-who asked. Video rendering runs ffmpeg with fixed arguments (no shell).
+draft a post, set the breaking-news banner, draft or send the newsletter),
+from the signed-in staff member's own chat; anything else in its reply is
+ignored. Sending the newsletter now always asks the person to confirm first
+(added in this audit). Video rendering runs ffmpeg with fixed arguments (no shell).
 
 ### Door 24: Packages are real and maintained. Done
 

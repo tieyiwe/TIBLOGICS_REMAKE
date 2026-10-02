@@ -6,6 +6,7 @@ import { getT } from "@/lib/i18n/server";
 import { addLearnerReply, markLearnerRead, REPLY_MAX } from "@/lib/learn/inbox/threads";
 import { sendLearnerReplyAlert } from "@/lib/learn/inbox/email";
 import { csrfGuard } from "@/lib/learn/account-status/admin-auth";
+import { onLearnerFollowUp } from "@/lib/learn/support/tickets";
 
 export const dynamic = "force-dynamic";
 
@@ -46,8 +47,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ thr
   if (r.error === "not_found") return NextResponse.json({ error: t("inbox.error") }, { status: 404 });
   if (r.error === "closed") return NextResponse.json({ error: t("inbox.closed") }, { status: 409 });
 
-  sendLearnerReplyAlert({ name: student.name, email: student.email, subject: r.thread.subject, body, threadId }).catch((err) =>
-    console.error("[inbox] reply alert", err instanceof Error ? err.message : err),
-  );
+  // Support threads ("Need help?") alert the owner, batched (lib/learn/support);
+  // other threads keep the usual alert to the ARFA mailbox.
+  const isSupport = await onLearnerFollowUp(threadId).catch((err) => {
+    console.error("[inbox] support follow-up", err instanceof Error ? err.message : err);
+    return false;
+  });
+  if (!isSupport) {
+    sendLearnerReplyAlert({ name: student.name, email: student.email, subject: r.thread.subject, body, threadId }).catch((err) =>
+      console.error("[inbox] reply alert", err instanceof Error ? err.message : err),
+    );
+  }
   return NextResponse.json({ ok: true });
 }

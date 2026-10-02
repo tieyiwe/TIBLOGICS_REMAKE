@@ -76,6 +76,20 @@ export async function readLimit(staff: Staff, bucket: string, max = 60): Promise
   return null;
 }
 
+/**
+ * The viewer's calendar day, sent by the client as x-cc-today. Accepted only
+ * within a day of UTC (time zones), otherwise UTC today.
+ */
+export function todayOf(req: Request): string {
+  const utc = new Date().toISOString().slice(0, 10);
+  const h = req.headers.get("x-cc-today") ?? "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(h)) {
+    const diff = Math.abs(Date.parse(`${h}T12:00:00Z`) - Date.parse(`${utc}T12:00:00Z`));
+    if (diff <= 86_400_000) return h;
+  }
+  return utc;
+}
+
 /** Parses a JSON body, null on malformed input. */
 export async function jsonBody(req: Request): Promise<unknown> {
   try {
