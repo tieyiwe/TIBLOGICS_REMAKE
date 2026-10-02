@@ -196,9 +196,13 @@ optionally with a challenge id:
     ```
 
 Tools: automation-builder, loop-mapper, prompt-builder, prompt-arena,
-critic-mode, test-bench, task-sorter, spot-the-risk, wireframe-builder
-(see lib/learn/studio/catalog.ts for which are ready and their challenge
-ids). Put the block where the learner should practise the idea just taught,
+critic-mode, test-bench, task-sorter, spot-the-risk, wireframe-builder,
+security-doors (see lib/learn/studio/catalog.ts for which are ready and their
+challenge ids). security-doors (the 30 Doors security audit) also takes
+focused views that earn no points, for other tracks' lessons: view-owner,
+view-commission, view-agents, view-prompt, view-ml, view-governance
+(components/learn/studio/tools/security-doors/doors.ts).
+Put the block where the learner should practise the idea just taught,
 with one sentence before it saying what to do.
 
 Free accounts: where a lab or project is best done in a real assistant, the
