@@ -89,7 +89,9 @@ function translationRequest(fields: Fields, locale: Locale) {
     task,
     system: SYSTEM(locale),
     messages: [{ role: "user" as const, content: json }],
-    maxTokens: Math.min(16_000, Math.max(1_000, Math.ceil(size / 2))),
+    // French runs longer than English and HTML/JSON escaping adds tokens, so
+    // budget about one output token per input character (capped).
+    maxTokens: Math.min(32_000, Math.max(1_000, size)),
   };
 }
 
@@ -103,12 +105,50 @@ function applyTranslation(fields: Fields, keys: string[], raw: string): Fields {
 }
 
 /** One model call. Throws on failure so callers can decide what to show. */
-async function translateNow(fields: Fields, locale: Locale): Promise<Fields> {
+async function translateNow(fields: Fields, locale: Locale, depth = 0): Promise<Fields> {
   const req = translationRequest(fields, locale);
   if (!req) return { ...fields };
   const { text, stopReason } = await runClaude(req.task, { system: req.system, messages: req.messages, maxTokens: req.maxTokens });
-  if (stopReason === "max_tokens") throw new Error("Translation was cut off");
-  return applyTranslation(fields, req.keys, text);
+  if (stopReason !== "max_tokens") return applyTranslation(fields, req.keys, text);
+  // Too long for one reply: split and translate the parts separately.
+  if (depth >= 4) throw new Error("Translation was cut off");
+  const keys = req.keys;
+  if (keys.length > 1) {
+    const half = Math.ceil(keys.length / 2);
+    const pick = (ks: string[]) => Object.fromEntries(ks.map((k) => [k, fields[k]]));
+    const [a, b] = await Promise.all([
+      translateNow(pick(keys.slice(0, half)), locale, depth + 1),
+      translateNow(pick(keys.slice(half)), locale, depth + 1),
+    ]);
+    return { ...fields, ...a, ...b };
+  }
+  const key = keys[0];
+  const parts = splitLongText(fields[key]);
+  if (parts.length < 2) throw new Error("Translation was cut off");
+  const done: string[] = [];
+  for (const part of parts) done.push((await translateNow({ [key]: part }, locale, depth + 1))[key]);
+  return { ...fields, [key]: done.join("") };
+}
+
+/**
+ * Splits a long text (article HTML or Markdown) into about-equal pieces at
+ * block boundaries (closing block tags or blank lines), so each piece is
+ * translated whole and the pieces join back seamlessly.
+ */
+function splitLongText(text: string, target = 6_000): string[] {
+  if (text.length <= target) return [text];
+  const blocks = text.split(/(?<=<\/(?:p|h[1-6]|ul|ol|li|blockquote|pre|table|figure|div|section)>)|(?<=\n\n)/i);
+  const out: string[] = [];
+  let cur = "";
+  for (const blk of blocks) {
+    if (cur && cur.length + blk.length > target) {
+      out.push(cur);
+      cur = "";
+    }
+    cur += blk;
+  }
+  if (cur) out.push(cur);
+  return out;
 }
 
 const collector = new AsyncLocalStorage<PendingTranslation[]>();
