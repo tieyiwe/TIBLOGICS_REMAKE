@@ -40,10 +40,14 @@ const STEPS: Array<[string, () => Promise<unknown>]> = [
   ["lib/learn/tutor/db", () => import("@/lib/learn/tutor/db").then((m) => m.ensureTutorTables())],
   ["lib/learn/live/db", () => import("@/lib/learn/live/db").then((m) => m.ensureLiveTables())],
   ["lib/learn/inbox/db", () => import("@/lib/learn/inbox/db").then((m) => m.ensureCommsTables())],
+  ["lib/learn/inbox/notifications", () => import("@/lib/learn/inbox/notifications").then((m) => m.ensureNotificationTables())],
+  ["lib/learn/support/db", () => import("@/lib/learn/support/db").then((m) => m.ensureSupportTables())],
   ["lib/learn/video/db", () => import("@/lib/learn/video/db").then((m) => m.ensureVideoTables())],
   ["lib/learn/mastery/db", () => import("@/lib/learn/mastery/db").then((m) => m.ensureMasteryTables())],
   ["lib/i18n/content", () => import("@/lib/i18n/content").then((m) => m.ensureTable())],
   ["lib/cache/public-data", () => import("@/lib/cache/public-data").then((m) => m.ensureTable())],
+  ["lib/admin/command-center/db (pm)", () => import("@/lib/admin/command-center/db").then((m) => m.ensurePmTables())],
+  ["lib/admin/command-center/db (finance)", () => import("@/lib/admin/command-center/db").then((m) => m.ensureFinanceTables())],
   ["lib/db/warm", () => import("@/lib/db/warm").then((m) => m.warmDatabase())],
 ];
 

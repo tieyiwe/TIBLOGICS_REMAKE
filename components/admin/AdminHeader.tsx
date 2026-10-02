@@ -18,6 +18,8 @@ import {
   Settings,
   User,
   Users,
+  ListChecks,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, Kbd } from "@/components/admin/ui";
@@ -31,6 +33,8 @@ const TYPE_ICON: Record<NotifType, React.ElementType> = {
   service_request: Briefcase,
   partnership: Handshake,
   waitlist: Users,
+  task: ListChecks,
+  finance: Wallet,
 };
 
 const TYPE_COLOR: Record<NotifType, string> = {
@@ -39,6 +43,8 @@ const TYPE_COLOR: Record<NotifType, string> = {
   service_request: "bg-[var(--a-orange-bg)] text-[var(--a-orange-text)]",
   partnership: "bg-[#F3EEFD] text-[#6D28D9]",
   waitlist: "bg-[#E6F6F4] text-[#0F766E]",
+  task: "bg-[var(--a-info-bg)] text-[var(--a-navy)]",
+  finance: "bg-[var(--a-warn-bg)] text-[var(--a-warn)]",
 };
 
 function timeAgo(dateStr: string) {

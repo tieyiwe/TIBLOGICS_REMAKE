@@ -35,8 +35,16 @@ export function GET() {
       { src: "/pwa/maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
     shortcuts: [
-      { name: "Continue learning", url: "/learn", icons: [{ src: "/pwa/icon-192.png", sizes: "192x192" }] },
-      { name: "My tracks", url: "/learn/tracks", icons: [{ src: "/pwa/icon-192.png", sizes: "192x192" }] },
+      { name: "Continue learning", url: "/learn", icons: [{ src: "/pwa/icon-96.png", sizes: "96x96", type: "image/png" }] },
+      { name: "My tracks", url: "/learn/tracks", icons: [{ src: "/pwa/icon-96.png", sizes: "96x96", type: "image/png" }] },
+    ],
+    // The richer install dialog on Android and desktop Chrome/Edge. Taken from
+    // real /learn pages (narrow: phone at 390x844 @2x; wide: 1280x800).
+    screenshots: [
+      { src: "/pwa/screenshots/narrow-dashboard.png", sizes: "780x1688", type: "image/png", form_factor: "narrow", label: "Your ARFA dashboard" },
+      { src: "/pwa/screenshots/narrow-lesson.png", sizes: "780x1688", type: "image/png", form_factor: "narrow", label: "A lesson" },
+      { src: "/pwa/screenshots/wide-dashboard.png", sizes: "1280x800", type: "image/png", form_factor: "wide", label: "Your ARFA dashboard" },
+      { src: "/pwa/screenshots/wide-lesson.png", sizes: "1280x800", type: "image/png", form_factor: "wide", label: "A lesson" },
     ],
     related_applications: [{ platform: "webapp", url: `${siteUrl()}/arfa.webmanifest` }],
     prefer_related_applications: false,

@@ -3,9 +3,11 @@ import {
   LayoutDashboard,
   Rocket,
   BarChart2,
-  Columns,
-  GanttChartSquare,
-  List,
+  FolderKanban,
+  ListChecks,
+  Wallet,
+  Receipt,
+  PiggyBank,
   RefreshCw,
   Calendar,
   Users,
@@ -46,6 +48,7 @@ import {
   MessageSquareText,
   ScrollText,
   TicketPercent,
+  LifeBuoy,
 } from "lucide-react";
 
 export interface NavSubItem {
@@ -79,13 +82,26 @@ export const NAV_SECTIONS: NavSection[] = [
         label: "Command Center",
         href: "/admin_pro/command-center",
         icon: Rocket,
-        keywords: "projects",
+        keywords: "projects tasks kanban timeline gantt my work notes milestones",
         subItems: [
-          { label: "Overview", href: "/admin_pro/command-center", icon: BarChart2 },
-          { label: "Kanban", href: "/admin_pro/command-center/kanban", icon: Columns },
-          { label: "Timeline", href: "/admin_pro/command-center/timeline", icon: GanttChartSquare },
-          { label: "All Projects", href: "/admin_pro/command-center/list", icon: List },
+          { label: "Projects", href: "/admin_pro/command-center", icon: FolderKanban },
+          { label: "My work", href: "/admin_pro/command-center/my-work", icon: ListChecks },
+          { label: "Calendar", href: "/admin_pro/command-center/calendar", icon: CalendarDays },
+          { label: "Updates", href: "/admin_pro/command-center/updates", icon: Megaphone },
           { label: "Sync", href: "/admin_pro/command-center/sync", icon: RefreshCw },
+        ],
+      },
+      {
+        label: "Finance",
+        href: "/admin_pro/command-center/finance",
+        icon: Wallet,
+        keywords: "income expenses profit budget tax invoices accounting p&l",
+        subItems: [
+          { label: "Dashboard", href: "/admin_pro/command-center/finance", icon: BarChart2 },
+          { label: "Income", href: "/admin_pro/command-center/finance/income", icon: DollarSign },
+          { label: "Expenses", href: "/admin_pro/command-center/finance/expenses", icon: Receipt },
+          { label: "Budgets", href: "/admin_pro/command-center/finance/budgets", icon: PiggyBank },
+          { label: "Reports & taxes", href: "/admin_pro/command-center/finance/reports", icon: FileText },
         ],
       },
       { label: "Analytics", href: "/admin_pro/analytics", icon: BarChart2, keywords: "owner analytics kpi" },
@@ -145,6 +161,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "Communications", href: "/admin_pro/communications", icon: MessageSquareText, keywords: "message learners email broadcast inbox" },
       { label: "Learners", href: "/admin_pro/learn/learners", icon: Users, keywords: "students arfa academy" },
+      { label: "Learner support", href: "/admin_pro/communications/support", icon: LifeBuoy, keywords: "help desk tickets need help questions learners visitors" },
     ],
   },
   {
@@ -221,6 +238,16 @@ export const NAV_PERMISSION_MAP: Record<string, string> = {
   "/admin_pro/command-center/timeline": "command_center", // (inherited)
   "/admin_pro/command-center/list": "command_center", // (inherited)
   "/admin_pro/command-center/sync": "command_center", // (inherited)
+  "/admin_pro/command-center/my-work": "command_center",
+  "/admin_pro/command-center/calendar": "command_center",
+  "/admin_pro/command-center/updates": "command_center",
+  // Money: its own permission (owner and admins always), see
+  // lib/admin/command-center/permissions.ts.
+  "/admin_pro/command-center/finance": "finance",
+  "/admin_pro/command-center/finance/income": "finance",
+  "/admin_pro/command-center/finance/expenses": "finance",
+  "/admin_pro/command-center/finance/budgets": "finance",
+  "/admin_pro/command-center/finance/reports": "finance",
   "/admin_pro/appointments": "appointments",
   "/admin_pro/appointments/availability": "appointments", // (inherited)
   "/admin_pro/contacts": "contacts",
@@ -269,6 +296,8 @@ export const NAV_PERMISSION_MAP: Record<string, string> = {
   "/admin_pro/growth/acquire": "__admin_only__",
   // People / ops: owner and admin only.
   "/admin_pro/communications": "__admin_only__",
+  // Support requests: readable by staff with learner access (lib/learn/account-status/admin-auth).
+  "/admin_pro/communications/support": "events",
   "/admin_pro/audit": "__admin_only__",
   // Promotions change what customers pay: owner and admin only.
   "/admin_pro/promotions": "__admin_only__",

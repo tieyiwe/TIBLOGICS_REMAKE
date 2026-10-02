@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { canSee } from "@/components/admin/shell/nav";
+import { searchPm } from "@/lib/admin/command-center/pm";
 
 // Global admin search for the command palette (Cmd/Ctrl+K).
 //
@@ -287,6 +288,24 @@ export async function GET(req: NextRequest) {
               badge: r.published ? "published" : "draft",
             })),
           ),
+        [],
+      ),
+    );
+  }
+
+  if (see("/admin_pro/command-center")) {
+    jobs.push(
+      safe(
+        "command center",
+        searchPm(q, PER_GROUP).then((rows) =>
+          rows.map((r) => ({
+            id: `pm-${r.kind}-${r.id}`,
+            group: r.kind === "project" ? "Projects" : r.kind === "task" ? "Tasks" : "Notes",
+            title: r.title,
+            subtitle: r.subtitle,
+            href: r.href,
+          })),
+        ),
         [],
       ),
     );

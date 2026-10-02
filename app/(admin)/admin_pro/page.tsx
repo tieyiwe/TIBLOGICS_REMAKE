@@ -9,6 +9,7 @@ import {
   Flag,
   Flame,
   GraduationCap,
+  LifeBuoy,
   Mail,
   Megaphone,
   Newspaper,
@@ -161,6 +162,7 @@ export default async function AdminDashboardPage() {
   type InboxRow = { key: string; icon: LucideIcon; count: number; label: string; action: string; href: string; tone: BadgeTone };
   const inbox: InboxRow[] = (
     [
+      { key: "support", icon: LifeBuoy, count: d.inbox.support, label: "learner support requests waiting", action: "Answer", href: "/admin_pro/communications/support", tone: "danger" },
       { key: "growth", icon: Megaphone, count: d.inbox.growthDrafts, label: "social posts awaiting approval", action: "Review posts", href: "/admin_pro/growth/content", tone: "orange" },
       { key: "outreach", icon: Mail, count: d.inbox.outreachDrafts, label: "outreach emails awaiting approval", action: "Approve emails", href: "/admin_pro/growth/outreach", tone: "orange" },
       { key: "hot", icon: Flame, count: d.inbox.hotLeads, label: "hot leads to follow up", action: "Open leads", href: "/admin_pro/growth/leads", tone: "danger" },

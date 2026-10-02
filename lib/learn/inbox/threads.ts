@@ -117,17 +117,21 @@ export async function addLearnerReply(studentId: string, threadId: string, body:
 
 export type InboxView = "open" | "unread" | "closed" | "all";
 
+// "Need help?" requests (campaignId "support") are listed on their own page
+// (/admin_pro/communications/support), not here.
+const NOT_SUPPORT: Prisma.InboxThreadWhereInput = { OR: [{ campaignId: null }, { campaignId: { not: "support" } }] };
+
 export async function adminInbox(view: InboxView) {
   await ensureCommsTables();
-  const where: Prisma.InboxThreadWhereInput = { hasLearnerReply: true };
+  const where: Prisma.InboxThreadWhereInput = { hasLearnerReply: true, ...NOT_SUPPORT };
   if (view === "open") where.status = "open";
   if (view === "closed") where.status = "closed";
   if (view === "unread") where.adminUnread = { gt: 0 };
   const [threads, counts] = await Promise.all([
     prisma.inboxThread.findMany({ where, orderBy: { lastMessageAt: "desc" }, take: 200 }),
-    prisma.inboxThread.groupBy({ by: ["status"], where: { hasLearnerReply: true }, _count: { _all: true } }),
+    prisma.inboxThread.groupBy({ by: ["status"], where: { hasLearnerReply: true, ...NOT_SUPPORT }, _count: { _all: true } }),
   ]);
-  const unread = await prisma.inboxThread.count({ where: { hasLearnerReply: true, adminUnread: { gt: 0 } } });
+  const unread = await prisma.inboxThread.count({ where: { hasLearnerReply: true, adminUnread: { gt: 0 }, ...NOT_SUPPORT } });
   const students = threads.length
     ? await prisma.student.findMany({ where: { id: { in: [...new Set(threads.map((t) => t.studentId))] } }, select: { id: true, name: true, email: true } })
     : [];

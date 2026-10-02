@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { requireLearnerPage } from "@/lib/learn/account-status/admin-auth";
 import { campaignDetail } from "@/lib/learn/inbox/campaigns";
 import { renderMarkdownLite } from "@/lib/learn/inbox/markdown";
+import { campaignFormat } from "@/lib/learn/inbox/notifications";
 import { dt, human } from "../../learn/learners/_components/format";
 import { CancelCampaign } from "./CancelCampaign";
 
@@ -27,6 +28,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
   const data = await campaignDetail(id);
   if (!data) notFound();
   const { campaign: c, recipients } = data;
+  const fmt = await campaignFormat(id).catch(() => null);
   const pending = recipients.filter((r) => r.status === "pending" || r.status === "sending").length;
 
   return (
@@ -38,6 +40,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
           <>
             <Badge tone={STATUS[c.status]?.tone ?? "neutral"} dot>{STATUS[c.status]?.label ?? c.status}</Badge>
             <Badge tone={c.kind === "marketing" ? "orange" : "info"}>{c.kind === "marketing" ? "Marketing" : "Service"}</Badge>
+            {fmt?.format === "notification" ? <Badge tone="info">Notification{fmt.linkUrl ? ` · button to ${fmt.linkUrl}` : ""}</Badge> : null}
             {c.viaEmail ? <Badge tone="neutral"><Mail size={12} aria-hidden /> Email</Badge> : null}
             {c.viaInbox ? <Badge tone="neutral"><Inbox size={12} aria-hidden /> Inbox</Badge> : null}
             {c.bodyFr ? <Badge tone="neutral">EN + FR</Badge> : <Badge tone="neutral">EN</Badge>}

@@ -60,11 +60,14 @@ async function gate(req: NextRequest) {
       // Shown to suspended or blocked learners (who have no usable session)
       // and opened from emails without signing in.
       pathname.startsWith("/learn/account-status") ||
-      pathname.startsWith("/learn/unsubscribe");
+      pathname.startsWith("/learn/unsubscribe") ||
+      // "Install the ARFA app" instructions, linked from the welcome email
+      // and often opened on a phone that has never signed in.
+      pathname === "/learn/install";
 
     if (isPublic) {
       // Already signed in as a student → straight to the dashboard
-      const stay = ["/learn/forgot", "/learn/reset", "/learn/account-status", "/learn/unsubscribe"].some((p) => pathname.startsWith(p));
+      const stay = ["/learn/forgot", "/learn/reset", "/learn/account-status", "/learn/unsubscribe", "/learn/install"].some((p) => pathname.startsWith(p));
       if (token?.studentId && !stay) {
         // Honour ?next= (same-site paths only), so a signed-in account sent
         // here from the paid tools goes back to them rather than to Learn.

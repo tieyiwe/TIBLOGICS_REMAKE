@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { ensurePmTables } from "@/lib/admin/command-center/db";
 
 /**
  * Non-archived projects with their tasks, in the shape GET /api/admin/projects
@@ -7,6 +8,7 @@ import prisma from "@/lib/prisma";
  * checked for a staff session.
  */
 export async function getActiveProjects<T = unknown>(): Promise<T[]> {
+  await ensurePmTables().catch((err) => console.error("[admin/projects] tables", err));
   const projects = await prisma.project
     .findMany({
       where: { archived: false },

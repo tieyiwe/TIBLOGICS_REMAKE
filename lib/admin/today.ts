@@ -31,6 +31,7 @@ const OPTIONAL = [
   "LoginEvent",
   "TrackPurchase",
   "Blueprint",
+  "SupportTicket",
 ] as const;
 type Opt = (typeof OPTIONAL)[number];
 
@@ -84,6 +85,8 @@ export interface TodayData {
     serviceRequests: number;
     pendingAppointments: number;
     blogDrafts: number;
+    /** Learner support requests waiting for the team (lib/learn/support). */
+    support: number;
   };
   activity: Array<{ kind: string; title: string; detail: string; href: string; at: Date }>;
 }
@@ -152,7 +155,8 @@ export async function getToday(): Promise<TodayData> {
       ${has.CommunityReport ? Prisma.sql`(SELECT count(*) FROM "CommunityReport" WHERE "status" = 'open')` : Prisma.sql`0`} AS reports,
       (SELECT count(*) FROM "ServiceRequest" WHERE "status" = 'NEW') AS service_requests,
       (SELECT count(*) FROM "Appointment" WHERE "status" = 'PENDING' AND "date" >= ${todayStart}) AS pending_appts,
-      (SELECT count(*) FROM "BlogPost" WHERE "published" = false) AS blog_drafts`;
+      (SELECT count(*) FROM "BlogPost" WHERE "published" = false) AS blog_drafts,
+      ${has.SupportTicket ? Prisma.sql`(SELECT count(*) FROM "SupportTicket" WHERE "status" = 'open')` : Prisma.sql`0`} AS support_open`;
 
   // 5. Upcoming appointments (next 30 days, capped).
   const upcomingQ = prisma.appointment.findMany({
@@ -246,6 +250,7 @@ export async function getToday(): Promise<TodayData> {
       serviceRequests: n(c.service_requests),
       pendingAppointments: n(c.pending_appts),
       blogDrafts: n(c.blog_drafts),
+      support: n(c.support_open),
     },
     activity: activity.map((a) => ({
       kind: a.kind,

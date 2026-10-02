@@ -71,6 +71,29 @@ const esc = (v: string) =>
 
 const p = (t: string) => `<p style="font-size:14px;color:#5b6b72;line-height:1.7;margin:0 0 14px;">${t}</p>`;
 
+/** /learn/install: the step-by-step "Install the ARFA app" page for every browser. */
+const INSTALL_URL = `${SITE}/learn/install`;
+
+/**
+ * Numbered "first steps" rows (navy circles), each with a title, a line of
+ * text and a link: `${key}.title`, `${key}.body` and `${key}.link`.
+ */
+function stepRows(t: T, items: Array<{ key: string; href: string }>) {
+  const rows = items
+    .map(
+      ({ key, href }, i) => `<tr><td style="padding:0 0 14px;vertical-align:top;width:40px;">
+          <div style="width:28px;height:28px;border-radius:14px;background:#1B2A5E;color:#fff;font-weight:800;font-size:14px;line-height:28px;text-align:center;">${i + 1}</div>
+        </td>
+        <td style="padding:0 0 14px;font-size:14px;color:#5b6b72;line-height:1.6;">
+          <strong style="color:#131A1B;">${t(`${key}.title`)}</strong><br/>
+          ${t(`${key}.body`)}<br/>
+          <a href="${href}" style="color:#F47C20;font-weight:700;text-decoration:none;">${t(`${key}.link`)} &rarr;</a>
+        </td></tr>`,
+    )
+    .join("");
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;">${rows}</table>`;
+}
+
 /**
  * "Welcome to ARFA (AI Readiness For All)": sent on every new learner
  * account, from the sign-up form (app/api/learn/auth/signup) and from the
@@ -87,26 +110,19 @@ export function studentWelcomeEmail(s: { name: string }, t: T) {
         <td style="padding:0 0 10px;font-size:14px;color:#5b6b72;line-height:1.6;"><strong style="color:#1B2A5E;">${t(`learn.email.welcome.pillar.${n}.title`)}.</strong> ${t(`learn.email.welcome.pillar.${n}.body`)}</td></tr>`,
     )
     .join("");
-  const links = [`${SITE}/learning-box#path`, `${SITE}/learn/tracks`, `${SITE}/learn/community`];
-  const steps = [1, 2, 3]
-    .map(
-      (n) => `<tr><td style="padding:0 0 14px;vertical-align:top;width:40px;">
-          <div style="width:28px;height:28px;border-radius:14px;background:#1B2A5E;color:#fff;font-weight:800;font-size:14px;line-height:28px;text-align:center;">${n}</div>
-        </td>
-        <td style="padding:0 0 14px;font-size:14px;color:#5b6b72;line-height:1.6;">
-          <strong style="color:#131A1B;">${t(`learn.email.welcome.step.${n}.title`)}</strong><br/>
-          ${t(`learn.email.welcome.step.${n}.body`)}<br/>
-          <a href="${links[n - 1]}" style="color:#F47C20;font-weight:700;text-decoration:none;">${t(`learn.email.welcome.step.${n}.link`)} &rarr;</a>
-        </td></tr>`,
-    )
-    .join("");
+  const steps = stepRows(t, [
+    { key: "learn.email.welcome.step.1", href: `${SITE}/learning-box#path` },
+    { key: "learn.email.welcome.step.2", href: `${SITE}/learn/tracks` },
+    { key: "learn.email.welcome.step.3", href: `${SITE}/learn/community` },
+    { key: "learn.email.welcome.step.4", href: INSTALL_URL },
+  ]);
   const body =
     `<div style="display:none;max-height:0;overflow:hidden;">${t("learn.email.welcome.preheader")}</div>` +
     p(t("learn.email.welcome.p1")) +
     h2(t("learn.email.welcome.whatTitle")) +
     `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;">${pillars}</table>` +
     h2(t("learn.email.welcome.stepsTitle")) +
-    `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;">${steps}</table>` +
+    steps +
     p(t("learn.email.welcome.p2"));
   const outro =
     p(t("learn.email.welcome.help", { email: `<a href="mailto:${ARFA_EMAIL}" style="color:#F47C20;">${ARFA_EMAIL}</a>` })) +
@@ -180,6 +196,16 @@ export function joinWelcomeEmail(s: { name: string }, state: JoinWelcomeState, t
     p(`${t("learn.email.welcome.signoff")}<br/><strong style="color:#131A1B;">${t("learn.email.welcome.team")}</strong>`) +
     `<p style="font-size:12px;color:#8A9BA0;line-height:1.6;margin:18px 0 0;border-top:1px solid #e6ebf1;padding-top:14px;">${t("learn.email.welcome.about")} <a href="${SITE}/learning-box" style="color:#8A9BA0;">${SITE.replace(/^https?:\/\//, "")}/learning-box</a></p>`;
   const pre = (v: string) => `<div style="display:none;max-height:0;overflow:hidden;">${v}</div>`;
+  // Below the main button, so "Start lesson 1" (or "Finish your enrolment")
+  // stays the one primary action.
+  // The community needs access, so a learner who has not paid yet only gets
+  // the install step.
+  const quick = (withCommunity: boolean) =>
+    h2(t("learn.email.join.quickTitle")) +
+    stepRows(t, [
+      { key: "learn.email.welcome.step.4", href: INSTALL_URL },
+      ...(withCommunity ? [{ key: "learn.email.welcome.step.3", href: `${SITE}/learn/community` }] : []),
+    ]);
 
   if (state.kind === "purchased") {
     const track = state.track ?? null;
@@ -226,7 +252,7 @@ export function joinWelcomeEmail(s: { name: string }, state: JoinWelcomeState, t
       next;
     return {
       subject,
-      html: shell(t, t("learn.email.welcome.title", { name: first }), body, cta, p(t("learn.email.welcome.p2")) + outro),
+      html: shell(t, t("learn.email.welcome.title", { name: first }), body, cta, quick(true) + p(t("learn.email.welcome.p2")) + outro),
     };
   }
 
@@ -253,6 +279,7 @@ export function joinWelcomeEmail(s: { name: string }, state: JoinWelcomeState, t
       : h2(t("learn.email.welcome.whatTitle")) +
         `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;">${pillars}</table>`);
   const after =
+    (reminder ? "" : quick(false)) +
     p(t("learn.email.join.pending.explore", { link: `<a href="${SITE}/learning-box" style="color:#F47C20;font-weight:700;">${t("learn.email.join.pending.catalog")}</a>` })) +
     outro;
   return {

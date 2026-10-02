@@ -20,6 +20,7 @@
 //   node scripts/cron.mjs outreach
 //   node scripts/cron.mjs comms
 //   node scripts/cron.mjs videos
+//   node scripts/cron.mjs pm
 //   node scripts/cron.mjs all
 //
 // Needs two environment variables:
@@ -72,6 +73,11 @@ const JOBS = {
   // videos (default 2). Each job is claimed before it runs; idempotent.
   // Needs GOOGLE_TTS_API_KEY (or OPENAI_API_KEY) on the server.
   videos: { path: "/api/cron/videos", suggested: "every 15 minutes" },
+  // Command Center: recurring expenses for each period that came due, overdue
+  // invoices, budget alerts, task due/overdue reminders in the admin bell and
+  // a daily email digest per assignee (opt-out in My work; at most one per
+  // person per day, claimed before sending). Idempotent.
+  pm: { path: "/api/cron/pm", suggested: "hourly" },
   // One-off, not scheduled: creates every runtime table/column/index so the
   // development database matches production before publishing on Replit.
   dbprep: { path: "/api/cron/db-prepare", suggested: "manually, before publishing" },

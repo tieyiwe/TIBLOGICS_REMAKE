@@ -2622,6 +2622,12 @@ model CommsCampaign {
   templateId     String?
   createdBy      String
   createdAt      DateTime  @default(now())
+  // Notification campaigns (lib/learn/inbox/notifications.ts adds the columns
+  // at runtime). format: message | notification.
+  format         String    @default("message")
+  linkUrl        String?
+  linkLabel      String?
+  linkLabelFr    String?
 
   @@index([status, scheduledAt])
   @@index([createdAt])
@@ -3008,4 +3014,78 @@ model FinBudget {
   category        String   @id
   monthlyUsdCents Int
   updatedAt       DateTime @default(now())
+}
+
+// ── Learner notifications and support (lib/learn/inbox/notifications.ts,
+// lib/learn/support/db.ts). Tables created at runtime (no migrations).
+
+/// A notice for one learner (Inbox, Notifications tab). readAt null = unread.
+/// kind: service | marketing | support.
+model LearnerNotification {
+  id         String    @id
+  studentId  String
+  campaignId String?
+  kind       String    @default("service")
+  title      String
+  body       String    @default("")
+  linkUrl    String?
+  linkLabel  String?
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([studentId, createdAt])
+  @@index([studentId, readAt])
+}
+
+/// A "Need help?" request. kind: learner (threadId = its InboxThread) |
+/// visitor (signed out, messages in SupportEntry). status: open | answered | closed.
+model SupportTicket {
+  id            String    @id
+  kind          String    @default("learner")
+  threadId      String?   @unique
+  studentId     String?
+  name          String
+  email         String
+  locale        String    @default("en")
+  topic         String    @default("other")
+  subject       String
+  priority      String    @default("normal")
+  assignee      String?
+  context       Json?
+  status        String    @default("open")
+  lastSender    String    @default("learner")
+  lastMessageAt DateTime  @default(now())
+  adminUnread   Int       @default(1)
+  notifiedAt    DateTime?
+  notifyPending Boolean   @default(false)
+  pendingSince  DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([status, lastMessageAt])
+  @@index([studentId])
+  @@index([notifyPending])
+}
+
+/// Internal staff note (kind "note") or a visitor ticket message (visitor | staff).
+model SupportEntry {
+  id          String   @id
+  ticketId    String
+  kind        String
+  authorName  String?
+  authorEmail String?
+  body        String
+  createdAt   DateTime @default(now())
+
+  @@index([ticketId, createdAt])
+}
+
+/// Saved support reply.
+model SupportCanned {
+  id        String   @id
+  title     String
+  body      String
+  bodyFr    String?
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
 }

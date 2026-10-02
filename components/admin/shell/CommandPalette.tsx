@@ -4,7 +4,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState, type ElementType } from "react";
 import {
   CalendarPlus,
+  CircleCheck,
   CornerDownLeft,
+  FolderPlus,
+  ReceiptText,
   ExternalLink,
   FilePlus2,
   FileText,
@@ -42,10 +45,15 @@ export const QUICK_ACTIONS: QuickAction[] = [
   { label: "New blog post", href: "/admin_pro/blog", icon: FilePlus2, keywords: "ai times article write" },
   { label: "New promotion", href: "/admin_pro/promotions/new", icon: TicketPercent, keywords: "discount sale coupon promo code" },
   { label: "Message learners", href: "/admin_pro/communications", icon: MessageSquareText, keywords: "email broadcast arfa academy students" },
+  { label: "New task in…", href: "/admin_pro/command-center/my-work?new=task", icon: CircleCheck, keywords: "todo quick add command center project" },
+  { label: "New project", href: "/admin_pro/command-center?new=project", icon: FolderPlus, keywords: "command center template client implementation launch" },
+  { label: "Add expense", href: "/admin_pro/command-center/finance/expenses?new=1", icon: ReceiptText, keywords: "finance cost receipt bill" },
+  { label: "Add income", href: "/admin_pro/command-center/finance/income?new=1", icon: ReceiptText, keywords: "finance invoice payment client" },
 ];
 
 export function visibleQuickActions(viewer: NavViewer) {
-  return QUICK_ACTIONS.filter((a) => canSee(a.href, viewer));
+  // Permission is decided by the path; a query string only opens a form.
+  return QUICK_ACTIONS.filter((a) => canSee(a.href.split(/[?#]/)[0], viewer));
 }
 
 const RECENT_KEY = "tib.admin.recent";

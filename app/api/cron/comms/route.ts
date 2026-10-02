@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { secretEquals } from "@/lib/require-admin";
 import { runComms } from "@/lib/learn/inbox/campaigns";
+import { flushSupportAlerts } from "@/lib/learn/support/tickets";
 
 // Communications center: starts scheduled messages and sends what is pending,
 // within COMMS_HOURLY_CAP emails per hour (default 300). Every recipient is
@@ -19,7 +20,13 @@ export async function GET(req: NextRequest) {
   if (!secretEquals(bearer, cronSecret)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const report = await runComms({ deadlineMs: 240_000 });
-    return NextResponse.json(report, { status: report.errors.length > 0 ? 207 : 200 });
+    // Learner support: batched follow-up alerts to the owner whose 10-minute
+    // window is over (lib/learn/support/tickets.ts).
+    const supportAlerts = await flushSupportAlerts().catch((err) => {
+      console.error("[cron/comms] support alerts", err);
+      return 0;
+    });
+    return NextResponse.json({ ...report, supportAlerts }, { status: report.errors.length > 0 ? 207 : 200 });
   } catch (err) {
     console.error("[cron/comms]", err);
     return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });

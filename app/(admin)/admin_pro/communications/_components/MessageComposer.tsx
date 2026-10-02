@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  CalendarClock, Eye, Inbox, Languages, Mail, Megaphone, Save, Search, Send, ShieldCheck, Sparkles, TestTube2, UserRound, Users, X,
+  BellRing, CalendarClock, Eye, Inbox, Languages, Mail, Megaphone, MessageSquareText, Save, Search, Send, ShieldCheck, Sparkles, TestTube2, UserRound, Users, X,
 } from "lucide-react";
 import { Badge, Button, Segmented, Select, useToast } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
@@ -48,7 +48,8 @@ export interface Segment {
 export type ComposerAudience =
   | { type: "one"; studentId: string; label: string }
   | { type: "ids"; ids: string[]; label?: string }
-  | { type: "segment"; segment: Segment };
+  | { type: "segment"; segment: Segment }
+  | { type: "all" };
 
 interface Initial {
   audience?: ComposerAudience;
@@ -81,6 +82,7 @@ const FIELD_LABEL: Record<string, string> = { firstName: "First name", trackTitl
 function apiAudience(a: ComposerAudience) {
   if (a.type === "one") return { type: "one", studentId: a.studentId };
   if (a.type === "ids") return { type: "ids", ids: a.ids };
+  if (a.type === "all") return { type: "all" };
   const s = a.segment;
   return {
     type: "segment",
@@ -157,6 +159,14 @@ export function MessageComposer({
   const [kind, setKind] = useState<"service" | "marketing">((tpl0?.kind as "service" | "marketing") ?? "service");
   const [viaEmail, setViaEmail] = useState(true);
   const [viaInbox, setViaInbox] = useState(true);
+  // "message": a conversation in the learner's Inbox (they can reply).
+  // "notification": a short notice with an optional link button, shown
+  // under Notifications (for example "New track released").
+  const [format, setFormat] = useState<"message" | "notification">("message");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkLabel, setLinkLabel] = useState("");
+  const [linkLabelFr, setLinkLabelFr] = useState("");
+  const [allOk, setAllOk] = useState(false);
   const [lang, setLang] = useState<"en" | "fr">("en");
   const [subject, setSubject] = useState(tpl0?.subject ?? "");
   const [body, setBody] = useState(tpl0?.body ?? "");
@@ -296,7 +306,9 @@ export function MessageComposer({
 
   const frStarted = !!(subjectFr.trim() || bodyFr.trim());
   const frIncomplete = frStarted && !(subjectFr.trim() && bodyFr.trim());
-  const ready = !!subject.trim() && !!body.trim() && (viaEmail || viaInbox) && (preview?.count ?? 0) > 0 && !frIncomplete;
+  const notif = format === "notification";
+  const tooLong = notif && (subject.length > 140 || subjectFr.length > 140 || body.length > 1000 || bodyFr.length > 1000);
+  const ready = !!subject.trim() && !!body.trim() && (viaEmail || viaInbox) && (preview?.count ?? 0) > 0 && !frIncomplete && !tooLong;
 
   async function send() {
     setBusy("send");
@@ -315,6 +327,10 @@ export function MessageComposer({
           bodyFr: bodyFr.trim() || null,
           scheduleAt: when === "later" ? new Date(at).toISOString() : null,
           templateId: templateId || null,
+          format,
+          linkUrl: format === "notification" ? linkUrl.trim() || null : null,
+          linkLabel: format === "notification" ? linkLabel.trim() || null : null,
+          linkLabelFr: format === "notification" ? linkLabelFr.trim() || null : null,
         },
       );
       setConfirm(false);
@@ -381,6 +397,10 @@ export function MessageComposer({
             ) : null
           }
         >
+          <div role="radiogroup" aria-label="Format" className="mb-3 flex flex-col gap-2 sm:flex-row">
+            <Choice testId="format-message" on={format === "message"} onClick={() => setFormat("message")} icon={MessageSquareText} title="Message" body="A conversation in the learner's Inbox. They can reply." />
+            <Choice testId="format-notification" on={format === "notification"} onClick={() => setFormat("notification")} icon={BellRing} title="Notification" body="A short notice with an optional button, e.g. “New track released”." />
+          </div>
           <div role="radiogroup" aria-label="Message type" className="flex flex-col gap-2 sm:flex-row">
             <Choice testId="kind-service" on={kind === "service"} onClick={() => setKind("service")} icon={ShieldCheck} title="Service" body="Account or course notice. Always delivered." />
             <Choice testId="kind-marketing" on={kind === "marketing"} onClick={() => setKind("marketing")} icon={Megaphone} title="Marketing" body="News or offers. Adds an unsubscribe link; skips learners who opted out." />
@@ -391,7 +411,9 @@ export function MessageComposer({
             <div className="flex flex-wrap gap-2">
               {[
                 { on: viaEmail, set: setViaEmail, icon: Mail, label: "Email", hint: "From arfa_edu@tiblogics.com" },
-                { on: viaInbox, set: setViaInbox, icon: Inbox, label: "In-app Inbox", hint: "Learner can reply" },
+                notif
+                  ? { on: viaInbox, set: setViaInbox, icon: BellRing, label: "In-app notification", hint: "Inbox, Notifications tab" }
+                  : { on: viaInbox, set: setViaInbox, icon: Inbox, label: "In-app Inbox", hint: "Learner can reply" },
               ].map((c) => (
                 <label
                   key={c.label}
@@ -445,10 +467,11 @@ export function MessageComposer({
 
           <div className="mt-3 space-y-3">
             <TextField
-              label="Subject"
+              label={notif ? "Title" : "Subject"}
               value={lang === "fr" ? subjectFr : subject}
               onChange={(e) => (lang === "fr" ? setSubjectFr : setSubject)(e.target.value)}
-              maxLength={200}
+              maxLength={notif ? 140 : 200}
+              data-testid="composer-subject"
               placeholder={lang === "fr" ? "Objet en français" : "For example: Your next lesson is waiting, {firstName}"}
             />
             <div>
@@ -474,15 +497,40 @@ export function MessageComposer({
                 ref={bodyRef}
                 value={lang === "fr" ? bodyFr : body}
                 onChange={(e) => (lang === "fr" ? setBodyFr : setBody)(e.target.value)}
-                maxLength={20000}
-                rows={compact ? 8 : 11}
+                maxLength={notif ? 1000 : 20000}
+                rows={notif ? 4 : compact ? 8 : 11}
                 placeholder={lang === "fr" ? "Message en français" : "Hi {firstName},\n\nWrite your message. **Bold**, *italic*, [links](https://...) and - lists work."}
                 className={cn(inputCls, "resize-y py-2.5 leading-relaxed")}
               />
               <p className="mt-1 font-dm text-[12px] text-[var(--a-ink-3)]">
-                Light formatting: **bold**, *italic*, [text](https://link), lines starting with “- ”. Replies go to arfa_edu@tiblogics.com and the Inbox tab. Opens are not tracked.
+                {notif
+                  ? `Keep it short (${(lang === "fr" ? bodyFr : body).length}/1000). Light formatting works. Learners cannot reply to a notification.`
+                  : "Light formatting: **bold**, *italic*, [text](https://link), lines starting with “- ”. Replies go to arfa_edu@tiblogics.com and the Inbox tab. Opens are not tracked."}
               </p>
             </div>
+            {notif ? (
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_200px]">
+                <TextField
+                  label="Button link"
+                  optional
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  maxLength={500}
+                  placeholder="/learn/tracks or https://..."
+                  hint="A page of the site (/learn/...) or an https:// address."
+                  data-testid="composer-link"
+                />
+                <TextField
+                  label={lang === "fr" ? "Button label (French)" : "Button label"}
+                  optional
+                  value={lang === "fr" ? linkLabelFr : linkLabel}
+                  onChange={(e) => (lang === "fr" ? setLinkLabelFr : setLinkLabel)(e.target.value)}
+                  maxLength={40}
+                  placeholder={lang === "fr" ? "Voir le parcours" : "See the track"}
+                />
+              </div>
+            ) : null}
+            {tooLong ? <p className="font-dm text-[12.5px] text-[var(--a-danger)]">A notification title has at most 140 characters and the text at most 1,000.</p> : null}
           </div>
         </Section>
 
@@ -545,9 +593,13 @@ export function MessageComposer({
                     className="mt-3 font-dm text-[13.5px] leading-relaxed text-[#3b4a52] [&_a]:font-semibold [&_a]:text-[#C2560E] [&_p+p]:mt-2.5 [&_ul]:mt-2 [&_ul]:list-disc [&_ul]:pl-5"
                     dangerouslySetInnerHTML={{ __html: html }}
                   />
-                  {viaInbox ? (
+                  {notif && linkUrl.trim() ? (
                     <div className="mt-4 text-center">
-                      <span className="inline-block rounded-full bg-gradient-to-r from-[#F47C4C] to-[#F9A738] px-5 py-2 font-dm text-[12.5px] font-extrabold text-[#131A1B]">Open my Inbox →</span>
+                      <span className="inline-block rounded-full bg-gradient-to-r from-[#F47C4C] to-[#F9A738] px-5 py-2 font-dm text-[12.5px] font-extrabold text-[#131A1B]">{((lang === "fr" ? linkLabelFr || linkLabel : linkLabel) || "Open")} →</span>
+                    </div>
+                  ) : viaInbox ? (
+                    <div className="mt-4 text-center">
+                      <span className="inline-block rounded-full bg-gradient-to-r from-[#F47C4C] to-[#F9A738] px-5 py-2 font-dm text-[12.5px] font-extrabold text-[#131A1B]">{notif ? "Open my notifications" : "Open my Inbox"} →</span>
                     </div>
                   ) : null}
                   {kind === "marketing" ? (
@@ -570,7 +622,15 @@ export function MessageComposer({
                   className="mt-2 font-dm text-[13.5px] leading-relaxed text-[var(--a-ink-2)] [&_a]:font-semibold [&_a]:text-[var(--a-blue)] [&_a]:underline [&_p+p]:mt-2.5 [&_ul]:mt-2 [&_ul]:list-disc [&_ul]:pl-5"
                   dangerouslySetInnerHTML={{ __html: html }}
                 />
-                <div className="mt-3 rounded-xl border border-dashed border-[var(--a-border-strong)] px-3 py-2 font-dm text-[12px] text-[var(--a-ink-3)]">Reply box</div>
+                {notif ? (
+                  linkUrl.trim() ? (
+                    <span className="mt-3 inline-block rounded-full bg-[var(--a-navy)] px-4 py-1.5 font-dm text-[12.5px] font-bold text-white">
+                      {(lang === "fr" ? linkLabelFr || linkLabel : linkLabel) || "Open"}
+                    </span>
+                  ) : null
+                ) : (
+                  <div className="mt-3 rounded-xl border border-dashed border-[var(--a-border-strong)] px-3 py-2 font-dm text-[12px] text-[var(--a-ink-3)]">Reply box</div>
+                )}
               </div>
               {!viaInbox ? <p className="mt-2 font-dm text-[12px] text-[var(--a-ink-3)]">In-app Inbox is off for this message.</p> : null}
             </div>
@@ -580,20 +640,23 @@ export function MessageComposer({
 
       <Dialog
         open={confirm}
-        onClose={() => setConfirm(false)}
+        onClose={() => {
+          setConfirm(false);
+          setAllOk(false);
+        }}
         title={when === "later" ? "Schedule this message?" : count === 1 ? "Send this message?" : `Send to ${count} learners?`}
         icon={when === "later" ? CalendarClock : Send}
         description={
           <>
-            <strong>{preview?.label}</strong>. {kind === "marketing" ? "Marketing" : "Service"} message by{" "}
-            {[viaEmail && "email", viaInbox && "in-app Inbox"].filter(Boolean).join(" and ")}
+            <strong>{preview?.label}</strong>. {kind === "marketing" ? "Marketing" : "Service"} {notif ? "notification" : "message"} by{" "}
+            {[viaEmail && "email", viaInbox && (notif ? "in-app notification" : "in-app Inbox")].filter(Boolean).join(" and ")}
             {when === "later" ? `, on ${new Date(at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}` : ""}.
           </>
         }
         footer={
           <>
             <Button variant="ghost" onClick={() => setConfirm(false)} disabled={busy === "send"}>Cancel</Button>
-            <Button variant="primary" loading={busy === "send"} onClick={send} data-testid="composer-confirm">
+            <Button variant="primary" loading={busy === "send"} disabled={audience.type === "all" && !allOk} onClick={send} data-testid="composer-confirm">
               {when === "later" ? "Schedule" : "Send now"}
             </Button>
           </>
@@ -610,6 +673,15 @@ export function MessageComposer({
           </div>
         </dl>
         {frStarted ? null : <p className="mt-3 font-dm text-[12.5px] text-[var(--a-ink-3)]">No French version: French-speaking learners get the English text.</p>}
+        {audience.type === "all" ? (
+          <label className="mt-3 flex items-start gap-2 rounded-[10px] border border-[var(--a-warn)] bg-[var(--a-warn-bg,#FFF7E6)] p-3 font-dm text-[13px] text-[var(--a-ink)]">
+            <input type="checkbox" checked={allOk} onChange={(e) => setAllOk(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--a-blue)]" data-testid="confirm-all" />
+            <span>
+              I confirm this {notif ? "notification" : "message"} goes to <strong>all {count} learners</strong>
+              {viaEmail ? `, by email${viaInbox ? " and in-app" : ""}` : " in-app"}.
+            </span>
+          </label>
+        ) : null}
       </Dialog>
 
       <Dialog
@@ -704,6 +776,7 @@ function AudiencePicker({ audience, setAudience, context }: { audience: Composer
         value={mode}
         onChange={(v) => {
           if (v === "segment") setAudience({ type: "segment", segment: {} });
+          else if (v === "all") setAudience({ type: "all" });
           else if (v === "one") setAudience({ type: "one", studentId: "", label: "" });
           else if (audience.type !== "ids") setAudience({ type: "ids", ids: [] });
         }}
@@ -711,8 +784,16 @@ function AudiencePicker({ audience, setAudience, context }: { audience: Composer
           { value: "one", label: "One learner" },
           ...(audience.type === "ids" ? [{ value: "ids", label: `Selection (${audience.ids.length})` }] : []),
           { value: "segment", label: "Segment" },
+          { value: "all", label: "All learners" },
         ]}
       />
+
+      {audience.type === "all" ? (
+        <p className="mt-3 flex items-center gap-2 font-dm text-[13px] text-[var(--a-ink-2)]" data-testid="audience-all">
+          <Users size={15} className="text-[var(--a-ink-3)]" aria-hidden />
+          Every learner account. Blocked and deleted accounts are never included; marketing skips learners who unsubscribed. You confirm the count before sending.
+        </p>
+      ) : null}
 
       {audience.type === "one" ? (
         <div className="relative mt-3">

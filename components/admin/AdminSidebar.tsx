@@ -152,7 +152,9 @@ function SidebarBody({
       ? counts.appointments
       : href === "/admin_pro/service-requests"
         ? counts.serviceRequests
-        : undefined;
+        : href === "/admin_pro/communications/support" || href === "/admin_pro/communications"
+          ? counts.support || undefined
+          : undefined;
 
   return (
     <div className="a-sidebar flex h-full flex-col bg-[var(--a-navy-deep)] text-white">

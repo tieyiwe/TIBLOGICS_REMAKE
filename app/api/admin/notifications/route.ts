@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/require-admin";
 import { listLimit } from "@/lib/admin/list-limit";
 import { prisma } from "@/lib/prisma";
+import { currentStaff } from "@/lib/admin/command-center/guard";
+import { notificationsFor } from "@/lib/admin/command-center/pm";
+import { hasPermission, PERM_COMMAND_CENTER, PERM_FINANCE } from "@/lib/admin/command-center/permissions";
 
 export async function GET(req: NextRequest) {
   const authErr = await requireAdmin();
@@ -42,7 +45,7 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
-  const items = [
+  const items: Array<{ id: string; type: string; title: string; subtitle: string; href: string; createdAt: Date }> = [
     ...appointments.map(a => ({
       id: `appt-${a.id}`, type: "appointment" as const,
       title: `New appointment — ${a.firstName} ${a.lastName}`,
@@ -78,7 +81,31 @@ export async function GET(req: NextRequest) {
       href: "/admin_pro/waitlist",
       createdAt: w.createdAt,
     })),
-  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  ];
+
+  // Command Center: this person's assignments, mentions, due dates and budget
+  // alerts. Task entries need command_center; budget alerts need finance.
+  const staff = await currentStaff();
+  if (staff) {
+    const user = staff.session.user;
+    const pm = hasPermission(user, PERM_COMMAND_CENTER);
+    const fin = hasPermission(user, PERM_FINANCE);
+    if (pm || fin) {
+      for (const n of await notificationsFor(staff.id, 30)) {
+        const isBudget = n.kind === "budget";
+        if (isBudget ? !fin : !pm) continue;
+        items.push({
+          id: `pm-${n.id}`,
+          type: isBudget ? "finance" : "task",
+          title: n.title,
+          subtitle: n.body ?? (isBudget ? "Finance" : "Command Center"),
+          href: n.href,
+          createdAt: n.createdAt,
+        });
+      }
+    }
+  }
+  items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return NextResponse.json({ items, total: items.length });
 }

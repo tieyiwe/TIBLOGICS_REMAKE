@@ -25,6 +25,7 @@ import { newLessonsByTrack } from "@/lib/learn/track-updates";
 import TeamDashboardCard from "@/components/learn/team/TeamDashboardCard";
 import YoureInBanner from "@/components/learn/join/YoureInBanner";
 import PendingEnrollmentCard from "@/components/learn/join/PendingEnrollmentCard";
+import InstallHint from "@/components/learn/pwa/InstallHint";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -109,6 +110,8 @@ export default async function LearnDashboard({ searchParams }: { searchParams: P
         <h1 className="text-2xl font-black text-[var(--ink)]">
           {t(started.length > 0 ? "learn.dash.welcomeBack" : "learn.dash.welcome", { name: student.name.split(" ")[0] })}
         </h1>
+        {/* First visit: a quiet link to install the app (nothing once installed). */}
+        {started.length === 0 && <InstallHint />}
         {pending && (
           <p role="status" className="mt-2 text-xs text-[var(--ink3)]">
             {t("common.translationPending")}

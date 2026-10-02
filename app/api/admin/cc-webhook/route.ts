@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { checkRateLimit, secretEquals } from "@/lib/require-admin";
+import { ensurePmTables } from "@/lib/admin/command-center/db";
 
 async function getWebhookToken(): Promise<string | null> {
   const setting = await prisma.adminSettings.findUnique({ where: { key: "cc_webhook_token" } });
@@ -31,6 +32,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // The Command Center added columns to Project/ProjectTask at runtime.
+    await ensurePmTables();
     const body = await req.json();
     const updates = body.action === "batch" ? body.updates : [body];
 
@@ -145,7 +148,7 @@ export async function POST(req: NextRequest) {
           .filter((id): id is string => id !== null);
         if (taskIds.length) {
           writes.push(
-            prisma.projectTask.updateMany({ where: { id: { in: taskIds } }, data: { done: true } }),
+            prisma.projectTask.updateMany({ where: { id: { in: taskIds } }, data: { done: true, status: "done", completedAt: new Date() } }),
           );
         }
       }

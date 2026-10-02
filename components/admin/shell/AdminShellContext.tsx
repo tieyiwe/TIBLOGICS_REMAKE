@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { usePathname } from "next/navigation";
 import { rememberRecent } from "./CommandPalette";
 
-export type NotifType = "appointment" | "contact" | "service_request" | "partnership" | "waitlist";
+export type NotifType = "appointment" | "contact" | "service_request" | "partnership" | "waitlist" | "task" | "finance";
 export type NotifItem = { id: string; type: NotifType; title: string; subtitle: string; href: string; createdAt: string };
 
 type ShellState = {
@@ -16,7 +16,7 @@ type ShellState = {
   setPaletteOpen: (v: boolean) => void;
   notifications: NotifItem[];
   /** Cheap nav badges derived from the notifications feed (pending, last 7 days). */
-  counts: { appointments: number; serviceRequests: number };
+  counts: { appointments: number; serviceRequests: number; support: number };
 };
 
 const COLLAPSE_KEY = "tib.admin.sidebarCollapsed";
@@ -34,6 +34,8 @@ export function AdminShellProvider({ children }: { children: ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotifItem[]>([]);
+  // Learner support requests waiting for the team (0 for staff without learner access).
+  const [supportWaiting, setSupportWaiting] = useState(0);
 
   useEffect(() => {
     try {
@@ -61,6 +63,10 @@ export function AdminShellProvider({ children }: { children: ReactNode }) {
           const data = await res.json();
           setNotifications(data.items ?? []);
         }
+      } catch {}
+      try {
+        const res = await fetch("/api/admin/communications/support/count", { cache: "no-store" });
+        if (res.ok && alive) setSupportWaiting(Math.max(0, Number((await res.json()).waiting) || 0));
       } catch {}
     }
     load();
@@ -93,8 +99,9 @@ export function AdminShellProvider({ children }: { children: ReactNode }) {
     () => ({
       appointments: notifications.filter((n) => n.type === "appointment").length,
       serviceRequests: notifications.filter((n) => n.type === "service_request").length,
+      support: supportWaiting,
     }),
-    [notifications],
+    [notifications, supportWaiting],
   );
 
   const value = useMemo<ShellState>(

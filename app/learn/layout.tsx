@@ -19,6 +19,12 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { themeColor: "#1B3A6B" };
 
+// Chrome, Edge and Samsung Internet can fire "beforeinstallprompt" before
+// React hydrates. Keep it from the first moment for our install buttons
+// (lib/learn/pwa/platform.ts reads window.__tibInstallPrompt).
+const INSTALL_PROMPT_BOOT =
+  'addEventListener("beforeinstallprompt",function(e){e.preventDefault();window.__tibInstallPrompt=e;dispatchEvent(new Event("tib-install-ready"))});';
+
 // Bare shell. The member area supplies its own chrome in (member)/layout.tsx;
 // the auth pages (login/signup) are full-bleed and need no nav.
 // Reading preferences (components/a11y/ReadingPrefsPanel): the inline script
@@ -29,6 +35,7 @@ export default function LearnRootLayout({ children }: { children: React.ReactNod
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html: READING_PREFS_BOOT }} />
+      <script dangerouslySetInnerHTML={{ __html: INSTALL_PROMPT_BOOT }} />
       <style>{`:root{--rp-font-atkinson:${atkinson.style.fontFamily};--rp-font-dyslexic:${openDyslexic.style.fontFamily}}`}</style>
       <span hidden className={`${atkinson.className} ${openDyslexic.className}`} />
       <ReadingPrefsApplier />

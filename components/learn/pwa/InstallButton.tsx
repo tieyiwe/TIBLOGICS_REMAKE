@@ -1,70 +1,27 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Download } from "lucide-react";
 import { useT } from "@/lib/i18n/client";
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt(): Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
-type W = Window & { __tibInstallPrompt?: BeforeInstallPromptEvent };
-type Nav = Navigator & { standalone?: boolean; getInstalledRelatedApps?: () => Promise<unknown[]> };
+import { installNow, useInstallPlatform } from "@/lib/learn/pwa/platform";
+import { IconText, hintKey, offersInstall } from "./InstallSteps";
 
 /**
- * "Install app" button in the ARFA nav. Visible only when this browser can
- * install ARFA and it is not installed yet (and never inside the installed
- * app). Opens the browser's install dialog, or short instructions on
- * iPhone/iPad and Safari on Mac. Shares the "installed" flag with
- * InstallPrompt and the account settings card.
+ * "Install app" in the ARFA nav (lib/learn/pwa/platform.ts decides how).
+ * Never shown in the installed app or once ARFA is installed.
+ *  icon  the nav button: the browser's install dialog where there is one;
+ *        on iPhone/iPad, Safari on Mac and Firefox on Android a short popover
+ *        with the one step and a link to the full guide. Hidden elsewhere so
+ *        the nav never nags.
+ *  row   the account menu rows: the install dialog, or /learn/install with
+ *        the steps for this browser (every browser that can install).
  */
 export default function InstallButton({ variant = "icon" }: { variant?: "icon" | "row" }) {
   const t = useT();
-  const [mode, setMode] = useState<"prompt" | "ios" | "mac" | null>(null);
+  const env = useInstallPlatform();
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const nav = navigator as Nav;
-    if (window.matchMedia("(display-mode: standalone)").matches || nav.standalone === true) return;
-    try {
-      if (localStorage.getItem("arfa-installed") === "1") return;
-    } catch {
-      /* ignore */
-    }
-    let cancelled = false;
-    const decide = async () => {
-      try {
-        if (((await nav.getInstalledRelatedApps?.()) ?? []).length > 0) return;
-      } catch {
-        /* not supported */
-      }
-      if (cancelled) return;
-      if ((window as W).__tibInstallPrompt) return setMode("prompt");
-      const ua = navigator.userAgent;
-      const ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-      const safari = /Safari/.test(ua) && !/Chrome|CriOS|FxiOS|EdgiOS|Edg\//.test(ua);
-      if (ios && safari) setMode("ios");
-      else if (safari && /Macintosh/.test(ua)) setMode("mac");
-    };
-    const onReady = () => void decide();
-    const onInstalled = () => {
-      try {
-        localStorage.setItem("arfa-installed", "1");
-      } catch {
-        /* ignore */
-      }
-      setMode(null);
-    };
-    window.addEventListener("tib-install-ready", onReady);
-    window.addEventListener("appinstalled", onInstalled);
-    void decide();
-    return () => {
-      cancelled = true;
-      window.removeEventListener("tib-install-ready", onReady);
-      window.removeEventListener("appinstalled", onInstalled);
-    };
-  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -80,55 +37,54 @@ export default function InstallButton({ variant = "icon" }: { variant?: "icon" |
     };
   }, [open]);
 
-  if (!mode) return null;
+  if (!env || env.platform === "installed" || env.platform === "unsupported") return null;
+  const prompt = env.platform === "prompt";
 
-  async function click() {
-    if (mode !== "prompt") return setOpen((o) => !o);
-    const ev = (window as W).__tibInstallPrompt;
-    if (!ev) return;
-    await ev.prompt();
-    const choice = await ev.userChoice.catch(() => null);
-    (window as W).__tibInstallPrompt = undefined;
-    if (choice?.outcome === "accepted") {
-      try {
-        localStorage.setItem("arfa-installed", "1");
-      } catch {
-        /* ignore */
-      }
-      setMode(null);
-    }
+  if (variant === "row") {
+    const cls = "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-[var(--ink2)] hover:bg-[var(--s2)]";
+    return prompt ? (
+      <button type="button" onClick={() => void installNow()} className={cls} data-testid="install-row">
+        <Download size={16} aria-hidden /> {t("pwa.prompt.title")}
+      </button>
+    ) : (
+      <Link href="/learn/install" className={cls} data-testid="install-row">
+        <Download size={16} aria-hidden /> {t("pwa.prompt.title")}
+      </Link>
+    );
   }
 
-  const label = t("pwa.prompt.install");
+  if (!offersInstall(env)) return null;
+
   return (
     <div ref={wrap} className="relative">
-      {variant === "row" ? (
-        <button
-          type="button"
-          onClick={click}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-[var(--ink2)] hover:bg-[var(--s2)]"
+      <button
+        type="button"
+        onClick={() => (prompt ? void installNow() : setOpen((o) => !o))}
+        aria-expanded={prompt ? undefined : open}
+        aria-haspopup={prompt ? undefined : "dialog"}
+        title={t("pwa.prompt.title")}
+        className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[var(--border)] bg-white px-3 text-xs font-bold text-[var(--ink)] hover:bg-[var(--s2)]"
+        data-testid="install-button"
+        data-platform={env.platform}
+      >
+        <Download size={14} aria-hidden />
+        <span className="hidden sm:inline">{t("pwa.prompt.install")}</span>
+        <span className="sr-only sm:hidden">{t("pwa.prompt.title")}</span>
+      </button>
+      {open && !prompt ? (
+        <div
+          role="dialog"
+          aria-label={t("pwa.prompt.title")}
+          className="absolute right-0 top-full z-50 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-[var(--border)] bg-white p-3 text-xs leading-relaxed text-[var(--ink2)] shadow-lg"
+          data-testid="install-popover"
         >
-          <Download size={16} aria-hidden /> {t("pwa.prompt.title")}
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={click}
-          aria-expanded={mode === "prompt" ? undefined : open}
-          title={t("pwa.prompt.title")}
-          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[var(--border)] bg-white px-3 text-xs font-bold text-[var(--ink)] hover:bg-[var(--s2)]"
-          data-testid="install-button"
-        >
-          <Download size={14} aria-hidden />
-          <span className="hidden sm:inline">{label}</span>
-          <span className="sr-only sm:hidden">{t("pwa.prompt.title")}</span>
-        </button>
-      )}
-      {open && mode !== "prompt" ? (
-        <div role="dialog" className="absolute right-0 top-full z-50 mt-2 w-64 rounded-xl border border-[var(--border)] bg-white p-3 text-xs leading-relaxed text-[var(--ink2)] shadow-lg">
           <p className="font-bold text-[var(--ink)]">{t("pwa.prompt.title")}</p>
-          <p className="mt-1">{mode === "ios" ? t("pwa.prompt.ios") : t("pwa.prompt.mac")}</p>
-          <p className="mt-2 font-semibold text-[var(--ink)]">{mode === "ios" ? t("pwa.prompt.iosHint") : t("pwa.prompt.macHint")}</p>
+          <p className="mt-2 font-semibold text-[var(--ink)]">
+            <IconText text={t(hintKey(env))} />
+          </p>
+          <Link href="/learn/install" onClick={() => setOpen(false)} className="mt-3 inline-block font-bold text-[var(--blue2)] underline underline-offset-2">
+            {t("pwa.install.guide")} →
+          </Link>
         </div>
       ) : null}
     </div>

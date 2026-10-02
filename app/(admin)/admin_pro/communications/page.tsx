@@ -10,6 +10,7 @@ import { adminInbox, type InboxView } from "@/lib/learn/inbox/threads";
 import { plainPreview } from "@/lib/learn/inbox/markdown";
 import { ago, dt } from "../learn/learners/_components/format";
 import { TemplatesPanel } from "./_components/TemplatesPanel";
+import { waitingCount } from "@/lib/learn/support/tickets";
 
 export const dynamic = "force-dynamic";
 
@@ -37,12 +38,13 @@ export default async function CommunicationsPage({ searchParams }: { searchParam
 
   await ensureCommsTables();
   const since30 = new Date(Date.now() - 30 * 86_400_000);
-  const [campaigns, inbox, templates, sent30, emailed1h] = await Promise.all([
+  const [campaigns, inbox, templates, sent30, emailed1h, supportWaiting] = await Promise.all([
     listCampaigns(100),
     adminInbox(view),
     prisma.commsTemplate.findMany({ orderBy: { updatedAt: "desc" }, take: 200 }),
     prisma.commsRecipient.groupBy({ by: ["status"], where: { sentAt: { gte: since30 } }, _count: { _all: true } }),
     prisma.commsRecipient.count({ where: { emailed: true, sentAt: { gte: new Date(Date.now() - 3_600_000) } } }),
+    waitingCount(),
   ]);
   const n = (s: string) => sent30.find((x) => x.status === s)?._count._all ?? 0;
   const delivered30 = n("sent");
@@ -60,6 +62,8 @@ export default async function CommunicationsPage({ searchParams }: { searchParam
         tabs={[
           { label: "Messages", href: tabHref("messages"), count: campaigns.length },
           { label: "Inbox", href: tabHref("inbox"), count: inbox.counts.unread || null },
+          // "Need help?" requests (learners and visitors): their own page.
+          { label: "Support", href: "/admin_pro/communications/support", count: supportWaiting || null },
           { label: "Templates", href: tabHref("templates"), count: templates.length },
         ]}
         activeTab={tabHref(tab)}

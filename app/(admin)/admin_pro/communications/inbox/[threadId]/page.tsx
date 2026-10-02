@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ExternalLink } from "lucide-react";
 import { Badge, Card, PageHeader } from "@/components/admin/ui";
 import { canManageLearners, requireLearnerPage } from "@/lib/learn/account-status/admin-auth";
 import { adminThread } from "@/lib/learn/inbox/threads";
 import { readAccountState } from "@/lib/learn/account-status";
+import { SUPPORT_THREAD_MARK } from "@/lib/learn/support/tickets";
 import { Conversation } from "../../_components/Conversation";
 import { dt } from "../../../learn/learners/_components/format";
 
@@ -18,6 +19,8 @@ export default async function InboxThreadPage({ params }: { params: Promise<{ th
   if (!/^[\w-]{1,64}$/.test(threadId)) notFound();
   const data = await adminThread(threadId, true);
   if (!data) notFound();
+  // "Need help?" requests have their own page (topic, notes, assignee).
+  if (data.thread.campaignId === SUPPORT_THREAD_MARK) redirect(`/admin_pro/communications/support/${threadId}`);
   const { thread, messages, student } = data;
   const state = student ? await readAccountState(student.id) : null;
   const name = student?.name ?? "Learner";
