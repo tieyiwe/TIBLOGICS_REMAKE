@@ -315,6 +315,20 @@ model Project {
   archived         Boolean         @default(false)
   notes            String?
   tasks            ProjectTask[]
+  // Command Center additions (lib/admin/command-center/db.ts adds the columns
+  // at runtime; all nullable or defaulted so existing rows are unchanged).
+  ownerId          String?
+  health           String          @default("on_track")
+  healthNote       String?
+  goals            String?
+  links            Json            @default("[]")
+  progressMode     String          @default("manual")
+  hourlyRateCents  Int?
+  clientName       String?
+  clientEmail      String?
+  prospectId       String?
+  templateKey      String?
+  lastUpdateAt     DateTime?
 
   @@index([category])
   @@index([status])
@@ -351,8 +365,27 @@ model ProjectTask {
   createdAt DateTime  @default(now())
   dueDate   DateTime?
   order     Int       @default(0)
+  // Command Center additions (runtime columns, see lib/admin/command-center/db.ts)
+  status          String    @default("todo") // todo | in_progress | review | done
+  priority        String    @default("none") // none | low | medium | high | urgent
+  assigneeId      String? // "owner" or a Collaborator id
+  description     String?
+  labels          String[]  @default([])
+  parentId        String? // subtask of another ProjectTask
+  startDate       DateTime?
+  estimateMinutes Int?
+  blockedBy       String[]  @default([])
+  recurrence      String? // weekly | monthly
+  completedAt     DateTime?
+  updatedAt       DateTime  @default(now()) @updatedAt
+  createdById     String?
+  milestoneId     String?
+  links           Json      @default("[]")
 
   @@index([projectId])
+  @@index([assigneeId])
+  @@index([parentId])
+  @@index([dueDate])
 }
 
 model NewsletterSubscriber {
@@ -2754,4 +2787,225 @@ model PendingEnrollment {
   updatedAt       DateTime  @default(now())
 
   @@index([completedAt, updatedAt])
+}
+
+// ── Command Center: project management (lib/admin/command-center/db.ts) ─────
+// Created at runtime; keep the two in step. No Prisma relations (the foreign
+// keys live in db.ts): a project's PM rows cascade with it.
+
+model PmMilestone {
+  id          String    @id @default(cuid())
+  projectId   String
+  title       String
+  description String?
+  dueDate     DateTime
+  done        Boolean   @default(false)
+  completedAt DateTime?
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@index([projectId])
+}
+
+model PmComment {
+  id         String    @id @default(cuid())
+  projectId  String
+  taskId     String
+  authorId   String
+  authorName String
+  body       String
+  mentions   String[]  @default([])
+  createdAt  DateTime  @default(now())
+  editedAt   DateTime?
+
+  @@index([taskId])
+}
+
+model PmActivity {
+  id        String   @id @default(cuid())
+  projectId String
+  taskId    String?
+  actorId   String
+  actorName String
+  kind      String
+  summary   String
+  createdAt DateTime @default(now())
+
+  @@index([projectId, createdAt])
+}
+
+model PmNotification {
+  id          String    @id @default(cuid())
+  recipientId String // "owner" or a Collaborator id
+  kind        String
+  title       String
+  body        String?
+  href        String
+  dedupeKey   String?   @unique
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([recipientId, createdAt])
+}
+
+model PmNote {
+  id            String   @id @default(cuid())
+  projectId     String
+  title         String
+  bodyMd        String   @default("")
+  kind          String   @default("note") // note | meeting | spec | decision
+  pinned        Boolean  @default(false)
+  createdById   String
+  createdByName String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now())
+
+  @@index([projectId])
+}
+
+model PmUpdate {
+  id         String   @id @default(cuid())
+  projectId  String
+  authorId   String
+  authorName String
+  health     String
+  progress   Int      @default(0)
+  doneMd     String   @default("")
+  nextMd     String   @default("")
+  blockersMd String   @default("")
+  createdAt  DateTime @default(now())
+
+  @@index([projectId, createdAt])
+}
+
+model PmTimeEntry {
+  id        String    @id @default(cuid())
+  projectId String
+  taskId    String?
+  staffId   String
+  staffName String
+  startedAt DateTime
+  endedAt   DateTime?
+  minutes   Int       @default(0)
+  note      String?
+  createdAt DateTime  @default(now())
+
+  @@index([projectId])
+  @@index([staffId, endedAt])
+}
+
+model PmSavedView {
+  id        String   @id @default(cuid())
+  ownerId   String
+  name      String
+  filters   Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  @@index([ownerId])
+}
+
+model PmPrefs {
+  staffId      String    @id
+  emailDigest  Boolean   @default(true)
+  lastDigestAt DateTime?
+  updatedAt    DateTime  @default(now())
+}
+
+// ── Finance (lib/admin/command-center/db.ts) ────────────────────────────────
+// Amounts are integer minor units in the entry's currency, plus the USD
+// equivalent at the entry's own exchange rate (fxRate = USD per 1 unit).
+
+model FinReceipt {
+  id           String   @id @default(cuid())
+  filename     String
+  mime         String
+  size         Int
+  data         Bytes
+  uploadedById String
+  createdAt    DateTime @default(now())
+}
+
+model FinIncome {
+  id             String    @id @default(cuid())
+  date           DateTime
+  client         String
+  description    String?
+  projectId      String?
+  amountCents    Int
+  currency       String    @default("USD")
+  fxRate         Float     @default(1)
+  amountUsdCents Int
+  taxCents       Int       @default(0)
+  taxUsdCents    Int       @default(0)
+  taxLabel       String?
+  status         String    @default("invoiced") // invoiced | paid | overdue
+  invoiceNumber  String?
+  dueDate        DateTime?
+  paidAt         DateTime?
+  notes          String?
+  createdById    String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now())
+
+  @@index([date])
+  @@index([projectId])
+}
+
+model FinRecurring {
+  id             String   @id @default(cuid())
+  vendor         String
+  category       String
+  description    String?
+  projectId      String?
+  amountCents    Int
+  currency       String   @default("USD")
+  fxRate         Float    @default(1)
+  amountUsdCents Int
+  taxCents       Int      @default(0)
+  taxUsdCents    Int      @default(0)
+  taxLabel       String?
+  paymentMethod  String?
+  interval       String   @default("monthly") // monthly | annual
+  startDate      DateTime
+  nextDate       DateTime
+  active         Boolean  @default(true)
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now())
+}
+
+model FinExpense {
+  id             String   @id @default(cuid())
+  date           DateTime
+  vendor         String
+  category       String
+  description    String?
+  projectId      String?
+  amountCents    Int
+  currency       String   @default("USD")
+  fxRate         Float    @default(1)
+  amountUsdCents Int
+  taxCents       Int      @default(0)
+  taxUsdCents    Int      @default(0)
+  taxLabel       String?
+  paymentMethod  String?
+  receiptId      String?
+  receiptUrl     String?
+  recurringId    String?
+  periodKey      String?
+  notes          String?
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now())
+
+  @@unique([recurringId, periodKey])
+  @@index([date])
+  @@index([projectId])
+  @@index([category, date])
+}
+
+model FinBudget {
+  category        String   @id
+  monthlyUsdCents Int
+  updatedAt       DateTime @default(now())
 }
