@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Download } from "lucide-react";
-import { Button, Select } from "@/components/admin/ui";
+import { Button, buttonClasses, Select } from "@/components/admin/ui";
 import { fmtDay } from "@/lib/admin/command-center/dates";
 import { inputCls } from "../../_components/fields";
 import { PRESETS } from "./range";
@@ -44,9 +44,14 @@ export function RangeBar({ range, exportKind }: { range: { from: string; to: str
           Apply
         </Button>
       </form>
-      <Button size="sm" variant="ghost" icon={Download} href={`/api/admin/finance/export?kind=${exportKind}&from=${range.from}&to=${range.to}`} aria-label={`Download CSV for ${fmtDay(range.from, { withYear: true })} to ${fmtDay(range.to, { withYear: true })}`}>
-        CSV
-      </Button>
+      <a
+        href={`/api/admin/finance/export?kind=${exportKind}&from=${range.from}&to=${range.to}`}
+        download
+        className={buttonClasses("ghost", "sm")}
+        aria-label={`Download CSV for ${fmtDay(range.from, { withYear: true })} to ${fmtDay(range.to, { withYear: true })}`}
+      >
+        <Download size={14} aria-hidden /> CSV
+      </a>
     </div>
   );
 }

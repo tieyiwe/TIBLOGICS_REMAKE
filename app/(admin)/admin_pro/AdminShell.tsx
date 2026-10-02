@@ -8,6 +8,7 @@ import { SessionWrapper } from "@/components/admin/SessionWrapper";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminHeader from "@/components/admin/AdminHeader";
 import { AdminShellProvider } from "@/components/admin/shell/AdminShellContext";
+import { StaffPageView } from "@/components/admin/shell/StaffPageView";
 import { ConfirmProvider, ToastProvider } from "@/components/admin/ui";
 
 // Routes inside the (admin) group that must render WITHOUT the auth guard
@@ -55,6 +56,7 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
           >
             Skip to content
           </a>
+          <StaffPageView />
           <AdminSidebar />
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
             <AdminHeader />

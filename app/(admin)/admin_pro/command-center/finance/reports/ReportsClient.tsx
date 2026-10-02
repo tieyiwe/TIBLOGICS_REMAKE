@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Download, FileSpreadsheet, Landmark, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button, Card, Select, useToast } from "@/components/admin/ui";
+import { Button, buttonClasses, Card, Select, useToast } from "@/components/admin/ui";
 import type { FinanceSettings, MonthTotals } from "@/lib/admin/command-center/finance";
 import { categoryLabel, sourceLabel } from "@/lib/admin/command-center/constants";
 import { fmtUsd, monthLabel } from "@/lib/admin/command-center/money";
@@ -58,9 +58,9 @@ export default function ReportsClient({ year, thisYear, pnl, taxes, settings }: 
         padded={false}
         className="mb-5"
         action={
-          <Button size="sm" icon={Download} href={`/api/admin/finance/export?kind=pnl&year=${year}`}>
-            P&L CSV
-          </Button>
+          <a href={`/api/admin/finance/export?kind=pnl&year=${year}`} download className={buttonClasses("secondary", "sm")}>
+          <Download size={14} aria-hidden /> P&L CSV
+        </a>
         }
       >
         <div className="overflow-x-auto">
@@ -147,15 +147,15 @@ function ExportRow({ year }: { year: number }) {
   return (
     <div className="space-y-3 font-dm text-[13px]">
       <div className="flex flex-wrap gap-2">
-        <Button size="sm" icon={Download} href={`/api/admin/finance/export?kind=income&from=${year}-01-01&to=${year}-12-31`}>
-          Income {year}
-        </Button>
-        <Button size="sm" icon={Download} href={`/api/admin/finance/export?kind=expenses&from=${year}-01-01&to=${year}-12-31`}>
-          Expenses {year}
-        </Button>
-        <Button size="sm" icon={Download} href={`/api/admin/finance/export?kind=pnl&year=${year}`}>
-          P&L {year}
-        </Button>
+        <a href={`/api/admin/finance/export?kind=income&from=${year}-01-01&to=${year}-12-31`} download className={buttonClasses("secondary", "sm")}>
+          <Download size={14} aria-hidden /> Income {year}
+        </a>
+        <a href={`/api/admin/finance/export?kind=expenses&from=${year}-01-01&to=${year}-12-31`} download className={buttonClasses("secondary", "sm")}>
+          <Download size={14} aria-hidden /> Expenses {year}
+        </a>
+        <a href={`/api/admin/finance/export?kind=pnl&year=${year}`} download className={buttonClasses("secondary", "sm")}>
+          <Download size={14} aria-hidden /> P&L {year}
+        </a>
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[var(--a-ink-3)]">
         By quarter:

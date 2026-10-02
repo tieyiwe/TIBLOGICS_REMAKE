@@ -5,7 +5,8 @@
 //      this very request, not when the cookie is next refreshed;
 //   2. checks the path against lib/admin/access-map.ts (GET = view, writes =
 //      manage, CSV exports also need data.export);
-//   3. records the footprint: page views (throttled), API writes, exports.
+//   3. records the footprint: API writes and exports (page views come from
+//      the admin shell, see /api/admin/team/pageview).
 // Returns a response to send instead, or null to let the request through.
 import { NextResponse, type NextRequest } from "next/server";
 import type { JWT } from "next-auth/jwt";
@@ -62,21 +63,19 @@ export async function staffGate(req: NextRequest, token: JWT, kind: "page" | "ap
   const area = areaOf(path);
   const write = !["GET", "HEAD", "OPTIONS"].includes(method);
 
-  // Footprint (never awaited, never blocks).
-  void import("./footprint")
-    .then((fp) => {
-      if (kind === "page") {
-        // Link prefetches are not visits (Next sends one of these headers).
-        const prefetch =
-          req.headers.has("next-router-prefetch") || req.headers.has("next-router-segment-prefetch") || req.headers.get("purpose") === "prefetch" || req.headers.get("sec-purpose")?.includes("prefetch");
-        if (method === "GET" && !prefetch && d.ok) fp.recordPageView({ staffId, email, path, area, headers: req.headers });
-      } else if (write) {
-        fp.recordApiWrite({ staffId, email, path, method, area, headers: req.headers, allowed: d.ok });
-      } else if (d.ok && isExportPath(path) && !path.startsWith("/api/admin/team/")) {
-        fp.recordExport({ staffId, email, name: typeof token.name === "string" ? token.name : null, path, query: req.nextUrl.search.slice(1), area, headers: req.headers, isOwner: !!token.isOwner });
-      }
-    })
-    .catch(() => {});
+  // Footprint (never awaited, never blocks). Page views are reported by the
+  // admin shell instead (/api/admin/team/pageview): Next strips the router
+  // headers before the proxy runs, so a link prefetch looks like a visit here.
+  if (kind === "api" && path !== "/api/admin/team/pageview") {
+    void import("./footprint")
+      .then((fp) => {
+        if (write) fp.recordApiWrite({ staffId, email, path, method, area, headers: req.headers, allowed: d.ok });
+        else if (d.ok && isExportPath(path) && !path.startsWith("/api/admin/team/")) {
+          fp.recordExport({ staffId, email, name: typeof token.name === "string" ? token.name : null, path, query: req.nextUrl.search.slice(1), area, headers: req.headers, isOwner: !!token.isOwner });
+        }
+      })
+      .catch(() => {});
+  }
 
   if (d.ok) return null;
   if (kind === "api") {

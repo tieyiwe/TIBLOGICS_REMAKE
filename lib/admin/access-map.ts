@@ -91,6 +91,7 @@ export const API_RULES: AccessRule[] = [
   { path: "/api/admin/notifications", key: "__staff__" },
   // Team & Roles: the handlers apply the finer rules (owner, admins, escalation).
   { path: "/api/admin/team", key: "team", write: "team" },
+  { path: "/api/admin/team/pageview", key: "__staff__", write: "__staff__" },
   { path: "/api/admin/collaborators", key: "__admin__" },
   { path: "/api/admin/sync-db", key: "__admin__" },
   { path: "/api/admin/sync-history", key: "command_center" },
