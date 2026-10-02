@@ -41,7 +41,7 @@ export default async function Footer() {
               {/* The network mark is an image; the wordmark is live text so it
                   stays crisp at any size (the old baked-in wordmark had a flaw on the "L"). */}
               <a href="/" className="inline-flex items-center gap-3" aria-label="TIBLOGICS home">
-                <Image src="/logo-mark.png" alt="" width={290} height={173} className="h-14 w-auto" />
+                <Image src="/logo-mark.png" alt="" width={300} height={173} className="h-14 w-auto" />
                 <span className="font-dm text-[1.7rem] font-extrabold leading-none tracking-tight">
                   <span className="text-white">TIB</span>
                   <span className="text-[#F47C20]">LOGICS</span>
