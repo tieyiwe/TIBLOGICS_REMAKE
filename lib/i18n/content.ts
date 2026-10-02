@@ -30,7 +30,7 @@ const TABLE = [
 ];
 
 let ready: Promise<void> | null = null;
-function ensureTable(): Promise<void> {
+export function ensureTable(): Promise<void> {
   ready ??= (async () => {
     for (const sql of TABLE) await prisma.$executeRawUnsafe(sql);
   })().catch((err) => {

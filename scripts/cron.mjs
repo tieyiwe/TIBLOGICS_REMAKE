@@ -66,6 +66,9 @@ const JOBS = {
   // (email and in-app), within COMMS_HOURLY_CAP emails per hour (default
   // 300). Each recipient is claimed before sending; idempotent.
   comms: { path: "/api/cron/comms", suggested: "every 15 minutes" },
+  // One-off, not scheduled: creates every runtime table/column/index so the
+  // development database matches production before publishing on Replit.
+  dbprep: { path: "/api/cron/db-prepare", suggested: "manually, before publishing" },
 };
 
 /**
@@ -98,7 +101,7 @@ if (!secret) {
 console.log(`Target: ${base}`);
 
 const which = (process.argv[2] ?? "all").toLowerCase();
-const names = which === "all" ? Object.keys(JOBS) : [which];
+const names = which === "all" ? Object.keys(JOBS).filter((n) => n !== "dbprep") : [which];
 
 for (const name of names) {
   if (!JOBS[name]) {

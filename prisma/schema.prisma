@@ -2650,3 +2650,15 @@ model CacheVersion {
   version   Int      @default(0)
   updatedAt DateTime @default(now())
 }
+
+/// Machine-translation cache for course, lab, toolkit and article content
+/// (lib/i18n/content.ts). Table created at runtime; keep in step.
+model ContentTranslation {
+  key       String
+  locale    String
+  hash      String
+  value     Json
+  updatedAt DateTime @default(now())
+
+  @@id([key, locale])
+}

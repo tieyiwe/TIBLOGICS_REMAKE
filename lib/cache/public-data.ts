@@ -89,7 +89,7 @@ function dropLocal(tag: CacheTag) {
   for (const [k, e] of S.entries) if (e.tag === tag) S.entries.delete(k);
 }
 
-function ensureTable(): Promise<boolean> {
+export function ensureTable(): Promise<boolean> {
   S.tableReady ??= prisma
     .$executeRawUnsafe(
       `CREATE TABLE IF NOT EXISTS "CacheVersion" ("tag" TEXT NOT NULL PRIMARY KEY, "version" INTEGER NOT NULL DEFAULT 0, "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP)`,
