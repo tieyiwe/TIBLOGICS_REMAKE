@@ -155,7 +155,7 @@ export default function MembersClient({
       />
 
       <Toolbar className="mb-4">
-        <SearchInput value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email or role" label="Search team" />
+        <SearchInput value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email or role" label="Search team" className="basis-full sm:basis-auto" />
         <Segmented
           ariaLabel="Status"
           size="sm"
@@ -293,7 +293,7 @@ function MemberDrawer({ member, roles, viewer, onClose }: { member: MemberRow | 
         ) : undefined
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-6 p-4 sm:p-5">
         {member.owner ? (
           <Notice tone="info" title="Super Admin (owner)">
             The owner has every permission, including the owner-only ones (Admins, security, log retention). This account is locked: nobody can edit,
@@ -578,7 +578,7 @@ function InviteDrawer({ open, roles, viewer, onClose }: { open: boolean; roles: 
       }
     >
       {results ? (
-        <div className="space-y-3">
+        <div className="space-y-3 p-4 sm:p-5">
           {results.map((r) => (
             <div key={r.email} className="rounded-[var(--a-radius-control)] border border-[var(--a-border)] p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -601,7 +601,7 @@ function InviteDrawer({ open, roles, viewer, onClose }: { open: boolean; roles: 
           <p className="font-dm text-[12.5px] text-[var(--a-ink-3)]">Each link works once. They choose their own password when they accept.</p>
         </div>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-5 p-4 sm:p-5">
           <div>
             <label htmlFor="inv-emails" className={lbl}>
               Email addresses

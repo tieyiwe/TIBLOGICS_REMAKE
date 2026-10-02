@@ -199,7 +199,7 @@ export default function RolesClient({ roles, viewer }: { roles: RoleWithMembers[
         }
       >
         {editing ? (
-          <div className="space-y-5">
+          <div className="space-y-5 p-4 sm:p-5">
             <div>
               <label htmlFor="role-name" className="mb-1 block font-dm text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--a-ink-3)]">
                 Name
@@ -237,7 +237,7 @@ export default function RolesClient({ roles, viewer }: { roles: RoleWithMembers[
 
       <Drawer open={!!viewing} onClose={() => setViewing(null)} width={640} title={viewing ? viewing.name : ""}>
         {viewing ? (
-          <div className="space-y-5">
+          <div className="space-y-5 p-4 sm:p-5">
             <p className="font-dm text-[13.5px] text-[var(--a-ink-2)]">{viewing.description}</p>
             <section>
               <h3 className="mb-2 font-syne text-[16px] font-bold text-[var(--a-ink)]">Who has this role</h3>
@@ -280,7 +280,7 @@ export default function RolesClient({ roles, viewer }: { roles: RoleWithMembers[
         }
       >
         {removing ? (
-          <div className="space-y-4">
+          <div className="space-y-4 p-4 sm:p-5">
             <p className="font-dm text-[13.5px] text-[var(--a-ink-2)]">
               {removing.members.length} member{removing.members.length === 1 ? " has" : "s have"} this role. Choose the role they move to. Their own overrides are kept.
             </p>

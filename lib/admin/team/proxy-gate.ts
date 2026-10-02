@@ -66,7 +66,9 @@ export async function staffGate(req: NextRequest, token: JWT, kind: "page" | "ap
   void import("./footprint")
     .then((fp) => {
       if (kind === "page") {
-        const prefetch = req.headers.get("next-router-prefetch") === "1" || req.headers.get("purpose") === "prefetch";
+        // Link prefetches are not visits (Next sends one of these headers).
+        const prefetch =
+          req.headers.has("next-router-prefetch") || req.headers.has("next-router-segment-prefetch") || req.headers.get("purpose") === "prefetch" || req.headers.get("sec-purpose")?.includes("prefetch");
         if (method === "GET" && !prefetch && d.ok) fp.recordPageView({ staffId, email, path, area, headers: req.headers });
       } else if (write) {
         fp.recordApiWrite({ staffId, email, path, method, area, headers: req.headers, allowed: d.ok });

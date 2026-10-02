@@ -27,6 +27,7 @@ import {
   effectiveAccess,
   levelOf,
   presetRole,
+  RANKS,
   validGrant,
   validRevoke,
   withinActor,
@@ -115,15 +116,19 @@ const touchesTeam = (a: Access) => levelOf(a, "team") !== "none";
 
 /**
  * The checks on the access an actor wants to give someone: the Admin role
- * and anything in Team & Roles are the owner's to give, and a non-owner
- * never gives more than they hold.
+ * and Team & Roles management are the owner's to give, and a non-owner
+ * never gives more than they hold: every level raised and every capability
+ * added (compared with `before`, the person's current access) must be one
+ * the actor has. Lowering or removing access is always allowed.
  */
-function checkGrantable(actor: Actor, role: RoleDef, grants: string[], revokes: string[]) {
+function checkGrantable(actor: Actor, role: RoleDef, grants: string[], revokes: string[], before: Access = { levels: {}, caps: [] }) {
   if (actor.isOwner) return;
   if (role.admin) throw new TeamError("Only the owner can make someone an Admin.", 403);
   const eff = effectiveAccess(role.access, grants, revokes);
-  if (levelOf(eff, "team") === "manage") throw new TeamError("Only the owner can grant Team & Roles management.", 403);
-  if (!withinActor(actor, eff)) throw new TeamError("You can only give access you have yourself.", 403);
+  if (levelOf(eff, "team") === "manage" && levelOf(before, "team") !== "manage") throw new TeamError("Only the owner can grant Team & Roles management.", 403);
+  const raised: Access = { levels: {}, caps: eff.caps.filter((c) => !before.caps.includes(c)) };
+  for (const [k, l] of Object.entries(eff.levels)) if (RANKS[l] > RANKS[levelOf(before, k)]) raised.levels[k] = l;
+  if (!withinActor(actor, raised)) throw new TeamError("You can only give access you have yourself.", 403);
 }
 
 interface Target {
@@ -462,7 +467,7 @@ export async function updateMember(actor: Actor, id: string, raw: unknown) {
   const accessChanged = body.roleId !== undefined || body.grants !== undefined || body.revokes !== undefined;
   const { grants, revokes } = cleanOverrides(body.grants ?? beforeEff?.grants ?? [], body.revokes ?? beforeEff?.revokes ?? []);
   if (accessChanged) {
-    checkGrantable(actor, role, grants, revokes);
+    checkGrantable(actor, role, grants, revokes, beforeEff && !beforeEff.isAdmin ? beforeEff.access : { levels: {}, caps: [] });
     // Demoting an Admin is the owner's call too (checkTarget already refuses
     // non-owners on Admins; this covers the owner making the change).
     await prisma.$executeRaw`
