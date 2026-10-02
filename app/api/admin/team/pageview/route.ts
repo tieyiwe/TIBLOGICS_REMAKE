@@ -18,8 +18,10 @@ const Body = z.object({ path: z.string().max(300).regex(/^\/admin_pro(\/[\w\-./%
 export async function POST(req: NextRequest) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "Cross-site request refused" }, { status: 403 });
   const session = await getServerSession(authOptions).catch(() => null);
+  // Staff only: owner, admin or collaborator, never a learner session.
+  const isStaff = !!(session?.user?.isOwner || session?.user?.isAdmin || session?.user?.collaboratorId);
   const u = session?.user;
-  if (!u || u.studentId || !(u.isOwner || u.isAdmin || u.collaboratorId)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!u || u.studentId || !isStaff) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!(await checkRateLimit(`team-pv:${u.email}`, 120, 60_000))) return NextResponse.json({ ok: false }, { status: 429 });
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid path" }, { status: 400 });
