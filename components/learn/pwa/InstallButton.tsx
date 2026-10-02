@@ -75,7 +75,9 @@ export default function InstallButton({ variant = "icon" }: { variant?: "icon" |
         <div
           role="dialog"
           aria-label={t("pwa.prompt.title")}
-          className="absolute right-0 top-full z-50 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-[var(--border)] bg-white p-3 text-xs leading-relaxed text-[var(--ink2)] shadow-lg"
+          // Phones: across the screen under the nav (the button is not at the
+          // edge, so a right-aligned popover would run off the left side).
+          className="fixed inset-x-4 top-[4.5rem] z-50 rounded-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-72 border border-[var(--border)] bg-white p-3 text-xs leading-relaxed text-[var(--ink2)] shadow-lg"
           data-testid="install-popover"
         >
           <p className="font-bold text-[var(--ink)]">{t("pwa.prompt.title")}</p>

@@ -9,7 +9,7 @@ import { Badge, Button, Card, Menu, Tabs, useConfirm, useToast, type BadgeTone }
 import type { ProjectBundle } from "@/lib/admin/command-center/pm";
 import { healthSignals } from "@/lib/admin/command-center/pm-client";
 import { HEALTH, PROJECT_CATEGORIES, PROJECT_PRIORITIES, PROJECT_STATUSES } from "@/lib/admin/command-center/constants";
-import { fmtDay, fmtMinutes, localTodayKey, relativeDay } from "@/lib/admin/command-center/dates";
+import { fmtMinutes, localTodayKey, relativeDay } from "@/lib/admin/command-center/dates";
 import { fmtUsd } from "@/lib/admin/command-center/money";
 import { api, errMsg } from "../../_components/api";
 import { CcShell, emitChanged, useOnCcChange, type ProjectLite } from "../../_components/CcShell";
@@ -271,7 +271,6 @@ function Overview({
   onTab: (t: string) => void;
 }) {
   const p = b.project;
-  const toast = useToast();
   const [healthNote, setHealthNote] = useState(p.healthNote ?? "");
   useEffect(() => setHealthNote(p.healthNote ?? ""), [p.healthNote]);
   const latest = b.updates[0];
@@ -414,23 +413,7 @@ function Overview({
                   From tasks and milestones
                 </label>
               </div>
-              <div className="flex items-center gap-3">
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  step={5}
-                  value={p.progress}
-                  disabled={p.progressMode === "auto"}
-                  onChange={(e) => setProgressLocal(e)}
-                  onMouseUp={(e) => void patch({ progress: Number((e.target as HTMLInputElement).value) })}
-                  onKeyUp={(e) => void patch({ progress: Number((e.target as HTMLInputElement).value) })}
-                  onTouchEnd={(e) => void patch({ progress: Number((e.target as HTMLInputElement).value) })}
-                  aria-label="Progress"
-                  className="flex-1 accent-[var(--a-blue)] disabled:opacity-50"
-                />
-                <span className="w-10 text-right font-dm text-[13px] font-semibold tabular-nums text-[var(--a-ink)]">{p.progress}%</span>
-              </div>
+              <ProgressSlider value={p.progress} disabled={p.progressMode === "auto"} onCommit={(v) => void patch({ progress: v })} />
               <Progress value={p.progress} color={p.color} className="mt-2" />
             </div>
           </div>
@@ -457,16 +440,31 @@ function Overview({
     </div>
   );
 
-  function setProgressLocal(e: React.ChangeEvent<HTMLInputElement>) {
-    const v = Number(e.target.value);
-    // Visual only until release; the PATCH goes out on mouse/key/touch up.
-    e.target.setAttribute("aria-valuenow", String(v));
-    void toast;
-    patchLocal(v);
-  }
-  function patchLocal(v: number) {
-    (document.querySelector('[aria-label="Progress"]') as HTMLInputElement | null)?.setAttribute("value", String(v));
-  }
+}
+
+function ProgressSlider({ value, disabled, onCommit }: { value: number; disabled: boolean; onCommit: (v: number) => void }) {
+  const [v, setV] = useState(value);
+  useEffect(() => setV(value), [value]);
+  const commit = () => v !== value && onCommit(v);
+  return (
+    <div className="flex items-center gap-3">
+      <input
+        type="range"
+        min={0}
+        max={100}
+        step={5}
+        value={v}
+        disabled={disabled}
+        onChange={(e) => setV(Number(e.target.value))}
+        onPointerUp={commit}
+        onKeyUp={commit}
+        onBlur={commit}
+        aria-label="Progress"
+        className="flex-1 accent-[var(--a-blue)] disabled:opacity-50"
+      />
+      <span className="w-10 text-right font-dm text-[13px] font-semibold tabular-nums text-[var(--a-ink)]">{v}%</span>
+    </div>
+  );
 }
 
 function Section({ title, md }: { title: string; md: string }) {
@@ -664,4 +662,3 @@ function Milestones({ b, today, reload }: { b: ProjectBundle; today: string; rel
   );
 }
 
-export { fmtDay };

@@ -2,7 +2,7 @@ import { Prisma, type Project, type ProjectTask } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { ensurePmTables } from "./db";
 import { addDays, addMonths, dayToDate, diffDays, keyOf } from "./dates";
-import { STALE_UPDATE_DAYS, TASK_PRIORITIES } from "./constants";
+import { TASK_PRIORITIES } from "./constants";
 import { templateByKey } from "./templates";
 import { PERM_COMMAND_CENTER } from "./permissions";
 import type { Staff } from "./guard";
@@ -246,28 +246,8 @@ export async function recomputeProgress(projectId: string): Promise<number | nul
   return progress;
 }
 
-export interface HealthSignal {
-  kind: "overdue" | "stale" | "milestone";
-  text: string;
-}
-
-export function healthSignals(
-  p: { status: string; createdAt: string | Date; lastUpdateAt: string | Date | null },
-  openTasks: Array<{ dueKey: string | null }>,
-  overdueMilestones: number,
-  today: string,
-): HealthSignal[] {
-  const out: HealthSignal[] = [];
-  if (p.status !== "ACTIVE") return out;
-  const overdue = openTasks.filter((t) => t.dueKey && t.dueKey < today).length;
-  if (overdue) out.push({ kind: "overdue", text: `${overdue} overdue task${overdue === 1 ? "" : "s"}` });
-  if (overdueMilestones) out.push({ kind: "milestone", text: `${overdueMilestones} missed milestone${overdueMilestones === 1 ? "" : "s"}` });
-  const last = keyOf(p.lastUpdateAt ?? p.createdAt);
-  if (last && diffDays(today, last) >= STALE_UPDATE_DAYS) {
-    out.push({ kind: "stale", text: p.lastUpdateAt ? `No update in ${diffDays(today, last)} days` : "No status update yet" });
-  }
-  return out;
-}
+export { healthSignals, type HealthSignal } from "./pm-client";
+import { healthSignals, type HealthSignal } from "./pm-client";
 
 // ── Portfolio ────────────────────────────────────────────────────────────────
 
@@ -1018,8 +998,4 @@ export async function updatesDigest(weeks = 8) {
   });
 }
 
-/** Ids of tasks whose blockers are not done yet (for board badges). */
-export function blockedIds(tasks: TaskDTO[]): Set<string> {
-  const open = new Set(tasks.filter((t) => !t.done).map((t) => t.id));
-  return new Set(tasks.filter((t) => t.blockedBy.some((b) => open.has(b))).map((t) => t.id));
-}
+export { blockedIds } from "./pm-client";
