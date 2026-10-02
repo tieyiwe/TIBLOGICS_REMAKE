@@ -11,55 +11,15 @@ import { renderSlide } from "./slides";
 import { deleteAsset, storeVideoFile } from "./storage";
 import { buildVtt, sceneChapters, timingsFrom } from "./timing";
 import { ttsProvider, type TtsLocale } from "./tts";
-import { normaliseChapters, type Captions, type Chapter } from "./shared";
+import type { Captions } from "./shared";
+import { ASSET_PREFIX, isGeneratedUrl, readVariants, type Variant } from "./variants";
+
+export { isGeneratedUrl } from "./variants";
 
 // One narrated video, end to end: scene script (cached on the plan) ->
 // French translation when needed -> a slide PNG and the AI voice per scene
 // -> ffmpeg -> stored file -> the lesson's link, chapters and captions.
 // Temporary files live under os.tmpdir() and are always removed.
-
-export const ASSET_PREFIX = "/api/learn/video/asset/";
-
-/** A link to a generated video (as opposed to the owner's own YouTube/Vimeo/file). */
-export function isGeneratedUrl(url: string | null | undefined): boolean {
-  return !!url && url.startsWith(ASSET_PREFIX);
-}
-
-export interface Variant {
-  url: string;
-  webm?: string;
-  assetIds: string[];
-  chapters: Chapter[];
-  captions: Captions;
-  durationSec: number;
-  voice: string;
-  provider: string;
-  generatedAt: string;
-}
-
-export type Variants = Partial<Record<TtsLocale, Variant>>;
-
-export function readVariants(v: unknown): Variants {
-  const out: Variants = {};
-  if (!v || typeof v !== "object") return out;
-  for (const l of ["en", "fr"] as const) {
-    const x = (v as Record<string, unknown>)[l] as Partial<Variant> | undefined;
-    if (x && typeof x.url === "string" && isGeneratedUrl(x.url)) {
-      out[l] = {
-        url: x.url,
-        webm: typeof x.webm === "string" && isGeneratedUrl(x.webm) ? x.webm : undefined,
-        assetIds: Array.isArray(x.assetIds) ? x.assetIds.filter((a): a is string => typeof a === "string") : [],
-        chapters: normaliseChapters(x.chapters),
-        captions: (x.captions && typeof x.captions === "object" ? x.captions : {}) as Captions,
-        durationSec: Number(x.durationSec) || 0,
-        voice: String(x.voice ?? ""),
-        provider: String(x.provider ?? ""),
-        generatedAt: String(x.generatedAt ?? ""),
-      };
-    }
-  }
-  return out;
-}
 
 export class NeedsTts extends Error {
   constructor() {

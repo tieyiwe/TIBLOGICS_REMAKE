@@ -56,6 +56,10 @@ export interface VideoPlayerProps {
   lessonId?: string;
   accentColor?: string;
   onWatched?: () => void;
+  /** Files to offer in order (generated videos: MP4, then WebM); the browser plays the first it can. */
+  sources?: Array<{ src: string; type: string }>;
+  /** Language of the voice-over (generated videos); captions in it are not switched on by default. */
+  voiceLang?: CaptionLang;
 }
 
 export default function VideoPlayer({
@@ -69,6 +73,8 @@ export default function VideoPlayer({
   lessonId,
   accentColor = "#F47C20",
   onWatched,
+  sources,
+  voiceLang = "en",
 }: VideoPlayerProps) {
   const t = useT();
   const locale = useLocale();
@@ -110,8 +116,8 @@ export default function VideoPlayer({
   const defaultLang: CaptionLang | null = langs.includes(locale as CaptionLang) ? (locale as CaptionLang) : langs.includes("en") ? "en" : langs[0] ?? null;
   const [lang, setLang] = useState<CaptionLang | null>(defaultLang);
   // On by default when they exist in the learner's language and it is not
-  // English (the voice-over is English); remembered once the learner chooses.
-  const [ccOn, setCcOn] = useState<boolean>(!!defaultLang && defaultLang === locale && locale !== "en");
+  // the voice-over's language; remembered once the learner chooses.
+  const [ccOn, setCcOn] = useState<boolean>(!!defaultLang && defaultLang === locale && locale !== voiceLang);
   const [transcriptOpen, setTranscriptOpen] = useState(false);
 
   useEffect(() => {
@@ -127,7 +133,7 @@ export default function VideoPlayer({
       const chosen = /(?:^|;\s*)tib_lang=([a-z]{2})/.exec(document.cookie)?.[1] as CaptionLang | undefined;
       if (chosen && chosen !== locale && langs.includes(chosen)) {
         setLang(chosen);
-        setCcOn(chosen !== "en");
+        setCcOn(chosen !== voiceLang);
       }
     }
     if (SPEEDS.includes(savedRate) && savedRate !== 1) setRateState(savedRate);
@@ -227,6 +233,13 @@ export default function VideoPlayer({
     const id = window.setTimeout(() => setToast(null), 7000);
     return () => window.clearTimeout(id);
   }, [toast]);
+
+  // Generated videos: when the browser can play none of the files offered
+  // (no error event fires for that), say so instead of a black frame.
+  useEffect(() => {
+    const v = video.current;
+    if (sources?.length && v && !sources.some((x) => v.canPlayType(x.type))) setFailed(true);
+  }, [sources]);
 
   // HLS only where the browser plays it itself (Safari, iOS, Android, newer Chrome).
   useEffect(() => {
@@ -377,7 +390,7 @@ export default function VideoPlayer({
         {native ? (
           <video
             ref={video}
-            src={hlsUnsupported ? undefined : source.src}
+            src={hlsUnsupported || sources?.length ? undefined : source.src}
             preload="metadata"
             playsInline
             className="h-full w-full bg-black"
@@ -410,7 +423,12 @@ export default function VideoPlayer({
             }}
             onError={() => setFailed(true)}
             aria-label={t("video.title", { title })}
-          />
+          >
+            {sources?.map((x, i) => (
+              // The last source failing means none could play.
+              <source key={x.src} src={x.src} type={x.type} onError={i === sources.length - 1 ? () => setFailed(true) : undefined} />
+            ))}
+          </video>
         ) : (
           <iframe
             ref={iframe}

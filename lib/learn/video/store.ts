@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { ensureVideoTables } from "./db";
+import { isGeneratedUrl, readVariants, type Variants } from "./variants";
 import {
   CAPTION_LANGS,
   COVERAGE_BUCKETS,
@@ -28,34 +29,51 @@ export function readCaptions(v: unknown): Captions {
   return out;
 }
 
-export async function getVideoMeta(lessonId: string): Promise<{ chapters: Chapter[]; captions: Captions }> {
+export async function getVideoMeta(lessonId: string): Promise<{ chapters: Chapter[]; captions: Captions; variants: Variants }> {
   try {
     await ensureVideoTables();
     const row = await prisma.lessonVideoMeta.findUnique({ where: { lessonId } });
-    return { chapters: normaliseChapters(row?.chapters), captions: readCaptions(row?.captions) };
+    return { chapters: normaliseChapters(row?.chapters), captions: readCaptions(row?.captions), variants: readVariants(row?.variants) };
   } catch (err) {
     console.error("[learn/video] meta", err);
-    return { chapters: [], captions: {} };
+    return { chapters: [], captions: {}, variants: {} };
   }
 }
 
-/** Everything the lesson page needs for one learner. Null when the lesson has no video. */
+/**
+ * Everything the lesson page needs for one learner. Null when the lesson has
+ * no video. A generated narrated video plays in the learner's language when
+ * that version exists (French learners get the French voice-over); the
+ * owner's own video always wins over generated ones.
+ */
 export async function lessonVideoFor(
   studentId: string,
   lesson: { id: string; videoUrl: string | null },
+  locale: string = "en",
 ): Promise<LessonVideoData | null> {
   if (!lesson.videoUrl) return null;
   const meta = await getVideoMeta(lesson.id);
   const progress = await prisma.videoProgress
     .findUnique({ where: { studentId_lessonId: { studentId, lessonId: lesson.id } } })
     .catch(() => null);
+  const generated = isGeneratedUrl(lesson.videoUrl);
+  const variant = generated ? (locale === "fr" ? meta.variants.fr : undefined) ?? meta.variants.en : undefined;
+  const pick = variant ? { url: variant.url, chapters: variant.chapters, captions: readCaptions(variant.captions) } : { url: lesson.videoUrl, chapters: meta.chapters, captions: meta.captions };
+  const voiceLang = variant ? (variant === meta.variants.fr ? "fr" : "en") : generated ? "en" : undefined;
   return {
-    url: lesson.videoUrl,
-    chapters: meta.chapters,
-    captions: meta.captions,
+    ...pick,
     resumeAt: progress?.positionSec ?? 0,
     coverage: progress?.coverage?.length === COVERAGE_BUCKETS ? progress.coverage : emptyCoverage(),
     watched: !!progress?.watchedAt,
+    ...(generated
+      ? {
+          voiceLang,
+          sources: [
+            { src: pick.url, type: 'video/mp4; codecs="avc1.640029, mp4a.40.2"' },
+            ...(variant?.webm ? [{ src: variant.webm, type: 'video/webm; codecs="vp9, opus"' }] : []),
+          ],
+        }
+      : {}),
   };
 }
 

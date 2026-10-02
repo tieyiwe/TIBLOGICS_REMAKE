@@ -100,7 +100,14 @@ export default function LessonMedia({
             watched={video.watched}
             lessonId={lessonId}
             accentColor={accentColor}
+            sources={video.sources}
+            voiceLang={video.voiceLang}
           />
+          {video.voiceLang && (
+            <p className="mt-2 text-xs text-[var(--ink3)]" data-testid="video-ai-voice">
+              {t("video.aiVoice")}
+            </p>
+          )}
         </div>
       )}
 

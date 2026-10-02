@@ -123,7 +123,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
       : null;
 
   // The lesson video (chapters, captions, the learner's place); null without one.
-  const video = await lessonVideoFor(student.id, lesson).catch(() => null);
+  const video = await lessonVideoFor(student.id, lesson, locale).catch(() => null);
 
   // Flatten for prev/next
   const flat = modules.flatMap((m) => m.lessons.map((l) => l.id));

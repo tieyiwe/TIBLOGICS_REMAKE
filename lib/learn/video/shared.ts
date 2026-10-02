@@ -31,6 +31,10 @@ export interface LessonVideoData {
   /** Parts already seen ("0"/"1" buckets). */
   coverage: string;
   watched: boolean;
+  /** Generated narrated video: the files to offer, best first (MP4 then WebM). */
+  sources?: Array<{ src: string; type: string }>;
+  /** Generated narrated video: the language the AI voice speaks. */
+  voiceLang?: CaptionLang;
 }
 
 export const LIMITS = {
