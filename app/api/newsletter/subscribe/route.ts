@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getT } from "@/lib/i18n/server";
 import prisma from "@/lib/prisma";
-import { isValidEmail, checkRateLimit } from "@/lib/require-admin";
+import { isValidEmail, checkRateLimit, escapeHtml } from "@/lib/require-admin";
 import resend from "@/lib/resend";
 
 const ADMIN_EMAIL = process.env.TIWE_EMAIL || process.env.TITAN_SMTP_USER || "info@tiblogics.com";
 const SITE_URL = (process.env.NEXTAUTH_URL || "https://tiblogics.com").replace(/\/$/, "");
 
-async function notifyAdmin(email: string, firstName: string | null, source: string) {
+async function notifyAdmin(rawEmail: string, rawFirst: string | null, rawSource: string) {
+  // Visitor-supplied text inside an HTML email: escaped, so a sign-up cannot
+  // inject links or markup into the admin's inbox.
+  const email = escapeHtml(rawEmail);
+  const firstName = rawFirst ? escapeHtml(rawFirst) : null;
+  const source = escapeHtml(rawSource.slice(0, 50));
   try {
     await resend.emails.send({
       to: ADMIN_EMAIL,
-      subject: `📬 New AI Times Subscriber — ${email}`,
+      subject: `📬 New AI Times Subscriber — ${rawEmail}`,
       html: `
         <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;">
           <div style="background:linear-gradient(135deg,#1B3A6B,#2251A3);padding:20px 24px;border-radius:12px 12px 0 0;">

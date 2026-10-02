@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { boundedJson } from "@/lib/validate/json";
 import prisma from "@/lib/prisma";
 import { requireAdmin, checkRateLimit } from "@/lib/require-admin";
 
@@ -36,7 +37,8 @@ export async function POST(req: Request) {
         perfScore: score(perfScore),
         uxScore: score(uxScore),
         aiScore: score(aiScore),
-        findings: findings && typeof findings === "object" ? findings : {},
+        // Capped: the scanner's own findings are a few KB.
+        findings: (boundedJson(findings, 100_000) ?? {}) as object,
         aiDescription:
           typeof aiDescription === "string" ? aiDescription.slice(0, 5000) : "",
       },

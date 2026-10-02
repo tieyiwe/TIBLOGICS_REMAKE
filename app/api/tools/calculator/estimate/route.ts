@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { streamChat } from "@/lib/claude";
+import { isAiBudgetError, streamChat } from "@/lib/claude";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isLocale, replyInLanguage, DEFAULT_LOCALE } from "@/lib/i18n/config";
 import { translatorFor } from "@/lib/i18n/server";
@@ -62,6 +62,7 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     console.error("[calculator/estimate]", err instanceof Error ? err.message : err);
+    if (isAiBudgetError(err)) return NextResponse.json({ error: t("calculator.ai.errorUnavailable"), code: "ai_budget" }, { status: 503 });
     return NextResponse.json({ error: t("calculator.ai.errorFailed"), code: "failed" }, { status: 502 });
   }
 }

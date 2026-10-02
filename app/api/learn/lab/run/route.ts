@@ -8,7 +8,7 @@ import { trackOfLab } from "@/lib/learn/track-of";
 import { checkRateLimit } from "@/lib/require-admin";
 import { withinDailyAiBudget } from "@/lib/learn/ai-budget";
 import { getT } from "@/lib/i18n/server";
-import { streamChat } from "@/lib/claude";
+import { isAiBudgetError, streamChat } from "@/lib/claude";
 import { parseConfig } from "@/lib/learn/labs/types";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { localizeLab } from "@/lib/i18n/sources/labs";
@@ -137,6 +137,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error("[POST /api/learn/lab/run]", err);
+    if (isAiBudgetError(err)) return NextResponse.json({ error: t("labs.api.sandboxOff"), code: "ai_budget" }, { status: 503 });
     return NextResponse.json({ error: t("labs.api.sandboxFailed") }, { status: 500 });
   }
 }

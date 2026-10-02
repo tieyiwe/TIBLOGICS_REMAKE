@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { boundedObject } from "@/lib/validate/json";
 import prisma from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/require-admin";
 
@@ -23,7 +24,7 @@ export async function POST(req: Request) {
       data: {
         tool: tool.slice(0, 100),
         sessionId: typeof sessionId === "string" ? sessionId.slice(0, 64) : null,
-        metadata: metadata && typeof metadata === "object" ? metadata : undefined,
+        metadata: (boundedObject(metadata) ?? undefined) as object | undefined,
       },
     });
 

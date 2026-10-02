@@ -42,6 +42,20 @@ function loginAllowed(key: string): Promise<boolean> {
   return checkRateLimit(`login:${key}`, MAX_LOGIN_ATTEMPTS, LOGIN_WINDOW_MS);
 }
 
+/**
+ * Per-address ceiling across all accounts: the per-email limit above does not
+ * stop one machine trying a leaked password list against many emails.
+ * Generous, so a shared office or school network is not locked out.
+ */
+const MAX_LOGINS_PER_IP = 60;
+function ipAllowed(headers: unknown): Promise<boolean> {
+  const h = (headers ?? {}) as Record<string, string | string[] | undefined>;
+  const raw = h["x-forwarded-for"] ?? h["x-real-ip"];
+  const ip = (Array.isArray(raw) ? raw[0] : raw)?.split(",")[0].trim();
+  if (!ip) return Promise.resolve(true);
+  return checkRateLimit(`login-ip:${ip}`, MAX_LOGINS_PER_IP, LOGIN_WINDOW_MS);
+}
+
 /** Clear the counter on success so normal use never trips the limit. */
 function loginSucceeded(key: string): void {
   // Not awaited: the login should not wait on a bookkeeping delete, and a
@@ -126,13 +140,14 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) return null;
 
         const throttleKey = `staff:${credentials.email.toLowerCase().trim()}`;
         // Thrown, not `return null`, so the login page can say "wait 15
         // minutes" instead of a misleading "wrong password".
         if (!(await loginAllowed(throttleKey))) throw new Error("TooManyAttempts");
+        if (!(await ipAllowed(req?.headers))) throw new Error("TooManyAttempts");
 
         // Lazy import so a Prisma binary failure doesn't crash the auth module at load time
         let prisma: Awaited<typeof import("@/lib/prisma")>["prisma"];
@@ -243,6 +258,7 @@ export const authOptions: NextAuthOptions = {
         const attempted = credentials.email.toLowerCase().trim();
         const throttleKey = attempted === OWNER_EMAIL.toLowerCase() ? `staff:${attempted}` : `student:${attempted}`;
         if (!(await loginAllowed(throttleKey))) return null;
+        if (!(await ipAllowed(req?.headers))) return null;
 
         let prisma: Awaited<typeof import("@/lib/prisma")>["prisma"];
         try {
@@ -338,6 +354,10 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ account, profile }) {
       if (account?.provider !== "google") return true;
+      // Google verifies the password; this only bounds how fast one address
+      // can create or open learner accounts through it.
+      const gEmail = String((profile as { email?: string } | undefined)?.email ?? "").toLowerCase();
+      if (gEmail && !(await checkRateLimit(`login-google:${gEmail}`, 20, LOGIN_WINDOW_MS))) return "/learn/login?error=google";
       // A verified Google address signs into (or creates) that learner
       // account. Anything else goes back to the learner login with an error,
       // never to the admin login page.

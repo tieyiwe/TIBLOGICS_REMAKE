@@ -73,7 +73,7 @@ You are done when every door is marked and the register entry shows which open d
     {
       question: "Which governance control does door 30 (backups with a tested restore) provide evidence for?",
       options: [
-        "Business continuity and recovery",
+        "Business continuity and tested data recovery",
         "Fairness and bias testing of the model",
         "Transparency notices shown to users",
         "Vendor contract liability and exit terms",
@@ -98,7 +98,7 @@ You are done when every door is marked and the register entry shows which open d
       question: "Which open door should most clearly block approval of an AI customer-service tool?",
       options: [
         "One customer can read another customer's records by changing an ID",
-        "Error pages show a reference number instead of a full explanation",
+        "Error pages show a reference number instead of a full technical explanation",
         "The audit log is kept for twelve months rather than twenty-four",
         "Two dependencies are a minor version behind the latest release",
       ],
@@ -110,7 +110,7 @@ You are done when every door is marked and the register entry shows which open d
       question: "Doors 28 (no personal data in logs) and 29 (audit trail) can pull in opposite directions. How should governance resolve this?",
       options: [
         "A logging standard stating what is recorded, redacted and kept how long",
-        "Log everything in full, because audit needs outweigh privacy needs",
+        "Log everything in full, because audit needs always outweigh privacy needs",
         "Log nothing at all, because personal data must never be stored",
         "Let each development team decide case by case without a standard",
       ],
@@ -126,7 +126,7 @@ export const GOV_DOORS_QUIZ: SeedQuestion[] = [
     question: "An AI tool was built by a business team using a coding agent that had production credentials. Which control is missing?",
     options: [
       "Environment separation that keeps production secrets away from build tools",
-      "A transparency notice telling customers that AI was used in development",
+      "A transparency notice telling customers that AI was used during development",
       "A bias test on the coding agent's suggestions before they were accepted",
       "An exit clause in the contract with the coding agent's provider",
     ],
@@ -139,7 +139,7 @@ export const GOV_DOORS_QUIZ: SeedQuestion[] = [
     options: [
       "As launch evidence in the approval gate, recorded in the use-case register",
       "As a poster in the office reminding staff that security is important",
-      "As an annual training quiz for every employee across the organisation",
+      "As an annual training quiz for every single employee across the organisation",
       "As a replacement for the risk classification of each AI use case",
     ],
     correctIndex: 0,

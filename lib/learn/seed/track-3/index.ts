@@ -3,6 +3,7 @@ import { spreadAnswer, spreadModule } from "../balance";
 import { TRACK_3_MODULES_1_TO_3 } from "./modules-1-3";
 import { TRACK_3_MODULES_4_TO_6 } from "./modules-4-6";
 import { TRACK_3_CAPSTONE, TRACK_3_FINAL_EXAM, TRACK_3_LABS } from "./assessments";
+import { T3_DOORS_LESSON, T3_DOORS_QUIZ } from "./security-doors";
 
 // Level 3 · Expert. Written to lib/learn/seed/AUTHORING.md and checked by
 // scripts/validate-learn-content.mts before it was added here.
@@ -33,10 +34,13 @@ Skills this track builds also appear in generative AI leadership and AI governan
     "Assess risk, document accountability and run vendor due diligence",
     "Cost AI honestly, measure value against a baseline, and lead adoption",
   ],
-  // Lessons total 710 minutes.
-  estimatedHours: 12,
+  // Lessons total 740 minutes (710 plus the 30-door launch-gate lesson).
+  estimatedHours: 12.5,
   estimatedWeeksAt3Hrs: 5,
-  modules: [...TRACK_3_MODULES_1_TO_3, ...TRACK_3_MODULES_4_TO_6].map(spreadModule),
+  // Module 4 ends with the 30-door launch-gate lesson (appended).
+  modules: [...TRACK_3_MODULES_1_TO_3, ...TRACK_3_MODULES_4_TO_6]
+    .map((m, i) => (i === 3 ? { ...m, lessons: [...m.lessons, T3_DOORS_LESSON], quiz: [...(m.quiz ?? []), ...T3_DOORS_QUIZ] } : m))
+    .map(spreadModule),
   labs: TRACK_3_LABS,
   finalExam: { ...TRACK_3_FINAL_EXAM, questions: TRACK_3_FINAL_EXAM.questions.map(spreadAnswer) },
   capstone: TRACK_3_CAPSTONE,

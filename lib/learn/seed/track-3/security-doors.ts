@@ -73,7 +73,7 @@ You are done when every door in the view is marked and you have sent or schedule
       question: "A delivery team reports 'auth is handled' for a new AI assistant. What evidence best supports that claim?",
       options: [
         "A test where one user tries to read another user's records and fails",
-        "A screenshot of the login page working correctly for the team lead",
+        "A screenshot of the login page working correctly for the delivery lead",
         "A statement from the vendor that their product is secure by design",
         "A list of the AI models used and their published safety ratings",
       ],
@@ -85,7 +85,7 @@ You are done when every door in the view is marked and you have sent or schedule
       question: "Your launch gate only accepts 'all doors green'. What is the likely side effect?",
       options: [
         "Teams tick boxes without testing, so the gate loses its meaning",
-        "Teams launch faster, because the criteria are clear and simple",
+        "Teams launch faster, because the criteria are so clear and simple",
         "Vendors offer discounts to meet the stricter launch standard",
         "The number of doors in the checklist steadily falls over time",
       ],
@@ -97,7 +97,7 @@ You are done when every door in the view is marked and you have sent or schedule
       question: "The same door (secrets in front-end code) fails in three different teams' apps. What is the highest-leverage response?",
       options: [
         "Provide a shared platform control so the mistake is hard to make",
-        "Add a fourth reminder about secrets to the launch checklist",
+        "Add a fourth reminder about secrets to the launch checklist and policy",
         "Ask each team to try harder and report back in a month",
         "Remove the door from the checklist since it keeps failing",
       ],
@@ -109,7 +109,7 @@ You are done when every door in the view is marked and you have sent or schedule
       question: "Where should the 30-door review sit in the delivery process?",
       options: [
         "At the launch decision, where an open door can still stop release",
-        "Six months after launch, once real users have tested the system",
+        "Six months after launch, once real users have tested the whole system",
         "Only after an incident, to explain what went wrong to the board",
         "At the very start, before any requirements have been agreed",
       ],
@@ -125,7 +125,7 @@ export const T3_DOORS_QUIZ: SeedQuestion[] = [
     question: "A vendor's AI agent will be connected to your CRM. Which question most directly tests door 23 (limits on what the model can do)?",
     options: [
       "Which actions can it take alone, and which require human approval?",
-      "Which large language model powers the agent, and in which region?",
+      "Which large language model powers the agent, and in which cloud region?",
       "How many customers already use the agent in your industry today?",
       "How often does the vendor release new features for the agent?",
     ],

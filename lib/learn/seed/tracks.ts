@@ -6,6 +6,7 @@ import { TRACK_1_MODULE_8, TRACK_1_MODULE_8_EXAM } from "./track-1-module-8";
 import { TRACK_1_MODULE_8_LABS } from "./labs-track-1-module-8";
 import { TRACK_1_MODULE_9, TRACK_1_MODULE_9_EXAM } from "./track-1-module-9";
 import { TRACK_1_MODULE_9_LABS } from "./labs-track-1-module-9";
+import { T1_SAFE_USE_LESSON, T1_SAFE_USE_QUIZ } from "./track-1-security";
 import { AI_PRACTITIONER } from "./track-2";
 import { AI_SYSTEMS_EXPERT } from "./track-3";
 import { VIBE_CODING_ENGINEER } from "./track-4";
@@ -22,10 +23,15 @@ import { AI_APPS_AGENTS } from "./track-agents";
 // labs' and exam questions' 1-based module numbers stay valid.
 const AI_FOUNDATIONS: SeedTrack = {
   ...TRACK_1,
-  // 12h of lessons, Module 8's 70 minutes and Module 9 (AI Fluency)'s 85.
-  estimatedHours: 14.5,
+  // 12h of lessons, Module 8's 70 minutes, Module 9 (AI Fluency)'s 85 and
+  // the 20-minute "Safe AI use" lesson at the end of Module 5 (895 in all).
+  estimatedHours: 15,
   estimatedWeeksAt3Hrs: 6,
-  modules: [...TRACK_1.modules, ...TRACK_1_MODULES_3_TO_7, ...TRACK_1_MODULE_8, ...TRACK_1_MODULE_9],
+  modules: [...TRACK_1.modules, ...TRACK_1_MODULES_3_TO_7, ...TRACK_1_MODULE_8, ...TRACK_1_MODULE_9].map((m) =>
+    m.title === "Your Data and Your Privacy"
+      ? { ...m, lessons: [...m.lessons, T1_SAFE_USE_LESSON], quiz: [...(m.quiz ?? []), ...T1_SAFE_USE_QUIZ] }
+      : m,
+  ),
   finalExam: {
     ...TRACK_1_FINAL_EXAM,
     questions: [...TRACK_1_FINAL_EXAM.questions, ...TRACK_1_MODULE_8_EXAM, ...TRACK_1_MODULE_9_EXAM],

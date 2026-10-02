@@ -1,3 +1,4 @@
+import { staffAiLimit } from "@/lib/rate-limit";
 export const maxDuration = 30;
 import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/claude";
@@ -17,6 +18,8 @@ export async function POST(req: NextRequest) {
   // staff account (e.g. one with only the "events" permission) publish.
   const unauth = await requirePermission("*");
   if (unauth) return unauth;
+  const slow = await staffAiLimit("aria-post");
+  if (slow) return slow;
 
   const { platforms, topic, tone, customContent, generate } = await req.json() as {
     platforms: Platform[];

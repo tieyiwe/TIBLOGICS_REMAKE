@@ -3,6 +3,7 @@ import { spreadAnswer, spreadModule } from "../balance";
 import { TRACK_2_MODULES_1_TO_3 } from "./modules-1-3";
 import { TRACK_2_MODULES_4_TO_6 } from "./modules-4-6";
 import { TRACK_2_CAPSTONE, TRACK_2_FINAL_EXAM, TRACK_2_LABS } from "./assessments";
+import { T2_DOORS_LESSON, T2_DOORS_QUIZ } from "./security-doors";
 
 // Level 2 · Intermediate. Written to lib/learn/seed/AUTHORING.md and checked by
 // scripts/validate-learn-content.mts before it was added here.
@@ -33,10 +34,13 @@ Skills this track builds also appear in AI-at-work courses and entry-level AI pr
     "Design an automation with an AI step and a human checkpoint",
     "Handle confidential data, prompt injection and bias responsibly",
   ],
-  // Lessons total 640 minutes.
+  // Lessons total 665 minutes (640 plus the 30-door security lesson).
   estimatedHours: 11,
   estimatedWeeksAt3Hrs: 5,
-  modules: [...TRACK_2_MODULES_1_TO_3, ...TRACK_2_MODULES_4_TO_6].map(spreadModule),
+  // Module 6 ends with the 30-door security lesson (appended).
+  modules: [...TRACK_2_MODULES_1_TO_3, ...TRACK_2_MODULES_4_TO_6]
+    .map((m, i) => (i === 5 ? { ...m, lessons: [...m.lessons, T2_DOORS_LESSON], quiz: [...(m.quiz ?? []), ...T2_DOORS_QUIZ] } : m))
+    .map(spreadModule),
   labs: TRACK_2_LABS,
   finalExam: { ...TRACK_2_FINAL_EXAM, questions: TRACK_2_FINAL_EXAM.questions.map(spreadAnswer) },
   capstone: TRACK_2_CAPSTONE,

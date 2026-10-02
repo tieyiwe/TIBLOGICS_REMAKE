@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
-import { streamClaude } from "@/lib/claude";
+import { aiBudgetBlock, streamClaude } from "@/lib/claude";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { tutorGuard } from "@/lib/learn/tutor/guard";
 import {
@@ -88,6 +88,9 @@ export async function POST(req: NextRequest) {
   if (turns[0]?.role !== "user") turns.shift();
 
   const system = buildSystem(page, profile, thread.summary, locale);
+  // Essential: only the platform's hard AI cap pauses the Tutor.
+  const paused = await aiBudgetBlock("tutor", t("tutor.api.off"));
+  if (paused) return paused;
   const stream = streamClaude("tutor", { system, messages: turns, maxTokens: REPLY_MAX_TOKENS, meta: { studentId: student.id, ref: page.kind } });
   req.signal.addEventListener("abort", () => stream.abort());
 

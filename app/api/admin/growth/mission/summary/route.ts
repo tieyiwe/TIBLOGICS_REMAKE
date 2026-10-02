@@ -1,3 +1,4 @@
+import { staffAiLimit } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
 import { ClaudeRefusal } from "@/lib/claude";
 import { requireGrowthAdmin } from "@/lib/growth/content-auth";
@@ -9,6 +10,8 @@ export const maxDuration = 30;
 export async function POST() {
   const denied = await requireGrowthAdmin();
   if (denied) return denied;
+  const slow = await staffAiLimit("mission-summary");
+  if (slow) return slow;
   try {
     return NextResponse.json(await missionSummary(await getNextActions()));
   } catch (err) {

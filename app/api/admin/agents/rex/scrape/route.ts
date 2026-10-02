@@ -1,3 +1,4 @@
+import { staffAiLimit } from "@/lib/rate-limit";
 export const maxDuration = 30;
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -25,6 +26,8 @@ export async function POST(req: NextRequest) {
   // too, since learners share this NextAuth instance — requireAdmin rejects them.
   const unauth = await requirePermission("agents");
   if (unauth) return unauth;
+  const slow = await staffAiLimit("rex-scrape");
+  if (slow) return slow;
 
   const { leadId } = await req.json();
   if (!leadId) return NextResponse.json({ error: "leadId required" }, { status: 400 });

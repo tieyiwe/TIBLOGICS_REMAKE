@@ -155,7 +155,9 @@ const nextConfig = {
         headers: [{ key: "Cache-Control", value: "no-store, no-cache, must-revalidate" }],
       },
       {
-        source: "/api/:path*",
+        // Generated lesson video files set their own (private, long) caching:
+        // their ids change with every regeneration.
+        source: "/api/:path((?!learn/video/asset/).*)",
         headers: [{ key: "Cache-Control", value: "no-store, no-cache, must-revalidate" }],
       },
       {

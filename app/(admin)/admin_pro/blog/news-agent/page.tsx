@@ -13,6 +13,12 @@ const QUICK_ACTIONS = [
   { label: "Set breaking news", icon: Zap, msg: "Help me set breaking news. What's the biggest AI news today that deserves a breaking alert?" },
 ];
 
+// Titles and headlines come from the model, which writes from public news
+// pages: escaped before they go into the feedback HTML.
+function esc(v: unknown): string {
+  return String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
+}
+
 export default function NewsAgentPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -50,7 +56,7 @@ export default function NewsAgentPage() {
         });
         if (res.ok) {
           const d = await res.json();
-          setActionFeedback(`✅ Post created: "${d.post?.title}" — <a href="/ai-times/${d.post?.slug}" target="_blank" class="underline">View →</a>`);
+          setActionFeedback(`✅ Post created: "${esc(d.post?.title)}" — <a href="/ai-times/${encodeURIComponent(String(d.post?.slug ?? ""))}" target="_blank" class="underline">View →</a>`);
         } else {
           setActionFeedback("❌ Failed to generate post.");
         }
@@ -62,7 +68,7 @@ export default function NewsAgentPage() {
         });
         if (res.ok) {
           const d = await res.json();
-          setActionFeedback(`✅ Post created: "${d.post?.title}" — <a href="/ai-times/${d.post?.slug}" target="_blank" class="underline">View →</a>`);
+          setActionFeedback(`✅ Post created: "${esc(d.post?.title)}" — <a href="/ai-times/${encodeURIComponent(String(d.post?.slug ?? ""))}" target="_blank" class="underline">View →</a>`);
         } else {
           setActionFeedback("❌ Failed to create post.");
         }
@@ -73,7 +79,7 @@ export default function NewsAgentPage() {
           body: JSON.stringify(action.data),
         });
         if (res.ok) {
-          setActionFeedback(`✅ Breaking news set: "${action.data.headline}"`);
+          setActionFeedback(`✅ Breaking news set: "${esc(action.data.headline)}"`);
         } else {
           setActionFeedback("❌ Failed to set breaking news.");
         }

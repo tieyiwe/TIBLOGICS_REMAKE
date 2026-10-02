@@ -7,6 +7,7 @@ import { GOV_MODULE_4 } from "./module-4";
 import { GOV_MODULE_5 } from "./module-5";
 import { GOV_MODULE_6 } from "./module-6";
 import { GOV_CAPSTONE, GOV_FINAL_EXAM, GOV_LABS } from "./assessments";
+import { GOV_DOORS_LESSON, GOV_DOORS_QUIZ } from "./security-doors";
 
 // Specialist track: AI Governance, Risk and Compliance. Written to
 // lib/learn/seed/AUTHORING.md and checked by
@@ -39,8 +40,8 @@ The labs are done on the platform, and the capstone is a full AI governance pack
     "Run vendor due diligence, spot weak contract terms and set governance gates for in-house builds",
     "Set up and run an AI governance programme with clear roles, paired metrics and a realistic 90-day plan",
   ],
-  // Lessons total 639 minutes.
-  estimatedHours: 10.5,
+  // Lessons total 664 minutes (639 plus the 30-door controls lesson).
+  estimatedHours: 11,
   estimatedWeeksAt3Hrs: 4,
   modules: [
     ...GOV_MODULE_1,
@@ -49,7 +50,10 @@ The labs are done on the platform, and the capstone is a full AI governance pack
     ...GOV_MODULE_4,
     ...GOV_MODULE_5,
     ...GOV_MODULE_6,
-  ].map(spreadModule),
+  ]
+    // Module 4 ends with the 30-door controls lesson (appended).
+    .map((m, i) => (i === 3 ? { ...m, lessons: [...m.lessons, GOV_DOORS_LESSON], quiz: [...(m.quiz ?? []), ...GOV_DOORS_QUIZ] } : m))
+    .map(spreadModule),
   labs: GOV_LABS,
   finalExam: { ...GOV_FINAL_EXAM, questions: GOV_FINAL_EXAM.questions.map(spreadAnswer) },
   capstone: GOV_CAPSTONE,

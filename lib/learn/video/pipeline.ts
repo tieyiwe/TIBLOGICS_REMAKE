@@ -64,7 +64,7 @@ export async function ensureScript(lesson: LessonForVideo, wantFr: boolean): Pro
     changed = true;
   }
   if (wantFr && !fr) {
-    fr = await translateScenes(lesson.id, en);
+    fr = await translateScenes(lesson.id, en, { track: lesson.trackTitle, module: lesson.moduleTitle });
     if (fr) changed = true;
   }
   if (changed) {
@@ -124,7 +124,14 @@ export async function generateLessonVideo(lessonId: string, locale: TtsLocale): 
     const total = script.scenes.length;
     const parts = await pool(script.scenes, 3, async (scene, i) => {
       const [png, mp3s] = await Promise.all([
-        renderSlide(scene, { index: i, total, trackTitle: lesson.trackTitle, moduleTitle: lesson.moduleTitle, lessonTitle: script === en ? lesson.title : script.title || lesson.title, locale }),
+        renderSlide(scene, {
+          index: i,
+          total,
+          trackTitle: locale === "fr" ? script.track || lesson.trackTitle : lesson.trackTitle,
+          moduleTitle: locale === "fr" ? script.module || lesson.moduleTitle : lesson.moduleTitle,
+          lessonTitle: locale === "fr" ? script.title || lesson.title : lesson.title,
+          locale,
+        }),
         tts.synthesize(scene.narration, locale),
       ]);
       const slide = path.join(tmp, `s${i}.png`);

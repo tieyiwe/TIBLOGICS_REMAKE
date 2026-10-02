@@ -30,6 +30,9 @@ export interface Scene {
 
 export interface SceneScript {
   title: string;
+  /** The track and module titles in this language (French scripts). */
+  track?: string;
+  module?: string;
   scenes: Scene[];
 }
 
@@ -58,6 +61,8 @@ const SceneSchema = z.object({
 
 const ScriptSchema = z.object({
   title: str(200).min(1),
+  track: str(200).optional(),
+  module: str(200).optional(),
   scenes: z.array(SceneSchema).min(3).max(12),
 });
 
@@ -72,7 +77,7 @@ function normalise(s: SceneScript): SceneScript {
     const code = sc.code ? { ...sc.code, text: sc.code.text.split("\n").slice(0, 14).map((l) => l.slice(0, 90)).join("\n") } : null;
     return { ...sc, layout, title: tidy(sc.title).slice(0, 90), narration: speakable(sc.narration), bullets: sc.bullets.map(tidy), steps: sc.steps.map(tidy), code };
   });
-  return { title: tidy(s.title), scenes };
+  return { title: tidy(s.title), ...(s.track ? { track: tidy(s.track) } : {}), ...(s.module ? { module: tidy(s.module) } : {}), scenes };
 }
 
 /** Plain punctuation, like the other scripts. */
@@ -162,8 +167,12 @@ export function narrationChars(s: SceneScript): number {
 // ── French ──────────────────────────────────────────────────────────────────
 
 /** Flattens the translatable text (code stays as written; prompts are translated). */
-function flatten(s: SceneScript): Record<string, string> {
+function flatten(s: SceneScript, names?: { track: string; module: string }): Record<string, string> {
   const f: Record<string, string> = { title: s.title };
+  if (names) {
+    f.track = names.track;
+    f.module = names.module;
+  }
   s.scenes.forEach((sc, i) => {
     f[`${i}.title`] = sc.title;
     f[`${i}.narration`] = sc.narration;
@@ -188,13 +197,14 @@ function flatten(s: SceneScript): Record<string, string> {
  * of the English, so a regenerated English script is re-translated and an
  * unchanged one is never paid for twice). Null when it cannot be done now.
  */
-export async function translateScenes(lessonId: string, en: SceneScript): Promise<SceneScript | null> {
-  const fields = flatten(en);
+export async function translateScenes(lessonId: string, en: SceneScript, names?: { track: string; module: string }): Promise<SceneScript | null> {
+  const fields = flatten(en, names);
   const fr = await translated(`video-scenes:${lessonId}`, "fr", fields, "wait");
   if (!fr) return null;
   const g = (k: string, d: string) => (typeof fr[k] === "string" && fr[k].trim() ? fr[k] : d);
   return {
     title: g("title", en.title),
+    ...(names ? { track: g("track", names.track), module: g("module", names.module) } : {}),
     scenes: en.scenes.map((sc, i) => ({
       ...sc,
       title: g(`${i}.title`, sc.title),

@@ -79,25 +79,50 @@ export function splitCues(narration: string): string[] {
       out.push(s);
       continue;
     }
-    // Cut into n roughly equal pieces at word boundaries, so no cue is tiny.
-    const n = Math.ceil(s.length / MAX_CUE);
-    const target = s.length / n;
-    const words = s.split(" ");
+    // Prefer clause breaks (after commas), merged while they fit; a clause
+    // still too long is cut into roughly equal pieces at word boundaries.
+    const clauses = s.split(/(?<=[,;])\s+/);
     let cur = "";
-    for (const w of words) {
-      const next = cur ? `${cur} ${w}` : w;
-      if (cur && (next.length > MAX_CUE || cur.length >= target)) {
-        out.push(cur);
-        cur = w;
-      } else cur = next;
+    const flush = () => {
+      if (cur) out.push(cur);
+      cur = "";
+    };
+    for (const c of clauses) {
+      const next = cur ? `${cur} ${c}` : c;
+      if (next.length <= MAX_CUE) {
+        cur = next;
+        continue;
+      }
+      flush();
+      if (c.length <= MAX_CUE) {
+        cur = c;
+        continue;
+      }
+      const n = Math.ceil(c.length / MAX_CUE);
+      const target = c.length / n;
+      for (const w of c.split(" ")) {
+        const nx = cur ? `${cur} ${w}` : w;
+        if (cur && (nx.length > MAX_CUE || cur.length >= target)) {
+          out.push(cur);
+          cur = w;
+        } else cur = nx;
+      }
     }
-    if (cur) out.push(cur);
+    flush();
   }
   return out;
 }
 
 /** The cue text laid out on at most two lines. */
 function cueLines(text: string): string {
+  if (text.length <= MAX_LINE) return text;
+  // Two balanced lines: the break nearest the middle that keeps both short enough.
+  const mid = text.length / 2;
+  let best = -1;
+  for (let i = text.indexOf(" "); i >= 0; i = text.indexOf(" ", i + 1)) {
+    if (i <= MAX_LINE && text.length - i - 1 <= MAX_LINE && (best < 0 || Math.abs(i - mid) < Math.abs(best - mid))) best = i;
+  }
+  if (best > 0) return `${text.slice(0, best)}\n${text.slice(best + 1)}`;
   const lines = wrap(text);
   if (lines.length <= 2) return lines.join("\n");
   // Should not happen after splitCues, but never emit more than two lines.

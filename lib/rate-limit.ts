@@ -229,3 +229,14 @@ export async function clearRateLimit(key: string): Promise<void> {
     // Already handled by the in-memory delete above.
   }
 }
+
+/**
+ * Staff-only AI endpoints (article drafting, agents, briefs): one shared
+ * ceiling per endpoint, so a stuck button, a script or a stolen staff cookie
+ * cannot loop model calls. The platform budget (lib/ai-spend-guard.ts) still
+ * applies on top. Returns a 429 response, or null to go ahead.
+ */
+export async function staffAiLimit(name: string, max = 60, windowMs = 3_600_000): Promise<Response | null> {
+  if (await checkRateLimit(`staff-ai:${name}`, max, windowMs)) return null;
+  return Response.json({ error: "Too many AI requests from the admin. Try again in a few minutes." }, { status: 429 });
+}

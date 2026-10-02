@@ -1,5 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { logAiUsage } from "@/lib/ai-usage";
+import { assertAiBudget, assertAiBudgetCached } from "@/lib/ai-spend-guard";
+
+export { AiBudgetExceeded, isAiBudgetError, assertAiBudget, aiBudgetBlock } from "@/lib/ai-spend-guard";
 
 // The Anthropic client honours ANTHROPIC_BASE_URL (the local e2e mock uses it).
 const anthropic = new Anthropic({
@@ -304,6 +307,9 @@ export async function runClaude(
   task: AiTask,
   req: ClaudeRequest,
 ): Promise<{ text: string; stopReason: string | null; message: Anthropic.Messages.Message }> {
+  // Platform spending caps (lib/ai-spend-guard.ts): throws AiBudgetExceeded
+  // when this task may not run now.
+  await assertAiBudget(task);
   let msg: Anthropic.Messages.Message;
   try {
     msg = await anthropic.messages.stream(buildParams(task, req)).finalMessage();
@@ -325,6 +331,9 @@ export async function runClaude(
  * usual; usage is logged when it finishes.
  */
 export function streamClaude(task: AiTask, req: ClaudeRequest) {
+  // Synchronous, so it can only use the cached spend figure; the streaming
+  // routes also await assertAiBudget(task) before calling this.
+  assertAiBudgetCached(task);
   const stream = anthropic.messages.stream(buildParams(task, req));
   stream.finalMessage().then(
     (msg) => record(task, msg, req.meta),

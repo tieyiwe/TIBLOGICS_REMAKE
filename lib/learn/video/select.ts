@@ -7,7 +7,8 @@ import { extractJson } from "./script";
 // Which lessons get a generated narrated video.
 //
 // Deterministic rules first (cheap, explainable): module introductions,
-// recaps, concept and process lessons, Studio and lab walkthroughs say yes;
+// recaps, and lessons whose title names a concept, process, system, Studio
+// or lab walkthrough say yes;
 // very short lessons, checklists and reference pages say no. Whatever the
 // rules cannot decide goes to a short Haiku classification, cached per lesson
 // content hash so it is asked once per version of the lesson. Staff can
@@ -47,7 +48,6 @@ const REFERENCE = /\b(checklist|cheat ?sheet|glossary|quick reference|reference 
 const RECAP = /\b(recap|summary|wrap[- ]up|review|key takeaways|putting it (all )?together|capstone|what you learned)\b/i;
 const CONCEPT =
   /\b(what (is|are)|how (to|does|do|it works)|why|introduc\w*|overview|understand\w*|walkthrough|step[- ]by[- ]step|workflow|process|pipeline|system|architecture|agents?|studio|lab|build\w*|anatomy|inside|explained|basics|fundamentals|framework|lifecycle|loop|models?)\b/i;
-const HANDS_ON = /```(?:try|prompt|playground)|\b(Studio|lab|Try it now)\b/;
 
 /** The rules' verdict, or decision null when the rules cannot tell. */
 export function ruleDecision(l: PlanLesson): { decision: boolean | null; reason: string } {
@@ -61,7 +61,8 @@ export function ruleDecision(l: PlanLesson): { decision: boolean | null; reason:
   if (l.sortOrder === 0) return { decision: true, reason: "Module introduction." };
   if (l.sortOrder === l.moduleSize - 1 && RECAP.test(l.title)) return { decision: true, reason: "Module recap." };
   if (CONCEPT.test(l.title)) return { decision: true, reason: "Explains a concept, process or system." };
-  if (HANDS_ON.test(l.bodyMd) && words >= 300) return { decision: true, reason: "Hands-on walkthrough (Studio, lab or Try it now)." };
+  // Everything else (most lessons have a "Try it now" task, so that alone
+  // does not decide) is left to the AI check.
   return { decision: null, reason: "" };
 }
 

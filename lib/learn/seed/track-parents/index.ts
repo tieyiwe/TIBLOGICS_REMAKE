@@ -3,6 +3,7 @@ import { spreadAnswer, spreadModule } from "../balance";
 import { PARENTS_MODULES_1_TO_3 } from "./modules-1-3";
 import { PARENTS_MODULES_4_TO_6 } from "./modules-4-6";
 import { PARENTS_CAPSTONE, PARENTS_FINAL_EXAM, PARENTS_LABS } from "./assessments";
+import { PARENTS_DOORS_LESSON, PARENTS_DOORS_QUIZ } from "./security-doors";
 
 // Specialist track for parents and carers. Module 3 teaches the TIBLOGICS
 // In-Story approach at the level the founder has described it publicly;
@@ -32,10 +33,13 @@ It is practical from the first lesson: every lesson has prompts you can run on t
     "Recognise the risks of AI companions and talk about them calmly",
     "Agree a family AI plan with your child and work with their school",
   ],
-  // Lessons total 523 minutes.
-  estimatedHours: 8.75,
+  // Lessons total 545 minutes (523 plus "Keeping your family safe with AI apps").
+  estimatedHours: 9,
   estimatedWeeksAt3Hrs: 5,
-  modules: [...PARENTS_MODULES_1_TO_3, ...PARENTS_MODULES_4_TO_6].map(spreadModule),
+  // Module 4 ends with the family app-safety lesson (appended).
+  modules: [...PARENTS_MODULES_1_TO_3, ...PARENTS_MODULES_4_TO_6]
+    .map((m, i) => (i === 3 ? { ...m, lessons: [...m.lessons, PARENTS_DOORS_LESSON], quiz: [...(m.quiz ?? []), ...PARENTS_DOORS_QUIZ] } : m))
+    .map(spreadModule),
   labs: PARENTS_LABS,
   finalExam: { ...PARENTS_FINAL_EXAM, questions: PARENTS_FINAL_EXAM.questions.map(spreadAnswer) },
   capstone: PARENTS_CAPSTONE,

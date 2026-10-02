@@ -39,7 +39,9 @@ export async function POST(req: NextRequest) {
     const messages = boundChatMessages((await req.json().catch(() => ({})))?.messages);
     if (!messages) return NextResponse.json({ error: t("tools.api.invalidRequest") }, { status: 400 });
 
-    const { streamClaude } = await import("@/lib/claude");
+    const { aiBudgetBlock, streamClaude } = await import("@/lib/claude");
+    const paused = await aiBudgetBlock("chat-advisor", t("tools.api.aiUnavailable"));
+    if (paused) return paused;
 
     const stream = streamClaude("chat-advisor", { system, messages, maxTokens: 1024, meta: { ref: "advisor" } });
 

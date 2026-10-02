@@ -5,7 +5,7 @@ import { denyTrack, requireEntitledStudent } from "@/lib/learn/session";
 import { trackOfLesson } from "@/lib/learn/track-of";
 import { checkRateLimit } from "@/lib/require-admin";
 import { withinDailyAiBudget } from "@/lib/learn/ai-budget";
-import { streamChat } from "@/lib/claude";
+import { isAiBudgetError, streamChat } from "@/lib/claude";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { replyInLanguage } from "@/lib/i18n/config";
 
@@ -70,6 +70,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, response });
   } catch (err) {
     console.error("[POST /api/learn/practice]", err);
+    if (isAiBudgetError(err)) return NextResponse.json({ error: t("learn.api.padOff"), code: "ai_budget" }, { status: 503 });
     return NextResponse.json({ error: t("learn.api.padFailed") }, { status: 502 });
   }
 }

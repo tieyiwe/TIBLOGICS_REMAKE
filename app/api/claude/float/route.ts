@@ -1,7 +1,7 @@
 import { checkRateLimit } from "@/lib/rate-limit";
 export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
-import { streamClaude } from "@/lib/claude";
+import { aiBudgetBlock, streamClaude } from "@/lib/claude";
 import { getLocale } from "@/lib/i18n/server";
 import { replyInLanguage } from "@/lib/i18n/config";
 import { boundChatMessages } from "@/lib/chat-bounds";
@@ -116,6 +116,10 @@ export async function POST(req: NextRequest) {
     const system = language
       ? `${FLOAT_SYSTEM_PROMPT}\n\n== LANGUAGE ==\n${language} Keep the marker [BOOK_APPOINTMENT] and the page paths exactly as written.`
       : FLOAT_SYSTEM_PROMPT;
+
+    // Paused while the platform is over its AI budget (lib/ai-spend-guard.ts).
+    const paused = await aiBudgetBlock("chat-sales", "Tibo is taking a short break. Please email info@tiblogics.com or book a call.");
+    if (paused) return paused;
 
     const stream = streamClaude("chat-sales", { system, messages, maxTokens: 512, meta: { ref: "float" } });
 

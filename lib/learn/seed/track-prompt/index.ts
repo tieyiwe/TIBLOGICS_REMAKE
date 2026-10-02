@@ -3,6 +3,7 @@ import { spreadAnswer, spreadModule } from "../balance";
 import { PROMPT_MODULES_1_TO_3 } from "./modules-1-3";
 import { PROMPT_MODULES_4_TO_6 } from "./modules-4-6";
 import { PROMPT_CAPSTONE, PROMPT_FINAL_EXAM, PROMPT_LABS } from "./assessments";
+import { PROMPT_DOORS_LESSON, PROMPT_DOORS_QUIZ } from "./security-doors";
 
 // Specialist track: becoming a prompt specialist. Replaces the retired
 // "Practical Prompt Engineering" outline and keeps its slug, so waitlist
@@ -36,10 +37,13 @@ Skills this track builds also appear in prompt engineering courses from model pr
     "Apply specialist techniques: few-shot examples, structured outputs, reasoning and self-review, documents and data",
     "Run a versioned, documented prompt library, stay current as models change, and prompt ethically",
   ],
-  // Lessons total 605 minutes.
-  estimatedHours: 10,
+  // Lessons total 630 minutes (605 plus the untrusted-input security lesson).
+  estimatedHours: 10.5,
   estimatedWeeksAt3Hrs: 5,
-  modules: [...PROMPT_MODULES_1_TO_3, ...PROMPT_MODULES_4_TO_6].map(spreadModule),
+  // Module 4 ends with the untrusted-input security lesson (appended).
+  modules: [...PROMPT_MODULES_1_TO_3, ...PROMPT_MODULES_4_TO_6]
+    .map((m, i) => (i === 3 ? { ...m, lessons: [...m.lessons, PROMPT_DOORS_LESSON], quiz: [...(m.quiz ?? []), ...PROMPT_DOORS_QUIZ] } : m))
+    .map(spreadModule),
   labs: PROMPT_LABS,
   finalExam: { ...PROMPT_FINAL_EXAM, questions: PROMPT_FINAL_EXAM.questions.map(spreadAnswer) },
   capstone: PROMPT_CAPSTONE,

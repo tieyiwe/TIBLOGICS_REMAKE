@@ -1,3 +1,4 @@
+import { staffAiLimit } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
@@ -14,6 +15,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const unauth = await requireAdmin();
   if (unauth) return unauth;
+  const slow = await staffAiLimit("appt-brief");
+  if (slow) return slow;
 
   const { id } = await params;
 

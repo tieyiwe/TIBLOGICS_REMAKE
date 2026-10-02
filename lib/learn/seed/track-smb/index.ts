@@ -4,6 +4,7 @@ import { SMB_MODULES_1_TO_3 } from "./modules-1-3";
 import { SMB_MODULES_4_TO_6 } from "./modules-4-6";
 import { AGENTS_LESSON_SMB } from "../agents-2026";
 import { SMB_CAPSTONE, SMB_FINAL_EXAM, SMB_LABS } from "./assessments";
+import { SMB_DOORS_LESSON, SMB_DOORS_QUIZ } from "./security-doors";
 
 // Specialist track for small business owners and managers.
 
@@ -32,12 +33,15 @@ Every lesson has ready-to-use prompts you run on the page with your own business
     "Read your numbers, check your pricing and model what-if scenarios with AI",
     "Plan, measure and lead a 90-day AI rollout with your team",
   ],
-  // Lessons total 625 minutes (600 plus the personal-agents lesson).
-  estimatedHours: 10.5,
+  // Lessons total 650 minutes (600, the personal-agents lesson and the
+  // security lesson "Before you let customers use your AI tool or app").
+  estimatedHours: 11,
   estimatedWeeksAt3Hrs: 6,
   // Module 4 ("Admin and Operations on Autopilot") ends with personal AI agents.
   modules: [...SMB_MODULES_1_TO_3, ...SMB_MODULES_4_TO_6]
     .map((m, i) => (i === 3 ? { ...m, lessons: [...m.lessons, AGENTS_LESSON_SMB] } : m))
+    // Module 6 ends with the security lesson (appended).
+    .map((m, i) => (i === 5 ? { ...m, lessons: [...m.lessons, SMB_DOORS_LESSON], quiz: [...(m.quiz ?? []), ...SMB_DOORS_QUIZ] } : m))
     .map(spreadModule),
   labs: SMB_LABS,
   finalExam: { ...SMB_FINAL_EXAM, questions: SMB_FINAL_EXAM.questions.map(spreadAnswer) },

@@ -1,3 +1,4 @@
+import { auditFromRequest } from "@/lib/admin/audit";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
@@ -32,6 +33,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Invalid id or status" }, { status: 400 });
     }
     const order = await prisma.order.update({ where: { id }, data: { status } });
+    await auditFromRequest("order.status", { type: "order", id, label: order.email ?? null }, { status });
     return NextResponse.json({ order });
   } catch (err) {
     console.error("[admin/orders PATCH]", err);

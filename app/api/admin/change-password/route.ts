@@ -1,13 +1,20 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { requireAdmin, checkRateLimit, secretEquals } from "@/lib/require-admin";
+import { audit } from "@/lib/admin/audit";
 
 export async function POST(req: Request) {
   // Staff only. A bare session check passed here for TIBLOGICS Learn students
   // too, since learners share this NextAuth instance — requireAdmin rejects them.
   const unauth = await requireAdmin();
   if (unauth) return unauth;
+  // This is the OWNER's password. Collaborators (even admins) have their own
+  // password and never need this screen.
+  const session = await getServerSession(authOptions).catch(() => null);
+  if (!session?.user.isOwner) return NextResponse.json({ error: "Only the owner can change this password" }, { status: 403 });
 
   // This endpoint verifies the owner password, so it is a guessing oracle for
   // any account that reaches it. Bound the attempts.
@@ -16,7 +23,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
   }
 
-  const { currentPassword, newPassword } = await req.json();
+  const { currentPassword, newPassword } = await req.json().catch(() => ({}));
 
   // Capped as well as floored: bcrypt only reads the first 72 bytes, so a
   // multi-megabyte string is pure work for the server and no extra strength.
@@ -50,6 +57,7 @@ export async function POST(req: Request) {
     update: { value: hash },
     create: { key: "admin_password_hash", value: hash },
   });
+  await audit(session, "owner.password.change", { type: "owner" });
 
   return NextResponse.json({ success: true });
 }

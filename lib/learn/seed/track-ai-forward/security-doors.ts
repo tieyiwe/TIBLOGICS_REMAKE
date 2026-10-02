@@ -63,7 +63,7 @@ You are done when every AI connection you keep has the narrowest access that wor
       question: "An AI assistant asks for access to 'read, send and delete all email'. You only want it to draft replies. What should you do?",
       options: [
         "Choose narrower access, such as reading and drafting without sending",
-        "Accept it, since the assistant will only use what it actually needs",
+        "Accept it, since the assistant will only ever use what it actually needs",
         "Accept it now and remember to check the settings again next year",
         "Accept it, but tell the assistant in a prompt never to delete email",
       ],
@@ -87,7 +87,7 @@ You are done when every AI connection you keep has the narrowest access that wor
       question: "A colleague asks you to paste the team's API key into a chatbot so it can 'help configure' a tool. What is the safest response?",
       options: [
         "Decline; keys never go into prompts, and use the tool's settings page",
-        "Paste it, but delete the conversation from the history afterwards",
+        "Paste it, but delete the whole conversation from the history afterwards",
         "Paste only half of the key so the chatbot cannot use all of it",
         "Paste it into a private chat window so nobody else can see it",
       ],
@@ -99,7 +99,7 @@ You are done when every AI connection you keep has the narrowest access that wor
       question: "You built a small AI assistant that your whole team will use. What changes for you?",
       options: [
         "You become its owner, so access, keys, limits and recovery are yours",
-        "Nothing, because the AI provider is responsible for all of security",
+        "Nothing, because the AI provider is responsible for all of the security",
         "Only the visual design matters, since colleagues are trusted users",
         "You must rebuild it in a programming language before sharing it",
       ],
@@ -127,7 +127,7 @@ export const FWD_DOORS_QUIZ: SeedQuestion[] = [
     question: "A browser extension promises AI summaries of every page you visit, including internal systems. What should you check before installing?",
     options: [
       "What data it can read and send, and whether your organisation approves it",
-      "Whether its icon matches the colours of your organisation's brand",
+      "Whether its toolbar icon matches the colours of your organisation's own brand",
       "How many languages its summaries can be translated into today",
       "Whether it can also summarise videos as well as written pages",
     ],

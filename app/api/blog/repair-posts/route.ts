@@ -1,3 +1,4 @@
+import { staffAiLimit } from "@/lib/rate-limit";
 export const maxDuration = 300;
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
@@ -57,6 +58,8 @@ category must be exactly one of: breaking, ai-business, tips, tools, case-studie
 export async function POST() {
   const unauth = await requireAdmin();
   if (unauth) return unauth;
+  const slow = await staffAiLimit("repair-posts");
+  if (slow) return slow;
 
   try {
     // Find posts with thin content (placeholder fallback or very short)

@@ -1,3 +1,4 @@
+import { staffAiLimit } from "@/lib/rate-limit";
 export const maxDuration = 60;
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -47,6 +48,8 @@ async function placesLeads(key: string, location: string, industry: string, inst
 export async function POST(req: NextRequest) {
   const unauth = await requirePermission("agents");
   if (unauth) return unauth;
+  const slow = await staffAiLimit("agents-search");
+  if (slow) return slow;
 
   try {
     const { instructions, location, industry, count = 8 } = await req.json();

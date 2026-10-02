@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { secretEquals } from "@/lib/require-admin";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { anonymiseIp } from "@/lib/require-admin";
+import { audit } from "@/lib/admin/audit";
 
 export async function GET() {
   try {
@@ -69,6 +71,7 @@ export async function POST(req: NextRequest) {
     await prisma.adminSettings.create({
       data: { key: "admin_password_hash", value: hash },
     });
+    await audit({ email: "anonymous", name: "Password recovery", role: "anonymous" }, "owner.password.setup", { type: "owner" }, { ip: anonymiseIp(ip) });
 
     return NextResponse.json({ success: true });
   } catch (err) {
@@ -93,6 +96,7 @@ export async function DELETE(req: NextRequest) {
     // correct token here wipes the admin password with no session at all.
     if (secretEquals(resetToken, process.env.RESET_TOKEN)) {
       await prisma.adminSettings.deleteMany({ where: { key: "admin_password_hash" } });
+      await audit({ email: "anonymous", name: "Password recovery", role: "anonymous" }, "owner.password.clear", { type: "owner" }, { via: "RESET_TOKEN", ip: anonymiseIp(ip) });
       return NextResponse.json({ success: true, message: "Password reset. Visit /admin_pro/login to set a new one." });
     }
 
@@ -112,6 +116,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     await prisma.adminSettings.delete({ where: { key: "admin_password_hash" } });
+    await audit({ email: "anonymous", name: "Password recovery", role: "anonymous" }, "owner.password.clear", { type: "owner" }, { via: "current password", ip: anonymiseIp(ip) });
     return NextResponse.json({ success: true, message: "Password reset. Visit /admin_pro/login to set a new one." });
   } catch (err) {
     console.error("[admin/setup DELETE]", err);

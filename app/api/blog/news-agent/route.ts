@@ -1,3 +1,4 @@
+import { staffAiLimit } from "@/lib/rate-limit";
 export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/claude";
@@ -55,6 +56,8 @@ Be concise, proactive, and professional. When drafting newsletters, make them en
 export async function POST(req: NextRequest) {
   const unauth = await requireAdmin();
   if (unauth) return unauth;
+  const slow = await staffAiLimit("news-agent");
+  if (slow) return slow;
 
   try {
     const { messages } = await req.json();

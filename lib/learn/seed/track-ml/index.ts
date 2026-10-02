@@ -7,6 +7,7 @@ import { ML_MODULE_4 } from "./module-4";
 import { ML_MODULE_5 } from "./module-5";
 import { ML_MODULE_6 } from "./module-6";
 import { ML_CAPSTONE, ML_FINAL_EXAM, ML_LABS } from "./assessments";
+import { ML_DOORS_LESSON, ML_DOORS_QUIZ } from "./security-doors";
 
 // Specialist track: a vendor-neutral technical foundation in how AI and
 // machine learning work. Covers, in original words and examples, the ground
@@ -39,8 +40,8 @@ Lessons include small interactive demos you can edit, prompts you run on the pag
     "Choose a foundation model, decide between prompting, retrieval and fine-tuning, estimate running cost and plan a monitored launch with a human in the loop",
     "Assess an AI system for fairness, privacy and security risks, and outline proportionate governance using risk tiers and recognised frameworks",
   ],
-  // Lessons total 659 minutes.
-  estimatedHours: 11,
+  // Lessons total 684 minutes (659 plus the pipeline security lesson).
+  estimatedHours: 11.5,
   estimatedWeeksAt3Hrs: 5,
   modules: [
     ...ML_MODULE_1,
@@ -49,7 +50,10 @@ Lessons include small interactive demos you can edit, prompts you run on the pag
     ...ML_MODULE_4,
     ...ML_MODULE_5,
     ...ML_MODULE_6,
-  ].map(spreadModule),
+  ]
+    // Module 6 ends with the pipeline security lesson (appended).
+    .map((m, i) => (i === 5 ? { ...m, lessons: [...m.lessons, ML_DOORS_LESSON], quiz: [...(m.quiz ?? []), ...ML_DOORS_QUIZ] } : m))
+    .map(spreadModule),
   labs: ML_LABS,
   finalExam: { ...ML_FINAL_EXAM, questions: ML_FINAL_EXAM.questions.map(spreadAnswer) },
   capstone: ML_CAPSTONE,

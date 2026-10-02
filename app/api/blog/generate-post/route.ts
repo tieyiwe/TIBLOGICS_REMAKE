@@ -1,3 +1,4 @@
+import { staffAiLimit } from "@/lib/rate-limit";
 export const maxDuration = 120;
 import { translateArticleSoon } from "@/lib/i18n/sources/blog";
 import { NextRequest, NextResponse } from "next/server";
@@ -25,6 +26,8 @@ export async function POST(req: NextRequest) {
   // TIBLOGICS name. Its only real caller is the admin News Agent page.
   const unauth = await requireAdmin();
   if (unauth) return unauth;
+  const slow = await staffAiLimit("blog-generate");
+  if (slow) return slow;
 
   try {
     const body = await req.json();

@@ -101,7 +101,7 @@ You are done when every door is marked, each Needs work has a date agreed with y
         "Ask for specific evidence, such as a test or a setting, for each door",
         "Accept it, since agencies are responsible for any problems anyway",
         "Ask the chatbot itself whether the app has any security problems",
-        "Delay the launch indefinitely until you can learn to code yourself",
+        "Delay the launch indefinitely until you can learn to write code yourself",
       ],
       correctIndex: 0,
       explanation:
@@ -127,7 +127,7 @@ export const SMB_DOORS_QUIZ: SeedQuestion[] = [
     question: "Customer photos uploaded to your app open for anyone who has the link. What should you ask your developer to change?",
     options: [
       "Make the storage private, with links that only work briefly for the owner",
-      "Give the photos longer file names so that the links are harder to guess",
+      "Give the photos much longer file names so that the links are harder to guess",
       "Ask customers to upload smaller photos so that they take less space",
       "Add a note telling customers not to share their links with anyone",
     ],

@@ -87,7 +87,7 @@ You are done when the prompt treats outside text as data, any action it can trig
       question: "Your prompt wraps customer emails in <email> tags and says to treat them as data. Why do you still need limits on what the model can do?",
       options: [
         "Delimiters help but cannot guarantee the model ignores injected text",
-        "Tags are removed by most models before the prompt is processed",
+        "Tags are removed by most models before the rest of the prompt is processed",
         "Limits make the model's replies shorter and therefore cheaper",
         "Customers can see the tags and will complain about the format",
       ],
@@ -99,7 +99,7 @@ You are done when the prompt treats outside text as data, any action it can trig
       question: "A colleague shares a SKILL.md that tells the assistant to fetch and run a setup script from a web address. What should you do?",
       options: [
         "Treat it as code: read it, and remove the step unless you can vouch for it",
-        "Use it as is, since shared skills are checked by the assistant's maker",
+        "Use it as it is, since shared skills are all checked by the assistant's maker",
         "Use it, but ask the assistant afterwards whether the script was safe",
         "Rename the file so the assistant loads it with fewer permissions",
       ],
@@ -123,7 +123,7 @@ You are done when the prompt treats outside text as data, any action it can trig
       question: "You want to test a new agent prompt against realistic data. What is the safe approach?",
       options: [
         "Use test data and accounts, never production systems or real customers",
-        "Use production data, but only for a short test on a quiet afternoon",
+        "Use production data, but only for one short test on a quiet Friday afternoon",
         "Use production data, and delete the chat history once you are done",
         "Use production data, and ask the agent not to change any records",
       ],
@@ -140,7 +140,7 @@ export const PROMPT_DOORS_QUIZ: SeedQuestion[] = [
     options: [
       "Anyone can script it into a free AI service and run up your costs",
       "The model will refuse to answer questions that are too short",
-      "Search engines will index the chatbot's answers as your content",
+      "Search engines will index all of the chatbot's answers as your own content",
       "The prompt's tone of voice will drift after many conversations",
     ],
     correctIndex: 0,
@@ -153,7 +153,7 @@ export const PROMPT_DOORS_QUIZ: SeedQuestion[] = [
       "A project instruction file that tells a coding agent which commands to run",
       "A one-off question typed into a chat window and never saved anywhere",
       "A printed list of tips on tone that sits in the team's meeting room",
-      "A spreadsheet of past prompts kept for reference by the marketing team",
+      "A spreadsheet of past prompts kept for reference by the whole marketing team",
     ],
     correctIndex: 0,
     explanation:

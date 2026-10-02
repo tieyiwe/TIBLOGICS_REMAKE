@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { learnerStaff } from "@/lib/learn/account-status/admin-auth";
 import { learnersCsv, parseFilters } from "@/lib/learn/admin/learners";
+import { auditFromRequest } from "@/lib/admin/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,8 @@ export async function GET(req: NextRequest) {
   try {
     const { csv } = await learnersCsv(parseFilters(req.nextUrl.searchParams));
     const date = new Date().toISOString().slice(0, 10);
+    // A bulk export of personal data: always on the record.
+    await auditFromRequest("learners.export", { type: "learner-list" }, { filters: Object.fromEntries(req.nextUrl.searchParams) });
     return new NextResponse(csv, {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",

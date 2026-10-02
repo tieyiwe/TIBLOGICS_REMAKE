@@ -1,3 +1,4 @@
+import { auditFromRequest } from "@/lib/admin/audit";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { checkRateLimit, requirePermission } from "@/lib/require-admin";
@@ -30,5 +31,6 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   const r = await updateTeamAdmin((await params).id, parsed.data);
   if ("error" in r) return NextResponse.json({ error: r.error }, { status: 400 });
+  await auditFromRequest("team.update", { type: "team", id: (await params).id }, parsed.data);
   return NextResponse.json(r);
 }

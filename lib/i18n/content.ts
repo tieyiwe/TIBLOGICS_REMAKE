@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
 import { AsyncLocalStorage } from "node:async_hooks";
 import prisma from "@/lib/prisma";
-import anthropic, { buildParams, recordUsage, runClaude, textOf, type AiTask } from "@/lib/claude";
+import anthropic, { assertAiBudget, buildParams, recordUsage, runClaude, textOf, type AiTask } from "@/lib/claude";
 import { LANGUAGE_FOR_AI, type Locale } from "./config";
 import { cachedPublicData } from "@/lib/cache/public-data";
 
@@ -331,6 +331,8 @@ export async function submitTranslationBatch(units: PendingTranslation[], collec
     });
   }
   if (requests.length === 0) return null;
+  // Translations are non-essential: skipped while over the AI budget.
+  await assertAiBudget("translate-long");
   const batch = await anthropic.messages.batches.create({ requests });
   const state: BatchState = { id: batch.id, submittedAt: collectedAt.toISOString(), jobs };
   const value = JSON.stringify(state);

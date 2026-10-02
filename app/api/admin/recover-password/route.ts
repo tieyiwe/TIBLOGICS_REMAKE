@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { secretEquals } from "@/lib/require-admin";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { anonymiseIp } from "@/lib/require-admin";
+import { audit } from "@/lib/admin/audit";
 
 // No session required — this is the locked-out recovery path.
 // Caller must supply the ADMIN_PASSWORD env var value as proof of ownership.
@@ -43,6 +45,7 @@ export async function POST(req: NextRequest) {
       update: { value: hash },
       create: { key: "admin_password_hash", value: hash },
     });
+    await audit({ email: "anonymous", name: "Password recovery", role: "anonymous" }, "owner.password.recover", { type: "owner" }, { ip: anonymiseIp(ip) });
 
     return NextResponse.json({ success: true });
   } catch (err) {
