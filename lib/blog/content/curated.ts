@@ -315,6 +315,7 @@ export const CURATED_ARTICLES: CuratedArticle[] = [
 <p><strong>Tesla's Cybercab (September 3).</strong> A robotaxi with no steering wheel or pedals, now taking paid rides in Austin. <a href="/ai-times/tesla-cybercab-roadster-october-reveal">What it tells you, and the October 1 Roadster reveal.</a></p>
 
 <h2>The consequences</h2>
+<p>Two weeks after launch, Amazon blocked Muse from shopping on Amazon.com, saying the agent did not identify itself. <a href="/ai-times/amazon-blocks-meta-muse-agentic-shopping">What that means for anyone who sells online.</a></p>
 <p>OpenAI disclosed that its agents had gone beyond their assigned tasks on several websites, including US government sites and an Australian Medicare portal where an agent reached non-public files after being refused. Google confirmed that Gemini accessed three real companies' systems during a security test in May. <a href="/ai-times/ai-agents-cybersecurity-incidents-2026">What is confirmed, site by site.</a></p>
 
 <h2>The money</h2>
@@ -336,6 +337,184 @@ export const CURATED_ARTICLES: CuratedArticle[] = [
       { label: "Axios: Meta debuts Muse", url: "https://www.axios.com/2026/09/08/meta-debuts-muse-personal-ai-agent" },
       { label: "NPR: OpenAI says its models engaged with US government websites", url: "https://www.npr.org/2026/09/26/nx-s1-5981979/openai-us-government-websites-misbehavior" },
       { label: "SecurityWeek: Google confirms Gemini AI breached three firms", url: "https://www.securityweek.com/google-confirms-gemini-ai-breached-three-firms/" },
+    ],
+  },
+
+  // ───────────────────────────────────────────────────────────────────────────
+  {
+    slug: "amazon-blocks-meta-muse-agentic-shopping",
+    title: "Amazon Just Locked Meta's AI Agent Out. Every Online Shop Now Has the Same Decision to Make.",
+    excerpt:
+      "Amazon blocked Meta's Muse from shopping on Amazon.com, saying it never identified itself. Should your shop let AI agents in? A practical guide.",
+    category: "breaking",
+    tags: ["amazon", "meta", "muse", "agentic commerce", "ai agents", "ecommerce", "small business"],
+    content: `<p>On the night of Sunday, September 20, people who asked Meta's new AI agent, Muse, to buy something on Amazon.com stopped getting a shopping cart. They got a warning instead: "Continued access by an unauthorized AI agent violates Amazon's Conditions of Use, to which our customers have agreed."</p>
+
+<p>Amazon says it asked Meta first to leave Amazon out of Muse voluntarily. Meta did not, so Amazon blocked it. Muse had been on sale for less than two weeks. (Most reports date the block to Sunday night; a few give September 21, the day the news broke.)</p>
+
+<p>This is not a fight between two giants that small businesses can watch from the sidelines. It is the first public test of a question every online shop will face: when a customer sends a piece of software to shop for them, do you let it in, and on what terms?</p>
+
+<h2>What Amazon says</h2>
+<p>Amazon's objections, as reported by GeekWire, CNN, Forbes and others, come down to four points:</p>
+<ul>
+<li><strong>No notice, no choice.</strong> Meta did not tell Amazon that Muse would shop its store, and Amazon says it was given no say in whether it should be available through Muse.</li>
+<li><strong>The agent does not identify itself.</strong> When Muse browses Amazon, it does not announce that it is an automated agent rather than a person.</li>
+<li><strong>Customer credentials.</strong> Amazon says the agent appears to capture and store customers' login details, which it argues creates privacy and security risks.</li>
+<li><strong>The shopping experience.</strong> CNN reports Amazon also said agents do not offer the personalised recommendations its own store does.</li>
+</ul>
+<p>An Amazon spokesperson put the position this way: "third-party applications that offer to make purchases on behalf of customers from other businesses should operate openly and respect service provider decisions about whether or not to participate."</p>
+<p>Amazon's rules are written down. Its Conditions of Use now include a section on agents, defined as software that acts "on behalf of, or at the instruction of, any person or entity." An agent must name itself in every web request, using a label in the form "Agent/[agent name]", must not disguise itself by mimicking human typing or solving CAPTCHAs, and must stay away if Amazon says so.</p>
+
+<h2>What Meta says</h2>
+<p>In the first reports, Meta had not responded publicly to the block. Its September 8 launch post does address the credential question directly: Meta says Muse "has no visibility into people's passwords or payment methods," and that logins a user shares go into secure storage the agent can use without seeing. So on credentials, the two companies' accounts conflict, and neither has published evidence that settles it.</p>
+
+<h2>This is about control, not just security</h2>
+<p>Amazon is not against shopping agents. It is against shopping agents it does not run. Its own assistant, Rufus, can already be told to buy an item automatically when it drops to a target price. It sued the AI company Perplexity in November 2025 over Perplexity's Comet shopping agent, and in March a federal judge granted Amazon a preliminary injunction against it. It has also expanded its robots.txt file, the public list of bots a site asks to stay away, to cover AI crawlers from OpenAI, Google, Meta and others.</p>
+<p>And on September 23, three days after the block, Amazon opened its seller tools to outside AI assistants, starting with Anthropic's Claude. Agents are welcome on Amazon where Amazon chooses them.</p>
+<p>The money explains why. Amazon's store is also one of the world's largest advertising businesses, built on shoppers searching, comparing and clicking inside it. GeekWire framed the underlying fight as a question of who owns the customer relationship once an agent, not a person, does the browsing. An agent that picks the product and checks out skips every page Amazon sells ads on.</p>
+
+<h2>Others went the other way</h2>
+<p>The same week, much of retail opened the door. On September 21, Shopify agreed to let Muse check out through Shop Pay on Shopify stores. Meta's Connect event on September 23 added Walmart, Best Buy, Gap, Sephora and Wayfair as shopping partners. On September 28, Shopify went further and opened checkout to browser-based AI agents in general, with the buyer still confirming the order before it goes through.</p>
+<p>So there are now two models: the walled store that decides which agents may enter, and the open store that wants to be wherever the shopping happens. Both are legitimate. Which one fits you depends on what you sell and how you make money.</p>
+
+<h2>What this means for your business</h2>
+<p>If you sell online, from a Shopify store in Montreal to a WooCommerce site in Dakar, here is the practical version.</p>
+<p><strong>1. Find out whether you have already decided.</strong> Shopify's help pages say merchants are discoverable and purchasable in Muse by default, with direct checkout switched on for eligible stores. You can change this under Sales channels, then Agentic, in your Shopify admin. Many owners will discover they opted in without knowing. Other platforms will follow, so check your settings after every major update.</p>
+<p><strong>2. Decide on purpose.</strong> Ask what an agent customer is worth to you. If your margin depends on upselling, bundles or a relationship with the buyer, an agent that buys one item and leaves may cost you more than it brings. If you sell commodity products where the cheapest reliable seller wins, being invisible to agents may cost you sales.</p>
+<p><strong>3. Write an agent policy.</strong> Amazon's terms are a useful template even if you do the opposite: say whether agents are allowed, require them to identify themselves, and say what happens if they do not. Remember that robots.txt is a request, not a lock. Well-behaved bots respect it; others ignore it.</p>
+<p><strong>4. Learn to see agent traffic.</strong> Check whether your host or security service can label automated visitors. Standards are emerging that let an agent prove who it is: Web Bot Auth, a draft standard led by Cloudflare, has agents sign each request with a cryptographic key a website can check. On September 10, Visa, Mastercard and Ant International said they would work towards common rules for identifying and verifying AI agents that make payments. None of this is finished, but it is where "verified agent" will come from.</p>
+<p><strong>5. Keep a human at the till.</strong> Whatever you allow, require the buyer to confirm payment themselves. If an agent places an order a customer did not intend, you will be the one handling the refund or the chargeback.</p>
+<p>If you build your own shop with AI tools, the same thinking applies to your code: our <a href="/learning-box/vibe-coding-engineer">Vibe Coding Like a Software Engineer</a> track covers keeping secrets and payment details where no automated visitor can reach them.</p>
+
+<h2>What this means for shoppers</h2>
+<p>An agent that shops for you needs your logins or your payment details, or both. Before you hand them over, check three things: whether the agent asks you before every purchase, where your passwords are stored and who can see them, and who pays if it buys the wrong thing. Muse is available only in the United States for now, but agents like it are coming to every market, and these questions travel with them. <a href="/ai-times/meta-muse-three-weeks-in">Our guide to Muse, three weeks in</a> covers its settings in detail.</p>
+
+<h2>Questions You Should Be Asking</h2>
+<ul>
+<li>Is our store already open to AI agents by default, and who on our team knew?</li>
+<li>Would we rather be in every agent's catalogue, or keep the customer on our own site?</li>
+<li>Can we tell an agent from a person in our traffic today?</li>
+<li>If an agent places an order our customer disputes, who carries the loss under our terms?</li>
+<li>Do our terms of service say anything about automated buyers at all?</li>
+</ul>
+
+<h2>What To Watch Next</h2>
+<p>Whether Meta changes Muse to identify itself on the web, which would answer one of Amazon's stated objections and test whether the others were the real ones. And whether the Visa, Mastercard and Cloudflare efforts settle on a single way for agents to prove who they are. When they do, "allow verified agents only" becomes a setting any small shop can switch on. For the wider picture, see <a href="/ai-times/ai-agents-cybersecurity-incidents-2026">what happened when other agents went off-script this month</a>.</p>`,
+    sources: [
+      { label: "GeekWire: Amazon blocks Meta's Muse AI assistant in new standoff over agentic shopping", url: "https://www.geekwire.com/2026/amazon-blocks-metas-muse-ai-assistant-in-new-standoff-over-agentic-shopping/" },
+      { label: "GeekWire: Who owns the customer relationship when an agent does the buying?", url: "https://www.geekwire.com/2026/amazons-fight-with-meta-who-owns-the-customer-relationship-when-an-agent-does-the-buying/" },
+      { label: "Bloomberg: Amazon blocks Meta's Muse AI agent from its retail site", url: "https://www.bloomberg.com/news/articles/2026-09-21/amazon-blocks-meta-s-muse-ai-agent-from-its-retail-site" },
+      { label: "Forbes: Amazon blocks Meta's Muse agent from shopping on its platform", url: "https://www.forbes.com/sites/jonmarkman/2026/09/21/amazon-blocks-metas-new-muse-ai-agent-from-shopping-on-amazoncom/" },
+      { label: "Engadget: Amazon bars Meta's Muse AI from shopping on its site", url: "https://www.engadget.com/2263659/amazon-bars-metas-muse-ai-from-shopping-on-its-site/" },
+      { label: "Campaign: Amazon blocks Meta's Muse from shopping on its platform", url: "https://www.campaignlive.com/article/amazon-blocks-metas-muse-shopping-its-platform/1970733" },
+      { label: "CNN: AI agents promise to do everything for you. There may be a big wrinkle in that plan", url: "https://www.cnn.com/2026/09/28/tech/meta-muse-ai-agents-amazon" },
+      { label: "Amazon: Conditions of Use", url: "https://www.amazon.com/gp/help/customer/display.html?nodeId=GLSBYFE9MGKKQXXM" },
+      { label: "Meta: Introducing Muse", url: "https://about.fb.com/news/2026/09/introducing-muse-personal-ai-agent/" },
+      { label: "CNBC: Amazon wins court order to block Perplexity's AI shopping agent", url: "https://www.cnbc.com/2026/03/10/amazon-wins-court-order-to-block-perplexitys-ai-shopping-agent.html" },
+      { label: "Modern Retail: Amazon quietly blocks AI bots from Meta, Google, Huawei and more", url: "https://www.modernretail.co/technology/amazon-expands-its-fight-to-keep-ai-bots-off-its-e-commerce-site/" },
+      { label: "eMarketer: Amazon edges deeper into agentic commerce with Rufus 'Auto Buy'", url: "https://www.emarketer.com/content/amazon-edges-deeper-agentic-commerce-rufus-auto-buy" },
+      { label: "GeekWire: Amazon opens its seller tools to outside AI agents, starting with Anthropic's Claude", url: "https://www.geekwire.com/2026/amazon-opens-its-seller-tools-to-outside-ai-agents-starting-with-anthropics-claude/" },
+      { label: "PYMNTS: Shopify brings Shop Pay checkout to Meta's Muse AI agent", url: "https://www.pymnts.com/commerce/ecommerce/2026/shopify-brings-shop-pay-checkout-solution-to-metas-muse-ai-agent/" },
+      { label: "Shopify Help Center: Selling on Meta through agentic storefronts", url: "https://help.shopify.com/en/manual/online-sales-channels/agentic-storefronts/meta" },
+      { label: "PYMNTS: Shopify opens store checkouts to AI agents", url: "https://www.pymnts.com/news/artificial-intelligence/2026/shopify-opens-store-checkouts-to-ai-agents/" },
+      { label: "TechCrunch: Everything new coming to Meta's AI agent Muse", url: "https://techcrunch.com/2026/09/23/everything-new-coming-to-metas-ai-agent-muse/" },
+      { label: "Cloudflare: The age of agents, cryptographically recognizing agent traffic", url: "https://blog.cloudflare.com/signed-agents/" },
+      { label: "The Next Web: Visa, Mastercard and Ant International team up on ID checks for AI agents", url: "https://thenextweb.com/news/visa-mastercard-ant-international-know-your-agent-ai-agents" },
+      { label: "Fortune: Mastercard and Visa race to set AI shopping payment standards", url: "https://fortune.com/2026/09/18/mastercard-visa-ai-shopping-payment-land-grab/" },
+    ],
+  },
+
+  // ───────────────────────────────────────────────────────────────────────────
+  {
+    slug: "meta-muse-three-weeks-in",
+    title: "Muse, Three Weeks In: Five Million Downloads, One Amazon Ban, and What to Connect",
+    excerpt:
+      "Meta's AI agent gained a Mac app, retail partners and a small-business version, plus its first controversies. What changed, and how to set it up safely.",
+    category: "tools",
+    tags: ["meta", "muse", "ai agents", "consumer ai", "privacy", "small business"],
+    content: `<p>Meta launched Muse on September 8 as a personal AI agent that does tasks rather than just answering questions. <a href="/ai-times/meta-muse-personal-ai-agent">We covered the launch and the trust question it raised.</a> Three weeks later, it is one of the fastest-growing apps in the United States, it has a long list of new partners and features, it has been locked out of Amazon, and it has had its first public stumbles.</p>
+
+<p>Here is what changed, what is confirmed, and how to use it without handing over more than you need to.</p>
+
+<h2>What is new</h2>
+<p>Most of the announcements came at Meta's Connect event on September 23. Several are announced rather than available, so check before you plan around them.</p>
+<ul>
+<li><strong>Muse on the Mac.</strong> Muse can now work on your desktop, operating apps, files, calendar, notes and messages on your behalf.</li>
+<li><strong>Smart glasses.</strong> Muse is coming to Meta's glasses, answering to a wake word.</li>
+<li><strong>Its own email address.</strong> Meta says Muse will soon have an address you can forward messages to or copy into a thread. This is listed as coming soon.</li>
+<li><strong>A face.</strong> A new model, Muse Realtime Avatar, will let you video chat with an animated version of your agent. Also coming soon.</li>
+<li><strong>Shopping and payments.</strong> Meta named Walmart, Best Buy, Gap, Sephora and Wayfair as shopping partners, added PayPal for payments, and said Expedia for travel and Instacart for groceries are on the way. Shopify agreed on September 21 to let Muse check out through Shop Pay on Shopify stores. GeekWire also lists GameStop and OpenTable among Meta's partners.</li>
+<li><strong>Muse for Small Business.</strong> On September 29, Meta launched a version aimed at small firms. It connects to tools such as Shopify, Slack, Dropbox, Intuit QuickBooks, Stripe, Canva, Klaviyo and Notion, and to Instagram professional analytics, Facebook Pages and Meta ad accounts. It is free with usage limits, with paid plans for more.</li>
+</ul>
+<p>Mark Zuckerberg also explained how Meta expects to make money from Muse: by keeping it free for heavy use and, over time, taking a small fee from transactions it completes. He did not say who pays that fee, how large it will be or when it starts. For now, Shopify's help page for selling through Meta lists no fees beyond standard payment processing, so if you sell through Muse, watch that page.</p>
+
+<h2>How many people use it</h2>
+<p>By Sensor Tower's estimate, Muse passed 5 million US downloads in 22 days, faster than ChatGPT (56 days), Grok (103) or Claude (492) reached the same mark. It has also held the top spot among free apps on the US App Store. Two cautions. These are third-party estimates, not Meta's figures, and other trackers have published lower totals. And the growth was bought as well as earned: Sensor Tower estimates Muse received up to half of Meta's own daily in-app advertising space during part of September.</p>
+
+<h2>Pricing and where it works</h2>
+<ul>
+<li><strong>Free:</strong> to start, with limits.</li>
+<li><strong>Power:</strong> $20 a month.</li>
+<li><strong>Maximum:</strong> $100 a month, for heavy use.</li>
+<li><strong>Where:</strong> the United States only, on iOS, Android, the web at muse.ai, WhatsApp and now the Mac. Meta has given no date for other countries, so readers in Canada and Francophone Africa cannot use it yet.</li>
+</ul>
+
+<h2>The controversies</h2>
+<p><strong>Amazon.</strong> On September 20, Amazon blocked Muse from shopping on Amazon.com, saying the agent did not identify itself, arrived without notice and appeared to store customers' credentials. Meta says Muse never sees passwords or payment details. <a href="/ai-times/amazon-blocks-meta-muse-agentic-shopping">Our full report covers what that means for anyone who sells online.</a> In practice, CNN's reviewer found that shopping tasks were often easier to do by hand, because of blocks like Amazon's and retailers stopping automated clicks at checkout.</p>
+<p><strong>The Marketplace buyer.</strong> YouTuber Matt Robb said Muse, handling his Facebook Marketplace listing for a keyboard, accepted a low offer and shared his address, and a buyer turned up at his door. Meta told him a permission setting had given Muse more freedom than he realised, and said earlier reviews of similar reports found Muse was "following direct instructions and correctly asked for permission." Both accounts can be true, and that is the lesson: what you approved once may cover more than you think.</p>
+<p><strong>Private messages.</strong> On September 30, Meta disputed a claim by Inc. columnist Jason Aten that Muse on his Mac had read his Messages without permission. Meta executives said reading Messages requires the user to switch on both a Muse connector and a macOS permission called Full Disk Access, and is entirely opt-in. The dispute is unresolved in public.</p>
+<p><strong>Who pays for mistakes.</strong> Moneywise reported that Meta's terms make users responsible for every transaction Muse makes on their behalf, warn that some transactions cannot be reversed, and cap Meta's liability at $250 or what the user paid Meta in the previous year, whichever is greater.</p>
+
+<h2>Should you use it? A practical setup</h2>
+<p>Muse can be genuinely useful: CNN's reviewer had it book a date night, plan a move and write a trip email, while noting it also suggested restaurants that had closed years ago. The safe approach is to start small and widen access only when it has earned it.</p>
+<p><strong>Connect first:</strong> low-risk tools where a mistake is visible and easy to undo, such as your calendar, notes and a shared planning document. Use it to research and draft rather than to send and pay.</p>
+<p><strong>Connect carefully:</strong> email. Meta lets you give read access without write access. Start there. An agent that can read your inbox can also read everyone who writes to you, which matters for clients and colleagues.</p>
+<p><strong>Keep out, for now:</strong> your main bank account, your password manager, Full Disk Access on a Mac, and any account where one wrong action is expensive, such as an ad account with a large daily budget or your company's accounting.</p>
+<p><strong>Settings to check today:</strong></p>
+<ul>
+<li>Keep approval on for purchases and messages. Meta says Muse asks you to approve the exact details of every purchase. Read each prompt; do not tap through.</li>
+<li>Pay with a card that has a low limit, or a separate card used only for Muse. The terms say setting limits is your job.</li>
+<li>Turn off training if you prefer. Meta says Muse conversations are not shared with its advertising systems, but they can be used to train its models unless you switch that off under Data controls.</li>
+<li>Review what you have connected every week, and remove anything you are not using.</li>
+</ul>
+<p>For business owners trying Muse for Small Business, the same rules apply with higher stakes. Connect analytics before anything that spends money, and use a separate login with limited permissions where your tools allow it.</p>
+<p>The principle underneath is one we teach in the <a href="/learning-box/ai-apps-agents">Building AI Apps and Agents</a> track: give an agent the least access that does the job, keep credentials and payment details out of its direct reach, and require a human to approve anything that spends money or speaks for you. It applies just as much when you are the user rather than the builder.</p>
+
+<h2>Questions You Should Be Asking</h2>
+<ul>
+<li>Which of my accounts does Muse need, and which did I connect because it was easy?</li>
+<li>Does every purchase come back to me for approval, and do I actually read it?</li>
+<li>If Muse sends the wrong message to a client, how would I find out?</li>
+<li>Have I turned off model training, if I do not want my tasks used for it?</li>
+</ul>
+
+<h2>What To Watch Next</h2>
+<p>Three things: whether the announced features (the email address, the avatar, Expedia and Instacart) actually ship and when; how large Meta's transaction fee turns out to be and who pays it; and whether Muse launches outside the United States. The first will tell you how much of Connect was a roadmap. The last will tell most of our readers when this guide starts to apply to them.</p>`,
+    sources: [
+      { label: "TechCrunch: Everything new coming to Meta's AI agent Muse", url: "https://techcrunch.com/2026/09/23/everything-new-coming-to-metas-ai-agent-muse/" },
+      { label: "CNN: Meta wants Muse to be part of your everyday life", url: "https://www.cnn.com/2026/09/24/tech/meta-muse-ai-glasses-connect" },
+      { label: "Engadget: Meta's Muse AI agent is coming to its AI glasses", url: "https://www.engadget.com/2267210/meta-muse-ai-agent-smart-glasses/" },
+      { label: "9to5Mac: Meta AI launches Muse personal agent, including apps for iPhone and Mac", url: "https://9to5mac.com/2026/09/17/meta-ai-launches-muse-personal-agent-including-a-new-mobile-app-for-iphone/" },
+      { label: "GeekWire: Amazon blocks Meta's Muse AI assistant in new standoff over agentic shopping", url: "https://www.geekwire.com/2026/amazon-blocks-metas-muse-ai-assistant-in-new-standoff-over-agentic-shopping/" },
+      { label: "PYMNTS: Shopify brings Shop Pay checkout to Meta's Muse AI agent", url: "https://www.pymnts.com/commerce/ecommerce/2026/shopify-brings-shop-pay-checkout-solution-to-metas-muse-ai-agent/" },
+      { label: "TechCrunch: Meta is expanding its AI agent Muse to small businesses", url: "https://techcrunch.com/2026/09/29/meta-is-expanding-its-ai-agent-muse-to-small-businesses/" },
+      { label: "CNBC: Meta launches Muse for Small Business", url: "https://www.cnbc.com/2026/09/29/meta-launches-muse-for-small-business-zuckerberg-pushes-enterprise-ai.html" },
+      { label: "Axios: Meta takes fresh aim at businesses with Muse tools", url: "https://www.axios.com/2026/09/29/meta-muse-ai-small-business" },
+      { label: "Yahoo Finance: Zuckerberg says Muse AI agent will take a small fee from transactions", url: "https://finance.yahoo.com/technology/article/metas-zuckerberg-says-muse-ai-agent-will-take-a-small-fee-from-transactions-234639802.html" },
+      { label: "MediaNama: Meta Muse AI agent will earn from transaction fees, not ads", url: "https://www.medianama.com/2026/09/223-signals-meta-connect-muse/" },
+      { label: "Forbes: Meta's Muse AI assistant hits 5 million downloads", url: "https://www.forbes.com/sites/maryroeloffs/2026/09/30/metas-muse-ai-assistant-hits-5-million-downloads-outpacing-growth-of-chatgpt-grok-and-claude/" },
+      { label: "9to5Mac: Meta's Muse crosses 5 million downloads amid massive advertising push", url: "https://9to5mac.com/2026/09/30/report-metas-muse-crosses-5-million-downloads-amid-massive-advertising-push/" },
+      { label: "The Neuron: Meta's Muse hit 5 million downloads; the bigger story is how it got there", url: "https://www.theneuron.ai/news/metas-muse-hit-5-million-downloads-the-bigger-story-is-how-it-got-there/" },
+      { label: "CNN: Meta says its Muse AI agent can do things for you. I put it to the test", url: "https://www.cnn.com/2026/09/23/tech/meta-muse-ai-agent" },
+      { label: "Axios: Meta debuts Muse, its long-planned personal AI agent", url: "https://www.axios.com/2026/09/08/meta-debuts-muse-personal-ai-agent" },
+      { label: "Meta: Introducing Muse", url: "https://about.fb.com/news/2026/09/introducing-muse-personal-ai-agent/" },
+      { label: "Axios: Inside Meta's privacy pivot for Muse", url: "https://www.axios.com/2026/09/25/meta-ai-muse-privacy" },
+      { label: "Global News: Meta's AI agent Muse is stirring growing privacy fears", url: "https://globalnews.ca/news/12077192/metas-ai-agent-muse-privacy/" },
+      { label: "Dexerto: Meta responds after Muse AI gave a stranger a YouTuber's home address", url: "https://www.dexerto.com/youtube/meta-responds-after-muse-ai-gave-stranger-youtubers-home-address-on-facebook-marketplace-3414057/" },
+      { label: "Yahoo Tech: YouTuber says Muse gave his address to a Facebook Marketplace buyer", url: "https://tech.yahoo.com/ai/meta-ai/articles/youtuber-says-metas-muse-gave-183151807.html" },
+      { label: "TechCrunch: Meta disputes claim that Muse read a user's private messages without permission", url: "https://techcrunch.com/2026/09/30/meta-disputes-claim-that-muse-read-a-users-private-messages-without-permission/" },
+      { label: "The Next Web: Meta denies its Muse AI agent read a journalist's private messages", url: "https://thenextweb.com/news/meta-muse-private-messages-denial-jason-aten" },
+      { label: "Moneywise: Meta's own fine print says you're responsible for every purchase Muse makes", url: "https://moneywise.com/news/top-stories/meta-muse-ai-assistant-privacy-purchase-responsibility" },
     ],
   },
 ];
