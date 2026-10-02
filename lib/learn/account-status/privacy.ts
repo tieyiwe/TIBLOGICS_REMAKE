@@ -200,5 +200,16 @@ export async function deleteLearner(
     kept: ["subscription", "track purchases", "certificate verification records (name removed)", "learning records (anonymous)"],
     removed: done,
   });
+  // Team & Roles: the owner hears about every learner deletion.
+  void import("@/lib/admin/team/alerts")
+    .then(({ sendOwnerAlert }) =>
+      sendOwnerAlert("learner_delete", `${session.user.name || session.user.email} deleted a learner account.`, [
+        ["By", session.user.email],
+        ["Learner id", id],
+        ["Reason", opts.reason || null],
+        ["Email blocked", opts.blockEmail ? "yes" : "no"],
+      ]),
+    )
+    .catch(() => {});
   return { ok: true, message: "Account deleted and anonymised. Financial and certificate records were kept without personal data." };
 }

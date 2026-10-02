@@ -3,13 +3,13 @@ import { NextResponse } from "next/server";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { requirePermission } from "@/lib/require-admin";
+import { can } from "@/lib/admin/permissions";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { ensureOutreachTables } from "./db";
 
-// Growth leads/outreach is admin-only. Collaborators can be let in to the
-// lead workspace with the "growth" permission; approving and sending email is
-// reserved to admins (or a collaborator holding "*"), because it speaks for
-// the business to strangers.
+// Growth leads/outreach: Team & Roles "growth" opens the lead workspace;
+// approving and sending email needs the "growth.send" capability (owner and
+// admins always), because it speaks for the business to strangers.
 
 export const GROWTH_PERMISSION = "growth";
 
@@ -28,9 +28,9 @@ export async function requireGrowth(): Promise<NextResponse | null> {
   return (await requirePermission(GROWTH_PERMISSION)) ?? (await tablesOr500());
 }
 
-/** Approving and sending: admin or "*" only. */
+/** Approving and sending: the "growth.send" capability. */
 export async function requireSender(): Promise<NextResponse | null> {
-  return (await requirePermission("*")) ?? (await tablesOr500());
+  return (await requirePermission("growth.send")) ?? (await tablesOr500());
 }
 
 /**
@@ -70,8 +70,8 @@ export async function requireGrowthPage(): Promise<{ session: Session; canSend: 
   if (u?.studentId) redirect("/admin_pro/login");
   if (!(u?.isOwner || u?.isAdmin || u?.collaboratorId)) redirect("/admin_pro/login");
   const perms: string[] = u?.permissions ?? [];
-  const canSend = !!(u.isAdmin || perms.includes("*"));
-  if (!canSend && !perms.includes(GROWTH_PERMISSION)) redirect("/admin_pro");
+  const canSend = can(u, "growth.send");
+  if (!canSend && !perms.includes(GROWTH_PERMISSION)) redirect("/admin_pro/no-access");
   await ensureOutreachTables();
   return { session, canSend };
 }

@@ -1,9 +1,9 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { PageHeader, useConfirm, useToast } from "@/components/admin/ui";
-import { Plus, X, Eye, EyeOff, RefreshCw, Save, CheckCircle, AlertCircle, Video, Calendar, Trash2, Users, Mail, Shield, Activity, ChevronDown, ChevronUp, UserX, UserCheck, Crown, KeyRound } from "lucide-react";
+import { PageHeader, useConfirm } from "@/components/admin/ui";
+import { Plus, X, Eye, EyeOff, RefreshCw, Save, CheckCircle, AlertCircle, Video, Calendar, Trash2, Users, Shield, Crown } from "lucide-react";
 
 const WORKING_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const BUFFER_OPTIONS = ["15 min", "30 min", "45 min", "60 min"];
@@ -15,17 +15,10 @@ const NOTIFICATION_TOGGLES = [
 ];
 
 /**
- * Settings screen. Almost all of it is local form state with no initial read —
- * the one exception is the team roster, which page.tsx now reads from Prisma on
- * the server and hands down through `collaborators` / `activityLogs`.
+ * Settings screen: local form state with no initial read. Team access moved
+ * to /admin_pro/team (Team & Roles); this page links there.
  */
-export default function SettingsClient({
-  collaborators,
-  activityLogs,
-}: {
-  collaborators: Collaborator[];
-  activityLogs: ActivityLog[];
-}) {
+export default function SettingsClient() {
   const { data: session } = useSession();
   const isOwner = session?.user?.isOwner ?? false;
 
@@ -121,7 +114,7 @@ export default function SettingsClient({
   return (
     <div className="space-y-6 max-w-3xl">
       {/* Header */}
-      <PageHeader title="Settings" subtitle="Booking, notifications, integrations and team access." className="mb-0" />
+      <PageHeader title="Settings" subtitle="Booking, notifications and integrations. Team access is in Team & Roles." className="mb-0" />
 
       {/* ── Booking Settings ── */}
       <section className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-6 space-y-6">
@@ -308,8 +301,23 @@ curl -X POST $TIBLOGICS_WEBHOOK_URL \\
       {/* ── Meeting Integrations ── */}
       <MeetingIntegrations />
 
-      {/* ── Team Access ── */}
-      <TeamAccess collaborators={collaborators} logs={activityLogs} />
+      {/* ── Team Access: moved to Team & Roles ── */}
+      <section className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-6">
+        <div className="flex flex-wrap items-center gap-4">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--a-radius-control)] bg-[var(--a-info-bg)] text-[var(--a-blue)]">
+            <Shield size={18} aria-hidden />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-syne font-bold text-base text-[var(--a-ink)]">Team access</h2>
+            <p className="font-dm text-sm text-[var(--a-ink-3)]">
+              Invite staff, choose their role and what each person can open, and see their activity in Team &amp; Roles.
+            </p>
+          </div>
+          <Link href="/admin_pro/team" className="btn-primary inline-flex items-center gap-2 text-sm">
+            <Users size={15} aria-hidden /> Open Team &amp; Roles
+          </Link>
+        </div>
+      </section>
 
       {/* ── Admin Account ── */}
       <section className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-6 space-y-6">
@@ -507,369 +515,6 @@ function MeetingIntegrations() {
         <p className="font-dm text-xs text-[var(--a-blue)]/80 leading-relaxed">
           1. Client books → 2. Admin clicks "Confirm" → 3. System generates a Jitsi Meet room → 4. Client receives branded email with "Join on Jitsi Meet" button. No manual copy-paste.
         </p>
-      </div>
-    </section>
-  );
-}
-
-// ── Team Access Component ─────────────────────────────────────────────────────
-
-const ALL_PERMISSIONS = [
-  { key: "appointments",     label: "Appointments" },
-  { key: "contacts",         label: "Contacts" },
-  { key: "prospects",        label: "Prospects" },
-  { key: "blog",             label: "Blog & Newsletter" },
-  { key: "analytics",        label: "Analytics" },
-  { key: "service_requests", label: "Service Requests" },
-  { key: "scanner_leads",    label: "Scanner Leads" },
-  { key: "revenue",          label: "Revenue" },
-  { key: "tools",            label: "Tool Analytics" },
-  { key: "agents",           label: "AI Agents" },
-  { key: "command_center",   label: "Command Center" },
-  // Lead workspace + drafting outreach. Approving/sending stays admin-only.
-  { key: "growth",           label: "Growth: leads & outreach" },
-  // ARFA admin pages (tracks, cohorts, live, events) and read-only learner records.
-  { key: "events",           label: "ARFA · AI Academy & Events" },
-  { key: "learners",         label: "Learners (read only)" },
-];
-
-const ROLE_PRESETS: Record<string, string[]> = {
-  FULL:    ALL_PERMISSIONS.map(p => p.key),
-  SUPPORT: ["appointments", "contacts", "service_requests"],
-  EDITOR:  ["blog"],
-  ANALYST: ["analytics", "revenue", "tools"],
-  CUSTOM:  [],
-};
-
-const ROLE_COLORS: Record<string, string> = {
-  FULL:    "bg-[var(--a-navy)] text-white",
-  SUPPORT: "bg-blue-100 text-blue-700",
-  EDITOR:  "bg-purple-100 text-purple-700",
-  ANALYST: "bg-teal-100 text-teal-700",
-  CUSTOM:  "bg-gray-100 text-gray-600",
-};
-
-type Collaborator = {
-  id: string; name: string; email: string; role: string;
-  permissions: string[]; isAdmin: boolean; active: boolean; lastLoginAt: string | null;
-  inviteToken: string | null; createdAt: string;
-};
-
-type ActivityLog = {
-  id: string; action: string; resource: string; details: string | null;
-  ip: string | null; createdAt: string;
-  collaborator: { name: string; email: string; role: string };
-};
-
-/**
- * The roster and the activity feed are props read from Prisma by page.tsx, not
- * state: nothing here edits them locally. `load()` therefore asks the server to
- * re-run that read instead of re-fetching /api/admin/collaborators, and the
- * invite/suspend/delete calls it follows are untouched.
- */
-function TeamAccess({
-  collaborators,
-  logs,
-}: {
-  collaborators: Collaborator[];
-  logs: ActivityLog[];
-}) {
-  const { data: session } = useSession();
-  const isOwner = session?.user?.isOwner ?? false;
-  const router = useRouter();
-  const confirmFn = useConfirm();
-  const toast = useToast();
-
-  const [showLogs, setShowLogs] = useState(false);
-  const [inviteName, setInviteName] = useState("");
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("CUSTOM");
-  const [invitePerms, setInvitePerms] = useState<string[]>([]);
-  const [inviting, setInviting] = useState(false);
-  const [inviteStatus, setInviteStatus] = useState<{ type: "success" | "error"; msg: string } | null>(null);
-  const [inviteLink, setInviteLink] = useState<string | null>(null);
-  const [resetStatus, setResetStatus] = useState<{ id: string; msg: string; ok: boolean } | null>(null);
-
-  // Re-read the roster after a mutation by re-running the server component.
-  function load() {
-    router.refresh();
-  }
-
-  function applyPreset(role: string) {
-    setInviteRole(role);
-    setInvitePerms(ROLE_PRESETS[role] ?? []);
-  }
-
-  function togglePerm(key: string) {
-    setInvitePerms(prev =>
-      prev.includes(key) ? prev.filter(p => p !== key) : [...prev, key]
-    );
-  }
-
-  async function handleInvite() {
-    setInviteStatus(null);
-    setInviteLink(null);
-    if (!inviteName.trim()) { setInviteStatus({ type: "error", msg: "Name is required" }); return; }
-    if (!inviteEmail.trim()) { setInviteStatus({ type: "error", msg: "Email is required" }); return; }
-    setInviting(true);
-    try {
-      const res = await fetch("/api/admin/collaborators", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: inviteName, email: inviteEmail, role: inviteRole, permissions: invitePerms }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setInviteStatus({ type: "success", msg: `Invitation sent to ${inviteEmail}` });
-        setInviteLink(data.inviteUrl);
-        setInviteName(""); setInviteEmail(""); setInviteRole("CUSTOM"); setInvitePerms([]);
-        load();
-      } else {
-        setInviteStatus({ type: "error", msg: data.error ?? "Failed to invite" });
-      }
-    } finally {
-      setInviting(false);
-    }
-  }
-
-  async function toggleActive(collab: Collaborator) {
-    await fetch(`/api/admin/collaborators/${collab.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ active: !collab.active }),
-    });
-    load();
-  }
-
-  async function grantAdmin(id: string, grant: boolean) {
-    const res = await fetch(`/api/admin/collaborators/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isAdmin: grant }),
-    });
-    const data = await res.json();
-    if (!res.ok) { toast.error("Could not update admin status", data.error ?? undefined); return; }
-    toast.success(grant ? "Admin access granted" : "Admin access removed");
-    load();
-  }
-
-  async function resetPassword(id: string, name: string) {
-    setResetStatus(null);
-    if (!(await confirmFn({ title: `Send a password reset email to ${name}?`, confirmLabel: "Send reset email", danger: false }))) return;
-    const res = await fetch(`/api/admin/collaborators/${id}/reset-password`, { method: "POST" });
-    const data = await res.json();
-    setResetStatus({ id, msg: res.ok ? "Reset email sent." : (data.error ?? "Failed to send reset."), ok: res.ok });
-  }
-
-  async function deleteCollab(id: string) {
-    if (!(await confirmFn({ title: "Remove this collaborator?", body: "They lose access immediately. This cannot be undone.", confirmLabel: "Remove" }))) return;
-    const res = await fetch(`/api/admin/collaborators/${id}`, { method: "DELETE" });
-    if (res.ok) toast.success("Collaborator removed");
-    else toast.error("Could not remove the collaborator");
-    load();
-  }
-
-  return (
-    <section className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-6 space-y-6">
-      <h2 className="font-syne font-bold text-base text-[var(--a-ink)] border-b border-[var(--a-border)] pb-3 flex items-center gap-2">
-        <Users size={16} className="text-[var(--a-blue)]" /> Team Access & Collaborators
-      </h2>
-
-      {/* Invite Form */}
-      <div className="bg-[var(--a-surface-2)] rounded-[var(--a-radius-control)] p-5 space-y-4">
-        <p className="font-dm text-sm font-semibold text-[var(--a-ink)] flex items-center gap-2">
-          <Mail size={14} /> Invite Collaborator
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="font-dm text-xs text-[var(--a-ink-3)] block mb-1">Full Name</label>
-            <input value={inviteName} onChange={e => setInviteName(e.target.value)}
-              placeholder="Jane Smith"
-              className="w-full border border-[var(--a-border)] bg-white rounded-[var(--a-radius-control)] px-3 py-2 text-sm font-dm focus:outline-none focus:ring-2 focus:ring-[#2251A3]" />
-          </div>
-          <div>
-            <label className="font-dm text-xs text-[var(--a-ink-3)] block mb-1">Email Address</label>
-            <input value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
-              type="email" placeholder="jane@example.com"
-              className="w-full border border-[var(--a-border)] bg-white rounded-[var(--a-radius-control)] px-3 py-2 text-sm font-dm focus:outline-none focus:ring-2 focus:ring-[#2251A3]" />
-          </div>
-        </div>
-
-        {/* Role presets */}
-        <div>
-          <label className="font-dm text-xs text-[var(--a-ink-3)] block mb-2">Role Preset</label>
-          <div className="flex flex-wrap gap-2">
-            {Object.keys(ROLE_PRESETS).map(r => (
-              <button key={r} onClick={() => applyPreset(r)}
-                className={`px-3 py-1 rounded-full text-xs font-dm font-semibold border transition-all ${
-                  inviteRole === r
-                    ? "border-[#2251A3] bg-[#2251A3] text-white"
-                    : "border-[var(--a-border)] bg-white text-[var(--a-ink-2)] hover:bg-[var(--a-info-bg)]"
-                }`}>
-                {r}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Permission checkboxes */}
-        <div>
-          <label className="font-dm text-xs text-[var(--a-ink-3)] block mb-2 flex items-center gap-1">
-            <Shield size={11} /> Permissions
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {ALL_PERMISSIONS.map(p => (
-              <label key={p.key} className="flex items-center gap-2 cursor-pointer group">
-                <input type="checkbox" checked={invitePerms.includes(p.key)}
-                  onChange={() => togglePerm(p.key)}
-                  className="w-4 h-4 rounded border-[var(--a-border)] accent-[#2251A3]" />
-                <span className="font-dm text-xs text-[var(--a-ink-2)] group-hover:text-[var(--a-ink)]">{p.label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {inviteStatus && (
-          <div className={`flex items-center gap-2 text-sm px-4 py-3 rounded-[var(--a-radius-control)] font-dm ${
-            inviteStatus.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"
-          }`}>
-            {inviteStatus.type === "success" ? <CheckCircle size={14} /> : <AlertCircle size={14} />}
-            {inviteStatus.msg}
-          </div>
-        )}
-        {inviteLink && (
-          <div className="bg-[var(--a-info-bg)] border border-[#C7D7F0] rounded-[var(--a-radius-control)] px-4 py-3">
-            <p className="font-dm text-xs text-[var(--a-blue)] font-semibold mb-1">Invite link (share manually if email fails):</p>
-            <p className="font-dm text-xs text-[var(--a-blue)] break-all">{inviteLink}</p>
-          </div>
-        )}
-        <button onClick={handleInvite} disabled={inviting}
-          className="btn-primary flex items-center gap-2 disabled:opacity-60 text-sm">
-          {inviting ? <><RefreshCw size={13} className="animate-spin" /> Sending…</> : <><Plus size={13} /> Send Invitation</>}
-        </button>
-      </div>
-
-      {/* Collaborator List */}
-      <div>
-        <p className="font-dm text-sm font-semibold text-[var(--a-ink)] mb-3 flex items-center gap-2">
-          <Users size={14} /> Active Collaborators ({collaborators.length})
-        </p>
-        {/* Server-rendered, so there is no loading placeholder to show. */}
-        {collaborators.length === 0 ? (
-          <div className="bg-[var(--a-surface-2)] rounded-[var(--a-radius-control)] px-4 py-6 text-center">
-            <p className="font-dm text-sm text-[var(--a-ink-3)]">No collaborators yet. Invite someone above.</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {collaborators.map(c => (
-              <div key={c.id} className={`rounded-[var(--a-radius-control)] border transition-colors ${
-                c.active ? "bg-white border-[var(--a-border)]" : "bg-[var(--a-surface-2)] border-[var(--a-border)] opacity-60"
-              }`}>
-                <div className="flex items-start justify-between gap-3 px-4 py-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-dm text-sm font-semibold text-[var(--a-ink)]">{c.name}</span>
-                      <span className={`text-xs font-dm font-bold px-2 py-0.5 rounded-full ${ROLE_COLORS[c.role] ?? ROLE_COLORS.CUSTOM}`}>
-                        {c.role}
-                      </span>
-                      {c.isAdmin && (
-                        <span className="flex items-center gap-1 text-xs font-dm font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
-                          <Crown size={10} /> Admin
-                        </span>
-                      )}
-                      {c.inviteToken && (
-                        <span className="text-xs font-dm bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Pending</span>
-                      )}
-                      {!c.active && (
-                        <span className="text-xs font-dm bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Suspended</span>
-                      )}
-                    </div>
-                    <p className="font-dm text-xs text-[var(--a-ink-3)] mt-0.5">{c.email}</p>
-                    <p className="font-dm text-xs text-[var(--a-ink-3)]">
-                      {c.isAdmin ? "Full admin access (all permissions)" : `Permissions: ${c.permissions.length === 0 ? "None" : c.permissions.join(", ")}`}
-                    </p>
-                    {c.lastLoginAt && (
-                      <p className="font-dm text-xs text-[var(--a-ink-3)]">
-                        Last login: {new Date(c.lastLoginAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                      </p>
-                    )}
-                    {resetStatus?.id === c.id && (
-                      <p className={`text-xs font-dm mt-1 ${resetStatus.ok ? "text-green-600" : "text-red-500"}`}>{resetStatus.msg}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {isOwner && (
-                      <button
-                        onClick={() => grantAdmin(c.id, !c.isAdmin)}
-                        title={c.isAdmin ? "Revoke admin access" : "Grant admin access"}
-                        className={`p-1.5 rounded-lg transition-colors text-xs font-dm ${
-                          c.isAdmin
-                            ? "hover:bg-amber-50 text-amber-500 hover:text-amber-700"
-                            : "hover:bg-[var(--a-surface-2)] text-[var(--a-ink-3)] hover:text-amber-600"
-                        }`}
-                      >
-                        <Crown size={15} />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => resetPassword(c.id, c.name)}
-                      title="Send password reset email"
-                      className="p-1.5 rounded-lg hover:bg-[var(--a-surface-2)] text-[var(--a-ink-3)] hover:text-[var(--a-blue)] transition-colors"
-                    >
-                      <KeyRound size={15} />
-                    </button>
-                    <button onClick={() => toggleActive(c)} title={c.active ? "Suspend" : "Reactivate"}
-                      className="p-1.5 rounded-lg hover:bg-[var(--a-surface-2)] text-[var(--a-ink-3)] hover:text-[var(--a-ink)] transition-colors">
-                      {c.active ? <UserX size={15} /> : <UserCheck size={15} />}
-                    </button>
-                    <button onClick={() => deleteCollab(c.id)} title="Remove permanently"
-                      className="p-1.5 rounded-lg hover:bg-red-50 text-[var(--a-ink-3)] hover:text-red-600 transition-colors">
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Activity Logs */}
-      <div>
-        <button onClick={() => setShowLogs(!showLogs)}
-          className="flex items-center gap-2 font-dm text-sm font-semibold text-[var(--a-ink)] hover:text-[var(--a-blue)] transition-colors">
-          <Activity size={14} /> Collaborator Activity Log ({logs.length})
-          {showLogs ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </button>
-        {showLogs && (
-          <div className="mt-3 border border-[var(--a-border)] rounded-[var(--a-radius-control)] overflow-hidden">
-            {logs.length === 0 ? (
-              <p className="font-dm text-sm text-[var(--a-ink-3)] px-4 py-4">No activity recorded yet.</p>
-            ) : (
-              <div className="divide-y divide-[var(--a-border)] max-h-80 overflow-y-auto">
-                {logs.map(log => (
-                  <div key={log.id} className="px-4 py-3 flex items-start gap-3 hover:bg-[var(--a-surface-2)]">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-dm text-xs font-semibold text-[var(--a-ink)]">{log.collaborator.name}</span>
-                        <span className="font-dm text-xs text-[var(--a-ink-3)]">{log.collaborator.email}</span>
-                        <span className="font-dm text-xs bg-[var(--a-info-bg)] text-[var(--a-blue)] px-2 py-0.5 rounded-full">{log.action}</span>
-                        <span className="font-dm text-xs text-[var(--a-ink-3)]">{log.resource}</span>
-                      </div>
-                      {log.details && (
-                        <p className="font-dm text-xs text-[var(--a-ink-3)] mt-0.5">{log.details}</p>
-                      )}
-                    </div>
-                    <span className="font-dm text-xs text-[var(--a-ink-3)] shrink-0">
-                      {new Date(log.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                      {" "}{new Date(log.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </section>
   );

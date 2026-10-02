@@ -3,22 +3,30 @@ import { NextResponse } from "next/server";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { requirePermission } from "@/lib/require-admin";
+import { can } from "@/lib/admin/permissions";
 import { growthTablesReady } from "./db";
 
-// Growth content, scheduling and attribution are admin-only: posts go out
-// under the company's name and the link reports show revenue. Admins (and the
-// owner) or a collaborator holding "*". Learners never.
+// Growth content, scheduling and attribution: Team & Roles "growth_content"
+// (view to read; writes need growth_content:manage, enforced per method in
+// proxy.ts; publishing posts also needs "growth.publish"). Posts go out under
+// the company's name, so the owner decides who gets it. Admins and the owner
+// always. Learners never.
 
 export async function requireGrowthAdmin(): Promise<NextResponse | null> {
-  const denied = await requirePermission("*");
+  const denied = await requirePermission("growth_content");
   if (denied) return denied;
   if (!(await growthTablesReady())) return NextResponse.json({ error: "Database unavailable" }, { status: 503 });
   return null;
 }
 
+/** Approving, scheduling or publishing content: the "growth.publish" capability. */
+export async function requireGrowthPublish(): Promise<NextResponse | null> {
+  return requirePermission("growth.publish");
+}
+
 export function isGrowthAdmin(user: Session["user"] | undefined | null): boolean {
   if (!user || user.studentId) return false;
-  return !!(user.isOwner || user.isAdmin || user.permissions?.includes("*"));
+  return can(user, "growth_content");
 }
 
 /** Page twin: redirects anyone else (staff without "*" go to the dashboard). */
@@ -32,7 +40,7 @@ export async function requireGrowthAdminPage(): Promise<Session> {
   if (!session) redirect("/admin_pro/login");
   const u = session.user;
   if (u?.studentId || !(u?.isOwner || u?.isAdmin || u?.collaboratorId)) redirect("/admin_pro/login");
-  if (!isGrowthAdmin(u)) redirect("/admin_pro");
+  if (!isGrowthAdmin(u)) redirect("/admin_pro/no-access");
   return session;
 }
 

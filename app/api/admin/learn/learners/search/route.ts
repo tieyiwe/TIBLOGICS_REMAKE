@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 // Learner picker for the message composer: name or email contains q.
 export async function GET(req: NextRequest) {
-  const { error } = await learnerStaff("manage");
+  const { error } = await learnerStaff("manage", "communications");
   if (error) return error;
   const q = (req.nextUrl.searchParams.get("q") ?? "").trim().slice(0, 100);
   if (q.length < 2) return NextResponse.json({ results: [] });

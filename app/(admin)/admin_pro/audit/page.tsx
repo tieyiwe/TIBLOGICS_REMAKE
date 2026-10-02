@@ -2,15 +2,18 @@ import Link from "next/link";
 import { Download, ScrollText } from "lucide-react";
 import { Badge, Button, EmptyState, PageHeader, buttonClasses, tableStyles, type BadgeTone } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
-import { requireLearnerPage } from "@/lib/learn/account-status/admin-auth";
+import { redirect } from "next/navigation";
+import { requireAdminPage } from "../_lib/admin-page-auth";
+import { can } from "@/lib/admin/permissions";
 import { AUDIT_PAGE, auditQuery, listAudit, parseAuditFilters, type AuditRow } from "@/lib/admin/audit";
 import { dt, ago } from "../learn/learners/_components/format";
 
 export const dynamic = "force-dynamic";
 
 // Every admin action on learners, communication sends, access grants,
-// certificate and capstone decisions and product publishes. Owner or admin
-// only. Filters live in the URL; the CSV export uses the same filters.
+// certificate and capstone decisions, product publishes and Team & Roles
+// changes. Needs the "audit" permission (Team & Roles); the CSV export is
+// owner or admin only. Filters live in the URL; the export uses the same.
 
 const GROUPS: Array<[string, string]> = [
   ["", "All actions"],
@@ -22,12 +25,15 @@ const GROUPS: Array<[string, string]> = [
   ["product", "Products"],
   ["promotion", "Promotions"],
   ["audit", "Audit exports"],
+  ["team", "Team & Roles"],
 ];
 
 function tone(action: string): BadgeTone {
   if (/\.(block|delete|revoke)$|comp\.revoke|test\.revoke|certificate\.revoke/.test(action)) return "danger";
   if (/suspend$|temporary|sessions\.revoke|email\.change/.test(action) && !/unsuspend/.test(action)) return "warn";
   if (/^comms\./.test(action)) return "info";
+  if (/^team\.(delete|deactivate|invite_revoke|signout)$/.test(action)) return "warn";
+  if (/^team\./.test(action)) return "info";
   if (/grant|publish|unblock|unsuspend|restore|extend/.test(action)) return "success";
   return "neutral";
 }
@@ -50,11 +56,14 @@ function targetHref(r: AuditRow): string | null {
   if (r.targetType === "campaign") return `/admin_pro/communications/${r.targetId}`;
   if (r.targetType === "thread") return `/admin_pro/communications/inbox/${r.targetId}`;
   if (r.targetType === "promotion") return `/admin_pro/promotions/${r.targetId}`;
+  if (r.targetType === "collaborator") return `/admin_pro/team?member=${encodeURIComponent(r.targetId)}`;
   return null;
 }
 
 export default async function AuditPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  await requireLearnerPage("manage");
+  const session = await requireAdminPage();
+  if (!can(session.user, "audit")) redirect("/admin_pro/no-access");
+  const canExport = can(session.user, "__admin__");
   const f = parseAuditFilters(await searchParams);
   const { rows, total, actors, actions } = await listAudit(f);
   const pages = Math.max(1, Math.ceil(total / AUDIT_PAGE));
@@ -69,9 +78,11 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         title="Audit log"
         subtitle="Who did what, when: learner account actions, messages sent, access grants, certificates, capstone reviews and product publishes."
         actions={
-          <a href={`/api/admin/audit/export${auditQuery({ ...f, page: 1 })}`} className={buttonClasses("secondary")}>
-            <Download size={16} aria-hidden /> Download CSV ({total.toLocaleString("en")})
-          </a>
+          canExport ? (
+            <a href={`/api/admin/audit/export${auditQuery({ ...f, page: 1 })}`} className={buttonClasses("secondary")}>
+              <Download size={16} aria-hidden /> Download CSV ({total.toLocaleString("en")})
+            </a>
+          ) : null
         }
       />
 

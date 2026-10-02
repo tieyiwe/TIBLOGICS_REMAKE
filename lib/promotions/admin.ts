@@ -1,5 +1,7 @@
 // Admin API guard and input schema for /api/admin/promotions/*.
-// Owner or admin only (requirePermission("*")), JSON from this site only.
+// Team & Roles "promotions": view to read, manage to change; turning a
+// promotion on or off also needs "promotions.publish" (checked in the action
+// route). Owner and admins always. JSON from this site only.
 import { getServerSession, type Session } from "next-auth";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -12,7 +14,7 @@ import { NeedsConfirm, type PromotionInput } from "./service";
 import { PromotionError } from "./stripe-ops";
 
 export async function promoAdmin(req: Request): Promise<{ session: Session; error: null } | { session: null; error: NextResponse }> {
-  const denied = await requirePermission("*");
+  const denied = await requirePermission(req.method === "GET" ? "promotions" : "promotions:manage");
   if (denied) return { session: null, error: denied };
   if (req.method !== "GET") {
     const bad = req.method === "DELETE" ? (sameSite(req) ? null : NextResponse.json({ error: "Cross-site request refused" }, { status: 403 })) : csrfGuard(req);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jsonBody, requireGrowthAdmin } from "@/lib/growth/content-auth";
+import { jsonBody, requireGrowthAdmin, requireGrowthPublish } from "@/lib/growth/content-auth";
 import { deletePost, PostError, updatePost } from "@/lib/growth/content/posts";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -10,6 +10,10 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   const { id } = await params;
   const b = await jsonBody(req);
   if (!b) return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+  if (b.action === "approve") {
+    const noPublish = await requireGrowthPublish();
+    if (noPublish) return noPublish;
+  }
   try {
     return NextResponse.json({ post: await updatePost(id, b) });
   } catch (err) {

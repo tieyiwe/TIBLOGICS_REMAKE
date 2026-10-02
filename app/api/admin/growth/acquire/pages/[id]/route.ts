@@ -1,3 +1,4 @@
+import { requireGrowthPublish } from "@/lib/growth/content-auth";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { jsonBody } from "@/lib/growth/content-auth";
@@ -50,6 +51,8 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     switch (b?.action) {
       case "publish":
       case "unpublish": {
+        const noPublish = await requireGrowthPublish();
+        if (noPublish) return noPublish;
         const p = await setPageStatus(id, b.action === "publish");
         return NextResponse.json({ status: p.status });
       }

@@ -1,14 +1,15 @@
 import { redirect } from "next/navigation";
 import type { Session } from "next-auth";
 import prisma from "@/lib/prisma";
+import { can } from "@/lib/admin/permissions";
 import { requireAdminPage } from "../../_lib/admin-page-auth";
 import { ensureLearnEditColumns } from "@/lib/learn/admin/columns";
 import { trackPriceCents } from "@/lib/learn/pricing";
 
-/** Owner or admin only (the same rule as requirePermission("*") on the API). */
+/** Team & Roles "promotions" (the same rule as the API; owner and admins always). */
 export async function requirePromotionsPage(): Promise<Session> {
   const s = await requireAdminPage();
-  if (!(s.user.isOwner || s.user.isAdmin || (s.user.permissions ?? []).includes("*"))) redirect("/admin_pro");
+  if (!can(s.user, "promotions")) redirect("/admin_pro/no-access");
   return s;
 }
 

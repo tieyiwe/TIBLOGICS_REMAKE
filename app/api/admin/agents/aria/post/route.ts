@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   // is held to the same bar as Growth publishing (lib/growth/content-auth):
   // admin, owner, or a collaborator holding "*". requireAdmin() alone let any
   // staff account (e.g. one with only the "events" permission) publish.
-  const unauth = await requirePermission("*");
+  const unauth = await requirePermission("growth.publish");
   if (unauth) return unauth;
   const slow = await staffAiLimit("aria-post");
   if (slow) return slow;

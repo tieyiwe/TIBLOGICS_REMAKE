@@ -1,3 +1,4 @@
+import { can } from "@/lib/admin/permissions";
 import { redirect } from "next/navigation";
 import { Gauge } from "lucide-react";
 import { EmptyState, PageHeader, StatCard } from "@/components/admin/ui";
@@ -78,7 +79,7 @@ async function load() {
 export default async function AiUsagePage() {
   const session = await requireAdminPage();
   // Spend data: owners and admins only, like Settings.
-  if (!session.user?.isAdmin && !session.user?.isOwner) redirect("/admin_pro");
+  if (!can(session.user, "ai_usage")) redirect("/admin_pro/no-access");
 
   let data: Awaited<ReturnType<typeof load>> | null = null;
   try {

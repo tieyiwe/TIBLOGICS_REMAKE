@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireAdmin, requirePermission } from "@/lib/require-admin";
 import { revalidateShop } from "@/lib/shop/revalidate";
 import { parseDeliveryFields } from "@/lib/shop/delivery-fields";
 import { auditFromRequest } from "@/lib/admin/audit";
@@ -32,7 +32,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       data.stock = body.stock === "" || body.stock == null ? null : Math.max(0, Math.round(Number(body.stock)));
     if (body.digital != null) data.digital = !!body.digital;
     if (body.featured != null) data.featured = !!body.featured;
-    if (body.published != null) data.published = !!body.published;
+    if (body.published != null) {
+      // Team & Roles: publishing or unpublishing needs "store.publish".
+      const cur = await prisma.product.findUnique({ where: { id }, select: { published: true } });
+      if (cur && cur.published !== !!body.published) {
+        const denied = await requirePermission("store.publish");
+        if (denied) return denied;
+      }
+      data.published = !!body.published;
+    }
     if (body.onSale != null) data.onSale = !!body.onSale;
     if (body.sku !== undefined) data.sku = body.sku ? String(body.sku).slice(0, 60) : null;
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { csrfGuard, learnerStaff } from "@/lib/learn/account-status/admin-auth";
+import { csrfGuard, hasCapability, learnerStaff } from "@/lib/learn/account-status/admin-auth";
 import * as A from "@/lib/learn/account-status/actions";
 import { deleteLearner } from "@/lib/learn/account-status/privacy";
 import prisma from "@/lib/prisma";
@@ -34,6 +34,9 @@ export async function POST(req: NextRequest) {
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
   const b = parsed.data;
+  if (b.action === "delete" && !hasCapability(session, "learners.delete")) {
+    return NextResponse.json({ error: "You do not have permission to delete learners. Ask the owner." }, { status: 403 });
+  }
   let done = 0;
   const failed: Array<{ id: string; error: string }> = [];
   for (const id of [...new Set(b.ids)]) {

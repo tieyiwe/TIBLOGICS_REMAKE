@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { audit } from "@/lib/admin/audit";
+import { can } from "@/lib/admin/permissions";
 import { actorEmail, errorResponse, promoAdmin, serialise } from "@/lib/promotions/admin";
 import { duplicatePromotion, publishPromotion, stopPromotion } from "@/lib/promotions/service";
 import { promoStatus } from "@/lib/promotions/shared";
@@ -15,6 +16,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   try {
     const { action } = Body.parse(await req.json().catch(() => ({})));
+    // Publishing, pausing or ending changes what customers pay right away.
+    if (action !== "duplicate" && !can(session.user, "promotions.publish")) {
+      return NextResponse.json({ error: "Turning promotions on or off needs the Publish promotions permission." }, { status: 403 });
+    }
     if (action === "duplicate") {
       const copy = await duplicatePromotion(id, actorEmail(session));
       await audit(session, "promotion.duplicate", { type: "promotion", id: copy.id, label: copy.name }, { from: id });

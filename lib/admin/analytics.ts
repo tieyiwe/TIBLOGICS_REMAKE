@@ -26,6 +26,7 @@
 //     from first activity in the track to the certificate (or last lesson).
 //   - Paid one-time revenue: Order paid|fulfilled, EventRegistration paid,
 //     Appointment paid, Blueprint paidAt, TrackPurchase: stored amounts.
+import { can } from "@/lib/admin/permissions";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { PLANS } from "@/lib/payments/provider";
@@ -47,7 +48,8 @@ export function canViewAnalytics(
   user: { studentId?: string | null; isOwner?: boolean; isAdmin?: boolean; permissions?: string[] } | null | undefined,
 ): boolean {
   if (!user || user.studentId) return false;
-  return !!(user.isOwner || user.isAdmin || user.permissions?.includes("*"));
+  // Team & Roles "insights" (Business analytics); owner and admins always.
+  return can(user, "insights");
 }
 
 export const RANGES = [7, 30, 90] as const;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireAdmin, requirePermission } from "@/lib/require-admin";
 import { auditFromRequest } from "@/lib/admin/audit";
 import { revalidateShop } from "@/lib/shop/revalidate";
 import { parseDeliveryFields } from "@/lib/shop/delivery-fields";
@@ -42,6 +42,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const name = String(body.name ?? "").trim();
     if (!name) return NextResponse.json({ error: "Name is required" }, { status: 400 });
+    if (body.published) {
+      const denied = await requirePermission("store.publish");
+      if (denied) return denied;
+    }
 
     const price = Math.max(0, Math.round(Number(body.price) || 0));
     const compareAtPrice = body.compareAtPrice ? Math.max(0, Math.round(Number(body.compareAtPrice))) : null;

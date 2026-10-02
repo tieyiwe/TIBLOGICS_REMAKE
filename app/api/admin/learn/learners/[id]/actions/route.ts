@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { csrfGuard, learnerStaff } from "@/lib/learn/account-status/admin-auth";
+import { csrfGuard, hasCapability, learnerStaff } from "@/lib/learn/account-status/admin-auth";
 import * as A from "@/lib/learn/account-status/actions";
 import { deleteLearner } from "@/lib/learn/account-status/privacy";
 
 export const dynamic = "force-dynamic";
 
-// Every admin action on one learner account (owner or admin only; a
-// collaborator never, whatever their permissions). Each one is audited in
+// Every admin action on one learner account: learners:manage, plus the
+// learners.delete / learners.password / learners.access capability for the
+// riskiest ones (owner and admins always). Each one is audited in
 // lib/learn/account-status/actions.ts. JSON only, same origin.
 
 const reason = z.string().trim().max(1000);
@@ -49,6 +50,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const parsed = Action.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
   const a = parsed.data;
+  // Team & Roles: the riskiest actions need their own capability on top of
+  // learners:manage (owner and admins always have them).
+  const cap =
+    a.action === "delete" ? "learners.delete"
+    : a.action === "resetLink" || a.action === "tempPassword" || a.action === "changeEmail" ? "learners.password"
+    : a.action === "grantComp" || a.action === "revokeComp" || a.action === "extendAccess" ? "learners.access"
+    : null;
+  if (cap && !hasCapability(session, cap)) {
+    return NextResponse.json({ error: "You do not have permission for this action. Ask the owner." }, { status: 403 });
+  }
 
   try {
     let r: A.ActionResult;
