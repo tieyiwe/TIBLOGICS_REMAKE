@@ -4,6 +4,7 @@ import { READING_PREFS_BOOT } from "@/lib/a11y/reading-prefs";
 import { atkinson, openDyslexic } from "@/lib/a11y/fonts";
 import UtmCapture from "@/components/public/UtmCapture";
 import ClientMessages from "@/components/i18n/ClientMessages";
+import HelpWidget from "@/components/learn/support/HelpWidget";
 
 export const metadata: Metadata = {
   title: { absolute: "ARFA · TIBLOGICS AI Academy", template: "%s · ARFA AI Academy" },
@@ -32,7 +33,11 @@ export default function LearnRootLayout({ children }: { children: React.ReactNod
       <span hidden className={`${atkinson.className} ${openDyslexic.className}`} />
       <ReadingPrefsApplier />
       <UtmCapture />
-      <ClientMessages area={["learn", "member"]}>{children}</ClientMessages>
+      <ClientMessages area={["learn", "member"]}>
+        {children}
+        {/* "Need help?" on every learner page, signed in or not (components/learn/support). */}
+        <HelpWidget />
+      </ClientMessages>
     </>
   );
 }

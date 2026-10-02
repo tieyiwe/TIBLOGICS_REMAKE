@@ -46,7 +46,8 @@ export type MessageArea = "learn" | "member" | "tools" | "calculator" | "toolkit
  *  studio     the full Studio tool texts (Studio tool page, lazy elsewhere)
  */
 const AREAS: Record<MessageArea, string[]> = {
-  learn: ["learn.", "badges.", "team."],
+  // "support.": the "Need help?" panel, also on learning-box/join and join-team.
+  learn: ["learn.", "badges.", "team.", "support."],
   member: [
     "labs.", "community.", "method.", "game.", "live.", "mastery.", "pwa.",
     "tutor.", "video.", "referrals.", "resume.", "inbox.", "drafts.", "changePassword.", "authStatus.",

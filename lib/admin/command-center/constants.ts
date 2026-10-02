@@ -77,6 +77,9 @@ export const MEETING_TEMPLATE = `## Attendees
 - [ ]
 `;
 
+/** Appended to a note checklist line once it has been turned into a task. */
+export const TASK_MARK = "(task created)";
+
 export const PROJECT_COLORS = ["#2251A3", "#F47C20", "#0F766E", "#7C3AED", "#B91C1C", "#1B3A6B", "#B45309", "#15803D"];
 
 /** Days without a status update before a project is flagged. */

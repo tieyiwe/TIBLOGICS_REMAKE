@@ -193,14 +193,21 @@ export async function syncVideoJobs(opts: { aiBudget?: number; deadline?: number
 /** Lessons with a finished video whose content has changed since: queued again. Cheap (no AI). */
 export async function requeueChanged(): Promise<number> {
   await ensureVideoTables();
-  const done = await prisma.lessonVideoJob.findMany({ where: { status: { in: ["done", "failed"] } }, select: { lessonId: true, contentHash: true, status: true } });
+  const done = await prisma.lessonVideoJob.findMany({ where: { status: { in: ["done", "failed"] } }, select: { lessonId: true, locale: true, contentHash: true, status: true } });
   if (!done.length) return 0;
   const ids = [...new Set(done.map((d) => d.lessonId))];
   const lessons = await prisma.lesson.findMany({ where: { id: { in: ids } }, select: { id: true, title: true, objective: true, bodyMd: true, videoUrl: true } });
   const hash = new Map(lessons.map((l) => [l.id, contentHash(l)]));
   const own = new Set(lessons.filter((l) => l.videoUrl && !isGeneratedUrl(l.videoUrl)).map((l) => l.id));
-  const changed = [...new Set(done.filter((d) => d.status === "done" && hash.has(d.lessonId) && hash.get(d.lessonId) !== d.contentHash && !own.has(d.lessonId)).map((d) => d.lessonId))];
-  return queueVideos(changed);
+  // Only the languages whose video was made from older text.
+  const stale = new Map<string, TtsLocale[]>();
+  for (const d of done) {
+    if (d.status !== "done" || !hash.has(d.lessonId) || hash.get(d.lessonId) === d.contentHash || own.has(d.lessonId)) continue;
+    if (d.locale === "en" || d.locale === "fr") stale.set(d.lessonId, [...(stale.get(d.lessonId) ?? []), d.locale]);
+  }
+  let n = 0;
+  for (const [lessonId, locales] of stale) n += await queueVideos([lessonId], { locales });
+  return n;
 }
 
 // ── Summary and cost estimate (admin) ───────────────────────────────────────
