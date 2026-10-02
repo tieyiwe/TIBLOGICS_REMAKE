@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/require-admin";
-import { badRequest, currentStaff, jsonBody, todayOf, writeGuard, zodMessage } from "@/lib/admin/command-center/guard";
+import { badRequest, currentStaff, jsonBody, writeGuard, zodMessage } from "@/lib/admin/command-center/guard";
 import { createTask, listStaff, milestonesBetween, myWork, tasksDueBetween, TaskError } from "@/lib/admin/command-center/pm";
 import { taskCreateSchema } from "@/lib/admin/command-center/schemas";
 import { isDayKey } from "@/lib/admin/command-center/dates";
@@ -41,7 +41,6 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return badRequest(zodMessage(parsed.error));
   try {
     const task = await createTask(parsed.data, staff, await listStaff());
-    void todayOf;
     return NextResponse.json({ task }, { status: 201 });
   } catch (err) {
     if (err instanceof TaskError) return NextResponse.json({ error: err.message, ...err.extra }, { status: err.status });
