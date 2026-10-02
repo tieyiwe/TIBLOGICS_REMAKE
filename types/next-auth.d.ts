@@ -26,6 +26,10 @@ declare module "next-auth" {
     studentId?: string;
     permissions: string[];
     sv?: number;
+    /** Staff only: epoch ms after which the session is refused (lib/auth.ts). */
+    staffUntil?: number;
+    /** Set on a token whose roles were removed (staff lifetime over, collaborator deactivated). */
+    expired?: boolean;
   }
 }
 
@@ -38,5 +42,9 @@ declare module "next-auth/jwt" {
     studentId?: string;
     permissions: string[];
     sv?: number;
+    /** Staff only: epoch ms after which the session is refused (lib/auth.ts). */
+    staffUntil?: number;
+    /** Set on a token whose roles were removed (staff lifetime over, collaborator deactivated). */
+    expired?: boolean;
   }
 }

@@ -3,6 +3,7 @@ import { checkRateLimit, clearRateLimit } from "@/lib/rate-limit";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
+import type { JWT } from "next-auth/jwt";
 import { randomBytes, timingSafeEqual } from "crypto";
 
 // tieyiwebass@gmail.com is the Owner — the super account above all admins
@@ -49,6 +50,56 @@ function loginSucceeded(key: string): void {
 }
 
 type Db = Awaited<typeof import("@/lib/prisma")>["prisma"];
+
+// ── Session lifetimes ────────────────────────────────────────────────────────
+// Learners: 14 days, rolling (every visit re-issues the cookie with a fresh
+// expiry). Staff: 12 hours from sign-in, not extended by activity, because a
+// staff cookie opens every learner record and the payments screens.
+// STAFF_SESSION_HOURS overrides the staff lifetime.
+const LEARNER_MAX_AGE_S = 14 * 86_400;
+function staffMaxAgeMs(): number {
+  const h = Number(process.env.STAFF_SESSION_HOURS);
+  return (Number.isFinite(h) && h > 0 ? h : 12) * 3_600_000;
+}
+
+/**
+ * A collaborator's live state, cached for a minute per process, so that
+ * deactivating someone or changing their permissions takes effect on their
+ * next request instead of when their cookie expires. null = could not check
+ * (database unreachable): the token is left as it is.
+ */
+const collabCache = new Map<string, { at: number; value: { active: boolean; isAdmin: boolean; permissions: string[] } | "gone" }>();
+async function collaboratorState(id: string) {
+  const hit = collabCache.get(id);
+  if (hit && Date.now() - hit.at < 60_000) return hit.value;
+  try {
+    const { prisma } = await import("@/lib/prisma");
+    const c = await prisma.collaborator.findUnique({
+      where: { id },
+      select: { active: true, isAdmin: true, permissions: true },
+    });
+    const value = c ? { active: c.active, isAdmin: c.isAdmin, permissions: c.permissions } : ("gone" as const);
+    if (collabCache.size > 500) collabCache.clear();
+    collabCache.set(id, { at: Date.now(), value });
+    return value;
+  } catch {
+    return null;
+  }
+}
+
+/** Forget a collaborator's cached state (call after deactivating or editing them). */
+export function forgetCollaboratorSession(id: string): void {
+  collabCache.delete(id);
+}
+
+/**
+ * A token with every role removed: the cookie still decodes, but no guard
+ * (requireAdmin, requireStudent, the proxy) accepts it, so the person is sent
+ * to sign in again.
+ */
+function strippedToken(token: JWT): JWT {
+  return { sub: token.sub, id: "", isAdmin: false, isOwner: false, permissions: [], expired: true } as JWT;
+}
 
 /**
  * The owner's password: the ADMIN_PASSWORD secret (master credential) or the
@@ -277,7 +328,9 @@ export const authOptions: NextAuthOptions = {
         ]
       : []),
   ],
-  session: { strategy: "jwt" },
+  // maxAge is the learner lifetime; staff tokens carry their own shorter
+  // deadline (staffUntil, checked in the jwt callback below).
+  session: { strategy: "jwt", maxAge: LEARNER_MAX_AGE_S, updateAge: 86_400 },
   // Errors only ever redirect from the Google flow (staff and learner
   // passwords use redirect: false), so they land on the learner login, which
   // shows a "Google sign-in didn't work" note for any ?error=.
@@ -334,6 +387,22 @@ export const authOptions: NextAuthOptions = {
         token.studentId = user.studentId;
         token.permissions = user.permissions;
         token.sv = user.sv;
+        token.staffUntil = user.studentId ? undefined : Date.now() + staffMaxAgeMs();
+      }
+      if (token.expired) return token;
+      // Staff sessions: a fixed 12-hour lifetime, and a collaborator who has
+      // been deactivated or deleted loses access at once (permission changes
+      // apply live too).
+      if (!token.studentId && (token.isOwner || token.isAdmin || token.collaboratorId)) {
+        if (!token.staffUntil || Date.now() > token.staffUntil) return strippedToken(token);
+        if (token.collaboratorId) {
+          const c = await collaboratorState(token.collaboratorId);
+          if (c === "gone" || (c && !c.active)) return strippedToken(token);
+          if (c) {
+            token.isAdmin = c.isAdmin;
+            token.permissions = c.isAdmin ? ["*"] : c.permissions;
+          }
+        }
       }
       return token;
     },

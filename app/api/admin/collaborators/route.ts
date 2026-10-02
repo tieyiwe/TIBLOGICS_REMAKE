@@ -5,6 +5,8 @@ import prisma from "@/lib/prisma";
 import { requireAdmin, isValidEmail, escapeHtml } from "@/lib/require-admin";
 import resend from "@/lib/resend";
 import crypto from "crypto";
+import { audit } from "@/lib/admin/audit";
+import { validPermissions } from "@/lib/admin/permissions-input";
 
 export async function GET() {
   const unauth = await requireAdmin();
@@ -37,7 +39,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { name, email, role, permissions } = await req.json();
+  const body = await req.json().catch(() => null);
+  if (!body || typeof body !== "object") return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  const { name, email, role } = body;
+  // Known shape only; "*" (everything) is the Owner's to grant.
+  const permissions = validPermissions(body.permissions, !!session.user.isOwner);
+  const VALID_ROLES = ["FULL", "SUPPORT", "EDITOR", "ANALYST", "CUSTOM"];
+  if (role !== undefined && !VALID_ROLES.includes(role)) {
+    return NextResponse.json({ error: "Invalid role" }, { status: 400 });
+  }
 
   if (!name || typeof name !== "string" || name.length > 100) {
     return NextResponse.json({ error: "Invalid name" }, { status: 400 });
@@ -45,7 +55,7 @@ export async function POST(req: NextRequest) {
   if (!isValidEmail(email)) {
     return NextResponse.json({ error: "Invalid email" }, { status: 400 });
   }
-  if (!Array.isArray(permissions)) {
+  if (!permissions) {
     return NextResponse.json({ error: "Invalid permissions" }, { status: 400 });
   }
 

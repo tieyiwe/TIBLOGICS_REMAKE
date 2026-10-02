@@ -42,7 +42,8 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json(lead, { status: 201 });
+    // Only the id: the visitor's page needs nothing else back.
+    return NextResponse.json({ id: lead.id }, { status: 201 });
   } catch (error) {
     console.error("[POST /api/scanner-leads]", error);
     return NextResponse.json(

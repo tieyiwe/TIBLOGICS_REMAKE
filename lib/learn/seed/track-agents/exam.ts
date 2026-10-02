@@ -20,7 +20,7 @@ export const TRACK_AGENTS_FINAL_EXAM: SeedFinalExam = {
 
 Most questions are short scenarios from building and running AI features: a request that loses context, a retry loop that makes an outage worse, a tool that can do too much, a retrieval system that leaks a document, an agent that will not stop, an eval that measures the wrong thing, a bill that doubles. They test the judgement of a developer who ships AI features, not recall of a phrase from a lesson.
 
-Questions are vendor-neutral. Where a question mentions prices, they are illustrative. Questions are drawn at random from a larger bank covering all six modules, and options are shuffled, so each attempt is different. Every answer is saved the moment you select it, and the clock runs on our server.
+Questions are vendor-neutral. Where a question mentions prices, they are illustrative. Questions are drawn at random from a larger bank covering all six modules, including the 30-door security audit, and options are shuffled, so each attempt is different. Every answer is saved the moment you select it, and the clock runs on our server.
 
 You have up to 3 attempts, with a 24-hour gap between them so that a retry is a studied one. Your result is broken down by module, so you will know what to revisit.`,
   questions: [

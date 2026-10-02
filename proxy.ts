@@ -15,7 +15,10 @@ async function gate(req: NextRequest) {
     const isPublic =
       pathname === "/admin_pro/login" || pathname.startsWith("/admin_pro/accept-invite");
 
-    const isStaffToken = !!(token && (token.isOwner || token.isAdmin || token.collaboratorId) && !token.studentId);
+    // A staff token past its 12-hour lifetime (lib/auth.ts) is treated as no
+    // session here, so the person goes straight to the login form.
+    const staffLive = !!token?.staffUntil && Number(token.staffUntil) > Date.now();
+    const isStaffToken = !!(token && (token.isOwner || token.isAdmin || token.collaboratorId) && !token.studentId && staffLive);
 
     // Signed-in STAFF hitting the login page → dashboard. A learner session
     // (Learning Box students share this NextAuth instance) must still reach the
@@ -25,7 +28,7 @@ async function gate(req: NextRequest) {
     }
     if (isPublic) return NextResponse.next();
 
-    if (!token) {
+    if (!token || (!token.studentId && !isStaffToken)) {
       const url = new URL("/admin_pro/login", req.url);
       url.searchParams.set("callbackUrl", pathname + search);
       return NextResponse.redirect(url);

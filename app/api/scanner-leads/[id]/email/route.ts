@@ -20,14 +20,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ error: "Invalid name" }, { status: 400 });
     }
 
-    const lead = await prisma.scannerLead.update({
-      where: { id },
+    // Only the visitor who just ran the scan may attach an email: the lead
+    // must still have none and be recent. Without this, anyone holding (or
+    // guessing) a lead id could overwrite another visitor's email, and the
+    // response used to return the whole lead record.
+    const updated = await prisma.scannerLead.updateMany({
+      where: { id, email: null, createdAt: { gte: new Date(Date.now() - 6 * 3_600_000) } },
       data: {
         email: body.email.toLowerCase().trim(),
         name: body.name ? body.name.trim().slice(0, 100) : undefined,
       },
     });
-    return NextResponse.json(lead);
+    if (updated.count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("[PATCH /api/scanner-leads/[id]/email]", error);
     return NextResponse.json({ error: "Failed to update scanner lead email" }, { status: 500 });

@@ -26,6 +26,24 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  if (!(await checkRateLimit(`admin-setup:${ip}`, 5, 3_600_000))) {
+    return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
+  }
+  // This endpoint needs no session: it sets the OWNER password when none is
+  // stored. When ADMIN_PASSWORD is configured the owner already has a
+  // credential, so first-come setup would only let a stranger who reaches a
+  // fresh (or restored) database before the owner sign in as the owner. In
+  // production the owner must set ADMIN_PASSWORD in Replit Secrets instead.
+  if (process.env.ADMIN_PASSWORD) {
+    return NextResponse.json({ error: "Admin password already configured" }, { status: 409 });
+  }
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      { error: "Set the ADMIN_PASSWORD secret on the server, then sign in with it." },
+      { status: 403 },
+    );
+  }
   try {
     const { password } = await req.json();
 

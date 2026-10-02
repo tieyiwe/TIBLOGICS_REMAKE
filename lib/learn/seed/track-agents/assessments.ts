@@ -1588,7 +1588,7 @@ A link to (or export of) the code, and one document of roughly **2,000 to 3,000 
 
 **3. Evaluation set and results.** At least 20 cases across categories, including edge, decline and adversarial (prompt injection) cases, with the check used for each. Your results table, what failed, what you changed, and the before and after scores. If you used a judge, how you calibrated it.
 
-**4. Security and privacy review.** Untrusted content paths, private data access and outbound channels, and the defence for each. Output handling (rendering, validation). What is logged, redacted and for how long. What personal data the feature touches and why.
+**4. Security and privacy review.** Untrusted content paths, private data access and outbound channels, and the defence for each. Output handling (rendering, validation). What is logged, redacted and for how long. What personal data the feature touches and why. Include a short **30-door launch audit** (from the security lessons at the end of Modules 5 and 6; the 30 Doors tool produces the report): the status of every door, at least three doors you fixed with the test that proves each one closed, and a dated plan for anything still marked Needs work.
 
 **5. Cost estimate.** Tokens per task, calls per task, illustrative or current prices (dated and sourced from the provider's page), monthly estimate at a stated volume, and the levers you used or would use (model routing, prompt caching, batching, trimming).
 
@@ -1614,7 +1614,7 @@ A reviewer can follow the thread from purpose to design, evaluation, security, c
       criterion: "Security and privacy",
       weight: 20,
       description:
-        "Are injection paths, private data and outbound channels identified with a defence for each? Is model output validated and rendered safely? Is logging minimal, redacted and time-limited, and personal data justified?",
+        "Are injection paths, private data and outbound channels identified with a defence for each? Is model output validated and rendered safely? Is logging minimal, redacted and time-limited, and personal data justified? Does the 30-door launch audit give a status for every door with evidence, show at least three fixes proven by tests, and leave no door exposing data, money, tools or admin power open without a dated fix?",
     },
     {
       criterion: "Cost and operations",

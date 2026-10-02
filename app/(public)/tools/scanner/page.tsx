@@ -538,7 +538,7 @@ export default function ScannerPage() {
     e.preventDefault();
     if (!email.trim() || !leadId) return;
     try {
-      await fetch(`/api/scanner-leads/${leadId}`, {
+      await fetch(`/api/scanner-leads/${encodeURIComponent(leadId)}/email`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
