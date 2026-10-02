@@ -47,8 +47,8 @@ export default function OGImage() {
             Real insights. Less than 5 min reads.
           </div>
           <div style={{ fontSize: 20, color: "#64748B", lineHeight: 1.5, maxWidth: 500, display: "flex", flexDirection: "column" }}>
-            <span>Stay up to date with the most relevant AI tech</span>
-            <span>info without wasting time or getting lost.</span>
+            <span>AI and advanced tech, made digestible.</span>
+            <span>From AI tools to chips, quantum and robotics.</span>
           </div>
 
           {/* Feature pills */}

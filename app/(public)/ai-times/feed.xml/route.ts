@@ -62,7 +62,7 @@ export async function GET() {
     <title>AI Times by TIBLOGICS</title>
     <link>${SITE_URL}/ai-times</link>
     <atom:link href="${feedUrl}" rel="self" type="application/rss+xml" />
-    <description>Practical articles on AI for business from TIBLOGICS, an AI implementation agency. Also available in French and Swahili.</description>
+    <description>AI and advanced tech, made digestible: practical articles on AI for business and on frontier tech (chips, quantum, robotics, space, biotech, energy) from TIBLOGICS, an AI implementation agency. Less than 5 min reads. Also available in French and Swahili.</description>
     <language>en</language>
     <copyright>© ${new Date().getUTCFullYear()} TIBLOGICS</copyright>
     <lastBuildDate>${(posts.length ? lastBuild : new Date()).toUTCString()}</lastBuildDate>

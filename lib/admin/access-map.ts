@@ -93,7 +93,7 @@ export const API_RULES: AccessRule[] = [
   { path: "/api/admin/team", key: "team", write: "team" },
   { path: "/api/admin/collaborators", key: "__admin__" },
   { path: "/api/admin/sync-db", key: "__admin__" },
-  { path: "/api/admin/sync-history", key: "__admin__" },
+  { path: "/api/admin/sync-history", key: "command_center" },
   { path: "/api/admin/agents", key: "agents" },
   { path: "/api/admin/agents/aria/post", key: "growth_content", write: "growth.publish" },
   { path: "/api/admin/analytics", key: "insights" },

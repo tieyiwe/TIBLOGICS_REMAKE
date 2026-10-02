@@ -549,6 +549,7 @@ model Collaborator {
   createdAt     DateTime                  @default(now())
   updatedAt     DateTime                  @updatedAt
   activityLogs  CollaboratorActivityLog[]
+  access        StaffAccess?
 
   @@index([email])
   @@index([inviteToken])
@@ -3088,4 +3089,58 @@ model SupportCanned {
   createdBy String?
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())
+}
+
+/// Team & Roles: custom staff roles (presets live in lib/admin/permissions.ts).
+/// Created at runtime by lib/admin/team/db.ts; keep the two in step.
+model StaffRole {
+  id          String   @id
+  name        String   @unique
+  description String?
+  levels      Json     @default("{}")
+  caps        Json     @default("[]")
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+}
+
+/// Team & Roles: one row per collaborator (role, per-person overrides,
+/// session version for "sign out everywhere", invite note).
+model StaffAccess {
+  collaboratorId String       @id
+  collaborator   Collaborator @relation(fields: [collaboratorId], references: [id], onDelete: Cascade)
+  roleId         String       @default("custom")
+  grants         Json         @default("[]")
+  revokes        Json         @default("[]")
+  sessionVersion Int          @default(0)
+  inviteNote     String?
+  migratedFrom   Json?
+  updatedBy      String?
+  updatedAt      DateTime     @default(now())
+
+  @@index([roleId])
+}
+
+/// Team & Roles: staff footprint (sign-ins, page views, API writes, exports).
+/// Append-only for staff; the retention clean-up is the only delete.
+model StaffEvent {
+  id         String   @id
+  at         DateTime @default(now())
+  staffId    String?
+  email      String
+  kind       String
+  area       String?
+  path       String?
+  method     String?
+  success    Boolean  @default(true)
+  ipPrefix   String?
+  country    String?
+  deviceType String?
+  browser    String?
+  os         String?
+  meta       Json?
+
+  @@index([at])
+  @@index([email, at])
+  @@index([kind, at])
 }

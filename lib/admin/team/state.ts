@@ -107,6 +107,13 @@ export async function accessRow(id: string): Promise<AccessRow | null> {
  * Idempotent (ON CONFLICT DO NOTHING).
  */
 export async function migrateLegacy(c: { id: string; isAdmin: boolean; permissions: string[] }): Promise<AccessRow> {
+  // Invitation tokens used to be stored as issued; v2 stores only their
+  // SHA-256. A pending pre-v2 invitation is hashed in place, so the link
+  // already emailed keeps working and the plain value leaves the database.
+  await prisma.$executeRaw`
+    UPDATE "Collaborator" SET "inviteToken" = encode(sha256(convert_to("inviteToken", 'UTF8')), 'hex')
+    WHERE "id" = ${c.id} AND "inviteToken" IS NOT NULL
+      AND NOT EXISTS (SELECT 1 FROM "StaffAccess" WHERE "collaboratorId" = ${c.id})`;
   const admin = c.isAdmin || c.permissions.includes("*");
   const roleId = admin ? ADMIN_ROLE_ID : NO_ROLE_ID;
   const grants = admin ? [] : grantsFromLegacy(c.permissions);

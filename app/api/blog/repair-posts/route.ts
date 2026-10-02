@@ -7,7 +7,7 @@ import { requireAdmin } from "@/lib/require-admin";
 import { sanitizeAiHtml } from "@/lib/ai-html";
 
 const VALID_CATEGORIES = new Set([
-  "breaking", "ai-business", "tips", "tools", "case-studies", "industry",
+  "breaking", "ai-business", "tips", "tools", "case-studies", "industry", "advanced-tech",
 ]);
 
 async function regenerate(title: string, sourceTitle?: string | null) {
@@ -33,7 +33,8 @@ Return ONLY a valid JSON object (no markdown, no fences):
   "tags": ["ai", "business"]
 }
 
-category must be exactly one of: breaking, ai-business, tips, tools, case-studies, industry`;
+category must be exactly one of: breaking, ai-business, tips, tools, case-studies, industry, advanced-tech
+Use "advanced-tech" for frontier technology beyond AI software (chips, quantum, robotics, autonomous vehicles, space, biotech, energy tech, AR/VR, networks, brain-computer interfaces).`;
 
   const raw = await streamChat(
     [{ role: "user", content: prompt }],

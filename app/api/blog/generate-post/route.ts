@@ -16,6 +16,7 @@ const CATEGORY_MAP: Record<string, { emoji: string; gradient: string }> = {
   "tools":       { emoji: "🔧", gradient: "from-teal-600 to-emerald-500" },
   "case-studies":{ emoji: "📊", gradient: "from-[#F47C20] to-yellow-500" },
   "industry":    { emoji: "🌐", gradient: "from-slate-600 to-gray-500" },
+  "advanced-tech": { emoji: "🚀", gradient: "from-indigo-700 to-cyan-500" },
 };
 
 const VALID_CATEGORIES = new Set(Object.keys(CATEGORY_MAP));
@@ -71,7 +72,8 @@ Return ONLY a valid JSON object (no markdown fences, no extra text):
   "imageQuery": "2-3 keywords for a relevant cover photo (e.g. 'artificial intelligence robot', 'business technology laptop')"
 }
 
-category must be one of: breaking, ai-business, tips, tools, case-studies, industry`;
+category must be one of: breaking, ai-business, tips, tools, case-studies, industry, advanced-tech
+Use "advanced-tech" for frontier technology beyond AI software (chips and semiconductors, quantum computing, robotics, autonomous vehicles and drones, space, biotech and health tech, energy and climate tech, AR/VR, next-generation networks, brain-computer interfaces). If the topic is advanced tech, replace the small-business section with "What This Means for Businesses and People".`
 
     let generated: { excerpt: string; content: string; category: string; tags: string[]; imageQuery?: string };
 

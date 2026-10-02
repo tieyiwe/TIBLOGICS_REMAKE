@@ -32,7 +32,7 @@ interface BreakingNews {
   source?: string;
 }
 
-const CATEGORIES = ["all", "breaking", "ai-business", "tips", "tools", "case-studies", "industry"];
+const CATEGORIES = ["all", "breaking", "ai-business", "tips", "tools", "case-studies", "industry", "advanced-tech"];
 
 type T = (key: string, vars?: Record<string, string | number>) => string;
 type Summaries = Record<string, { title: string; excerpt: string }>;
@@ -44,6 +44,12 @@ const GRADIENT_MAP: Record<string, string> = {
   "from-teal-600 to-emerald-500": "bg-gradient-to-br from-teal-600 to-emerald-500",
   "from-[#F47C20] to-yellow-500": "bg-gradient-to-br from-[#F47C20] to-yellow-500",
   "from-slate-600 to-gray-500": "bg-gradient-to-br from-slate-600 to-gray-500",
+  "from-indigo-700 to-cyan-500": "bg-gradient-to-br from-indigo-700 to-cyan-500",
+};
+
+// Card badge colours. Categories not listed keep the default blue chip.
+const BADGE_CLASS: Record<string, string> = {
+  "advanced-tech": "bg-indigo-50 text-indigo-700",
 };
 
 function gradientClass(g: string): string {
@@ -336,7 +342,7 @@ function CategoryBadge({ category }: { category: string }) {
   const t = useT();
   const label = t(`pages.aiTimes.badge.${category}`);
   return (
-    <span className="bg-[#EBF0FA] text-[#2251A3] text-xs font-medium font-dm px-2.5 py-1 rounded-full">
+    <span className={`${BADGE_CLASS[category] ?? "bg-[#EBF0FA] text-[#2251A3]"} text-xs font-medium font-dm px-2.5 py-1 rounded-full`}>
       {label.startsWith("pages.") ? category : label}
     </span>
   );

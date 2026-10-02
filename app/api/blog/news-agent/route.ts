@@ -32,10 +32,10 @@ Available actions:
 - DRAFT_NEWSLETTER: Draft a newsletter campaign. data: { title, subject, previewText?, contentHtml, category }
 - SEND_NEWSLETTER: Send an existing draft newsletter. data: { campaignId }
 
-Categories (blog): "breaking" | "ai-business" | "tips" | "tools" | "case-studies" | "industry"
+Categories (blog): "breaking" | "ai-business" | "tips" | "tools" | "case-studies" | "industry" | "advanced-tech" (frontier tech beyond AI software: chips, quantum, robotics, autonomous vehicles, space, biotech, energy, AR/VR, networks, brain-computer interfaces)
 Newsletter categories: "ai-practices" | "ai-readiness" | "ai-mistakes" | "general"
-Cover emojis: ⚡ (breaking), 💼 (business), 💡 (tips), 🔧 (tools), 📊 (case-studies), 🌐 (industry)
-Cover gradients: "from-red-600 to-orange-500" | "from-[#1B3A6B] to-[#2251A3]" | "from-purple-600 to-violet-500" | "from-teal-600 to-emerald-500" | "from-[#F47C20] to-yellow-500" | "from-slate-600 to-gray-500"
+Cover emojis: ⚡ (breaking), 💼 (business), 💡 (tips), 🔧 (tools), 📊 (case-studies), 🌐 (industry), 🚀 (advanced-tech)
+Cover gradients: "from-red-600 to-orange-500" | "from-[#1B3A6B] to-[#2251A3]" | "from-purple-600 to-violet-500" | "from-teal-600 to-emerald-500" | "from-[#F47C20] to-yellow-500" | "from-slate-600 to-gray-500" | "from-indigo-700 to-cyan-500"
 
 For DRAFT_NEWSLETTER, write a full HTML newsletter email body (will be wrapped in an email template). Focus on:
 - AI best practices for small businesses

@@ -15,6 +15,7 @@ export const maxDuration = 300;
 
 const STEPS: Array<[string, () => Promise<unknown>]> = [
   ["lib/admin/audit", () => import("@/lib/admin/audit").then((m) => m.ensureAuditTable())],
+  ["lib/admin/team/db", () => import("@/lib/admin/team/db").then((m) => m.ensureTeamAccessTables())],
   ["lib/growth/acquire/db", () => import("@/lib/growth/acquire/db").then((m) => m.ensureAcquireTables())],
   ["lib/growth/outreach/db", () => import("@/lib/growth/outreach/db").then((m) => m.ensureOutreachTables())],
   ["lib/growth/db", () => import("@/lib/growth/db").then((m) => m.ensureGrowthTables())],

@@ -19,7 +19,7 @@ export interface CuratedArticle {
   slug: string;
   title: string;
   excerpt: string;
-  category: "breaking" | "ai-business" | "tips" | "tools" | "case-studies" | "industry";
+  category: "breaking" | "ai-business" | "tips" | "tools" | "case-studies" | "industry" | "advanced-tech";
   tags: string[];
   featured?: boolean;
   /** HTML body, without the sources list — that is appended from `sources`. */
@@ -515,6 +515,150 @@ export const CURATED_ARTICLES: CuratedArticle[] = [
       { label: "TechCrunch: Meta disputes claim that Muse read a user's private messages without permission", url: "https://techcrunch.com/2026/09/30/meta-disputes-claim-that-muse-read-a-users-private-messages-without-permission/" },
       { label: "The Next Web: Meta denies its Muse AI agent read a journalist's private messages", url: "https://thenextweb.com/news/meta-muse-private-messages-denial-jason-aten" },
       { label: "Moneywise: Meta's own fine print says you're responsible for every purchase Muse makes", url: "https://moneywise.com/news/top-stories/meta-muse-ai-assistant-privacy-purchase-responsibility" },
+    ],
+  },
+  // ───────────────────────────────────────────────────────────────────────────
+  {
+    slug: "pentagon-project-meridian-musk-luckey",
+    title: "Musk, Luckey and Gingrich Will Lead a Pentagon Study on Future Warfare",
+    excerpt:
+      "Project Meridian is a 120-day study of the weapons and technology the US military may need. Here is what it is, what it is not, and why it matters beyond Washington.",
+    category: "advanced-tech",
+    tags: ["defense tech", "autonomy", "ai policy", "spacex", "anduril"],
+    content: `<p>On September 30, US Defense Secretary Pete Hegseth announced that Elon Musk, Anduril co-founder Palmer Luckey and former House Speaker Newt Gingrich will co-lead "Project Meridian", a 120-day study of how war is likely to change and what the US military will need to fight it. The findings are due by January 28, 2027.</p>
+
+<p>The headlines have ranged from "Musk to design America's weapons" to "Pentagon hands warfare to billionaires". The documented facts are narrower. This is a study with three co-directors, commissioned through the department's technology office, that will produce recommendations. Whether those recommendations become programmes, budgets or contracts is a separate process that has not started.</p>
+
+<h2>What is confirmed</h2>
+<ul>
+<li><strong>The commission.</strong> Hegseth signed a memo on September 30 commissioning "Project Meridian: The Future of Warfare". It is published on the Defense Department's media site. It directs Emil Michael, the department's chief technology officer, to commission the work through a partner organisation. The memo does not name that organisation.</li>
+<li><strong>The task.</strong> According to the memo, the study is to examine the battlefields of the future, identify which weapons and technologies the military will need to dominate in them, and propose actionable steps to start developing, testing and fielding those capabilities. Several outlets quoted the announcement as saying the effort "will be focused on discovering, developing, and fielding the weapons and systems that our children and our grandchildren will need in their lifetimes".</li>
+<li><strong>The scope.</strong> The memo covers every future warfighting domain, "from subterranean depths to the cislunar frontier", meaning from underground to the space between Earth and the Moon. It names artificial intelligence, autonomy, directed energy, robotics and biotechnology as fields that will change how wars are fought.</li>
+<li><strong>The leaders.</strong> Musk, Luckey and Gingrich are co-directors. A supporting team of academic, policy and industry experts is described in coverage of the memo, but its members have not been named.</li>
+<li><strong>The output.</strong> The department says the findings will be delivered as an unclassified report released to the public, plus a classified annex.</li>
+</ul>
+
+<h2>What is not known yet</h2>
+<p>Several basics are still missing. The partner organisation running the study has not been named. The Pentagon has not detailed what ethics rules will apply to the co-directors, whether they are paid, or what employment status, if any, they will hold. It has not said whether the study will follow the federal advisory committee rules that normally govern outside panels, which call for balanced membership and generally open meetings. Reporting describes these as open questions, not as established problems.</p>
+
+<h2>Why the appointments drew conflict-of-interest questions</h2>
+<p>Two of the three co-directors run companies that sell to the Pentagon. SpaceX, which Musk leads, holds major defence work: in May the Space Force awarded it a $4.16 billion contract for satellites designed to detect and track airborne threats, days after a separate $2.29 billion award for a military satellite communications network. Anduril, which Luckey co-founded, builds autonomous systems; in March the US Army awarded it an enterprise contract worth up to $20 billion covering drones, counter-drone systems and its AI software platform, Lattice.</p>
+<p>The Guardian and other outlets reported concerns that leaders whose companies sell autonomy, drones and space systems will help define which capabilities the military should buy. Several reports stressed that the concern is about incentives and influence; none has shown that either man has received an improper benefit from the project. The flip side is that builders of these systems know what is technically possible today. Which of those weighs more will depend on the governance questions above, which is why they matter.</p>
+
+<h2>What "future warfare" technology means here</h2>
+<p>The memo's own list is a useful map of where defence money and attention are heading, and it overlaps heavily with civilian advanced tech:</p>
+<ul>
+<li><strong>AI and autonomy:</strong> software that fuses sensor data, flags targets for human review, or lets drones and vehicles operate with limited supervision. Anduril's Lattice platform, described in the Army contract coverage, is one example of this category.</li>
+<li><strong>Robotics:</strong> uncrewed ground, air and sea systems, which are increasingly cheap enough to be used in large numbers.</li>
+<li><strong>Space:</strong> satellite constellations for communications and for tracking moving targets from orbit, the kind of system SpaceX is building under its Space Force contract.</li>
+<li><strong>Directed energy:</strong> lasers and high-power microwave systems, often discussed as a cheaper way to defeat drones.</li>
+<li><strong>Biotechnology:</strong> named in the memo without detail.</li>
+</ul>
+<p>None of this tells us what Project Meridian will actually recommend. It tells us which fields the department has asked it to look at.</p>
+
+<h2>What it means for the tech industry</h2>
+<p>For technology companies, the signal is that the Pentagon wants commercial builders, not only traditional defence contractors, shaping its long-range thinking. Companies working in autonomy, computer vision, satellite services, batteries and drones may see more defence interest, and more scrutiny of dual-use products that serve both civilian and military customers. For AI vendors in particular, the line between a general-purpose model and a defence tool is becoming a procurement and policy question, not just an ethical one.</p>
+
+<h2>What it means outside the United States</h2>
+<p>For readers in Canada, and in Francophone Africa where many governments buy or receive Western security technology, the recommendations will matter in two ways. First, US priorities tend to set what allies and partners are offered, from surveillance drones to satellite connectivity. Second, the public version of the report is a rare chance to see, in writing, how the US expects autonomy and AI to be used in conflict. Countries that are drafting their own rules on autonomous weapons, data sovereignty and satellite internet licensing will be able to read it directly, and should.</p>
+
+<h2>Questions You Should Be Asking</h2>
+<ul>
+<li>Which organisation is running the study, and will its contract and staffing be public?</li>
+<li>What recusal rules apply when a recommendation touches a product that SpaceX or Anduril sells?</li>
+<li>How much of the final report will be public, and how much will sit in the classified annex?</li>
+<li>If you supply dual-use technology, would your product be affected by tighter export or end-use rules that follow?</li>
+<li>For governments outside the US: what review will apply before adopting systems the report recommends?</li>
+</ul>
+
+<h2>What To Watch Next</h2>
+<p>The first concrete signal will be the naming of the partner organisation and any ethics agreement covering the co-directors. After that, the date that matters is January 28, 2027, when the unclassified report is due. Compare its recommendations with the products the co-directors' companies sell: that is the simplest test of whether the concerns raised this week were warranted.</p>`,
+    sources: [
+      { label: "US Department of Defense: Commissioning of Project Meridian (memo, September 30, 2026)", url: "https://media.defense.gov/2026/Sep/30/2004009287/-1/-1/1/COMMISSIONING-OF-PROJECT-MERIDIAN.PDF" },
+      { label: "CNBC: Elon Musk, Palmer Luckey and Newt Gingrich to help Pentagon with warfare initiative, Hegseth says", url: "https://www.cnbc.com/2026/09/30/musk-luckey-gingrich-pentagon-hegseth-.html" },
+      { label: "Stars and Stripes: Elon Musk, Project Meridian", url: "https://www.stripes.com/theaters/us/2026-10-01/elon-musk-project-meridian-23025679.html" },
+      { label: "The Hill: Hegseth puts Musk, Luckey, Gingrich in charge of military future warfare review", url: "https://thehill.com/policy/defense/6121108-pete-hegseth-pentagon-project-meridian-warfare-future/" },
+      { label: "Axios: Musk returns to Trump world for Pentagon war study", url: "https://www.axios.com/2026/09/30/pentagon-hegseth-musk-gingrich-anduril" },
+      { label: "TechCrunch: The Pentagon taps Elon Musk and Palmer Luckey to help decide what the military should do next", url: "https://techcrunch.com/2026/09/30/the-pentagon-taps-elon-musk-and-palmer-luckey-to-help-decide-what-the-military-should-do-next/" },
+      { label: "Engadget: Elon Musk and Palmer Luckey will advise the government on the future of warfare", url: "https://www.engadget.com/2274082/elon-musk-and-palmer-luckey-will-advise-the-government-on-the-future-of-warfare/" },
+      { label: "UPI: Hegseth appoints Musk, Gingrich, Luckey to lead warfare project", url: "https://upi.com/Top_News/US/2026/09/30/musk-gingrich-luckey-to-lead-warfare-project/9841790814098" },
+      { label: "Business Standard: What Project Meridian, led by Musk and Palmer Luckey, means for US defence", url: "https://www.business-standard.com/blueprint-defence-magazine/reports/what-project-meridian-led-by-musk-and-palmer-luckey-means-for-us-defence-126100100904_1.html" },
+      { label: "The Guardian (via inkl): Hegseth puts the future of warfare in the hands of major donors", url: "https://www.inkl.com/news/hegseth-puts-the-future-of-warfare-in-the-hands-of-major-maga-donors" },
+      { label: "Fox News: Musk tapped to co-lead Pentagon's Project Meridian on future warfare", url: "https://www.foxnews.com/politics/elon-musk-lands-new-trump-admin-role-shaping-future-american-warfare" },
+      { label: "Space.com: SpaceX wins $4 billion Space Force contract for satellites that track airborne threats", url: "https://www.space.com/space-exploration/satellites/spacex-wins-usd4-billion-space-force-contract-for-satellites-that-target-airborne-threats-anywhere-on-earth" },
+      { label: "US News (Reuters): US Space Force awards SpaceX $4.16 billion deal", url: "https://money.usnews.com/investing/news/articles/2026-05-29/us-space-force-awards-spacex-4-16-billion-deal" },
+      { label: "DefenseScoop: Army awards Anduril $20B contract with an eye toward counter-drone capabilities", url: "https://defensescoop.com/2026/03/14/anduril-20-billion-dollar-army-contract/" },
+      { label: "TechCrunch: US Army announces contract with Anduril worth up to $20B", url: "https://techcrunch.com/2026/03/14/us-army-announces-contract-with-anduril-worth-up-to-20b/" },
+    ],
+  },
+  // ───────────────────────────────────────────────────────────────────────────
+  {
+    slug: "anthropic-ipo-what-we-know",
+    title: "Anthropic's IPO: What Is Confirmed, What Is Reported, What Is Unknown",
+    excerpt:
+      "Anthropic has filed confidentially to go public. Valuation targets, timing and the exchange are still reports, not facts. Here is the line between them.",
+    category: "ai-business",
+    tags: ["anthropic", "ipo", "ai industry", "claude", "funding"],
+    content: `<p>Anthropic, the company behind Claude, is preparing to become a public company. That much is official: on June 1, 2026 it confidentially submitted a draft registration statement to the US Securities and Exchange Commission. Almost everything else in the headlines, including a possible $2 trillion valuation and a listing date, comes from people familiar with the plans, and some of those reports have already changed.</p>
+
+<p>This piece sorts what is known into three groups, so you can tell which claims to rely on.</p>
+
+<h2>Confirmed</h2>
+<ul>
+<li><strong>The confidential filing.</strong> Anthropic announced that it had confidentially submitted a draft registration statement on Form S-1 to the SEC on June 1, 2026, for a proposed initial public offering of common stock. It said the number of shares and the price had not been determined. A confidential submission starts the SEC review privately. It does not set a date or guarantee that an offering will happen.</li>
+<li><strong>The last private round.</strong> In late May, Anthropic raised $65 billion in a Series H round at a $965 billion post-money valuation, as reported by CNBC and TechCrunch at the time. That placed it ahead of OpenAI as the most valuable private AI company, based on OpenAI's last reported valuation.</li>
+</ul>
+
+<h2>Reported, not confirmed</h2>
+<ul>
+<li><strong>A valuation above $2 trillion.</strong> Reuters reported that some investors believe the listing could value Anthropic at more than $2 trillion. That is a target discussed by people around the deal, not a price. IPO valuations are set at the end of the marketing process and often move.</li>
+<li><strong>Timing.</strong> Reports have shifted. On September 5, Reuters reported that Anthropic would begin marketing the IPO in mid-October at the earliest and could complete the listing days before the US midterm elections in early November. Later coverage, citing The Wall Street Journal, said the listing would come in November so the company could show third-quarter financial results, and some reports since have pointed to a date after the midterms. Anthropic has not announced a date.</li>
+<li><strong>The prospectus contents.</strong> Reuters reported on September 28 that it had seen Anthropic's draft prospectus, and Fortune also reported on the leaked document. According to those reports, revenue grew about twelvefold in 2025 to nearly $4.6 billion, the company lost more than $8 billion on an operating basis, and its reported net loss of about $42 billion included a non-cash accounting charge of roughly $34 billion tied to earlier financing. Reuters also reported about $518 billion in cloud, computing and infrastructure commitments over coming years. These figures come from a draft that Anthropic has not published, and they may change before a public filing.</li>
+<li><strong>A credit facility.</strong> Reuters reported that Anthropic was working to finalise a $15 billion revolving credit facility as part of its preparations.</li>
+</ul>
+
+<h2>Unknown</h2>
+<ul>
+<li><strong>Exchange and ticker.</strong> Some outlets have reported, citing unnamed sources, that Anthropic chose Nasdaq. The company has not announced an exchange, and no ticker symbol exists until one is assigned for a listing.</li>
+<li><strong>Size of the offering</strong>, the share price, and how much stock existing investors will sell.</li>
+<li><strong>Governance after listing.</strong> Anthropic is a public benefit corporation with a stated safety mission. How its governance structure will be described to public investors will only be clear once a prospectus is public.</li>
+</ul>
+
+<h2>Why it matters for the AI market</h2>
+<p>A public listing would put the economics of frontier AI on the record. Until now, the costs of training and running large models have been visible mostly through leaks and private fundraising. A public Anthropic would report revenue, losses and compute commitments every quarter, giving the market its first regular look at whether a frontier lab's revenue can keep pace with its infrastructure bills. That matters for competitors such as OpenAI and Google, for the cloud providers that supply Anthropic's computing, and for investors trying to price the whole sector.</p>
+
+<h2>What it means for businesses that use Claude</h2>
+<p>For a business that builds on Claude, an IPO changes little on day one. Your contract, your pricing and the models you use do not change because the company files with the SEC. Over time, three things are worth watching, and none of them is predictable yet:</p>
+<ul>
+<li><strong>Disclosure.</strong> A public company must report material risks and results. Customers will be able to read, in a public filing, how dependent Anthropic is on its largest partners and how it describes the risks of its own technology. The leaked draft reportedly already discusses safety risks from increasingly autonomous models.</li>
+<li><strong>Pricing pressure.</strong> Public investors focus on margins. Whether that leads to higher prices, lower prices driven by competition, or no change is not known. Treat any confident prediction as speculation.</li>
+<li><strong>Enterprise trust.</strong> Audited financials and public reporting can make procurement and vendor-risk reviews easier for large buyers. They do not, on their own, say anything about product quality.</li>
+</ul>
+
+<h2>A note for individual readers</h2>
+<p>Shares in Anthropic are not publicly traded today. Offers to sell "pre-IPO" Anthropic shares to the public should be treated with great caution, as they are a common vehicle for scams. Nothing in this article is investment advice.</p>
+
+<h2>Questions You Should Be Asking</h2>
+<ul>
+<li>If your business depends on Claude, does your contract fix pricing and model availability for a set period?</li>
+<li>Which of the reported figures will still hold when the prospectus is made public?</li>
+<li>How will Anthropic describe its safety commitments to public shareholders, and do they change?</li>
+<li>Do you have a tested fallback to another model provider, whatever happens to any single vendor?</li>
+</ul>
+
+<h2>What To Watch Next</h2>
+<p>The public S-1 filing is the event that turns most of the "reported" items above into facts. US rules require a confidential draft to be made public at least 15 days before the company starts its investor roadshow, so when the prospectus appears on the SEC's EDGAR system, the listing is close. Until then, treat dates and valuations as reports.</p>`,
+    sources: [
+      { label: "Yahoo Finance: Anthropic takes first step toward IPO with confidential SEC filing", url: "https://finance.yahoo.com/markets/stocks/articles/anthropic-takes-first-step-toward-013027105.html" },
+      { label: "CNBC: Anthropic tops OpenAI as most valuable AI startup, nears $1 trillion valuation in latest round", url: "https://www.cnbc.com/2026/05/28/anthropic-open-ai-startup-value.html" },
+      { label: "TechCrunch: Anthropic raises $65 billion, nears $1T valuation ahead of IPO", url: "https://techcrunch.com/2026/05/28/anthropic-raises-65-billion-nears-1t-valuation-ahead-of-ipo/" },
+      { label: "CNBC (Reuters): Anthropic IPO launch shifts toward mid-October", url: "https://www.cnbc.com/2026/09/05/anthropic-ipo-launch-shifts-toward-mid-october-reuters.html" },
+      { label: "Investing.com (Reuters): Anthropic delays IPO launch to mid-October at earliest", url: "https://www.investing.com/news/company-news/anthropic-delays-ipo-launch-to-midoctober-at-earliest-reuters-reports-4890106" },
+      { label: "Mixed News: Anthropic reportedly moves its IPO to November to show third-quarter numbers first", url: "https://mixed-news.com/en/anthropic-ipo-november-third-quarter-numbers-report/" },
+      { label: "CNBC (Reuters): Anthropic's IPO prospectus shows sweeping AI vision, surging costs", url: "https://www.cnbc.com/2026/09/28/anthropics-ipo-prospectus-shows-sweeping-ai-vision-surging-costs-reuters.html" },
+      { label: "US News (Reuters): Anthropic's IPO prospectus shows sweeping AI vision, surging costs", url: "https://money.usnews.com/investing/news/articles/2026-09-28/exclusive-anthropics-ipo-prospectus-shows-sweeping-ai-vision-surging-costs" },
+      { label: "Fortune: Anthropic's leaked IPO prospectus details steep losses and rapid growth", url: "https://fortune.com/2026/09/29/anthropic-leaked-ipo-prospectus-losses-growth-ai-end-humanity/" },
+      { label: "Quartz: Anthropic IPO prospectus: 2025 revenue, losses, and $518B spending plan", url: "https://qz.com/anthropic-ipo-prospectus-revenue-operating-loss-092926" },
     ],
   },
 ];

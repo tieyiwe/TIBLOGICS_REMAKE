@@ -116,6 +116,7 @@ const GRADIENT_MAP: Record<string, string> = {
   "from-teal-600 to-emerald-500": "bg-gradient-to-br from-teal-600 to-emerald-500",
   "from-[#F47C20] to-yellow-500": "bg-gradient-to-br from-[#F47C20] to-yellow-500",
   "from-slate-600 to-gray-500": "bg-gradient-to-br from-slate-600 to-gray-500",
+  "from-indigo-700 to-cyan-500": "bg-gradient-to-br from-indigo-700 to-cyan-500",
 };
 
 function gradientClass(g: string): string {
@@ -388,7 +389,7 @@ export default function BlogPostPage({
           <div className="p-5 sm:p-8 md:p-10">
             {/* Meta */}
             <div className="flex flex-wrap items-center gap-2 mb-5">
-              <span className="bg-[#EBF0FA] text-[#2251A3] text-xs font-medium font-dm px-3 py-1 rounded-full">
+              <span className={`${post.category === "advanced-tech" ? "bg-indigo-50 text-indigo-700" : "bg-[#EBF0FA] text-[#2251A3]"} text-xs font-medium font-dm px-3 py-1 rounded-full`}>
                 {t(`pages.aiTimes.label.${post.category}`).startsWith("pages.") ? post.category : t(`pages.aiTimes.label.${post.category}`)}
               </span>
               {post.aiGenerated && (

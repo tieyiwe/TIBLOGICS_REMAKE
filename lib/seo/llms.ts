@@ -130,7 +130,7 @@ export async function buildLlmsTxt(): Promise<string> {
   out.push("");
 
   out.push("## AI Times (articles)", "");
-  out.push(`- [AI Times](${absUrl("/ai-times")}): articles on AI for business, in English, French and Swahili. RSS: ${absUrl("/ai-times/feed.xml")}`);
+  out.push(`- [AI Times](${absUrl("/ai-times")}): AI and advanced tech, made digestible: articles on AI for business and on frontier tech (AI chips, quantum computing, robotics, space, biotech, energy tech), each a less than 5 minute read, in English, French and Swahili. RSS: ${absUrl("/ai-times/feed.xml")}`);
   for (const p of d.posts) out.push(`- [${p.title}](${absUrl(`/ai-times/${p.slug}`)}): ${oneLine(p.excerpt, 160)}`);
   out.push("");
 

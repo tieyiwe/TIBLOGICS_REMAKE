@@ -3,14 +3,14 @@ import { tri } from "./_tri";
 export default tri({
   // AI Times: listing
   "pages.aiTimes.meta.title": [
-    "AI TIMES | AI Insights for Business",
-    "AI TIMES | L'IA au service des entreprises",
-    "AI TIMES | Maarifa ya AI kwa Biashara",
+    "AI TIMES | AI and Advanced Tech, Made Digestible",
+    "AI TIMES | L'IA et les technologies de pointe, simplement expliquées",
+    "AI TIMES | AI na Teknolojia ya Kisasa, Kwa Lugha Rahisi",
   ],
   "pages.aiTimes.meta.description": [
-    "Practical AI knowledge for businesses, builders, and curious minds. AI best practices, readiness guides, tool reviews, and industry news, curated by TIBLOGICS.",
-    "Des connaissances pratiques en IA pour les entreprises, les créateurs et les esprits curieux. Bonnes pratiques, guides de préparation, tests d'outils et actualités du secteur, sélectionnés par TIBLOGICS.",
-    "Maarifa ya vitendo ya AI kwa biashara, wajenzi, na wadadisi. Mbinu bora za AI, miongozo ya utayari, tathmini za zana, na habari za sekta, vilivyoratibiwa na TIBLOGICS.",
+    "Practical AI and advanced tech knowledge for businesses, builders, and curious minds. AI best practices, tool reviews, and plain-English explainers on chips, quantum, robotics, space, biotech and energy tech, in less than 5 min reads. Curated by TIBLOGICS.",
+    "Des connaissances pratiques sur l'IA et les technologies de pointe pour les entreprises, les créateurs et les esprits curieux. Bonnes pratiques, tests d'outils et explications claires sur les puces, le quantique, la robotique, l'espace, les biotechnologies et l'énergie, à lire en moins de 5 minutes. Sélectionné par TIBLOGICS.",
+    "Maarifa ya vitendo ya AI na teknolojia ya kisasa kwa biashara, wajenzi, na wadadisi. Mbinu bora za AI, tathmini za zana, na maelezo rahisi kuhusu chipu, kompyuta za quantum, roboti, anga, bioteknolojia na nishati, husomwa kwa chini ya dakika 5. Vimeratibiwa na TIBLOGICS.",
   ],
   "pages.aiTimes.meta.ogTitle": [
     "AI TIMES: Real Insights. Less Than 5 Min Reads. | TIBLOGICS",
@@ -23,19 +23,19 @@ export default tri({
     "AI TIMES: Maarifa Halisi. Husomwa kwa Chini ya Dakika 5.",
   ],
   "pages.aiTimes.meta.ogDescription": [
-    "Stay up to date with the most relevant AI tech info without wasting time or getting lost in dreadful articles.",
-    "Restez informé de l'essentiel de l'actualité IA sans perdre de temps ni vous noyer dans des articles interminables.",
-    "Pata habari muhimu zaidi za teknolojia ya AI bila kupoteza muda wala kupotea katika makala zinazochosha.",
+    "Stay up to date on AI and the advanced tech shaping business, from AI chips and quantum to robotics and space, without wasting time or getting lost in dreadful articles.",
+    "Restez informé de l'essentiel de l'IA et des technologies de pointe qui transforment les entreprises, des puces IA au quantique en passant par la robotique et l'espace, sans perdre de temps ni vous noyer dans des articles interminables.",
+    "Pata habari muhimu zaidi za AI na teknolojia ya kisasa inayobadilisha biashara, kuanzia chipu za AI na quantum hadi roboti na anga, bila kupoteza muda wala kupotea katika makala zinazochosha.",
   ],
   "pages.aiTimes.tagline": [
-    "The #1 AI Digestible Knowledge",
-    "L'IA expliquée simplement, n° 1",
-    "Maarifa ya AI Yanayoeleweka, Nambari 1",
+    "AI and Advanced Tech, Made Digestible",
+    "L'IA et les technologies de pointe, simplement expliquées",
+    "AI na Teknolojia ya Kisasa, Kwa Lugha Rahisi",
   ],
   "pages.aiTimes.intro": [
-    "Practical AI knowledge for businesses, builders, and curious minds.",
-    "Des connaissances pratiques en IA pour les entreprises, les créateurs et les esprits curieux.",
-    "Maarifa ya vitendo ya AI kwa biashara, wajenzi, na wadadisi.",
+    "Practical AI and advanced tech knowledge for businesses, builders, and curious minds, in less than 5 min reads.",
+    "Des connaissances pratiques sur l'IA et les technologies de pointe pour les entreprises, les créateurs et les esprits curieux, à lire en moins de 5 minutes.",
+    "Maarifa ya vitendo ya AI na teknolojia ya kisasa kwa biashara, wajenzi, na wadadisi, husomwa kwa chini ya dakika 5.",
   ],
   "pages.aiTimes.breaking": ["BREAKING", "FLASH", "HABARI MPYA"],
   "pages.aiTimes.source": ["Source →", "Source →", "Chanzo →"],
@@ -48,6 +48,7 @@ export default tri({
   "pages.aiTimes.cat.tools": ["🔧 Tools", "🔧 Outils", "🔧 Zana"],
   "pages.aiTimes.cat.case-studies": ["📊 Case Studies", "📊 Études de cas", "📊 Mifano ya Kazi"],
   "pages.aiTimes.cat.industry": ["🌐 Industry", "🌐 Secteur", "🌐 Sekta"],
+  "pages.aiTimes.cat.advanced-tech": ["🚀 Advanced Tech", "🚀 Technologies de pointe", "🚀 Teknolojia ya Kisasa"],
   // Shorter labels used on cards
   "pages.aiTimes.badge.breaking": ["⚡ Breaking", "⚡ Dernière minute", "⚡ Habari Mpya"],
   "pages.aiTimes.badge.ai-business": ["💼 AI for Business", "💼 L'IA pour les entreprises", "💼 AI kwa Biashara"],
@@ -55,6 +56,7 @@ export default tri({
   "pages.aiTimes.badge.tools": ["🔧 Tools", "🔧 Outils", "🔧 Zana"],
   "pages.aiTimes.badge.case-studies": ["📊 Case Study", "📊 Étude de cas", "📊 Mfano wa Kazi"],
   "pages.aiTimes.badge.industry": ["🌐 Industry", "🌐 Secteur", "🌐 Sekta"],
+  "pages.aiTimes.badge.advanced-tech": ["🚀 Advanced Tech", "🚀 Tech de pointe", "🚀 Teknolojia ya Kisasa"],
   // Long labels used on the article page
   "pages.aiTimes.label.breaking": ["⚡ Breaking News", "⚡ Dernière minute", "⚡ Habari Zinazochipuka"],
   "pages.aiTimes.label.ai-business": ["💼 AI for Business", "💼 L'IA pour les entreprises", "💼 AI kwa Biashara"],
@@ -62,6 +64,7 @@ export default tri({
   "pages.aiTimes.label.tools": ["🔧 Tools & Reviews", "🔧 Outils et tests", "🔧 Zana na Tathmini"],
   "pages.aiTimes.label.case-studies": ["📊 Case Studies", "📊 Études de cas", "📊 Mifano ya Kazi"],
   "pages.aiTimes.label.industry": ["🌐 Industry News", "🌐 Actualités du secteur", "🌐 Habari za Sekta"],
+  "pages.aiTimes.label.advanced-tech": ["🚀 Advanced Tech", "🚀 Technologies de pointe", "🚀 Teknolojia ya Kisasa"],
 
   "pages.aiTimes.empty.title": ["No posts yet", "Aucun article pour l'instant", "Bado hakuna makala"],
   "pages.aiTimes.empty.body": [
@@ -120,9 +123,9 @@ export default tri({
     "Kaa mbele katika AI, bila kelele.",
   ],
   "pages.newsletter.articleBody": [
-    "Get the most digestible AI insights, tools, and developments straight to your inbox. In plain English. Free.",
-    "Recevez directement dans votre boîte les analyses, outils et nouveautés de l'IA les plus faciles à digérer. En termes simples. Gratuitement.",
-    "Pata maarifa, zana, na maendeleo ya AI yanayoeleweka kwa urahisi moja kwa moja kwenye sanduku lako la barua pepe. Kwa lugha rahisi. Bila malipo.",
+    "Get the most digestible AI and advanced tech insights, tools, and developments straight to your inbox. In plain English. Free.",
+    "Recevez directement dans votre boîte les analyses, outils et nouveautés de l'IA et des technologies de pointe les plus faciles à digérer. En termes simples. Gratuitement.",
+    "Pata maarifa, zana, na maendeleo ya AI na teknolojia ya kisasa yanayoeleweka kwa urahisi moja kwa moja kwenye sanduku lako la barua pepe. Kwa lugha rahisi. Bila malipo.",
   ],
 
   // Article page

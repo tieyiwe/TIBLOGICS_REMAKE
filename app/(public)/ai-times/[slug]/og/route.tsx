@@ -18,6 +18,7 @@ const CATEGORY: Record<string, { label: string; color: string }> = {
   tools: { label: "Tools", color: "#60A5FA" },
   "case-studies": { label: "Case Study", color: "#A78BFA" },
   industry: { label: "Industry", color: "#F472B6" },
+  "advanced-tech": { label: "Advanced Tech", color: "#22D3EE" },
 };
 
 // Cover photos are fetched only from known image hosts or this site's own

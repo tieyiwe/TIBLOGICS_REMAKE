@@ -43,7 +43,7 @@ function buildEmailHtml(
       <h1 style="margin:0;color:white;font-size:26px;font-weight:900;letter-spacing:-0.5px;">
         TIB<span style="color:#F47C20;">LOGICS</span>
       </h1>
-      <p style="margin:8px 0 0;color:rgba(255,255,255,0.75);font-size:13px;">The #1 AI Digestible Knowledge</p>
+      <p style="margin:8px 0 0;color:rgba(255,255,255,0.75);font-size:13px;">AI and Advanced Tech, Made Digestible</p>
     </div>
 
     <!-- Intro -->

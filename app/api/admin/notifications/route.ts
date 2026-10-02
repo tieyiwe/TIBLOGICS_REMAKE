@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/require-admin";
+import { canSee } from "@/components/admin/shell/nav";
 import { listLimit } from "@/lib/admin/list-limit";
 import { prisma } from "@/lib/prisma";
 import { currentStaff } from "@/lib/admin/command-center/guard";
@@ -105,7 +106,10 @@ export async function GET(req: NextRequest) {
       }
     }
   }
-  items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  // Team & Roles: only the feeds whose page this person can open.
+  const viewer = staff ? { isAdmin: staff.isAdmin, isOwner: staff.isOwner, permissions: staff.permissions } : { isAdmin: false, permissions: [] };
+  const visible = items.filter((i) => canSee(i.href.split("?")[0], viewer));
+  visible.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  return NextResponse.json({ items, total: items.length });
+  return NextResponse.json({ items: visible, total: visible.length });
 }

@@ -390,9 +390,9 @@ export default tri({
     "Duka: vifaa vya AI na vifurushi vya prompts kwa kila sekta, hupakuliwa papo hapo.",
   ],
   "seo.facts.p.aitimes": [
-    "AI Times: a publication on AI for business, in English, French and Swahili.",
-    "AI Times : une publication sur l'IA pour les entreprises, en anglais, en français et en swahili.",
-    "AI Times: chapisho kuhusu AI kwa biashara, kwa Kiingereza, Kifaransa na Kiswahili.",
+    "AI Times: AI and advanced tech, made digestible. Articles on AI for business and on frontier tech such as chips, quantum, robotics, space and energy, in less than 5 min reads, in English, French and Swahili.",
+    "AI Times : l'IA et les technologies de pointe, simplement expliquées. Des articles sur l'IA pour les entreprises et sur les technologies de pointe (puces, quantique, robotique, espace, énergie), à lire en moins de 5 minutes, en anglais, en français et en swahili.",
+    "AI Times: AI na teknolojia ya kisasa, kwa lugha rahisi. Makala kuhusu AI kwa biashara na teknolojia ya kisasa kama chipu, quantum, roboti, anga na nishati, husomwa kwa chini ya dakika 5, kwa Kiingereza, Kifaransa na Kiswahili.",
   ],
   "seo.facts.p.events": [
     "Events: live AI trainings and workshops.",

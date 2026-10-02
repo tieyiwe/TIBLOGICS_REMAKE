@@ -2,6 +2,7 @@ import { translateArticleSoon } from "@/lib/i18n/sources/blog";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
+import { isBlogCategory } from "@/lib/blog/categories";
 import { INDEXNOW_SECTIONS, indexNowSoon } from "@/lib/seo/indexnow";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -31,7 +32,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         title: typeof body.title === "string" ? body.title.slice(0, 300) : undefined,
         excerpt: typeof body.excerpt === "string" ? body.excerpt.slice(0, 500) : undefined,
         content: typeof body.content === "string" ? body.content : undefined,
-        category: typeof body.category === "string" ? body.category : undefined,
+        category: isBlogCategory(body.category) ? body.category : undefined,
         tags: Array.isArray(body.tags) ? body.tags.slice(0, 20) : undefined,
         coverEmoji: typeof body.coverEmoji === "string" ? body.coverEmoji.slice(0, 10) : undefined,
         coverGradient: typeof body.coverGradient === "string" ? body.coverGradient.slice(0, 100) : undefined,

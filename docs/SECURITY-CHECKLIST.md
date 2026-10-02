@@ -229,9 +229,11 @@ sign-in for learners. No home-made session or password code.
 - **Learners**: 14 days, rolling (each visit extends it).
 - **Staff** (owner, admins, collaborators): 12 hours from sign-in, not
   extended by activity. Change with `STAFF_SESSION_HOURS` if needed.
-- **Deactivating or deleting a collaborator** now cuts off their open session
-  within a minute, and permission changes apply within a minute, without
-  waiting for the cookie to expire.
+- **Deactivating, deleting or signing out a staff member** (Team & Roles,
+  /admin_pro/team) ends their open sessions on their next request, and role
+  or permission changes apply on the next request too: the proxy and the
+  session check read the person's live access (cached for 3 seconds, dropped
+  at once on every change; "Sign out everywhere" moves a session version).
 - **Learner "sign out everywhere"** (admin action), **password reset**,
   suspension, block and deletion all invalidate existing learner sessions
   (session version). Verified in the code.
@@ -471,7 +473,14 @@ limit keys store a keyed hash of addresses and emails, never the plain value.
 
 ### Door 29: Audit trail. Done
 
-`/admin_pro/audit` records who did what and when. Already recorded: learner
+`/admin_pro/audit` records who did what and when. Team & Roles adds a staff
+footprint (`/admin_pro/team/activity`): every staff sign-in and failed
+attempt (device, /24 network, country when the host sends it), admin page
+views (one per page per person per 10 minutes), every API change and export,
+merged with the audit entries; CSV export for the owner and admins; email
+alerts to `ADMIN_NOTIFY_EMAIL` for exports, learner deletions, access
+changes, new-device sign-ins and 5+ failed staff sign-ins in 15 minutes; a
+retention setting (default 12 months) applied daily by the teams job. Already recorded: learner
 actions (suspend, block, delete, sign out everywhere, notes, exports),
 communications, test access grants, certificate and capstone decisions,
 product publishing, promotions. Added in this audit: collaborator invite,

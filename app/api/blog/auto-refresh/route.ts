@@ -22,6 +22,9 @@ import { CURATED_ARTICLES, renderSources } from "@/lib/blog/content/curated";
 import { RETRACTIONS } from "@/lib/blog/content/retractions";
 import { applyCorrections } from "@/lib/blog/content/apply-corrections";
 import { INDEXNOW_SECTIONS, indexNowSoon } from "@/lib/seo/indexnow";
+import { fetchAdvancedTechNews, type FeedItem } from "@/lib/blog/feeds";
+import { isBlogCategory } from "@/lib/blog/categories";
+import { planRun, type GenItem } from "@/lib/blog/plan-run";
 
 
 
@@ -296,7 +299,7 @@ FACT RULES. These override everything below.
 - Do not invent companies, customers, case studies, people, quotes or statistics. No "a regional restaurant group cut no-shows by 22%". If an example helps, make it plainly hypothetical ("imagine a clinic that...") and give it no invented figures.
 - Explain how to approach the problem: what it involves, what it takes, and what can go wrong.`;
 
-  const prompt = `Write a piece for AI TIMES, the TIBLOGICS technology publication.
+  const prompt = `Write a piece for AI TIMES, the TIBLOGICS publication on AI and advanced tech.
 
 Topic: "${title}"
 Today's date: ${today}
@@ -334,9 +337,17 @@ THE PIECE MUST DO THREE THINGS, IN THIS ORDER.
 Then close with "What To Watch Next" — one short paragraph naming the specific
 signal that will tell the reader which way this goes.
 
+IF THE SUBJECT IS ADVANCED TECH BEYOND AI SOFTWARE (chips, quantum, robotics,
+autonomous vehicles, drones, space, biotech, health tech, energy and climate
+tech, AR/VR, networks, frontier cybersecurity, brain-computer interfaces):
+add a section headed exactly "What It Means for Businesses and People" before
+"Questions You Should Be Asking": concrete effects on costs, jobs, products,
+timelines or daily life, stated only as far as the source supports. Explain
+the science or engineering plainly; the reader is not a specialist.
+
 Requirements:
-- 550-750 words
-- 4-5 <h2> subheadings, including the two named sections above
+- 550-750 words (a less than 5 minute read)
+- 4-6 <h2> subheadings, including the named sections above
 - HTML: <h2>, <p>, <ul>, <li>, <strong>
 - Tone: direct, specific, no hype, no jargon left unexplained, no filler
   sentences that restate the previous one
@@ -345,7 +356,18 @@ Requirements:
   historically relevant.
 
 Also determine:
-- category: one of [breaking, ai-business, tips, tools, case-studies, industry]
+- category: one of [breaking, ai-business, tips, tools, case-studies, industry, advanced-tech]
+  Use "advanced-tech" when the story is about frontier technology itself and
+  not mainly about AI software: semiconductors and AI chips (new chips,
+  architectures, fabs, manufacturing), quantum computing, robotics and
+  humanoids, autonomous vehicles and drones, space tech, biotech and health
+  tech, energy and climate tech (batteries, fusion, grid), AR/VR and spatial
+  computing, next-generation networks (6G, satellite internet), frontier
+  cybersecurity, brain-computer interfaces.
+  Use "industry" for the business side of those companies (earnings, deals,
+  lawsuits, policy, export rules), and the AI categories when the story is
+  mainly about an AI model, AI product or AI adoption, even if hardware is
+  mentioned.
 - tags: 3-5 relevant lowercase tags as JSON array
 - excerpt: 1 compelling sentence (max 160 chars)
 
@@ -361,7 +383,7 @@ Return a JSON object:
   try {
     const raw = await streamChat(
       [{ role: "user", content: prompt }],
-      `You write for AI TIMES, a technology publication read by operators and founders. You announce what happened, teach the reader enough that they understand it themselves, and hand them the questions a careful person would ask before acting. Your headlines earn attention with the real consequence, never with manufactured drama, and you never write a sentence that only restates the one before it. The current year is ${CURRENT_YEAR}. Never describe 2025 or 2024 as "this year" or "the current year".`,
+      `You write for AI TIMES, a publication on AI and advanced tech read by operators and founders. You announce what happened, teach the reader enough that they understand it themselves, and hand them the questions a careful person would ask before acting. Your headlines earn attention with the real consequence, never with manufactured drama, and you never write a sentence that only restates the one before it. The current year is ${CURRENT_YEAR}. Never describe 2025 or 2024 as "this year" or "the current year".`,
       // 550-750 words of HTML, JSON-escaped, plus headline, excerpt and tags.
       // The old 2000 cap sat right on that boundary: anything over it truncated
       // mid-JSON, the parse below threw, and the article was dropped with no
@@ -376,6 +398,9 @@ Return a JSON object:
     // Written from a third-party page and published as HTML: keep only plain
     // article markup (lib/ai-html.ts).
     parsed.content = sanitizeAiHtml(parsed.content);
+    // The model's category is a suggestion: anything off the list would
+    // create a post no filter tab can reach.
+    if (!isBlogCategory(parsed.category)) parsed.category = "industry";
     return parsed;
   } catch {
     return null;
@@ -861,11 +886,46 @@ export async function GET(req: NextRequest) {
       needsRefresh = !lastRefresh || Date.now() - lastRefresh.getTime() > REFRESH_INTERVAL_MS;
     }
     // Alert if the agent is running significantly behind schedule
-    if (!checkOnly && lastRefresh && Date.now() - lastRefresh.getTime() > ALERT_THRESHOLD_MS) {
+    if (!checkOnly && searchParams.get("dryRun") !== "true" && lastRefresh && Date.now() - lastRefresh.getTime() > ALERT_THRESHOLD_MS) {
       await sendOverdueAlert(lastRefresh);
     }
   } catch {
     needsRefresh = true; // table missing — treat as needing refresh
+  }
+
+  // ?dryRun=true (admin or cron only, checked above): fetch every source and
+  // show what a run would pick, without calling the model or writing anything.
+  if (searchParams.get("dryRun") === "true") {
+    const [hn, dev, advanced] = await Promise.all([
+      fetchHackerNews(),
+      fetchDevTo(),
+      fetchAdvancedTechNews().catch(() => ({ items: [] as FeedItem[], perSource: {} as Record<string, number> })),
+    ]);
+    const known = await prisma.blogPost
+      .findMany({ select: { sourceUrl: true, title: true } })
+      .catch(() => [] as { sourceUrl: string | null; title: string }[]);
+    const knownUrls = new Set(known.map((k) => k.sourceUrl).filter(Boolean) as string[]);
+    const knownTitles = new Set(known.map((k) => k.title.toLowerCase()));
+    const bank: GenItem[] = (CATEGORY_TOPIC_BANK["advanced-tech"] ?? []).map((t) => ({
+      title: t, category: "advanced-tech", sourceLabel: "TIBLOGICS advanced-tech",
+    }));
+    const plan = planRun({
+      want: WANT,
+      aiNews: [
+        ...hn.map((s) => ({ title: s.title, url: s.url, source: "Hacker News" })),
+        ...dev.map((a) => ({ title: a.title, url: a.url, source: "DEV.to" })),
+      ],
+      advancedNews: advanced.items,
+      topicBank: bank,
+      isKnown: (i) => (!!i.url && knownUrls.has(i.url)) || knownTitles.has(i.title.toLowerCase()),
+    });
+    return NextResponse.json({
+      dryRun: true,
+      want: WANT,
+      sources: { hackerNews: hn.length, devTo: dev.length, feeds: advanced.perSource },
+      advancedCandidates: advanced.items.slice(0, 30),
+      plan,
+    });
   }
 
   if (checkOnly) {
@@ -1162,7 +1222,7 @@ export async function GET(req: NextRequest) {
 
   // Build per-category generation queue from topic bank (minimum 3 per category).
   const MIN_PER_CATEGORY = 3;
-  const CATEGORIES_LIST = ["breaking", "ai-business", "tips", "tools", "case-studies", "industry"] as const;
+  const CATEGORIES_LIST = ["breaking", "ai-business", "tips", "tools", "case-studies", "industry", "advanced-tech"] as const;
 
   // Load previously used topics so we don't repeat within the recent history
   const USED_TOPICS_KEY = "blog_used_topics";
@@ -1173,7 +1233,6 @@ export async function GET(req: NextRequest) {
   } catch { /* ignore */ }
   const usedTopicsSet = new Set<string>(usedTopicsArr);
 
-  type GenItem = { title: string; category: string; url?: string; sourceLabel: string };
   const topicBankItems: GenItem[] = [];
 
   // Check whether a proposed topic is too similar to any existing title (partial substring match)
@@ -1204,11 +1263,11 @@ export async function GET(req: NextRequest) {
   }
 
   // Real news is the point of the publication, so it leads and fills the run.
-  const [hnStories, devArticles] = await Promise.all([fetchHackerNews(), fetchDevTo()]);
-  const externalSources: Array<{ title: string; url?: string; source: string }> = [
-    ...hnStories.map((s) => ({ title: s.title, url: s.url, source: "Hacker News" })),
-    ...devArticles.map((a) => ({ title: a.title, url: a.url, source: "DEV.to" })),
-  ];
+  const [hnStories, devArticles, advanced] = await Promise.all([
+    fetchHackerNews(),
+    fetchDevTo(),
+    fetchAdvancedTechNews().catch(() => ({ items: [] as FeedItem[], perSource: {} })),
+  ]);
   // One scan of BlogPost for all three sets, instead of three separate ones
   // (source URLs, titles, and the slugs the generation loop probes below).
   const dedupRows = await prisma.blogPost.findMany({
@@ -1224,22 +1283,18 @@ export async function GET(req: NextRequest) {
   // also stops two articles in the same batch from claiming one slug, which the
   // old per-article findUnique could not see.
   const takenSlugs = new Set(dedupRows.map((p) => p.slug));
-  const newExternalSources: GenItem[] = externalSources
-    .filter((item) => {
-      if (item.url && existingSourceUrls.has(item.url)) return false;
-      if (existingSourceTitlesForDedup.has(item.title.toLowerCase())) return false;
-      return true;
-    })
-    .slice(0, WANT)
-    .map((item) => ({ title: item.title, category: "", url: item.url, sourceLabel: item.source }));
-
-  // News first; evergreen topics only make up the shortfall. If neither can
-  // fill the run, publish fewer articles rather than repeating old ones.
-  const shortfall = Math.max(0, WANT - newExternalSources.length);
-  const allToGenerate: GenItem[] = [
-    ...newExternalSources,
-    ...topicBankItems.slice(0, shortfall),
-  ];
+  const allToGenerate = planRun({
+    want: WANT,
+    aiNews: [
+      ...hnStories.map((s) => ({ title: s.title, url: s.url, source: "Hacker News" })),
+      ...devArticles.map((a) => ({ title: a.title, url: a.url, source: "DEV.to" })),
+    ],
+    advancedNews: advanced.items,
+    topicBank: topicBankItems,
+    isKnown: (item) =>
+      (!!item.url && existingSourceUrls.has(item.url)) ||
+      existingSourceTitlesForDedup.has(item.title.toLowerCase()),
+  });
 
   // One source of truth for covers. lib/blog-images owns the pool and the
   // uniqueness rule; this route used to keep its own parallel list, which is

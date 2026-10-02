@@ -110,6 +110,33 @@ export const CATEGORY_TOPIC_BANK: Record<string, string[]> = {
   ],
 };
 
+// Frontier tech beyond AI software: chips, quantum, robotics, space, biotech,
+// energy, spatial computing, networks. Evergreen explainers only (no dated
+// claims in the headline), each written with a "what it means for businesses
+// and people" angle. The agent still has to verify any fact it states.
+CATEGORY_TOPIC_BANK["advanced-tech"] = [
+  "AI Chips Explained: GPUs, TPUs and Custom Silicon, and Why They Decide What AI Costs You",
+  "Why Chip Manufacturing Is So Hard: Fabs, Lithography and the Supply Chain Behind Every Device",
+  "Quantum Computing in Plain English: What It Can Do, What It Cannot, and When It Matters for Business",
+  "Post-Quantum Cryptography: Why Your Encryption Needs an Upgrade Plan Before Quantum Computers Arrive",
+  "Humanoid Robots: What They Can Actually Do Today and Where They Will Show Up First",
+  "Warehouse and Factory Robotics: How Automation Is Changing Logistics for Mid-Sized Businesses",
+  "Self-Driving Cars and Robotaxis: How Autonomy Levels Work and What They Mean for Transport Businesses",
+  "Commercial Drones: Delivery, Agriculture and Inspection Use Cases That Already Pay Off",
+  "Satellite Internet Explained: How Low-Earth-Orbit Networks Are Connecting Remote Regions",
+  "The New Space Economy: How Cheaper Launches Are Creating Opportunities on the Ground",
+  "Biotech Meets AI: How Protein Design and Drug Discovery Models Are Changing Medicine",
+  "Health Tech Wearables: What Continuous Monitoring Means for Patients, Clinics and Insurers",
+  "Battery Technology Explained: Lithium-Ion, Sodium-Ion and Solid-State, and Why It Matters for EVs and Solar",
+  "Fusion Energy in Plain English: Where It Really Stands and What It Would Change",
+  "Grid AI: How Utilities Use Smart Software to Balance Solar, Wind and Data Center Demand",
+  "AR, VR and Spatial Computing: Practical Business Uses Beyond the Headset Hype",
+  "6G and the Future of Networks: What Comes After 5G and Why Businesses Should Care",
+  "Brain-Computer Interfaces: How They Work, Who They Help, and the Privacy Questions They Raise",
+  "Cybersecurity at the Frontier: Deepfakes, AI-Driven Attacks and the Defenses That Work",
+  "Edge Computing and On-Device AI: Why More Processing Is Moving Out of the Cloud",
+];
+
 export const CATEGORY_META: Record<string, { emoji: string; gradient: string }> = {
   "breaking":    { emoji: "⚡", gradient: "from-red-600 to-orange-500" },
   "ai-business": { emoji: "💼", gradient: "from-[#1B3A6B] to-[#2251A3]" },
@@ -117,4 +144,5 @@ export const CATEGORY_META: Record<string, { emoji: string; gradient: string }> 
   "tools":       { emoji: "🔧", gradient: "from-teal-600 to-emerald-500" },
   "case-studies":{ emoji: "📊", gradient: "from-[#F47C20] to-yellow-500" },
   "industry":    { emoji: "🌐", gradient: "from-slate-600 to-gray-500" },
+  "advanced-tech": { emoji: "🚀", gradient: "from-indigo-700 to-cyan-500" },
 };

@@ -9,6 +9,7 @@ import {
   Zap, Bot, BarChart2, FileText, ImageIcon,
 } from "lucide-react";
 import { Button, EmptyState, PageHeader, StatCard } from "@/components/admin/ui";
+import { BLOG_CATEGORIES, BLOG_CATEGORY_ADMIN_LABELS } from "@/lib/blog/categories";
 
 export interface Post {
   id: string;
@@ -36,14 +37,7 @@ export interface RefreshStatus {
   nextRefresh: string | null;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  "breaking": "⚡ Breaking",
-  "ai-business": "💼 Business",
-  "tips": "💡 Tips",
-  "tools": "🔧 Tools",
-  "case-studies": "📊 Case Study",
-  "industry": "🌐 Industry",
-};
+const CATEGORY_LABELS: Record<string, string> = BLOG_CATEGORY_ADMIN_LABELS;
 
 export default function BlogClient(initial: {
   posts: Post[];
@@ -172,6 +166,15 @@ export default function BlogClient(initial: {
       body: JSON.stringify({ featured: true }),
     });
     setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, featured: true } : p)));
+  }
+
+  async function updateCategory(id: string, category: string) {
+    const res = await fetch(`/api/blog/posts/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category }),
+    }).catch(() => null);
+    if (res?.ok) setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, category } : p)));
   }
 
   async function updateCoverImage(id: string, currentCover: string | null) {
@@ -410,9 +413,19 @@ export default function BlogClient(initial: {
                       </div>
                     </td>
                     <td className="px-5 py-3">
-                      <span className="text-xs font-dm text-[var(--a-ink-2)]">
-                        {CATEGORY_LABELS[p.category] ?? p.category}
-                      </span>
+                      <select
+                        aria-label={`Category for ${p.title}`}
+                        value={p.category}
+                        onChange={(e) => updateCategory(p.id, e.target.value)}
+                        className="text-xs font-dm text-[var(--a-ink-2)] bg-transparent border border-[var(--a-border)] rounded-md px-1.5 py-1"
+                      >
+                        {!(BLOG_CATEGORIES as readonly string[]).includes(p.category) && (
+                          <option value={p.category}>{p.category}</option>
+                        )}
+                        {BLOG_CATEGORIES.map((c) => (
+                          <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>
+                        ))}
+                      </select>
                     </td>
                     <td className="px-5 py-3 font-dm text-sm text-[var(--a-ink-3)]">{p.viewCount}</td>
                     <td className="px-5 py-3">

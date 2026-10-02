@@ -15,6 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
     keywords: [
       "AI blog", "AI for business", "AI best practices", "AI readiness",
       "AI news", "AI tools", "AI case studies", "AI TIMES", "AI implementation tips",
+      "advanced tech", "AI chips", "quantum computing", "robotics", "space tech", "climate tech",
     ],
   });
 }

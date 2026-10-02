@@ -319,23 +319,27 @@ export async function inviteMembers(actor: Actor, raw: unknown): Promise<InviteR
     const token = randomBytes(32).toString("hex");
     const expires = new Date(Date.now() + body.expiryDays * 86_400_000);
     const name = emails.length === 1 && body.name ? body.name : nameFromEmail(email);
-    const c = await prisma.collaborator.create({
-      data: {
-        name,
-        email,
-        role: role.id,
-        permissions: eff.permissions,
-        isAdmin: eff.isAdmin,
-        active: true,
-        inviteToken: hashInviteToken(token),
-        inviteExpires: expires,
-        invitedBy: actor.email,
-      },
+    // One transaction: the legacy migration (which hashes tokens of rows
+    // without an access row) can never see the collaborator without its row.
+    const c = await prisma.$transaction(async (tx) => {
+      const created = await tx.collaborator.create({
+        data: {
+          name,
+          email,
+          role: role.id,
+          permissions: eff.permissions,
+          isAdmin: eff.isAdmin,
+          active: true,
+          inviteToken: hashInviteToken(token),
+          inviteExpires: expires,
+          invitedBy: actor.email,
+        },
+      });
+      await tx.$executeRaw`
+        INSERT INTO "StaffAccess" ("collaboratorId", "roleId", "grants", "revokes", "inviteNote", "updatedBy")
+        VALUES (${created.id}, ${role.id}, ${JSON.stringify(grants)}::jsonb, ${JSON.stringify(revokes)}::jsonb, ${body.note || null}, ${actor.email})`;
+      return created;
     });
-    await prisma.$executeRaw`
-      INSERT INTO "StaffAccess" ("collaboratorId", "roleId", "grants", "revokes", "inviteNote", "updatedBy")
-      VALUES (${c.id}, ${role.id}, ${JSON.stringify(grants)}::jsonb, ${JSON.stringify(revokes)}::jsonb, ${body.note || null}, ${actor.email})
-      ON CONFLICT ("collaboratorId") DO UPDATE SET "roleId" = EXCLUDED."roleId", "grants" = EXCLUDED."grants", "revokes" = EXCLUDED."revokes", "inviteNote" = EXCLUDED."inviteNote"`;
     const url = `${appUrl()}/admin_pro/accept-invite?token=${token}`;
     try {
       await sendInviteEmail({ to: email, name, inviter: actor.isOwner ? `${actor.name || "The owner"} (owner)` : actor.name || actor.email, roleName: role.name, note: body.note, url, days: body.expiryDays });
@@ -435,13 +439,12 @@ export const AcceptBody = z.object({
   password: z.string().min(10, "Use at least 10 characters").max(200),
 });
 
-/** Looks up a pending invitation by its token (hashed; older raw tokens still work). */
+/** Looks up a pending invitation by its token (only the SHA-256 is stored). */
 export async function findInvite(token: string) {
   if (!/^[a-f0-9]{16,200}$/i.test(token)) return null;
-  return (
-    (await prisma.collaborator.findUnique({ where: { inviteToken: hashInviteToken(token) } })) ??
-    (await prisma.collaborator.findUnique({ where: { inviteToken: token } }))
-  );
+  // Pre-v2 invitations are hashed in place by migrateAllLegacy.
+  await migrateAllLegacy().catch(() => 0);
+  return prisma.collaborator.findUnique({ where: { inviteToken: hashInviteToken(token) } });
 }
 
 // ── Changing a member ───────────────────────────────────────────────────────
@@ -572,6 +575,16 @@ async function nameTaken(name: string, exceptId?: string): Promise<boolean> {
   return rows.some((r) => r.id !== exceptId);
 }
 
+/** A non-owner cannot change, through a role, someone who manages the team. */
+async function refuseIfManagersHold(ids: string[]) {
+  for (const id of ids) {
+    const row = await accessRow(id);
+    if (!row) continue;
+    const eff = await computeAccess(row, false);
+    if (eff.isAdmin || levelOf(eff.access, "team") === "manage") throw new TeamError("Someone who manages the team has this role. Only the owner can change it.", 403);
+  }
+}
+
 export async function createRole(actor: Actor, raw: unknown) {
   requireManage(actor);
   const body = RoleBody.parse(raw);
@@ -602,6 +615,7 @@ export async function updateRole(actor: Actor, id: string, raw: unknown) {
     const holders = await prisma.$queryRaw<Array<{ id: string }>>`SELECT "collaboratorId" AS id FROM "StaffAccess" WHERE "roleId" = ${id}`;
     if (holders.some((h) => h.id === actor.collaboratorId)) throw new TeamError("You cannot change the role you hold yourself. Ask the owner.", 403);
     if (levelOf(existing.access, "team") === "manage") throw new TeamError("Only the owner can change this role.", 403);
+    await refuseIfManagersHold(holders.map((h) => h.id));
   }
   if (await nameTaken(body.name, id)) throw new TeamError("A role with this name already exists.", 409);
   await prisma.$executeRaw`
@@ -633,6 +647,7 @@ export async function deleteRole(actor: Actor, id: string, reassignTo?: string |
     const target = await roleById(reassignTo);
     if (!target) throw new TeamError("That role does not exist.");
     if (!actor.isOwner) {
+      await refuseIfManagersHold(holders.map((h) => h.id));
       if (target.admin) throw new TeamError("Only the owner can make someone an Admin.", 403);
       if (holders.some((h) => h.id === actor.collaboratorId)) throw new TeamError("You cannot change your own role. Ask the owner.", 403);
       checkRoleGrantable(actor, target.access);

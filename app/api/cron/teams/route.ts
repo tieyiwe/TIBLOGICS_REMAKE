@@ -23,13 +23,18 @@ export async function GET(req: NextRequest) {
   if (!secretEquals(bearer, cronSecret)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!(await teamTablesReady())) return NextResponse.json({ error: "Team tables unavailable" }, { status: 500 });
 
+  // Staff log retention (Team & Roles): deletes footprint and audit entries
+  // past the owner's retention setting, at most once a day.
+  const retention = await import("@/lib/admin/team/footprint")
+    .then((m) => m.runStaffLogRetention())
+    .catch((err) => ({ error: err instanceof Error ? err.message : String(err) }));
   const digest = await runTeamDigests().catch((err) => ({ digests: 0, skipped: 0, errors: [err instanceof Error ? err.message : String(err)] }));
   const now = new Date();
   const due = await prisma.teamAssignment.findMany({
     where: { dueAt: { lt: now }, OR: [{ lastRemindedAt: null }, { lastRemindedAt: { lt: new Date(now.getTime() - WEEK + 3_600_000) } }] },
     take: 2000,
   });
-  if (due.length === 0) return NextResponse.json({ reminded: 0, emails: 0, digest });
+  if (due.length === 0) return NextResponse.json({ reminded: 0, emails: 0, digest, retention });
 
   const teams = await prisma.team.findMany({ where: { id: { in: [...new Set(due.map((d) => d.teamId))] } } });
   const live = new Map(teams.filter((t) => teamEntitled(t)).map((t) => [t.id, t]));
@@ -72,5 +77,5 @@ export async function GET(req: NextRequest) {
       errors.push(err instanceof Error ? err.message : String(err));
     }
   }
-  return NextResponse.json({ reminded, emails, errors, digest });
+  return NextResponse.json({ reminded, emails, errors, digest, retention });
 }

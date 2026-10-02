@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { CheckCircle, AlertCircle, Copy, RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Badge, Button, Card, Notice, PageHeader, Tabs } from "@/components/admin/ui";
+import { CheckCircle, AlertCircle, Copy } from "lucide-react";
 
 interface SyncChange {
   project: string;
@@ -47,6 +48,11 @@ export default function SyncPage() {
   const [history, setHistory] = useState<SyncHistory[]>([]);
   const [tab, setTab] = useState<"paste" | "history">("paste");
   const [snippetCopied, setSnippetCopied] = useState(false);
+
+  // History used to load only after an apply; load it with the page.
+  useEffect(() => {
+    fetch("/api/admin/sync-history").then(r => r.json()).then(d => { if (Array.isArray(d)) setHistory(d); }).catch(() => {});
+  }, []);
 
   function handleParse() {
     setParseError(null);
@@ -104,154 +110,124 @@ export default function SyncPage() {
   }
 
   return (
-    <div className="bg-[#0F2240] min-h-screen p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="font-syne font-extrabold text-xl text-[#E8EFF8]">Command Center Sync</h1>
-          <p className="text-[#7A9BBF] text-sm font-dm mt-0.5">Paste a Claude update snippet to sync project data</p>
-        </div>
-        <a href="/admin_pro/command-center" className="text-[#7A9BBF] text-sm font-dm hover:text-[#E8EFF8]">← Overview</a>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-[#162D4F] border border-[#1E3A60] rounded-xl p-1 w-fit">
-        {(["paste","history"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-dm font-medium transition-colors capitalize ${
-              tab === t ? "bg-[#2251A3] text-white" : "text-[#7A9BBF] hover:text-[#E8EFF8]"
-            }`}>
-            {t === "paste" ? "Paste & Sync" : "Sync History"}
-          </button>
-        ))}
-      </div>
+    <div className="mx-auto w-full max-w-[1400px]">
+      <PageHeader
+        title="Command Center sync"
+        subtitle="Paste an update snippet from a Claude conversation to update a project."
+        breadcrumb={[{ label: "Command Center", href: "/admin_pro/command-center" }, { label: "Sync" }]}
+        tabs={<Tabs items={[{ id: "paste", label: "Paste and sync" }, { id: "history", label: "Sync history", count: history.length || null }]} active={tab} onChange={(t) => setTab(t as "paste" | "history")} ariaLabel="Sync sections" />}
+      />
 
       {tab === "paste" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left: paste input */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="space-y-4">
             <div>
-              <label className="block text-[#7A9BBF] text-xs font-dm mb-2">Paste Claude update snippet below:</label>
+              <label htmlFor="sync-input" className="mb-2 block font-dm text-[12.5px] font-semibold text-[var(--a-ink-2)]">Update snippet (JSON)</label>
               <textarea
+                id="sync-input"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 rows={12}
                 placeholder={'{\n  "action": "update",\n  "project": "SSR International Airport",\n  "progress": 45,\n  "addTasks": ["Follow-up call done"],\n  "chatSummary": "Phase 1 scope confirmed with Chairman Raju."\n}'}
-                className="w-full bg-[#0F2240] border border-[#1E3A60] rounded-xl p-4 text-[#E8EFF8] text-sm font-mono placeholder:text-[#4A6A8A] outline-none focus:border-[#2251A3] resize-none"
+                className="w-full resize-none rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] bg-[var(--a-surface)] p-4 font-mono text-[13px] text-[var(--a-ink)] placeholder:text-[var(--a-ink-3)] focus:border-[var(--a-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20"
               />
             </div>
 
-            {parseError && (
-              <div className="flex items-start gap-2 bg-red-900/20 border border-red-500/30 rounded-xl p-3">
-                <AlertCircle size={15} className="text-red-400 shrink-0 mt-0.5" />
-                <p className="text-red-400 text-sm font-dm">{parseError}</p>
-              </div>
-            )}
+            {parseError && <Notice tone="danger">{parseError}</Notice>}
 
-            <div className="flex gap-3">
-              <button onClick={handleParse} disabled={!input.trim()}
-                className="bg-[#2251A3] hover:bg-[#1B3A6B] text-white px-4 py-2 rounded-lg text-sm font-dm font-medium transition-colors disabled:opacity-40">
-                Parse & Preview
-              </button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" onClick={handleParse} disabled={!input.trim()}>
+                Preview changes
+              </Button>
               {preview && !applied && (
-                <button onClick={handleApply} disabled={applying}
-                  className="bg-[#F47C20] hover:bg-[#E05F00] text-white px-4 py-2 rounded-lg text-sm font-dm font-medium transition-colors disabled:opacity-60 flex items-center gap-2">
-                  {applying && <RefreshCw size={14} className="animate-spin" />}
-                  Apply Changes
-                </button>
+                <Button variant="primary" onClick={handleApply} loading={applying}>
+                  Apply changes
+                </Button>
               )}
               {preview && (
-                <button onClick={() => { setPreview(null); setParseError(null); }}
-                  className="text-[#7A9BBF] hover:text-[#E8EFF8] px-4 py-2 text-sm font-dm transition-colors">
+                <Button variant="ghost" onClick={() => { setPreview(null); setParseError(null); }}>
                   Cancel
-                </button>
+                </Button>
               )}
             </div>
 
-            {applied && (
-              <div className="flex items-center gap-2 bg-green-900/20 border border-green-500/30 rounded-xl p-3">
-                <CheckCircle size={15} className="text-green-400" />
-                <p className="text-green-400 text-sm font-dm font-medium">Changes applied successfully!</p>
-              </div>
-            )}
+            {applied && <Notice tone="success">Changes applied.</Notice>}
           </div>
 
-          {/* Right: preview + how-to */}
           <div className="space-y-4">
             {preview && (
-              <div className="bg-[#162D4F] border border-[#1E3A60] rounded-xl p-4">
-                <h3 className="font-syne font-bold text-[#E8EFF8] text-sm mb-3">Preview</h3>
+              <Card title="Preview">
                 {preview.map((item, i) => (
-                  <div key={i} className="border-b border-[#1E3A60] last:border-0 py-2.5">
+                  <div key={i} className="border-b border-[var(--a-border)] py-2.5 last:border-0">
                     {item.error ? (
-                      <div className="flex items-center gap-2 text-red-400 text-sm font-dm">
-                        <AlertCircle size={14} /> {item.project}: {item.error}
+                      <div className="flex items-center gap-2 font-dm text-sm text-[var(--a-danger)]">
+                        <AlertCircle size={14} aria-hidden /> {item.project}: {item.error}
                       </div>
                     ) : (
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <CheckCircle size={14} className="text-green-400" />
-                          <span className="font-dm text-sm text-[#E8EFF8] font-medium">{item.project}</span>
-                          <span className="text-xs text-[#7A9BBF] font-dm capitalize">({item.action})</span>
+                        <div className="mb-1 flex items-center gap-2">
+                          <CheckCircle size={14} className="text-[var(--a-success)]" aria-hidden />
+                          <span className="font-dm text-sm font-semibold text-[var(--a-ink)]">{item.project}</span>
+                          <span className="font-dm text-xs capitalize text-[var(--a-ink-3)]">({item.action})</span>
                         </div>
                         {item.changes && Object.keys(item.changes.after).filter(k => !["action","project","_source"].includes(k)).map(k => (
-                          <div key={k} className="text-xs text-[#7A9BBF] font-dm pl-5">
-                            ✓ {k}: {JSON.stringify(item.changes!.after[k])}
+                          <div key={k} className="pl-5 font-dm text-xs text-[var(--a-ink-3)]">
+                            {k}: {JSON.stringify(item.changes!.after[k])}
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
                 ))}
-              </div>
+              </Card>
             )}
 
-            {/* How to use */}
-            <div className="bg-[#162D4F] border border-[#1E3A60] rounded-xl p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-syne font-bold text-[#E8EFF8] text-sm">How to Use</h3>
-                <button onClick={copySnippet}
-                  className="flex items-center gap-1 text-xs text-[#7A9BBF] hover:text-[#E8EFF8] transition-colors font-dm">
-                  <Copy size={12} /> {snippetCopied ? "Copied!" : "Copy prompt"}
-                </button>
-              </div>
-              <p className="text-[#7A9BBF] text-xs font-dm mb-3">
-                At the end of any Claude conversation about a project, paste this prompt to get a sync snippet:
+            <Card
+              title="How to use"
+              action={
+                <Button size="sm" variant="ghost" icon={Copy} onClick={copySnippet}>
+                  {snippetCopied ? "Copied" : "Copy prompt"}
+                </Button>
+              }
+            >
+              <p className="mb-3 font-dm text-[13px] text-[var(--a-ink-3)]">
+                At the end of a Claude conversation about a project, paste this prompt to get a sync snippet:
               </p>
-              <pre className="bg-[#0F2240] border border-[#1E3A60] rounded-lg p-3 text-[#E8EFF8] text-xs font-mono whitespace-pre-wrap overflow-x-auto">{SNIPPET_TEMPLATE}</pre>
-            </div>
+              <pre className="overflow-x-auto whitespace-pre-wrap rounded-[10px] bg-[var(--a-surface-2)] p-3 font-mono text-xs text-[var(--a-ink-2)]">{SNIPPET_TEMPLATE}</pre>
+            </Card>
           </div>
         </div>
       )}
 
       {tab === "history" && (
-        <div className="bg-[#162D4F] border border-[#1E3A60] rounded-2xl overflow-hidden">
+        <Card padded={false}>
           {history.length === 0 ? (
-            <div className="p-12 text-center">
-              <p className="text-[#7A9BBF] font-dm text-sm">No sync history yet. Use the Paste & Sync tab to apply your first update.</p>
-            </div>
+            <p className="p-12 text-center font-dm text-sm text-[var(--a-ink-3)]">No sync history yet. Use Paste and sync to apply your first update.</p>
           ) : (
-            <table className="w-full">
-              <thead className="border-b border-[#1E3A60]">
-                <tr>
-                  {["Date", "Project", "Action", "Source", "Summary"].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-dm text-[#7A9BBF]">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {history.map((s) => (
-                  <tr key={s.id} className="border-b border-[#1E3A60] last:border-0 hover:bg-[#1E3A60]/20">
-                    <td className="px-4 py-3 text-xs font-dm text-[#7A9BBF]">{new Date(s.createdAt).toLocaleDateString()}</td>
-                    <td className="px-4 py-3 text-sm font-dm text-[#E8EFF8]">{s.projectName}</td>
-                    <td className="px-4 py-3"><span className="bg-[#1E3A60] text-[#7A9BBF] text-xs px-2 py-0.5 rounded-full font-dm capitalize">{s.action}</span></td>
-                    <td className="px-4 py-3 text-xs font-dm text-[#7A9BBF] capitalize">{s.source}</td>
-                    <td className="px-4 py-3 text-xs font-dm text-[#7A9BBF] max-w-xs truncate">{s.chatSummary ?? "—"}</td>
+            <div className="overflow-x-auto">
+              <table className="w-full font-dm text-[13px]">
+                <thead className="bg-[var(--a-surface-2)]">
+                  <tr>
+                    {["Date", "Project", "Action", "Source", "Summary"].map(h => (
+                      <th key={h} className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--a-ink-3)]">{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {history.map((s) => (
+                    <tr key={s.id} className="border-t border-[var(--a-border)] hover:bg-[#f8fafd]">
+                      <td className="whitespace-nowrap px-4 py-3 text-[var(--a-ink-3)]">{new Date(s.createdAt).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 font-semibold text-[var(--a-ink)]">{s.projectName}</td>
+                      <td className="px-4 py-3"><Badge tone="neutral">{s.action}</Badge></td>
+                      <td className="px-4 py-3 capitalize text-[var(--a-ink-3)]">{s.source}</td>
+                      <td className="max-w-xs truncate px-4 py-3 text-[var(--a-ink-3)]">{s.chatSummary ?? ""}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
-        </div>
+        </Card>
       )}
     </div>
   );

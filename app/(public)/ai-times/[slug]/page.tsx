@@ -56,6 +56,7 @@ const CATEGORY_OG_FALLBACK: Record<string, string> = {
   "tools":        "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&h=630&q=80",
   "case-studies": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&h=630&q=80",
   "industry":     "https://images.unsplash.com/photo-1779509742657-97f3e5c76f4f?auto=format&fit=crop&w=1200&h=630&q=80",
+  "advanced-tech": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&h=630&q=80",
 };
 
 /** The article's own share card (app/(public)/ai-times/[slug]/og). */

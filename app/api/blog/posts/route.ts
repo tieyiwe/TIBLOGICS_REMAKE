@@ -2,6 +2,7 @@ import { translateArticleSoon } from "@/lib/i18n/sources/blog";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
+import { isBlogCategory } from "@/lib/blog/categories";
 import { INDEXNOW_SECTIONS, indexNowSoon } from "@/lib/seo/indexnow";
 
 function slugify(title: string): string {
@@ -19,6 +20,7 @@ const CATEGORY_COVER_POOL: Record<string, string[]> = {
   "tips":         ["https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1484557052118-f32bd25b45b5?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1434030216411-0b793f4b6f6d?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1513258496099-48168024aec0?auto=format&fit=crop&w=800&q=80"],
   "tools":        ["https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1555949963-aa79dcee981c?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1587620962725-abab7fe55159?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=800&q=80"],
   "case-studies": ["https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1560472354-b33ff0c44a43?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80"],
+  "advanced-tech": ["https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80"],
   "industry":     ["https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80"],
 };
 
@@ -38,7 +40,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const where: Record<string, unknown> = { published: true };
-    if (category && category !== "all") where.category = category;
+    if (category && category !== "all") where.category = category.slice(0, 40);
     if (featured === "true") where.featured = true;
     if (search) {
       const terms = search.trim().split(/\s+/).filter(Boolean);
@@ -89,7 +91,7 @@ export async function POST(req: NextRequest) {
       slug = `${baseSlug}-${i++}`;
     }
 
-    const category = body.category ?? "industry";
+    const category = isBlogCategory(body.category) ? body.category : "industry";
     const post = await prisma.blogPost.create({
       data: {
         slug,
