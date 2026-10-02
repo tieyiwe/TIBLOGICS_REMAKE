@@ -122,7 +122,7 @@ export function UpdatesTab({ b, today, reload }: { b: ProjectBundle; today: stri
 function UpdatePart({ title, md, tone }: { title: string; md: string; tone?: "danger" }) {
   return (
     <div className="mt-2">
-      <p className={cn("a-micro mb-1", tone === "danger" && "!text-[var(--a-danger)]")}>{title}</p>
+      <p className={cn("a-micro font-dm mb-1", tone === "danger" && "!text-[var(--a-danger)]")}>{title}</p>
       <Markdown source={md} />
     </div>
   );
@@ -142,7 +142,7 @@ export function ActivityTab({ b }: { b: ProjectBundle }) {
     <div className="max-w-3xl space-y-5">
       {[...byDay.entries()].map(([day, items]) => (
         <section key={day}>
-          <h3 className="a-micro mb-2">{relativeDay(day, today)}</h3>
+          <h3 className="a-micro font-dm mb-2">{relativeDay(day, today)}</h3>
           <ol className="space-y-0 border-l-2 border-[var(--a-border)] pl-4">
             {items.map((a) => (
               <li key={a.id} className="relative py-1.5 font-dm text-[13.5px] text-[var(--a-ink-2)]">

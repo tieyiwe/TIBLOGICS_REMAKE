@@ -474,7 +474,7 @@ function Board({ projects, staff, today, onMove }: { projects: PortfolioProject[
                     e.dataTransfer.effectAllowed = "move";
                   }}
                   data-project={p.id}
-                  className="cursor-grab rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-3 shadow-[var(--a-shadow-card)] active:cursor-grabbing"
+                  className="relative cursor-grab rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-3 shadow-[var(--a-shadow-card)] active:cursor-grabbing"
                 >
                   <div className="flex items-center gap-2">
                     <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: p.color }} aria-hidden />

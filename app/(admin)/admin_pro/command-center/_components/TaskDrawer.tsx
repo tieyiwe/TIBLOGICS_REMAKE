@@ -259,7 +259,7 @@ function TaskPanel({ taskId, onClose }: { taskId: string; onClose: () => void })
         {/* Activity */}
         {detail.activity.length ? (
           <section>
-            <h3 className="a-micro mb-2">Activity</h3>
+            <h3 className="a-micro font-dm mb-2">Activity</h3>
             <ul className="space-y-1.5">
               {detail.activity.slice(0, 15).map((a) => (
                 <li key={a.id} className="font-dm text-[12.5px] text-[var(--a-ink-3)]">
@@ -348,7 +348,7 @@ function LabelsEditor({ labels, onSave }: { labels: string[]; onSave: (l: string
   };
   return (
     <section>
-      <h3 className="a-micro mb-2">Labels</h3>
+      <h3 className="a-micro font-dm mb-2">Labels</h3>
       <div className="flex flex-wrap items-center gap-1.5">
         {labels.map((l) => (
           <span key={l} className="inline-flex items-center gap-1 rounded-md bg-[var(--a-surface-2)] py-0.5 pl-2 pr-1 font-dm text-[12.5px] font-semibold text-[var(--a-ink-2)] ring-1 ring-inset ring-[var(--a-border)]">
@@ -381,7 +381,7 @@ function BlockersEditor({ task, siblings, onSave, openTask }: { task: TaskDTO; s
   const options = siblings.filter((t) => !task.blockedBy.includes(t.id) && t.id !== task.id);
   return (
     <section>
-      <h3 className="a-micro mb-2">Blocked by</h3>
+      <h3 className="a-micro font-dm mb-2">Blocked by</h3>
       <div className="space-y-1.5">
         {task.blockedBy.map((id) => {
           const t = siblings.find((x) => x.id === id);
@@ -427,7 +427,7 @@ function DescriptionEditor({ value, onSave }: { value: string; onSave: (v: strin
   return (
     <section>
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="a-micro">Description</h3>
+        <h3 className="a-micro font-dm">Description</h3>
         {!editing ? (
           <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
             {value ? "Edit" : "Add description"}
@@ -481,7 +481,7 @@ function Subtasks({ task, subtasks, reload }: { task: TaskDTO; subtasks: TaskDTO
   return (
     <section>
       <div className="mb-2 flex items-center gap-2">
-        <h3 className="a-micro">Subtasks</h3>
+        <h3 className="a-micro font-dm">Subtasks</h3>
         {subtasks.length ? <span className="font-dm text-[12px] tabular-nums text-[var(--a-ink-3)]">{done}/{subtasks.length}</span> : null}
       </div>
       <ul className="space-y-1">
@@ -536,7 +536,7 @@ function LinksEditor({ links, onSave }: { links: Array<{ label: string; url: str
   const [url, setUrl] = useState("");
   return (
     <section>
-      <h3 className="a-micro mb-2">Attachments and links</h3>
+      <h3 className="a-micro font-dm mb-2">Attachments and links</h3>
       <ul className="space-y-1">
         {links.map((l, i) => (
           <li key={i} className="flex items-center gap-2">
@@ -581,7 +581,7 @@ function TimeSection({ task, entries, logged, onChanged }: { task: TaskDTO; entr
   return (
     <section>
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <h3 className="a-micro">Time</h3>
+        <h3 className="a-micro font-dm">Time</h3>
         <span className="font-dm text-[12.5px] tabular-nums text-[var(--a-ink-3)]">
           {fmtMinutes(logged)} logged{task.estimateMinutes ? ` of ${fmtMinutes(task.estimateMinutes)} (${pctOfEstimate}%)` : ""}
         </span>
@@ -654,12 +654,18 @@ function Comments({ taskId, comments, onAdded }: { taskId: string; comments: Com
   const [busy, setBusy] = useState(false);
   const [suggest, setSuggest] = useState<{ q: string; at: number } | null>(null);
   const ref = useRef<HTMLTextAreaElement>(null);
-  const matches = suggest ? staff.filter((s) => s.name.toLowerCase().includes(suggest.q.toLowerCase())).slice(0, 6) : [];
+  const matches = suggest
+    ? staff
+        .filter((s) => s.name.toLowerCase().includes(suggest.q.toLowerCase()))
+        .sort((a, b) => Number(!a.name.toLowerCase().startsWith(suggest.q.toLowerCase())) - Number(!b.name.toLowerCase().startsWith(suggest.q.toLowerCase())))
+        .slice(0, 6)
+    : [];
 
   const onInput = (text: string, caret: number) => {
     setV(text);
     const before = text.slice(0, caret);
-    const m = before.match(/(^|\s)@([\w.]{0,30})$/);
+    // First name, optionally followed by a space and the start of a surname.
+    const m = before.match(/(^|\s)@([\w.]{0,30}(?: [\w.]{0,30})?)$/);
     setSuggest(m ? { q: m[2], at: caret - m[2].length - 1 } : null);
   };
   const pick = (s: { id: string; name: string }) => {
@@ -692,7 +698,7 @@ function Comments({ taskId, comments, onAdded }: { taskId: string; comments: Com
 
   return (
     <section>
-      <h3 className="a-micro mb-2 flex items-center gap-1.5">
+      <h3 className="a-micro font-dm mb-2 flex items-center gap-1.5">
         <MessageSquare size={13} aria-hidden /> Comments {comments.length ? <span className="tabular-nums">({comments.length})</span> : null}
       </h3>
       <ul className="space-y-3">

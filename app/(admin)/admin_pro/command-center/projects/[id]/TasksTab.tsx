@@ -335,7 +335,7 @@ function Board({ tasks, projectId, onStatus, reload, ...c }: Common & { tasks: T
                   }}
                   onDragEnd={() => setDragging(null)}
                   className={cn(
-                    "group cursor-grab rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-3 shadow-[var(--a-shadow-card)] transition-shadow hover:border-[var(--a-border-strong)] active:cursor-grabbing",
+                    "group relative cursor-grab rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-3 shadow-[var(--a-shadow-card)] transition-shadow hover:border-[var(--a-border-strong)] active:cursor-grabbing",
                     dragging === t.id && "opacity-50",
                   )}
                 >

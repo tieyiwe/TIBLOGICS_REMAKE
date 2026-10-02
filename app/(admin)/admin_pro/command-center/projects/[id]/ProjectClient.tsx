@@ -142,6 +142,7 @@ export default function ProjectClient({
     <CcShell
       {...shell}
       defaultProjectId={p.id}
+      hideTabs
       breadcrumb={[{ label: "Command Center", href: "/admin_pro/command-center" }, { label: p.name }]}
       title={
         <span className="flex min-w-0 items-center gap-2.5">
@@ -470,7 +471,7 @@ function ProgressSlider({ value, disabled, onCommit }: { value: number; disabled
 function Section({ title, md }: { title: string; md: string }) {
   return (
     <div className="mt-2">
-      <p className="a-micro mb-1">{title}</p>
+      <p className="a-micro font-dm mb-1">{title}</p>
       <Markdown source={md} />
     </div>
   );

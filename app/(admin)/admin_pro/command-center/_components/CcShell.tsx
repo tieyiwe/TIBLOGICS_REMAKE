@@ -83,6 +83,7 @@ export function CcShell({
   breadcrumb,
   meta,
   defaultProjectId,
+  hideTabs,
   children,
 }: {
   staff: StaffLite[];
@@ -95,6 +96,8 @@ export function CcShell({
   breadcrumb?: Crumb[];
   meta?: ReactNode;
   defaultProjectId?: string | null;
+  /** Pages with their own section tabs (a project) drop the Command Center tabs. */
+  hideTabs?: boolean;
   children: ReactNode;
 }) {
   const pathname = usePathname() ?? "";
@@ -163,7 +166,7 @@ export function CcShell({
           subtitle={subtitle}
           breadcrumb={breadcrumb}
           meta={meta}
-          tabs={tabs}
+          tabs={hideTabs ? undefined : tabs}
           activeTab={active}
           actions={
             <>

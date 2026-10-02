@@ -90,7 +90,7 @@ export default function UpdatesClient({
 function Part({ title, md }: { title: string; md: string }) {
   return (
     <div className="min-w-0">
-      <p className="a-micro mb-1">{title}</p>
+      <p className="a-micro font-dm mb-1">{title}</p>
       {md.trim() ? <Markdown source={md} className="text-[13px]" /> : <p className="font-dm text-[13px] text-[var(--a-ink-3)]">None</p>}
     </div>
   );

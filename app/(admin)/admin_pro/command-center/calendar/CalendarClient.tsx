@@ -152,7 +152,7 @@ function Calendar() {
         {agenda.length ? (
           agenda.map((d) => (
             <section key={d}>
-              <h3 className={cn("a-micro mb-1.5", d === today && "!text-[var(--a-orange-text)]")}>{fmtDay(d, { withYear: false })}{d === today ? " · Today" : ""}</h3>
+              <h3 className={cn("a-micro font-dm mb-1.5", d === today && "!text-[var(--a-orange-text)]")}>{fmtDay(d, { withYear: false })}{d === today ? " · Today" : ""}</h3>
               <ul className="overflow-hidden rounded-[12px] border border-[var(--a-border)] bg-[var(--a-surface)]">
                 {byDay.get(d)!.ms.map((m) => (
                   <li key={m.id} className="flex items-center gap-2 border-b border-[var(--a-border)] px-3 py-2 last:border-b-0">

@@ -73,7 +73,7 @@ export function NotesTab({ b, reload, setB }: { b: ProjectBundle; reload: () => 
           }}
           className="rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] p-3 shadow-[var(--a-shadow-card)]"
         >
-          <label htmlFor="quick-capture" className="a-micro mb-1.5 block">
+          <label htmlFor="quick-capture" className="a-micro font-dm mb-1.5 block">
             Quick capture
           </label>
           <textarea

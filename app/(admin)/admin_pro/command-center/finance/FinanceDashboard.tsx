@@ -120,7 +120,7 @@ export default function FinanceDashboard({ data, currentMonth }: { data: Dashboa
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12.5, color: "#3A4A5C" }} />
                 <Bar dataKey="Income" fill={INCOME} radius={[4, 4, 0, 0]} maxBarSize={22} />
                 <Bar dataKey="Expenses" fill={EXPENSE} radius={[4, 4, 0, 0]} maxBarSize={22} />
-                <Line dataKey="Net" stroke={NET} strokeWidth={2} dot={{ r: 3, strokeWidth: 2, stroke: "#fff", fill: NET }} type="monotone" />
+                <Line dataKey="Net" stroke={NET} strokeWidth={2} dot={{ r: 3, strokeWidth: 2, stroke: "#fff", fill: NET }} type="linear" />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
