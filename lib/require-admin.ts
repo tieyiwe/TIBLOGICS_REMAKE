@@ -3,6 +3,7 @@ import { getServerSession, type Session } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { can } from "@/lib/admin/permissions";
 
 // Rate limiting moved to lib/rate-limit.ts, where the counter is shared rather
 // than living in a per-instance Map that reset on every deploy. Re-exported
@@ -57,8 +58,17 @@ function requireStaffSession(session: Session): NextResponse | null {
 }
 
 /**
- * Returns null if the session user has the given permission (or is admin),
- * otherwise returns a 403 response.
+ * Returns null if the session user holds `permission`, otherwise a 403.
+ *
+ * Accepts (lib/admin/permissions.ts, `can`):
+ *   "blog" / "blog:view"   at least view access to the area
+ *   "blog:manage"          manage access
+ *   "learners.delete"      a sensitive capability
+ *   "finance.manage"       alias of "finance:manage" (also team, settings)
+ *   "*"                    owner or admin only
+ * The owner (Super Admin) always passes; admins pass everything except the
+ * owner-only keys. Every pre-existing call (a plain area key) behaves as
+ * before: the plain key is in the list of anyone who had it.
  */
 export async function requirePermission(permission: string): Promise<NextResponse | null> {
   let session: Session | null = null;
@@ -72,8 +82,7 @@ export async function requirePermission(permission: string): Promise<NextRespons
   // Learners are never permitted here, whatever permissions array they carry.
   const staffErr = requireStaffSession(session);
   if (staffErr) return staffErr;
-  if (session.user.isAdmin || session.user.permissions.includes("*")) return null;
-  if (!session.user.permissions.includes(permission)) {
+  if (!can(session.user, permission)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   return null;

@@ -13,7 +13,7 @@ const Body = z.object({ audience: AudienceSchema, kind: z.enum(["marketing", "se
 export async function POST(req: NextRequest) {
   const csrf = csrfGuard(req);
   if (csrf) return csrf;
-  const { error } = await learnerStaff("manage");
+  const { error } = await learnerStaff("manage", "communications");
   if (error) return error;
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid audience" }, { status: 400 });

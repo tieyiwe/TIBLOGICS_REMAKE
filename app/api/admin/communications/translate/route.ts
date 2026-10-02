@@ -24,7 +24,7 @@ Answer with JSON only: {"subject": "...", "body": "..."}`;
 export async function POST(req: NextRequest) {
   const csrf = csrfGuard(req);
   if (csrf) return csrf;
-  const { session, error } = await learnerStaff("manage");
+  const { session, error } = await learnerStaff("manage", "communications");
   if (error) return error;
   if (!(await checkRateLimit(`comms-translate:${session.user.email}`, 40, 3_600_000))) {
     return NextResponse.json({ error: "Too many translations in an hour." }, { status: 429 });

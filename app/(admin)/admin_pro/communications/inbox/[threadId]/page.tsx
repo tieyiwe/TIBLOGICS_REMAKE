@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 // One support conversation (a learner replied to a message). Opening it
 // marks it read for the team.
 export default async function InboxThreadPage({ params }: { params: Promise<{ threadId: string }> }) {
-  const session = await requireLearnerPage("manage");
+  const session = await requireLearnerPage("read", "communications");
   const { threadId } = await params;
   if (!/^[\w-]{1,64}$/.test(threadId)) notFound();
   const data = await adminThread(threadId, true);
@@ -45,7 +45,7 @@ export default async function InboxThreadPage({ params }: { params: Promise<{ th
             threadId={thread.id}
             status={thread.status}
             learnerName={name}
-            canManage={canManageLearners(session)}
+            canManage={canManageLearners(session, "communications")}
             messages={messages.map((m) => ({ ...m, createdAt: m.createdAt.toISOString() }))}
           />
         </Card>

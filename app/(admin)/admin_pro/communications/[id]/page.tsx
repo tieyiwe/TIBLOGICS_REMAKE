@@ -22,7 +22,7 @@ const STATUS: Record<string, { label: string; tone: BadgeTone }> = {
 const R_TONE: Record<string, BadgeTone> = { sent: "success", failed: "danger", skipped: "neutral", pending: "info", sending: "orange" };
 
 export default async function CampaignPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireLearnerPage("manage");
+  await requireLearnerPage("read", "communications");
   const { id } = await params;
   if (!/^[\w-]{1,64}$/.test(id)) notFound();
   const data = await campaignDetail(id);

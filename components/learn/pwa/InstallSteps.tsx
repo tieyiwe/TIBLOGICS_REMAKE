@@ -1,13 +1,13 @@
 "use client";
 
-import { Ellipsis, EllipsisVertical, MonitorDown, Share, SquarePlus } from "lucide-react";
+import { Ellipsis, EllipsisVertical, MonitorDown, Share, SquarePlus, type LucideIcon } from "lucide-react";
 import type { InstallEnv, InstallPlatform } from "@/lib/learn/pwa/platform";
 
 type T = (key: string, vars?: Record<string, string | number>) => string;
 
 // The browser buttons named in the steps, drawn small and inline so learners
 // can match them on screen.
-const ICONS: Record<string, React.ComponentType<{ size?: number; className?: string; "aria-hidden"?: boolean }>> = {
+const ICONS: Record<string, LucideIcon> = {
   share: Share,
   menu: EllipsisVertical,
   more: Ellipsis,

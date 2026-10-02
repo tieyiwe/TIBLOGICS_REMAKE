@@ -1,12 +1,11 @@
-import { requireAdminPage } from "../../_lib/admin-page-auth";
-import { getActiveProjects } from "@/lib/admin/projects";
-import ListClient, { type Project } from "./ListClient";
+import { redirect } from "next/navigation";
+import { requireCcPage } from "@/lib/admin/command-center/guard";
+import { PERM_COMMAND_CENTER } from "@/lib/admin/command-center/permissions";
 
-// Per-request and session-scoped: never cached or prerendered.
 export const dynamic = "force-dynamic";
 
-/** Command Center list, rendered on the server (was fetched on mount). */
-export default async function ListPage() {
-  await requireAdminPage();
-  return <ListClient initialProjects={await getActiveProjects<Project>()} />;
+/** Old Command Center view, kept so bookmarks work: now a view of Projects. */
+export default async function LegacyView() {
+  await requireCcPage(PERM_COMMAND_CENTER);
+  redirect("/admin_pro/command-center?view=table");
 }

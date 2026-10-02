@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { csrfGuard, learnerStaff } from "@/lib/learn/account-status/admin-auth";
+import { csrfGuard, hasCapability, learnerStaff } from "@/lib/learn/account-status/admin-auth";
 import { audit } from "@/lib/admin/audit";
 import { addNote, assignableStaff, setTicketFields, setTicketStatus, staffReply } from "@/lib/learn/support/tickets";
 import { SUPPORT_PRIORITIES } from "@/lib/learn/support/shared";
@@ -26,7 +26,7 @@ const Body = z.discriminatedUnion("action", [
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const csrf = csrfGuard(req);
   if (csrf) return csrf;
-  const { session, error } = await learnerStaff("manage");
+  const { session, error } = await learnerStaff("manage", "communications");
   if (error) return error;
   const { id } = await params;
   if (!/^[\w-]{1,64}$/.test(id)) return NextResponse.json({ error: "Request not found" }, { status: 404 });
@@ -38,6 +38,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   try {
     if (d.action === "reply") {
+      if (!hasCapability(session, "comms.send")) return NextResponse.json({ error: "You do not have permission to send messages." }, { status: 403 });
       if (!(await checkRateLimit(`support-reply:${session.user.email}`, 120, 3_600_000))) {
         return NextResponse.json({ error: "Too many replies in an hour." }, { status: 429 });
       }

@@ -1,4 +1,5 @@
 import type { ElementType } from "react";
+import { can } from "@/lib/admin/permissions";
 import {
   LayoutDashboard,
   Rocket,
@@ -47,6 +48,7 @@ import {
   Magnet,
   MessageSquareText,
   ScrollText,
+  ShieldCheck,
   TicketPercent,
   LifeBuoy,
 } from "lucide-react";
@@ -161,6 +163,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "Communications", href: "/admin_pro/communications", icon: MessageSquareText, keywords: "message learners email broadcast inbox" },
       { label: "Learners", href: "/admin_pro/learn/learners", icon: Users, keywords: "students arfa academy" },
+      { label: "Team & Roles", href: "/admin_pro/team", icon: ShieldCheck, keywords: "staff team collaborators roles permissions access invite activity footprint logs" },
       { label: "Learner support", href: "/admin_pro/communications/support", icon: LifeBuoy, keywords: "help desk tickets need help questions learners visitors" },
     ],
   },
@@ -224,7 +227,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     id: "settings",
     label: "Settings",
-    items: [{ label: "Settings", href: "/admin_pro/settings", icon: Settings, keywords: "team collaborators password" }],
+    items: [{ label: "Settings", href: "/admin_pro/settings", icon: Settings, keywords: "booking notifications integrations password" }],
   },
 ];
 
@@ -267,51 +270,56 @@ export const NAV_PERMISSION_MAP: Record<string, string> = {
   "/admin_pro/waitlist": "service_requests",
   "/admin_pro/shop": "shop",
   "/admin_pro/learn": "events",
-  "/admin_pro/learn/learners": "events",
+  "/admin_pro/learn/learners": "learners",
   "/admin_pro/learn/live": "events",
   "/admin_pro/learn/teams": "events", // (inherited, new link)
   "/admin_pro/learn/cohorts": "events", // (inherited, new link)
   "/admin_pro/learn/community": "events", // (inherited, new link)
   "/admin_pro/learn/videos": "events", // (inherited, new link)
   "/admin_pro/learn/tutor": "events", // (inherited, new link)
-  "/admin_pro/analytics": "__admin_only__",
+  "/admin_pro/analytics": "insights",
   "/admin_pro/analytics/visitors": "analytics",
   "/admin_pro/agents": "agents",
   "/admin_pro/agents/aria": "agents", // (inherited)
   "/admin_pro/agents/rex": "agents", // (inherited)
   "/admin_pro/agents/nova": "agents", // (inherited)
-  "/admin_pro/settings": "__admin_only__",
-  "/admin_pro/ai-usage": "__admin_only__",
+  "/admin_pro/settings": "settings",
+  "/admin_pro/ai-usage": "ai_usage",
+  // Team & Roles (lib/admin/permissions.ts "team").
+  "/admin_pro/team": "team",
+  "/admin_pro/team/activity": "team",
   // Growth: the section and its lead workspace are open to the "growth"
-  // permission; content, scheduling, links and brand settings are admin-only.
+  // permission; content, scheduling, links and brand settings need
+  // "growth_content" (admins always).
   "/admin_pro/growth": "growth",
   "/admin_pro/growth/leads": "growth",
   "/admin_pro/growth/outreach": "growth",
-  "/admin_pro/growth/content": "__admin_only__",
-  "/admin_pro/growth/calendar": "__admin_only__",
-  "/admin_pro/growth/links": "__admin_only__",
-  "/admin_pro/growth/settings": "__admin_only__",
-  "/admin_pro/growth/campaigns": "__admin_only__",
-  "/admin_pro/growth/campaigns/new": "__admin_only__",
-  "/admin_pro/growth/acquire": "__admin_only__",
-  // People / ops: owner and admin only.
-  "/admin_pro/communications": "__admin_only__",
+  "/admin_pro/growth/content": "growth_content",
+  "/admin_pro/growth/calendar": "growth_content",
+  "/admin_pro/growth/links": "growth_content",
+  "/admin_pro/growth/settings": "growth_content",
+  "/admin_pro/growth/campaigns": "growth_content",
+  "/admin_pro/growth/campaigns/new": "growth_content",
+  "/admin_pro/growth/acquire": "growth_content",
+  // People / ops: each its own Team & Roles feature (admins always).
+  "/admin_pro/communications": "communications",
   // Support requests: readable by staff with learner access (lib/learn/account-status/admin-auth).
-  "/admin_pro/communications/support": "events",
-  "/admin_pro/audit": "__admin_only__",
-  // Promotions change what customers pay: owner and admin only.
-  "/admin_pro/promotions": "__admin_only__",
-  "/admin_pro/promotions/new": "__admin_only__",
+  "/admin_pro/communications/support": "learners",
+  "/admin_pro/audit": "audit",
+  // Promotions change what customers pay: the "promotions" feature, and
+  // turning one on also needs "promotions.publish".
+  "/admin_pro/promotions": "promotions",
+  "/admin_pro/promotions/new": "promotions",
 };
 
-export type NavViewer = { isAdmin: boolean; permissions: string[] };
+export type NavViewer = { isAdmin: boolean; isOwner?: boolean; permissions: string[] };
 
+/** Same rule as the server (lib/admin/permissions.ts `can`, proxy.ts). */
 export function canSee(href: string, viewer: NavViewer): boolean {
-  if (viewer.isAdmin || viewer.permissions.includes("*")) return true;
   const required = NAV_PERMISSION_MAP[href];
   if (!required) return true; // dashboard and unlisted items always visible
-  if (required === "__admin_only__") return false;
-  return viewer.permissions.includes(required);
+  if (required === "__admin_only__") return can(viewer, "__admin__");
+  return can(viewer, required);
 }
 
 export function visibleSections(viewer: NavViewer): NavSection[] {

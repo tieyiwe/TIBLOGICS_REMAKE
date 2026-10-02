@@ -26,7 +26,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const csrf = csrfGuard(req);
   if (csrf) return csrf;
-  const { session, error } = await learnerStaff("manage");
+  const { session, error } = await learnerStaff("manage", "communications");
   if (error) return error;
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "Cross-site request refused" }, { status: 403 });
-  const { session, error } = await learnerStaff("manage");
+  const { session, error } = await learnerStaff("manage", "communications");
   if (error) return error;
   const id = req.nextUrl.searchParams.get("id") ?? "";
   if (!/^[\w-]{1,64}$/.test(id)) return NextResponse.json({ error: "Canned reply not found" }, { status: 404 });

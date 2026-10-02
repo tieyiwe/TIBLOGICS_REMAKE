@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 
 export default async function SupportPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const session = await requireLearnerPage("read");
-  const canManage = canManageLearners(session);
+  const canManage = canManageLearners(session, "communications");
   const sp = await searchParams;
   const one = (k: string) => (Array.isArray(sp[k]) ? sp[k]![0] : (sp[k] as string | undefined)) ?? "";
   const status: AdminFilters["status"] = (SUPPORT_STATUSES as readonly string[]).includes(one("status")) ? (one("status") as SupportStatus) : one("status") === "all" ? "all" : "open";

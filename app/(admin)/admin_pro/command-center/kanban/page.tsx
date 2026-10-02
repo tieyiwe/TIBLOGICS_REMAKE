@@ -1,12 +1,11 @@
-import { requireAdminPage } from "../../_lib/admin-page-auth";
-import { getActiveProjects } from "@/lib/admin/projects";
-import KanbanClient, { type Project } from "./KanbanClient";
+import { redirect } from "next/navigation";
+import { requireCcPage } from "@/lib/admin/command-center/guard";
+import { PERM_COMMAND_CENTER } from "@/lib/admin/command-center/permissions";
 
-// Per-request and session-scoped: never cached or prerendered.
 export const dynamic = "force-dynamic";
 
-/** Command Center kanban, rendered on the server (was fetched on mount). */
-export default async function KanbanPage() {
-  await requireAdminPage();
-  return <KanbanClient initialProjects={await getActiveProjects<Project>()} />;
+/** Old Command Center view, kept so bookmarks work: now a view of Projects. */
+export default async function LegacyView() {
+  await requireCcPage(PERM_COMMAND_CENTER);
+  redirect("/admin_pro/command-center?view=board");
 }

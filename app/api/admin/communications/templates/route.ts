@@ -9,7 +9,7 @@ import { TemplateSchema } from "./schema";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const { error } = await learnerStaff("manage");
+  const { error } = await learnerStaff("manage", "communications");
   if (error) return error;
   await ensureCommsTables();
   const templates = await prisma.commsTemplate.findMany({ orderBy: { updatedAt: "desc" }, take: 200 });
@@ -19,7 +19,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const csrf = csrfGuard(req);
   if (csrf) return csrf;
-  const { session, error } = await learnerStaff("manage");
+  const { session, error } = await learnerStaff("manage", "communications");
   if (error) return error;
   const parsed = TemplateSchema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid template" }, { status: 400 });

@@ -77,25 +77,17 @@ function staffMaxAgeMs(): number {
 }
 
 /**
- * A collaborator's live state, cached for a minute per process, so that
- * deactivating someone or changing their permissions takes effect on their
- * next request instead of when their cookie expires. null = could not check
- * (database unreachable): the token is left as it is.
+ * A collaborator's live state (lib/admin/team/state.ts: active flag, role and
+ * overrides flattened into permissions, session version), cached for a few
+ * seconds per process and dropped at once by every Team & Roles change, so
+ * deactivating someone, changing their access or signing them out takes
+ * effect on their next request. null = could not check (database
+ * unreachable): the token is left as it is.
  */
-const collabCache = new Map<string, { at: number; value: { active: boolean; isAdmin: boolean; permissions: string[] } | "gone" }>();
 async function collaboratorState(id: string) {
-  const hit = collabCache.get(id);
-  if (hit && Date.now() - hit.at < 60_000) return hit.value;
   try {
-    const { prisma } = await import("@/lib/prisma");
-    const c = await prisma.collaborator.findUnique({
-      where: { id },
-      select: { active: true, isAdmin: true, permissions: true },
-    });
-    const value = c ? { active: c.active, isAdmin: c.isAdmin, permissions: c.permissions } : ("gone" as const);
-    if (collabCache.size > 500) collabCache.clear();
-    collabCache.set(id, { at: Date.now(), value });
-    return value;
+    const { staffState } = await import("@/lib/admin/team/state");
+    return await staffState(id);
   } catch {
     return null;
   }
@@ -103,7 +95,17 @@ async function collaboratorState(id: string) {
 
 /** Forget a collaborator's cached state (call after deactivating or editing them). */
 export function forgetCollaboratorSession(id: string): void {
-  collabCache.delete(id);
+  void import("@/lib/admin/team/state").then((m) => m.forgetStaffState(id)).catch(() => {});
+}
+
+/** Staff sign-in footprint (lib/admin/team/footprint.ts). Never throws. */
+async function staffSignin(p: { staffId: string | null; email: string; name?: string | null; success: boolean; reason?: string; headers: unknown }) {
+  try {
+    const { recordStaffSignin } = await import("@/lib/admin/team/footprint");
+    await recordStaffSignin({ ...p, headers: p.headers as Record<string, unknown> });
+  } catch {
+    /* never blocks a sign-in */
+  }
 }
 
 /**
@@ -144,10 +146,17 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null;
 
         const throttleKey = `staff:${credentials.email.toLowerCase().trim()}`;
+        const attemptEmail = credentials.email.toLowerCase().trim();
+        const failed = async (reason: string, staffId: string | null = null) => {
+          await staffSignin({ staffId, email: attemptEmail, success: false, reason, headers: req?.headers });
+          return null;
+        };
         // Thrown, not `return null`, so the login page can say "wait 15
         // minutes" instead of a misleading "wrong password".
-        if (!(await loginAllowed(throttleKey))) throw new Error("TooManyAttempts");
-        if (!(await ipAllowed(req?.headers))) throw new Error("TooManyAttempts");
+        if (!(await loginAllowed(throttleKey)) || !(await ipAllowed(req?.headers))) {
+          await staffSignin({ staffId: null, email: attemptEmail, success: false, reason: "rate limited", headers: req?.headers });
+          throw new Error("TooManyAttempts");
+        }
 
         // Lazy import so a Prisma binary failure doesn't crash the auth module at load time
         let prisma: Awaited<typeof import("@/lib/prisma")>["prisma"];
@@ -188,6 +197,7 @@ export const authOptions: NextAuthOptions = {
                 }
               } catch { /* non-blocking */ }
               loginSucceeded(throttleKey);
+              await staffSignin({ staffId: "owner", email: OWNER_EMAIL, name: ownerUser.name, success: true, headers: req?.headers });
               return ownerUser;
             }
           }
@@ -201,12 +211,13 @@ export const authOptions: NextAuthOptions = {
               const valid = await bcrypt.compare(credentials.password, stored.value);
               if (valid) {
                 loginSucceeded(throttleKey);
+                await staffSignin({ staffId: "owner", email: OWNER_EMAIL, name: ownerUser.name, success: true, headers: req?.headers });
                 return ownerUser;
               }
             }
           } catch { /* fall through */ }
 
-          return null;
+          return failed("wrong password", "owner");
         }
 
         // ── Collaborator login ────────────────────────────────────────────────
@@ -214,10 +225,17 @@ export const authOptions: NextAuthOptions = {
           const collab = await prisma.collaborator.findUnique({
             where: { email: credentials.email.toLowerCase() },
           });
-          if (!collab || !collab.active || !collab.passwordHash) return null;
+          if (!collab) return failed("unknown account");
+          if (!collab.active) return failed("deactivated", collab.id);
+          if (!collab.passwordHash) return failed("invitation not accepted", collab.id);
 
           const valid = await bcrypt.compare(credentials.password, collab.passwordHash);
-          if (!valid) return null;
+          if (!valid) return failed("wrong password", collab.id);
+
+          // Live access (role + overrides) and the session version, so the
+          // token starts with what the person can do right now.
+          const state = await collaboratorState(collab.id);
+          if (state === "gone" || (state && !state.active)) return failed("deactivated", collab.id);
 
           await prisma.collaborator.update({
             where: { id: collab.id },
@@ -225,14 +243,17 @@ export const authOptions: NextAuthOptions = {
           });
 
           loginSucceeded(throttleKey);
+          await staffSignin({ staffId: collab.id, email: collab.email, name: collab.name, success: true, headers: req?.headers });
+          const isAdmin = state ? state.isAdmin : collab.isAdmin;
           return {
             id: collab.id,
             email: collab.email,
             name: collab.name,
-            isAdmin: collab.isAdmin,
+            isAdmin,
             isOwner: false,
             collaboratorId: collab.id,
-            permissions: collab.isAdmin ? ["*"] : collab.permissions,
+            permissions: state ? state.permissions : collab.isAdmin ? ["*"] : collab.permissions,
+            ssv: state?.sessionVersion ?? 0,
           };
         } catch {
           return null;
@@ -407,6 +428,7 @@ export const authOptions: NextAuthOptions = {
         token.studentId = user.studentId;
         token.permissions = user.permissions;
         token.sv = user.sv;
+        token.ssv = user.ssv;
         token.staffUntil = user.studentId ? undefined : Date.now() + staffMaxAgeMs();
       }
       if (token.expired) return token;
@@ -418,6 +440,8 @@ export const authOptions: NextAuthOptions = {
         if (token.collaboratorId) {
           const c = await collaboratorState(token.collaboratorId);
           if (c === "gone" || (c && !c.active)) return strippedToken(token);
+          // "Sign out everywhere" from Team & Roles moves the version on.
+          if (c && c.sessionVersion !== (token.ssv ?? 0)) return strippedToken(token);
           if (c) {
             token.isAdmin = c.isAdmin;
             token.permissions = c.isAdmin ? ["*"] : c.permissions;

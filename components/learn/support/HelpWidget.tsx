@@ -15,8 +15,8 @@ import { OPEN_HELP_EVENT } from "./events";
 // sign-up, join pages) give a name and an email.
 //
 // Placement (CSS below): bottom right, raised above the Tutor button when a
-// Tutor dock is on the page (lesson, lab, studio, review, exam), shifted left
-// of the docked Tutor panel on desktop, and raised above the mobile join
+// Tutor dock is on the page (lesson, lab, studio, review, exam), kept clear of
+// the Tutor side tab and shifted left of the docked Tutor panel on desktop, and raised above the mobile join
 // summary bar when it shows. place="public" (marketing layout pages) uses the
 // bottom left, clear of the site chat button and the mobile bottom nav.
 
@@ -26,7 +26,7 @@ const CSS = `
 .arfa-help[data-open="true"]{z-index:56}
 html:has([data-tutor-ignore]) .arfa-help{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 @media (max-width:1023px){html:has([data-testid="join-bar"][aria-hidden="false"]) .arfa-help{bottom:calc(92px + env(safe-area-inset-bottom,0px))}}
-@media (min-width:1024px){html.tutor-docked .arfa-help{right:416px}}
+@media (min-width:1024px){html:has([data-tutor-ignore]) .arfa-help{right:66px}html.tutor-docked .arfa-help{right:416px}}
 .arfa-help[data-place="public"]{right:auto;left:16px;align-items:flex-start;bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 @media (min-width:640px){.arfa-help[data-place="public"]{bottom:24px}}
 @media (min-width:640px) and (max-width:1023px){html:has([data-testid="join-bar"][aria-hidden="false"]) .arfa-help[data-place="public"]{bottom:92px}}

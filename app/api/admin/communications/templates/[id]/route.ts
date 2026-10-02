@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const csrf = csrfGuard(req);
   if (csrf) return csrf;
-  const { session, error } = await learnerStaff("manage");
+  const { session, error } = await learnerStaff("manage", "communications");
   if (error) return error;
   const { id } = await params;
   const parsed = TemplateSchema.safeParse(await req.json().catch(() => ({})));
@@ -27,7 +27,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   if (!sameOrigin(req)) return NextResponse.json({ error: "Cross-site request refused" }, { status: 403 });
-  const { session, error } = await learnerStaff("manage");
+  const { session, error } = await learnerStaff("manage", "communications");
   if (error) return error;
   const { id } = await params;
   await ensureCommsTables();

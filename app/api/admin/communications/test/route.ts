@@ -21,7 +21,7 @@ const Body = z.object({
 export async function POST(req: NextRequest) {
   const csrf = csrfGuard(req);
   if (csrf) return csrf;
-  const { session, error } = await learnerStaff("manage");
+  const { session, error } = await learnerStaff("manage", "communications");
   if (error) return error;
   const to = session.user.email;
   if (!to) return NextResponse.json({ error: "Your account has no email" }, { status: 400 });

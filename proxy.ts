@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { isMissingContent } from "@/lib/seo/exists";
+import { staffGate } from "@/lib/admin/team/proxy-gate";
 
 // Single edge proxy for both gated areas. Uses getToken directly (rather than
 // withAuth) because the two areas need different sign-in destinations:
@@ -45,6 +46,22 @@ async function gate(req: NextRequest) {
       url.searchParams.set("callbackUrl", pathname + search);
       url.searchParams.set("switch", "learner");
       return NextResponse.redirect(url);
+    }
+    // Team & Roles: the person's live access decides which admin pages open
+    // (lib/admin/access-map.ts), and the visit is logged (throttled).
+    const blocked = await staffGate(req, token, "page");
+    if (blocked) return blocked;
+    return NextResponse.next();
+  }
+
+  // ── Admin APIs (and the admin methods of shared routes) ──────────────────
+  // Only staff sessions are checked here; anyone else falls through to the
+  // route, which answers 401/403 itself or serves the public method.
+  if (pathname.startsWith("/api/") && !pathname.startsWith("/api/learn/")) {
+    const staffLive = !!token?.staffUntil && Number(token.staffUntil) > Date.now();
+    if (token && staffLive && !token.studentId && (token.isOwner || token.isAdmin || token.collaboratorId)) {
+      const blocked = await staffGate(req, token, "api");
+      if (blocked) return blocked;
     }
     return NextResponse.next();
   }
@@ -123,5 +140,9 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin_pro/:path*", "/learn/:path*", "/learning-box/:path*", "/api/learn/:path*", "/p/:path*", "/certificates/:path*", "/badges/:path*", "/store/:path*", "/ai-times/:path*", "/free/:path*", "/lp/:path*"],
+  matcher: [
+    "/api/admin/:path*", "/api/appointments/:path*", "/api/blog/:path*", "/api/newsletter/:path*", "/api/prospects/:path*",
+    "/api/service-requests/:path*", "/api/analytics/realtime", "/api/claude/agents", "/api/contacts", "/api/events/notify",
+    "/api/events/register", "/api/partnerships", "/api/scanner-leads", "/api/waitlist",
+    "/admin_pro/:path*", "/learn/:path*", "/learning-box/:path*", "/api/learn/:path*", "/p/:path*", "/certificates/:path*", "/badges/:path*", "/store/:path*", "/ai-times/:path*", "/free/:path*", "/lp/:path*"],
 };

@@ -11,7 +11,7 @@ const Body = z.object({ action: z.literal("cancel") });
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const csrf = csrfGuard(req);
   if (csrf) return csrf;
-  const { session, error } = await learnerStaff("manage");
+  const { session, error } = await learnerStaff("manage", "communications");
   if (error) return error;
   const { id } = await params;
   if (!Body.safeParse(await req.json().catch(() => ({}))).success) return NextResponse.json({ error: "Invalid action" }, { status: 400 });

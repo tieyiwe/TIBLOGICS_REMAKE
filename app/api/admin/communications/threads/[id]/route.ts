@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { csrfGuard, learnerStaff } from "@/lib/learn/account-status/admin-auth";
+import { csrfGuard, hasCapability, learnerStaff } from "@/lib/learn/account-status/admin-auth";
 import { addAdminReply, REPLY_MAX } from "@/lib/learn/inbox/threads";
 import { ensureCommsTables } from "@/lib/learn/inbox/db";
 import { sendAdminReplyEmail } from "@/lib/learn/inbox/email";
@@ -20,7 +20,7 @@ const Body = z.discriminatedUnion("action", [
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const csrf = csrfGuard(req);
   if (csrf) return csrf;
-  const { session, error } = await learnerStaff("manage");
+  const { session, error } = await learnerStaff("manage", "communications");
   if (error) return error;
   const { id } = await params;
   if (!/^[\w-]{1,64}$/.test(id)) return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
@@ -36,6 +36,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ ok: true });
   }
 
+  if (!hasCapability(session, "comms.send")) return NextResponse.json({ error: "You do not have permission to send messages." }, { status: 403 });
   if (!(await checkRateLimit(`comms-reply:${session.user.email}`, 120, 3_600_000))) {
     return NextResponse.json({ error: "Too many replies in an hour." }, { status: 429 });
   }

@@ -26,6 +26,8 @@ declare module "next-auth" {
     studentId?: string;
     permissions: string[];
     sv?: number;
+    /** Staff session version (Team & Roles "sign out everywhere"). */
+    ssv?: number;
     /** Staff only: epoch ms after which the session is refused (lib/auth.ts). */
     staffUntil?: number;
     /** Set on a token whose roles were removed (staff lifetime over, collaborator deactivated). */
@@ -42,6 +44,8 @@ declare module "next-auth/jwt" {
     studentId?: string;
     permissions: string[];
     sv?: number;
+    /** Staff session version (Team & Roles "sign out everywhere"). */
+    ssv?: number;
     /** Staff only: epoch ms after which the session is refused (lib/auth.ts). */
     staffUntil?: number;
     /** Set on a token whose roles were removed (staff lifetime over, collaborator deactivated). */

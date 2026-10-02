@@ -30,7 +30,7 @@ type Tab = (typeof TABS)[number];
 const VIEWS: InboxView[] = ["open", "unread", "closed", "all"];
 
 export default async function CommunicationsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  await requireLearnerPage("manage");
+  await requireLearnerPage("read", "communications");
   const sp = await searchParams;
   const one = (k: string) => (Array.isArray(sp[k]) ? sp[k]![0] : (sp[k] as string | undefined));
   const tab: Tab = (TABS as readonly string[]).includes(one("tab") ?? "") ? (one("tab") as Tab) : "messages";

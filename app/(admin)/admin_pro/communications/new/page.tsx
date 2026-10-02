@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 // The composer. Prefilled from the URL: ?to=<learner id> (one learner),
 // ?ids=a,b,c (a selection from the Learners list), ?template=<id>.
 export default async function NewMessagePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const session = await requireLearnerPage("manage");
+  const session = await requireLearnerPage("manage", "communications");
   const sp = await searchParams;
   const one = (k: string) => (Array.isArray(sp[k]) ? sp[k]![0] : (sp[k] as string | undefined)) ?? "";
   const ctx = await composerContext(session.user.email);

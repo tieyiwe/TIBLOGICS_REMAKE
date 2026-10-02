@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 // One support request. Opening it marks it read for the team.
 export default async function SupportTicketPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await requireLearnerPage("read");
-  const canManage = canManageLearners(session);
+  const canManage = canManageLearners(session, "communications");
   const { id } = await params;
   if (!/^[\w-]{1,64}$/.test(id)) notFound();
   const data = await adminTicket(id, true);
