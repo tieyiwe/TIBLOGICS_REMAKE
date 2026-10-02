@@ -18,7 +18,11 @@ import { streamChat } from "@/lib/claude";
 import resend from "@/lib/resend";
 import { assignCoverImage } from "@/lib/blog-cover";
 import { requireAdmin, secretEquals } from "@/lib/require-admin";
-import { CURATED_ARTICLES, renderSources } from "@/lib/blog/content/curated";
+import { CURATED_ARTICLES as CURATED_BASE, renderSources } from "@/lib/blog/content/curated";
+import { CURATED_OCTOBER } from "@/lib/blog/content/curated-october";
+
+// Every researched article the agent publishes (idempotent by slug).
+const CURATED_ARTICLES = [...CURATED_BASE, ...CURATED_OCTOBER];
 import { RETRACTIONS } from "@/lib/blog/content/retractions";
 import { applyCorrections } from "@/lib/blog/content/apply-corrections";
 import { INDEXNOW_SECTIONS, indexNowSoon } from "@/lib/seo/indexnow";

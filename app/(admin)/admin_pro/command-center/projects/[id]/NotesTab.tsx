@@ -26,6 +26,8 @@ export function NotesTab({ b, reload, setB }: { b: ProjectBundle; reload: () => 
   const [activeId, setActiveId] = useState<string | null>(search?.get("note") ?? b.notes[0]?.id ?? null);
   const [capture, setCapture] = useState("");
   const [busy, setBusy] = useState(false);
+  // Notes created here open ready to type (quick captures excepted).
+  const [freshId, setFreshId] = useState<string | null>(null);
   const today = localTodayKey();
 
   const notes = useMemo(() => {
@@ -47,6 +49,7 @@ export function NotesTab({ b, reload, setB }: { b: ProjectBundle; reload: () => 
     try {
       const r = await api<{ note: NoteDTO }>("/api/admin/pm/notes", { body: { projectId: b.project.id, ...body } });
       setB((x) => ({ ...x, notes: [r.note, ...x.notes] }));
+      if (body.kind !== "note") setFreshId(r.note.id);
       select(r.note.id);
       toast.success(msg, r.note.title);
       emitChanged({ kind: "note", projectId: b.project.id });
@@ -140,6 +143,7 @@ export function NotesTab({ b, reload, setB }: { b: ProjectBundle; reload: () => 
           <NoteEditor
             key={active.id}
             note={active}
+            startEditing={active.id === freshId}
             onSaved={(n) => setB((x) => ({ ...x, notes: x.notes.map((o) => (o.id === n.id ? n : o)) }))}
             onDelete={async () => {
               if (!(await confirm({ title: `Delete "${active.title}"?`, danger: true, confirmLabel: "Delete note" }))) return;
@@ -165,11 +169,11 @@ export function NotesTab({ b, reload, setB }: { b: ProjectBundle; reload: () => 
   );
 }
 
-function NoteEditor({ note, onSaved, onDelete, onTaskCreated }: { note: NoteDTO; onSaved: (n: NoteDTO) => void; onDelete: () => void; onTaskCreated: () => Promise<void> }) {
+function NoteEditor({ note, startEditing, onSaved, onDelete, onTaskCreated }: { note: NoteDTO; startEditing?: boolean; onSaved: (n: NoteDTO) => void; onDelete: () => void; onTaskCreated: () => Promise<void> }) {
   const toast = useToast();
   const [title, setTitle] = useState(note.title);
   const [body, setBody] = useState(note.bodyMd);
-  const [mode, setMode] = useState<"read" | "edit">(note.bodyMd.trim() ? "read" : "edit");
+  const [mode, setMode] = useState<"read" | "edit">(startEditing || !note.bodyMd.trim() ? "edit" : "read");
   const [state, setState] = useState<SaveState>("saved");
   const [busyLine, setBusyLine] = useState<number | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
