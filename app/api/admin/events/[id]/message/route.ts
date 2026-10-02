@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { maskEmail } from "@/lib/log/redact";
 import prisma from "@/lib/prisma";
 import { arfaMailer as mailer } from "@/lib/resend";
 import { requireAdmin, escapeHtml } from "@/lib/require-admin";
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       sent++;
     } catch (e) {
       errors.push(reg.email);
-      console.error("[event/message]", reg.email, e);
+      console.error("[event/message]", maskEmail(reg.email), e instanceof Error ? e.message : e);
     }
   }
 

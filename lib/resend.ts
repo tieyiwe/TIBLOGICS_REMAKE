@@ -195,7 +195,7 @@ function getArfaTransport() {
   const pass = process.env.ARFA_SMTP_PASS;
   const host = process.env.TITAN_SMTP_HOST ?? "smtp.titan.email";
   const port = Number(process.env.TITAN_SMTP_PORT ?? 465);
-  console.log(`[ARFA-SMTP] host=${host} port=${port} user=${user} pass=${pass ? "SET(" + pass.length + "chars)" : "MISSING — set ARFA_SMTP_PASS"}`);
+  console.log(`[ARFA-SMTP] host=${host} port=${port} user=${user} pass=${pass ? "set" : "MISSING — set ARFA_SMTP_PASS"}`);
   return nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
 }
 

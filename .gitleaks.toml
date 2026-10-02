@@ -31,6 +31,8 @@ keywords = ["nextauth_secret", "cron_secret", "reset_token", "admin_password", "
 
 [allowlist]
 description = "Placeholders and the deliberately fake keys used as examples in course content"
+# Match the allowlist against the whole finding, not only the secret part.
+regexTarget = "match"
 paths = [
   '''^\.env\.example$''',
   '''^package-lock\.json$''',

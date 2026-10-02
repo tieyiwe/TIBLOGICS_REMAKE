@@ -29,7 +29,7 @@ export function ffmpegPath(): string {
 export async function runFfmpeg(args: string[], timeoutMs: number): Promise<string> {
   const bin = ffmpegPath();
   return new Promise((resolve, reject) => {
-    const child = spawn(bin, ["-hide_banner", "-nostdin", "-loglevel", "error", ...args], { stdio: ["ignore", "ignore", "pipe"] });
+    const child = spawn(/*turbopackIgnore: true*/ bin, ["-hide_banner", "-nostdin", "-loglevel", "error", ...args], { stdio: ["ignore", "ignore", "pipe"] });
     let err = "";
     child.stderr.on("data", (d) => {
       if (err.length < 20_000) err += String(d);
@@ -54,7 +54,7 @@ export async function runFfmpeg(args: string[], timeoutMs: number): Promise<stri
 export async function probe(file: string): Promise<{ duration: number; streams: string[] }> {
   const bin = ffmpegPath();
   const out: string = await new Promise((resolve, reject) => {
-    const child = spawn(bin, ["-hide_banner", "-nostdin", "-i", file], { stdio: ["ignore", "ignore", "pipe"] });
+    const child = spawn(/*turbopackIgnore: true*/ bin, ["-hide_banner", "-nostdin", "-i", file], { stdio: ["ignore", "ignore", "pipe"] });
     let s = "";
     child.stderr.on("data", (d) => (s += String(d)));
     const timer = setTimeout(() => child.kill("SIGKILL"), 20_000);

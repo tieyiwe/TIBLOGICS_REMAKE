@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { maskEmail } from "@/lib/log/redact";
 import prisma from "@/lib/prisma";
 import { sendConfirmationEmail, sendTiweNotification, sendEventWelcomeEmail, sendAdminNewRegistrationAlert, sendOrderConfirmationEmail, sendAdminOrderAlert } from "@/lib/resend";
 import Stripe from "stripe";
@@ -313,16 +314,16 @@ export async function POST(req: Request) {
 
         // Send the "You're in — let's build" welcome email now that payment
         // succeeded. firstName is captured from the registration record.
-        console.log(`[stripe/webhook] Sending welcome email to ${reg.email} (reg: ${registrationId})`);
+        console.log(`[stripe/webhook] Sending welcome email to ${maskEmail(reg.email)} (reg: ${registrationId})`);
         await sendEventWelcomeEmail({
           firstName: reg.firstName,
           email: reg.email,
           eventName: reg.eventName,
           confirmationNumber: reg.confirmationNumber,
         }).then(() => {
-          console.log(`[stripe/webhook] ✓ Welcome email sent to ${reg.email}`);
+          console.log(`[stripe/webhook] ✓ Welcome email sent to ${maskEmail(reg.email)}`);
         }).catch((err) => {
-          console.error(`[stripe/webhook] ✗ Welcome email FAILED for ${reg.email}:`, err instanceof Error ? err.message : err);
+          console.error(`[stripe/webhook] ✗ Welcome email FAILED for ${maskEmail(reg.email)}:`, err instanceof Error ? err.message : err);
         });
       }
 

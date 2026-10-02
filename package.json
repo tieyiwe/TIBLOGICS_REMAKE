@@ -12,7 +12,9 @@
     "db:push": "prisma db push",
     "db:seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts",
     "db:studio": "prisma studio",
-    "cron": "node scripts/cron.mjs"
+    "cron": "node scripts/cron.mjs",
+    "db:verify": "node scripts/db-verify.mjs",
+    "security:routes": "node scripts/audit-api-routes.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.39.0",
