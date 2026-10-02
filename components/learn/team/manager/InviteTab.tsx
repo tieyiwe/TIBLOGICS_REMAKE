@@ -13,7 +13,7 @@ interface PreviewRow {
   status: PreviewStatus;
 }
 
-const LANGS = ["en", "fr", "sw"] as const;
+const LANGS = ["en", "fr"] as const;
 
 /**
  * Invite: paste addresses or a CSV (names optional), choose the role, tracks

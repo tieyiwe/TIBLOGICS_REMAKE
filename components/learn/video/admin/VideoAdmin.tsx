@@ -29,7 +29,7 @@ const btnPrimary = `${btn} bg-[#1B3A6B] text-white hover:bg-[#2251A3]`;
 const btnGhost = `${btn} text-[#2251A3] hover:bg-[#EBF0FA]`;
 const btnDanger = `${btn} text-red-600 hover:bg-red-50`;
 
-const LANG_NAME: Record<CaptionLang, string> = { en: "English", fr: "French", sw: "Swahili" };
+const LANG_NAME: Record<CaptionLang, string> = { en: "English", fr: "French" };
 const KIND_NAME = { youtube: "YouTube (privacy-enhanced)", vimeo: "Vimeo (do not track)", file: "Video file", hls: "HLS stream" } as const;
 
 interface Row {
@@ -45,7 +45,7 @@ export default function VideoAdmin({ lessonId, lessonTitle, initialUrl }: { less
   const [loaded, setLoaded] = useState(false);
   const [url, setUrl] = useState(initialUrl);
   const [rows, setRows] = useState<Row[]>([]);
-  const [captions, setCaptions] = useState<Record<CaptionLang, string>>({ en: "", fr: "", sw: "" });
+  const [captions, setCaptions] = useState<Record<CaptionLang, string>>({ en: "", fr: "" });
   const [tab, setTab] = useState<CaptionLang>("en");
   const [paste, setPaste] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
@@ -64,7 +64,7 @@ export default function VideoAdmin({ lessonId, lessonTitle, initialUrl }: { less
         setUrl(d.videoUrl ?? "");
         setSavedUrl(d.videoUrl ?? "");
         setRows(toRows(d.chapters ?? []));
-        setCaptions({ en: d.captions?.en ?? "", fr: d.captions?.fr ?? "", sw: d.captions?.sw ?? "" });
+        setCaptions({ en: d.captions?.en ?? "", fr: d.captions?.fr ?? "" });
       })
       .finally(() => live && setLoaded(true));
     return () => {

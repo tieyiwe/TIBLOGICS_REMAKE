@@ -2,7 +2,7 @@
 // validation, chapters, WebVTT parsing and validation, and the draft captions
 // built from a video script. No database or Node imports here.
 
-export const CAPTION_LANGS = ["en", "fr", "sw"] as const;
+export const CAPTION_LANGS = ["en", "fr"] as const;
 export type CaptionLang = (typeof CAPTION_LANGS)[number];
 
 export interface Chapter {

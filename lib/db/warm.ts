@@ -24,6 +24,9 @@ export async function warmDatabase(): Promise<void> {
     console.error("[db] warm-up failed", err instanceof Error ? err.message : err);
     return;
   }
+  // ARFA learner accounts are English or French only; earlier sign-ups could
+  // carry Swahili from the public site. Idempotent and cheap.
+  await prisma.$executeRawUnsafe(`UPDATE "Student" SET "locale" = 'en' WHERE "locale" NOT IN ('en', 'fr')`).catch(() => {});
   for (const sql of INDEXES) {
     await prisma.$executeRawUnsafe(sql).catch((err) => console.error("[db] index", err instanceof Error ? err.message : err));
   }

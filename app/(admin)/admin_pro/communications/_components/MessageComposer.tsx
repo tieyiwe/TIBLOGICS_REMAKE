@@ -781,7 +781,7 @@ function AudiencePicker({ audience, setAudience, context }: { audience: Composer
             </div>
           </div>
           <SegSelect label="Tag" value={seg.tag ?? ""} onChange={(v) => setSeg({ tag: v || null })} options={[["", "Any tag"], ...context.tags.map((t) => [t, t] as [string, string])]} />
-          <SegSelect label="Language" value={seg.lang ?? ""} onChange={(v) => setSeg({ lang: v || null })} options={[["", "Any language"], ["en", "English"], ["fr", "French"], ["sw", "Swahili"]]} />
+          <SegSelect label="Language" value={seg.lang ?? ""} onChange={(v) => setSeg({ lang: v || null })} options={[["", "Any language"], ["en", "English"], ["fr", "French"]]} />
           {context.teams.length ? (
             <SegSelect label="Team" value={seg.team ?? ""} onChange={(v) => setSeg({ team: v || null })} options={[["", "Any team"], ...context.teams.map((t) => [t.id, t.name] as [string, string])]} />
           ) : null}

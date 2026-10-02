@@ -12,7 +12,7 @@ export const SegmentSchema = z.object({
   progressMax: z.number().int().min(0).max(100).optional().nullable(),
   inactiveDays: z.number().int().min(1).max(3650).optional().nullable(),
   tag: z.string().max(32).optional().nullable(),
-  lang: z.enum(["en", "fr", "sw"]).optional().nullable(),
+  lang: z.enum(["en", "fr"]).optional().nullable(),
   team: z.string().regex(/^[\w-]{1,64}$/).optional().nullable(),
   q: z.string().max(100).optional().nullable(),
 });

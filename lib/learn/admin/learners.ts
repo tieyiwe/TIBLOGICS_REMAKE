@@ -68,7 +68,7 @@ export interface LearnerFilters {
   tag: string | null;
   /** Account status; deleted accounts are hidden unless asked for. */
   status: StatusFilter | null;
-  lang: "en" | "fr" | "sw" | null;
+  lang: "en" | "fr" | null;
   team: string | null;
   /** Inactive: no sign-in, lesson or XP in the last N days. */
   inactive: number | null;
@@ -96,7 +96,7 @@ export function parseFilters(sp: Params | URLSearchParams): LearnerFilters {
     track: /^[\w-]{1,64}$/.test(get("track")) ? get("track") : null,
     tag: normaliseTag(get("tag")) || null,
     status: (STATUS_FILTERS as readonly string[]).includes(get("status")) ? (get("status") as StatusFilter) : null,
-    lang: get("lang") === "en" || get("lang") === "fr" || get("lang") === "sw" ? (get("lang") as "en" | "fr" | "sw") : null,
+    lang: get("lang") === "en" || get("lang") === "fr" ? (get("lang") as "en" | "fr") : null,
     team: /^[\w-]{1,64}$/.test(get("team")) ? get("team") : null,
     inactive: intIn(get("inactive"), 1, 3650),
     progressMin: intIn(get("pmin"), 0, 100),

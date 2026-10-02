@@ -155,7 +155,6 @@ export default async function LearnersPage({
             <option value="">Any</option>
             <option value="en">English</option>
             <option value="fr">French</option>
-            <option value="sw">Swahili</option>
           </select>
         </label>
         <label className="flex items-center gap-2 pb-2 text-sm text-[var(--ink2)]">

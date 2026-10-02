@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/require-admin";
 import { sendStudentWelcomeEmail } from "@/lib/learn/emails";
 import { getLocale, getT } from "@/lib/i18n/server";
-import { isLocale } from "@/lib/i18n/config";
+import { isLocale, learnLocale } from "@/lib/i18n/config";
 import { sendSignupNotification } from "@/lib/learn/admin/signup-notify";
 import { OWNER_EMAIL } from "@/lib/auth";
 import { recordAttribution } from "@/lib/growth/attribution";
@@ -60,7 +60,9 @@ export async function POST(req: NextRequest) {
   const { name, email, password } = parsed.data;
   // The language the learner signed up in: saved on the account so emails
   // and other devices use it.
-  const locale = isLocale(parsed.data.locale) ? parsed.data.locale : await getLocale();
+  // ARFA runs in English and French only: a Swahili choice on the public site
+  // becomes English for the learner account (and its emails).
+  const locale = learnLocale(isLocale(parsed.data.locale) ? parsed.data.locale : await getLocale());
 
   try {
     // The owner's learner account is always entitled (lib/learn/session.ts,

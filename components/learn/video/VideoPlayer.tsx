@@ -30,7 +30,7 @@ import { useVideoProgress } from "./useVideoProgress";
 // "watched" tracking.
 
 export const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2];
-const LANG_LABEL: Record<CaptionLang, string> = { en: "English", fr: "Français", sw: "Kiswahili" };
+const LANG_LABEL: Record<CaptionLang, string> = { en: "English", fr: "Français" };
 
 function store(key: string, value?: string): string | null {
   try {
