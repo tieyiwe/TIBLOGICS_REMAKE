@@ -8,11 +8,17 @@ import { requireAdminPage } from "../../_lib/admin-page-auth";
 import { videoTablesReady } from "@/lib/learn/video/db";
 import { CAPTION_LANGS, normaliseChapters, parseVideoUrl } from "@/lib/learn/video/shared";
 import { readCaptions } from "@/lib/learn/video/store";
+import { isGeneratedUrl } from "@/lib/learn/video/variants";
+import { contentHash } from "@/lib/learn/video/select";
+import AutoVideoPanel from "@/components/learn/video/admin/AutoVideoPanel";
+import AutoVideoRow, { type RowJob } from "@/components/learn/video/admin/AutoVideoRow";
 
 export const dynamic = "force-dynamic";
 
 // Which lessons have a video and which are missing one, per track, with
-// chapters, captions and script status: the owner's to-record list.
+// chapters, captions and script status: the owner's to-record list. On top,
+// the narrated-video pipeline (AI voice + slides, English and French): plan,
+// generate, preview, override per lesson.
 
 const KIND = { youtube: "YouTube", vimeo: "Vimeo", file: "File", hls: "HLS" } as const;
 
@@ -34,7 +40,10 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
             id: true,
             title: true,
             sortOrder: true,
-            lessons: { orderBy: { sortOrder: "asc" }, select: { id: true, title: true, sortOrder: true, videoUrl: true, durationMinutes: true } },
+            lessons: {
+              orderBy: { sortOrder: "asc" },
+              select: { id: true, title: true, sortOrder: true, videoUrl: true, durationMinutes: true, objective: true, bodyMd: true },
+            },
           },
         },
       },
@@ -42,12 +51,17 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
     .catch(() => []);
 
   const ready = await videoTablesReady();
-  const [metas, scripts] = ready
+  const [metas, scripts, plans, jobs] = ready
     ? await Promise.all([
         prisma.lessonVideoMeta.findMany({ select: { lessonId: true, chapters: true, captions: true } }).catch(() => []),
         prisma.videoScript.groupBy({ by: ["lessonId"], _max: { version: true } }).catch(() => []),
+        prisma.lessonVideoPlan.findMany({ select: { lessonId: true, decision: true, reason: true, override: true } }).catch(() => []),
+        prisma.lessonVideoJob.findMany({ select: { lessonId: true, locale: true, status: true, error: true, durationSec: true, contentHash: true } }).catch(() => []),
       ])
-    : [[], []];
+    : [[], [], [], []];
+  const planBy = new Map(plans.map((p) => [p.lessonId, p]));
+  const jobsBy = new Map<string, typeof jobs>();
+  for (const j of jobs) jobsBy.set(j.lessonId, [...(jobsBy.get(j.lessonId) ?? []), j]);
   const meta = new Map(metas.map((m) => [m.lessonId, { chapters: normaliseChapters(m.chapters).length, langs: Object.keys(readCaptions(m.captions)) }]));
   const scriptVersions = new Map(scripts.map((s) => [s.lessonId, s._max.version ?? 0]));
 
@@ -73,6 +87,7 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
         activeTab="/admin_pro/learn/videos"
         className="mb-0"
       />
+      {tracks.length > 0 && ready ? <AutoVideoPanel /> : null}
       {tracks.length === 0 ? (
         <Card>
           <EmptyState icon={Clapperboard} title="No tracks yet" body="Seed ARFA content from the Learn admin overview, then lessons show up here." />
@@ -142,7 +157,7 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
       {selected.map((t) => (
         <Card key={t.id} title={t.title} padded={false}>
           <div className="relative overflow-x-auto">
-            <table className={cn(tableStyles.table, "min-w-[640px]")}>
+            <table className={cn(tableStyles.table, "min-w-[980px]")}>
               <thead className={tableStyles.thead}>
                 <tr>
                   <th className={tableStyles.th}>Lesson</th>
@@ -150,6 +165,7 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
                   <th className={cn(tableStyles.th, "text-right")}>Chapters</th>
                   <th className={tableStyles.th}>Captions</th>
                   <th className={tableStyles.th}>Script</th>
+                  <th className={tableStyles.th}>Narrated video (AI)</th>
                   <th className={tableStyles.th}><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
@@ -159,7 +175,7 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
                   if (!rows.length) return null;
                   return [
                     <tr key={m.id}>
-                      <td colSpan={6} className="a-micro border-b border-[var(--a-border)] bg-[#fafbfd] px-4 pb-1.5 pt-3">
+                      <td colSpan={7} className="a-micro border-b border-[var(--a-border)] bg-[#fafbfd] px-4 pb-1.5 pt-3">
                         {m.sortOrder + 1}. {m.title}
                       </td>
                     </tr>,
@@ -173,7 +189,7 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
                           <td className={tableStyles.td}>
                             {l.videoUrl ? (
                               <span className="inline-flex items-center gap-1 font-semibold text-[var(--a-success)]">
-                                <Check size={14} aria-hidden /> {kind ? KIND[kind] : "Link"}
+                                <Check size={14} aria-hidden /> {isGeneratedUrl(l.videoUrl) ? "AI narrated" : kind ? KIND[kind] : "Link"}
                               </span>
                             ) : (
                               <Badge tone="warn">Missing</Badge>
@@ -196,6 +212,31 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
                             </span>
                           </td>
                           <td className={cn(tableStyles.td, "text-[12.5px]")}>{v ? `v${v}` : <span className="text-[var(--a-ink-3)]">None</span>}</td>
+                          <td className={tableStyles.td}>
+                            {(() => {
+                              const p = planBy.get(l.id);
+                              const js = jobsBy.get(l.id) ?? [];
+                              const job = (loc: string): RowJob | undefined => {
+                                const j = js.find((x) => x.locale === loc);
+                                return j ? { status: j.status, error: j.error, durationSec: j.durationSec } : undefined;
+                              };
+                              const hash = contentHash(l);
+                              return (
+                                <AutoVideoRow
+                                  lessonId={l.id}
+                                  lessonTitle={l.title}
+                                  planned={!!p}
+                                  decision={p?.decision ?? false}
+                                  reason={p?.reason ?? ""}
+                                  override={p?.override === "include" || p?.override === "exclude" ? p.override : null}
+                                  ownVideo={!!l.videoUrl && !isGeneratedUrl(l.videoUrl)}
+                                  generated={isGeneratedUrl(l.videoUrl) || js.some((j) => j.status === "done")}
+                                  stale={js.some((j) => j.status === "done" && j.contentHash !== hash)}
+                                  jobs={{ en: job("en"), fr: job("fr") }}
+                                />
+                              );
+                            })()}
+                          </td>
                           <td className={cn(tableStyles.td, "text-right")}>
                             <Link href={`/admin_pro/learn/lessons/${l.id}#video`} className="whitespace-nowrap text-[13px] font-semibold text-[var(--a-blue)] hover:underline">
                               {l.videoUrl ? "Edit video" : "Add video"}

@@ -19,4 +19,5 @@ export const STUDIO_COMPONENTS: Record<string, ComponentType<StudioToolProps>> =
   "prompt-arena": load(() => import("./tools/prompt-arena")),
   "critic-mode": load(() => import("./tools/critic-mode")),
   "test-bench": load(() => import("./tools/test-bench")),
+  "security-doors": load(() => import("./tools/security-doors")),
 };

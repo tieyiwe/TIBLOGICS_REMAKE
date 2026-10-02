@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { fmtPrice } from "@/lib/learn/format";
 import { useLocale, useT } from "@/lib/i18n/client";
 import { quoteSeats, type SeatTier } from "@/lib/learn/team/config";
+import { joinPath } from "@/lib/learn/join/choice";
 
 /**
  * The Teams option: pick seats (at least the minimum), name the company, then
@@ -51,7 +52,8 @@ export default function TeamsOffer({
   const unit = quote.seatPriceCents;
   const total = quote.totalCents;
   const valid = Number.isInteger(seats) && seats >= minSeats && seats <= 500;
-  const next = `/learn/subscribe?team=1&seats=${seats}`;
+  // Public pages: the one-page join flow with the team plan preselected.
+  const joinHref = joinPath({ kind: "team", seats: valid ? seats : minSeats });
 
   async function start(e: React.FormEvent) {
     e.preventDefault();
@@ -160,7 +162,7 @@ export default function TeamsOffer({
           <div className="sm:col-span-2">
             {mode === "link" ? (
               <Link
-                href={`/learn/signup?next=${encodeURIComponent(next)}`}
+                href={joinHref}
                 className="block w-full rounded-full bg-[var(--ink)] px-4 py-3 text-center text-sm font-bold text-white hover:opacity-90 sm:inline-block sm:w-auto sm:px-8"
               >
                 {t("team.offer.createAccount")}
@@ -177,7 +179,7 @@ export default function TeamsOffer({
             {mode === "link" && (
               <p className="mt-2 text-xs text-[var(--ink3)]">
                 {t("team.offer.haveAccount")}{" "}
-                <Link href={`/learn/login?next=${encodeURIComponent(next)}`} className="font-semibold underline">{t("team.offer.signIn")}</Link>
+                <Link href={`/learn/login?next=${encodeURIComponent(joinHref)}`} className="font-semibold underline">{t("team.offer.signIn")}</Link>
               </p>
             )}
           </div>

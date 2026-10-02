@@ -23,6 +23,8 @@ import ResumeCard from "@/components/learn/ResumeCard";
 import { NewLessonsChip } from "@/components/learn/NewLessons";
 import { newLessonsByTrack } from "@/lib/learn/track-updates";
 import TeamDashboardCard from "@/components/learn/team/TeamDashboardCard";
+import YoureInBanner from "@/components/learn/join/YoureInBanner";
+import PendingEnrollmentCard from "@/components/learn/join/PendingEnrollmentCard";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getT();
@@ -31,7 +33,9 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export const dynamic = "force-dynamic";
 
-export default async function LearnDashboard() {
+export default async function LearnDashboard({ searchParams }: { searchParams: Promise<{ welcome?: string }> }) {
+  // ?welcome=1: just paid (app/api/learn/checkout/confirm): "You're in".
+  const welcome = (await searchParams).welcome === "1";
   const student = await getStudent();
   if (!student) redirect("/learn/login");
 
@@ -90,6 +94,16 @@ export default async function LearnDashboard() {
 
   return (
     <div className="space-y-8">
+      {welcome && (
+        <YoureInBanner
+          trackTitle={access.all ? null : openTracks[0]?.track.title ?? null}
+          startHref={access.all ? "/learn/tracks" : openTracks[0] ? `/learn/track/${openTracks[0].track.slug}` : "/learn/tracks"}
+          closeHref="/learn"
+          lifetime={!access.all}
+        />
+      )}
+      {/* One-page join flow: a plan chosen but not paid yet (nothing otherwise). */}
+      <PendingEnrollmentCard studentId={student.id} />
       {/* Greeting + stats */}
       <section>
         <h1 className="text-2xl font-black text-[var(--ink)]">

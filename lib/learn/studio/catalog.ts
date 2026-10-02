@@ -8,6 +8,7 @@ import { wireframeBuilder } from "./tools/wireframe-builder";
 import { promptArena } from "./tools/prompt-arena";
 import { criticMode } from "./tools/critic-mode";
 import { testBench } from "./tools/test-bench";
+import { securityDoors } from "./tools/security-doors";
 
 // Every Studio tool. Safe to import on the server and in the browser.
 export const STUDIO_TOOLS: StudioToolMeta[] = [
@@ -20,6 +21,7 @@ export const STUDIO_TOOLS: StudioToolMeta[] = [
   promptArena,
   criticMode,
   testBench,
+  securityDoors,
 ];
 
 export const STUDIO_BY_ID = new Map(STUDIO_TOOLS.map((t) => [t.id, t]));

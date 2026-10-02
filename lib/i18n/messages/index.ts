@@ -24,6 +24,7 @@ import studioWireframe from "./studio-wireframe-builder";
 import studioArena from "./studio-prompt-arena";
 import studioCritic from "./studio-critic-mode";
 import studioBench from "./studio-test-bench";
+import studioDoors from "./studio-security-doors";
 import game from "./game";
 import method from "./method";
 import resumeMsgs from "./resume";
@@ -36,8 +37,9 @@ import referralsMsgs from "./referrals";
 import inboxMsgs from "./inbox";
 import promoMsgs from "./promo";
 import seoMsgs from "./seo";
+import joinMsgs from "./join";
 
-const ALL: Messages[] = [common, home, site, tools, learn, labs, toolkit, calculator, pages, game, studio, studioAutomation, studioLoops, studioPrompt, studioSorter, studioRisk, studioWireframe, studioArena, studioCritic, studioBench, method, tutorMsgs, masteryMsgs, communityMsgs, videoMsgs, teamMsgs, resumeMsgs, liveMsgs, badgesMsgs, pwaMsgs, a11yMsgs, acquireMsgs, referralsMsgs, inboxMsgs, promoMsgs, seoMsgs];
+const ALL: Messages[] = [common, home, site, tools, learn, labs, toolkit, calculator, pages, game, studio, studioAutomation, studioLoops, studioPrompt, studioSorter, studioRisk, studioWireframe, studioArena, studioCritic, studioBench, studioDoors, method, tutorMsgs, masteryMsgs, communityMsgs, videoMsgs, teamMsgs, resumeMsgs, liveMsgs, badgesMsgs, pwaMsgs, a11yMsgs, acquireMsgs, referralsMsgs, inboxMsgs, promoMsgs, seoMsgs, joinMsgs];
 
 const cache = new Map<Locale, Record<string, string>>();
 

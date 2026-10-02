@@ -21,6 +21,8 @@ export default function MobileBottomNav() {
   const pathname = usePathname();
   const t = useT();
   if (pathname?.startsWith("/admin_pro")) return null;
+  // The join flow has its own bottom bar (summary + continue).
+  if (pathname === "/learning-box/join") return null;
 
   function isActive(href: string) {
     if (href === "/") return pathname === "/";

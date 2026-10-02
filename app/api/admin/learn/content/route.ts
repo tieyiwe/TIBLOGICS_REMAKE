@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/require-admin";
 import { ContentError, Op, runOp } from "@/lib/learn/admin/content";
+import { requeueChanged } from "@/lib/learn/video/queue";
 
 // The Learning Box editor's single write endpoint: { op: "lesson.update", ... }.
 // Staff only; every operation is validated in lib/learn/admin/content.ts.
@@ -16,7 +17,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `${field ? `${field}: ` : ""}${issue?.message ?? "Invalid request"}` }, { status: 400 });
   }
   try {
-    return NextResponse.json({ ok: true, ...(await runOp(parsed.data)) });
+    const result = await runOp(parsed.data);
+    // A lesson whose text changed gets its narrated video made again (cheap check, after the response).
+    if (parsed.data.op === "lesson.update") after(() => requeueChanged().catch((err) => console.error("[video] requeue", err)));
+    return NextResponse.json({ ok: true, ...result });
   } catch (err) {
     if (err instanceof ContentError) {
       return NextResponse.json({ error: err.message, needsConfirm: err.needsConfirm }, { status: err.status });

@@ -25,6 +25,7 @@ import { NewLessonsPanel, NewPill } from "@/components/learn/NewLessons";
 import { resumeTitle } from "@/components/learn/ResumeCard";
 import TrackCommunityCards from "@/components/learn/community/TrackCommunityCards";
 import OfflineDownload from "@/components/learn/pwa/OfflineDownload";
+import YoureInBanner from "@/components/learn/join/YoureInBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -36,8 +37,16 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return { title: text.title };
 }
 
-export default async function TrackHome({ params }: { params: Promise<{ slug: string }> }) {
+export default async function TrackHome({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ welcome?: string }>;
+}) {
   const { slug } = await params;
+  // ?welcome=1: just paid (app/api/learn/checkout/confirm): "You're in".
+  const welcome = (await searchParams).welcome === "1";
   const student = await getStudent();
   if (!student) redirect("/learn/login");
 
@@ -227,8 +236,19 @@ export default async function TrackHome({ params }: { params: Promise<{ slug: st
     { key: "capstone", label: t("learn.gates.capstone"), ok: gates.capstone },
   ];
 
+  const firstLessonId = track.modules[0]?.lessons[0]?.id ?? null;
+
   return (
     <div className="space-y-8">
+      {welcome && (
+        <YoureInBanner
+          trackTitle={text?.title ?? track.title}
+          startHref={resumeHref ?? (firstLessonId ? `/learn/lesson/${firstLessonId}` : `/learn/track/${track.slug}`)}
+          closeHref={`/learn/track/${track.slug}`}
+          accent={track.accentColor}
+          lifetime={access.purchased.includes(track.id)}
+        />
+      )}
       <header className="flex flex-wrap items-center gap-6 rounded-2xl border border-[var(--border)] bg-white p-6">
         <ProgressRing percent={progress.percent} color={track.accentColor} size={76} />
         <div className="min-w-0 flex-1" style={{ flexBasis: 180 }}>

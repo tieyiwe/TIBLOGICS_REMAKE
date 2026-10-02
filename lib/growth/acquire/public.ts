@@ -1,4 +1,5 @@
 import type { AcquireMagnet, AcquirePage } from "@prisma/client";
+import { signupToJoin } from "@/lib/learn/join/choice";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 import type { Locale } from "@/lib/i18n/config";
 import { getCatalogItem, TYPE_LABEL } from "../catalog";
@@ -75,7 +76,8 @@ export async function pageView(page: AcquirePage, visitor?: Locale, contentOverr
   let ctaHref: string | null = null;
   if (base.cta.kind === "newsletter") ctaHref = "#lead-form";
   else if (base.cta.href.startsWith("/")) ctaHref = (() => {
-    const u = trackedProductUrl(base.cta.href, campaign, "landing");
+    // "Sign up" CTAs open the one-page join flow (choose, account, pay).
+    const u = trackedProductUrl(signupToJoin(base.cta.href), campaign, "landing");
     if (!u) return null;
     const x = new URL(u);
     return `${x.pathname}${x.search}${x.hash}`;

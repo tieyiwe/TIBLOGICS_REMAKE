@@ -1,7 +1,8 @@
 import type { SeedCapstone, SeedFinalExam, SeedLab } from "../types";
 
 // Vibe Coding Like a Software Engineer: labs, final exam and capstone.
-// Every assessment tests what Modules 1-6 teach, in their terms. The system
+// Every assessment tests what Modules 1-7 teach (Module 7's labs and exam
+// questions are in ./module-7-assessments.ts), in their terms. The system
 // map from Module 1 is the thread: the spec, the build loops, the tests, the
 // security review and the handover all refer back to it. All apps, people and
 // organisations in scenarios are fictional and illustrative.
@@ -1072,7 +1073,7 @@ export const TRACK_4_FINAL_EXAM: SeedFinalExam = {
 
 Most questions are short scenarios from building software with AI: a spec that cannot be checked, a diff that changes too much, a test that passes for the wrong reason, a key in the wrong place, a deploy that goes wrong. They test the judgement of a working software engineer. Recalling a phrase from a lesson will not be enough.
 
-Questions are drawn at random from a larger bank covering all six modules, and the options are shuffled, so each attempt is different. Every answer is saved the moment you select it, and the clock runs on our server.
+Questions are drawn at random from a larger bank covering all seven modules, including the Ship Safe security module, and the options are shuffled, so each attempt is different. Every answer is saved the moment you select it, and the clock runs on our server.
 
 You have up to 3 attempts, with a 24-hour gap between them so that a retry is a studied one. Your result is broken down by module, so you will know what to revisit.`,
   questions: [
@@ -1762,7 +1763,7 @@ A link to the running app, a link to (or export of) its Git repository, and one 
 
 **4. Tests and verification.** Automated tests or a written test plan covering every acceptance criterion and at least five edge cases, with results. Show that at least one test fails when the code is broken on purpose.
 
-**5. Security review.** Where secrets live, how input is validated and displayed safely, how dependencies were checked, how login and authorisation work (if any), what personal data you collect and why, and what you chose not to collect.
+**5. Security review: the 30 doors.** Before your first real user signs up, run the 30-door launch audit from Module 7 on this app (the 30 Doors tool will produce the report). Include a short security section: the status of all 30 doors (Checked, Not applicable with a reason, or Needs work with a fix plan and date), at least three doors you fixed with the test that proves each one closed, and how you checked the doors yourself rather than trusting the AI's verdict. Also say what personal data you collect and why, and what you chose not to collect. An app with a door that exposes personal data, money or admin power still open cannot pass this section.
 
 **6. README and handover.** A README in the repository: what the app does, how to run it locally, the environment variables it needs (names only, never values), how to deploy and roll back, what is logged, known issues and technical debt, and when to call a professional engineer.
 
@@ -1784,7 +1785,7 @@ A reviewer can follow the thread from the map and the spec to the code, the test
     },
     {
       criterion: "Small, reviewed build loops",
-      weight: 20,
+      weight: 15,
       description:
         "Does the Git history show small, meaningful commits? Do the chosen commits show what was asked of the AI, what was checked and what was rejected or corrected? Is at least one bug reproduced, isolated, fixed and explained?",
     },
@@ -1795,10 +1796,10 @@ A reviewer can follow the thread from the map and the spec to the code, the test
         "Do tests or a test plan cover every acceptance criterion and meaningful edge cases, with honest results? Is there evidence that tests fail on broken code, and that AI changes to tests were reviewed?",
     },
     {
-      criterion: "Security and data",
-      weight: 15,
+      criterion: "Security: the 30-door launch audit",
+      weight: 20,
       description:
-        "Are secrets kept out of the front end and the repository, input validated on the server and displayed safely, dependencies checked, authorisation enforced on the server where relevant, and personal data minimised with reasons?",
+        "Does the security section give a status for all 30 doors, with evidence that the learner tested doors themselves? Are at least three doors fixed with a test proving each one closed? Are secrets out of the front end and the repository, authorisation and ownership enforced on the server, input validated and displayed safely, AI features capped and rate limited, and personal data minimised with reasons? Every remaining Needs work door needs a fix plan, and no door exposing personal data, money or admin power may be left open.",
     },
     {
       criterion: "Shipping and handover",

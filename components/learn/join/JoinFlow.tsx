@@ -549,11 +549,6 @@ export default function JoinFlow(props: JoinFlowProps) {
           )}
         </fieldset>
 
-        {promoTargets.length > 0 && (
-          <div className="mt-5 max-w-md">
-            <PromoCodeField targets={promoTargets} email={email || student?.email} />
-          </div>
-        )}
       </section>
 
       {/* ── 2. Account + 3. Pay ─────────────────────────────────────── */}
@@ -576,6 +571,11 @@ export default function JoinFlow(props: JoinFlowProps) {
               <p className="mt-1 text-sm text-[var(--ink2)]">{t("learn.join.sum.none")}</p>
             )}
           </div>
+          {promoTargets.length > 0 && (
+            <div className="mt-3">
+              <PromoCodeField targets={promoTargets} email={email || student?.email} />
+            </div>
+          )}
 
           <h2 className="mt-5 flex items-center gap-2 text-lg font-black text-[var(--ink)]">
             <StepNum n={2} done={accountReady} /> {t("learn.join.step2")}
@@ -756,6 +756,7 @@ export default function JoinFlow(props: JoinFlowProps) {
         }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         aria-hidden={payVisible || !summary}
+        data-testid="join-bar"
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
           <div className="min-w-0">

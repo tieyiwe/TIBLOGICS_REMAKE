@@ -19,6 +19,7 @@
 //   node scripts/cron.mjs growth
 //   node scripts/cron.mjs outreach
 //   node scripts/cron.mjs comms
+//   node scripts/cron.mjs videos
 //   node scripts/cron.mjs all
 //
 // Needs two environment variables:
@@ -66,6 +67,11 @@ const JOBS = {
   // (email and in-app), within COMMS_HOURLY_CAP emails per hour (default
   // 300). Each recipient is claimed before sending; idempotent.
   comms: { path: "/api/cron/comms", suggested: "every 15 minutes" },
+  // Narrated lesson videos (AI voice + slides, EN and FR): re-queues lessons
+  // whose text changed, plans new ones, then makes up to VIDEO_MAX_PER_RUN
+  // videos (default 2). Each job is claimed before it runs; idempotent.
+  // Needs GOOGLE_TTS_API_KEY (or OPENAI_API_KEY) on the server.
+  videos: { path: "/api/cron/videos", suggested: "every 15 minutes" },
   // One-off, not scheduled: creates every runtime table/column/index so the
   // development database matches production before publishing on Replit.
   dbprep: { path: "/api/cron/db-prepare", suggested: "manually, before publishing" },
@@ -122,7 +128,7 @@ for (const name of names) {
     const res = await fetch(url, {
       headers: { authorization: `Bearer ${secret}` },
       // A news run generates several articles; give it room.
-      signal: AbortSignal.timeout(name === "news" ? 600_000 : name === "monitor" || name === "blueprints" || name === "translate" || name === "growth" || name === "outreach" || name === "comms" ? 330_000 : 120_000),
+      signal: AbortSignal.timeout(name === "news" || name === "videos" ? 900_000 : name === "monitor" || name === "blueprints" || name === "translate" || name === "growth" || name === "outreach" || name === "comms" ? 330_000 : 120_000),
     });
     const body = await res.text();
     const secs = ((Date.now() - started) / 1000).toFixed(1);

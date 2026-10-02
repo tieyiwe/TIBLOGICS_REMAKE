@@ -38,7 +38,7 @@ let fontsP: Promise<Font[]> | null = null;
 let logoP: Promise<string | null> | null = null;
 
 function fonts(): Promise<Font[]> {
-  fontsP ??= (async () => {
+  fontsP ??= (async (): Promise<Font[]> => {
     const dir = path.join(process.cwd(), "lib", "og", "fonts");
     const [r, b, m] = await Promise.all(
       ["InstrumentSans-Regular.ttf", "InstrumentSans-Bold.ttf", "JetBrainsMono-Regular.ttf"].map((f) => readFile(path.join(dir, f))),
@@ -52,7 +52,7 @@ function fonts(): Promise<Font[]> {
     fontsP = null;
     throw err;
   });
-  return fontsP;
+  return fontsP!;
 }
 
 function logo(): Promise<string | null> {

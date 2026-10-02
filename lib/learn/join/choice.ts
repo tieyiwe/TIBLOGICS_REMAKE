@@ -88,3 +88,19 @@ export function choiceKey(c: JoinChoice | null): string {
   if (!c) return "";
   return c.kind === "track" ? `track:${c.slug}` : c.kind;
 }
+
+/**
+ * Old sign-up links that meant "I want to buy" (/learn/signup, /learn/signup?track=x),
+ * as the join page with the same query (UTM parameters included). Anything
+ * else, including sign-ups continuing elsewhere (?next=), is returned as is.
+ */
+export function signupToJoin(href: string): string {
+  if (!href.startsWith("/learn/signup")) return href;
+  try {
+    const u = new URL(href, "https://same.site.invalid");
+    if (u.pathname !== "/learn/signup" || u.searchParams.has("next")) return href;
+    return `${JOIN_PATH}${u.search}${u.hash}`;
+  } catch {
+    return href;
+  }
+}

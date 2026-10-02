@@ -9,6 +9,7 @@ import SalePrice, { type SaleInfo } from "@/components/promo/SalePrice";
 import PromoCodeField from "@/components/promo/PromoCodeField";
 import { getStoredCode } from "@/lib/promotions/client-code";
 import type { TargetT } from "@/lib/promotions/lines";
+import { joinPath } from "@/lib/learn/join/choice";
 
 export interface PurchaseTrack {
   slug: string;
@@ -27,7 +28,8 @@ export interface PurchaseTrack {
  *   All tracks: $89/month
  *
  * mode "checkout" (signed-in learner) starts Stripe Checkout; mode "link"
- * (public pages) sends the visitor to create an account first. Prices shown
+ * (public pages) opens the one-page join flow (/learning-box/join) with the
+ * option preselected: choose, create the account and pay on one page. Prices shown
  * here are display only: checkout recomputes them on the server.
  */
 export default function PurchaseOptions({
@@ -55,7 +57,9 @@ export default function PurchaseOptions({
   const locale = useLocale();
   const [busy, setBusy] = useState<"track" | "monthly" | null>(null);
   const [error, setError] = useState("");
-  const signupHref = track ? `/learn/signup?track=${track.slug}` : "/learn/signup";
+  // Public pages: the one-page join flow, with this option preselected.
+  const trackHref = track ? joinPath({ kind: "track", slug: track.slug }) : joinPath(null);
+  const monthlyHref = joinPath({ kind: "monthly", track: track?.slug ?? null });
 
   async function start(kind: "track" | "monthly") {
     setBusy(kind);
@@ -114,7 +118,7 @@ export default function PurchaseOptions({
                 ✓ {t("learn.offer.owned")}
               </p>
             ) : mode === "link" ? (
-              <Link href={signupHref} className={`${btnBase} text-white`} style={{ background: accent }}>
+              <Link href={trackHref} className={`${btnBase} text-white`} style={{ background: accent }}>
                 {t("learn.offer.track.buy", { price: fmtPrice(trackPrice, locale) })}
               </Link>
             ) : (
@@ -149,7 +153,7 @@ export default function PurchaseOptions({
             <p className="mt-3 flex-1 text-sm leading-relaxed text-[var(--ink2)]">{t("learn.offer.all.blurb")}</p>
             {mode === "link" ? (
               <Link
-                href={signupHref}
+                href={monthlyHref}
                 className={`${btnBase} bg-gradient-to-r from-[var(--orange)] to-[#F9A738] text-[var(--ink)]`}
               >
                 {t("learn.offer.all.cta", { price: fmtPrice(monthlyPrice, locale) })}

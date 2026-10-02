@@ -11,6 +11,7 @@ import { TRACK_BASE_PRICE_CENTS } from "@/lib/learn/pricing";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { fmtPrice } from "@/lib/learn/format";
 import { useLocale, useT } from "@/lib/i18n/client";
+import { isSlug, joinPath } from "@/lib/learn/join/choice";
 
 
 /** A same-site path, or null. Resolved so "/%09/evil.com" (read as "//evil.com") is refused. */
@@ -112,6 +113,20 @@ function SignupForm() {
               {t("learn.auth.signingUpFor1")}{" "}
               <strong>{track.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</strong>
               {t("learn.auth.signingUpFor2")}
+            </p>
+          )}
+
+          {!next && (
+            // The one-page flow (choose, account and payment together) for
+            // visitors who already know what they want.
+            <p className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--s2)] px-3 py-2.5 text-xs leading-relaxed text-[var(--ink2)]">
+              {t("learn.join.signupHint")}{" "}
+              <Link
+                href={joinPath(track && isSlug(track) ? { kind: "track", slug: track } : null)}
+                className="font-bold text-[var(--blue2)] underline underline-offset-2"
+              >
+                {t("learn.join.signupHintLink")} →
+              </Link>
             </p>
           )}
 

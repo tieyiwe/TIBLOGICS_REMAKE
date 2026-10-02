@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { requirePermission } from "@/lib/require-admin";
 import { seedAll } from "@/lib/learn/seed";
+import { requeueChanged } from "@/lib/learn/video/queue";
 
 // Idempotent. Re-running updates content in place and never duplicates —
 // learner progress, attempts, points and certificates are untouched.
@@ -12,6 +13,8 @@ export async function POST() {
 
   try {
     const reports = await seedAll();
+    // Lessons whose text the seed changed get their narrated videos made again.
+    after(() => requeueChanged().catch((err) => console.error("[video] requeue", err)));
     const totals = reports.reduce(
       (acc, r) => ({
         modules: acc.modules + r.modules,

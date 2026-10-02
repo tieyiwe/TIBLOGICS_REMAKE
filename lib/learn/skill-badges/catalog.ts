@@ -245,6 +245,31 @@ export const SKILL_BADGES: SkillBadgeDef[] = [
       { id: "quiz", need: 1, quizzes: ["ai-practitioner:4", "ai-small-business:3", "ai-forward-professional:2"] },
     ],
   },
+  {
+    // The 30 Doors: the pre-launch security audit taught in Vibe Coding
+    // (Module 7, Ship Safe) and Building AI Apps and Agents.
+    slug: "ship-safe",
+    glyph: "security",
+    name: "Ship Safe",
+    description:
+      "Audits an AI-built app against 30 common security doors before launch, from keys and access checks to AI spending limits, prompt injection and tested backups, and fixes the gaps.",
+    minTracks: 2,
+    requirements: [
+      {
+        id: "core",
+        need: 2,
+        labs: [
+          "vibe-coding-lab-7-security-audit",
+          "vibe-coding-lab-8-your-app-security-report",
+          "ai-agents-lab-8-security-audit-agent-app",
+          "vibe-coding-lab-5-security-review",
+          "ai-agents-lab-7-pre-launch-design-review",
+          "ai-systems-expert-lab-4-injection-resistant-instructions",
+        ],
+      },
+      { id: "quiz", need: 1, quizzes: ["vibe-coding-engineer:6", "ai-apps-agents:4", "ai-systems-expert:3"] },
+    ],
+  },
 ];
 
 export const SKILL_BY_SLUG = new Map(SKILL_BADGES.map((b) => [b.slug, b]));

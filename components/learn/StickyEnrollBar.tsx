@@ -6,6 +6,7 @@ import WaitlistForm from "./WaitlistForm";
 import { PLANS, FOUNDING_PRICING } from "@/lib/payments/provider";
 import { fmtPrice } from "@/lib/learn/format";
 import { useLocale, useT } from "@/lib/i18n/client";
+import { joinPath } from "@/lib/learn/join/choice";
 
 // Sticky enrol CTA (Part C2). Appears after the hero scrolls away so it
 // doesn't compete with the page's own call to action.
@@ -73,7 +74,7 @@ export default function StickyEnrollBar({
           </div>
         ) : (
           <Link
-            href={`/learn/signup?track=${trackSlug}`}
+            href={joinPath({ kind: "track", slug: trackSlug })}
             className="shrink-0 rounded-full px-6 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
             style={{ background: accentColor }}
           >

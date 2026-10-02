@@ -36,7 +36,9 @@ const nextConfig = {
   allowedDevOrigins: [process.env.REPLIT_DEV_DOMAIN].filter(Boolean),
   compress: true,
   poweredByHeader: false,
-  serverExternalPackages: ["@prisma/client", "prisma"],
+  // ffmpeg-static resolves its binary from its own folder, and Replit Object
+  // Storage pulls in the Google Cloud SDK: both stay plain Node requires.
+  serverExternalPackages: ["@prisma/client", "prisma", "ffmpeg-static", "@replit/object-storage"],
   images: {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 86400,
