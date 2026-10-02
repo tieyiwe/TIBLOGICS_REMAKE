@@ -52,6 +52,7 @@ export type AiTask =
   | "growth-ideas"
   | "comms-translate"
   | "promo-translate"
+  | "video-select"
   // Sonnet
   | "code-assist"
   | "grade-code"
@@ -67,6 +68,7 @@ export type AiTask =
   | "translate-long"
   | "tutor"
   | "video-script"
+  | "video-scenes"
   | "outreach-strategy"
   | "growth-kit"
   | "growth-campaign"
@@ -123,6 +125,8 @@ export const ROUTES: Record<AiTask, Route> = {
   "comms-translate": { tier: "haiku", maxTokens: 4000 },
   // Promotions: a site banner (one line) into French and Swahili.
   "promo-translate": { tier: "haiku", maxTokens: 600 },
+  // Narrated lesson videos: does this lesson benefit from a video? (cached per content hash)
+  "video-select": { tier: "haiku", maxTokens: 300 },
 
   "code-assist": { tier: "sonnet", maxTokens: 8000, thinking: "adaptive", effort: "medium", cacheSystem: true },
   "grade-code": { tier: "sonnet", maxTokens: 4000, thinking: "adaptive", effort: "medium" },
@@ -138,6 +142,8 @@ export const ROUTES: Record<AiTask, Route> = {
   "translate-long": { tier: "sonnet", maxTokens: 16000, thinking: "off" },
   tutor: { tier: "sonnet", maxTokens: 700, thinking: "off", effort: "low", cacheSystem: true, cacheHistory: true },
   "video-script": { tier: "sonnet", maxTokens: 6000, thinking: "off", effort: "low" },
+  // Narrated lesson videos: the scene script (narration + slide content) as JSON.
+  "video-scenes": { tier: "sonnet", maxTokens: 8000, thinking: "off", effort: "low" },
   // Growth outreach: drafting a whole multi-step sequence (strategy).
   "outreach-strategy": { tier: "sonnet", maxTokens: 2500, thinking: "off", effort: "low" },
   // Growth: a whole product marketing kit (posts, emails, ads, script, calendar) as JSON.

@@ -1663,7 +1663,78 @@ model LessonVideoMeta {
   lessonId  String   @id
   chapters  Json     @default("[]")
   captions  Json     @default("{}")
+  /// Generated narrated videos per language: { en?, fr? } each
+  /// { url, webm?, chapters, captions, durationSec, voice, generatedAt }.
+  variants  Json     @default("{}")
   updatedAt DateTime @default(now()) @updatedAt
+}
+
+/// Whether a lesson gets a generated narrated video (lib/learn/video/select.ts)
+/// and its scene script once drafted (lib/learn/video/scenes.ts).
+/// source: rule | ai | default; override: include | exclude | null.
+model LessonVideoPlan {
+  lessonId    String   @id
+  contentHash String
+  decision    Boolean  @default(false)
+  reason      String   @default("")
+  source      String   @default("rule")
+  override    String?
+  estChars    Int      @default(0)
+  script      Json?
+  scriptHash  String?
+  updatedAt   DateTime @default(now())
+}
+
+/// One narrated-video generation job per lesson and language (en | fr).
+/// status: queued | running | done | failed | needs_tts | skipped.
+model LessonVideoJob {
+  id          String    @id
+  lessonId    String
+  locale      String
+  status      String    @default("queued")
+  contentHash String    @default("")
+  priority    Int       @default(0)
+  attempts    Int       @default(0)
+  error       String?
+  chars       Int       @default(0)
+  durationSec Float     @default(0)
+  provider    String?
+  assetId     String?
+  queuedAt    DateTime  @default(now())
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  leaseUntil  DateTime?
+  updatedAt   DateTime  @default(now())
+
+  @@unique([lessonId, locale])
+  @@index([status])
+}
+
+/// A stored generated video file. storage: object (Replit Object Storage,
+/// objectKey) | db (LessonVideoChunk rows of chunkSize bytes).
+model LessonVideoAsset {
+  id          String   @id
+  lessonId    String
+  locale      String
+  contentType String
+  size        Int
+  etag        String
+  storage     String
+  objectKey   String?
+  chunkSize   Int      @default(0)
+  durationSec Float    @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([lessonId])
+}
+
+/// Bytes of a LessonVideoAsset stored in the database, in order.
+model LessonVideoChunk {
+  assetId String
+  idx     Int
+  data    Bytes
+
+  @@id([assetId, idx])
 }
 
 /// A learner's place in a lesson video. coverage: 100 "0"/"1" buckets of the
