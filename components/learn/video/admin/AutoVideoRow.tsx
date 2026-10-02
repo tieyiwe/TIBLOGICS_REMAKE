@@ -23,7 +23,7 @@ const STATUS: Record<string, { label: string; tone: BadgeTone }> = {
   done: { label: "Ready", tone: "success" },
   failed: { label: "Failed", tone: "danger" },
   needs_tts: { label: "Needs voice key", tone: "warn" },
-  skipped: { label: "Off", tone: "neutral" },
+  skipped: { label: "Stopped", tone: "neutral" },
 };
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
@@ -139,7 +139,7 @@ export default function AutoVideoRow({
       <div className="flex flex-wrap gap-1">
         {include && (
           <Button size="sm" variant="ghost" icon={Play} loading={busy === "gen"} disabled={running} onClick={() => post("gen", { action: "generate" }, "Queued: the video is being made now.")} data-testid="video-generate">
-            {generated || jobs.en ? "Regenerate" : "Generate"}
+            {generated ? "Regenerate" : "Generate"}
           </Button>
         )}
         {generated && (
