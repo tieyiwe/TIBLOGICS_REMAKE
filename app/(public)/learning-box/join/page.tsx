@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import JoinFlow, { type JoinTrack } from "@/components/learn/join/JoinFlow";
+import HelpWidget from "@/components/learn/support/HelpWidget";
 import { getCatalog } from "@/lib/learn/catalog";
 import { getAccess, getStudent } from "@/lib/learn/session";
 import { getLocale, getT } from "@/lib/i18n/server";
@@ -118,6 +119,8 @@ export default async function JoinPage({
             google={!student && googleLoginEnabled()}
           />
         </div>
+        {/* "Need help?" (bottom left here, clear of the site chat button). */}
+        <HelpWidget place="public" />
       </div>
     </div>
   );

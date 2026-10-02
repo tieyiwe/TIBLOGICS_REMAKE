@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { getLearnContext } from "@/lib/learn/session";
 import AccountSettings from "@/components/learn/AccountSettings";
+import OpenHelpButton from "@/components/learn/support/OpenHelpButton";
 import CommunitySettings from "@/components/learn/community/CommunitySettings";
 import { getProfile } from "@/lib/learn/community/discussion";
 import BillingPortalButton from "@/components/learn/BillingPortalButton";
@@ -71,6 +72,22 @@ export default async function AccountPage() {
             </div>
           )}
         </dl>
+      </section>
+
+      <section className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6" data-testid="account-inbox">
+        <h2 className="text-sm font-bold text-[var(--ink)]">{t("inbox.account.title")}</h2>
+        <p className="mt-1 text-sm text-[var(--ink2)]">{t("inbox.account.body")}</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link href="/learn/inbox" className="inline-flex min-h-11 items-center rounded-full border border-[var(--border)] px-4 text-sm font-semibold text-[var(--ink)] hover:border-[var(--ink3)]">
+            {t("inbox.account.messages")}
+          </Link>
+          <Link href="/learn/inbox?tab=notifications" className="inline-flex min-h-11 items-center rounded-full border border-[var(--border)] px-4 text-sm font-semibold text-[var(--ink)] hover:border-[var(--ink3)]">
+            {t("inbox.account.notifications")}
+          </Link>
+          <OpenHelpButton className="inline-flex min-h-11 items-center rounded-full bg-[var(--ink)] px-4 text-sm font-bold text-white hover:opacity-90">
+            {t("inbox.account.help")}
+          </OpenHelpButton>
+        </div>
       </section>
 
       <AccountSettings

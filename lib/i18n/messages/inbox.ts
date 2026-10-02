@@ -47,6 +47,11 @@ const messages: Messages = {
     "inbox.notif.allRead": "You are all caught up.",
     "inbox.notif.markAll": "Mark all as read",
     "inbox.notif.open": "Open",
+    "inbox.account.title": "Messages and notifications",
+    "inbox.account.body": "Messages from the ARFA team, notifications and your help requests, in one place.",
+    "inbox.account.messages": "Messages",
+    "inbox.account.notifications": "Notifications",
+    "inbox.account.help": "Ask for help",
 
     // "Need help?" panel on every learner page (components/learn/support).
     "support.fab": "Need help?",
@@ -202,6 +207,11 @@ const messages: Messages = {
     "inbox.notif.allRead": "Vous êtes à jour.",
     "inbox.notif.markAll": "Tout marquer comme lu",
     "inbox.notif.open": "Ouvrir",
+    "inbox.account.title": "Messages et notifications",
+    "inbox.account.body": "Les messages de l’équipe ARFA, les notifications et vos demandes d’aide, au même endroit.",
+    "inbox.account.messages": "Messages",
+    "inbox.account.notifications": "Notifications",
+    "inbox.account.help": "Demander de l’aide",
 
     "support.fab": `Besoin d’aide${NB}?`,
     "support.title": `Besoin d’aide${NB}?`,
