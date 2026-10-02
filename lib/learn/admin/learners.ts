@@ -311,7 +311,8 @@ async function lessonTotals(): Promise<Map<string, number>> {
 }
 
 /** Overall progress %: lessons done over lessons in the tracks touched. */
-async function progressByStudent(ids: string[] | null, ready: Ready, totals?: Map<string, number>) {
+/** Progress per learner: across the tracks they started, or in ONE track when `trackId` is given. */
+async function progressByStudent(ids: string[] | null, ready: Ready, totals?: Map<string, number>, trackId?: string | null) {
   const [done, touched, tot] = await Promise.all([lessonsDone(ids, ready), tracksTouched(ids, ready), totals ?? lessonTotals()]);
   const tracks = new Map<string, Set<string>>();
   for (const r of [...touched, ...done]) {
@@ -328,7 +329,7 @@ async function progressByStudent(ids: string[] | null, ready: Ready, totals?: Ma
     const d = doneBy.get(sid) ?? new Map<string, number>();
     let n = 0;
     let total = 0;
-    for (const t of set) {
+    for (const t of trackId ? [trackId] : set) {
       n += d.get(t) ?? 0;
       total += tot.get(t) ?? 0;
     }
@@ -472,7 +473,7 @@ export async function trackList(): Promise<TrackLite[]> {
 }
 
 /** Full rows for these learners, in the order given. Fixed query count. */
-async function rowsFor(ids: string[], ready: Ready, tracks: TrackLite[]): Promise<LearnerRow[]> {
+async function rowsFor(ids: string[], ready: Ready, tracks: TrackLite[], trackId?: string | null): Promise<LearnerRow[]> {
   if (ids.length === 0) return [];
   const title = new Map(tracks.map((t) => [t.id, t.title]));
   const [students, subs, purchases, teams, progress, xp, logins, certs, diags, estimates, accounts] = await Promise.all([
@@ -488,7 +489,7 @@ async function rowsFor(ids: string[], ready: Ready, tracks: TrackLite[]): Promis
       ? prisma.trackPurchase.findMany({ where: { studentId: { in: ids } }, select: { studentId: true, trackId: true } }).catch(() => [])
       : [],
     teamsBy(ids, ready),
-    progressByStudent(ids, ready),
+    progressByStudent(ids, ready, undefined, trackId),
     xpBy(ids),
     logins30By(ids, ready),
     certsBy(ids),
@@ -595,7 +596,7 @@ async function sortedIds(f: LearnerFilters, ready: Ready, all: boolean): Promise
   let matching = await prisma.student.findMany({ where, orderBy: dbOrder[f.sort] ?? { createdAt: "desc" }, select: { id: true } });
   if (ranged) {
     // Progress range: one grouped pass over every learner, then filter.
-    const prog = await progressByStudent(null, ready);
+    const prog = await progressByStudent(null, ready, undefined, f.track);
     const lo = f.progressMin ?? 0;
     const hi = f.progressMax ?? 100;
     matching = matching.filter((r) => {
@@ -611,7 +612,7 @@ async function sortedIds(f: LearnerFilters, ready: Ready, all: boolean): Promise
     f.sort === "xp" ? await xpBy(null)
     : f.sort === "logins" ? await logins30By(null, ready)
     : f.sort === "certs" ? await certsBy(null)
-    : new Map([...(await progressByStudent(null, ready)).entries()].map(([k, v]) => [k, v.percent]));
+    : new Map([...(await progressByStudent(null, ready, undefined, f.track)).entries()].map(([k, v]) => [k, v.percent]));
   const sign = dir === "asc" ? 1 : -1;
   const ids = matching
     .map((r, i) => ({ id: r.id, v: metric.get(r.id) ?? 0, i }))
@@ -637,7 +638,7 @@ export async function listLearners(f: LearnerFilters): Promise<LearnerPage> {
   const ready = await ensureLearnerTables();
   const tracks = await trackList();
   const { ids, total } = await sortedIds(f, ready, false);
-  const rows = await rowsFor(ids, ready, tracks);
+  const rows = await rowsFor(ids, ready, tracks, f.track);
   return { rows, total, page: f.page, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)), ready, tracks };
 }
 
@@ -664,7 +665,7 @@ export async function learnersCsv(f: LearnerFilters): Promise<{ csv: string; cou
   const site = (process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com").replace(/\/$/, "");
   // Rows in batches so a large export stays at a bounded query size.
   for (let i = 0; i < ids.length; i += 500) {
-    for (const r of await rowsFor(ids.slice(i, i + 500), ready, tracks)) {
+    for (const r of await rowsFor(ids.slice(i, i + 500), ready, tracks, f.track)) {
       lines.push([
         r.name, r.email, iso(r.createdAt), r.locale, r.emailVerified ? "yes" : "no", r.plan.labels.join("; "), r.plan.status,
         r.tracksStarted.join("; "), r.progress,

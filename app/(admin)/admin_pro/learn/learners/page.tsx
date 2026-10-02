@@ -41,7 +41,10 @@ export default async function LearnersPage({
   const headers = {
     name: sortHead("name", "Learner"),
     created: sortHead("created", "Signed up"),
-    progress: sortHead("progress", "Progress"),
+    progress: sortHead(
+      "progress",
+      f.track ? `Progress: ${tracks.find((t) => t.id === f.track || t.slug === f.track)?.title ?? "track"}` : "Progress",
+    ),
     lastLogin: sortHead("lastLogin", "Last login"),
     logins: sortHead("logins", "Logins 30d"),
     xp: sortHead("xp", "XP"),
@@ -180,7 +183,7 @@ export default async function LearnersPage({
             {filtered ? " match" : ""}
           </h2>
           <p className="text-xs text-[var(--ink3)]">
-            Active = signed in, finished a lesson or earned XP. Progress = lessons done in the tracks started.
+            Active = signed in, finished a lesson or earned XP. Progress = lessons done in the tracks started; pick a track in the filter to see everyone's progress in that one track.
           </p>
         </div>
         {rows.length === 0 ? (

@@ -3,6 +3,8 @@ import { z } from "zod";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { csrfGuard, learnerStaff } from "@/lib/learn/account-status/admin-auth";
 import * as A from "@/lib/learn/account-status/actions";
+import { deleteLearner } from "@/lib/learn/account-status/privacy";
+import prisma from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +17,10 @@ const Body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("signOutEverywhere"), ids: z.array(z.string().max(64)).min(1).max(200) }),
   z.object({ action: z.literal("addTag"), ids: z.array(z.string().max(64)).min(1).max(200), tag: z.string().trim().min(1).max(32) }),
   z.object({ action: z.literal("removeTag"), ids: z.array(z.string().max(64)).min(1).max(200), tag: z.string().trim().min(1).max(32) }),
+  // Delete = anonymise (see deleteLearner). The typed "DELETE" stands in for
+  // typing each learner's email; the email is NOT blocked, so the person can
+  // sign up again as a new learner.
+  z.object({ action: z.literal("delete"), ids: z.array(z.string().max(64)).min(1).max(50), confirm: z.literal("DELETE"), reason: z.string().trim().max(1000).optional().default("") }),
 ]);
 
 export async function POST(req: NextRequest) {
@@ -36,6 +42,11 @@ export async function POST(req: NextRequest) {
       else if (b.action === "unsuspend") await A.unsuspend(session, id, "");
       else if (b.action === "signOutEverywhere") await A.signOutEverywhere(session, id);
       else if (b.action === "addTag") await A.addTag(session, id, b.tag);
+      else if (b.action === "delete") {
+        const s = await prisma.student.findUnique({ where: { id }, select: { email: true } });
+        if (!s) throw new A.ActionError(404, "Learner not found");
+        await deleteLearner(session, id, { confirmEmail: s.email, reason: b.reason, blockEmail: false });
+      }
       else await A.addTag(session, id, b.tag, true);
       done++;
     } catch (err) {

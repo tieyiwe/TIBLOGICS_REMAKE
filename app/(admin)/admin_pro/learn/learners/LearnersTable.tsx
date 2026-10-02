@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { LogOut, MessageSquare, PauseCircle, PlayCircle, Tag, TagsIcon, X } from "lucide-react";
+import { LogOut, MessageSquare, PauseCircle, PlayCircle, Tag, TagsIcon, Trash2, X } from "lucide-react";
 import { Badge, Button, DataTable, Segmented, type BadgeTone, type Column } from "@/components/admin/ui";
 import { useToast } from "@/components/admin/ui";
 import { Dialog } from "./_components/Dialog";
@@ -37,7 +37,7 @@ export interface Row {
 const PLAN_TONE: Record<string, BadgeTone> = { active: "success", trial: "info", lifetime: "success", "past due": "warn", cancelled: "danger", none: "neutral" };
 const LANG: Record<string, string> = { en: "EN", fr: "FR", sw: "SW" };
 
-type Bulk = null | "suspend" | "addTag" | "removeTag" | "unsuspend" | "signOutEverywhere";
+type Bulk = null | "suspend" | "addTag" | "removeTag" | "unsuspend" | "signOutEverywhere" | "delete";
 
 export function LearnersTable({ rows, headers, canManage }: { rows: Row[]; headers: Record<string, React.ReactNode>; canManage: boolean }) {
   const router = useRouter();
@@ -47,6 +47,7 @@ export function LearnersTable({ rows, headers, canManage }: { rows: Row[]; heade
   const [reason, setReason] = useState("");
   const [length, setLength] = useState("7");
   const [tag, setTag] = useState("");
+  const [confirmText, setConfirmText] = useState("");
   const [busy, setBusy] = useState(false);
 
   const ids = [...sel];
@@ -61,12 +62,17 @@ export function LearnersTable({ rows, headers, canManage }: { rows: Row[]; heade
         body.until = length === "open" ? null : new Date(Date.now() + Number(length) * 86_400_000).toISOString();
       }
       if (bulk === "addTag" || bulk === "removeTag") body.tag = tag;
+      if (bulk === "delete") {
+        body.confirm = confirmText;
+        body.reason = reason;
+      }
       const r = await postJson<{ done: number; failed: Array<{ id: string; error: string }> }>("/api/admin/learn/learners/bulk", body);
       if (r.failed.length) toast.error(`${r.done} done, ${r.failed.length} not changed`, r.failed[0]?.error);
-      else toast.success(`${r.done} learner${r.done === 1 ? "" : "s"} updated`);
+      else toast.success(`${r.done} learner${r.done === 1 ? "" : "s"} ${bulk === "delete" ? "deleted" : "updated"}`);
       setBulk(null);
       setReason("");
       setTag("");
+      setConfirmText("");
       setSel(new Set());
       router.refresh();
     } catch (err) {
@@ -224,6 +230,13 @@ export function LearnersTable({ rows, headers, canManage }: { rows: Row[]; heade
               <Icon size={14} aria-hidden /> {label}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => setBulk("delete")}
+            className="inline-flex h-8 items-center gap-1.5 rounded-[10px] px-2.5 font-dm text-[13px] font-semibold text-[#FCA5A5] hover:bg-[#B91C1C]/30 hover:text-white"
+          >
+            <Trash2 size={14} aria-hidden /> Delete
+          </button>
           <button type="button" aria-label="Clear selection" onClick={() => setSel(new Set())} className="ml-1 rounded-[8px] p-1.5 text-white/70 hover:bg-white/10 hover:text-white">
             <X size={15} aria-hidden />
           </button>
@@ -238,11 +251,13 @@ export function LearnersTable({ rows, headers, canManage }: { rows: Row[]; heade
           bulk === "unsuspend" ? `Lift suspension for ${sel.size}` :
           bulk === "addTag" ? `Tag ${sel.size} learner${sel.size === 1 ? "" : "s"}` :
           bulk === "removeTag" ? `Remove a tag from ${sel.size}` :
+          bulk === "delete" ? `Delete ${sel.size} learner account${sel.size === 1 ? "" : "s"}` :
           `Sign out ${sel.size} learner${sel.size === 1 ? "" : "s"} everywhere`
         }
-        icon={bulk === "suspend" ? PauseCircle : bulk === "unsuspend" ? PlayCircle : bulk === "signOutEverywhere" ? LogOut : Tag}
-        tone={bulk === "suspend" ? "warn" : "default"}
+        icon={bulk === "delete" ? Trash2 : bulk === "suspend" ? PauseCircle : bulk === "unsuspend" ? PlayCircle : bulk === "signOutEverywhere" ? LogOut : Tag}
+        tone={bulk === "delete" ? "danger" : bulk === "suspend" ? "warn" : "default"}
         description={
+          bulk === "delete" ? "Each account is deleted and anonymised: name, email and personal content are removed; payments and certificate records are kept without personal data. The email address is freed, so the person can sign up again as a new learner. This cannot be undone." :
           bulk === "suspend" ? "They are signed out at once and see your reason when they try to sign in. Each one is recorded in the audit log." :
           bulk === "signOutEverywhere" ? "Ends every session on every device for the selected learners." :
           bulk === "unsuspend" ? "Selected learners who are suspended can sign in again." :
@@ -252,12 +267,12 @@ export function LearnersTable({ rows, headers, canManage }: { rows: Row[]; heade
           <>
             <Button variant="ghost" onClick={() => setBulk(null)}>Cancel</Button>
             <Button
-              variant={bulk === "suspend" ? "danger" : "primary"}
+              variant={bulk === "suspend" || bulk === "delete" ? "danger" : "primary"}
               loading={busy}
-              disabled={(bulk === "suspend" && !reason.trim()) || ((bulk === "addTag" || bulk === "removeTag") && !tag.trim())}
+              disabled={(bulk === "suspend" && !reason.trim()) || ((bulk === "addTag" || bulk === "removeTag") && !tag.trim()) || (bulk === "delete" && confirmText !== "DELETE")}
               onClick={run}
             >
-              Apply to {sel.size}
+              {bulk === "delete" ? `Delete ${sel.size}` : `Apply to ${sel.size}`}
             </Button>
           </>
         }
@@ -271,6 +286,12 @@ export function LearnersTable({ rows, headers, canManage }: { rows: Row[]; heade
               options={[{ value: "1", label: "1 day" }, { value: "7", label: "7 days" }, { value: "30", label: "30 days" }, { value: "open", label: "Until lifted" }]}
             />
             <TextArea label="Reason (shown to the learners)" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={1000} />
+          </div>
+        ) : null}
+        {bulk === "delete" ? (
+          <div className="space-y-4">
+            <TextArea label="Reason (optional, kept in the audit log)" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={1000} />
+            <TextField label='Type DELETE to confirm' value={confirmText} onChange={(e) => setConfirmText(e.target.value)} placeholder="DELETE" autoComplete="off" />
           </div>
         ) : null}
         {bulk === "addTag" || bulk === "removeTag" ? (
