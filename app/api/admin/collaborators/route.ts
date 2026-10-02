@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
   });
 
   // Send invitation email
-  const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/accept-invite?token=${inviteToken}`;
+  const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin_pro/accept-invite?token=${inviteToken}`;
   const safeName = escapeHtml(name.trim());
 
   await resend.emails.send({
@@ -104,6 +104,10 @@ export async function POST(req: NextRequest) {
 </body></html>`,
   }).catch(() => {});
 
+  await audit(session, "collaborator.invite", { type: "collaborator", id: collaborator.id, label: collaborator.email }, {
+    role: collaborator.role,
+    permissions,
+  });
   return NextResponse.json({
     id: collaborator.id,
     message: "Invitation sent",
