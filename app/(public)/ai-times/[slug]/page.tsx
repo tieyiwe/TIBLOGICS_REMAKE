@@ -58,6 +58,11 @@ const CATEGORY_OG_FALLBACK: Record<string, string> = {
   "industry":     "https://images.unsplash.com/photo-1779509742657-97f3e5c76f4f?auto=format&fit=crop&w=1200&h=630&q=80",
 };
 
+/** The article's own share card (app/(public)/ai-times/[slug]/og). */
+function articleCardUrl(slug: string, updatedAt: Date): string {
+  return `${SITE_URL}/ai-times/${encodeURIComponent(slug)}/og?v=${updatedAt.getTime().toString(36)}`;
+}
+
 function toOgImage(coverImage: string | null, category?: string | null): string {
   const fallback = CATEGORY_OG_FALLBACK[category ?? ""] ?? FALLBACK_IMAGE;
 
@@ -120,7 +125,9 @@ export async function generateMetadata(
     // Translated title and summary when the cache already has them; never
     // waits on the model, so crawlers get an answer straight away.
     const meta = await postMetaFor(post, locale);
-    const ogImage = toOgImage(post.coverImage, post.category);
+    // Each article gets its own preview card (title over its cover), versioned
+    // by its last update so social sites fetch the new one after an edit.
+    const ogImage = articleCardUrl(slug, post.updatedAt);
 
     const base = pageMetadata({
       path: articleUrl(slug, asked ?? "en"),
