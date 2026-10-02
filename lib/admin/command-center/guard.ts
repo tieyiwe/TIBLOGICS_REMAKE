@@ -68,6 +68,15 @@ export async function writeGuard(
   return null;
 }
 
+/** Guard for bodiless writes (DELETE): same origin and the per-person limit. */
+export async function deleteGuard(req: Request, staff: Staff, bucket: string, max = 60): Promise<NextResponse | null> {
+  if (!sameOrigin(req)) return NextResponse.json({ error: "Cross-site request refused" }, { status: 403 });
+  if (!(await checkRateLimit(`cc:${bucket}:${staff.id}`, max, 60_000))) {
+    return NextResponse.json({ error: "Too many changes in a short time. Wait a moment and try again." }, { status: 429 });
+  }
+  return null;
+}
+
 /** Read limit for heavier GETs (exports, search). */
 export async function readLimit(staff: Staff, bucket: string, max = 60): Promise<NextResponse | null> {
   if (!(await checkRateLimit(`cc:${bucket}:${staff.id}`, max, 60_000))) {

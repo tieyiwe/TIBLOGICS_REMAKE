@@ -6,6 +6,7 @@ import { getStudent } from "@/lib/learn/session";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { learnerThread } from "@/lib/learn/inbox/threads";
 import { renderMarkdownLite } from "@/lib/learn/inbox/markdown";
+import { learnerTicketStatus } from "@/lib/learn/support/tickets";
 import ReplyForm from "./ReplyForm";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +25,7 @@ export default async function InboxThreadPage({ params }: { params: Promise<{ th
   const data = await learnerThread(student.id, threadId);
   if (!data) notFound();
   const { thread, messages } = data;
+  const support = (await learnerTicketStatus(student.id)).get(thread.id) ?? null;
   const fmt = (d: Date) => d.toLocaleString(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
   return (
@@ -32,6 +34,23 @@ export default async function InboxThreadPage({ params }: { params: Promise<{ th
         <ArrowLeft size={16} aria-hidden /> {t("inbox.back")}
       </Link>
       <h1 className="mt-3 text-2xl font-black leading-tight text-[var(--ink)]">{thread.subject}</h1>
+      {support && (
+        <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-[var(--ink2)]">
+          <span
+            data-testid="support-status"
+            className={`rounded-full px-2.5 py-0.5 text-xs font-bold ring-1 ring-inset ${
+              support.status === "answered"
+                ? "bg-green-50 text-green-800 ring-green-200"
+                : support.status === "closed"
+                  ? "bg-[var(--s2)] text-[var(--ink3)] ring-[var(--border)]"
+                  : "bg-amber-50 text-amber-800 ring-amber-200"
+            }`}
+          >
+            {t(`support.status.${support.status}`)}
+          </span>
+          {support.status === "open" && <span>{t("support.thread.waiting")}</span>}
+        </p>
+      )}
 
       <ol className="mt-6 space-y-4" aria-label={thread.subject}>
         {messages.map((m) => {
