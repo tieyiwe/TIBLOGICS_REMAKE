@@ -404,7 +404,12 @@ export async function resendInvite(actor: Actor, id: string, expiryDays = 7) {
     console.error("[team/resend] email", err instanceof Error ? err.message : err);
   }
   await audit(auditActor(actor), reset ? "team.password_reset" : "team.invite_resend", { type: "collaborator", id, label: t.email }, { expiresInDays: days });
-  return { inviteUrl: url, reset };
+  // The link itself goes only to the person's inbox. Handing it to the actor
+  // would let a team manager set this person's password (or accept their
+  // invitation) and sign in as them, with access the actor may not hold.
+  // Only the owner may see it, and only for a pending invitation, never for
+  // a password reset.
+  return { reset, ...(actor.isOwner && !reset ? { inviteUrl: url } : {}) };
 }
 
 async function sendResetEmail(p: { to: string; name: string; inviter: string; url: string }) {

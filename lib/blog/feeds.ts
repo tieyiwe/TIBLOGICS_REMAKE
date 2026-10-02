@@ -83,11 +83,16 @@ export function isAdvancedTechHeadline(title: string): boolean {
   return ADVANCED_TECH_RE.test(title);
 }
 
+/** A numeric character reference, or nothing when it is not a valid code point (fromCodePoint would throw). */
+function codePoint(n: number): string {
+  return Number.isInteger(n) && n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : "";
+}
+
 function decodeEntities(s: string): string {
   return s
     .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&#(\d{1,8});/g, (_, n) => codePoint(Number(n)))
+    .replace(/&#x([0-9a-f]{1,8});/gi, (_, n) => codePoint(parseInt(n, 16)))
     .replace(/&quot;/g, '"')
     .replace(/&apos;|&#39;/g, "'")
     .replace(/&lt;/g, "<")
@@ -146,6 +151,26 @@ export function parseFeed(xml: string, source: string): FeedItem[] {
   return items;
 }
 
+const FEED_MAX_BYTES = 3_000_000;
+
+/** The body as text, stopping at `max` bytes (a huge or endless feed is cut, never buffered whole). */
+async function readCapped(body: ReadableStream<Uint8Array>, max: number): Promise<string> {
+  const reader = body.getReader();
+  const parts: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (total < max) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      parts.push(value);
+      total += value.byteLength;
+    }
+  } finally {
+    reader.cancel().catch(() => {});
+  }
+  return Buffer.concat(parts).subarray(0, max).toString("utf8");
+}
+
 export async function fetchFeed(feed: FeedSource): Promise<FeedItem[]> {
   try {
     const res = await fetch(feed.url, {
@@ -155,8 +180,8 @@ export async function fetchFeed(feed: FeedSource): Promise<FeedItem[]> {
       },
       signal: AbortSignal.timeout(8000),
     });
-    if (!res.ok) return [];
-    const xml = (await res.text()).slice(0, 3_000_000);
+    if (!res.ok || !res.body) return [];
+    const xml = await readCapped(res.body, FEED_MAX_BYTES);
     return parseFeed(xml, feed.name);
   } catch {
     return [];

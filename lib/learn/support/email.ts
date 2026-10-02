@@ -102,7 +102,13 @@ export async function sendOwnerSupportAlert(opts: {
 /** "We got your message" to the learner or visitor (their language). */
 export async function sendSupportAck(opts: { to: string; name: string; locale: string; message: string; threadId: string | null }) {
   const t = translator(opts.locale);
-  const first = learnEmailEsc(oneLine(opts.name).split(" ")[0] || opts.name);
+  // A visitor's address is unverified (anyone can type anyone's email), so
+  // their own text is never echoed back: otherwise the form would mail
+  // arbitrary content and links, under the ARFA name, to any inbox. The
+  // first word of the name is cut short for the same reason.
+  const visitor = !opts.threadId;
+  const firstRaw = oneLine(opts.name).split(" ")[0] || opts.name;
+  const first = learnEmailEsc(visitor ? firstRaw.replace(/[^\p{L}\p{M}'-]/gu, "").slice(0, 30) : firstRaw);
   await arfaMailer.emails.send({
     to: opts.to,
     subject: oneLine(t("comms.support.ackSubject")),
@@ -110,8 +116,10 @@ export async function sendSupportAck(opts: { to: string; name: string; locale: s
       t,
       t("comms.support.ackTitle", { name: first }),
       learnEmailP(learnEmailEsc(t("comms.support.ackBody"))) +
-        `<p style="font-size:12px;font-weight:700;color:#5b6b72;margin:18px 0 6px;">${learnEmailEsc(t("comms.support.ackYours"))}</p>` +
-        `<div style="border-left:3px solid #e6ebf1;padding:4px 0 4px 14px;margin:0 0 14px;">${bodyHtml(opts.message)}</div>`,
+        (visitor
+          ? ""
+          : `<p style="font-size:12px;font-weight:700;color:#5b6b72;margin:18px 0 6px;">${learnEmailEsc(t("comms.support.ackYours"))}</p>` +
+            `<div style="border-left:3px solid #e6ebf1;padding:4px 0 4px 14px;margin:0 0 14px;">${bodyHtml(opts.message)}</div>`),
       opts.threadId ? { href: `${LEARN_SITE}/learn/inbox/${encodeURIComponent(opts.threadId)}`, label: `${t("comms.email.inboxCta")} →` } : undefined,
       `<p style="font-size:12.5px;color:#8A9BA0;line-height:1.6;margin:18px 0 0;">${learnEmailEsc(opts.threadId ? t("comms.support.ackNoteLearner") : t("comms.support.ackNoteVisitor"))}</p>`,
     ),

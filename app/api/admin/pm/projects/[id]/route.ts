@@ -10,6 +10,7 @@ import { getProjectBundle, listStaff, logActivity, projectDTO, recomputeProgress
 import { projectPatchSchema } from "@/lib/admin/command-center/schemas";
 import { hasPermission, PERM_COMMAND_CENTER, PERM_FINANCE } from "@/lib/admin/command-center/permissions";
 import { HEALTH } from "@/lib/admin/command-center/constants";
+import { can } from "@/lib/admin/permissions";
 
 export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };
@@ -41,8 +42,8 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 
   const { startKey, deadlineKey, links, ...rest } = parsed.data;
   // Hourly rate feeds project cost: a money field, so it needs the finance permission.
-  if (rest.hourlyRateCents !== undefined && !hasPermission(staff.session.user, PERM_FINANCE)) {
-    return NextResponse.json({ error: "Setting an hourly rate needs the Finance permission" }, { status: 403 });
+  if (rest.hourlyRateCents !== undefined && !can(staff.session.user, "finance:manage")) {
+    return NextResponse.json({ error: "Setting an hourly rate needs Finance (manage) access" }, { status: 403 });
   }
   if (rest.ownerId) {
     const team = await listStaff();

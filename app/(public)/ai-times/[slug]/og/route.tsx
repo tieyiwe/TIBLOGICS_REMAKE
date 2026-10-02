@@ -48,10 +48,19 @@ async function coverDataUrl(cover: string | null): Promise<string | null> {
       url.searchParams.set("h", "630");
       url.searchParams.set("q", "70");
     }
-    const res = await fetch(url, { signal: AbortSignal.timeout(4000), redirect: "follow" });
+    // Redirects are followed by hand, and each hop must stay on an allowed
+    // host: a redirect is never a way to reach another server.
+    const signal = AbortSignal.timeout(4000);
+    let res = await fetch(url, { signal, redirect: "manual" });
+    for (let hop = 0; hop < 3 && res.status >= 300 && res.status < 400; hop++) {
+      const next = new URL(res.headers.get("location") ?? "", url);
+      if (next.protocol !== "https:" || !ALLOWED_HOSTS.has(next.hostname)) return null;
+      res = await fetch(next, { signal, redirect: "manual" });
+    }
     if (!res.ok) return null;
     const type = res.headers.get("content-type") ?? "";
     if (!/^image\/(png|jpe?g|webp)/.test(type)) return null;
+    if (Number(res.headers.get("content-length") ?? 0) > 4_000_000) return null;
     const buf = Buffer.from(await res.arrayBuffer());
     if (buf.length > 4_000_000) return null;
     return `data:${type.split(";")[0]};base64,${buf.toString("base64")}`;
