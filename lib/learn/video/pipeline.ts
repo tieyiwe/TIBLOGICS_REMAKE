@@ -113,7 +113,11 @@ export async function generateLessonVideo(lessonId: string, locale: TtsLocale): 
   if (!tts) throw new NeedsTts();
 
   const hash = contentHash(lesson);
+  const t0 = Date.now();
+  const lap: Record<string, number> = {};
+  const mark = (k: string) => (lap[k] = Math.round((Date.now() - t0) / 100) / 10);
   const { en, fr } = await ensureScript(lesson, true);
+  mark("script");
   const script = locale === "fr" ? fr : en;
   if (!script) throw new Error("The French translation of the script is not available yet; will retry.");
   // The other language's text, timed to this video's scenes, for its second caption track.
@@ -147,9 +151,11 @@ export async function generateLessonVideo(lessonId: string, locale: TtsLocale): 
       return { slide, wav, ...len };
     });
 
+    mark("voice+slides");
     const timings = timingsFrom(parts);
     const out = path.join(tmp, "video.mp4");
     await composeVideo({ slides: parts.map((p) => p.slide), audio: parts.map((p) => p.wav), sceneSeconds: parts.map((p) => p.total), out, tmp });
+    mark("compose");
     const info = await probe(out);
     if (!info.streams.some((s) => s.startsWith("Video: h264")) || !info.streams.some((s) => s.startsWith("Audio: aac"))) {
       throw new Error(`The finished file is missing a stream (${info.streams.join("; ").slice(0, 200)})`);
@@ -167,6 +173,8 @@ export async function generateLessonVideo(lessonId: string, locale: TtsLocale): 
       webmUrl = `${ASSET_PREFIX}${w.id}.webm`;
     }
 
+    mark("store");
+    console.info(`[video] ${lessonId} ${locale}: ${total} scenes, ${Math.round(duration)}s video, timings (cumulative s) ${JSON.stringify(lap)}`);
     const url = `${ASSET_PREFIX}${mp4.id}.mp4`;
     const chapters = sceneChapters(script.scenes.map((s) => s.title), timings);
     const captions: Captions = { [locale]: buildVtt(script.scenes.map((s) => s.narration), timings) };

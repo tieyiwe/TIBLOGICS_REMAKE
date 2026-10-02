@@ -239,7 +239,8 @@ export default function VideoPlayer({
   useEffect(() => {
     const v = video.current;
     if (sources?.length && v && !sources.some((x) => v.canPlayType(x.type))) setFailed(true);
-  }, [sources]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // HLS only where the browser plays it itself (Safari, iOS, Android, newer Chrome).
   useEffect(() => {
@@ -421,7 +422,10 @@ export default function VideoPlayer({
               setMuted(e.currentTarget.muted);
               setVolume(e.currentTarget.volume);
             }}
-            onError={() => setFailed(true)}
+            // React re-dispatches a <source>'s error to the <video>: only the video's own counts here.
+            onError={(e) => {
+              if (e.target === e.currentTarget) setFailed(true);
+            }}
             aria-label={t("video.title", { title })}
           >
             {sources?.map((x, i) => (

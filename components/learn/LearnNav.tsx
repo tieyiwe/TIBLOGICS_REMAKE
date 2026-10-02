@@ -8,6 +8,7 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 import ArfaWordmark from "@/components/learn/ArfaWordmark";
 import ReadingPrefsPanel from "@/components/a11y/ReadingPrefsPanel";
 import InboxBell from "@/components/learn/InboxBell";
+import InstallButton from "@/components/learn/pwa/InstallButton";
 import { POINTS_PER_LEVEL } from "@/lib/learn/points-shared";
 import { fmtNumber, rankName } from "@/lib/learn/format";
 import { LOCALE_COOKIE, isLocale } from "@/lib/i18n/config";
@@ -180,6 +181,8 @@ export default function LearnNav({
 
         <div className="ml-auto flex items-center gap-3">
           <LanguageSwitcher className="hidden md:inline-flex" />
+          {/* Shown only when this browser can install ARFA and it isn't installed */}
+          <InstallButton />
           <ReadingPrefsPanel />
 
           {/* Points + level */}
@@ -236,6 +239,7 @@ export default function LearnNav({
           <div className="px-3 py-3">
             <LanguageSwitcher />
           </div>
+          <InstallButton variant="row" />
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
             className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-50"
@@ -256,6 +260,7 @@ export default function LearnNav({
           <div className="border-t border-[var(--border)] px-3 py-2 md:hidden">
             <LanguageSwitcher />
           </div>
+          <InstallButton variant="row" />
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
             className="mt-1 w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-50"

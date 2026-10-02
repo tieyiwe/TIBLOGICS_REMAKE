@@ -30,8 +30,9 @@ import { LEARN_SITE } from "@/lib/learn/emails";
 import { ensureCommsTables } from "./db";
 import { AudienceSchema, describeAudience, resolveAudience, type Audience } from "./audience";
 import { applyMerge, type MergeValues } from "./markdown";
-import { renderCampaignEmail, sendCampaignEmail } from "./email";
+import { renderCampaignEmail, renderNotificationEmail, sendCampaignEmail } from "./email";
 import { createAdminThread } from "./threads";
+import { campaignFormat, createNotification, ensureNotificationTables, NOTIF_BODY_MAX, NOTIF_LINK_LABEL_MAX, NOTIF_TITLE_MAX, safeLink } from "./notifications";
 
 export const SUBJECT_MAX = 200;
 export const BODY_MAX = 20_000;
@@ -48,8 +49,23 @@ export const ComposeSchema = z
     bodyFr: z.string().trim().max(BODY_MAX).optional().nullable(),
     scheduleAt: z.string().datetime({ offset: true }).optional().nullable(),
     templateId: z.string().max(64).optional().nullable(),
+    // "notification": a short notice (title, body, optional link button) shown
+    // under Notifications in the learner Inbox instead of a conversation.
+    format: z.enum(["message", "notification"]).optional().default("message"),
+    linkUrl: z.string().trim().max(500).optional().nullable(),
+    linkLabel: z.string().trim().max(NOTIF_LINK_LABEL_MAX).optional().nullable(),
+    linkLabelFr: z.string().trim().max(NOTIF_LINK_LABEL_MAX).optional().nullable(),
   })
-  .refine((v) => v.viaEmail || v.viaInbox, { message: "Choose email, in-app or both", path: ["viaEmail"] });
+  .refine((v) => v.viaEmail || v.viaInbox, { message: "Choose email, in-app or both", path: ["viaEmail"] })
+  .refine((v) => v.format !== "notification" || (v.subject.length <= NOTIF_TITLE_MAX && (!v.subjectFr || v.subjectFr.length <= NOTIF_TITLE_MAX)), {
+    message: `A notification title has at most ${NOTIF_TITLE_MAX} characters`,
+    path: ["subject"],
+  })
+  .refine((v) => v.format !== "notification" || (v.body.length <= NOTIF_BODY_MAX && (!v.bodyFr || v.bodyFr.length <= NOTIF_BODY_MAX)), {
+    message: `A notification has at most ${NOTIF_BODY_MAX} characters`,
+    path: ["body"],
+  })
+  .refine((v) => !v.linkUrl || !!safeLink(v.linkUrl), { message: "The link must be a page of this site (/learn/...) or an https:// address", path: ["linkUrl"] });
 export type ComposeInput = z.infer<typeof ComposeSchema>;
 
 export function hourlyCap(): number {
@@ -70,7 +86,10 @@ export async function createCampaign(session: Session, input: ComposeInput) {
   if (at.getTime() > Date.now() + 366 * 86_400_000) return { error: "Schedule within the next year." as const };
   const id = randomUUID();
   const label = await describeAudience(input.audience);
-  await prisma.commsCampaign.create({
+  const notification = input.format === "notification";
+  if (notification) await ensureNotificationTables();
+  const linkUrl = notification ? safeLink(input.linkUrl) : null;
+  const createQ = prisma.commsCampaign.create({
     data: {
       id,
       kind: input.kind,
@@ -89,7 +108,17 @@ export async function createCampaign(session: Session, input: ComposeInput) {
       createdBy: session.user.email ?? "admin",
     },
   });
+  // Format set in the same transaction, so the comms job never picks up a
+  // notification campaign as an ordinary message.
+  if (notification) {
+    await prisma.$transaction([
+      createQ,
+      prisma.$executeRaw`UPDATE "CommsCampaign" SET "format" = 'notification', "linkUrl" = ${linkUrl},
+        "linkLabel" = ${linkUrl ? input.linkLabel || null : null}, "linkLabelFr" = ${linkUrl ? input.linkLabelFr || null : null} WHERE "id" = ${id}`,
+    ]);
+  } else await createQ;
   await audit(session, later ? "comms.schedule" : "comms.send", { type: "campaign", id, label: input.subject }, {
+    format: input.format,
     audience: label,
     recipients: ids.length,
     kind: input.kind,
@@ -244,6 +273,8 @@ export async function runComms(opts: { campaignId?: string; maxRecipients?: numb
   for (const c of active) {
     if (Date.now() > deadline || handled >= max) break;
     const marketing = c.kind === "marketing";
+    const fmt = await campaignFormat(c.id).catch(() => ({ format: "message", linkUrl: null, linkLabel: null, linkLabelFr: null }));
+    const isNotification = fmt.format === "notification";
     while (Date.now() < deadline && handled < max) {
       if (c.viaEmail && budget <= 0) break;
       const batch = await prisma.commsRecipient.findMany({
@@ -284,7 +315,14 @@ export async function runComms(opts: { campaignId?: string; maxRecipients?: numb
         let threadId = r.threadId;
         let inboxError: string | null = null;
         let emailError: string | null = null;
-        if (c.viaInbox && !threadId) {
+        const linkLabel = (r.locale === "fr" && fmt.linkLabelFr) || fmt.linkLabel || null;
+        if (c.viaInbox && !threadId && isNotification) {
+          try {
+            threadId = await createNotification({ studentId: r.studentId, title: subject, body, linkUrl: fmt.linkUrl, linkLabel, kind: c.kind, campaignId: c.id });
+          } catch (err) {
+            inboxError = err instanceof Error ? err.message : String(err);
+          }
+        } else if (c.viaInbox && !threadId) {
           try {
             threadId = await createAdminThread(prisma, { studentId: r.studentId, subject, body, campaignId: c.id, authorName: "ARFA team", authorEmail: c.createdBy });
           } catch (err) {
@@ -295,7 +333,12 @@ export async function runComms(opts: { campaignId?: string; maxRecipients?: numb
         if (c.viaEmail) {
           budget--;
           try {
-            await sendCampaignEmail(r.email, renderCampaignEmail({ locale: r.locale, subject, body, marketing, studentId: r.studentId, withInboxLink: !!threadId }));
+            await sendCampaignEmail(
+              r.email,
+              isNotification
+                ? renderNotificationEmail({ locale: r.locale, title: subject, body, marketing, studentId: r.studentId, linkUrl: fmt.linkUrl, linkLabel, inApp: !!threadId })
+                : renderCampaignEmail({ locale: r.locale, subject, body, marketing, studentId: r.studentId, withInboxLink: !!threadId }),
+            );
             emailed = true;
             report.emailed++;
           } catch (err) {

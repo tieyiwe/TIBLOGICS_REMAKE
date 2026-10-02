@@ -22,6 +22,8 @@ export const AudienceSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("one"), studentId: z.string().min(1).max(64) }),
   z.object({ type: z.literal("ids"), ids: z.array(z.string().min(1).max(64)).min(1).max(5000) }),
   z.object({ type: z.literal("segment"), segment: SegmentSchema }),
+  // Every learner account (blocked and deleted accounts are never included).
+  z.object({ type: z.literal("all") }),
 ]);
 export type Audience = z.infer<typeof AudienceSchema>;
 
@@ -50,7 +52,7 @@ export async function resolveAudience(a: Audience): Promise<string[]> {
     const rows = await prisma.student.findMany({ where: { id: { in: [...new Set(a.ids)] } }, select: { id: true } });
     return rows.map((r) => r.id);
   }
-  return matchingStudentIds(segmentFilters(a.segment));
+  return matchingStudentIds(segmentFilters(a.type === "all" ? {} : a.segment));
 }
 
 /** Short human description, stored on the campaign for the history list. */
@@ -60,6 +62,7 @@ export async function describeAudience(a: Audience): Promise<string> {
     return s ? `${s.name} <${s.email}>` : "One learner";
   }
   if (a.type === "ids") return `${a.ids.length} selected learner${a.ids.length === 1 ? "" : "s"}`;
+  if (a.type === "all") return "All learners";
   const s = a.segment;
   const parts: string[] = [];
   if (s.plan) parts.push(`plan ${s.plan}`);

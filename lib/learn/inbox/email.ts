@@ -49,6 +49,35 @@ export function renderCampaignEmail(opts: {
   };
 }
 
+/**
+ * A notification (short notice with an optional link button) for one learner.
+ * The button opens the link (same-site paths are made absolute), else the
+ * learner's Notifications when it was also posted in-app.
+ */
+export function renderNotificationEmail(opts: {
+  locale: string;
+  title: string;
+  body: string;
+  marketing: boolean;
+  studentId: string;
+  linkUrl: string | null;
+  linkLabel: string | null;
+  inApp: boolean;
+}): RenderedEmail {
+  const t = translator(opts.locale);
+  const subject = opts.title.replace(/[\r\n]+/g, " ").slice(0, 200);
+  const href = opts.linkUrl ? (opts.linkUrl.startsWith("/") ? `${LEARN_SITE}${opts.linkUrl}` : opts.linkUrl) : null;
+  const cta = href
+    ? { href: learnEmailEsc(href), label: `${learnEmailEsc(opts.linkLabel || t("comms.notif.open"))} →` }
+    : opts.inApp
+      ? { href: `${LEARN_SITE}/learn/inbox?tab=notifications`, label: `${t("comms.notif.cta")} →` }
+      : undefined;
+  const unsub = opts.marketing
+    ? `<p style="font-size:12px;color:#8A9BA0;line-height:1.6;margin:22px 0 0;border-top:1px solid #eef1f4;padding-top:14px;">${t("comms.email.unsubscribe")} <a href="${LEARN_SITE}/learn/unsubscribe?t=${encodeURIComponent(unsubscribeToken(opts.studentId))}" style="color:#8A9BA0;">${t("comms.email.unsubscribeLink")}</a></p>`
+    : "";
+  return { subject, html: learnEmailShell(t, learnEmailEsc(subject), opts.body.trim() ? bodyHtml(opts.body) : "", cta, unsub) };
+}
+
 export async function sendCampaignEmail(to: string, email: RenderedEmail) {
   await arfaMailer.emails.send({ to, subject: email.subject, html: email.html });
 }
