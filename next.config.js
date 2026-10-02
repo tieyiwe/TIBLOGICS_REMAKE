@@ -143,7 +143,7 @@ const nextConfig = {
               // Stronger than X-Frame-Options, and honoured by modern browsers
               "frame-ancestors 'self'",
               // TIBLOGICS Learn app: the service worker (public/sw.js) and the
-              // web app manifest (app/manifest.ts) are both same-origin.
+              // web app manifest (app/arfa.webmanifest) are both same-origin.
               "worker-src 'self'",
               "manifest-src 'self'",
             ].join("; "),

@@ -8,7 +8,10 @@ import ClientMessages from "@/components/i18n/ClientMessages";
 export const metadata: Metadata = {
   title: { absolute: "ARFA · TIBLOGICS AI Academy", template: "%s · ARFA AI Academy" },
   robots: { index: false, follow: false },
-  // Installed app (app/manifest.ts). iOS reads these instead of the manifest.
+  // Installed app: the ARFA manifest is linked only here, so installing from
+  // the browser installs the academy, not the whole site (app/arfa.webmanifest).
+  // iOS reads appleWebApp instead of the manifest.
+  manifest: "/arfa.webmanifest",
   appleWebApp: { capable: true, title: "ARFA", statusBarStyle: "default" },
   icons: { icon: [{ url: "/icon.svg", type: "image/svg+xml" }], apple: "/pwa/apple-touch-icon.png" },
 };

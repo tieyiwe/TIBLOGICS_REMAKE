@@ -11,6 +11,7 @@ import { readCaptions } from "@/lib/learn/video/store";
 import { isGeneratedUrl } from "@/lib/learn/video/variants";
 import { contentHash } from "@/lib/learn/video/select";
 import AutoVideoPanel from "@/components/learn/video/admin/AutoVideoPanel";
+import ClientMessages from "@/components/i18n/ClientMessages";
 import AutoVideoRow, { type RowJob } from "@/components/learn/video/admin/AutoVideoRow";
 
 export const dynamic = "force-dynamic";
@@ -77,7 +78,9 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
     return `/admin_pro/learn/videos${s ? `?${s}` : ""}`;
   };
 
+  // The preview player's texts (namespace "video") travel with the member area.
   return (
+    <ClientMessages area="member">
     <div className="space-y-5">
       <PageHeader
         title="Lesson videos"
@@ -253,5 +256,6 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
         </Card>
       ))}
     </div>
+    </ClientMessages>
   );
 }

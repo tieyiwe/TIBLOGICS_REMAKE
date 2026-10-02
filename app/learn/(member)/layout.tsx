@@ -4,6 +4,7 @@ import SkipLink from "@/components/a11y/SkipLink";
 import GraceBanner from "@/components/learn/GraceBanner";
 import GameCelebrations from "@/components/learn/game/GameCelebrations";
 import PwaShell from "@/components/learn/pwa/PwaShell";
+import InstallPrompt from "@/components/learn/pwa/InstallPrompt";
 import { getAccess, getStudent } from "@/lib/learn/session";
 import { getTotalPoints, levelFor } from "@/lib/learn/points";
 
@@ -42,6 +43,8 @@ export default async function MemberLayout({ children }: { children: React.React
       <GameCelebrations />
       {/* Offline app: service worker, offline indicator, queued completions */}
       <PwaShell studentId={student.id} />
+      {/* "Install the ARFA app" offer: never when already installed or snoozed */}
+      <InstallPrompt />
     </div>
   );
 }

@@ -32,6 +32,11 @@ export default function AppInstall() {
     setPrompt(stashed());
     const onPrompt = () => setPrompt(stashed());
     const onInstalled = () => {
+      try {
+        localStorage.setItem("arfa-installed", "1");
+      } catch {
+        /* ignore */
+      }
       setInstalled(true);
       setPrompt(null);
     };
