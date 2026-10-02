@@ -37,6 +37,8 @@ export interface CheckoutRequest extends CheckoutDiscountFields {
   plan: PlanId;
   studentId: string;
   email: string;
+  /** Track slug the learner lands on after paying (metadata, for the welcome email). */
+  returnTrack?: string | null;
   successUrl: string;
   cancelUrl: string;
 }

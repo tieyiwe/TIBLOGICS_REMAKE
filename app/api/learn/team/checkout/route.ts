@@ -9,6 +9,7 @@ import { getTeamPricing, quoteNewTeam } from "@/lib/learn/team/settings";
 import { createPendingTeam, ownedLiveTeam } from "@/lib/learn/team/service";
 import { TEAM_CURRENCY, TEAM_MAX_SEATS } from "@/lib/learn/team/config";
 import { resolveCheckoutDiscount } from "@/lib/promotions/service";
+import { joinPath } from "@/lib/learn/join/choice";
 
 // Team plan checkout: { seats, name } -> Stripe Checkout (subscription,
 // quantity = seats). The seat price comes from the server only, through
@@ -16,6 +17,8 @@ import { resolveCheckoutDiscount } from "@/lib/promotions/service";
 const Body = z.object({
   seats: z.number().int().min(1).max(TEAM_MAX_SEATS),
   name: z.string().trim().min(2).max(80),
+  // "join": the one-page join flow; a cancelled payment goes back there.
+  from: z.enum(["join"]).optional(),
 });
 
 const SITE = (process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com").replace(/\/$/, "");
@@ -64,7 +67,10 @@ export async function POST(req: NextRequest) {
       // The confirm route activates the team at once (the webhook does the
       // same, idempotently), so the owner never lands on a locked page.
       successUrl: `${SITE}/api/learn/team/confirm?session_id={CHECKOUT_SESSION_ID}`,
-      cancelUrl: `${SITE}/learn/subscribe?team=1&checkout=cancelled#teams`,
+      cancelUrl:
+        parsed.data.from === "join"
+          ? `${SITE}${joinPath({ kind: "team", seats: parsed.data.seats })}&checkout=cancelled`
+          : `${SITE}/learn/subscribe?team=1&checkout=cancelled#teams`,
     });
     await prisma.team.update({ where: { id: team.id }, data: { stripeCheckoutSessionId: sessionId, seatPriceCents: quote.seatPriceCents } });
     return NextResponse.json({ url });

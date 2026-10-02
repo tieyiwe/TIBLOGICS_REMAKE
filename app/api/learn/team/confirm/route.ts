@@ -4,6 +4,7 @@ import { getStudent } from "@/lib/learn/session";
 import { syncTeamSubscription } from "@/lib/learn/team/service";
 import { TEAM_PRODUCT } from "@/lib/learn/team/config";
 import { teamRateLimit } from "@/lib/learn/team/guard";
+import { completePendingEnrollment } from "@/lib/learn/join/pending";
 
 // Stripe Checkout's success_url for team plans. Reads the session back from
 // Stripe (never trusting the query string beyond its id), checks it belongs
@@ -25,7 +26,10 @@ export async function GET(req: NextRequest) {
     const paid = session.status === "complete" && (session.payment_status === "paid" || session.payment_status === "no_payment_required");
     const subId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
     if (paid && subId) {
-      await syncTeamSubscription(await stripe.subscriptions.retrieve(subId), { teamId: session.metadata?.teamId, checkoutSessionId: session.id });
+      const sub = await stripe.subscriptions.retrieve(subId);
+      await syncTeamSubscription(sub, { teamId: session.metadata?.teamId, checkoutSessionId: session.id });
+      // One-page join flow: close the pending choice, purchase-aware welcome (idempotent).
+      if (sub.status === "active" || sub.status === "trialing") await completePendingEnrollment(student.id, { kind: "team" });
     }
   } catch (err) {
     console.error("[GET /api/learn/team/confirm]", err);

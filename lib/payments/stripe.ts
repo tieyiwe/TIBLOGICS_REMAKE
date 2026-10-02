@@ -62,7 +62,13 @@ export const stripeProvider: PaymentProvider = {
       cancel_url: req.cancelUrl,
       // studentId is the join key the webhook uses to attach the subscription.
       client_reference_id: req.studentId,
-      metadata: { ...req.promoMetadata, studentId: req.studentId, plan: req.plan, product: "learn" },
+      metadata: {
+        ...req.promoMetadata,
+        studentId: req.studentId,
+        plan: req.plan,
+        product: "learn",
+        ...(req.returnTrack ? { returnTrack: req.returnTrack } : {}),
+      },
       subscription_data: {
         metadata: { studentId: req.studentId, plan: req.plan, product: "learn" },
       },

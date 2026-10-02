@@ -12,6 +12,7 @@ import { recordAttribution } from "@/lib/growth/attribution";
 import { referralCouponFor } from "@/lib/learn/referrals/service";
 import { resolveCheckoutDiscount } from "@/lib/promotions/service";
 import { promoCheckoutError } from "@/lib/promotions/http";
+import { joinPath } from "@/lib/learn/join/choice";
 
 // Slugs become part of a redirect URL; an unvalidated value here would be an
 // open-redirect vector, so they are constrained to a slug shape.
@@ -25,10 +26,18 @@ const Slug = z.string().trim().regex(/^[a-z0-9-]{1,64}$/, "Invalid track");
 // promoCode: a code typed in our field (lib/promotions). Checked again here;
 // an invalid one is refused with a 400 rather than silently dropped.
 const PromoCode = z.string().trim().max(40).optional();
+// from: "join" = the one-page join flow (/learning-box/join): a cancelled
+// payment goes back there with the choice preselected. An enum, never a URL.
+const From = z.enum(["join"]).optional();
 const Body = z.union([
-  z.object({ trackSlug: Slug, promoCode: PromoCode }),
-  z.object({ plan: z.literal("monthly"), track: Slug.optional(), promoCode: PromoCode }),
+  z.object({ trackSlug: Slug, promoCode: PromoCode, from: From }),
+  z.object({ plan: z.literal("monthly"), track: Slug.optional(), promoCode: PromoCode, from: From }),
 ]);
+
+// Stripe's success_url: the confirm route reads the session back, opens the
+// access at once (the webhook does the same; both idempotent) and lands the
+// learner in their track or dashboard with the "You're in" welcome.
+const CONFIRM = "/api/learn/checkout/confirm?session_id={CHECKOUT_SESSION_ID}";
 
 const SITE = (
   process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
@@ -88,8 +97,11 @@ export async function POST(req: NextRequest) {
         trackTitle: track.title,
         amount,
         currency: TRACK_CURRENCY,
-        successUrl: `${SITE}/learn/track/${track.slug}?welcome=1`,
-        cancelUrl: `${SITE}/learn/subscribe?track=${track.slug}&checkout=cancelled`,
+        successUrl: `${SITE}${CONFIRM}`,
+        cancelUrl:
+          parsed.data.from === "join"
+            ? `${SITE}${joinPath({ kind: "track", slug: track.slug })}&checkout=cancelled`
+            : `${SITE}/learn/subscribe?track=${track.slug}&checkout=cancelled`,
       });
       // Growth attribution; paid status is resolved from TrackPurchase at report time.
       await recordAttribution({ kind: "track_checkout", refId: `${student.id}:${track.id}`, cookieHeader: req.headers.get("cookie"), amountCents: amount - discount.discountCents });
@@ -111,10 +123,12 @@ export async function POST(req: NextRequest) {
       couponId: discount.couponId,
       allowPromotionCodes: discount.allowPromotionCodes,
       promoMetadata: discount.metadata,
-      successUrl: parsed.data.track
-        ? `${SITE}/learn/track/${parsed.data.track}?welcome=1`
-        : `${SITE}/learn?welcome=1`,
-      cancelUrl: `${SITE}/learning-box?checkout=cancelled`,
+      returnTrack: parsed.data.track ?? null,
+      successUrl: `${SITE}${CONFIRM}`,
+      cancelUrl:
+        parsed.data.from === "join"
+          ? `${SITE}${joinPath({ kind: "monthly", track: parsed.data.track ?? null })}&checkout=cancelled`
+          : `${SITE}/learning-box?checkout=cancelled`,
     });
     await recordAttribution({ kind: "learn_subscription_checkout", refId: student.id, cookieHeader: req.headers.get("cookie"), amountCents: PLANS.monthly.amount - discount.discountCents });
     return NextResponse.json({ url });

@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { cookies, headers } from "next/headers";
 import prisma from "@/lib/prisma";
 import { LOCALE_COOKIE, isLocale, learnLocale } from "@/lib/i18n/config";
+import { choiceFromJoinUrl } from "@/lib/learn/join/choice";
 
 // "Continue with Google" for Learn. Google has already verified the address,
 // so it signs into the learner account with that email, creating one on the
@@ -107,9 +108,23 @@ export async function studentForGoogle(profile: GoogleProfileLike | undefined) {
       }),
     )
     .catch((err) => console.error("[learn/google] owner notification", err));
-  void import("@/lib/learn/emails")
-    .then(({ sendStudentWelcomeEmail }) => sendStudentWelcomeEmail({ email: student.email, name: student.name, locale }))
-    .catch((err) => console.error("[learn/google] welcome email", err));
+  // Started from the one-page join flow (/learning-box/join)? NextAuth keeps
+  // the callbackUrl in a cookie for the OAuth round trip; when it points at
+  // the join page, the plan chosen there is saved and the welcome waits for
+  // the payment (purchase-aware) or the cart-reminders cron (finish your
+  // enrolment), as for a password sign-up on that page.
+  const joinChoice = choiceFromJoinUrl(
+    jar?.get("__Secure-next-auth.callback-url")?.value ?? jar?.get("next-auth.callback-url")?.value ?? null,
+  );
+  if (joinChoice) {
+    await import("@/lib/learn/join/pending")
+      .then(({ savePendingChoice }) => savePendingChoice(student.id, joinChoice, { deferWelcome: true }))
+      .catch((err) => console.error("[learn/google] join choice", err));
+  } else {
+    void import("@/lib/learn/emails")
+      .then(({ sendStudentWelcomeEmail }) => sendStudentWelcomeEmail({ email: student.email, name: student.name, locale }))
+      .catch((err) => console.error("[learn/google] welcome email", err));
+  }
   void import("@/lib/growth/attribution")
     .then(({ recordAttribution }) =>
       recordAttribution({ kind: "learn_signup", refId: student.id, cookieHeader: hdrs?.get("cookie") }),

@@ -15,6 +15,8 @@ import { recordTrackPurchase } from "@/lib/learn/purchases";
 import { isTeamSubscription, markTeamPaymentFailed, syncTeamSubscription } from "@/lib/learn/team/service";
 import { recordReferralPayment } from "@/lib/learn/referrals/service";
 import { recordRedemption } from "@/lib/promotions/service";
+import { upsertLearnSubscription } from "@/lib/learn/subscription-sync";
+import { completePendingEnrollment } from "@/lib/learn/join/pending";
 
 const SITE_URL = (
   process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
@@ -133,6 +135,11 @@ export async function POST(req: Request) {
           await upsertLearnSubscription(full, studentId);
           // Learning Box referral: a referred learner paid, the referrer earns a
           // pending reward (lib/learn/referrals). Never throws; idempotent.
+          if (full.status === "active" || full.status === "trialing") {
+            // One-page join flow: close the pending choice and send the
+            // purchase-aware welcome if it was deferred (idempotent).
+            await completePendingEnrollment(studentId, { kind: "monthly", track: session.metadata.returnTrack || null });
+          }
           if (full.status === "active") {
             await recordReferralPayment({
               studentId,
@@ -152,7 +159,11 @@ export async function POST(req: Request) {
         if (subId) {
           await stripe.subscriptions
             .retrieve(subId)
-            .then((full) => syncTeamSubscription(full, { teamId: session.metadata?.teamId, checkoutSessionId: session.id }))
+            .then(async (full) => {
+              await syncTeamSubscription(full, { teamId: session.metadata?.teamId, checkoutSessionId: session.id });
+              const owner = session.metadata?.ownerStudentId || session.client_reference_id;
+              if (owner && (full.status === "active" || full.status === "trialing")) await completePendingEnrollment(owner, { kind: "team" });
+            })
             .catch((err) => {
               console.error("[stripe/webhook] Learn team activation FAILED, asking Stripe to retry", err);
               retry = true;
@@ -408,6 +419,7 @@ async function handleTrackPurchase(session: Stripe.Checkout.Session) {
       typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null,
   });
   console.log(`[stripe/webhook] Learn track ${trackId} for student ${studentId}: ${created ? "purchase recorded" : "already recorded"}`);
+  await completePendingEnrollment(studentId, { kind: "track", trackId });
   await recordReferralPayment({
     studentId,
     kind: "track",
@@ -415,68 +427,4 @@ async function handleTrackPurchase(session: Stripe.Checkout.Session) {
     payerEmail: session.customer_details?.email ?? session.customer_email,
     customerId: typeof session.customer === "string" ? session.customer : session.customer?.id ?? null,
   });
-}
-
-// ── TIBLOGICS Learn subscription sync ───────────────────────────────────────
-// Mirrors Stripe's subscription state into LearnSubscription. Grace is cleared
-// whenever the subscription returns to a healthy state.
-async function upsertLearnSubscription(sub: Stripe.Subscription, studentIdArg?: string) {
-  const studentId = studentIdArg ?? sub.metadata?.studentId;
-  if (!studentId) return;
-
-  const raw = sub.status; // trialing|active|past_due|canceled|incomplete|unpaid|...
-  // A subscription whose first payment never settled was never paid for. It
-  // used to fall through to past_due below, which carries a 7-day grace, so
-  // an abandoned checkout granted a week of every track. Leave the row as it
-  // is: an existing healthy subscription is not overwritten, and nothing is
-  // granted to a new one. incomplete_expired still maps to canceled.
-  if (raw === "incomplete") {
-    console.log(`[stripe/webhook] Learn sub ${sub.id} incomplete (first payment not settled): no access`);
-    return;
-  }
-  const status =
-    raw === "active" || raw === "trialing" || raw === "past_due"
-      ? raw
-      : raw === "canceled" || raw === "incomplete_expired" || raw === "unpaid"
-      ? "canceled"
-      : "past_due";
-
-  const periodEndUnix = (sub as unknown as { current_period_end?: number }).current_period_end;
-  const currentPeriodEnd = periodEndUnix ? new Date(periodEndUnix * 1000) : null;
-  const plan = sub.metadata?.plan === "annual" ? "annual" : "monthly";
-  const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id ?? null;
-
-  // Entering past_due starts a 7-day grace; returning to healthy clears it.
-  // Staying past_due keeps the original deadline: any change to the
-  // subscription (the learner toggling cancel-at-period-end in the billing
-  // portal, say) fires customer.subscription.updated, and restarting the
-  // window on each one would extend unpaid access indefinitely.
-  let graceUntil: Date | null = null;
-  if (status === "past_due") {
-    const prev = await prisma.learnSubscription
-      .findUnique({ where: { studentId }, select: { status: true, graceUntil: true, stripeSubscriptionId: true } })
-      .catch(() => null);
-    graceUntil =
-      prev?.status === "past_due" && prev.graceUntil && prev.stripeSubscriptionId === sub.id
-        ? prev.graceUntil
-        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  }
-
-  const data = {
-    stripeCustomerId: customerId,
-    stripeSubscriptionId: sub.id,
-    status,
-    plan,
-    currentPeriodEnd,
-    graceUntil,
-    cancelAtPeriodEnd: !!sub.cancel_at_period_end,
-  };
-
-  await prisma.learnSubscription
-    .upsert({
-      where: { studentId },
-      create: { studentId, ...data },
-      update: data,
-    })
-    .catch((err) => console.error("[stripe/webhook] learn sub upsert", err));
 }

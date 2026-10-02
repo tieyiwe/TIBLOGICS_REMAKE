@@ -2733,3 +2733,25 @@ model ContentTranslation {
 
   @@id([key, locale])
 }
+
+/// One-page "Join ARFA" flow (/learning-box/join): the plan a learner chose
+/// before paying, one row per learner. Drives the "Finish your enrolment"
+/// card, the deferred purchase-aware welcome email and the one reminder the
+/// cart-reminders cron sends (lib/learn/join/pending.ts). No relation, so the
+/// row never blocks a learner deletion. Table created at runtime; keep in step.
+model PendingEnrollment {
+  studentId       String    @id
+  kind            String
+  trackSlug       String?
+  seats           Int?
+  company         String?
+  promoCode       String?
+  welcomeDeferred Boolean   @default(false)
+  welcomeSentAt   DateTime?
+  reminderSentAt  DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now())
+
+  @@index([completedAt, updatedAt])
+}

@@ -4,6 +4,7 @@
 import { arfaMailer } from "@/lib/resend";
 import prisma from "@/lib/prisma";
 import { translator, type T } from "./i18n";
+import type { JoinChoice } from "./join/choice";
 
 // Each email goes out in the learner's saved language (Student.locale). A
 // caller that already has it passes `locale`; otherwise it is looked up by
@@ -126,6 +127,149 @@ export function studentWelcomeEmail(s: { name: string }, t: T) {
 export async function sendStudentWelcomeEmail(s: { email: string; name: string; locale?: string | null }) {
   const t = await tFor(s.email, s.locale);
   const { subject, html } = studentWelcomeEmail(s, t);
+  await arfaMailer.emails.send({ to: s.email, subject, html });
+}
+
+// ── Context-aware welcome for the one-page join flow (/learning-box/join) ──
+//
+// A learner who creates their account on the join page is not sent the plain
+// welcome above. They get exactly one of these instead (lib/learn/join/pending.ts):
+//   purchased  payment confirmed: "your access is active", Start lesson 1
+//   pending    no payment after about an hour: welcome + Finish your enrolment
+// and an existing learner who chose a plan there and left gets the pending
+// version once as a reminder (reminderOnly). Team members keep the team
+// invitation and welcome emails (lib/learn/team).
+
+export type JoinWelcomeState =
+  | {
+      kind: "purchased";
+      product: "track" | "monthly" | "team";
+      track?: { slug: string; title: string; firstLessonId: string | null } | null;
+    }
+  | {
+      kind: "pending";
+      choice: JoinChoice;
+      track: { slug: string; title: string } | null;
+      /** Same-site path back to the join page with the choice preselected. */
+      resumePath: string;
+      reminderOnly?: boolean;
+    };
+
+function choiceLabel(t: T, choice: JoinChoice, trackTitle: string | null) {
+  if (choice.kind === "track") return t("learn.email.join.choice.track", { track: esc(trackTitle ?? choice.slug) });
+  if (choice.kind === "monthly") return t("learn.email.join.choice.monthly");
+  return t("learn.email.join.choice.team", { n: Math.max(1, choice.seats) });
+}
+
+function checkList(items: string[]) {
+  const rows = items
+    .map(
+      (x) => `<tr><td style="padding:0 0 8px;vertical-align:top;width:20px;color:#0F6E56;font-size:15px;line-height:1.5;font-weight:800;">&#10003;</td>
+        <td style="padding:0 0 8px;font-size:14px;color:#5b6b72;line-height:1.6;">${x}</td></tr>`,
+    )
+    .join("");
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;">${rows}</table>`;
+}
+
+export function joinWelcomeEmail(s: { name: string }, state: JoinWelcomeState, t: T) {
+  const first = esc(s.name.split(" ")[0] || s.name);
+  const h2 = (v: string) =>
+    `<h2 style="font-size:15px;color:#1B2A5E;margin:26px 0 10px;text-transform:uppercase;letter-spacing:.06em;">${v}</h2>`;
+  const outro =
+    p(t("learn.email.welcome.help", { email: `<a href="mailto:${ARFA_EMAIL}" style="color:#F47C20;">${ARFA_EMAIL}</a>` })) +
+    p(`${t("learn.email.welcome.signoff")}<br/><strong style="color:#131A1B;">${t("learn.email.welcome.team")}</strong>`) +
+    `<p style="font-size:12px;color:#8A9BA0;line-height:1.6;margin:18px 0 0;border-top:1px solid #e6ebf1;padding-top:14px;">${t("learn.email.welcome.about")} <a href="${SITE}/learning-box" style="color:#8A9BA0;">${SITE.replace(/^https?:\/\//, "")}/learning-box</a></p>`;
+  const pre = (v: string) => `<div style="display:none;max-height:0;overflow:hidden;">${v}</div>`;
+
+  if (state.kind === "purchased") {
+    const track = state.track ?? null;
+    const title = track ? esc(track.title) : "";
+    const product = state.product;
+    const subject =
+      product === "team"
+        ? t("learn.email.join.paid.subject.team")
+        : product === "track" && track
+          ? t("learn.email.join.paid.subject.track", { track: track.title })
+          : t("learn.email.join.paid.subject.monthly");
+    const lead =
+      product === "team"
+        ? t("learn.email.join.paid.lead.team")
+        : product === "track"
+          ? t("learn.email.join.paid.lead.track", { track: `<strong style="color:#131A1B;">${title}</strong>` })
+          : t("learn.email.join.paid.lead.monthly");
+    const included =
+      product === "team"
+        ? [1, 2, 3, 4].map((n) => t(`team.offer.item.${n}`))
+        : product === "track"
+          ? [1, 2, 3, 4, 5].map((n) => t(`learn.email.join.paid.track.item.${n}`))
+          : [1, 2, 3, 4, 5].map((n) => t(`learn.subscribe.item.${n}`));
+    const lessonHref = track?.firstLessonId
+      ? `${SITE}/learn/lesson/${track.firstLessonId}`
+      : track
+        ? `${SITE}/learn/track/${track.slug}`
+        : `${SITE}/learn/tracks`;
+    const cta =
+      product === "team"
+        ? { href: `${SITE}/learn/team`, label: `${t("learn.email.join.paid.cta.team")} &rarr;` }
+        : track
+          ? { href: lessonHref, label: `${t("learn.email.join.paid.cta.lesson1")} &rarr;` }
+          : { href: `${SITE}/learn/tracks`, label: `${t("learn.email.join.paid.cta.pick")} &rarr;` };
+    const next =
+      product === "team"
+        ? p(t("learn.email.join.paid.next.team", { link: `<a href="${SITE}/learn" style="color:#F47C20;font-weight:700;">${t("learn.email.join.paid.dashboard")}</a>` }))
+        : p(t("learn.email.join.paid.next", { link: `<a href="${SITE}/learn" style="color:#F47C20;font-weight:700;">${t("learn.email.join.paid.dashboard")}</a>` }));
+    const body =
+      pre(t("learn.email.join.paid.preheader")) +
+      p(lead) +
+      h2(t("learn.email.join.paid.included")) +
+      checkList(included) +
+      next;
+    return {
+      subject,
+      html: shell(t, t("learn.email.welcome.title", { name: first }), body, cta, p(t("learn.email.welcome.p2")) + outro),
+    };
+  }
+
+  const label = choiceLabel(t, state.choice, state.track?.title ?? null);
+  const href = `${SITE}${state.resumePath.startsWith("/") && !state.resumePath.startsWith("//") ? state.resumePath : "/learning-box/join"}`;
+  const reminder = !!state.reminderOnly;
+  const pillars = [1, 2, 3, 4]
+    .map(
+      (n) => `<tr><td style="padding:0 0 10px;vertical-align:top;width:18px;color:#F47C20;font-size:16px;line-height:1.4;">&#9679;</td>
+        <td style="padding:0 0 10px;font-size:14px;color:#5b6b72;line-height:1.6;"><strong style="color:#1B2A5E;">${t(`learn.email.welcome.pillar.${n}.title`)}.</strong> ${t(`learn.email.welcome.pillar.${n}.body`)}</td></tr>`,
+    )
+    .join("");
+  const choiceBox = `<div style="background:#F4F7FB;border-left:3px solid #F47C20;border-radius:8px;padding:14px 16px;margin:16px 0;">
+      <div style="font-size:12px;color:#8A9BA0;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">${t("learn.email.join.pending.yourChoice")}</div>
+      <div style="font-size:15px;color:#131A1B;font-weight:700;line-height:1.5;">${label}</div>
+    </div>`;
+  const body =
+    pre(t(reminder ? "learn.email.join.reminder.preheader" : "learn.email.join.pending.preheader")) +
+    p(t(reminder ? "learn.email.join.reminder.p1" : "learn.email.join.pending.p1")) +
+    choiceBox +
+    p(t("learn.email.join.pending.p2")) +
+    (reminder
+      ? ""
+      : h2(t("learn.email.welcome.whatTitle")) +
+        `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;">${pillars}</table>`);
+  const after =
+    p(t("learn.email.join.pending.explore", { link: `<a href="${SITE}/learning-box" style="color:#F47C20;font-weight:700;">${t("learn.email.join.pending.catalog")}</a>` })) +
+    outro;
+  return {
+    subject: t(reminder ? "learn.email.join.reminder.subject" : "learn.email.join.pending.subject"),
+    html: shell(
+      t,
+      reminder ? t("learn.email.join.reminder.title", { name: first }) : t("learn.email.welcome.title", { name: first }),
+      body,
+      { href, label: `${t("learn.email.join.pending.cta")} &rarr;` },
+      after,
+    ),
+  };
+}
+
+export async function sendJoinWelcomeEmail(s: { email: string; name: string; locale?: string | null; state: JoinWelcomeState }) {
+  const t = await tFor(s.email, s.locale);
+  const { subject, html } = joinWelcomeEmail(s, s.state, t);
   await arfaMailer.emails.send({ to: s.email, subject, html });
 }
 

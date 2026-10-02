@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { secretEquals } from "@/lib/require-admin";
 import { sendCartReminderEmail } from "@/lib/resend";
+import { sweepPendingEnrollments } from "@/lib/learn/join/pending";
 
 // Sends abandoned-cart reminder emails.
 // Scheduled via vercel.json cron (Authorization: Bearer CRON_SECRET) or an
@@ -89,7 +90,12 @@ export async function GET(req: NextRequest) {
   // adding another scheduled invocation.
   const pruned = await pruneAnalytics();
 
-  return NextResponse.json({ ok: true, checked: candidates.length, sent, results, pruned });
+  // ── ARFA one-page join flow: plans chosen but not paid ──────────────────
+  // A deferred welcome goes out as "finish your enrolment" after about an
+  // hour; other learners get one reminder (lib/learn/join/pending.ts).
+  const enrolments = await sweepPendingEnrollments();
+
+  return NextResponse.json({ ok: true, checked: candidates.length, sent, results, pruned, enrolments });
 }
 
 const PAGEVIEW_RETENTION_DAYS = 90;
