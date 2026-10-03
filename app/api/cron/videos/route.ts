@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { secretEquals } from "@/lib/require-admin";
-import { runVideoQueue, syncVideoJobs } from "@/lib/learn/video/queue";
+import { resumeBatchIfNeeded, runVideoQueue, syncVideoJobs } from "@/lib/learn/video/queue";
 
 // Narrated lesson videos: keeps the queue in step with the lessons (changed
 // lessons are queued again, new ones planned), then makes up to
@@ -23,6 +23,8 @@ export async function GET(req: NextRequest) {
     const deadline = started + 240_000;
     const sync = await syncVideoJobs({ aiBudget: 20, deadline: started + 60_000 });
     const run = await runVideoQueue({ deadline });
+    // A batch started from the admin that stopped with a restart carries on.
+    await resumeBatchIfNeeded().catch(() => {});
     return NextResponse.json({ ok: true, sync, ...run, seconds: Math.round((Date.now() - started) / 1000) });
   } catch (err) {
     console.error("[cron/videos]", err);

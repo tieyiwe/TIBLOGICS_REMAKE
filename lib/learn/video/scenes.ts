@@ -57,6 +57,8 @@ export interface SceneScript {
 }
 
 const str = (max: number) => z.string().trim().max(max);
+/** Short labels: cut to length instead of rejecting the whole script (French runs longer). */
+const cut = (max: number) => z.string().transform((s) => s.trim().slice(0, max));
 const list = (n: number, max: number) =>
   z
     .array(z.string())
@@ -70,21 +72,21 @@ const SceneSchema = z.object({
   bullets: list(4, 140),
   steps: list(5, 60),
   compare: z
-    .object({ leftTitle: str(60), rightTitle: str(60), left: list(4, 90), right: list(4, 90) })
+    .object({ leftTitle: cut(60), rightTitle: cut(60), left: list(4, 90), right: list(4, 90) })
     .nullish()
     .transform((v) => v ?? null),
   code: z
-    .object({ label: str(60).default(""), kind: z.enum(["prompt", "code"]).catch("prompt"), text: z.string().max(1500) })
+    .object({ label: cut(60).default(""), kind: z.enum(["prompt", "code"]).catch("prompt"), text: z.string().max(1500) })
     .nullish()
     .transform((v) => v ?? null),
   nodes: list(6, 48),
-  center: str(48).default(""),
+  center: cut(48).default(""),
   icons: z
     .array(z.string())
     .default([])
     .transform((a) => a.map((x) => x.trim().toLowerCase()).slice(0, 6)),
   figure: z
-    .object({ value: str(16).min(1), label: str(90) })
+    .object({ value: cut(16), label: cut(90) })
     .nullish()
     .transform((v) => v ?? null),
 });
@@ -250,6 +252,8 @@ function flatten(s: SceneScript, names?: { track: string; module: string }): Rec
     sc.nodes.forEach((b, j) => (f[`${i}.n${j}`] = b));
     if (sc.center) f[`${i}.center`] = sc.center;
     if (sc.figure?.label) f[`${i}.figure`] = sc.figure.label;
+    // Words in a figure ("3 in 4") are translated; a bare number stays as it is.
+    if (sc.figure?.value && /[a-z]/i.test(sc.figure.value)) f[`${i}.figv`] = sc.figure.value;
     if (sc.code) {
       if (sc.code.label) f[`${i}.codeLabel`] = sc.code.label;
       if (sc.code.kind === "prompt") f[`${i}.code`] = sc.code.text;
@@ -267,6 +271,12 @@ export async function translateScenes(lessonId: string, en: SceneScript, names?:
   const fields = flatten(en, names);
   const fr = await translated(`video-scenes:${lessonId}`, "fr", fields, "wait");
   if (!fr) return null;
+  // The translation layer hands back the English when it cannot read its
+  // cache: never let the French voice read English. Mostly unchanged = not
+  // translated (try again later).
+  const wordy = Object.entries(fields).filter(([, v]) => /[a-z]{3}/i.test(v) && v.trim().length > 3);
+  const same = wordy.filter(([k, v]) => typeof fr[k] !== "string" || fr[k].trim() === v.trim()).length;
+  if (wordy.length && same / wordy.length > 0.5) return null;
   const g = (k: string, d: string) => (typeof fr[k] === "string" && fr[k].trim() ? fr[k] : d);
   return {
     ...(en.v ? { v: en.v } : {}),
@@ -291,7 +301,7 @@ export async function translateScenes(lessonId: string, en: SceneScript, names?:
         : null,
       nodes: sc.nodes.map((b, j) => g(`${i}.n${j}`, b)),
       center: sc.center ? g(`${i}.center`, sc.center) : "",
-      figure: sc.figure ? { value: sc.figure.value, label: g(`${i}.figure`, sc.figure.label) } : null,
+      figure: sc.figure ? { value: g(`${i}.figv`, sc.figure.value), label: g(`${i}.figure`, sc.figure.label) } : null,
     })),
   };
 }

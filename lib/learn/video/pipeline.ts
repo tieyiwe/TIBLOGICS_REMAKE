@@ -76,7 +76,7 @@ export async function ensureScript(lesson: LessonForVideo, wantFr: boolean): Pro
     const script = { en, fr } as unknown as Prisma.InputJsonValue;
     await prisma.lessonVideoPlan.upsert({
       where: { lessonId: lesson.id },
-      create: { lessonId: lesson.id, contentHash: hash, decision: true, reason: "Generated on request.", source: "default", script, scriptHash: hash, estChars: narrationChars(en) },
+      create: { lessonId: lesson.id, contentHash: hash, decision: true, reason: "Generated on request.", source: "request", script, scriptHash: hash, estChars: narrationChars(en) },
       update: { script, scriptHash: hash, estChars: narrationChars(en) },
     });
   }
@@ -150,7 +150,24 @@ export function revealTimes(scene: Scene, n: number, speechSec: number): number[
     const t = Math.max(out[i - 1] + 0.4, Math.min(last, Math.max(out[i - 1] + 1.2, LEAD_SEC + pos[i] * speechSec)));
     out.push(t);
   }
+  // Many points in a short scene: squeeze them so the last still lands inside the speech.
+  const limit = Math.max(0.5, speechSec);
+  if (out[n - 1] > limit) return out.map((t) => (t * limit) / out[n - 1]);
   return out;
+}
+
+// Slides are drawn one at a time across the whole process, with a pause
+// between them: drawing is synchronous work, and the web server shares the
+// process, so page requests get through in between.
+let drawing: Promise<unknown> = Promise.resolve();
+function drawSlide(scene: Scene, ctx: Parameters<typeof renderSlide>[1]): Promise<Buffer> {
+  const run = drawing.then(async () => {
+    const png = await renderSlide(scene, ctx);
+    await new Promise((r) => setImmediate(r));
+    return png;
+  });
+  drawing = run.catch(() => {});
+  return run;
 }
 
 async function pool<T, R>(items: T[], n: number, fn: (x: T, i: number) => Promise<R>): Promise<R[]> {
@@ -179,7 +196,11 @@ export interface GenerateResult {
 }
 
 /** Makes the narrated video for one lesson in one language and publishes it on the lesson. */
-export async function generateLessonVideo(lessonId: string, locale: TtsLocale): Promise<GenerateResult> {
+export async function generateLessonVideo(
+  lessonId: string,
+  locale: TtsLocale,
+  opts: { stillWanted?: () => Promise<boolean> } = {},
+): Promise<GenerateResult> {
   await ensureVideoTables();
   const lesson = await loadLesson(lessonId);
   if (!lesson) throw new SkipJob("The lesson no longer exists.");
@@ -216,9 +237,9 @@ export async function generateLessonVideo(lessonId: string, locale: TtsLocale): 
       const [pngs, mp3s] = await Promise.all([
         // One frame at a time: drawing several 1080p slides at once costs memory.
         (async () => {
-          if (k <= 1) return [await renderSlide(scene, ctx)];
+          if (k <= 1) return [await drawSlide(scene, ctx)];
           const out: Buffer[] = [];
-          for (let j = 0; j < k; j++) out.push(await renderSlide(scene, { ...ctx, reveal: j + 1 }));
+          for (let j = 0; j < k; j++) out.push(await drawSlide(scene, { ...ctx, reveal: j + 1 }));
           return out;
         })(),
         tts.synthesize(scene.narration, locale),
@@ -259,38 +280,50 @@ export async function generateLessonVideo(lessonId: string, locale: TtsLocale): 
     }
     const duration = info.duration || timings[timings.length - 1].end;
 
-    const mp4 = await storeVideoFile(out, { lessonId, locale, contentType: "video/mp4", durationSec: duration });
-    const assetIds = [mp4.id];
-    let webmUrl: string | undefined;
-    if (process.env.VIDEO_WEBM === "1") {
-      const wf = path.join(tmp, "video.webm");
-      await toWebm(out, wf, duration);
-      const w = await storeVideoFile(wf, { lessonId, locale, contentType: "video/webm", durationSec: duration });
-      assetIds.push(w.id);
-      webmUrl = `${ASSET_PREFIX}${w.id}.webm`;
-    }
+    // Stored files are deleted again if anything after this fails, so a
+    // failed or cancelled run never leaves an unused file behind.
+    const stored: string[] = [];
+    try {
+      const mp4 = await storeVideoFile(out, { lessonId, locale, contentType: "video/mp4", durationSec: duration });
+      stored.push(mp4.id);
+      const assetIds = [mp4.id];
+      let webmUrl: string | undefined;
+      if (process.env.VIDEO_WEBM === "1") {
+        const wf = path.join(tmp, "video.webm");
+        await toWebm(out, wf, duration);
+        const w = await storeVideoFile(wf, { lessonId, locale, contentType: "video/webm", durationSec: duration });
+        stored.push(w.id);
+        assetIds.push(w.id);
+        webmUrl = `${ASSET_PREFIX}${w.id}.webm`;
+      }
 
-    mark("store");
-    console.info(`[video] ${lessonId} ${locale}: ${total} scenes, ${Math.round(duration)}s video, timings (cumulative s) ${JSON.stringify(lap)}`);
-    const url = `${ASSET_PREFIX}${mp4.id}.mp4`;
-    const chapters = sceneChapters(script.scenes.map((s) => s.title), timings);
-    const captions: Captions = { [locale]: buildVtt(script.scenes.map((s) => s.narration), timings) };
-    if (other && other.scenes.length === script.scenes.length) {
-      captions[locale === "fr" ? "en" : "fr"] = buildVtt(other.scenes.map((s) => s.narration), timings);
+      mark("store");
+      console.info(`[video] ${lessonId} ${locale}: ${total} scenes, ${Math.round(duration)}s video, timings (cumulative s) ${JSON.stringify(lap)}`);
+      const url = `${ASSET_PREFIX}${mp4.id}.mp4`;
+      const chapters = sceneChapters(script.scenes.map((s) => s.title), timings);
+      const captions: Captions = { [locale]: buildVtt(script.scenes.map((s) => s.narration), timings) };
+      if (other && other.scenes.length === script.scenes.length) {
+        captions[locale === "fr" ? "en" : "fr"] = buildVtt(other.scenes.map((s) => s.narration), timings);
+      }
+      const variant: Variant = {
+        url,
+        webm: webmUrl,
+        assetIds,
+        chapters,
+        captions,
+        durationSec: duration,
+        voice: tts.voice(locale),
+        provider: tts.id,
+        generatedAt: new Date().toISOString(),
+      };
+      // Cancelled or removed by staff while it was being made: not published.
+      if (opts.stillWanted && !(await opts.stillWanted())) throw new SkipJob("Stopped by staff while it was being made.");
+      await publishVariant(lessonId, locale, variant);
+      return { assetId: mp4.id, url, durationSec: duration, chars: narrationChars(script), provider: tts.id, scenes: total, hash };
+    } catch (err) {
+      for (const id of stored) await deleteAsset(id).catch(() => {});
+      throw err;
     }
-    const variant: Variant = {
-      url,
-      webm: webmUrl,
-      assetIds,
-      chapters,
-      captions,
-      durationSec: duration,
-      voice: tts.voice(locale),
-      provider: tts.id,
-      generatedAt: new Date().toISOString(),
-    };
-    await publishVariant(lessonId, locale, variant);
-    return { assetId: mp4.id, url, durationSec: duration, chars: narrationChars(script), provider: tts.id, scenes: total, hash };
   } finally {
     await rm(tmp, { recursive: true, force: true }).catch(() => {});
   }

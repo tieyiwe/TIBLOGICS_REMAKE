@@ -78,6 +78,47 @@ export interface TtsProvider {
 
 const TIMEOUT_MS = 60_000;
 
+// ── Audio cache ─────────────────────────────────────────────────────────────
+// Narration already paid for is kept on local disk for a while (by provider,
+// voice, speed and text), so a retry after a later step failed, or a video
+// re-made with the same voice and words, does not pay for the voice again.
+// Local and temporary: lost on restart, which only means paying once more.
+
+const CACHE_MAX_FILES = 400;
+
+async function cacheDir(): Promise<string> {
+  const os = await import("os");
+  const path = await import("path");
+  return path.join(os.tmpdir(), "arfa-tts-cache");
+}
+
+async function cached(key: string, make: () => Promise<Buffer>): Promise<Buffer> {
+  const { createHash } = await import("crypto");
+  const fs = await import("fs/promises");
+  const path = await import("path");
+  const dir = await cacheDir();
+  const file = path.join(dir, `${createHash("sha256").update(key).digest("hex").slice(0, 40)}.mp3`);
+  const hit = await fs.readFile(file).catch(() => null);
+  if (hit && hit.length > 0) return hit;
+  const buf = await make();
+  try {
+    await fs.mkdir(dir, { recursive: true });
+    // Written aside and renamed: a crash mid-write never leaves a cut-off file to reuse.
+    const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
+    await fs.writeFile(tmp, buf);
+    await fs.rename(tmp, file);
+    const names = await fs.readdir(dir);
+    if (names.length > CACHE_MAX_FILES) {
+      const stats = await Promise.all(names.map(async (n) => ({ n, t: (await fs.stat(path.join(dir, n)).catch(() => null))?.mtimeMs ?? 0 })));
+      stats.sort((a, b) => a.t - b.t);
+      for (const { n } of stats.slice(0, names.length - CACHE_MAX_FILES)) await fs.rm(path.join(dir, n), { force: true }).catch(() => {});
+    }
+  } catch {
+    /* a full disk only loses the cache */
+  }
+  return buf;
+}
+
 async function withRetry<T>(what: string, fn: () => Promise<T>): Promise<T> {
   let last: unknown;
   for (let i = 0; i < 3; i++) {
@@ -168,7 +209,11 @@ function googleProvider(key: string): TtsProvider {
       const pieces = chunkText(text, 4500, (s) => Buffer.byteLength(usePlain ? s : toSsml(s), "utf8"));
       const out: Buffer[] = [];
       for (const piece of pieces) {
-        out.push(await googleSynthesize({ base, key, voice, languageCode, rate, input: usePlain ? { text: piece } : { ssml: toSsml(piece) } }));
+        out.push(
+          await cached(`google|${voice}|${rate}|${usePlain ? "text" : "ssml"}|${piece}`, () =>
+            googleSynthesize({ base, key, voice, languageCode, rate, input: usePlain ? { text: piece } : { ssml: toSsml(piece) } }),
+          ),
+        );
       }
       return out;
     },
@@ -277,7 +322,7 @@ function openAiProvider(key: string): TtsProvider {
     async synthesize(text, locale) {
       const out: Buffer[] = [];
       for (const piece of chunkText(text, 3800, (s) => s.length)) {
-        const buf = await withRetry("OpenAI TTS", async () => {
+        const buf = await cached(`openai|${model}|${voices[locale]}|${locale}|${piece}`, () => withRetry("OpenAI TTS", async () => {
           const res = await fetch(`${base}/v1/audio/speech`, {
             method: "POST",
             headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
@@ -297,7 +342,7 @@ function openAiProvider(key: string): TtsProvider {
             throw new HttpError(res.status, `OpenAI TTS ${res.status}: ${msg}`);
           }
           return Buffer.from(await res.arrayBuffer());
-        });
+        }));
         out.push(buf);
       }
       return out;

@@ -6,6 +6,7 @@ import { getLocale, getT } from "@/lib/i18n/server";
 import { fmtNumber } from "@/lib/learn/format";
 import { loadPortfolio, publicPortfolioOwner } from "@/lib/learn/method/portfolio";
 import PortfolioView from "@/components/learn/method/PortfolioView";
+import { cardUrl } from "@/lib/seo/og-card";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title,
     description,
     robots: { index: false, follow: false },
-    openGraph: { title, description, type: "profile", url: `/p/${slug}`, siteName: "TIBLOGICS" },
+    openGraph: {
+      title,
+      description,
+      type: "profile",
+      url: `/p/${slug}`,
+      siteName: "TIBLOGICS",
+      images: [{ url: cardUrl({ title, description, kicker: "Portfolio", brand: "arfa" }), width: 1200, height: 630 }],
+    },
     twitter: { card: "summary", title, description },
   };
 }

@@ -7,7 +7,7 @@ import prisma from "@/lib/prisma";
 import { requirePermission } from "@/lib/require-admin";
 import { staffAiLimit } from "@/lib/rate-limit";
 import { polishSample } from "@/lib/learn/video/ffmpeg";
-import { queueRevoice } from "@/lib/learn/video/queue";
+import { invalidateVideoSummary, queueRevoice } from "@/lib/learn/video/queue";
 import {
   DEFAULT_RATE,
   DEFAULT_VOICES,
@@ -126,10 +126,12 @@ export async function POST(req: NextRequest) {
           update: { value: JSON.stringify(value) },
         });
         setVoiceSettingsCache(value);
+        invalidateVideoSummary();
         return NextResponse.json({ ok: true, ...value });
       }
       case "revoice": {
         const queued = await queueRevoice();
+        invalidateVideoSummary();
         return NextResponse.json({ ok: true, queued });
       }
     }

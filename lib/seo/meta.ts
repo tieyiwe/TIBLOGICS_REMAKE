@@ -9,6 +9,7 @@
 import type { Metadata } from "next";
 import type { Locale } from "@/lib/i18n/config";
 import { OG_IMAGE, OG_IMAGE_SIZE, OG_LOCALE, ORG, SITE_NAME, absUrl } from "./site";
+import { cardUrl, kickerFor, type CardBrand } from "@/lib/seo/og-card";
 
 export const TITLE_MAX = 60;
 export const DESCRIPTION_MAX = 155;
@@ -63,6 +64,9 @@ export interface PageMetaInput {
   socialTitle?: string;
   socialDescription?: string;
   image?: string | { url: string; width?: number; height?: number; alt?: string };
+  /** The card's section label and style when the page has no picture (default: from the path). */
+  cardKicker?: string;
+  cardBrand?: CardBrand;
   type?: "website" | "article";
   /** Keep out of search results (still followed unless `nofollow`). */
   noindex?: boolean;
@@ -78,9 +82,20 @@ export function pageMetadata(i: PageMetaInput): Metadata {
   const socialTitle = i.socialTitle ?? i.title;
   const socialDescription = clip(plain(i.socialDescription ?? i.description), 200);
   const img = typeof i.image === "string" ? { url: i.image } : i.image;
+  // No picture of its own: the home page keeps the owner's design; every
+  // other page gets its own card (its title and description), so no two
+  // pages share the same preview (lib/seo/og-card.ts).
+  const sect = kickerFor(i.path);
   const image = img
     ? { url: absUrl(img.url), width: img.width, height: img.height, alt: img.alt ?? socialTitle }
-    : { url: OG_IMAGE, ...OG_IMAGE_SIZE, alt: socialTitle };
+    : i.path === "/" || i.path === ""
+      ? { url: OG_IMAGE, ...OG_IMAGE_SIZE, alt: socialTitle }
+      : {
+          // The logo is on the card: no trailing "| TIBLOGICS" in its title.
+          url: cardUrl({ title: clip(plain(socialTitle).replace(/\s*[|·–-]\s*TIBLOGICS[^|·]*$/i, ""), 140), description: socialDescription, kicker: i.cardKicker ?? sect.kicker, brand: i.cardBrand ?? sect.brand }),
+          ...OG_IMAGE_SIZE,
+          alt: socialTitle,
+        };
 
   // Keep the title within what search results show: drop the " | TIBLOGICS"
   // suffix when it would overflow, and clip as a last resort.

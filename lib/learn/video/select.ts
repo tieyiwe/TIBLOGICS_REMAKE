@@ -112,7 +112,7 @@ export function effectiveDecision(p: Pick<PlanRow, "decision" | "override"> | nu
  * Rules first; undecided lessons go to Haiku while `aiBudget` lasts and the
  * deadline allows, and the rest wait for the next run (they stay unplanned).
  */
-export async function planLessons(opts: { trackId?: string; lessonIds?: string[]; aiBudget?: number; deadline?: number } = {}): Promise<{ planned: number; yes: number; no: number; pending: number; ai: number }> {
+export async function planLessons(opts: { trackId?: string; lessonIds?: string[]; aiBudget?: number; deadline?: number; force?: boolean } = {}): Promise<{ planned: number; yes: number; no: number; pending: number; ai: number }> {
   await ensureVideoTables();
   const lessons = await prisma.lesson.findMany({
     where: {
@@ -140,7 +140,10 @@ export async function planLessons(opts: { trackId?: string; lessonIds?: string[]
   for (const row of lessons) {
     const hash = contentHash(row);
     const prev = plans.get(row.id);
-    if (prev && prev.contentHash === hash && prev.source !== "default") continue;
+    // Provisional plans ("default") get another AI check, but not on every
+    // cron run: at most every 6 hours (each check is a paid call). The Plan
+    // button forces one.
+    if (prev && prev.contentHash === hash && (prev.source !== "default" || (!opts.force && Date.now() - prev.updatedAt.getTime() < 6 * 3_600_000))) continue;
     const l: PlanLesson = { id: row.id, title: row.title, objective: row.objective, bodyMd: row.bodyMd, sortOrder: row.sortOrder, moduleSize: row.module._count.lessons };
     const r = ruleDecision(l);
     if (r.decision !== null) await save(row.id, hash, r.decision, r.reason, "rule", estimateChars(row.bodyMd));

@@ -59,6 +59,7 @@ export async function generateMetadata({
       monthly: fmtPrice(PLANS.monthly.amount, locale),
     }),
     socialDescription: text?.tagline ?? track.tagline ?? undefined,
+    // A track's own picture, else its own ARFA card (title and promise).
     image: track.heroImage ? { url: track.heroImage } : undefined,
   });
 }

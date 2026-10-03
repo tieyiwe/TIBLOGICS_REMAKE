@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AudioLines, CircleStop, ListChecks, Play, RefreshCw, Rocket, Zap } from "lucide-react";
+import { AudioLines, CircleStop, ListChecks, Play, Repeat, RefreshCw, Rocket, Zap } from "lucide-react";
 import { Button, Card, Notice, StatCard, tableStyles, useConfirm, useToast } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import type { VideoSummary } from "@/lib/learn/video/queue";
@@ -29,6 +29,7 @@ export default function AutoVideoPanel() {
   const [s, setS] = useState<VideoSummary | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [batchSize, setBatchSize] = useState(10);
 
   const load = useCallback(async (): Promise<VideoSummary | null> => {
     try {
@@ -48,7 +49,8 @@ export default function AutoVideoPanel() {
     void load();
   }, [load]);
 
-  const active = (s?.jobs.queued ?? 0) + (s?.jobs.running ?? 0);
+  const batchOn = s?.batch?.state === "running";
+  const active = (s?.jobs.queued ?? 0) + (s?.jobs.running ?? 0) + (batchOn ? 1 : 0);
   // While videos are being made, poll the small status (a few KB) and
   // re-render the lesson table (about 1 MB for every lesson) only when a
   // video starts, finishes or fails, not every 15 seconds.
@@ -121,7 +123,7 @@ export default function AutoVideoPanel() {
       if (d.done) toast.success("One video made. Open \u201cAI videos made\u201d below to watch it.");
       else if (d.needsTts) toast.error("No voice key is set: the videos wait as \u201cneeds voice key\u201d.");
       else if (d.error) toast.error(`The video failed: ${d.error}`);
-      else toast.success("Nothing started: no video is queued, or one is already being made.");
+      else toast.success("Nothing started: no video is ready to start (none queued, one already being made, or a failed one waiting a few minutes to retry).");
       await load();
       router.refresh();
     } catch (e) {
@@ -155,6 +157,13 @@ export default function AutoVideoPanel() {
     }
   }
 
+  async function startBatch() {
+    await post("batch", { action: "batch", size: batchSize }, () => `Making up to ${batchSize} videos, one after another. You can close this page.`);
+  }
+  async function stopBatch() {
+    await post("stopBatch", { action: "stopBatch" }, () => "Stopping after the video being made.");
+  }
+
   async function cancel(trackId?: string, title?: string) {
     const ok = await confirm({
       title: trackId ? `Cancel the queued videos for ${title}?` : "Cancel every queued video?",
@@ -173,7 +182,7 @@ export default function AutoVideoPanel() {
   const waiting = s.jobs.queued + s.jobs.needs_tts;
   const cancellable = waiting + s.activity.stuck;
   const lastMove = [s.activity.lastStartedAt, s.activity.lastFinishedAt].filter(Boolean).sort().pop() ?? null;
-  const stalled = s.jobs.queued > 0 && (!lastMove || Date.now() - new Date(lastMove).getTime() > STALLED_MIN * 60_000);
+  const stalled = !batchOn && s.jobs.queued > 0 && (!lastMove || Date.now() - new Date(lastMove).getTime() > STALLED_MIN * 60_000);
   return (
     <Card
       title="Narrated videos (AI voice)"
@@ -184,10 +193,30 @@ export default function AutoVideoPanel() {
           <Button size="sm" icon={ListChecks} loading={busy === "plan"} onClick={() => post("plan", { action: "plan" }, (d) => `Planned ${d.planned ?? 0} lessons: ${d.yes ?? 0} with a video, ${d.no ?? 0} without${d.pending ? `, ${d.pending} provisional` : ""}.`)} data-testid="video-plan-all">
             Plan videos for all tracks
           </Button>
-          {s.jobs.queued > 0 && (
-            <Button size="sm" icon={Zap} loading={busy === "run"} disabled={!!busy} onClick={runNow} data-testid="video-run-now">
-              Make next video now
-            </Button>
+          {s.jobs.queued > 0 && !batchOn && (
+            <>
+              <Button size="sm" icon={Zap} loading={busy === "run"} disabled={!!busy} onClick={runNow} data-testid="video-run-now">
+                Make next video now
+              </Button>
+              <span className="inline-flex items-center gap-1">
+                <select
+                  aria-label="How many videos to make in a row"
+                  value={batchSize}
+                  onChange={(e) => setBatchSize(Number(e.target.value))}
+                  className="h-8 rounded-[10px] border border-[var(--a-border-strong)] bg-[var(--a-surface)] px-1.5 font-dm text-[12.5px] text-[var(--a-ink)]"
+                  data-testid="video-batch-size"
+                >
+                  {[5, 10, 20].map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+                <Button size="sm" variant="secondary" icon={Repeat} loading={busy === "batch"} disabled={!!busy} onClick={startBatch} data-testid="video-batch-start">
+                  Make the next {batchSize}
+                </Button>
+              </span>
+            </>
           )}
           {cancellable > 0 && (
             <Button size="sm" variant="danger" icon={CircleStop} loading={busy === "cancel"} onClick={() => cancel()} data-testid="video-cancel-all">
@@ -227,6 +256,36 @@ export default function AutoVideoPanel() {
           </Notice>
         )}
 
+        {s.batch && (s.batch.state === "running" || Date.now() - new Date(s.batch.endedAt ?? 0).getTime() < 7 * 24 * 3_600_000) && (
+          <div data-testid="video-batch">
+            <Notice
+              tone={s.batch.state === "running" ? "info" : s.batch.state === "paused" && s.batch.failed === 0 && s.batch.made >= s.batch.size ? "success" : "warn"}
+              title={
+                s.batch.state === "running"
+                  ? `Making videos automatically: ${s.batch.made} of ${s.batch.size} made`
+                  : s.batch.state === "stopped"
+                    ? `Batch stopped: ${s.batch.made} of ${s.batch.size} made`
+                    : `Batch ${s.batch.state === "paused" ? "paused" : "finished"}: ${s.batch.made} of ${s.batch.size} made`
+              }
+              action={
+                s.batch.state === "running" ? (
+                  <Button size="sm" variant="danger" icon={CircleStop} loading={busy === "stopBatch"} onClick={stopBatch} data-testid="video-batch-stop">
+                    Stop
+                  </Button>
+                ) : s.jobs.queued > 0 ? (
+                  <Button size="sm" variant="primary" icon={Repeat} loading={busy === "batch"} onClick={startBatch} data-testid="video-batch-next">
+                    Make the next {batchSize}
+                  </Button>
+                ) : undefined
+              }
+            >
+              {s.batch.state === "running"
+                ? "One video after another, on the server: you can close this page. It pauses when the batch is done so you can review the videos (AI videos made, below)."
+                : s.batch.reason ?? ""}
+              {s.batch.failed ? ` ${s.batch.failed} failed (see Last error).` : ""}
+            </Notice>
+          </div>
+        )}
         {s.provider.provider === "google" && <VoicePicker onSaved={() => void load()} />}
         {s.oldVoice.videos > 0 && (
           <div data-testid="video-old-voice">

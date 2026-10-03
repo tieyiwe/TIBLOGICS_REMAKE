@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Loader2, Mic, Pause, Play } from "lucide-react";
+import { Check, ChevronDown, Loader2, Mic, Pause, Play } from "lucide-react";
 import { Badge, Button, Notice, useToast } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 
@@ -48,6 +48,25 @@ export default function VoicePicker({ onSaved }: { onSaved?: () => void }) {
   const [loading, setLoading] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const audio = useRef<HTMLAudioElement | null>(null);
+  // Folded by default (one line with the chosen voices); remembered per browser.
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    try {
+      setOpen(localStorage.getItem("tib:admin:voice-open") === "1");
+    } catch {
+      /* storage blocked: stays folded */
+    }
+  }, []);
+  const toggle = () =>
+    setOpen((o) => {
+      try {
+        localStorage.setItem("tib:admin:voice-open", o ? "0" : "1");
+      } catch {
+        /* ignore */
+      }
+      if (o) audio.current?.pause();
+      return !o;
+    });
   const urls = useRef(new Map<string, string>());
 
   useEffect(() => {
@@ -188,21 +207,29 @@ export default function VoicePicker({ onSaved }: { onSaved?: () => void }) {
     );
   };
 
+  const label = (name: string | null) => (name ? `${short(name)} (${LANG_LABEL[name.slice(0, 5)] ?? name.slice(0, 5)})` : "not set");
   return (
     <div className="space-y-3 rounded-[14px] border border-[var(--a-border)] bg-[var(--a-surface-2)] p-4" data-testid="voice-picker">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="font-dm">
+        <button type="button" onClick={toggle} aria-expanded={open} aria-controls="voice-picker-body" className="min-w-0 flex-1 text-left font-dm" data-testid="voice-toggle">
           <p className="flex items-center gap-1.5 text-[14px] font-semibold text-[var(--a-ink)]">
             <Mic size={15} aria-hidden /> Narration voice
+            <ChevronDown size={16} aria-hidden className={cn("transition-transform duration-150", open && "rotate-180")} />
           </p>
           <p className="text-[12.5px] text-[var(--a-ink-3)]">
-            Male voices, most natural first. Press play to hear each one read the same short passage, as it will sound in the videos.
+            {open
+              ? "Male voices, most natural first. Press play to hear each one read the same short passage, as it will sound in the videos."
+              : `English: ${label(d.current.en)} · French: ${label(d.current.fr)} · speed ${d.rate.toFixed(2)}×. Open to listen and change.`}
           </p>
-        </div>
-        <Button size="sm" variant="primary" loading={saving} disabled={!changed} onClick={save} data-testid="voice-save">
-          Save voice
-        </Button>
+        </button>
+        {open && (
+          <Button size="sm" variant="primary" loading={saving} disabled={!changed} onClick={save} data-testid="voice-save">
+            Save voice
+          </Button>
+        )}
       </div>
+      {open && (
+      <div id="voice-picker-body" className="space-y-3">
       {d.error && <Notice tone="warn" title="Voice list">{d.error}</Notice>}
       <div className="grid gap-4 md:grid-cols-2">
         {column("en")}
@@ -223,6 +250,8 @@ export default function VoicePicker({ onSaved }: { onSaved?: () => void }) {
         <span className="tabular-nums font-semibold text-[var(--a-ink)]">{rate.toFixed(2)}×</span>
         <span className="text-[12px] text-[var(--a-ink-3)]">0.90 to 0.95 suits a calm lecture pace</span>
       </label>
+      </div>
+      )}
     </div>
   );
 }

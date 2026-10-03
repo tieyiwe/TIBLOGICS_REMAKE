@@ -5,6 +5,14 @@ import { atkinson, openDyslexic } from "@/lib/a11y/fonts";
 import UtmCapture from "@/components/public/UtmCapture";
 import ClientMessages from "@/components/i18n/ClientMessages";
 import HelpWidget from "@/components/learn/support/HelpWidget";
+import { cardUrl } from "@/lib/seo/og-card";
+
+// The academy's own card (distinct from the Learning Box banner); sign-in and sign-up have their own.
+const ACADEMY_CARD = {
+  url: cardUrl({ title: "Your ARFA learning space", description: "Tracks, hands-on labs, quizzes and certificates from ARFA, the TIBLOGICS AI Academy.", kicker: "ARFA · AI Academy", brand: "arfa" }),
+  width: 1200,
+  height: 630,
+};
 
 export const metadata: Metadata = {
   title: { absolute: "ARFA · TIBLOGICS AI Academy", template: "%s · ARFA AI Academy" },
@@ -15,6 +23,9 @@ export const metadata: Metadata = {
   manifest: "/arfa.webmanifest",
   appleWebApp: { capable: true, title: "ARFA", statusBarStyle: "default" },
   icons: { icon: [{ url: "/icon.svg", type: "image/svg+xml" }], apple: "/pwa/apple-touch-icon.png" },
+  // Shared links into the academy (sign-in, sign-up, a lesson) show the ARFA banner, not the main site's.
+  openGraph: { siteName: "TIBLOGICS", type: "website", title: "ARFA · TIBLOGICS AI Academy", images: [ACADEMY_CARD] },
+  twitter: { card: "summary_large_image", images: [ACADEMY_CARD.url] },
 };
 
 export const viewport: Viewport = { themeColor: "#1B3A6B" };

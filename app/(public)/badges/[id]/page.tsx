@@ -6,6 +6,7 @@ import { badgeUrl, readCredential } from "@/lib/learn/skill-badges/credential";
 import BadgeShareActions from "@/components/learn/badges/BadgeShareActions";
 import { fmtDate } from "@/lib/learn/format";
 import { getLocale, getT } from "@/lib/i18n/server";
+import { cardUrl } from "@/lib/seo/og-card";
 
 // Public verification page for a skill badge. No sign-in. The signature is
 // checked server-side on every view (lib/learn/skill-badges/engine.ts), and
@@ -27,7 +28,14 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     description: t("badges.verify.metaDescription", vars),
     robots: b.status === "verified" ? undefined : { index: false },
     alternates: { canonical: `/badges/${id}` },
-    openGraph: { type: "website", title: t("badges.verify.metaTitle", vars), description: t("badges.verify.metaDescription", vars), url: `/badges/${id}` },
+    openGraph: {
+      type: "website",
+      title: t("badges.verify.metaTitle", vars),
+      description: t("badges.verify.metaDescription", vars),
+      url: `/badges/${id}`,
+      // Its own card: the badge and who earned it.
+      images: [{ url: cardUrl({ title: t("badges.verify.metaTitle", vars), description: t("badges.verify.metaDescription", vars), kicker: "Verified skill badge", brand: "arfa" }), width: 1200, height: 630 }],
+    },
     twitter: { card: "summary_large_image" },
   };
 }

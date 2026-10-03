@@ -15,6 +15,9 @@ export const SITE_NAME = "TIBLOGICS";
  *  padded to 1200x630 in public/main-domain-preview-og.png. Bump ?v= when it changes
  *  so social sites fetch it again. Articles use their own cards. */
 export const OG_IMAGE = `${SITE_URL}/main-domain-preview-og.png?v=1`;
+
+/** ARFA (the academy) pages: the ARFA banner (public/arfa-banner.png) fitted to 1200x630 in public/arfa-preview-og.jpg. Bump ?v= when it changes. */
+export const ARFA_OG_IMAGE = { url: `${SITE_URL}/arfa-preview-og.jpg?v=1`, width: 1200, height: 630, alt: "ARFA, AI Readiness For All: the TIBLOGICS AI Academy" };
 export const OG_IMAGE_SIZE = { width: 1200, height: 630 } as const;
 
 /** Raster logo for structured data (Google wants a crawlable image, ≥112px). */

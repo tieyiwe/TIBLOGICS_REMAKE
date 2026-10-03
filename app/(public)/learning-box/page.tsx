@@ -18,6 +18,7 @@ import JsonLd from "@/components/seo/JsonLd";
 import { FaqBlock, KeyTakeaways } from "@/components/seo/AnswerBlocks";
 import { academyFaq, academySummary, academyTakeaways } from "@/lib/seo/academy";
 import { arfaNode, breadcrumbNode, itemListNode } from "@/lib/seo/jsonld";
+import { ARFA_OG_IMAGE } from "@/lib/seo/site";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,8 @@ export async function generateMetadata(): Promise<Metadata> {
     title: t("learn.box.metaTitle"),
     absoluteTitle: true,
     description: t("learn.box.metaDescription"),
+    // The academy's own preview, not the main site's.
+    image: ARFA_OG_IMAGE,
   });
 }
 

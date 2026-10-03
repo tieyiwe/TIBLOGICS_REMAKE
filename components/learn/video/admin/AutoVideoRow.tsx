@@ -93,6 +93,8 @@ export default function AutoVideoRow({
   const include = override === "include" ? true : override === "exclude" ? false : decision;
   const running = jobs.en?.status === "running" || jobs.fr?.status === "running" || jobs.en?.status === "queued" || jobs.fr?.status === "queued";
   const shown = preview?.[lang];
+  // Both languages made from the current text: pressing again re-makes them (on purpose only).
+  const complete = jobs.en?.status === "done" && jobs.fr?.status === "done" && !stale;
 
   if (ownVideo) return <span className="font-dm text-[12.5px] text-[var(--a-ink-3)]">Your own video is used</span>;
 
@@ -138,8 +140,25 @@ export default function AutoVideoRow({
       </div>
       <div className="flex flex-wrap gap-1">
         {include && (
-          <Button size="sm" variant="ghost" icon={Play} loading={busy === "gen"} disabled={running} onClick={() => post("gen", { action: "generate" }, "Queued: the video is being made now.")} data-testid="video-generate">
-            {generated ? "Regenerate" : "Generate"}
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={Play}
+            loading={busy === "gen"}
+            disabled={running || !!busy}
+            onClick={async () => {
+              if (!complete) return post("gen", { action: "generate" }, "Queued: the missing video is being made now.");
+              // Already made: only on purpose, when a video is bad (it is paid for again).
+              const ok = await confirm({
+                title: "Re-make this lesson's videos?",
+                body: "Do this only if a video is bad. Both languages are made again and paid for again; the current videos stay until the new ones are ready.",
+                confirmLabel: "Re-make videos",
+              });
+              if (ok) await post("gen", { action: "generate", redo: true }, "Queued: the videos are being made again.");
+            }}
+            data-testid="video-generate"
+          >
+            {complete ? "Regenerate" : "Generate"}
           </Button>
         )}
         {generated && (
