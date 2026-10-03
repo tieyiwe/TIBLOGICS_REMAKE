@@ -56,19 +56,20 @@ export async function queuePlanned(opts: { trackId?: string } = {}): Promise<num
     prisma.lessonVideoJob.findMany({ where: { lessonId: { in: ids } } }),
   ]);
   const plan = new Map(plans.map((p) => [p.lessonId, p]));
-  const want: string[] = [];
+  let n = 0;
   for (const l of lessons) {
     if (l.videoUrl && !isGeneratedUrl(l.videoUrl)) continue;
     if (!effectiveDecision(plan.get(l.id))) continue;
     const hash = contentHash(l);
     const mine = jobs.filter((j) => j.lessonId === l.id);
-    const current = LOCALES.every((loc) => {
+    // Only the languages without a current video: a finished one is never paid for twice.
+    const missing = LOCALES.filter((loc) => {
       const j = mine.find((x) => x.locale === loc);
-      return j && j.contentHash === hash && (j.status === "done" || j.status === "queued" || j.status === "running");
+      return !(j && j.contentHash === hash && (j.status === "done" || j.status === "queued" || j.status === "running"));
     });
-    if (!current) want.push(l.id);
+    if (missing.length) n += await queueVideos([l.id], { locales: missing });
   }
-  return queueVideos(want);
+  return n;
 }
 
 interface ClaimedJob {
@@ -191,15 +192,16 @@ export async function syncVideoJobs(opts: { aiBudget?: number; deadline?: number
 }
 
 /**
- * Takes waiting jobs out of the queue (queued or waiting for a voice key),
- * for one track or all. Running jobs finish. Nothing is spent on cancelled
+ * Takes waiting jobs out of the queue (queued, waiting for a voice key, or
+ * stuck from a run that died), for one track or all. Running jobs finish. Nothing is spent on cancelled
  * jobs, and they stay out until someone presses Generate again.
  */
 export async function cancelQueued(opts: { trackId?: string } = {}): Promise<number> {
   await ensureVideoTables();
   const r = await prisma.lessonVideoJob.updateMany({
     where: {
-      status: { in: ["queued", "needs_tts"] },
+      // Waiting, or "running" from a run that died (its lease has expired).
+      OR: [{ status: { in: ["queued", "needs_tts"] } }, { status: "running", OR: [{ leaseUntil: null }, { leaseUntil: { lt: new Date() } }] }],
       ...(opts.trackId
         ? { lessonId: { in: (await prisma.lesson.findMany({ where: { module: { trackId: opts.trackId } }, select: { id: true } })).map((l) => l.id) } }
         : {}),
@@ -245,6 +247,13 @@ export interface VideoSummary {
   jobs: Record<JobStatus, number>;
   /** What generating every included lesson still missing a current video would cost. */
   estimate: { lessons: number; videos: number; chars: number; minutes: number; ttsUsd: number; aiUsd: number; totalUsd: number };
+  /** Whether the queue is moving: when a video was last started or finished, jobs stuck from a dead run, the latest error. */
+  activity: {
+    lastStartedAt: string | null;
+    lastFinishedAt: string | null;
+    stuck: number;
+    lastError: { lessonTitle: string; locale: string; error: string; at: string } | null;
+  };
   perTrack: Array<{ trackId: string; title: string; lessons: number; include: number; done: number; queued: number; failed: number; needsTts: number; estVideos: number; estUsd: number }>;
 }
 
@@ -256,7 +265,9 @@ export async function videoSummary(): Promise<VideoSummary> {
       select: { id: true, title: true, modules: { select: { lessons: { select: { id: true, title: true, objective: true, bodyMd: true, videoUrl: true } } } } },
     }),
     prisma.lessonVideoPlan.findMany({ select: { lessonId: true, decision: true, override: true, estChars: true, scriptHash: true, script: true, contentHash: true } }),
-    prisma.lessonVideoJob.findMany({ select: { lessonId: true, locale: true, status: true, contentHash: true } }),
+    prisma.lessonVideoJob.findMany({
+      select: { lessonId: true, locale: true, status: true, contentHash: true, error: true, startedAt: true, finishedAt: true, leaseUntil: true, updatedAt: true },
+    }),
   ]);
   const plan = new Map(plans.map((p) => [p.lessonId, p]));
   const jobsBy = new Map<string, typeof jobs>();
@@ -316,9 +327,24 @@ export async function videoSummary(): Promise<VideoSummary> {
   }
   const ttsUsd = (est.chars / 1e6) * status.pricePerMChar;
   const aiUsd = aiLessons * AI_COST_PER_LESSON;
+  const now = Date.now();
+  const latest = (d: Array<Date | null>) => d.reduce<Date | null>((a, x) => (x && (!a || x > a) ? x : a), null)?.toISOString() ?? null;
+  const errored = jobs
+    .filter((j) => j.error && (j.status === "queued" || j.status === "failed"))
+    .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())[0];
+  const titles = new Map(tracks.flatMap((t) => t.modules.flatMap((m) => m.lessons.map((l) => [l.id, l.title] as const))));
+  const activity: VideoSummary["activity"] = {
+    lastStartedAt: latest(jobs.map((j) => j.startedAt)),
+    lastFinishedAt: latest(jobs.map((j) => (j.status === "done" ? j.finishedAt : null))),
+    stuck: jobs.filter((j) => j.status === "running" && (!j.leaseUntil || j.leaseUntil.getTime() < now)).length,
+    lastError: errored
+      ? { lessonTitle: titles.get(errored.lessonId) ?? errored.lessonId, locale: errored.locale, error: (errored.error ?? "").slice(0, 300), at: errored.updatedAt.toISOString() }
+      : null,
+  };
   return {
     provider: status,
     storage: await storageMode(),
+    activity,
     lessons,
     planned,
     include,

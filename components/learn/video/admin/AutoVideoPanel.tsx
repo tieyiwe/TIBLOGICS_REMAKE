@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AudioLines, CircleStop, ListChecks, Play, RefreshCw } from "lucide-react";
+import { AudioLines, CircleStop, ListChecks, Play, RefreshCw, Zap } from "lucide-react";
 import { Button, Card, Notice, StatCard, tableStyles, useConfirm, useToast } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import type { VideoSummary } from "@/lib/learn/video/queue";
@@ -13,6 +13,13 @@ import type { VideoSummary } from "@/lib/learn/video/queue";
 // are queued or running.
 
 const usd = (n: number) => `$${n.toFixed(2)}`;
+const ago = (iso: string | null) => {
+  if (!iso) return "never";
+  const m = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
+  return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 2880 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} days ago`;
+};
+// A queue with work that has not started anything for this long is not being run.
+const STALLED_MIN = 30;
 
 export default function AutoVideoPanel() {
   const router = useRouter();
@@ -95,6 +102,25 @@ export default function AutoVideoPanel() {
     await post(trackId ? `gen:${trackId}` : "gen", { action: "generate", trackId }, (d) => `${d.queued ?? 0} video jobs queued.`);
   }
 
+  async function runNow() {
+    setBusy("run");
+    try {
+      const r = await fetch("/api/admin/learn/video/auto", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "run" }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error ?? "Something went wrong");
+      if (d.done) toast.success("One video made. Preview it on its lesson row below.");
+      else if (d.needsTts) toast.error("No voice key is set: the videos wait as \u201cneeds voice key\u201d.");
+      else if (d.error) toast.error(`The video failed: ${d.error}`);
+      else toast.success("Nothing started: no video is queued, or one is already being made.");
+      await load();
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function cancel(trackId?: string, title?: string) {
     const ok = await confirm({
       title: trackId ? `Cancel the queued videos for ${title}?` : "Cancel every queued video?",
@@ -110,6 +136,10 @@ export default function AutoVideoPanel() {
   if (!s) return <Card title="Narrated videos (AI voice)"><p className="font-dm text-[13px] text-[var(--a-ink-3)]">Loading…</p></Card>;
 
   const e = s.estimate;
+  const waiting = s.jobs.queued + s.jobs.needs_tts;
+  const cancellable = waiting + s.activity.stuck;
+  const lastMove = [s.activity.lastStartedAt, s.activity.lastFinishedAt].filter(Boolean).sort().pop() ?? null;
+  const stalled = s.jobs.queued > 0 && (!lastMove || Date.now() - new Date(lastMove).getTime() > STALLED_MIN * 60_000);
   return (
     <Card
       title="Narrated videos (AI voice)"
@@ -120,9 +150,14 @@ export default function AutoVideoPanel() {
           <Button size="sm" icon={ListChecks} loading={busy === "plan"} onClick={() => post("plan", { action: "plan" }, (d) => `Planned ${d.planned ?? 0} lessons: ${d.yes ?? 0} with a video, ${d.no ?? 0} without${d.pending ? `, ${d.pending} provisional` : ""}.`)} data-testid="video-plan-all">
             Plan videos for all tracks
           </Button>
-          {s.jobs.queued + s.jobs.needs_tts > 0 && (
+          {s.jobs.queued > 0 && (
+            <Button size="sm" icon={Zap} loading={busy === "run"} disabled={!!busy} onClick={runNow} data-testid="video-run-now">
+              Make next video now
+            </Button>
+          )}
+          {cancellable > 0 && (
             <Button size="sm" variant="danger" icon={CircleStop} loading={busy === "cancel"} onClick={() => cancel()} data-testid="video-cancel-all">
-              Cancel queued ({s.jobs.queued + s.jobs.needs_tts})
+              Cancel queued ({cancellable})
             </Button>
           )}
           <Button size="sm" variant="primary" icon={Play} loading={busy === "gen"} onClick={() => generate()} disabled={!e.videos} data-testid="video-generate-all">
@@ -144,10 +179,28 @@ export default function AutoVideoPanel() {
           </Notice>
         )}
 
+        {stalled && (
+          <div data-testid="video-stalled"><Notice tone="warn" title="Queued videos are not being made">
+            {s.jobs.queued} videos are queued, and no video has started {lastMove ? `since ${ago(lastMove)}` : "yet"}. Videos are made by the
+            &ldquo;videos&rdquo; scheduled job (<code>npm run cron videos</code>, every 15 minutes), 2 at a time. Schedule it in Replit, or press
+            &ldquo;Make next video now&rdquo; to make one at a time from here.
+          </Notice></div>
+        )}
+        {s.activity.lastError && (
+          <div data-testid="video-last-error"><Notice tone="danger" title="Last error">
+            {s.activity.lastError.lessonTitle} ({s.activity.lastError.locale.toUpperCase()}), {ago(s.activity.lastError.at)}: {s.activity.lastError.error}
+          </Notice></div>
+        )}
+
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard label="Lessons a video helps" value={s.include} hint={`${s.planned} of ${s.lessons} lessons planned · ${s.exclude} better read · ${s.ownVideo} have your own video`} />
           <StatCard label="Videos made" value={s.jobs.done} tone="success" hint="Each lesson has an English and a French video" />
-          <StatCard label="In progress" value={active} tone={active ? "orange" : "default"} hint={`${s.jobs.queued} queued · ${s.jobs.running} running`} />
+          <StatCard
+            label="In progress"
+            value={active}
+            tone={active ? "orange" : "default"}
+            hint={`${s.jobs.queued} queued · ${s.jobs.running} running${s.activity.stuck ? ` (${s.activity.stuck} stuck)` : ""} · last started ${ago(s.activity.lastStartedAt)}`}
+          />
           <StatCard
             label="Need attention"
             value={s.jobs.failed + s.jobs.needs_tts}
@@ -167,6 +220,9 @@ export default function AutoVideoPanel() {
             <>Every planned lesson has a current video.</>
           )}
         </p>
+        {process.env.NEXT_PUBLIC_BUILD_SHA ? (
+          <p className="font-dm text-[11px] text-[var(--a-ink-3)]" data-testid="build-version">Live version: {process.env.NEXT_PUBLIC_BUILD_SHA}</p>
+        ) : null}
 
         <div className="overflow-x-auto">
           <table className={cn(tableStyles.table, "min-w-[560px]")}>

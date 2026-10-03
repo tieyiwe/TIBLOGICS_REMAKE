@@ -31,7 +31,19 @@ const DEFAULT_HTML_LIMITED_BOTS =
 const AI_CRAWLERS =
   "GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|Claude-User|Claude-SearchBot|anthropic-ai|PerplexityBot|Perplexity-User|CCBot|Meta-ExternalAgent|Meta-ExternalFetcher|Amazonbot|DuckAssistBot|MistralAI-User|Bytespider|cohere-ai|YouBot|Diffbot|PetalBot|Applebot-Extended";
 
+// The commit this build was made from, shown in the admin so the owner can
+// see which version is live (empty when git is not available).
+let BUILD_SHA = process.env.BUILD_SHA || "";
+if (!BUILD_SHA) {
+  try {
+    BUILD_SHA = require("child_process").execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+  } catch {
+    /* not a git checkout */
+  }
+}
+
 const nextConfig = {
+  env: { NEXT_PUBLIC_BUILD_SHA: BUILD_SHA },
   htmlLimitedBots: new RegExp(`${DEFAULT_HTML_LIMITED_BOTS}|${AI_CRAWLERS}`, "i"),
   allowedDevOrigins: [process.env.REPLIT_DEV_DOMAIN].filter(Boolean),
   compress: true,
