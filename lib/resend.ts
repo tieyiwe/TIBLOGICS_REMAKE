@@ -78,7 +78,7 @@ export async function sendTiweNotification(appointment: {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   }).format(new Date(appointment.date));
 
-  const adminEmail = process.env.TIWE_EMAIL || process.env.DESIGN_EMAIL || process.env.TITAN_SMTP_USER || "info@tiblogics.com";
+  const adminEmail = process.env.ADMIN_NOTIFY_EMAIL || process.env.TIWE_EMAIL || process.env.DESIGN_EMAIL || process.env.TITAN_SMTP_USER || "info@tiblogics.com";
 
 
   const isPaid = appointment.totalAmount > 0;
@@ -128,7 +128,7 @@ export async function sendProspectEmail(prospect: {
   mainChallenge: string;
   suggestedSolutions: string[];
 }) {
-  const adminEmail = process.env.TIWE_EMAIL || process.env.TITAN_SMTP_USER || "info@tiblogics.com";
+  const adminEmail = process.env.ADMIN_NOTIFY_EMAIL || process.env.TIWE_EMAIL || process.env.TITAN_SMTP_USER || "info@tiblogics.com";
 
 
   await getTransport().sendMail({
@@ -879,7 +879,7 @@ export async function sendAdminOrderAlert(order: {
   currency?: string;
   itemCount: number;
 }) {
-  const adminEmail = process.env.TIWE_EMAIL || process.env.TITAN_SMTP_USER || "info@tiblogics.com";
+  const adminEmail = process.env.ADMIN_NOTIFY_EMAIL || process.env.TIWE_EMAIL || process.env.TITAN_SMTP_USER || "info@tiblogics.com";
   const html = `
   <div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;padding:24px;">
     <h2 style="color:#131A1B;font-size:18px;margin:0 0 12px;">🛒 New shop order — payment confirmed</h2>

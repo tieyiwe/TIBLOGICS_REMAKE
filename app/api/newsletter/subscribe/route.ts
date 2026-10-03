@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 import { isValidEmail, checkRateLimit, escapeHtml } from "@/lib/require-admin";
 import resend from "@/lib/resend";
 
-const ADMIN_EMAIL = process.env.TIWE_EMAIL || process.env.TITAN_SMTP_USER || "info@tiblogics.com";
+const ADMIN_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || process.env.TIWE_EMAIL || process.env.TITAN_SMTP_USER || "info@tiblogics.com";
 const SITE_URL = (process.env.NEXTAUTH_URL || "https://tiblogics.com").replace(/\/$/, "");
 
 async function notifyAdmin(rawEmail: string, rawFirst: string | null, rawSource: string) {
