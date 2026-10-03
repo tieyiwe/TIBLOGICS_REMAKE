@@ -11,6 +11,7 @@ import { LEAD_SEC, TAIL_SEC } from "./timing";
 //   VIDEO_KEN_BURNS=1     slow zoom on each slide (more CPU)
 //   VIDEO_FFMPEG_THREADS  encoder threads (default 2)
 //   VIDEO_FPS             default 25
+//   VIDEO_AUDIO_WARMTH=0  turn off the voice polish (bass lift, gentle compression, even loudness)
 
 let resolved: string | null = null;
 
@@ -113,6 +114,34 @@ export async function sceneAudio(chunks: string[], out: string): Promise<{ speec
 }
 
 /**
+ * Voice polish for the narration: removes rumble, adds a little body to the
+ * low end (a warmer, deeper voice), evens out loud and soft words and sets
+ * a steady loudness (-16 LUFS, the usual level for spoken video). Does not
+ * change the length, so slides and captions stay in step.
+ */
+export function voiceFilter(): string | null {
+  if (process.env.VIDEO_AUDIO_WARMTH === "0") return null;
+  return [
+    "highpass=f=70",
+    "bass=g=3:f=120:w=0.8",
+    "equalizer=f=3200:t=q:w=1.2:g=1.5",
+    "acompressor=threshold=-21dB:ratio=2:attack=10:release=150:makeup=1.5",
+    "loudnorm=I=-16:TP=-1.5:LRA=11",
+  ].join(",");
+}
+
+/** The same polish on a voice sample (MP3 in, MP3 out), so the admin hears what videos will sound like. */
+export async function polishSample(mp3: Buffer, tmp: string): Promise<Buffer> {
+  const f = voiceFilter();
+  if (!f) return mp3;
+  const src = path.join(tmp, "sample-in.mp3");
+  const out = path.join(tmp, "sample-out.mp3");
+  await writeFile(src, mp3);
+  await runFfmpeg(["-y", "-i", src, "-af", f, "-ar", "24000", "-ac", "1", "-c:a", "libmp3lame", "-b:a", "96k", out], 60_000);
+  return readFile(out);
+}
+
+/**
  * The video: each slide held for its scene's audio, a short crossfade from
  * the previous slide at the start of each scene, AAC audio, H.264 1080p with
  * fast start.
@@ -177,6 +206,7 @@ export async function composeVideo(opts: { slides: string[]; audio: string[]; sc
     [
       "-y", "-f", "concat", "-safe", "0", "-i", videoList, "-f", "concat", "-safe", "0", "-i", audioList,
       "-map", "0:v", "-map", "1:a", "-c:v", "copy",
+      ...(voiceFilter() ? ["-af", voiceFilter() as string] : []),
       "-c:a", "aac", "-b:a", "96k", "-ac", "1", "-ar", "48000",
       "-t", total.toFixed(3), "-movflags", "+faststart",
       out,

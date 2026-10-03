@@ -102,6 +102,7 @@ export default function LessonMedia({
             accentColor={accentColor}
             sources={video.sources}
             voiceLang={video.voiceLang}
+            noSkip
           />
           {video.voiceLang && (
             <p className="mt-2 text-xs text-[var(--ink3)]" data-testid="video-ai-voice">

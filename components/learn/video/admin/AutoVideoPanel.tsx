@@ -6,6 +6,7 @@ import { AudioLines, CircleStop, ListChecks, Play, RefreshCw, Rocket, Zap } from
 import { Button, Card, Notice, StatCard, tableStyles, useConfirm, useToast } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import type { VideoSummary } from "@/lib/learn/video/queue";
+import VoicePicker from "./VoicePicker";
 
 // The narrated-video pipeline on /admin_pro/learn/videos: which voice and
 // storage are in use, how far generation has got, what the rest would cost,
@@ -130,6 +131,30 @@ export default function AutoVideoPanel() {
     }
   }
 
+  async function revoice() {
+    if (!s) return;
+    const ok = await confirm({
+      title: `Re-make ${s.oldVoice.videos} videos with the new voice?`,
+      body: `They keep their scripts and slides; only the voice is made again. Estimated cost about ${usd(s.oldVoice.usd)}. The current videos stay on the lessons until each new one is ready.`,
+      confirmLabel: "Re-make videos",
+      danger: false,
+    });
+    if (!ok) return;
+    setBusy("revoice");
+    try {
+      const r = await fetch("/api/admin/learn/video/voice", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "revoice" }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error ?? "Something went wrong");
+      toast.success(`${d.queued ?? 0} videos queued with the new voice.`);
+      await load();
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function cancel(trackId?: string, title?: string) {
     const ok = await confirm({
       title: trackId ? `Cancel the queued videos for ${title}?` : "Cancel every queued video?",
@@ -202,6 +227,22 @@ export default function AutoVideoPanel() {
           </Notice>
         )}
 
+        {s.provider.provider === "google" && <VoicePicker onSaved={() => void load()} />}
+        {s.oldVoice.videos > 0 && (
+          <div data-testid="video-old-voice">
+            <Notice
+              tone="info"
+              title={`${s.oldVoice.videos} videos use an earlier voice`}
+              action={
+                <Button size="sm" variant="primary" loading={busy === "revoice"} onClick={revoice} data-testid="video-revoice">
+                  Re-make with the new voice
+                </Button>
+              }
+            >
+              Made before the voice changed. Re-making them reuses their scripts, so only the voice is paid for (about {usd(s.oldVoice.usd)}).
+            </Notice>
+          </div>
+        )}
         {stalled && (
           <div data-testid="video-stalled"><Notice tone="warn" title="Queued videos are not being made">
             {s.jobs.queued} videos are queued, and no video has started {lastMove ? `since ${ago(lastMove)}` : "yet"}. Videos are made by the

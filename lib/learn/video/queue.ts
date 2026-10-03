@@ -4,7 +4,8 @@ import { ensureVideoTables } from "./db";
 import { NeedsTts, SkipJob, generateLessonVideo, isGeneratedUrl } from "./pipeline";
 import { contentHash, effectiveDecision, planLessons } from "./select";
 import { storageMode } from "./storage";
-import { ttsProvider, ttsStatus, type TtsLocale } from "./tts";
+import { loadVoiceSettings, ttsProvider, ttsStatus, type TtsLocale } from "./tts";
+import { readVariants } from "./variants";
 
 // The narrated-video job queue: one LessonVideoJob per lesson and language.
 // The cron job ("videos", every 15 minutes) claims jobs one at a time with a
@@ -124,6 +125,7 @@ export async function runVideoQueue(opts: { max?: number; deadline?: number } = 
   localBusy = true;
   try {
     await ensureVideoTables();
+    await loadVoiceSettings();
     const max = opts.max ?? (Number(process.env.VIDEO_MAX_PER_RUN) || 2);
     if (!ttsProvider()) {
       // Nothing can be made: say so on the queued jobs instead of failing them.
@@ -231,6 +233,37 @@ export async function requeueChanged(): Promise<number> {
   return n;
 }
 
+/** Published AI videos made with another voice than the one now chosen, per language. */
+export async function oldVoiceVideos(): Promise<Array<{ lessonId: string; locale: TtsLocale; chars: number }>> {
+  await ensureVideoTables();
+  await loadVoiceSettings();
+  const p = ttsProvider();
+  if (!p) return [];
+  const [metas, jobs] = await Promise.all([
+    prisma.lessonVideoMeta.findMany({ select: { lessonId: true, variants: true } }),
+    prisma.lessonVideoJob.findMany({ select: { lessonId: true, locale: true, status: true, chars: true } }),
+  ]);
+  const out: Array<{ lessonId: string; locale: TtsLocale; chars: number }> = [];
+  for (const m of metas) {
+    const v = readVariants(m.variants);
+    for (const loc of LOCALES) {
+      const variant = v[loc];
+      if (!variant || variant.voice === p.voice(loc)) continue;
+      const j = jobs.find((x) => x.lessonId === m.lessonId && x.locale === loc);
+      if (j && (j.status === "queued" || j.status === "running")) continue;
+      out.push({ lessonId: m.lessonId, locale: loc, chars: j?.chars || 3000 });
+    }
+  }
+  return out;
+}
+
+/** Queues those videos again with the chosen voice (the scripts are reused, so only the voice is paid for). */
+export async function queueRevoice(): Promise<number> {
+  let n = 0;
+  for (const r of await oldVoiceVideos()) n += await queueVideos([r.lessonId], { locales: [r.locale] });
+  return n;
+}
+
 // ── Summary and cost estimate (admin) ───────────────────────────────────────
 
 /** Claude cost per lesson for the scene script (Sonnet) and its French translation, USD. */
@@ -247,6 +280,8 @@ export interface VideoSummary {
   jobs: Record<JobStatus, number>;
   /** What generating every included lesson still missing a current video would cost. */
   estimate: { lessons: number; videos: number; chars: number; minutes: number; ttsUsd: number; aiUsd: number; totalUsd: number };
+  /** Videos made with another voice than the one now chosen, and what re-making them would cost (voice only). */
+  oldVoice: { videos: number; usd: number };
   /** Whether the queue is moving: when a video was last started or finished, jobs stuck from a dead run, the latest error. */
   activity: {
     lastStartedAt: string | null;
@@ -259,6 +294,7 @@ export interface VideoSummary {
 
 export async function videoSummary(): Promise<VideoSummary> {
   await ensureVideoTables();
+  await loadVoiceSettings();
   const [tracks, plans, jobs] = await Promise.all([
     prisma.learnTrack.findMany({
       orderBy: { sortOrder: "asc" },
@@ -341,10 +377,13 @@ export async function videoSummary(): Promise<VideoSummary> {
       ? { lessonTitle: titles.get(errored.lessonId) ?? errored.lessonId, locale: errored.locale, error: (errored.error ?? "").slice(0, 300), at: errored.updatedAt.toISOString() }
       : null,
   };
+  const old = await oldVoiceVideos().catch(() => []);
+  const oldVoice = { videos: old.length, usd: round2((old.reduce((t, r) => t + r.chars, 0) / 1e6) * status.pricePerMChar) };
   return {
     provider: status,
     storage: await storageMode(),
     activity,
+    oldVoice,
     lessons,
     planned,
     include,

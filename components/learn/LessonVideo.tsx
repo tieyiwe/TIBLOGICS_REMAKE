@@ -7,5 +7,5 @@ import VideoPlayer from "./video/VideoPlayer";
 // and playback in components/learn/video/VideoPlayer.tsx. This is the plain
 // form, without chapters, captions or saved progress.
 export default function LessonVideo({ url, title }: { url: string; title: string }) {
-  return <VideoPlayer url={url} title={title} />;
+  return <VideoPlayer url={url} title={title} noSkip />;
 }

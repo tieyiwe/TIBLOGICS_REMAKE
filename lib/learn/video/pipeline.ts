@@ -10,7 +10,7 @@ import { contentHash } from "./select";
 import { renderSlide } from "./slides";
 import { deleteAsset, storeVideoFile } from "./storage";
 import { buildVtt, sceneChapters, timingsFrom } from "./timing";
-import { ttsProvider, type TtsLocale } from "./tts";
+import { loadVoiceSettings, ttsProvider, type TtsLocale } from "./tts";
 import type { Captions } from "./shared";
 import { ASSET_PREFIX, isGeneratedUrl, readVariants, type Variant } from "./variants";
 
@@ -109,6 +109,7 @@ export async function generateLessonVideo(lessonId: string, locale: TtsLocale): 
   const lesson = await loadLesson(lessonId);
   if (!lesson) throw new SkipJob("The lesson no longer exists.");
   if (lesson.videoUrl && !isGeneratedUrl(lesson.videoUrl)) throw new SkipJob("The lesson has its own video; a generated one is not added.");
+  await loadVoiceSettings();
   const tts = ttsProvider();
   if (!tts) throw new NeedsTts();
 

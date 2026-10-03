@@ -45,8 +45,12 @@ export const LIMITS = {
   vtt: 200_000,
 };
 
-/** Watched once this share of the video has been seen (by coverage, not position). */
-export const WATCHED_SHARE = 0.8;
+/**
+ * Watched once this share of the video has been seen (by coverage, not
+ * position): in practice, played to the end. Learners cannot skip ahead of
+ * what they have seen until then (VideoPlayer noSkip).
+ */
+export const WATCHED_SHARE = 0.95;
 /** Coverage is kept as this many buckets ("0"/"1"), each a slice of the video. */
 export const COVERAGE_BUCKETS = 100;
 

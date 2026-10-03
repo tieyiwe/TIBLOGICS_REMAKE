@@ -60,6 +60,11 @@ export interface VideoPlayerProps {
   sources?: Array<{ src: string; type: string }>;
   /** Language of the voice-over (generated videos); captions in it are not switched on by default. */
   voiceLang?: CaptionLang;
+  /**
+   * Learners: no skipping ahead of what they have already seen until the
+   * video has been watched to the end (rewinding is always allowed).
+   */
+  noSkip?: boolean;
 }
 
 export default function VideoPlayer({
@@ -75,6 +80,7 @@ export default function VideoPlayer({
   onWatched,
   sources,
   voiceLang = "en",
+  noSkip = false,
 }: VideoPlayerProps) {
   const t = useT();
   const locale = useLocale();
@@ -154,6 +160,22 @@ export default function VideoPlayer({
 
   // ── Engine ────────────────────────────────────────────────────────────────
   const startAt = resumeAt > 5 ? resumeAt : 0;
+  // ── No skipping ahead (learners) ──────────────────────────────────────────
+  const furthest = useRef(startAt);
+  // The furthest point reached by playing (`furthest`): the resume point to
+  // start with, then wherever normal playback gets to. Seeking past it is
+  // pulled back until the video has been watched to the end.
+  const locked = noSkip && !progress.watched && !watchedInitial;
+  const lockedRef = useRef(locked);
+  useEffect(() => {
+    lockedRef.current = locked;
+  }, [locked]);
+  const lastNotice = useRef(0);
+  const noSkipNotice = useCallback(() => {
+    if (Date.now() - lastNotice.current < 2500) return;
+    lastNotice.current = Date.now();
+    setToast({ text: t("video.noSkip") });
+  }, [t]);
   const onEmbed = useCallback(
     (s: EmbedState) => {
       if (s.duration !== undefined) setDuration(s.duration);
@@ -163,14 +185,25 @@ export default function VideoPlayer({
         if (!s.paused) setStarted(true);
       }
       if (s.time !== undefined) {
+        // Embedded players: a jump past what was seen is sent back while locked.
+        if (lockedRef.current && s.time > furthest.current + 3) {
+          bridgeRef.current?.command("seek", furthest.current);
+          noSkipNotice();
+          return;
+        }
+        if (s.time > furthest.current && s.time - furthest.current <= 3) furthest.current = s.time;
         setTime(s.time);
         progress.tick(s.time, s.duration ?? null, s.paused === false);
       }
       if (s.ended) progress.flush();
     },
-    [progress],
+    [progress, noSkipNotice],
   );
   const bridge = useEmbedBridge(embedKind, iframe, onEmbed);
+  const bridgeRef = useRef(bridge);
+  useEffect(() => {
+    bridgeRef.current = bridge;
+  }, [bridge]);
   // The iframe src is fixed on first render (start time included), so a
   // re-render never reloads the embed.
   const [iframeSrc] = useState(() => (embedKind && source ? embedSrc(embedKind, source.src, startAt) : ""));
@@ -187,13 +220,17 @@ export default function VideoPlayer({
   const seek = useCallback(
     (to: number) => {
       const max = duration || Number.MAX_SAFE_INTEGER;
-      const v = Math.max(0, Math.min(to, max - 0.25));
+      let v = Math.max(0, Math.min(to, max - 0.25));
+      if (lockedRef.current && v > furthest.current + 0.5) {
+        v = furthest.current;
+        noSkipNotice();
+      }
       if (native && video.current) video.current.currentTime = v;
       else bridge.command("seek", v);
       setTime(v);
       progress.seeked(v);
     },
-    [duration, native, bridge, progress],
+    [duration, native, bridge, progress, noSkipNotice],
   );
   const setRate = useCallback(
     (r: number) => {
@@ -400,8 +437,19 @@ export default function VideoPlayer({
             onDurationChange={(e) => setDuration(finite(e.currentTarget.duration))}
             onTimeUpdate={(e) => {
               const v = e.currentTarget;
+              // Normal playback moves forward a little at a time (up to 3 s between
+              // updates, as useVideoProgress counts it); a bigger jump is a seek.
+              if (!v.seeking && v.currentTime > furthest.current && v.currentTime - furthest.current <= 3) furthest.current = v.currentTime;
               setTime(v.currentTime);
               progress.tick(v.currentTime, finite(v.duration) || null, !v.paused);
+            }}
+            onSeeking={(e) => {
+              // Any other way of jumping ahead (browser menus, media keys): pulled back.
+              const v = e.currentTarget;
+              if (lockedRef.current && v.currentTime > furthest.current + 1) {
+                v.currentTime = furthest.current;
+                noSkipNotice();
+              }
             }}
             onSeeked={(e) => setTime(e.currentTarget.currentTime)}
             onPlay={() => {
