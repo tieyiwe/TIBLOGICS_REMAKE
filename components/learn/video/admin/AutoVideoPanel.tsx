@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AudioLines, CircleStop, ListChecks, Play, RefreshCw, Zap } from "lucide-react";
 import { Button, Card, Notice, StatCard, tableStyles, useConfirm, useToast } from "@/components/admin/ui";
@@ -29,15 +29,17 @@ export default function AutoVideoPanel() {
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (): Promise<VideoSummary | null> => {
     try {
       const r = await fetch("/api/admin/learn/video/auto", { cache: "no-store" });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error ?? "Could not load");
       setS(d);
       setErr(null);
+      return d;
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Could not load");
+      return null;
     }
   }, []);
 
@@ -46,11 +48,18 @@ export default function AutoVideoPanel() {
   }, [load]);
 
   const active = (s?.jobs.queued ?? 0) + (s?.jobs.running ?? 0);
+  // While videos are being made, poll the small status (a few KB) and
+  // re-render the lesson table (about 1 MB for every lesson) only when a
+  // video starts, finishes or fails, not every 15 seconds.
+  const lastSig = useRef("");
   useEffect(() => {
     if (!active) return;
-    const id = window.setInterval(() => {
-      void load();
-      router.refresh();
+    const id = window.setInterval(async () => {
+      const d = await load();
+      if (!d) return;
+      const sig = [d.jobs.running, d.jobs.done, d.jobs.failed, d.jobs.needs_tts, d.jobs.skipped].join("|");
+      if (lastSig.current && sig !== lastSig.current) router.refresh();
+      lastSig.current = sig;
     }, 15_000);
     return () => window.clearInterval(id);
   }, [active, load, router]);
