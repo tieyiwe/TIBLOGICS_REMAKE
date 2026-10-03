@@ -1,5 +1,6 @@
 import { spawn } from "child_process";
 import { existsSync } from "fs";
+import os from "os";
 import { readFile, writeFile } from "fs/promises";
 import path from "path";
 import { LEAD_SEC, TAIL_SEC } from "./timing";
@@ -8,7 +9,7 @@ import { LEAD_SEC, TAIL_SEC } from "./timing";
 // FFMPEG_PATH). Every run has a timeout and is killed when it passes.
 //
 //   VIDEO_KEN_BURNS=1     slow zoom on each slide (more CPU)
-//   VIDEO_FFMPEG_THREADS  limit encoder threads (default: ffmpeg decides)
+//   VIDEO_FFMPEG_THREADS  encoder threads (default 2)
 //   VIDEO_FPS             default 25
 
 let resolved: string | null = null;
@@ -30,6 +31,14 @@ export async function runFfmpeg(args: string[], timeoutMs: number): Promise<stri
   const bin = ffmpegPath();
   return new Promise((resolve, reject) => {
     const child = spawn(/*turbopackIgnore: true*/ bin, ["-hide_banner", "-nostdin", "-loglevel", "error", ...args], { stdio: ["ignore", "ignore", "pipe"] });
+    // Lowest CPU priority: on a shared server the website is served first.
+    if (child.pid) {
+      try {
+        os.setPriority(child.pid, 19);
+      } catch {
+        /* not permitted here: runs at normal priority */
+      }
+    }
     let err = "";
     child.stderr.on("data", (d) => {
       if (err.length < 20_000) err += String(d);
@@ -104,58 +113,76 @@ export async function sceneAudio(chunks: string[], out: string): Promise<{ speec
 }
 
 /**
- * The video: each slide held for its scene's audio, short fades between
- * slides (the fade overlaps the next scene's lead-in, so narration and
- * slides stay in step), AAC audio, H.264 1080p with fast start.
+ * The video: each slide held for its scene's audio, a short crossfade from
+ * the previous slide at the start of each scene, AAC audio, H.264 1080p with
+ * fast start.
+ *
+ * Made one scene at a time and then joined without re-encoding: a single
+ * filter graph over every slide made ffmpeg buffer frames for all of them
+ * (about 2.4 GB for a 3-minute lesson), which ran a small server out of
+ * memory and took the website down with it. A scene clip needs about 200 MB.
+ * Each clip's length comes from the running total, rounded to whole frames,
+ * so the slides never drift from the narration.
  */
 export async function composeVideo(opts: { slides: string[]; audio: string[]; sceneSeconds: number[]; out: string; tmp: string }): Promise<void> {
-  const { slides, audio, sceneSeconds, out } = opts;
-  const n = slides.length;
+  const { slides, audio, sceneSeconds, out, tmp } = opts;
   const fps = Number(process.env.VIDEO_FPS) || 25;
   const fade = 0.5;
   const kenBurns = process.env.VIDEO_KEN_BURNS === "1";
-  const args: string[] = ["-y"];
-  slides.forEach((s, i) => {
-    const len = sceneSeconds[i] + (i < n - 1 ? fade : 0);
-    args.push("-loop", "1", "-framerate", String(fps), "-t", len.toFixed(3), "-i", s);
-  });
-  // The narration as one track (scene WAVs concatenated) from a list file.
-  const list = path.join(opts.tmp, "audio.txt");
-  await writeFile(list, audio.map((a) => `file '${a.replace(/'/g, "'\\''")}'`).join("\n"));
-  args.push("-f", "concat", "-safe", "0", "-i", list);
-
-  const filters: string[] = [];
-  slides.forEach((_, i) => {
-    const frames = Math.ceil((sceneSeconds[i] + fade) * fps);
-    const zoom = kenBurns ? `,scale=2880:-1,zoompan=z='min(zoom+0.00025,1.05)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1920x1080:fps=${fps}` : "";
-    filters.push(`[${i}:v]format=yuv420p,setsar=1${zoom},trim=end_frame=${frames}[v${i}]`);
-  });
-  let last = "v0";
-  let offset = 0;
-  for (let i = 1; i < n; i++) {
-    offset += sceneSeconds[i - 1];
-    const label = i === n - 1 ? "vout" : `x${i}`;
-    filters.push(`[${last}][v${i}]xfade=transition=fade:duration=${fade}:offset=${offset.toFixed(3)}[${label}]`);
-    last = label;
-  }
-  if (n === 1) filters.push(`[v0]null[vout]`);
-  const total = sceneSeconds.reduce((a, b) => a + b, 0);
-  const threads = process.env.VIDEO_FFMPEG_THREADS ? ["-threads", process.env.VIDEO_FFMPEG_THREADS] : [];
-  args.push(
-    "-filter_complex", filters.join(";"),
-    "-map", "[vout]", "-map", `${n}:a`,
+  const threads = ["-threads", process.env.VIDEO_FFMPEG_THREADS || "2", "-filter_threads", "1", "-filter_complex_threads", "1"];
+  const encode = [
     "-c:v", "libx264", "-preset", "veryfast", "-tune", "stillimage", "-crf", "24",
+    // No lookahead: the frames are stills, and it saves memory.
+    "-x264-params", "rc-lookahead=0:sync-lookahead=0",
     "-maxrate", "3M", "-bufsize", "6M", "-pix_fmt", "yuv420p", "-profile:v", "high", "-level", "4.1",
-    "-r", String(fps), "-g", String(fps * 10),
-    "-c:a", "aac", "-b:a", "96k", "-ac", "1", "-ar", "48000",
-    "-t", total.toFixed(3),
-    "-movflags", "+faststart",
-    ...threads,
-    out,
+    "-r", String(fps), "-g", String(fps * 10), "-an",
+  ];
+  // A still decoded once and repeated (tpad), not re-read for every frame.
+  const hold = (secs: number) => `format=yuv420p,setsar=1,tpad=stop_mode=clone:stop_duration=${secs.toFixed(3)},fps=${fps}`;
+  const zoomIn = kenBurns ? `,scale=2880:-1,zoompan=z='min(zoom+0.00025,1.05)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1920x1080:fps=${fps}` : "";
+  // The previous slide as it ended (fully zoomed) for the crossfade.
+  const zoomEnd = kenBurns ? ",scale=2016:-1,crop=1920:1080" : "";
+
+  const clips: string[] = [];
+  let cum = 0;
+  let prevFrame = 0;
+  for (let i = 0; i < slides.length; i++) {
+    cum += sceneSeconds[i];
+    const endFrame = Math.round(cum * fps);
+    const frames = Math.max(1, endFrame - prevFrame);
+    prevFrame = endFrame;
+    const secs = frames / fps;
+    const clip = path.join(tmp, `clip${i}.mp4`);
+    const args =
+      i === 0
+        ? ["-y", "-i", slides[0], "-filter_complex", `[0:v]${hold(secs + 1)}${zoomIn}[v]`]
+        : [
+            "-y", "-i", slides[i - 1], "-i", slides[i],
+            "-filter_complex",
+            `[0:v]${hold(fade + 1)}${zoomEnd}[a];[1:v]${hold(secs + 1)}${zoomIn}[b];[a][b]xfade=transition=fade:duration=${fade}:offset=0[v]`,
+          ];
+    args.push("-map", "[v]", "-frames:v", String(frames), ...encode, ...threads, clip);
+    await runFfmpeg(args, Math.min(30 * 60_000, Math.max(120_000, Math.round(secs * (kenBurns ? 8000 : 3000)))));
+    clips.push(clip);
+  }
+
+  // Join the clips as they are, with the narration (scene WAVs) as one track.
+  const list = (files: string[]) => files.map((f) => `file '${f.replace(/'/g, "'\\''")}'`).join("\n");
+  const videoList = path.join(tmp, "clips.txt");
+  const audioList = path.join(tmp, "audio.txt");
+  await writeFile(videoList, list(clips));
+  await writeFile(audioList, list(audio));
+  const total = sceneSeconds.reduce((a, b) => a + b, 0);
+  await runFfmpeg(
+    [
+      "-y", "-f", "concat", "-safe", "0", "-i", videoList, "-f", "concat", "-safe", "0", "-i", audioList,
+      "-map", "0:v", "-map", "1:a", "-c:v", "copy",
+      "-c:a", "aac", "-b:a", "96k", "-ac", "1", "-ar", "48000",
+      "-t", total.toFixed(3), "-movflags", "+faststart",
+      out,
+    ],
+    Math.min(30 * 60_000, Math.max(120_000, Math.round(total * 1000))),
   );
-  // Generous: stills encode far faster than real time, even on a small VM.
-  const timeout = Math.max(180_000, Math.round(total * (kenBurns ? 8000 : 3000)));
-  await runFfmpeg(args, Math.min(timeout, 30 * 60_000));
 }
 
 /** Optional WebM (VP9 + Opus) copy for browsers without H.264 (VIDEO_WEBM=1). */
