@@ -51,7 +51,15 @@ export async function lessonVideoFor(
   lesson: { id: string; videoUrl: string | null },
   locale: string = "en",
 ): Promise<LessonVideoData | null> {
-  if (!lesson.videoUrl) return null;
+  if (!lesson.videoUrl) {
+    // Only a French narrated video so far (the English one failed or is still
+    // to come): French learners get it; nobody else sees a video yet.
+    if (locale !== "fr") return null;
+    const meta = await getVideoMeta(lesson.id).catch(() => null);
+    const fr = meta?.variants.fr;
+    if (!fr) return null;
+    return lessonVideoFor(studentId, { id: lesson.id, videoUrl: fr.url }, locale);
+  }
   const meta = await getVideoMeta(lesson.id);
   const progress = await prisma.videoProgress
     .findUnique({ where: { studentId_lessonId: { studentId, lessonId: lesson.id } } })

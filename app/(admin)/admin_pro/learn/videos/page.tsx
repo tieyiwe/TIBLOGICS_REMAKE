@@ -8,7 +8,7 @@ import { requireAdminPage } from "../../_lib/admin-page-auth";
 import { videoTablesReady } from "@/lib/learn/video/db";
 import { CAPTION_LANGS, normaliseChapters, parseVideoUrl } from "@/lib/learn/video/shared";
 import { readCaptions } from "@/lib/learn/video/store";
-import { isGeneratedUrl } from "@/lib/learn/video/variants";
+import { isGeneratedUrl, readVariants } from "@/lib/learn/video/variants";
 import { contentHash } from "@/lib/learn/video/select";
 import AutoVideoPanel from "@/components/learn/video/admin/AutoVideoPanel";
 import ClientMessages from "@/components/i18n/ClientMessages";
@@ -23,10 +23,12 @@ export const dynamic = "force-dynamic";
 
 const KIND = { youtube: "YouTube", vimeo: "Vimeo", file: "File", hls: "HLS" } as const;
 
-export default async function LessonVideosPage({ searchParams }: { searchParams: Promise<{ track?: string; missing?: string }> }) {
+export default async function LessonVideosPage({ searchParams }: { searchParams: Promise<{ track?: string; missing?: string; made?: string }> }) {
   await requireAdminPage();
   const sp = await searchParams;
-  const onlyMissing = sp.missing === "1";
+  // Which lessons the table lists: all, those missing a video, or those with a finished AI video (to watch them).
+  const view: "all" | "missing" | "made" = sp.made === "1" ? "made" : sp.missing === "1" ? "missing" : "all";
+  const onlyMissing = view === "missing";
 
   const tracks = await prisma.learnTrack
     .findMany({
@@ -54,7 +56,7 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
   const ready = await videoTablesReady();
   const [metas, scripts, plans, jobs] = ready
     ? await Promise.all([
-        prisma.lessonVideoMeta.findMany({ select: { lessonId: true, chapters: true, captions: true } }).catch(() => []),
+        prisma.lessonVideoMeta.findMany({ select: { lessonId: true, chapters: true, captions: true, variants: true } }).catch(() => []),
         prisma.videoScript.groupBy({ by: ["lessonId"], _max: { version: true } }).catch(() => []),
         prisma.lessonVideoPlan.findMany({ select: { lessonId: true, decision: true, reason: true, override: true } }).catch(() => []),
         prisma.lessonVideoJob.findMany({ select: { lessonId: true, locale: true, status: true, error: true, durationSec: true, contentHash: true } }).catch(() => []),
@@ -66,14 +68,22 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
   const meta = new Map(metas.map((m) => [m.lessonId, { chapters: normaliseChapters(m.chapters).length, langs: Object.keys(readCaptions(m.captions)) }]));
   const scriptVersions = new Map(scripts.map((s) => [s.lessonId, s._max.version ?? 0]));
 
-  const selected = sp.track ? tracks.filter((t) => t.id === sp.track) : tracks;
+  // Lessons with an AI video learners can watch: what is published on the
+  // lesson (its English or French version), plus any job that just finished.
+  const madeIds = new Set([
+    ...metas.filter((m) => { const v = readVariants(m.variants); return !!(v.en || v.fr); }).map((m) => m.lessonId),
+    ...jobs.filter((j) => j.status === "done").map((j) => j.lessonId),
+  ]);
+  const shows = (l: { id: string; videoUrl: string | null }) => (view === "missing" ? !l.videoUrl : view === "made" ? madeIds.has(l.id) : true);
+  const selected = (sp.track ? tracks.filter((t) => t.id === sp.track) : tracks).filter((t) => t.modules.some((m) => m.lessons.some(shows)));
   const all = tracks.flatMap((t) => t.modules.flatMap((m) => m.lessons));
   const withVideo = all.filter((l) => l.videoUrl).length;
 
-  const qs = (p: { track?: string; missing?: boolean }) => {
+  const qs = (p: { track?: string; missing?: boolean; made?: boolean }) => {
     const q = new URLSearchParams();
     if (p.track) q.set("track", p.track);
     if (p.missing) q.set("missing", "1");
+    if (p.made) q.set("made", "1");
     const s = q.toString();
     return `/admin_pro/learn/videos${s ? `?${s}` : ""}`;
   };
@@ -107,7 +117,7 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
           return (
             <Link
               key={t.id}
-              href={qs({ track: active ? undefined : t.id, missing: onlyMissing })}
+              href={qs({ track: active ? undefined : t.id, missing: onlyMissing, made: view === "made" })}
               aria-current={active ? "true" : undefined}
               className={cn(
                 "rounded-[var(--a-radius-card)] border bg-[var(--a-surface)] p-4 shadow-[var(--a-shadow-card)] transition-colors duration-150",
@@ -129,11 +139,12 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
         })}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 font-dm">
+      <div id="lessons" className="flex scroll-mt-20 flex-wrap items-center gap-2 font-dm">
         <div className="inline-flex rounded-[var(--a-radius-control)] border border-[var(--a-border)] bg-[var(--a-surface-2)] p-0.5" role="group" aria-label="Filter lessons">
           {[
-            { on: !onlyMissing, href: qs({ track: sp.track, missing: false }), label: "All lessons" },
-            { on: onlyMissing, href: qs({ track: sp.track, missing: true }), label: "Missing a video" },
+            { on: view === "all", href: qs({ track: sp.track }), label: "All lessons" },
+            { on: view === "missing", href: qs({ track: sp.track, missing: true }), label: "Missing a video" },
+            { on: view === "made", href: qs({ track: sp.track, made: true }), label: `AI videos made (${madeIds.size})` },
           ].map((o) => (
             <Link
               key={o.label}
@@ -151,11 +162,17 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
           ))}
         </div>
         {sp.track && (
-          <Link href={qs({ missing: onlyMissing })} className="text-[13px] font-semibold text-[var(--a-blue)] hover:underline">
+          <Link href={qs({ missing: onlyMissing, made: view === "made" })} className="text-[13px] font-semibold text-[var(--a-blue)] hover:underline">
             Show every track
           </Link>
         )}
       </div>
+
+      {view === "made" && selected.length === 0 ? (
+        <Card>
+          <EmptyState icon={Clapperboard} title="No AI videos made yet" body="When a video is ready it appears here with a Preview button. Use Make next video now above, or Generate on a lesson." />
+        </Card>
+      ) : null}
 
       {selected.map((t) => (
         <Card key={t.id} title={t.title} padded={false}>
@@ -174,7 +191,7 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
               </thead>
               <tbody>
                 {t.modules.map((m) => {
-                  const rows = m.lessons.filter((l) => !onlyMissing || !l.videoUrl);
+                  const rows = m.lessons.filter(shows);
                   if (!rows.length) return null;
                   return [
                     <tr key={m.id}>
@@ -233,7 +250,7 @@ export default async function LessonVideosPage({ searchParams }: { searchParams:
                                   reason={p?.reason ?? ""}
                                   override={p?.override === "include" || p?.override === "exclude" ? p.override : null}
                                   ownVideo={!!l.videoUrl && !isGeneratedUrl(l.videoUrl)}
-                                  generated={isGeneratedUrl(l.videoUrl) || js.some((j) => j.status === "done")}
+                                  generated={isGeneratedUrl(l.videoUrl) || madeIds.has(l.id)}
                                   stale={js.some((j) => j.status === "done" && j.contentHash !== hash)}
                                   jobs={{ en: job("en"), fr: job("fr") }}
                                 />

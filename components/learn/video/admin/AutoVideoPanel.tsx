@@ -117,7 +117,7 @@ export default function AutoVideoPanel() {
       const r = await fetch("/api/admin/learn/video/auto", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "run" }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error ?? "Something went wrong");
-      if (d.done) toast.success("One video made. Preview it on its lesson row below.");
+      if (d.done) toast.success("One video made. Open \u201cAI videos made\u201d below to watch it.");
       else if (d.needsTts) toast.error("No voice key is set: the videos wait as \u201cneeds voice key\u201d.");
       else if (d.error) toast.error(`The video failed: ${d.error}`);
       else toast.success("Nothing started: no video is queued, or one is already being made.");
@@ -217,7 +217,13 @@ export default function AutoVideoPanel() {
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard label="Lessons a video helps" value={s.include} hint={`${s.planned} of ${s.lessons} lessons planned · ${s.exclude} better read · ${s.ownVideo} have your own video`} />
-          <StatCard label="Videos made" value={s.jobs.done} tone="success" hint="Each lesson has an English and a French video" />
+          <StatCard
+            label="Videos made"
+            value={s.jobs.done}
+            tone="success"
+            hint={s.jobs.done ? "Click to watch them (Preview on each lesson)" : "Each lesson has an English and a French video"}
+            href={s.jobs.done ? "/admin_pro/learn/videos?made=1#lessons" : undefined}
+          />
           <StatCard
             label="In progress"
             value={active}
@@ -264,7 +270,15 @@ export default function AutoVideoPanel() {
                   <td className={cn(tableStyles.td, "text-right tabular-nums")}>
                     {t.include} / {t.lessons}
                   </td>
-                  <td className={cn(tableStyles.td, "text-right tabular-nums")}>{t.done}</td>
+                  <td className={cn(tableStyles.td, "text-right tabular-nums")}>
+                    {t.done ? (
+                      <a href={`/admin_pro/learn/videos?track=${encodeURIComponent(t.trackId)}&made=1#lessons`} className="font-semibold text-[var(--a-blue)] underline-offset-2 hover:underline" title="Watch this track's videos">
+                        {t.done}
+                      </a>
+                    ) : (
+                      t.done
+                    )}
+                  </td>
                   <td className={cn(tableStyles.td, "text-right tabular-nums")}>{t.queued}</td>
                   <td className={cn(tableStyles.td, "text-right tabular-nums", t.failed ? "text-[var(--a-danger)]" : "")}>{t.failed}</td>
                   <td className={cn(tableStyles.td, "text-right")}>
