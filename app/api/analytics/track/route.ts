@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { anonymiseIp } from "@/lib/require-admin";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 function detectDevice(ua: string): string {
   if (/mobile|android|iphone|ipod|blackberry|windows phone/i.test(ua)) return "mobile";
@@ -53,9 +54,25 @@ function detectCountry(req: NextRequest): string | null {
 }
 
 export async function POST(req: NextRequest) {
+  // Public heartbeat; a generous cap so it cannot be used to flood the table.
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? req.headers.get("x-real-ip") ?? "unknown";
+  if (!(await checkRateLimit(`analytics-track:${ip}`, ip === "unknown" ? 6000 : 600, 10 * 60_000))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   try {
-    const { page, referrer, sessionId } = await req.json();
+    const { page, referrer, sessionId, beat } = await req.json();
     if (!page || !sessionId) return NextResponse.json({ ok: true });
+
+    // A heartbeat only proves the visitor is still here — it is not a new
+    // page view. Refresh ActiveSession and stop, which is one cheap upsert
+    // instead of an unbounded INSERT every interval.
+    if (beat === true) {
+      await prisma.activeSession
+        .update({ where: { sessionId }, data: { page, lastSeen: new Date() } })
+        .catch(() => {}); // session already expired — nothing to keep alive
+      return NextResponse.json({ ok: true });
+    }
 
     const ua = req.headers.get("user-agent") ?? "";
     const rawIp =

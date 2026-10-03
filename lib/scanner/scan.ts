@@ -1,0 +1,114 @@
+import { checkTargetUrl, safeFetch, BLOCK_MESSAGES, SsrfBlockedError } from "@/lib/ssrf";
+import { audit, type AuditResult, type Signals } from "@/lib/scanner/audit";
+
+// Fetch a site and score it.
+//
+// Shared by the free scanner (one visitor, one URL) and the Readiness Monitor
+// (scheduled rescans of a customer's site and their competitors), so the two
+// can never score the same page differently.
+
+const UA = "TIBLOGICSScanner/2.0 (+https://tiblogics.com)";
+
+export type ScanOutcome =
+  | ({ ok: true; url: string } & AuditResult)
+  /** `status` is the HTTP status the scanner route should answer with. */
+  | { ok: false; status: 400 | 502; error: string };
+
+/**
+ * GET probe that only reports whether something is really there.
+ *
+ * `textFile` is for robots.txt and llms.txt. Many sites answer any missing
+ * path with their normal HTML page and a 200, which used to count as having
+ * the file; the monitor then told customers a competitor "passes" a check it
+ * does not. An HTML body is not a text file, whatever the status says.
+ */
+async function probe(url: string, signal: AbortSignal, textFile = false): Promise<string | null> {
+  try {
+    // safeFetch follows redirects itself and re-checks each hop; plain
+    // redirect: "follow" would follow a public URL to an internal one.
+    const res = await safeFetch(url, { signal, headers: { "User-Agent": UA } });
+    if (!res.ok) return null;
+    const body = (await res.text()).slice(0, 20_000);
+    if (textFile) {
+      const type = res.headers.get("content-type") ?? "";
+      if (/html/i.test(type) || /^\s*<(!doctype|html|head|body)/i.test(body) || !body.trim()) return null;
+    }
+    return body;
+  } catch {
+    return null;
+  }
+}
+
+export async function scanSite(raw: string, timeoutMs = 20_000): Promise<ScanOutcome> {
+  // Resolves the name and rejects it if any address behind it is internal —
+  // a hostname pointing at 10.x or the metadata service used to get through.
+  const checked = await checkTargetUrl(raw);
+  if (!checked.ok) return { ok: false, status: 400, error: BLOCK_MESSAGES[checked.reason] };
+  const target = checked.url;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const start = performance.now();
+    let res: Response;
+    try {
+      res = await safeFetch(target, {
+        signal: controller.signal,
+        headers: {
+          "User-Agent": UA,
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Encoding": "gzip, deflate, br",
+        },
+      });
+    } catch (err) {
+      // A redirect into private space is the caller's problem, not ours, and
+      // saying so is more useful than "could not reach the site".
+      if (err instanceof SsrfBlockedError) return { ok: false, status: 400, error: BLOCK_MESSAGES[err.reason] };
+      const error = controller.signal.aborted
+        ? `The site took too long to respond (over ${Math.round(timeoutMs / 1000)} seconds)`
+        : err instanceof Error
+        ? err.message
+        : "Could not reach the site";
+      return { ok: false, status: 502, error };
+    }
+
+    const ttfb = Math.round(performance.now() - start);
+    const html = (await res.text()).slice(0, 900_000);
+    const totalTime = Math.round(performance.now() - start);
+
+    const encoding = res.headers.get("content-encoding") ?? "";
+    const cacheControl = res.headers.get("cache-control") ?? "";
+    const etag = res.headers.get("etag") ?? "";
+    const contentLength = res.headers.get("content-length");
+
+    const finalUrl = res.url || target.toString();
+    const origin = new URL(finalUrl).origin;
+    const [robotsTxt, sitemapDirect, llms] = await Promise.all([
+      probe(`${origin}/robots.txt`, controller.signal, true),
+      probe(`${origin}/sitemap.xml`, controller.signal),
+      probe(`${origin}/llms.txt`, controller.signal, true),
+    ]);
+
+    const signals: Signals = {
+      html,
+      finalUrl,
+      statusCode: res.status,
+      ttfb,
+      totalTime,
+      bytes: contentLength ? parseInt(contentLength, 10) : Buffer.byteLength(html),
+      compressed: /gzip|br|deflate|zstd/.test(encoding),
+      cached: /max-age|s-maxage|public|immutable/.test(cacheControl) || !!etag,
+      https: new URL(finalUrl).protocol === "https:",
+      robotsTxt,
+      // A sitemap counts whether it sits at the default path or robots.txt points elsewhere.
+      sitemapFound: !!(sitemapDirect && sitemapDirect.includes("<url")) ||
+        !!(robotsTxt && /sitemap:\s*https?:\/\//i.test(robotsTxt)),
+      llmsTxt: !!llms,
+    };
+
+    return { ok: true, url: finalUrl, ...audit(signals) };
+  } finally {
+    clearTimeout(timeout);
+  }
+}

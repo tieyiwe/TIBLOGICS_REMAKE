@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAdmin } from "@/lib/require-admin";
 
-export async function GET() {
+// POST, staff only. This was a public GET that deletes articles: anyone could
+// trigger it, and so could anything that merely fetches a URL (a crawler, a
+// link preview, a browser prefetch). A destructive action must never be a GET.
+export async function POST() {
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   try {
     // Find all posts grouped by normalised title (lowercase, stripped punctuation)
     const allPosts = await prisma.blogPost.findMany({

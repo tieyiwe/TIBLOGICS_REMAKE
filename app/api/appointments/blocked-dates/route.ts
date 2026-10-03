@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAdmin } from "@/lib/require-admin";
 
 export async function GET() {
   try {
@@ -12,7 +13,12 @@ export async function GET() {
   }
 }
 
+// Staff only — blocking dates removes them from the public calendar, so an
+// open endpoint would let anyone shut booking down. GET stays public.
 export async function POST(req: NextRequest) {
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   try {
     const { date, reason } = await req.json();
     if (!date) return NextResponse.json({ error: "date required" }, { status: 400 });
@@ -25,7 +31,11 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// Staff only — see POST.
 export async function DELETE(req: NextRequest) {
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   try {
     const { id } = await req.json();
     await prisma.blockedDate.delete({ where: { id } });

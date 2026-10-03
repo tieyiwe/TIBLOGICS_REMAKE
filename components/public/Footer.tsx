@@ -1,37 +1,35 @@
 import { Mail } from "lucide-react";
 import Link from "next/link";
-const services = [
-  "AI Implementation",
-  "Workflow Automation",
-  "AI Strategy & Consulting",
-  "Web & App Development",
-  "Cybersecurity",
-  "Data Analytics",
-  "Mobile Development",
-  "AI Training & Academy",
-];
+import Image from "next/image";
+import { getT } from "@/lib/i18n/server";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+
+// Dictionary keys under site.footer.svc.*
+const services = ["ai", "automation", "strategy", "web", "security", "data", "mobile", "training"];
 
 const products = [
   { label: "InStory School", href: "#" },
   { label: "CareFlow AI", href: "#" },
   { label: "ShipFrica", href: "#" },
-  { label: "AI Academy", href: "#" },
+  { label: "AI Academy", href: "/learning-box" },
   { label: "RoofGuard", href: "#" },
   { label: "Tibintel", href: "https://tibintel.com" },
   { label: "Goal Tester", href: "#" },
   { label: "AI Central", href: "#" },
 ];
 
+// Dictionary keys under site.footer.*
 const company = [
-  { label: "About Us", href: "/about" },
-  { label: "Services", href: "/services" },
-  { label: "Events & Training", href: "/events" },
-  { label: "Try Smart Tools", href: "/tools" },
-  { label: "Book a Consulting", href: "/book" },
-  { label: "Contact", href: "/contact" },
+  { key: "about", href: "/about" },
+  { key: "services", href: "/services" },
+  { key: "events", href: "/events" },
+  { key: "tools", href: "/tools" },
+  { key: "book", href: "/book" },
+  { key: "contact", href: "/contact" },
 ];
 
-export default function Footer() {
+export default async function Footer() {
+  const t = await getT();
   return (
     <footer className="bg-[#1B3A6B] text-white pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -40,36 +38,44 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <div className="mb-3">
-              <img src="/footer-logo-transparent.png" alt="TIBLOGICS" className="h-24 w-auto" />
+              {/* The network mark is an image; the wordmark is live text so it
+                  stays crisp at any size (the old baked-in wordmark had a flaw on the "L"). */}
+              <a href="/" className="inline-flex items-center gap-3" aria-label="TIBLOGICS home">
+                <Image src="/logo-mark.png" alt="" width={300} height={173} className="h-14 w-auto" />
+                <span className="font-dm text-[1.7rem] font-extrabold leading-none tracking-tight">
+                  <span className="text-white">TIB</span>
+                  <span className="text-[#F47C20]">LOGICS</span>
+                </span>
+              </a>
             </div>
-            <p className="text-[#7A9BBF] text-sm font-dm leading-relaxed mb-4">
-              We create the right logics to fulfill your technical needs. AI-first.
-              Tech-complete. North America, Africa & beyond.
+            <p className="text-[#9DB9D6] text-sm font-dm leading-relaxed mb-4">
+              {t("site.footer.tagline")}
             </p>
             <a
               href="mailto:info@tiblogics.com"
-              className="inline-flex items-center gap-2 text-[#F47C20] hover:text-[#FEF0E3] text-sm font-dm font-medium transition-colors"
+              className="inline-flex items-center gap-2 text-[#F9A738] hover:text-[#FEF0E3] text-sm font-dm font-medium transition-colors"
             >
               <Mail size={14} />
               info@tiblogics.com
             </a>
-            <div className="flex items-center gap-2 text-[#7A9BBF] text-sm font-dm mt-2">
+            <div className="mt-5">
+              <LanguageSwitcher tone="dark" />
             </div>
           </div>
 
           {/* Services */}
           <div>
-            <h4 className="font-syne font-700 text-sm uppercase tracking-wider text-[#E8EFF8] mb-4">
-              Services
-            </h4>
+            <h2 className="font-syne font-700 text-sm uppercase tracking-wider text-[#E8EFF8] mb-4">
+              {t("site.footer.services")}
+            </h2>
             <ul className="space-y-2">
               {services.map((s) => (
                 <li key={s}>
                   <Link
                     href="/services"
-                    className="text-[#7A9BBF] hover:text-white text-sm font-dm transition-colors"
+                    className="text-[#9DB9D6] hover:text-white text-sm font-dm transition-colors"
                   >
-                    {s}
+                    {t(`site.footer.svc.${s}`)}
                   </Link>
                 </li>
               ))}
@@ -78,17 +84,30 @@ export default function Footer() {
 
           {/* Startups & Products */}
           <div>
-            <h4 className="font-syne font-700 text-sm uppercase tracking-wider text-[#E8EFF8] mb-4">
-              Startups &amp; Products
-            </h4>
+            <h2 className="font-syne font-700 text-sm uppercase tracking-wider text-[#E8EFF8] mb-4">
+              {t("site.footer.products")}
+            </h2>
             <ul className="space-y-2">
               {products.map((p) => (
                 <li key={p.label}>
                   <Link
                     href={p.href}
-                    className="text-[#7A9BBF] hover:text-white text-sm font-dm transition-colors"
+                    className="text-[#9DB9D6] hover:text-white text-sm font-dm transition-colors"
                   >
-                    {p.label}
+                    {p.href === "/learning-box" ? (
+                      // The AI Academy runs on ARFA (AI Readiness For All).
+                      <>
+                        {t("site.nav.learningBox")}
+                        <span
+                          className="ml-1.5 inline-block rounded-full bg-white/10 px-1.5 py-px align-middle text-[10px] font-black leading-tight tracking-tight text-white"
+                          title="ARFA: AI Readiness For All"
+                        >
+                          AR<span className="text-[#F47C20]">FA</span>
+                        </span>
+                      </>
+                    ) : (
+                      p.label
+                    )}
                   </Link>
                 </li>
               ))}
@@ -97,17 +116,17 @@ export default function Footer() {
 
           {/* Company */}
           <div>
-            <h4 className="font-syne font-700 text-sm uppercase tracking-wider text-[#E8EFF8] mb-4">
-              Company
-            </h4>
+            <h2 className="font-syne font-700 text-sm uppercase tracking-wider text-[#E8EFF8] mb-4">
+              {t("site.footer.company")}
+            </h2>
             <ul className="space-y-2">
               {company.map((c) => (
-                <li key={c.label}>
+                <li key={c.key}>
                   <Link
                     href={c.href}
-                    className="text-[#7A9BBF] hover:text-white text-sm font-dm transition-colors"
+                    className="text-[#9DB9D6] hover:text-white text-sm font-dm transition-colors"
                   >
-                    {c.label}
+                    {t(`site.footer.${c.key}`)}
                   </Link>
                 </li>
               ))}
@@ -117,17 +136,20 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="border-t border-[#2251A3]/40 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-[#7A9BBF] text-xs font-dm">
-            © 2026 TIBLOGICS. All rights reserved.
+          <p className="text-[#9DB9D6] text-xs font-dm text-center sm:text-left">
+            {t("site.footer.rights", { year: 2026 })}
           </p>
-          <div className="flex items-center gap-4">
-            <Link href="/privacy" className="text-[#7A9BBF] hover:text-white text-xs font-dm transition-colors">
-              Privacy Policy
+          <nav aria-label={t("site.footer.legal")} className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+            <Link href="/privacy" className="text-[#9DB9D6] hover:text-white text-xs font-dm transition-colors">
+              {t("site.footer.privacy")}
             </Link>
-            <Link href="/terms" className="text-[#7A9BBF] hover:text-white text-xs font-dm transition-colors">
-              Terms of Service
+            <Link href="/terms" className="text-[#9DB9D6] hover:text-white text-xs font-dm transition-colors">
+              {t("site.footer.terms")}
             </Link>
-          </div>
+            <Link href="/accessibility" className="text-[#9DB9D6] hover:text-white text-xs font-dm transition-colors">
+              {t("a11y.page.footerLink")}
+            </Link>
+          </nav>
         </div>
       </div>
     </footer>

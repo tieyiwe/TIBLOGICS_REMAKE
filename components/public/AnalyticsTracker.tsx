@@ -48,18 +48,25 @@ export default function AnalyticsTracker() {
     }).catch(() => {});
   }, [pathname]);
 
-  // Heartbeat every 45s to keep active session alive
+  // Heartbeat keeps the "currently online" session alive. It deliberately
+  // does NOT record a page view — it posts beat:true so the server only
+  // refreshes ActiveSession. Previously it hit the same path as a real
+  // navigation, so a visitor reading one page for ten minutes was recorded
+  // as ~13 separate page views: inflated analytics and 13x the database
+  // writes. Paused while the tab is hidden, since a backgrounded tab is not
+  // an active reader.
   useEffect(() => {
     const sessionId = getSessionId();
     const heartbeat = () => {
+      if (typeof document !== "undefined" && document.hidden) return;
       fetch("/api/analytics/track", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ page: pathname, referrer: "", sessionId }),
+        body: JSON.stringify({ page: pathname, sessionId, beat: true }),
         keepalive: true,
       }).catch(() => {});
     };
-    const interval = setInterval(heartbeat, 45_000);
+    const interval = setInterval(heartbeat, 120_000);
     return () => clearInterval(interval);
   }, [pathname]);
 

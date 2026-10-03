@@ -1,62 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const rateMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRate(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateMap.set(ip, { count: 1, resetAt: now + 3_600_000 });
-    return true;
-  }
-  if (entry.count >= 20) return false;
-  entry.count++;
-  return true;
-}
-
-function isPrivateOrLoopback(hostname: string): boolean {
-  if (hostname === "localhost" || hostname === "::1") return true;
-  return [
-    /^127\./,
-    /^10\./,
-    /^192\.168\./,
-    /^172\.(1[6-9]|2\d|3[01])\./,
-    /^169\.254\./,
-    /^0\./,
-  ].some((p) => p.test(hostname));
-}
+import { checkTargetUrl } from "@/lib/ssrf";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { getT } from "@/lib/i18n/server";
 
 export async function POST(req: NextRequest) {
+  const t = await getT();
   const ip = req.headers.get("x-forwarded-for") ?? "unknown";
-  if (!checkRate(ip)) {
-    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+  if (!(await checkRateLimit(`scanner-speed:${ip}`, 20, 3_600_000))) {
+    return NextResponse.json({ error: t("tools.api.rateLimit") }, { status: 429 });
   }
 
   let url: string;
   try {
     ({ url } = await req.json());
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json({ error: t("tools.api.invalidRequest") }, { status: 400 });
   }
 
   if (!url || typeof url !== "string") {
-    return NextResponse.json({ error: "URL required" }, { status: 400 });
+    return NextResponse.json({ error: t("tools.api.urlRequired") }, { status: 400 });
   }
 
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(url);
-  } catch {
-    return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
+  // Resolves the hostname and refuses it if it maps to anything internal; the
+  // old check only looked at the text of the hostname.
+  const checked = await checkTargetUrl(url);
+  if (!checked.ok) {
+    return NextResponse.json({ error: t(`tools.block.${checked.reason}`) }, { status: 400 });
   }
-
-  if (!["http:", "https:"].includes(parsedUrl.protocol)) {
-    return NextResponse.json({ error: "Only HTTP/HTTPS URLs allowed" }, { status: 400 });
-  }
-
-  if (isPrivateOrLoopback(parsedUrl.hostname)) {
-    return NextResponse.json({ error: "Private or loopback addresses are not allowed" }, { status: 400 });
-  }
+  const parsedUrl = checked.url;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10_000);
@@ -94,11 +65,9 @@ export async function POST(req: NextRequest) {
     totalTime = Math.round(performance.now() - start);
     responseSize = contentLength ? parseInt(contentLength, 10) : body.byteLength;
   } catch (err) {
-    fetchError = controller.signal.aborted
-      ? "Request timed out (>10s)"
-      : err instanceof Error
-      ? err.message
-      : "Request failed";
+    // Shown to the visitor as is, so in their language rather than Node's.
+    fetchError = controller.signal.aborted ? t("tools.speed.timeout") : t("tools.speed.failed");
+    if (!controller.signal.aborted) console.error("[scanner/speed]", err instanceof Error ? err.message : err);
     totalTime = Math.round(performance.now() - start);
   } finally {
     clearTimeout(timeoutId);

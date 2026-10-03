@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { requireAdmin } from "@/lib/require-admin";
+import { requirePermission } from "@/lib/require-admin";
 
 export async function GET() {
-  const unauth = await requireAdmin();
+  const unauth = await requirePermission("analytics");
   if (unauth) return unauth;
 
   try {

@@ -1,0 +1,188 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { ShoppingBag, Check } from "lucide-react";
+import ProductCard, { SHOP_CARD_STYLES } from "./ProductCard";
+import Spotlight, { SPOTLIGHT_STYLES } from "./Spotlight";
+import BrandPromo from "./BrandPromo";
+import type { ShopProduct, ShopCollection } from "./types";
+import { useT } from "@/lib/i18n/client";
+import ShopImage from "./ShopImage";
+
+const S = {
+  darker: "#0C1112",
+  card: "#1A2223",
+  orange: "#F47C4C",
+  amber: "#F9A738",
+  muted: "#8A9BA0",
+  border: "rgba(255,255,255,0.08)",
+};
+const syne = "var(--font-syne), sans-serif";
+const dm = "var(--font-dm-sans), sans-serif";
+
+export default function StoreFront({
+  products,
+  collections,
+  spotlightSlug = null,
+  rotatesInDays = 0,
+  featuredCount = 0,
+}: {
+  products: ShopProduct[];
+  collections: ShopCollection[];
+  spotlightSlug?: string | null;
+  rotatesInDays?: number;
+  featuredCount?: number;
+}) {
+  const t = useT();
+  const categories = useMemo(() => ["All", ...Array.from(new Set(products.map((p) => p.category)))], [products]);
+  const [cat, setCat] = useState("All");
+  const [collection, setCollection] = useState<string | null>(null);
+  const [q, setQ] = useState("");
+
+  // Only show the spotlight on the unfiltered storefront — once someone is
+  // browsing a collection or searching, a promo above the results is noise.
+  const spotlightProduct =
+    spotlightSlug && !collection && cat === "All" && !q
+      ? products.find((p) => p.slug === spotlightSlug) ?? null
+      : null;
+
+  const featuredCollections = collections.filter((c) => c.featured);
+  const activeCollection = collection ? collections.find((c) => c.slug === collection) ?? null : null;
+
+  const filtered = products.filter((p) => {
+    if (collection && !p.collections.includes(collection)) return false;
+    if (cat !== "All" && p.category !== cat) return false;
+    if (q && !`${p.name} ${p.tagline ?? ""} ${p.tags.join(" ")}`.toLowerCase().includes(q.toLowerCase())) return false;
+    return true;
+  });
+
+  return (
+    <div style={{ background: S.darker, color: "#fff", fontFamily: dm, minHeight: "100vh" }}>
+      <style>{SHOP_CARD_STYLES + SPOTLIGHT_STYLES + `
+        .col-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,260px));gap:16px}
+        @media(max-width:560px){.col-strip{grid-template-columns:repeat(2,1fr);gap:12px}}
+        .col-card{transition:transform .3s,border-color .3s}
+        .col-card:hover{transform:translateY(-4px);border-color:rgba(244,124,76,.5)}
+        .trust-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+        @media(max-width:760px){.trust-strip{grid-template-columns:1fr}}
+      `}</style>
+
+      {/* Hero */}
+      <section style={{ position: "relative", overflow: "hidden", padding: "132px 24px 48px", textAlign: "center", background: "radial-gradient(120% 80% at 50% -10%, rgba(244,124,76,.16), transparent 60%)" }}>
+        <div style={{ maxWidth: "760px", margin: "0 auto" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: "rgba(244,124,76,.1)", border: "1px solid rgba(244,124,76,.3)", borderRadius: "30px", padding: "7px 16px", marginBottom: "24px" }}>
+            <ShoppingBag size={15} color={S.amber} />
+            <span style={{ fontSize: ".8rem", color: S.amber, fontWeight: 600 }}>{t("pages.store.hero.badge")}</span>
+          </div>
+          <h1 style={{ fontFamily: syne, fontWeight: 800, fontSize: "clamp(2.4rem,5vw,4rem)", lineHeight: 1.08, marginBottom: "18px" }}>
+            {t("pages.store.hero.title")}{" "}<br />
+            <span style={{ background: "linear-gradient(135deg,#F47C4C,#F9A738)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{t("pages.store.hero.titleAccent")}</span>
+          </h1>
+          <p style={{ color: "#B0C4CC", fontSize: "1.05rem", lineHeight: 1.7, maxWidth: "520px", margin: "0 auto" }}>
+            {t("pages.store.hero.body")}
+          </p>
+        </div>
+      </section>
+
+      {/* What a first-time buyer checks before trusting a store */}
+      <section style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
+        <div className="trust-strip">
+          {[
+            { t: t("pages.store.trust.instant"), d: t("pages.store.trust.instantNote") },
+            { t: t("pages.store.trust.keep"), d: t("pages.store.trust.keepNote") },
+            { t: t("pages.store.trust.secure"), d: t("pages.store.trust.secureNote") },
+          ].map((x) => (
+            <div key={x.t} style={{
+              display: "flex", alignItems: "flex-start", gap: "10px",
+              border: `1px solid ${S.border}`, borderRadius: "14px",
+              padding: "14px 16px", background: "rgba(255,255,255,.02)",
+            }}>
+              <Check size={15} color="#22A387" style={{ marginTop: "2px", flexShrink: 0 }} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: ".88rem", color: "#DCE7EA" }}>{x.t}</div>
+                <div style={{ color: S.muted, fontSize: ".8rem", marginTop: "1px" }}>{x.d}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {spotlightProduct && (
+        <Spotlight
+          product={spotlightProduct}
+          rotatesInDays={rotatesInDays}
+          featuredCount={featuredCount}
+        />
+      )}
+
+      {/* Featured collections */}
+      {featuredCollections.length > 0 && !collection && (
+        <section style={{ maxWidth: "1200px", margin: "0 auto", padding: "8px 24px 8px" }}>
+          <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.15rem", marginBottom: "16px" }}>{t("pages.store.collections.title")}</div>
+          <div className="col-strip">
+            {featuredCollections.map((c) => (
+              <button key={c.slug} onClick={() => { setCollection(c.slug); setCat("All"); }} className="col-card"
+                style={{ position: "relative", textAlign: "left", border: `1px solid ${S.border}`, borderRadius: "18px", overflow: "hidden", cursor: "pointer", padding: 0, background: S.card, aspectRatio: "16/10", color: "#fff" }}>
+                {c.image ? (
+                  <ShopImage src={c.image} alt={c.name} sizes="(max-width: 640px) 80vw, 380px" style={{ opacity: 0.55 }} />
+                ) : (
+                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,#1C2526,#0C1112)" }} />
+                )}
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,transparent,rgba(12,17,18,.85))" }} />
+                <div style={{ position: "absolute", left: "16px", bottom: "14px", right: "16px" }}>
+                  <div style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.05rem" }}>{c.name}</div>
+                  {c.description && <div style={{ color: "#C8D8E0", fontSize: ".78rem", marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.description}</div>}
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Active collection header */}
+      {activeCollection && (
+        <section style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px 24px 0" }}>
+          <button onClick={() => setCollection(null)} style={{ background: "none", border: "none", color: S.muted, cursor: "pointer", fontSize: ".85rem", marginBottom: "10px", padding: 0 }}>{t("pages.store.allProducts")}</button>
+          <h2 style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.8rem" }}>{activeCollection.name}</h2>
+          {activeCollection.description && <p style={{ color: S.muted, fontSize: ".92rem", marginTop: "6px", maxWidth: "560px" }}>{activeCollection.description}</p>}
+        </section>
+      )}
+
+      {/* Filters */}
+      <section style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px 24px 24px", display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+          {categories.map((c) => (
+            <button key={c} onClick={() => setCat(c)}
+              style={{ border: `1px solid ${cat === c ? S.orange : S.border}`, background: cat === c ? "rgba(244,124,76,.12)" : "transparent", color: cat === c ? S.orange : S.muted, borderRadius: "50px", padding: "7px 16px", fontSize: ".82rem", fontWeight: 600, cursor: "pointer", fontFamily: dm }}>
+              {c === "All" ? t("pages.store.category.all") : c}
+            </button>
+          ))}
+        </div>
+        <input aria-label={t("pages.store.searchLabel")} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("pages.store.search")}
+          style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: "50px", padding: "9px 18px", color: "#fff", fontSize: ".85rem", fontFamily: dm, minWidth: "min(200px, 100%)", maxWidth: "100%", outline: "none" }} />
+      </section>
+
+      {/* Grid */}
+      <section style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px 100px" }}>
+        {filtered.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "80px 0", color: S.muted }}>
+            <ShoppingBag size={44} style={{ margin: "0 auto 18px", opacity: 0.4 }} />
+            <p style={{ fontSize: "1.05rem", fontFamily: syne, fontWeight: 700, marginBottom: "6px", color: "#fff" }}>
+              {products.length === 0 ? t("pages.store.empty.soon") : t("pages.store.empty.noMatch")}
+            </p>
+            <p style={{ fontSize: ".9rem" }}>
+              {products.length === 0 ? t("pages.store.empty.soonBody") : t("pages.store.empty.noMatchBody")}
+            </p>
+          </div>
+        ) : (
+          <div className="shop-grid">
+            {filtered.map((p) => <ProductCard key={p.id} p={p} />)}
+          </div>
+        )}
+      </section>
+
+      <BrandPromo />
+
+    </div>
+  );
+}

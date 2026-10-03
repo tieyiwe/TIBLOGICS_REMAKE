@@ -1,12 +1,39 @@
 import { NextResponse } from "next/server";
+import { getT } from "@/lib/i18n/server";
 import prisma from "@/lib/prisma";
 import resend from "@/lib/resend";
 import { sendTiweNotification } from "@/lib/resend";
 import { createMeeting, calcEndTime } from "@/lib/meeting-providers";
-import { isValidEmail, escapeHtml } from "@/lib/require-admin";
+import { isValidEmail, escapeHtml, requireAdmin, checkRateLimit } from "@/lib/require-admin";
+import { listLimit } from "@/lib/admin/list-limit";
+import { findTopicByName } from "@/lib/booking/services";
+import { recordAttribution } from "@/lib/growth/attribution";
+import {
+  getAvailability,
+  parseBookingDate,
+  bookingDayOfWeek,
+  BOOKING_TIMEZONE,
+} from "@/lib/booking/availability";
 import stripe from "@/lib/stripe";
 
+// Staff only. This returns every customer's name, email, phone, company and
+// private notes — it was reachable by anyone until now. POST below stays
+// public, because that is the booking form itself.
+/** How long the booking response will wait on confirmation emails. */
+const EMAIL_TIMEOUT_MS = 5000;
+
+/** Resolve when `p` settles or `ms` elapses, whichever comes first. */
+function withTimeout(p: Promise<unknown>, ms: number): Promise<unknown> {
+  return Promise.race([
+    p,
+    new Promise((resolve) => setTimeout(resolve, ms)),
+  ]);
+}
+
 export async function GET(req: Request) {
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   try {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status");
@@ -37,6 +64,9 @@ export async function GET(req: Request) {
     const appointments = await prisma.appointment.findMany({
       where,
       orderBy: { date: "desc" },
+      // Every booking ever made, with full contact details, in one response.
+      // Capped; the admin list filters by status and date range anyway.
+      take: listLimit(req.url, { def: 500, max: 5000 }),
     });
 
     return NextResponse.json(appointments);
@@ -50,55 +80,166 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const t = await getT();
   try {
+    // Unauthenticated, and every accepted booking sends two emails — one of
+    // them to an address the caller chooses. Without a cap this is both a slot
+    // exhaustion vector and a mail relay: nine bookings in a row went through
+    // before this was added.
+    //
+    // Two limits, because they guard different things. The loose one stops a
+    // flood of requests; the tight one, consumed further down only when a
+    // booking is actually about to be written, stops slot hoarding without
+    // punishing someone who picks a blocked date a few times.
+    // The full address, not a /24. checkRateLimit stores a keyed hash rather
+    // than the address itself, so precision here costs nothing in retained
+    // data — and a /24 put a whole office network on one shared allowance,
+    // where five bookings an hour would have colleagues blocking each other.
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+      req.headers.get("x-real-ip") ??
+      "unknown";
+    // With no forwarded header there is no caller to attribute to, and keying
+    // on the literal "unknown" would put every visitor in one bucket — five
+    // bookings and the site stops taking any. Fall back to the email instead,
+    // so a limit can never be shared between unrelated people.
+    const knownIp = ip !== "unknown";
+    if (!(await checkRateLimit(`appointments:req:${ip}`, knownIp ? 30 : 300, 10 * 60_000))) {
+      return NextResponse.json(
+        { error: t("pages.api.tooMany") },
+        { status: 429 },
+      );
+    }
+
     const body = await req.json();
 
     const {
       serviceType,
-      serviceDuration,
-      servicePrice,
       date,
       timeSlot,
-      timezone,
       firstName,
       lastName,
       email,
       phone,
       company,
       goalNotes,
-      addOnRecording,
-      addOnActionPlan,
-      addOnSlackAccess,
-      totalAmount,
+      sessionId,
     } = body;
 
     // Input validation
     if (!firstName || typeof firstName !== "string" || firstName.length > 100) {
-      return NextResponse.json({ error: "Invalid first name" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.invalidFirstName") }, { status: 400 });
     }
     if (!lastName || typeof lastName !== "string" || lastName.length > 100) {
-      return NextResponse.json({ error: "Invalid last name" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.invalidLastName") }, { status: 400 });
     }
     if (!isValidEmail(email)) {
-      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.invalidEmail") }, { status: 400 });
     }
-    if (!serviceType || typeof serviceType !== "string" || serviceType.length > 100) {
-      return NextResponse.json({ error: "Invalid serviceType" }, { status: 400 });
-    }
-    if (typeof totalAmount !== "number" || !Number.isInteger(totalAmount) || totalAmount < 0 || totalAmount > 500_000) {
-      return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
-    }
-    if (!date || isNaN(new Date(date).getTime())) {
-      return NextResponse.json({ error: "Invalid date" }, { status: 400 });
+    for (const [key, value] of [
+      ["pages.api.invalidPhone", phone],
+      ["pages.api.invalidCompany", company],
+      ["pages.api.invalidNotes", goalNotes],
+    ] as const) {
+      if (value != null && (typeof value !== "string" || value.length > 2000)) {
+        return NextResponse.json({ error: t(key) }, { status: 400 });
+      }
     }
 
+    // The topic, its length and its price all come from the server's own list.
+    // They used to be read straight off the request body, so a crafted call
+    // could book a topic the site does not offer, at any price it liked, and
+    // put arbitrary text into the notification emails and the admin UI.
+    const topic = findTopicByName(serviceType);
+    if (!topic) {
+      return NextResponse.json({ error: t("pages.api.book.unknownTopic") }, { status: 400 });
+    }
+    const serviceDuration = topic.duration;
+    const servicePrice = topic.price;
+    const totalAmount = topic.price;
+
+    const bookingDate = parseBookingDate(date);
+    if (!bookingDate) {
+      return NextResponse.json({ error: t("pages.api.book.invalidDate") }, { status: 400 });
+    }
+    // Yesterday's slots are not bookable. Compared against UTC midnight today,
+    // matching how bookings are stored.
+    const todayUtc = new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`);
+    if (bookingDate < todayUtc) {
+      return NextResponse.json({ error: t("pages.api.book.pastDate") }, { status: 400 });
+    }
+
+    // The form only ever offers configured days and slots, but nothing stopped
+    // a direct POST: a Saturday at "3:17 AM" was accepted, which is a slot no
+    // one is there for.
+    const availability = await getAvailability();
+    if (typeof timeSlot !== "string" || !availability.slots.includes(timeSlot)) {
+      return NextResponse.json({ error: t("pages.api.book.slotNotOffered") }, { status: 400 });
+    }
+    if (!availability.days.includes(bookingDayOfWeek(bookingDate))) {
+      return NextResponse.json({ error: t("pages.api.book.dayClosed") }, { status: 400 });
+    }
+
+    const dayStart = bookingDate;
+    const dayEnd = new Date(bookingDate.getTime() + 86_399_999);
+
+    const blocked = await prisma.blockedDate.findFirst({
+      where: { date: { gte: dayStart, lte: dayEnd } },
+      select: { id: true },
+    });
+    if (blocked) {
+      return NextResponse.json({ error: t("pages.api.book.dateUnavailable") }, { status: 400 });
+    }
+
+    // The form hides slots that /api/appointments/available reports as booked,
+    // but nothing re-checked at write time — so a double-click, a retry after a
+    // slow response, or two people on the page at once all produced overlapping
+    // bookings for one slot. PENDING counts as taken, matching how `available`
+    // computes bookedSlots.
+    //
+    // This closes the realistic cases. Two genuinely simultaneous requests can
+    // still slip through; only a unique index would make that impossible.
+    const taken = await prisma.appointment.findFirst({
+      where: {
+        date: { gte: dayStart, lte: dayEnd },
+        timeSlot,
+        status: { not: "CANCELLED" },
+      },
+      select: { id: true },
+    });
+    if (taken) {
+      return NextResponse.json(
+        { error: t("pages.api.book.slotTaken") },
+        { status: 409 },
+      );
+    }
+
+    // Everything checks out, so this attempt is a real booking. Only now is
+    // the per-IP booking allowance spent — a visitor who first tried a blocked
+    // date or a taken slot has not used any of it up.
+    const bookingKey = knownIp ? ip : `email:${String(email).toLowerCase()}`;
+    if (!(await checkRateLimit(`appointments:new:${bookingKey}`, 5, 60 * 60_000))) {
+      return NextResponse.json(
+        {
+          error: t("pages.api.book.tooManyBookings"),
+        },
+        { status: 429 },
+      );
+    }
+
+    // Consultations carry no add-ons today; the columns stay so a paid tier can
+    // reintroduce them without a migration.
+    const addOnRecording = false;
+    const addOnActionPlan = false;
+    const addOnSlackAccess = false;
+
     if (totalAmount === 0) {
-      const tz = timezone ?? "America/New_York";
+      const tz = BOOKING_TIMEZONE;
 
       // Auto-create meeting link before saving so it's included in the confirmation email
       const meetingLink = await createMeeting({
-        serviceType,
-        date: new Date(date),
+        serviceType: topic.name,
+        date: bookingDate,
         timeSlot,
         timezone: tz,
         serviceDuration,
@@ -108,10 +249,10 @@ export async function POST(req: Request) {
 
       const appointment = await prisma.appointment.create({
         data: {
-          serviceType,
+          serviceType: topic.name,
           serviceDuration,
           servicePrice,
-          date: new Date(date),
+          date: bookingDate,
           timeSlot,
           timezone: tz,
           firstName,
@@ -120,9 +261,9 @@ export async function POST(req: Request) {
           company: company ?? null,
           phone: phone ?? null,
           goalNotes: goalNotes ?? null,
-          addOnRecording: addOnRecording ?? false,
-          addOnActionPlan: addOnActionPlan ?? false,
-          addOnSlackAccess: addOnSlackAccess ?? false,
+          addOnRecording,
+          addOnActionPlan,
+          addOnSlackAccess,
           totalAmount,
           status: "CONFIRMED",
           paymentStatus: "free",
@@ -131,16 +272,36 @@ export async function POST(req: Request) {
         },
       });
 
-      await Promise.allSettled([
-        sendBookingConfirmation({ firstName, lastName, email, serviceType, serviceDuration, date, timeSlot, meetingLink }),
-        sendTiweNotification({
-          firstName, lastName, email, company: company ?? null,
-          serviceType, date: new Date(date), timeSlot,
-          totalAmount: 0, paymentStatus: "free",
-          addOnRecording: false, addOnActionPlan: false, addOnSlackAccess: false,
-          goalNotes: goalNotes ?? null, meetingLink,
-        }),
-      ]);
+      await recordAttribution({ kind: "appointment", refId: appointment.id, cookieHeader: req.headers.get("cookie"), amountCents: 0 });
+
+      // Link chat session to this appointment for expert intelligence
+      if (sessionId && typeof sessionId === "string") {
+        prisma.adminSettings.upsert({
+          where: { key: `appt:sid:${appointment.id}` },
+          update: { value: sessionId },
+          create: { key: `appt:sid:${appointment.id}`, value: sessionId },
+        }).catch(() => {});
+      }
+
+      // The appointment is already saved, so the emails are best-effort. Don't
+      // hold the response open on them: an unreachable or slow mail provider
+      // would leave the customer staring at a spinner on a booking that
+      // actually succeeded, and they would submit again and double-book.
+      // Sending continues in the background after the timeout — this runs on a
+      // long-lived server, not a function that gets frozen on response.
+      await withTimeout(
+        Promise.allSettled([
+          sendBookingConfirmation({ firstName, lastName, email, serviceType: topic.name, serviceDuration, date: bookingDate, timeSlot, meetingLink }),
+          sendTiweNotification({
+            firstName, lastName, email, company: company ?? null,
+            serviceType: topic.name, date: bookingDate, timeSlot,
+            totalAmount: 0, paymentStatus: "free",
+            addOnRecording: false, addOnActionPlan: false, addOnSlackAccess: false,
+            goalNotes: goalNotes ?? null, meetingLink,
+          }),
+        ]),
+        EMAIL_TIMEOUT_MS,
+      );
 
       return NextResponse.json(
         { appointmentId: appointment.id, checkoutUrl: null },
@@ -151,21 +312,21 @@ export async function POST(req: Request) {
     // totalAmount > 0 — create PENDING appointment then Stripe session
     const appointment = await prisma.appointment.create({
       data: {
-        serviceType,
+        serviceType: topic.name,
         serviceDuration,
         servicePrice,
-        date: new Date(date),
+        date: bookingDate,
         timeSlot,
-        timezone: timezone ?? "America/New_York",
+        timezone: BOOKING_TIMEZONE,
         firstName,
         lastName,
         email,
         company: company ?? null,
         phone: phone ?? null,
         goalNotes: goalNotes ?? null,
-        addOnRecording: addOnRecording ?? false,
-        addOnActionPlan: addOnActionPlan ?? false,
-        addOnSlackAccess: addOnSlackAccess ?? false,
+        addOnRecording,
+        addOnActionPlan,
+        addOnSlackAccess,
         totalAmount,
         status: "PENDING",
         paymentStatus: "pending",
@@ -173,6 +334,7 @@ export async function POST(req: Request) {
     });
 
     const appointmentId = appointment.id;
+    await recordAttribution({ kind: "appointment", refId: appointmentId, cookieHeader: req.headers.get("cookie"), amountCents: totalAmount });
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
@@ -180,8 +342,8 @@ export async function POST(req: Request) {
         {
           price_data: {
             currency: "usd",
-            product_data: { name: body.serviceType },
-            unit_amount: body.totalAmount,
+            product_data: { name: topic.name },
+            unit_amount: totalAmount,
           },
           quantity: 1,
         },
@@ -191,17 +353,26 @@ export async function POST(req: Request) {
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/book`,
       metadata: {
         appointmentId,
-        serviceType: body.serviceType,
-        clientEmail: body.email,
+        serviceType: topic.name,
+        clientEmail: email,
       },
-      customer_email: body.email,
+      customer_email: email,
     });
 
-    // Store the session ID on the appointment
+    // Store the Stripe session ID on the appointment
     await prisma.appointment.update({
       where: { id: appointmentId },
       data: { stripeSessionId: session.id },
     });
+
+    // Link chat session to appointment for expert intelligence
+    if (sessionId && typeof sessionId === "string") {
+      prisma.adminSettings.upsert({
+        where: { key: `appt:sid:${appointmentId}` },
+        update: { value: sessionId },
+        create: { key: `appt:sid:${appointmentId}`, value: sessionId },
+      }).catch(() => {});
+    }
 
     return NextResponse.json(
       { appointmentId, checkoutUrl: session.url },
@@ -210,7 +381,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("[POST /api/appointments]", error);
     return NextResponse.json(
-      { error: "Failed to create appointment" },
+      { error: t("pages.api.book.failed") },
       { status: 500 }
     );
   }
@@ -218,11 +389,13 @@ export async function POST(req: Request) {
 
 async function sendBookingConfirmation(data: {
   firstName: string; lastName: string; email: string;
-  serviceType: string; serviceDuration?: string; date: string; timeSlot: string;
+  serviceType: string; serviceDuration?: string; date: Date; timeSlot: string;
   meetingLink?: string | null;
 }) {
   const serviceLabel = data.serviceType.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c: string) => c.toUpperCase());
-  const dateLabel = new Date(data.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  // Booked dates are stored at UTC midnight, so the label has to be read in
+  // UTC — a local-zone read prints the previous day on any server west of it.
+  const dateLabel = data.date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
   const endTime = data.serviceDuration ? calcEndTime(data.timeSlot, data.serviceDuration) : "";
 
   const safeFirst = escapeHtml(data.firstName);
@@ -284,28 +457,5 @@ async function sendBookingConfirmation(data: {
     </div>
   </div>
 </body></html>`,
-  }).catch(() => {});
-}
-
-async function sendTeamBookingAlert(data: {
-  firstName: string; lastName: string; email: string;
-  serviceType: string; date: string; timeSlot: string;
-}) {
-  const serviceLabel = data.serviceType.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c: string) => c.toUpperCase());
-  const dateLabel = new Date(data.date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
-  await resend.emails.send({
-    from: process.env.FROM_EMAIL ?? "hello@tiblogics.com",
-    to: process.env.DESIGN_EMAIL ?? "design@tiblogics.com",
-    subject: `📅 New Booking — ${serviceLabel} · ${data.firstName} ${data.lastName}`,
-    html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;">
-      <h2 style="color:#1B3A6B;">New Meeting Booked</h2>
-      <div style="background:#F4F7FB;border-radius:12px;padding:20px;margin:16px 0;">
-        <p><strong>Client:</strong> ${data.firstName} ${data.lastName}</p>
-        <p><strong>Email:</strong> <a href="mailto:${data.email}">${data.email}</a></p>
-        <p><strong>Service:</strong> ${serviceLabel}</p>
-        <p><strong>Date:</strong> ${dateLabel} at ${data.timeSlot} EST</p>
-      </div>
-      <p><a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://tiblogics.com"}/admin/appointments" style="color:#F47C20;">View in Admin →</a></p>
-    </div>`,
   }).catch(() => {});
 }

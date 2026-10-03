@@ -15,6 +15,10 @@ import {
 } from "lucide-react";
 import SmartRecommendations from "@/components/public/SmartRecommendations";
 import { trackPageVisit, trackToolUse } from "@/lib/recommendations";
+import { useLocale, useT } from "@/lib/i18n/client";
+import type { Locale, Vars } from "@/lib/i18n/config";
+
+type T = (key: string, vars?: Vars) => string;
 
 interface Finding {
   type: "critical" | "warning" | "good";
@@ -32,6 +36,39 @@ interface ScanResult {
   aiDescription: string;
 }
 
+/** One honest paragraph, assembled from what was measured. */
+function describeResult(t: T, locale: Locale, d: {
+  overallScore: number; aiScore: number; perfScore: number; seoScore: number;
+  measured?: { schemaTypes?: string[]; ttfb?: number | null; imagesWithAlt?: number; imagesTotal?: number };
+}): string {
+  const m = d.measured ?? {};
+  const nf = new Intl.NumberFormat(locale);
+  const parts: string[] = [];
+
+  parts.push(
+    d.overallScore >= 80 ? t("tools.scanner.desc.good")
+      : d.overallScore >= 60 ? t("tools.scanner.desc.solid")
+      : t("tools.scanner.desc.gaps"),
+  );
+
+  if ((m.schemaTypes?.length ?? 0) > 0) {
+    parts.push(t("tools.scanner.desc.schema", { types: m.schemaTypes!.slice(0, 3).join(", ") }));
+  } else {
+    parts.push(t("tools.scanner.desc.noSchema"));
+  }
+
+  if (typeof m.ttfb === "number") {
+    parts.push(t(m.ttfb < 600 ? "tools.scanner.desc.fast" : "tools.scanner.desc.slow", { ms: nf.format(m.ttfb) }));
+  }
+
+  if (m.imagesTotal && m.imagesWithAlt !== undefined && m.imagesWithAlt < m.imagesTotal) {
+    const n = m.imagesTotal - m.imagesWithAlt;
+    parts.push(n === 1 ? t("tools.scanner.desc.alt.one") : t("tools.scanner.desc.alt.other", { n: nf.format(n) }));
+  }
+
+  return parts.join(" ");
+}
+
 interface SpeedResult {
   ttfb: number | null;
   totalTime: number | null;
@@ -43,80 +80,8 @@ interface SpeedResult {
   error: string | null;
 }
 
-const SCAN_STAGES = [
-  "Fetching page structure...",
-  "Measuring load speed & latency...",
-  "Analyzing SEO signals...",
-  "Checking AI integrations...",
-  "Assessing UX patterns...",
-  "Computing final score...",
-];
-
-function generateScanResult(url: string): ScanResult {
-  if (url.includes("tiblogics.com")) {
-    return {
-      url,
-      overallScore: 84,
-      seoScore: 91,
-      perfScore: 78,
-      uxScore: 82,
-      aiScore: 88,
-      findings: [
-        { type: "good", text: "AI chat agent (Echelon) detected and active on all pages" },
-        { type: "good", text: "Structured JSON-LD schema markup present (Organization, WebSite, LocalBusiness)" },
-        { type: "good", text: "SSL certificate valid and HTTPS enforced" },
-        { type: "good", text: "Comprehensive SEO metadata on all key pages with Open Graph & Twitter Card" },
-        { type: "good", text: "Dynamic sitemap with blog posts detected at /sitemap.xml" },
-        { type: "warning", text: "Mobile Core Web Vitals — LCP can be further reduced with image preloading" },
-        { type: "warning", text: "CRM webhook integration present but no third-party CRM pixel detected" },
-      ],
-      aiDescription:
-        "This site demonstrates strong AI-first architecture with a live AI chat agent, structured data, comprehensive SEO metadata, and an AI-powered blog. Minor performance gains remain on mobile Core Web Vitals.",
-    };
-  }
-
-  const seoScore = Math.floor(Math.random() * 40) + 45;
-  const perfScore = Math.floor(Math.random() * 35) + 50;
-  const uxScore = Math.floor(Math.random() * 35) + 45;
-  const aiScore = Math.floor(Math.random() * 45) + 10;
-  const overallScore = Math.floor((seoScore + perfScore + uxScore) / 3);
-
-  const genericFindings: Finding[] = [
-    {
-      type: aiScore < 30 ? "critical" : "warning",
-      text:
-        aiScore < 30
-          ? "No AI integrations detected — major competitive gap"
-          : "Limited AI capabilities — opportunity for enhancement",
-    },
-    {
-      type: seoScore < 60 ? "warning" : "good",
-      text:
-        seoScore < 60 ? "SEO metadata incomplete on several pages" : "SEO fundamentals are solid",
-    },
-    {
-      type: perfScore < 65 ? "warning" : "good",
-      text:
-        perfScore < 65
-          ? "Page load speed needs optimization"
-          : "Performance scores are acceptable",
-    },
-    { type: "warning", text: "No automated lead capture or CRM integration found" },
-    { type: "good", text: "Mobile-responsive layout detected" },
-    { type: "critical", text: "No AI-powered personalization or recommendation engine" },
-  ];
-
-  return {
-    url,
-    overallScore,
-    seoScore,
-    perfScore,
-    uxScore,
-    aiScore,
-    findings: genericFindings,
-    aiDescription: `This site scores ${overallScore}/100 overall. The biggest opportunity is AI integration — adding automation, a chatbot, and AI-driven personalization could significantly improve lead capture and user engagement.`,
-  };
-}
+/** Progress messages: tools.scanner.stage.0 … 5. */
+const SCAN_STAGES = 6;
 
 function scoreColor(score: number): string {
   if (score >= 70) return "#22c55e";
@@ -124,16 +89,16 @@ function scoreColor(score: number): string {
   return "#ef4444";
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+function formatBytes(t: T, locale: Locale, bytes: number): string {
+  const one = new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  if (bytes < 1024) return `${new Intl.NumberFormat(locale).format(bytes)} ${t("tools.unit.b")}`;
+  if (bytes < 1024 * 1024) return `${one.format(bytes / 1024)} ${t("tools.unit.kb")}`;
+  return `${one.format(bytes / (1024 * 1024))} ${t("tools.unit.mb")}`;
 }
 
-function formatMs(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(2)}s`;
+function formatMs(locale: Locale, ms: number): string {
+  if (ms < 1000) return `${new Intl.NumberFormat(locale).format(ms)} ms`;
+  return `${new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(ms / 1000)} s`;
 }
 
 function ttfbColor(ms: number): string {
@@ -231,16 +196,18 @@ function FindingRow({ finding }: { finding: Finding }) {
 }
 
 function LatencyGauge({ ttfb }: { ttfb: number }) {
+  const t = useT();
+  const locale = useLocale();
   const pct = Math.min((ttfb / 2000) * 100, 100);
   const color = ttfbColor(ttfb);
-  const label = ttfb < 200 ? "Excellent" : ttfb < 600 ? "Good" : ttfb < 1200 ? "Needs work" : "Poor";
+  const label = t(`tools.speed.gauge.${ttfb < 200 ? "excellent" : ttfb < 600 ? "good" : ttfb < 1200 ? "work" : "poor"}`);
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-2">
-        <span className="font-dm text-xs font-medium text-[#3A4A5C]">TTFB Latency Gauge</span>
+      <div className="flex flex-wrap justify-between items-center gap-x-3 mb-2">
+        <span className="font-dm text-xs font-medium text-[#3A4A5C]">{t("tools.speed.gauge")}</span>
         <span className="font-syne font-bold text-sm" style={{ color }}>
-          {label} — {formatMs(ttfb)}
+          {label} · {formatMs(locale, ttfb)}
         </span>
       </div>
       <div className="relative h-4 rounded-full overflow-hidden bg-[#E8EFF8]">
@@ -257,24 +224,28 @@ function LatencyGauge({ ttfb }: { ttfb: number }) {
           style={{ width: `${pct}%`, backgroundColor: color }}
         />
       </div>
-      <div className="flex justify-between mt-1.5">
-        <span className="font-dm text-[10px] text-green-600 font-medium">0ms · Instant</span>
-        <span className="font-dm text-[10px] text-[#F47C20] font-medium">800ms · Avg</span>
-        <span className="font-dm text-[10px] text-red-500 font-medium">2s+ · Slow</span>
+      <div className="flex justify-between gap-2 mt-1.5">
+        <span className="font-dm text-[10px] text-green-600 font-medium">0 ms · {t("tools.speed.gauge.instant")}</span>
+        <span className="font-dm text-[10px] text-[#F47C20] font-medium text-center">800 ms · {t("tools.speed.gauge.avg")}</span>
+        <span className="font-dm text-[10px] text-red-500 font-medium text-right">2 s+ · {t("tools.speed.gauge.slow")}</span>
       </div>
     </div>
   );
 }
 
 function SpeedPanel({ data, loading }: { data: SpeedResult | null; loading: boolean }) {
+  const t = useT();
+  const locale = useLocale();
+  const ms = (v: number) => formatMs(locale, v);
+  const bytes = (v: number) => formatBytes(t, locale, v);
   if (loading) {
     return (
       <div className="bg-white border border-[#D2DCE8] rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-5">
           <Activity size={16} className="text-[#2251A3]" />
-          <h2 className="font-syne font-bold text-[#0D1B2A] text-lg">Load Speed & Latency</h2>
+          <h2 className="font-syne font-bold text-[#0D1B2A] text-lg">{t("tools.speed.title")}</h2>
           <span className="flex items-center gap-1.5 font-dm text-xs text-[#7A8FA6] ml-1">
-            <Loader2 size={12} className="animate-spin" /> Measuring…
+            <Loader2 size={12} className="animate-spin" /> {t("tools.speed.measuring")}
           </span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
@@ -292,71 +263,52 @@ function SpeedPanel({ data, loading }: { data: SpeedResult | null; loading: bool
       <div className="bg-white border border-[#D2DCE8] rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-2">
           <Activity size={16} className="text-[#2251A3]" />
-          <h2 className="font-syne font-bold text-[#0D1B2A] text-lg">Load Speed & Latency</h2>
+          <h2 className="font-syne font-bold text-[#0D1B2A] text-lg">{t("tools.speed.title")}</h2>
         </div>
         <p className="font-dm text-sm text-[#7A8FA6]">
-          {data?.error ?? "Speed measurement could not be completed for this URL."}
+          {data?.error ?? t("tools.speed.unavailable")}
         </p>
       </div>
     );
   }
 
   const ratingMap = {
-    fast: { bg: "bg-green-100", text: "text-green-700", label: "Fast" },
-    average: { bg: "bg-orange-100", text: "text-orange-600", label: "Average" },
-    slow: { bg: "bg-red-100", text: "text-red-600", label: "Slow" },
-    unknown: { bg: "bg-gray-100", text: "text-gray-600", label: "Unknown" },
+    fast: { bg: "bg-green-100", text: "text-green-700", label: t("tools.speed.rating.fast") },
+    average: { bg: "bg-orange-100", text: "text-orange-600", label: t("tools.speed.rating.average") },
+    slow: { bg: "bg-red-100", text: "text-red-600", label: t("tools.speed.rating.slow") },
+    unknown: { bg: "bg-gray-100", text: "text-gray-600", label: t("tools.speed.rating.unknown") },
   };
   const ratingStyle = ratingMap[data.speedRating];
 
+  const sub = (k: string) => t(`tools.speed.sub.${k}`);
+  const na = t("tools.speed.na");
   const metrics = [
     {
       Icon: Clock,
-      label: "TTFB",
-      value: data.ttfb !== null ? formatMs(data.ttfb) : "N/A",
-      sub:
-        data.ttfb !== null
-          ? data.ttfb < 200
-            ? "Excellent"
-            : data.ttfb < 800
-            ? "Acceptable"
-            : "Slow"
-          : "Unavailable",
+      label: t("tools.speed.ttfb"),
+      value: data.ttfb !== null ? ms(data.ttfb) : na,
+      sub: sub(data.ttfb !== null ? (data.ttfb < 200 ? "excellent" : data.ttfb < 800 ? "acceptable" : "slow") : "unavailable"),
       color: data.ttfb !== null ? ttfbColor(data.ttfb) : "#7A8FA6",
     },
     {
       Icon: Zap,
-      label: "Load Time",
-      value: data.totalTime !== null ? formatMs(data.totalTime) : "N/A",
-      sub:
-        data.totalTime !== null
-          ? data.totalTime < 1000
-            ? "Fast"
-            : data.totalTime < 3000
-            ? "Average"
-            : "Slow"
-          : "Unavailable",
+      label: t("tools.speed.loadTime"),
+      value: data.totalTime !== null ? ms(data.totalTime) : na,
+      sub: sub(data.totalTime !== null ? (data.totalTime < 1000 ? "fast" : data.totalTime < 3000 ? "average" : "slow") : "unavailable"),
       color: data.totalTime !== null ? loadTimeColor(data.totalTime) : "#7A8FA6",
     },
     {
       Icon: FileText,
-      label: "Page Size",
-      value: data.responseSize > 0 ? formatBytes(data.responseSize) : "N/A",
-      sub:
-        data.responseSize > 0
-          ? data.responseSize < 500_000
-            ? "Lightweight"
-            : data.responseSize < 2_000_000
-            ? "Medium"
-            : "Heavy"
-          : "Unavailable",
+      label: t("tools.speed.pageSize"),
+      value: data.responseSize > 0 ? bytes(data.responseSize) : na,
+      sub: sub(data.responseSize > 0 ? (data.responseSize < 500_000 ? "light" : data.responseSize < 2_000_000 ? "medium" : "heavy") : "unavailable"),
       color: data.responseSize > 0 ? pageSizeColor(data.responseSize) : "#7A8FA6",
     },
     {
       Icon: Activity,
-      label: "Compression",
-      value: data.isGzipped ? "Enabled" : "Disabled",
-      sub: data.isGzipped ? "gzip / brotli" : "No encoding",
+      label: t("tools.speed.compression"),
+      value: data.isGzipped ? t("tools.speed.enabled") : t("tools.speed.disabled"),
+      sub: data.isGzipped ? "gzip / brotli" : t("tools.speed.noEncoding"),
       color: data.isGzipped ? "#22c55e" : "#ef4444",
     },
   ];
@@ -364,63 +316,36 @@ function SpeedPanel({ data, loading }: { data: SpeedResult | null; loading: bool
   const speedFindings: Finding[] = [];
   if (data.ttfb !== null) {
     if (data.ttfb > 800) {
-      speedFindings.push({
-        type: "critical",
-        text: `High TTFB (${formatMs(data.ttfb)}) — slow server response; consider a CDN or server-side caching`,
-      });
+      speedFindings.push({ type: "critical", text: t("tools.speed.f.ttfbHigh", { v: ms(data.ttfb) }) });
     } else if (data.ttfb > 200) {
-      speedFindings.push({
-        type: "warning",
-        text: `TTFB ${formatMs(data.ttfb)} — within range but edge caching could push this below 200ms`,
-      });
+      speedFindings.push({ type: "warning", text: t("tools.speed.f.ttfbMid", { v: ms(data.ttfb) }) });
     } else {
-      speedFindings.push({
-        type: "good",
-        text: `Excellent TTFB (${formatMs(data.ttfb)}) — server responds near-instantly`,
-      });
+      speedFindings.push({ type: "good", text: t("tools.speed.f.ttfbGood", { v: ms(data.ttfb) }) });
     }
   }
   if (data.totalTime !== null && data.totalTime > 3000) {
-    speedFindings.push({
-      type: "critical",
-      text: `Full response takes ${formatMs(data.totalTime)} — users may abandon before the page loads`,
-    });
+    speedFindings.push({ type: "critical", text: t("tools.speed.f.slowTotal", { v: ms(data.totalTime) }) });
   }
-  if (!data.isGzipped) {
-    speedFindings.push({
-      type: "warning",
-      text: "Response compression not enabled — enable gzip/brotli to reduce transfer size by up to 70%",
-    });
-  } else {
-    speedFindings.push({
-      type: "good",
-      text: "Compression enabled — transfer size is reduced for faster delivery",
-    });
-  }
-  if (!data.hasCaching) {
-    speedFindings.push({
-      type: "warning",
-      text: "No cache-control headers detected — browser caching would speed up repeat visits",
-    });
-  } else {
-    speedFindings.push({
-      type: "good",
-      text: "Caching headers configured — repeat visitors will load faster",
-    });
-  }
+  speedFindings.push(
+    data.isGzipped
+      ? { type: "good", text: t("tools.speed.f.compression") }
+      : { type: "warning", text: t("tools.speed.f.noCompression") },
+  );
+  speedFindings.push(
+    data.hasCaching
+      ? { type: "good", text: t("tools.speed.f.cache") }
+      : { type: "warning", text: t("tools.speed.f.noCache") },
+  );
   if (data.responseSize > 2_000_000) {
-    speedFindings.push({
-      type: "warning",
-      text: `Large page size (${formatBytes(data.responseSize)}) — optimize images and defer non-critical scripts`,
-    });
+    speedFindings.push({ type: "warning", text: t("tools.speed.f.large", { v: bytes(data.responseSize) }) });
   }
 
   return (
     <div className="bg-white border border-[#D2DCE8] rounded-2xl p-6">
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-2">
           <Activity size={16} className="text-[#2251A3]" />
-          <h2 className="font-syne font-bold text-[#0D1B2A] text-lg">Load Speed & Latency</h2>
+          <h2 className="font-syne font-bold text-[#0D1B2A] text-lg">{t("tools.speed.title")}</h2>
         </div>
         <span
           className={`font-dm font-semibold text-xs px-2.5 py-1 rounded-full ${ratingStyle.bg} ${ratingStyle.text}`}
@@ -435,7 +360,7 @@ function SpeedPanel({ data, loading }: { data: SpeedResult | null; loading: bool
           <div key={m.label} className="bg-[#F4F7FB] rounded-xl p-3 flex flex-col gap-1">
             <div className="flex items-center gap-1.5 mb-0.5">
               <m.Icon size={12} style={{ color: m.color }} />
-              <span className="font-dm text-xs text-[#7A8FA6]">{m.label}</span>
+              <span className="font-dm text-xs text-[#7A8FA6] break-words">{m.label}</span>
             </div>
             <span
               className="font-syne font-bold text-xl leading-none"
@@ -468,6 +393,8 @@ function SpeedPanel({ data, loading }: { data: SpeedResult | null; loading: bool
 }
 
 export default function ScannerPage() {
+  const t = useT();
+  const locale = useLocale();
   useEffect(() => {
     trackPageVisit("/tools/scanner");
     trackToolUse("scanner");
@@ -477,6 +404,9 @@ export default function ScannerPage() {
   const [scanning, setScanning] = useState(false);
   const [stage, setStage] = useState(0);
   const [result, setResult] = useState<ScanResult | null>(null);
+  // A scan that cannot reach the site has to say so. Silently showing nothing
+  // reads as a broken tool.
+  const [scanError, setScanError] = useState<string | null>(null);
   const [speedResult, setSpeedResult] = useState<SpeedResult | null>(null);
   const [speedLoading, setSpeedLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -486,14 +416,32 @@ export default function ScannerPage() {
 
   async function handleScan(e: React.FormEvent) {
     e.preventDefault();
-    if (!url.trim()) return;
+    await runScan(url);
+  }
 
-    let normalizedUrl = url.trim();
+  // The home page hero runs a quick scan and links here for the full report
+  // as /tools/scanner?url=… — pick that up and run it, so the visitor lands on
+  // their result rather than on an empty form they have to fill in again.
+  useEffect(() => {
+    const handed = new URLSearchParams(window.location.search).get("url");
+    if (handed && handed.length < 500) {
+      setUrl(handed);
+      void runScan(handed);
+    }
+    // Runs once on arrival; runScan is stable enough for that purpose.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function runScan(rawUrl: string) {
+    if (!rawUrl.trim()) return;
+
+    let normalizedUrl = rawUrl.trim();
     if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
       normalizedUrl = "https://" + normalizedUrl;
     }
 
     setResult(null);
+    setScanError(null);
     setSpeedResult(null);
     setSpeedLoading(true);
     setEmailSubmitted(false);
@@ -514,11 +462,42 @@ export default function ScannerPage() {
       if (currentStage <= 5) setStage(currentStage);
     }, 800);
 
-    await new Promise((r) => setTimeout(r, 5000));
+    // The audit is the scan. The staged progress above is presentation; this
+    // is the request that actually measures the site.
+    let scanResult: ScanResult;
+    try {
+      const auditRes = await fetch("/api/scanner/audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: normalizedUrl }),
+      });
+      const data = await auditRes.json();
+      if (!auditRes.ok) throw new Error(data?.error || t("tools.scanner.failed"));
+
+      scanResult = {
+        url: data.url ?? normalizedUrl,
+        overallScore: data.overallScore,
+        seoScore: data.seoScore,
+        perfScore: data.perfScore,
+        uxScore: data.uxScore,
+        aiScore: data.aiScore,
+        // The engine grades bad/warning/good; this UI has always said "critical".
+        findings: (data.findings ?? []).map((f: { type: string; text: string }) => ({
+          type: f.type === "bad" ? "critical" : (f.type as "warning" | "good"),
+          text: f.text,
+        })),
+        aiDescription: describeResult(t, locale, data),
+      };
+    } catch (err) {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      setScanning(false);
+      // A network failure has no useful message of its own.
+      setScanError(err instanceof Error && err.name === "Error" ? err.message : t("tools.scanner.failed"));
+      setSpeedLoading(false);
+      return;
+    }
 
     if (intervalRef.current) clearInterval(intervalRef.current);
-
-    const scanResult = generateScanResult(normalizedUrl);
     setScanning(false);
     setResult(scanResult);
 
@@ -559,7 +538,7 @@ export default function ScannerPage() {
     e.preventDefault();
     if (!email.trim() || !leadId) return;
     try {
-      await fetch(`/api/scanner-leads/${leadId}`, {
+      await fetch(`/api/scanner-leads/${encodeURIComponent(leadId)}/email`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -575,18 +554,17 @@ export default function ScannerPage() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-10">
-          <span className="section-tag">Free Tool</span>
-          <h1 className="font-syne font-extrabold text-4xl md:text-5xl text-[#0D1B2A] mt-2">
-            Website AI Scanner
+          <span className="section-tag">{t("tools.scanner.tag")}</span>
+          <h1 className="font-syne font-extrabold text-4xl md:text-5xl text-[#0D1B2A] mt-2 break-words">
+            {t("tools.scanner.title")}
           </h1>
           <p className="font-dm text-[#3A4A5C] text-lg mt-3 max-w-xl mx-auto">
-            Enter any URL and get an instant AI readiness score, real load speed measurements, and
-            actionable findings — no signup needed.
+            {t("tools.scanner.subtitle")}
           </p>
         </div>
 
         {/* URL Input */}
-        <form onSubmit={handleScan} className="w-full max-w-2xl mx-auto flex gap-3 mb-12">
+        <form onSubmit={handleScan} className="w-full max-w-2xl mx-auto flex flex-col sm:flex-row gap-3 mb-12">
           <div className="flex-1 relative">
             <Search
               size={16}
@@ -596,7 +574,8 @@ export default function ScannerPage() {
               type="text"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://yourwebsite.com"
+              placeholder={t("tools.scanner.placeholder")}
+              aria-label={t("tools.scanner.urlLabel")}
               className="w-full pl-10 pr-4 py-3 border border-[#D2DCE8] focus:border-[#2251A3] rounded-xl outline-none focus:ring-2 focus:ring-[#2251A3]/20 font-dm text-[#0D1B2A] placeholder:text-[#7A8FA6] bg-white transition-all duration-200 text-sm"
               disabled={scanning}
             />
@@ -604,20 +583,27 @@ export default function ScannerPage() {
           <button
             type="submit"
             disabled={scanning || !url.trim()}
-            className="btn-primary px-6 py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            className="btn-primary justify-center px-6 py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           >
             {scanning ? (
               <>
                 <Loader2 size={16} className="animate-spin" />
-                Scanning...
+                {t("tools.scanner.scanning")}
               </>
             ) : (
-              "Scan & Score"
+              t("tools.scanner.scan")
             )}
           </button>
         </form>
 
         {/* Scanning State */}
+        {scanError && !scanning && (
+          <div className="max-w-xl mx-auto mb-8 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-center">
+            <p className="font-syne font-bold text-[#0D1B2A]">{t("tools.scanner.failedTitle")}</p>
+            <p className="font-dm text-sm text-[#7A8FA6] mt-1">{scanError}</p>
+          </div>
+        )}
+
         {scanning && (
           <div className="flex flex-col items-center justify-center py-16 gap-6">
             <div className="relative w-20 h-20">
@@ -627,14 +613,14 @@ export default function ScannerPage() {
             </div>
             <div className="text-center">
               <p className="font-syne font-semibold text-[#0D1B2A] text-lg">
-                {SCAN_STAGES[Math.min(stage, 5)]}
+                {t(`tools.scanner.stage.${Math.min(stage, SCAN_STAGES - 1)}`)}
               </p>
               <p className="font-dm text-sm text-[#7A8FA6] mt-1">
-                Step {Math.min(stage + 1, 6)} of 6
+                {t("tools.scanner.step", { n: Math.min(stage + 1, SCAN_STAGES), total: SCAN_STAGES })}
               </p>
             </div>
             <div className="flex gap-1.5">
-              {SCAN_STAGES.map((_, i) => (
+              {Array.from({ length: SCAN_STAGES }, (_, i) => (
                 <div
                   key={i}
                   className="w-2 h-2 rounded-full transition-colors duration-300"
@@ -654,32 +640,28 @@ export default function ScannerPage() {
               <div className="bg-white border border-[#D2DCE8] rounded-2xl p-6 flex flex-col gap-5">
                 <div>
                   <p className="font-dm text-xs font-semibold text-[#7A8FA6] uppercase tracking-wider mb-3 text-center">
-                    Overall Score
+                    {t("tools.scanner.overall")}
                   </p>
                   <ScoreRing score={result.overallScore} />
                   <p
                     className="font-syne font-bold text-center text-base mt-3"
                     style={{ color: scoreColor(result.overallScore) }}
                   >
-                    {result.overallScore >= 70
-                      ? "AI-Ready"
-                      : result.overallScore >= 50
-                      ? "Needs Work"
-                      : "Critical Gaps"}
+                    {t(`tools.scanner.verdict.${result.overallScore >= 70 ? "ready" : result.overallScore >= 50 ? "work" : "critical"}`)}
                   </p>
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  <ScorePill label="SEO" score={result.seoScore} />
-                  <ScorePill label="Performance" score={result.perfScore} />
-                  <ScorePill label="UX" score={result.uxScore} />
+                  <ScorePill label={t("tools.scanner.pill.seo")} score={result.seoScore} />
+                  <ScorePill label={t("tools.scanner.pill.perf")} score={result.perfScore} />
+                  <ScorePill label={t("tools.scanner.pill.ux")} score={result.uxScore} />
                 </div>
 
                 {/* AI Readiness bar */}
                 <div className="bg-[#FEF0E3] rounded-xl p-4">
-                  <div className="flex justify-between items-center mb-2">
+                  <div className="flex justify-between items-center gap-3 mb-2">
                     <span className="font-dm text-sm font-semibold text-[#0D1B2A]">
-                      AI Readiness Score
+                      {t("tools.scanner.aiScore")}
                     </span>
                     <span className="font-syne font-bold text-[#F47C20] text-lg">
                       {result.aiScore}
@@ -693,18 +675,14 @@ export default function ScannerPage() {
                     />
                   </div>
                   <p className="font-dm text-xs text-[#7A8FA6] mt-2">
-                    {result.aiScore < 30
-                      ? "Major AI gaps — immediate action recommended"
-                      : result.aiScore < 60
-                      ? "Partial AI capabilities — enhancement opportunities exist"
-                      : "Strong AI foundation in place"}
+                    {t(`tools.scanner.ai.${result.aiScore < 30 ? "low" : result.aiScore < 60 ? "mid" : "high"}`)}
                   </p>
                 </div>
               </div>
 
               {/* Right: Findings */}
               <div className="bg-white border border-[#D2DCE8] rounded-2xl p-6 flex flex-col gap-4">
-                <h2 className="font-syne font-bold text-[#0D1B2A] text-lg">Key Findings</h2>
+                <h2 className="font-syne font-bold text-[#0D1B2A] text-lg">{t("tools.scanner.findings")}</h2>
                 <div className="flex flex-col gap-3">
                   {result.findings.map((f, i) => (
                     <FindingRow key={i} finding={f} />
@@ -727,17 +705,17 @@ export default function ScannerPage() {
                 <div className="flex items-center gap-3 text-green-600">
                   <CheckCircle2 size={20} />
                   <p className="font-dm font-medium">
-                    Got it! We&apos;ll send your detailed action plan shortly.
+                    {t("tools.scanner.email.done")}
                   </p>
                 </div>
               ) : (
                 <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
                   <div>
                     <h3 className="font-syne font-bold text-[#0D1B2A] text-base">
-                      Want a detailed action plan?
+                      {t("tools.scanner.email.title")}
                     </h3>
                     <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">
-                      Get a full PDF report with step-by-step AI implementation recommendations.
+                      {t("tools.scanner.email.body")}
                     </p>
                   </div>
                   <form onSubmit={handleEmailSubmit} className="flex gap-2 w-full sm:w-auto shrink-0">
@@ -745,12 +723,13 @@ export default function ScannerPage() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="your@email.com"
+                      placeholder={t("tools.scanner.email.placeholder")}
+                      aria-label={t("tools.common.yourEmail")}
                       required
-                      className="input-base text-sm px-3 py-2 flex-1 sm:w-56"
+                      className="input-base text-sm px-3 py-2 flex-1 min-w-0 sm:w-56"
                     />
-                    <button type="submit" className="btn-primary text-sm py-2 px-4 rounded-lg">
-                      Send Report
+                    <button type="submit" className="btn-primary text-sm py-2 px-4 rounded-lg shrink-0">
+                      {t("tools.scanner.email.send")}
                     </button>
                   </form>
                 </div>
@@ -761,16 +740,28 @@ export default function ScannerPage() {
             <div className="bg-[#1B3A6B] rounded-2xl p-8 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
                 <h3 className="font-syne font-bold text-white text-xl">
-                  Ready to close these gaps?
+                  {t("tools.scanner.cta.title")}
                 </h3>
                 <p className="font-dm text-[#7A9BBF] text-sm mt-1">
-                  Book a free meeting and get a custom AI roadmap for your business.
+                  {t("tools.scanner.cta.body")}
                 </p>
               </div>
-              <Link href="/book" className="btn-primary whitespace-nowrap">
-                Book a Free Meeting ↗
+              <Link href="/book" className="btn-primary justify-center text-center shrink-0">
+                {t("tools.scanner.cta.button")}
               </Link>
             </div>
+
+            <Link
+              href="/tools/readiness-monitor"
+              className="block bg-white border border-[#D2DCE8] rounded-2xl p-5 hover:border-[#B8500A] transition-colors"
+            >
+              <p className="font-syne font-bold text-[#0D1B2A] text-base">
+                {t("tools.scanner.monitor.q")} <span className="text-[#B8500A]">Readiness Monitor →</span>
+              </p>
+              <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">
+                {t("tools.scanner.monitor.body")}
+              </p>
+            </Link>
           </div>
         )}
         <SmartRecommendations currentPage="/tools/scanner" compact />

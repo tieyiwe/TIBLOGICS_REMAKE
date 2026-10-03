@@ -1,6 +1,9 @@
+import { checkRateLimit } from "@/lib/rate-limit";
 export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/claude";
+import { requireAdmin } from "@/lib/require-admin";
+import { boundChatMessages } from "@/lib/chat-bounds";
 
 const AGENTS: Record<string, { name: string; systemPrompt: string }> = {
   aria: {
@@ -25,7 +28,7 @@ Brand colors context: Navy (#1B3A6B), Orange (#F47C20). Bold and modern.
 TIBLOGICS is an AI implementation and digital solutions agency.
 - Markets: North America & Francophone Africa
 - Core services: AI Implementation, Workflow Automation, AI Strategy, Web/App Dev, Cybersecurity, Data Analytics, Mobile Dev, AI Training
-- Products: InStory (EdTech AI), CareFlow AI (HealthTech), ShipFrica (logistics SaaS), AI Academy on Skool
+- Products: InStory (EdTech AI), CareFlow AI (HealthTech), ShipFrica (logistics SaaS), ARFA (AI Readiness For All), the TIBLOGICS AI Academy
 - Target clients: SMBs, startups, enterprises, African diaspora businesses, healthcare orgs, schools
 - Website: tiblogics.com · Email: info@tiblogics.com
 
@@ -138,29 +141,21 @@ Be honest about data limitations. If given partial data, say so and work with wh
   },
 };
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + 3600000 });
-    return true;
-  }
-  if (entry.count >= 50) return false;
-  entry.count++;
-  return true;
-}
-
 export async function POST(req: NextRequest) {
+  // Admin-only: these are the internal agents in /admin_pro/agents. Without
+  // this check anyone could run the model on the site's bill.
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
   const ip = req.headers.get("x-forwarded-for") ?? "unknown";
-  if (!checkRateLimit(ip)) {
+  if (!(await checkRateLimit(`claude-agents:${ip}`, 50, 3_600_000))) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }
 
   try {
-    const { messages, agent } = await req.json();
-    if (!messages || !Array.isArray(messages) || !agent) {
+    const body = await req.json();
+    const agent = body?.agent;
+    const messages = boundChatMessages(body?.messages);
+    if (!messages || !agent) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
@@ -169,7 +164,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unknown agent" }, { status: 400 });
     }
 
-    const text = await streamChat(messages, agentConfig.systemPrompt, 1024);
+    const text = await streamChat(messages, agentConfig.systemPrompt, 2500, "admin-chat", { ref: `agent:${agent}` });
     return NextResponse.json({ text });
   } catch (err) {
     console.error("Agent error:", err);

@@ -1,9 +1,27 @@
 import { headers } from "next/headers";
+import { maskEmail } from "@/lib/log/redact";
 import prisma from "@/lib/prisma";
-import { sendConfirmationEmail, sendTiweNotification } from "@/lib/resend";
+import { sendConfirmationEmail, sendTiweNotification, sendEventWelcomeEmail, sendAdminNewRegistrationAlert, sendOrderConfirmationEmail, sendAdminOrderAlert } from "@/lib/resend";
 import Stripe from "stripe";
 import { createMeeting } from "@/lib/meeting-providers";
 import stripe from "@/lib/stripe";
+import { grantDownloadsForOrder } from "@/lib/shop/delivery";
+import { activateMonitor, syncMonitorSubscription } from "@/lib/monitor/billing";
+import { MONITOR_PRODUCT } from "@/lib/monitor/config";
+import { upsertToolkitSubscription } from "@/lib/toolkit/billing";
+import { TOOLKIT_PRODUCT } from "@/lib/toolkit/config";
+import { markBlueprintPaid } from "@/lib/blueprint/billing";
+import { BLUEPRINT_PRODUCT } from "@/lib/blueprint/config";
+import { recordTrackPurchase } from "@/lib/learn/purchases";
+import { isTeamSubscription, markTeamPaymentFailed, syncTeamSubscription } from "@/lib/learn/team/service";
+import { recordReferralPayment } from "@/lib/learn/referrals/service";
+import { recordRedemption } from "@/lib/promotions/service";
+import { upsertLearnSubscription } from "@/lib/learn/subscription-sync";
+import { completePendingEnrollment } from "@/lib/learn/join/pending";
+
+const SITE_URL = (
+  process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
+).replace(/\/$/, "");
 
 export async function POST(req: Request) {
   if (!process.env.STRIPE_WEBHOOK_SECRET) {
@@ -27,11 +45,287 @@ export async function POST(req: Request) {
     return new Response("Webhook signature verification failed", { status: 400 });
   }
 
-  // Always return 200 after signature check — Stripe will retry on 5xx
+  // Always return 200 after signature check — Stripe will retry on 5xx.
+  // Exception: a paid Learning Box track that could not be recorded answers
+  // 500 so Stripe retries (recording is idempotent).
+  let retry = false;
+  const trackPurchase = (session: Stripe.Checkout.Session) =>
+    handleTrackPurchase(session).catch((err) => {
+      console.error("[stripe/webhook] Learn track purchase FAILED, asking Stripe to retry", err);
+      retry = true;
+    });
   try {
+    // ── TIBLOGICS Learn subscription lifecycle ────────────────────────────
+    if (
+      event.type === "customer.subscription.updated" ||
+      event.type === "customer.subscription.deleted" ||
+      event.type === "customer.subscription.created"
+    ) {
+      const sub = event.data.object as Stripe.Subscription;
+      if (sub.metadata?.product === "learn" && sub.metadata?.studentId) {
+        await upsertLearnSubscription(sub);
+      }
+      if (sub.metadata?.product === MONITOR_PRODUCT) {
+        await syncMonitorSubscription(sub);
+      }
+      if (sub.metadata?.product === TOOLKIT_PRODUCT && sub.metadata?.studentId) {
+        await upsertToolkitSubscription(sub);
+      }
+      // ── TIBLOGICS Learn team plan: seats, status, grace ──────────────────
+      if (isTeamSubscription(sub.metadata)) {
+        await syncTeamSubscription(sub).catch((err) => {
+          console.error("[stripe/webhook] Learn team sync FAILED, asking Stripe to retry", err);
+          retry = true;
+        });
+      }
+    }
+
+    if (event.type === "invoice.payment_failed") {
+      const invoice = event.data.object as Stripe.Invoice;
+      const subId = (invoice as unknown as { subscription?: string }).subscription;
+      if (subId) {
+        // Team plans get the same 7-day grace (no-op for other subscriptions).
+        await markTeamPaymentFailed(subId).catch((err) => console.error("[stripe/webhook] team payment_failed", err));
+        const existing = await prisma.learnSubscription
+          .findUnique({ where: { stripeSubscriptionId: subId } })
+          .catch(() => null);
+        if (existing && existing.status !== "canceled") {
+          // 7-day read-only grace window (Part E1), started once. Every retry
+          // failure fires this event again; restarting the window each time
+          // would let an unpaid subscription keep access for the whole dunning
+          // cycle instead of seven days.
+          const keepGrace = existing.status === "past_due" && existing.graceUntil;
+          await prisma.learnSubscription.update({
+            where: { id: existing.id },
+            data: {
+              status: "past_due",
+              graceUntil: keepGrace ? existing.graceUntil : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            },
+          });
+          console.log(`[stripe/webhook] Learn sub ${subId} → past_due (7-day grace)`);
+        }
+      }
+    }
+
+    // ── Learning Box one-time track purchase, paid later (bank debits etc.).
+    // Card payments arrive as checkout.session.completed below; this event
+    // only fires for delayed methods, and only if enabled on the endpoint.
+    if (event.type === "checkout.session.async_payment_succeeded") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      if (session.metadata?.product === "learn-track") await trackPurchase(session);
+      await recordRedemption(session);
+    }
+
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
       const appointmentId = session.metadata?.appointmentId;
+      const registrationId = session.metadata?.registrationId;
+      const orderId = session.metadata?.orderId;
+
+      // ── Promotions: a discounted checkout counts as a redemption once paid
+      // (delayed methods are recorded on async_payment_succeeded above).
+      // Idempotent per session; never throws.
+      if (session.payment_status !== "unpaid") await recordRedemption(session);
+
+      // ── Learn subscription checkout ─────────────────────────────────────
+      if (session.metadata?.product === "learn" && session.mode === "subscription") {
+        const studentId = session.metadata.studentId || session.client_reference_id;
+        const subId = typeof session.subscription === "string" ? session.subscription : null;
+        if (studentId && subId) {
+          const full = await stripe.subscriptions.retrieve(subId);
+          await upsertLearnSubscription(full, studentId);
+          // Learning Box referral: a referred learner paid, the referrer earns a
+          // pending reward (lib/learn/referrals). Never throws; idempotent.
+          if (full.status === "active" || full.status === "trialing") {
+            // One-page join flow: close the pending choice and send the
+            // purchase-aware welcome if it was deferred (idempotent).
+            await completePendingEnrollment(studentId, { kind: "monthly", track: session.metadata.returnTrack || null });
+          }
+          if (full.status === "active") {
+            await recordReferralPayment({
+              studentId,
+              kind: "subscription",
+              amountCents: session.amount_total,
+              payerEmail: session.customer_details?.email ?? session.customer_email,
+              customerId: typeof session.customer === "string" ? session.customer : session.customer?.id ?? null,
+            });
+          }
+          console.log(`[stripe/webhook] ✓ Learn subscription active for student ${studentId}`);
+        }
+      }
+
+      // ── Learn team plan checkout: activate the team ─────────────────────
+      if (isTeamSubscription(session.metadata) && session.mode === "subscription") {
+        const subId = typeof session.subscription === "string" ? session.subscription : null;
+        if (subId) {
+          await stripe.subscriptions
+            .retrieve(subId)
+            .then(async (full) => {
+              await syncTeamSubscription(full, { teamId: session.metadata?.teamId, checkoutSessionId: session.id });
+              const owner = session.metadata?.ownerStudentId || session.client_reference_id;
+              if (owner && (full.status === "active" || full.status === "trialing")) await completePendingEnrollment(owner, { kind: "team" });
+            })
+            .catch((err) => {
+              console.error("[stripe/webhook] Learn team activation FAILED, asking Stripe to retry", err);
+              retry = true;
+            });
+        }
+      }
+
+      // ── Learning Box: one track, one payment, lifetime access ────────────
+      if (session.metadata?.product === "learn-track" && session.mode === "payment") {
+        await trackPurchase(session);
+      }
+
+      // ── Automation Blueprint (one-time) ──────────────────────────────────
+      if (session.metadata?.product === BLUEPRINT_PRODUCT && session.metadata.blueprintId) {
+        await markBlueprintPaid(session.metadata.blueprintId, session);
+      }
+
+      // ── Toolkit Live / Compliance Guard checkout ─────────────────────────
+      if (session.metadata?.product === TOOLKIT_PRODUCT && session.mode === "subscription") {
+        const studentId = session.metadata.studentId || session.client_reference_id;
+        const subId = typeof session.subscription === "string" ? session.subscription : null;
+        if (studentId && subId) {
+          await upsertToolkitSubscription(await stripe.subscriptions.retrieve(subId), studentId);
+        }
+      }
+
+      // ── Readiness Monitor subscription checkout ──────────────────────────
+      if (session.metadata?.product === MONITOR_PRODUCT && session.mode === "subscription") {
+        const monitorId = session.metadata.monitorId || session.client_reference_id;
+        const subId = typeof session.subscription === "string" ? session.subscription : null;
+        if (monitorId && subId) {
+          await activateMonitor(monitorId, await stripe.subscriptions.retrieve(subId));
+        }
+      }
+
+      // ── Shop order payment ──────────────────────────────────────────────
+      if (orderId) {
+        const email = session.customer_details?.email ?? session.customer_email ?? "";
+        const name = session.customer_details?.name ?? null;
+        const phone = session.customer_details?.phone ?? null;
+        const shipping = (session as unknown as { shipping_details?: unknown }).shipping_details ?? null;
+
+        const order = await prisma.order.update({
+          where: { id: orderId },
+          data: {
+            status: "paid",
+            stripeSessionId: session.id,
+            // What was actually charged (after any promotion).
+            ...(typeof session.amount_total === "number" ? { total: session.amount_total } : {}),
+            email,
+            customerName: name,
+            phone,
+            ...(shipping ? { shippingAddress: JSON.parse(JSON.stringify(shipping)) } : {}),
+          },
+        });
+
+        // Update inventory / sold counts (best-effort)
+        const items = Array.isArray(order.items) ? (order.items as unknown as Array<{ productId: string; quantity: number }>) : [];
+        // One read for every line item's stock, then the per-item updates go out
+        // together. A missing row (or a failed read) leaves stock untracked for
+        // that item, exactly as the old per-item `.catch(() => null)` did.
+        const stockById = new Map<string, number | null>(
+          (
+            await prisma.product
+              .findMany({
+                where: { id: { in: items.map((it) => it.productId) } },
+                select: { id: true, stock: true },
+              })
+              .catch(() => [])
+          ).map((p) => [p.id, p.stock]),
+        );
+        await Promise.all(
+          items.map((it) => {
+            const stock = stockById.get(it.productId) ?? null;
+            return prisma.product.update({
+              where: { id: it.productId },
+              data: {
+                soldCount: { increment: it.quantity },
+                ...(stock != null ? { stock: { decrement: Math.min(stock, it.quantity) } } : {}),
+              },
+            }).catch((err) => console.error("[stripe/webhook] product update", err));
+          }),
+        );
+
+        if (email) {
+          // Mark any saved cart for this shopper as recovered (stops reminders)
+          prisma.abandonedCart
+            .updateMany({ where: { email: email.toLowerCase(), recoveredAt: null }, data: { recoveredAt: new Date() } })
+            .catch((err) => console.error("[stripe/webhook] cart recover", err));
+
+          // Digital delivery. Grants are minted here — after payment settles —
+          // so a grant existing is itself proof of purchase. Idempotent, so a
+          // Stripe retry does not issue a second set of tokens.
+          const grants = await grantDownloadsForOrder(order.id, email).catch((err) => {
+            console.error("[stripe/webhook] download grants FAILED:", err);
+            return [];
+          });
+
+          sendOrderConfirmationEmail({
+            email,
+            customerName: name,
+            orderNumber: order.orderNumber,
+            items,
+            total: order.total,
+            currency: order.currency,
+            downloads: grants.map((g) => ({
+              name: g.productName,
+              url: `${SITE_URL}/api/shop/download/${g.token}`,
+              format: g.fileFormat,
+              expiresAt: g.expiresAt,
+            })),
+          }).catch((err) => console.error("[stripe/webhook] order email FAILED:", err instanceof Error ? err.message : err));
+        }
+        sendAdminOrderAlert({
+          orderNumber: order.orderNumber,
+          email,
+          customerName: name,
+          total: order.total,
+          currency: order.currency,
+          itemCount: items.reduce((n, i) => n + (i.quantity || 0), 0),
+        }).catch((err) => console.error("[stripe/webhook] admin order alert FAILED:", err instanceof Error ? err.message : err));
+      }
+
+      // ── Event registration payment ──────────────────────────────────────
+      if (registrationId) {
+        const reg = await prisma.eventRegistration.update({
+          where: { id: registrationId },
+          data: {
+            status: "paid",
+            stripeSessionId: session.id,
+          },
+        });
+
+        // Notify admin of confirmed sale
+        sendAdminNewRegistrationAlert({
+          firstName: reg.firstName,
+          lastName: reg.lastName,
+          email: reg.email,
+          eventName: reg.eventName,
+          confirmationNumber: reg.confirmationNumber ?? undefined,
+          whatsapp: reg.whatsapp,
+        }).then(() => {
+          console.log(`[stripe/webhook] ✓ Admin alert sent for ${reg.confirmationNumber}`);
+        }).catch((err) => {
+          console.error(`[stripe/webhook] ✗ Admin alert FAILED:`, err instanceof Error ? err.message : err);
+        });
+
+        // Send the "You're in — let's build" welcome email now that payment
+        // succeeded. firstName is captured from the registration record.
+        console.log(`[stripe/webhook] Sending welcome email to ${maskEmail(reg.email)} (reg: ${registrationId})`);
+        await sendEventWelcomeEmail({
+          firstName: reg.firstName,
+          email: reg.email,
+          eventName: reg.eventName,
+          confirmationNumber: reg.confirmationNumber,
+        }).then(() => {
+          console.log(`[stripe/webhook] ✓ Welcome email sent to ${maskEmail(reg.email)}`);
+        }).catch((err) => {
+          console.error(`[stripe/webhook] ✗ Welcome email FAILED for ${maskEmail(reg.email)}:`, err instanceof Error ? err.message : err);
+        });
+      }
 
       if (appointmentId) {
         // Auto-create meeting link on payment confirmation
@@ -97,5 +391,41 @@ export async function POST(req: Request) {
     console.error("[stripe/webhook] Event handling error", error);
   }
 
+  if (retry) return new Response("Track purchase not recorded", { status: 500 });
   return new Response("ok", { status: 200 });
+}
+
+// ── Learning Box track purchase ─────────────────────────────────────────────
+// Only a paid session grants the track. Idempotent: the purchase is keyed on
+// the Stripe session id and on (student, track), so a retried event inserts
+// nothing. A failure throws so the outer handler logs it.
+async function handleTrackPurchase(session: Stripe.Checkout.Session) {
+  if (session.payment_status !== "paid") {
+    console.log(`[stripe/webhook] Learn track session ${session.id} not paid yet (${session.payment_status})`);
+    return;
+  }
+  const studentId = session.metadata?.studentId || session.client_reference_id;
+  const trackId = session.metadata?.trackId;
+  if (!studentId || !trackId) {
+    console.error(`[stripe/webhook] Learn track session ${session.id} missing studentId/trackId`);
+    return;
+  }
+  const created = await recordTrackPurchase({
+    studentId,
+    trackId,
+    amountCents: session.amount_total ?? 0,
+    currency: session.currency ?? "usd",
+    stripeSessionId: session.id,
+    stripePaymentIntent:
+      typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null,
+  });
+  console.log(`[stripe/webhook] Learn track ${trackId} for student ${studentId}: ${created ? "purchase recorded" : "already recorded"}`);
+  await completePendingEnrollment(studentId, { kind: "track", trackId });
+  await recordReferralPayment({
+    studentId,
+    kind: "track",
+    amountCents: session.amount_total,
+    payerEmail: session.customer_details?.email ?? session.customer_email,
+    customerId: typeof session.customer === "string" ? session.customer : session.customer?.id ?? null,
+  });
 }

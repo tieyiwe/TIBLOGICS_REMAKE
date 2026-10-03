@@ -1,12 +1,15 @@
+import { checkRateLimit } from "@/lib/rate-limit";
 export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
-import { streamChat } from "@/lib/claude";
+import { getLocale, translatorFor } from "@/lib/i18n/server";
+import { replyInLanguage } from "@/lib/i18n/config";
+import { boundChatMessages } from "@/lib/chat-bounds";
 
 const ADVISOR_SYSTEM_PROMPT = `You are Tibo, the AI Project Advisor for TIBLOGICS, an AI implementation and digital solutions agency.
 
-TIBLOGICS services: AI Implementation & Agents, Workflow Automation, AI Strategy & Consulting, Web & App Development (React/Next.js), Cybersecurity, Data Analytics, Mobile Development (React Native), AI Training & Academy (90+ lessons, $97/mo on Skool), System Design & IoT.
+TIBLOGICS services: AI Implementation & Agents, Workflow Automation, AI Strategy & Consulting, Web & App Development (React/Next.js), Cybersecurity, Data Analytics, Mobile Development (React Native), AI Training & ARFA, the TIBLOGICS AI Academy (certificate tracks, $297 one time per track or $89/month for all, team plans), System Design & IoT.
 
-TIBLOGICS products: InStory (AI-personalized learning platform for K-8, school licensing $3,999–$13,999/yr, MCPS pipeline), CareFlow AI (automated wellness check-ins for social work agencies via Twilio + AI voice), ShipFrica (white-label shipping SaaS for African diaspora logistics, $199-$700/mo), AI Academy (Skool platform, 3 courses, 90+ lessons, founding members $97/mo).
+TIBLOGICS products: InStory (AI-personalized learning platform for K-8, school licensing $3,999–$13,999/yr, MCPS pipeline), CareFlow AI (automated wellness check-ins for social work agencies via Twilio + AI voice), ShipFrica (white-label shipping SaaS for African diaspora logistics, $199-$700/mo), ARFA, the TIBLOGICS AI Academy (tiblogics.com/learning-box, self-paced certificate tracks, $297+ per track or $89/month).
 
 Target markets: Enterprise/airports (SSR Airport Mauritius active client), SMBs & restaurants (Caribbean Flavor active client), Schools & educators, African diaspora businesses, Startups & tech companies.
 
@@ -19,37 +22,28 @@ PROSPECT_PROFILE|name:[full name or "Unknown"]|biz:[business name]|industry:[ind
 
 Keep all responses to 2-4 sentences maximum. Ask ONE question at a time. Be warm and conversational, not salesy.`;
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + 3600000 });
-    return true;
-  }
-  if (entry.count >= 20) return false;
-  entry.count++;
-  return true;
-}
-
 export async function POST(req: NextRequest) {
+  const locale = await getLocale();
+  const t = translatorFor(locale);
   const ip = req.headers.get("x-forwarded-for") ?? "unknown";
-  if (!checkRateLimit(ip)) {
-    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+  if (!(await checkRateLimit(`claude-advisor:${ip}`, 20, 3_600_000))) {
+    return NextResponse.json({ error: t("tools.api.rateLimit") }, { status: 429 });
   }
+  // Answers in the visitor's language. The profile line is parsed by the
+  // page, so its markers stay as specified.
+  const system =
+    locale === "en"
+      ? ADVISOR_SYSTEM_PROMPT
+      : `${ADVISOR_SYSTEM_PROMPT}\n\n${replyInLanguage(locale)} Keep the PROSPECT_PROFILE line's markers and field names (PROSPECT_PROFILE, name:, biz:, industry:, challenge:, budget:, solutions:) exactly as specified; write the values in that language.`;
   try {
-    const { messages } = await req.json();
+    const messages = boundChatMessages((await req.json().catch(() => ({})))?.messages);
+    if (!messages) return NextResponse.json({ error: t("tools.api.invalidRequest") }, { status: 400 });
 
-    const anthropic = (await import("@/lib/claude")).default;
-    const { CLAUDE_MODEL } = await import("@/lib/claude");
+    const { aiBudgetBlock, streamClaude } = await import("@/lib/claude");
+    const paused = await aiBudgetBlock("chat-advisor", t("tools.api.aiUnavailable"));
+    if (paused) return paused;
 
-    const stream = anthropic.messages.stream({
-      model: CLAUDE_MODEL,
-      max_tokens: 1024,
-      system: ADVISOR_SYSTEM_PROMPT,
-      messages,
-    });
+    const stream = streamClaude("chat-advisor", { system, messages, maxTokens: 1024, meta: { ref: "advisor" } });
 
     const encoder = new TextEncoder();
     const readable = new ReadableStream({
@@ -62,7 +56,7 @@ export async function POST(req: NextRequest) {
           }
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         } catch (err) {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "Stream error" })}\n\n`));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: t("tools.api.aiUnavailable") })}\n\n`));
         } finally {
           controller.close();
         }
@@ -78,6 +72,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error("Tibo advisor error:", err);
-    return NextResponse.json({ error: "AI service unavailable" }, { status: 500 });
+    return NextResponse.json({ error: t("tools.api.aiUnavailable") }, { status: 500 });
   }
 }

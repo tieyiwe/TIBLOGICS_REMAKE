@@ -23,9 +23,31 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
-.env*.local
+# local env files: every .env variant, except the documented template
 .env
+.env*
+!.env.example
+
+# keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+id_rsa*
+*.keystore
+service-account*.json
+*-credentials.json
+
+# scratch and local-only files
+*.log
+*.tmp
+*.bak
+*.swp
+tmp/
+scratch/
+.scratch/
+.claude/settings.local.json
 
 # vercel
 .vercel
@@ -33,3 +55,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Database dumps — these contain real customer data (emails, phone numbers,
+# order and appointment records). Never commit one.
+/db-migration/
+*.dump
