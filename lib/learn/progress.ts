@@ -5,6 +5,7 @@ import { certificationStatus } from "./assessments";
 import { draftTableReady } from "./drafts/db";
 import { lessonMastered, masteredLessonIds, moduleTestedOut, testOutOpen } from "./mastery/testout";
 import { ensureMasteryTables } from "./mastery/db";
+import { isOwnerStudent } from "@/lib/learn/owner";
 
 /**
  * Idempotent lesson completion. Returns the next lesson id in the track
@@ -196,6 +197,7 @@ export async function firstUnfinishedLesson(studentId: string, moduleId: string)
  * never re-locks work they have done).
  */
 export async function quizUnlocked(studentId: string, quizId: string, moduleId: string | null | undefined): Promise<boolean> {
+  if (await isOwnerStudent(studentId)) return true;
   const tried = await prisma.quizAttempt.count({ where: { studentId, quizId } });
   // Mastery paths: a module rated Mastered may be tested out of directly.
   return tried > 0 || (await moduleLessonsComplete(studentId, moduleId)) || testOutOpen(studentId, moduleId);
@@ -206,6 +208,7 @@ export async function quizUnlocked(studentId: string, quizId: string, moduleId: 
  * a learner with an autosaved draft keeps their lab open too.
  */
 export async function labUnlocked(studentId: string, labId: string): Promise<boolean> {
+  if (await isOwnerStudent(studentId)) return true;
   const tried = await prisma.labAttempt.count({ where: { studentId, labId } });
   if (tried > 0) return true;
   const drafted = await draftTableReady()
@@ -216,6 +219,7 @@ export async function labUnlocked(studentId: string, labId: string): Promise<boo
 
 /** Lab lock ignoring drafts: an attempt, or the module's lessons done. */
 export async function labOpenWithoutDrafts(studentId: string, labId: string): Promise<boolean> {
+  if (await isOwnerStudent(studentId)) return true;
   const tried = await prisma.labAttempt.count({ where: { studentId, labId } });
   return tried > 0 || moduleLessonsComplete(studentId, await labModuleId(labId));
 }

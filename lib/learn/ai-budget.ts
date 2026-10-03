@@ -1,6 +1,7 @@
 import { checkRateLimit, rateLimitStatus } from "@/lib/rate-limit";
 import { getMembership } from "@/lib/learn/team/access";
 import prisma from "@/lib/prisma";
+import { isOwnerStudent } from "@/lib/learn/owner";
 
 // One daily ceiling on model calls per learner, shared by the practice pad,
 // prompt-lab runs, the Code Studio pair programmer and lab grading. The
@@ -25,6 +26,9 @@ async function activeSeatCount(teamId: string): Promise<number> {
 }
 
 export async function withinDailyAiBudget(studentId: string): Promise<boolean> {
+  // The owner's own checks are not capped per day (the platform budget in
+  // lib/ai-spend-guard.ts still applies).
+  if (await isOwnerStudent(studentId)) return true;
   const limit = dailyAiLimit();
   const m = await getMembership(studentId);
   if (m?.entitled) {

@@ -9,6 +9,7 @@ import { getLocale, translatorFor, type T } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTrack } from "@/lib/i18n/sources/learn";
 import { localizeExamInstructions } from "@/lib/i18n/sources/labs";
 import TutorDock from "@/components/learn/tutor/TutorDock";
+import { isOwnerStudent } from "@/lib/learn/owner";
 
 export const dynamic = "force-dynamic";
 
@@ -64,7 +65,8 @@ export default async function ExamPage({ params }: { params: Promise<{ slug: str
   const modules = source ? source.modules.map((m) => ({ id: m.id, title: trackText?.modules[m.id]?.title ?? m.title })) : [];
 
   const [unlocked, sessions, profile] = await Promise.all([
-    allModuleQuizzesPassed(student.id, track.id),
+    // The owner can open every exam to check it (lib/learn/owner.ts).
+    isOwnerStudent(student.id).then((o) => o || allModuleQuizzesPassed(student.id, track.id)),
     prisma.finalExamSession.findMany({
       where: { studentId: student.id, finalExamId: exam.id },
       orderBy: { startedAt: "desc" },

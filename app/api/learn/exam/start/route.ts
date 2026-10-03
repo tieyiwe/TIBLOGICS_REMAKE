@@ -7,6 +7,7 @@ import { allModuleQuizzesPassed, presentQuestion, seededShuffle, serveQuestion }
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 import type { Locale } from "@/lib/i18n/config";
 import { localizeQuestions } from "@/lib/i18n/sources/labs";
+import { isOwnerStudent } from "@/lib/learn/owner";
 
 // Creates a server-clocked exam session (Part B rule 6).
 // started_at / expires_at are computed here; the client only renders a
@@ -32,8 +33,11 @@ export async function POST(req: NextRequest) {
     const denied = await denyTrack(access, track.id);
     if (denied) return denied;
 
+    // The owner checks every exam: no quiz gate, attempt limit or cooldown.
+    const owner = await isOwnerStudent(student.id);
+
     // Gate: all module quizzes must be passed first
-    if (!(await allModuleQuizzesPassed(student.id, track.id))) {
+    if (!owner && !(await allModuleQuizzesPassed(student.id, track.id))) {
       return NextResponse.json({ error: t("labs.api.passQuizzesFirst") }, { status: 403 });
     }
 
@@ -62,17 +66,17 @@ export async function POST(req: NextRequest) {
       orderBy: { startedAt: "desc" },
       select: { passed: true, submittedAt: true },
     });
-    if (past.some((s) => s.passed)) {
+    if (!owner && past.some((s) => s.passed)) {
       return NextResponse.json({ error: t("labs.api.examAlreadyPassed") }, { status: 409 });
     }
-    if (past.length >= exam.maxAttempts) {
+    if (!owner && past.length >= exam.maxAttempts) {
       return NextResponse.json(
         { error: t("labs.api.attemptsUsed"), supportReset: true },
         { status: 403 },
       );
     }
     const last = past[0];
-    if (last?.submittedAt) {
+    if (!owner && last?.submittedAt) {
       const readyAt = last.submittedAt.getTime() + exam.cooldownHours * 3600_000;
       if (Date.now() < readyAt) {
         return NextResponse.json(

@@ -16,6 +16,7 @@ import { readDraft } from "@/lib/learn/drafts/server";
 import TutorDock from "@/components/learn/tutor/TutorDock";
 import DiscussionSection from "@/components/learn/community/DiscussionSection";
 import { lessonVideoFor } from "@/lib/learn/video/store";
+import { isOwnerStudent } from "@/lib/learn/owner";
 
 export const dynamic = "force-dynamic";
 
@@ -133,8 +134,9 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
 
   // Quiz becomes available once every lesson in the module is complete
   const moduleLessonIds = lesson.module.lessons?.map((l) => l.id) ?? [];
+  // The owner can open every module quiz to check it (lib/learn/owner.ts).
   const moduleComplete =
-    moduleLessonIds.length > 0 && moduleLessonIds.every((lid) => doneIds.has(lid));
+    (moduleLessonIds.length > 0 && moduleLessonIds.every((lid) => doneIds.has(lid))) || (await isOwnerStudent(student.id));
 
   return (
     <div>

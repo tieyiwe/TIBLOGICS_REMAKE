@@ -152,8 +152,9 @@ export async function getIndividualEntitlement(studentId: string | null | undefi
     prisma.learnSubscription.findUnique({ where: { studentId } }).catch(() => null),
     prisma.student.findUnique({ where: { id: studentId }, select: { email: true } }).catch(() => null),
   ]);
+  const isOwner = row?.email.toLowerCase() === OWNER_EMAIL.toLowerCase();
   if (!sub || sub.status === "canceled") {
-    if (row?.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) return COMPED;
+    if (isOwner) return COMPED;
     if (!sub) return NONE;
   }
 
@@ -168,6 +169,9 @@ export async function getIndividualEntitlement(studentId: string | null | undefi
     sub.status === "comped" && (sub.plan === "referral" || sub.plan === "comp_timed") && !!sub.currentPeriodEnd && sub.currentPeriodEnd.getTime() <= now;
   const entitled =
     sub.status === "active" || sub.status === "trialing" || (sub.status === "comped" && !referralCompOver) || inGrace;
+  // The owner is never stopped by the paywall, whatever state a test
+  // subscription is in (unfinished checkout, failed payment, ended comp).
+  if (!entitled && isOwner) return COMPED;
 
   return {
     entitled,

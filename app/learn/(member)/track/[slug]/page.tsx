@@ -26,6 +26,7 @@ import { resumeTitle } from "@/components/learn/ResumeCard";
 import TrackCommunityCards from "@/components/learn/community/TrackCommunityCards";
 import OfflineDownload from "@/components/learn/pwa/OfflineDownload";
 import YoureInBanner from "@/components/learn/join/YoureInBanner";
+import { isOwnerStudent } from "@/lib/learn/owner";
 
 export const dynamic = "force-dynamic";
 
@@ -90,6 +91,7 @@ export default async function TrackHome({
   // Per-track access. Without it the outline stays visible as a preview,
   // lessons are locked (free-preview ones excepted) and the two ways to
   // unlock are offered.
+  const owner = await isOwnerStudent(student.id);
   const access = await getAccess(student.id);
   if (!canAccessTrack(access, track.id)) {
     return (
@@ -503,7 +505,7 @@ export default async function TrackHome({
             </p>
             {gates.exam ? (
               <p className="mt-3 text-xs font-semibold text-green-700">✓ {t("learn.trackHome.passed")}</p>
-            ) : gates.quizzes ? (
+            ) : gates.quizzes || owner ? (
               <Link
                 href={`/learn/exam/${track.slug}`}
                 className="mt-3 inline-block rounded-full bg-[var(--ink)] px-5 py-2 text-xs font-bold text-white"

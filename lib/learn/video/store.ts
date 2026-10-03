@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { ensureVideoTables } from "./db";
 import { isGeneratedUrl, readVariants, type Variants } from "./variants";
+import { isOwnerStudent } from "@/lib/learn/owner";
 import {
   CAPTION_LANGS,
   COVERAGE_BUCKETS,
@@ -70,6 +71,7 @@ export async function lessonVideoFor(
   const voiceLang = variant ? (variant === meta.variants.fr ? "fr" : "en") : generated ? "en" : undefined;
   return {
     ...pick,
+    noSkip: !(await isOwnerStudent(studentId)),
     resumeAt: progress?.positionSec ?? 0,
     coverage: progress?.coverage?.length === COVERAGE_BUCKETS ? progress.coverage : emptyCoverage(),
     watched: !!progress?.watchedAt,

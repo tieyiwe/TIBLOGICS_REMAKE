@@ -31,6 +31,8 @@ export interface LessonVideoData {
   /** Parts already seen ("0"/"1" buckets). */
   coverage: string;
   watched: boolean;
+  /** Learners cannot skip ahead until watched; false for the owner (checking content). */
+  noSkip?: boolean;
   /** Generated narrated video: the files to offer, best first (MP4 then WebM). */
   sources?: Array<{ src: string; type: string }>;
   /** Generated narrated video: the language the AI voice speaks. */
