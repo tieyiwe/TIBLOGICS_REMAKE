@@ -11,8 +11,10 @@ export const SITE_URL = "https://tiblogics.com";
 export const SITE_HOST = "tiblogics.com";
 export const SITE_NAME = "TIBLOGICS";
 
-/** The default social card (app/opengraph-image.tsx). */
-export const OG_IMAGE = `${SITE_URL}/opengraph-image?v=3`;
+/** The default social card: the owner's own design (public/main-domain-preview.png),
+ *  padded to 1200x630 in public/main-domain-preview-og.png. Bump ?v= when it changes
+ *  so social sites fetch it again. Articles use their own cards. */
+export const OG_IMAGE = `${SITE_URL}/main-domain-preview-og.png?v=1`;
 export const OG_IMAGE_SIZE = { width: 1200, height: 630 } as const;
 
 /** Raster logo for structured data (Google wants a crawlable image, ≥112px). */

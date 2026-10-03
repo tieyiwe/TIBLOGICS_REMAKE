@@ -47,7 +47,7 @@ function articlePost(prisma: typeof import("@/lib/prisma").prisma, slug: string)
 
 // Canonical origin, whatever host served the request.
 const SITE_URL = "https://tiblogics.com";
-const FALLBACK_IMAGE = `${SITE_URL}/opengraph-image?v=3`;
+const FALLBACK_IMAGE = `${SITE_URL}/main-domain-preview-og.png?v=1`;
 
 const CATEGORY_OG_FALLBACK: Record<string, string> = {
   "breaking":     "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&h=630&q=80",

@@ -2,7 +2,7 @@ import { readFile } from "fs/promises";
 import path from "path";
 
 // The social share preview for tiblogics.com (link cards on LinkedIn,
-// WhatsApp, X, Slack, iMessage...). One design, used by app/opengraph-image
+// WhatsApp, X, Slack, iMessage...). One design, formerly the site card (app/opengraph-image, now replaced by the owner's design in public/main-domain-preview-og.png); kept for
 // and app/twitter-image. Rendered by next/og (Satori): every element with
 // more than one child needs display:flex, and only inline styles work.
 
