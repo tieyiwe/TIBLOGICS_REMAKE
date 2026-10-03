@@ -2,14 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AudioLines, ListChecks, Play, RefreshCw } from "lucide-react";
+import { AudioLines, CircleStop, ListChecks, Play, RefreshCw } from "lucide-react";
 import { Button, Card, Notice, StatCard, tableStyles, useConfirm, useToast } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import type { VideoSummary } from "@/lib/learn/video/queue";
 
 // The narrated-video pipeline on /admin_pro/learn/videos: which voice and
 // storage are in use, how far generation has got, what the rest would cost,
-// and the bulk actions (plan, generate all or one track). Polls while jobs
+// and the bulk actions (plan, generate or cancel, all or one track). Polls while jobs
 // are queued or running.
 
 const usd = (n: number) => `$${n.toFixed(2)}`;
@@ -67,16 +67,18 @@ export default function AutoVideoPanel() {
   async function generate(trackId?: string, title?: string) {
     if (!s) return;
     const e = s.estimate;
+    const tr = trackId ? s.perTrack.find((x) => x.trackId === trackId) : undefined;
     const ok = await confirm({
       title: trackId ? `Generate videos for ${title}?` : "Generate every planned video?",
       body: (
         <div className="space-y-2">
           <p>
             {trackId
-              ? "Every lesson in this track that the plan includes and that has no current video is queued, in English and French."
+              ? `${tr?.estVideos ?? 0} videos (English and French) for the lessons in this track that the plan includes and that have no current video are queued.`
               : `${e.videos} videos for ${e.lessons} lessons (English and French) are queued.`}{" "}
             The &ldquo;videos&rdquo; cron job makes them a few at a time (VIDEO_MAX_PER_RUN, default 2, every 15 minutes).
           </p>
+          {tr && <p className="font-semibold">Estimated cost: about {usd(tr.estUsd)} (voice and AI scripts).</p>}
           {!trackId && (
             <p className="font-semibold">
               Estimated cost: about {usd(e.totalUsd)} ({usd(e.ttsUsd)} voice for {e.chars.toLocaleString()} characters, about {e.minutes} minutes of
@@ -93,6 +95,17 @@ export default function AutoVideoPanel() {
     await post(trackId ? `gen:${trackId}` : "gen", { action: "generate", trackId }, (d) => `${d.queued ?? 0} video jobs queued.`);
   }
 
+  async function cancel(trackId?: string, title?: string) {
+    const ok = await confirm({
+      title: trackId ? `Cancel the queued videos for ${title}?` : "Cancel every queued video?",
+      body: "Videos waiting in the queue are taken out and nothing is spent on them. A video being made right now finishes. Press Generate again any time to queue them back.",
+      confirmLabel: "Cancel queued",
+      danger: true,
+    });
+    if (!ok) return;
+    await post(trackId ? `cancel:${trackId}` : "cancel", { action: "cancel", trackId }, (d) => `${d.cancelled ?? 0} queued videos cancelled.`);
+  }
+
   if (err && !s) return <Notice tone="danger" title="Narrated videos">{err}</Notice>;
   if (!s) return <Card title="Narrated videos (AI voice)"><p className="font-dm text-[13px] text-[var(--a-ink-3)]">Loading…</p></Card>;
 
@@ -107,6 +120,11 @@ export default function AutoVideoPanel() {
           <Button size="sm" icon={ListChecks} loading={busy === "plan"} onClick={() => post("plan", { action: "plan" }, (d) => `Planned ${d.planned ?? 0} lessons: ${d.yes ?? 0} with a video, ${d.no ?? 0} without${d.pending ? `, ${d.pending} provisional` : ""}.`)} data-testid="video-plan-all">
             Plan videos for all tracks
           </Button>
+          {s.jobs.queued + s.jobs.needs_tts > 0 && (
+            <Button size="sm" variant="danger" icon={CircleStop} loading={busy === "cancel"} onClick={() => cancel()} data-testid="video-cancel-all">
+              Cancel queued ({s.jobs.queued + s.jobs.needs_tts})
+            </Button>
+          )}
           <Button size="sm" variant="primary" icon={Play} loading={busy === "gen"} onClick={() => generate()} disabled={!e.videos} data-testid="video-generate-all">
             Generate all planned
           </Button>
@@ -180,6 +198,11 @@ export default function AutoVideoPanel() {
                       <Button size="sm" variant="ghost" icon={Play} loading={busy === `gen:${t.trackId}`} onClick={() => generate(t.trackId, t.title)} disabled={!t.include}>
                         Generate
                       </Button>
+                      {t.queued + t.needsTts > 0 && (
+                        <Button size="sm" variant="ghost" icon={CircleStop} loading={busy === `cancel:${t.trackId}`} onClick={() => cancel(t.trackId, t.title)} data-testid="video-cancel-track">
+                          Cancel
+                        </Button>
+                      )}
                     </span>
                   </td>
                 </tr>

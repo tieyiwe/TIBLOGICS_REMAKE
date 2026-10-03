@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 import { requirePermission } from "@/lib/require-admin";
 import { ensureVideoTables } from "@/lib/learn/video/db";
 import { removeGeneratedVideo } from "@/lib/learn/video/pipeline";
-import { queuePlanned, queueVideos, runVideoQueue, videoSummary } from "@/lib/learn/video/queue";
+import { cancelQueued, queuePlanned, queueVideos, runVideoQueue, videoSummary } from "@/lib/learn/video/queue";
 import { planLessons, setOverride } from "@/lib/learn/video/select";
 
 // Staff only: the narrated-video pipeline on /admin_pro/learn/videos.
@@ -12,6 +12,7 @@ import { planLessons, setOverride } from "@/lib/learn/video/select";
 //   POST { action: "plan", trackId? }     decide which lessons get a video (rules + Haiku)
 //   POST { action: "generate", trackId? } queue every planned lesson without a current video
 //   POST { action: "generate", lessonId } queue one lesson (both languages) and start it now
+//   POST { action: "cancel", trackId? }   take waiting jobs out of the queue (running ones finish)
 //   POST { action: "override", lessonId, override: "include"|"exclude"|null }
 //   POST { action: "remove", lessonId }   take the generated video off the lesson
 
@@ -32,6 +33,7 @@ const Id = z.string().min(1).max(64);
 const Body = z.discriminatedUnion("action", [
   z.object({ action: z.literal("plan"), trackId: Id.optional() }),
   z.object({ action: z.literal("generate"), trackId: Id.optional(), lessonId: Id.optional() }),
+  z.object({ action: z.literal("cancel"), trackId: Id.optional() }),
   z.object({ action: z.literal("override"), lessonId: Id, override: z.enum(["include", "exclude"]).nullable() }),
   z.object({ action: z.literal("remove"), lessonId: Id }),
 ]);
@@ -61,6 +63,10 @@ export async function POST(req: NextRequest) {
         }
         const queued = await queuePlanned({ trackId: body.trackId });
         return NextResponse.json({ ok: true, queued });
+      }
+      case "cancel": {
+        const cancelled = await cancelQueued({ trackId: body.trackId });
+        return NextResponse.json({ ok: true, cancelled });
       }
       case "override": {
         await setOverride(body.lessonId, body.override);

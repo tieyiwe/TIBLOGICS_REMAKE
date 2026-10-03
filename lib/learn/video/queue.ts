@@ -190,6 +190,25 @@ export async function syncVideoJobs(opts: { aiBudget?: number; deadline?: number
   return { requeued, planned, resumed };
 }
 
+/**
+ * Takes waiting jobs out of the queue (queued or waiting for a voice key),
+ * for one track or all. Running jobs finish. Nothing is spent on cancelled
+ * jobs, and they stay out until someone presses Generate again.
+ */
+export async function cancelQueued(opts: { trackId?: string } = {}): Promise<number> {
+  await ensureVideoTables();
+  const r = await prisma.lessonVideoJob.updateMany({
+    where: {
+      status: { in: ["queued", "needs_tts"] },
+      ...(opts.trackId
+        ? { lessonId: { in: (await prisma.lesson.findMany({ where: { module: { trackId: opts.trackId } }, select: { id: true } })).map((l) => l.id) } }
+        : {}),
+    },
+    data: { status: "skipped", error: "Cancelled by staff.", leaseUntil: null, updatedAt: new Date() },
+  });
+  return r.count;
+}
+
 /** Lessons with a finished video whose content has changed since: queued again. Cheap (no AI). */
 export async function requeueChanged(): Promise<number> {
   await ensureVideoTables();
@@ -226,7 +245,7 @@ export interface VideoSummary {
   jobs: Record<JobStatus, number>;
   /** What generating every included lesson still missing a current video would cost. */
   estimate: { lessons: number; videos: number; chars: number; minutes: number; ttsUsd: number; aiUsd: number; totalUsd: number };
-  perTrack: Array<{ trackId: string; title: string; lessons: number; include: number; done: number; queued: number; failed: number; needsTts: number }>;
+  perTrack: Array<{ trackId: string; title: string; lessons: number; include: number; done: number; queued: number; failed: number; needsTts: number; estVideos: number; estUsd: number }>;
 }
 
 export async function videoSummary(): Promise<VideoSummary> {
@@ -251,7 +270,8 @@ export async function videoSummary(): Promise<VideoSummary> {
   let aiLessons = 0;
   const perTrack: VideoSummary["perTrack"] = [];
   for (const t of tracks) {
-    const row = { trackId: t.id, title: t.title, lessons: 0, include: 0, done: 0, queued: 0, failed: 0, needsTts: 0 };
+    const row = { trackId: t.id, title: t.title, lessons: 0, include: 0, done: 0, queued: 0, failed: 0, needsTts: 0, estVideos: 0, estUsd: 0 };
+    let trackChars = 0, trackAi = 0;
     for (const l of t.modules.flatMap((m) => m.lessons)) {
       lessons++;
       row.lessons++;
@@ -279,12 +299,19 @@ export async function videoSummary(): Promise<VideoSummary> {
       est.lessons++;
       const script = p?.scriptHash === hash ? (p.script as { en?: { scenes?: Array<{ narration?: string }> } } | null) : null;
       const chars = script?.en?.scenes?.reduce((a, s) => a + (s.narration?.length ?? 0), 0) || p?.estChars || 3000;
-      if (!script) aiLessons++;
+      if (!script) {
+        aiLessons++;
+        trackAi++;
+      }
       for (const loc of missing) {
+        const c = loc === "fr" ? Math.round(chars * 1.15) : chars;
         est.videos++;
-        est.chars += loc === "fr" ? Math.round(chars * 1.15) : chars;
+        est.chars += c;
+        row.estVideos++;
+        trackChars += c;
       }
     }
+    row.estUsd = round2((trackChars / 1e6) * status.pricePerMChar + trackAi * AI_COST_PER_LESSON);
     perTrack.push(row);
   }
   const ttsUsd = (est.chars / 1e6) * status.pricePerMChar;
