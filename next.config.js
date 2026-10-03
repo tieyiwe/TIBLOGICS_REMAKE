@@ -189,5 +189,8 @@ const nextConfig = {
 
 module.exports = (phase) => ({
   ...nextConfig,
-  env: { NEXT_PUBLIC_BUILD_SHA: phase === "phase-production-build" ? buildSha() : process.env.NEXT_PUBLIC_BUILD_SHA || "" },
+  env:
+    phase === "phase-production-build"
+      ? { NEXT_PUBLIC_BUILD_SHA: buildSha(), NEXT_PUBLIC_BUILD_TIME: new Date().toISOString() }
+      : { NEXT_PUBLIC_BUILD_SHA: process.env.NEXT_PUBLIC_BUILD_SHA || "", NEXT_PUBLIC_BUILD_TIME: process.env.NEXT_PUBLIC_BUILD_TIME || "" },
 });

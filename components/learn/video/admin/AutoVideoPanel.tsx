@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AudioLines, CircleStop, ListChecks, Play, RefreshCw, Zap } from "lucide-react";
+import { AudioLines, CircleStop, ListChecks, Play, RefreshCw, Rocket, Zap } from "lucide-react";
 import { Button, Card, Notice, StatCard, tableStyles, useConfirm, useToast } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import type { VideoSummary } from "@/lib/learn/video/queue";
@@ -176,6 +176,20 @@ export default function AutoVideoPanel() {
       }
     >
       <div className="space-y-4">
+        {process.env.NEXT_PUBLIC_BUILD_SHA ? (
+          <div
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[var(--a-radius-control)] border border-[var(--a-info)]/40 border-l-4 border-l-[var(--a-info)] bg-[var(--a-info-bg)] px-3 py-2.5 font-dm text-[13.5px] font-semibold text-[var(--a-info)]"
+            data-testid="build-version"
+          >
+            <Rocket size={15} aria-hidden className="shrink-0" />
+            <span>
+              Live version: <code className="rounded bg-white px-1.5 py-0.5 font-mono text-[13px] font-bold text-[var(--a-ink)]">{process.env.NEXT_PUBLIC_BUILD_SHA}</code>
+            </span>
+            {process.env.NEXT_PUBLIC_BUILD_TIME ? (
+              <span className="text-[var(--a-ink-2)]">built {new Date(process.env.NEXT_PUBLIC_BUILD_TIME).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}</span>
+            ) : null}
+          </div>
+        ) : null}
         {s.provider.provider ? (
           <p className="font-dm text-[13px] text-[var(--a-ink-2)]" data-testid="video-provider">
             Voice: <b>{s.provider.provider === "google" ? "Google Cloud Text-to-Speech" : "OpenAI TTS"}</b> ({s.provider.voices?.en} · {s.provider.voices?.fr}). Files stored in{" "}
@@ -229,9 +243,7 @@ export default function AutoVideoPanel() {
             <>Every planned lesson has a current video.</>
           )}
         </p>
-        {process.env.NEXT_PUBLIC_BUILD_SHA ? (
-          <p className="font-dm text-[11px] text-[var(--a-ink-3)]" data-testid="build-version">Live version: {process.env.NEXT_PUBLIC_BUILD_SHA}</p>
-        ) : null}
+
 
         <div className="overflow-x-auto">
           <table className={cn(tableStyles.table, "min-w-[560px]")}>
