@@ -2,6 +2,7 @@ import { z } from "zod";
 import { runClaude } from "@/lib/claude";
 import { translated } from "@/lib/i18n/content";
 import { extractJson } from "./script";
+import { ICONS } from "./icons";
 
 // The scene script for a generated narrated lesson video: 5 to 10 scenes,
 // each with what the AI voice says and what the slide shows (a title plus
@@ -9,7 +10,13 @@ import { extractJson } from "./script";
 // English from the lesson only (Sonnet, thinking off), then translated to
 // French through the content translation cache.
 
-export const SCENE_LAYOUTS = ["title", "bullets", "steps", "compare", "code", "recap"] as const;
+export const SCENE_LAYOUTS = ["title", "bullets", "steps", "compare", "code", "recap", "cycle", "hub", "timeline", "illustration", "number"] as const;
+
+/** Scripts written before the illustrated layouts are rewritten once (pipeline ensureScript). */
+export const SCRIPT_VERSION = 2;
+
+/** Icons the script may use (lib/learn/video/icons.ts). */
+export const ICON_KEYS = Object.keys(ICONS);
 export type SceneLayout = (typeof SCENE_LAYOUTS)[number];
 
 export interface Scene {
@@ -26,9 +33,22 @@ export interface Scene {
   compare: { leftTitle: string; rightTitle: string; left: string[]; right: string[] } | null;
   /** "code": a prompt or code snippet shown on a card. */
   code: { label: string; kind: "prompt" | "code"; text: string } | null;
+  /** "cycle", "hub", "timeline": 3-6 short labels (the loop's stages, the parts around the hub, the stages in time). */
+  nodes: string[];
+  /** "hub": the concept in the middle. */
+  center: string;
+  /**
+   * Icons (keys of ICONS): "illustration" shows 1-3 large ones as a small
+   * scene; on other layouts, one per item (bullet, step or node), optional.
+   */
+  icons: string[];
+  /** "number": a figure the lesson itself gives, and what it measures. */
+  figure: { value: string; label: string } | null;
 }
 
 export interface SceneScript {
+  /** SCRIPT_VERSION it was written for (missing: 1, before the illustrated layouts). */
+  v?: number;
   title: string;
   /** The track and module titles in this language (French scripts). */
   track?: string;
@@ -57,9 +77,20 @@ const SceneSchema = z.object({
     .object({ label: str(60).default(""), kind: z.enum(["prompt", "code"]).catch("prompt"), text: z.string().max(1500) })
     .nullish()
     .transform((v) => v ?? null),
+  nodes: list(6, 48),
+  center: str(48).default(""),
+  icons: z
+    .array(z.string())
+    .default([])
+    .transform((a) => a.map((x) => x.trim().toLowerCase()).slice(0, 6)),
+  figure: z
+    .object({ value: str(16).min(1), label: str(90) })
+    .nullish()
+    .transform((v) => v ?? null),
 });
 
 const ScriptSchema = z.object({
+  v: z.number().int().optional(),
   title: str(200).min(1),
   track: str(200).optional(),
   module: str(200).optional(),
@@ -73,11 +104,31 @@ function normalise(s: SceneScript): SceneScript {
     if (layout === "steps" && sc.steps.length < 2) layout = "bullets";
     if (layout === "compare" && (!sc.compare || !sc.compare.left.length || !sc.compare.right.length)) layout = "bullets";
     if (layout === "code" && !sc.code?.text.trim()) layout = "bullets";
+    // Unknown icon names are dropped (an icon per item only when every item has one).
+    const icons = sc.icons.map((k) => (ICONS[k] ? k : "")).filter(Boolean);
+    if ((layout === "cycle" || layout === "timeline") && sc.nodes.length < 3) layout = sc.nodes.length >= 2 ? "steps" : "bullets";
+    if (layout === "hub" && (sc.nodes.length < 3 || !sc.center.trim())) layout = "bullets";
+    if (layout === "illustration" && !icons.length) layout = "bullets";
+    if (layout === "number" && !sc.figure?.value.trim()) layout = "bullets";
     if (i === 0 && layout !== "title" && all.length > 3) layout = layout === "bullets" ? "title" : layout;
     const code = sc.code ? { ...sc.code, text: sc.code.text.split("\n").slice(0, 14).map((l) => l.slice(0, 90)).join("\n") } : null;
-    return { ...sc, layout, title: tidy(sc.title).slice(0, 90), narration: speakable(sc.narration), bullets: sc.bullets.map(tidy), steps: sc.steps.map(tidy), code };
+    const items = layout === "steps" ? sc.steps.length : layout === "cycle" || layout === "hub" || layout === "timeline" ? sc.nodes.length : sc.bullets.length;
+    const keepIcons = layout === "illustration" ? icons.slice(0, 3) : icons.length >= items && items > 0 ? icons.slice(0, items) : [];
+    return {
+      ...sc,
+      layout,
+      title: tidy(sc.title).slice(0, 90),
+      narration: speakable(sc.narration),
+      bullets: sc.bullets.map(tidy),
+      steps: sc.steps.map(tidy),
+      code,
+      nodes: sc.nodes.map(tidy),
+      center: tidy(sc.center),
+      icons: keepIcons,
+      figure: sc.figure ? { value: tidy(sc.figure.value), label: tidy(sc.figure.label) } : null,
+    };
   });
-  return { title: tidy(s.title), ...(s.track ? { track: tidy(s.track) } : {}), ...(s.module ? { module: tidy(s.module) } : {}), scenes };
+  return { ...(s.v ? { v: s.v } : {}), title: tidy(s.title), ...(s.track ? { track: tidy(s.track) } : {}), ...(s.module ? { module: tidy(s.module) } : {}), scenes };
 }
 
 /** Plain punctuation, like the other scripts. */
@@ -111,11 +162,22 @@ Rules:
 - Narration sounds like a respected university professor talking to a room of adults: calm, warm, unhurried and conversational, never salesy. Write for the ear so the voice has natural rhythm and intonation: mix short and medium sentences, open a new idea with a natural spoken link ("Now,", "Here's the thing.", "In other words,", "So,"), ask an occasional real question and then answer it, and end each scene on a clear, settled sentence. Never read a list out mechanically; turn it into flowing speech ("First, ... Then, ... And finally, ...").
 - Narration is plain spoken English for a text-to-speech voice: "you", contractions are fine. No Markdown, no bullet symbols, no URLs, no emoji, no abbreviations a voice would stumble on (write "for example", not "e.g."). Do not read the slide word for word: the slide summarises, the voice explains.
 - Plain punctuation: no em dashes, no ellipses for effect. Use commas, full stops and colons.
-- Slide text is short: "title" at most 8 words; each bullet at most 12 words; each step label at most 5 words; compare items at most 10 words.
+- Make the video SHOW ideas, not only list them. For every scene, pick the layout that best illustrates its idea for a learner, and use at least two illustrated scenes per video (steps, compare, cycle, hub, timeline, illustration or number) whenever the lesson allows. Plain "bullets" only when nothing visual fits.
+  - "steps": a process or workflow in order (2 to 5 steps).
+  - "cycle": something that loops or repeats, such as a feedback loop or an improve-and-repeat routine (3 to 6 stages in "nodes").
+  - "hub": a system and its parts, or one idea with what surrounds it ("center" plus 3 to 6 "nodes").
+  - "timeline": stages over time, a before, during and after, or a history (3 to 6 "nodes").
+  - "compare": two sides (before and after, weak and strong, human and AI).
+  - "illustration": a small picture of the situation, for a story, an example or an analogy: 1 to 3 "icons" side by side (for example ["person", "laptop", "robot"]) and one short caption line in "bullets".
+  - "number": one striking figure the lesson itself states (never invented) in "figure" {"value": "3 in 4", "label": "what it measures"}.
+  - On bullets, steps, cycle, hub and timeline you may add "icons" with exactly one icon per item, in the same order, when icons make the points easier to grasp.
+  - Icon names, use only these: ${ICON_KEYS.join(", ")}.
+- Points appear on screen one at a time as the voice reaches them, so put bullets, steps and nodes in the order the narration mentions them.
+- Slide text is short: "nodes" and "center" at most 4 words each; "title" at most 8 words; each bullet at most 12 words; each step label at most 5 words; compare items at most 10 words.
 - For layout "title", "bullets" holds one short subtitle line (the lesson's promise).
 
 Return ONLY a JSON object, no Markdown fences, with this shape:
-{"title": string, "scenes": [{"layout": "title"|"bullets"|"steps"|"compare"|"code"|"recap", "title": string, "narration": string, "bullets": string[], "steps": string[], "compare": {"leftTitle": string, "rightTitle": string, "left": string[], "right": string[]} | null, "code": {"label": string, "kind": "prompt"|"code", "text": string} | null}]}`;
+{"title": string, "scenes": [{"layout": "title"|"bullets"|"steps"|"compare"|"code"|"recap"|"cycle"|"hub"|"timeline"|"illustration"|"number", "title": string, "narration": string, "bullets": string[], "steps": string[], "compare": {"leftTitle": string, "rightTitle": string, "left": string[], "right": string[]} | null, "code": {"label": string, "kind": "prompt"|"code", "text": string} | null, "nodes": string[], "center": string, "icons": string[], "figure": {"value": string, "label": string} | null}]}`;
 
 export interface LessonForVideo {
   id: string;
@@ -155,7 +217,7 @@ export async function generateScenes(l: LessonForVideo): Promise<SceneScript> {
       meta: { ref: `lesson:${l.id}` },
     });
     const parsed = readSceneScript(extractJson(text));
-    if (parsed) return parsed;
+    if (parsed) return { ...parsed, v: SCRIPT_VERSION };
     lastErr = "The scene script did not come back in the expected shape.";
   }
   throw new Error(lastErr);
@@ -185,6 +247,9 @@ function flatten(s: SceneScript, names?: { track: string; module: string }): Rec
       sc.compare.left.forEach((b, j) => (f[`${i}.l${j}`] = b));
       sc.compare.right.forEach((b, j) => (f[`${i}.r${j}`] = b));
     }
+    sc.nodes.forEach((b, j) => (f[`${i}.n${j}`] = b));
+    if (sc.center) f[`${i}.center`] = sc.center;
+    if (sc.figure?.label) f[`${i}.figure`] = sc.figure.label;
     if (sc.code) {
       if (sc.code.label) f[`${i}.codeLabel`] = sc.code.label;
       if (sc.code.kind === "prompt") f[`${i}.code`] = sc.code.text;
@@ -204,6 +269,7 @@ export async function translateScenes(lessonId: string, en: SceneScript, names?:
   if (!fr) return null;
   const g = (k: string, d: string) => (typeof fr[k] === "string" && fr[k].trim() ? fr[k] : d);
   return {
+    ...(en.v ? { v: en.v } : {}),
     title: g("title", en.title),
     ...(names ? { track: g("track", names.track), module: g("module", names.module) } : {}),
     scenes: en.scenes.map((sc, i) => ({
@@ -223,6 +289,9 @@ export async function translateScenes(lessonId: string, en: SceneScript, names?:
       code: sc.code
         ? { ...sc.code, label: g(`${i}.codeLabel`, sc.code.label), text: sc.code.kind === "prompt" ? g(`${i}.code`, sc.code.text) : sc.code.text }
         : null,
+      nodes: sc.nodes.map((b, j) => g(`${i}.n${j}`, b)),
+      center: sc.center ? g(`${i}.center`, sc.center) : "",
+      figure: sc.figure ? { value: sc.figure.value, label: g(`${i}.figure`, sc.figure.label) } : null,
     })),
   };
 }

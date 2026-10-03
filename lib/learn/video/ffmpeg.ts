@@ -142,21 +142,29 @@ export async function polishSample(mp3: Buffer, tmp: string): Promise<Buffer> {
 }
 
 /**
- * The video: each slide held for its scene's audio, a short crossfade from
- * the previous slide at the start of each scene, AAC audio, H.264 1080p with
- * fast start.
+ * The video: a sequence of shots (each scene's slide, or the frames that
+ * build it up point by point), each held for its time with a short
+ * crossfade from the previous one, AAC audio, H.264 1080p with fast start.
  *
- * Made one scene at a time and then joined without re-encoding: a single
+ * Made one shot at a time and then joined without re-encoding: a single
  * filter graph over every slide made ffmpeg buffer frames for all of them
  * (about 2.4 GB for a 3-minute lesson), which ran a small server out of
- * memory and took the website down with it. A scene clip needs about 200 MB.
+ * memory and took the website down with it. A shot's clip needs about 200 MB.
  * Each clip's length comes from the running total, rounded to whole frames,
  * so the slides never drift from the narration.
  */
-export async function composeVideo(opts: { slides: string[]; audio: string[]; sceneSeconds: number[]; out: string; tmp: string }): Promise<void> {
-  const { slides, audio, sceneSeconds, out, tmp } = opts;
+export interface Shot {
+  /** The slide image. */
+  file: string;
+  /** How long it is on screen, seconds. */
+  seconds: number;
+  /** Crossfade from the previous shot, seconds (0 for the first). */
+  fade: number;
+}
+
+export async function composeVideo(opts: { shots: Shot[]; audio: string[]; totalSeconds: number; out: string; tmp: string }): Promise<void> {
+  const { shots, audio, out, tmp } = opts;
   const fps = Number(process.env.VIDEO_FPS) || 25;
-  const fade = 0.5;
   const kenBurns = process.env.VIDEO_KEN_BURNS === "1";
   const threads = ["-threads", process.env.VIDEO_FFMPEG_THREADS || "2", "-filter_threads", "1", "-filter_complex_threads", "1"];
   const encode = [
@@ -175,20 +183,21 @@ export async function composeVideo(opts: { slides: string[]; audio: string[]; sc
   const clips: string[] = [];
   let cum = 0;
   let prevFrame = 0;
-  for (let i = 0; i < slides.length; i++) {
-    cum += sceneSeconds[i];
+  for (let i = 0; i < shots.length; i++) {
+    cum += shots[i].seconds;
     const endFrame = Math.round(cum * fps);
     const frames = Math.max(1, endFrame - prevFrame);
     prevFrame = endFrame;
     const secs = frames / fps;
+    const fade = i === 0 ? 0 : Math.min(shots[i].fade, secs / 2);
     const clip = path.join(tmp, `clip${i}.mp4`);
     const args =
-      i === 0
-        ? ["-y", "-i", slides[0], "-filter_complex", `[0:v]${hold(secs + 1)}${zoomIn}[v]`]
+      fade <= 0
+        ? ["-y", "-i", shots[i].file, "-filter_complex", `[0:v]${hold(secs + 1)}${zoomIn}[v]`]
         : [
-            "-y", "-i", slides[i - 1], "-i", slides[i],
+            "-y", "-i", shots[i - 1].file, "-i", shots[i].file,
             "-filter_complex",
-            `[0:v]${hold(fade + 1)}${zoomEnd}[a];[1:v]${hold(secs + 1)}${zoomIn}[b];[a][b]xfade=transition=fade:duration=${fade}:offset=0[v]`,
+            `[0:v]${hold(fade + 1)}${zoomEnd}[a];[1:v]${hold(secs + 1)}${zoomIn}[b];[a][b]xfade=transition=fade:duration=${fade.toFixed(3)}:offset=0[v]`,
           ];
     args.push("-map", "[v]", "-frames:v", String(frames), ...encode, ...threads, clip);
     await runFfmpeg(args, Math.min(30 * 60_000, Math.max(120_000, Math.round(secs * (kenBurns ? 8000 : 3000)))));
@@ -201,7 +210,7 @@ export async function composeVideo(opts: { slides: string[]; audio: string[]; sc
   const audioList = path.join(tmp, "audio.txt");
   await writeFile(videoList, list(clips));
   await writeFile(audioList, list(audio));
-  const total = sceneSeconds.reduce((a, b) => a + b, 0);
+  const total = opts.totalSeconds;
   await runFfmpeg(
     [
       "-y", "-f", "concat", "-safe", "0", "-i", videoList, "-f", "concat", "-safe", "0", "-i", audioList,
