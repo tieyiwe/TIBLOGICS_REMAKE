@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Calendar, MapPin, Users, Clock, ArrowRight, Bell, X, ExternalLink } from "lucide-react";
 import { useLocale, useT } from "@/lib/i18n/client";
 
@@ -41,102 +40,14 @@ interface TechEvent {
   /** Dictionary id: pages.events.place.<place> */
   place: string;
   online?: boolean;
-  coverImage: string;
   url: string;
 }
 
+// Major AI and tech conferences, through 2027. Dates are the organizers'
+// own (checked October 2026); where the next edition has no announced
+// dates, startsOn is left out and endsOn is the last day of the month it
+// usually takes place ("Expected May 2027"). Past entries drop off by date.
 const POPULAR_TECH_EVENTS: TechEvent[] = [
-  {
-    id: "wwdc",
-    name: "Apple WWDC 2026",
-    startsOn: "2026-06-09",
-    endsOn: "2026-06-13",
-    organizer: "Apple",
-    place: "cupertino",
-    online: true,
-    coverImage: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80",
-    url: "https://developer.apple.com/wwdc26/",
-  },
-  {
-    id: "vivatech",
-    name: "VivaTech 2026",
-    startsOn: "2026-06-11",
-    endsOn: "2026-06-14",
-    organizer: "Vivendi / Les Echos",
-    place: "paris",
-    coverImage: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=800&q=80",
-    url: "https://vivatechnology.com/",
-  },
-  {
-    id: "collision",
-    name: "Collision Conference 2026",
-    startsOn: "2026-06-16",
-    endsOn: "2026-06-19",
-    organizer: "Collision",
-    place: "toronto",
-    coverImage: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80",
-    url: "https://collisionconf.com/",
-  },
-  {
-    id: "ltw",
-    name: "London Tech Week 2026",
-    startsOn: "2026-06-15",
-    endsOn: "2026-06-19",
-    organizer: "London & Partners",
-    place: "london",
-    coverImage: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80",
-    url: "https://londontechweek.com/",
-  },
-  {
-    id: "transform",
-    name: "VentureBeat Transform 2026",
-    startsOn: "2026-07-14",
-    endsOn: "2026-07-15",
-    organizer: "VentureBeat",
-    place: "sf",
-    coverImage: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=800&q=80",
-    url: "https://events.venturebeat.com/ai-impact-summit/",
-  },
-  {
-    id: "blackhat",
-    name: "Black Hat USA 2026",
-    startsOn: "2026-08-01",
-    endsOn: "2026-08-06",
-    organizer: "Black Hat",
-    place: "vegas",
-    coverImage: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80",
-    url: "https://www.blackhat.com/us-26/",
-  },
-  {
-    id: "siggraph",
-    name: "SIGGRAPH 2026",
-    startsOn: "2026-08-10",
-    endsOn: "2026-08-14",
-    organizer: "ACM SIGGRAPH",
-    place: "denver",
-    coverImage: "https://images.unsplash.com/photo-1639322537228-f710d846310a?auto=format&fit=crop&w=800&q=80",
-    url: "https://s2026.siggraph.org/",
-  },
-  {
-    id: "dreamforce",
-    name: "Salesforce Dreamforce 2026",
-    startsOn: "2026-09-15",
-    endsOn: "2026-09-18",
-    organizer: "Salesforce",
-    place: "sf",
-    coverImage: "https://images.unsplash.com/photo-1573804633927-bfcbcd909acd?auto=format&fit=crop&w=800&q=80",
-    url: "https://www.salesforce.com/dreamforce/",
-  },
-  {
-    id: "aisummit",
-    name: "AI Summit New York 2026",
-    startsOn: "2026-09-23",
-    endsOn: "2026-09-24",
-    organizer: "AI Summit",
-    place: "ny",
-    coverImage: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=800&q=80",
-    url: "https://theaisummit.com/newyork/",
-  },
   {
     id: "disrupt",
     name: "TechCrunch Disrupt 2026",
@@ -144,18 +55,7 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
     endsOn: "2026-10-09",
     organizer: "TechCrunch",
     place: "sf",
-    coverImage: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80",
     url: "https://techcrunch.com/events/tc-disrupt-2026/",
-  },
-  {
-    id: "gitex",
-    name: "GITEX Global 2026",
-    startsOn: "2026-10-12",
-    endsOn: "2026-10-16",
-    organizer: "DWTC",
-    place: "dubai",
-    coverImage: "https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=800&q=80",
-    url: "https://www.gitex.com/",
   },
   {
     id: "gartner",
@@ -164,17 +64,14 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
     endsOn: "2026-10-22",
     organizer: "Gartner",
     place: "orlando",
-    coverImage: "https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=800&q=80",
     url: "https://www.gartner.com/en/conferences/na/symposium-us",
   },
   {
     id: "devday",
     name: "OpenAI DevDay 2026",
-    // Dates not announced yet: shown as "Oct/Nov 2026".
     endsOn: "2026-11-30",
     organizer: "OpenAI",
     place: "sf",
-    coverImage: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&w=800&q=80",
     url: "https://openai.com/",
   },
   {
@@ -184,18 +81,16 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
     endsOn: "2026-11-07",
     organizer: "Web Summit",
     place: "lisbon",
-    coverImage: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80",
     url: "https://websummit.com/",
   },
   {
     id: "ignite",
     name: "Microsoft Ignite 2026",
-    startsOn: "2026-11-10",
-    endsOn: "2026-11-14",
+    startsOn: "2026-11-17",
+    endsOn: "2026-11-20",
     organizer: "Microsoft",
-    place: "chicago",
+    place: "sf",
     online: true,
-    coverImage: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=800&q=80",
     url: "https://ignite.microsoft.com/",
   },
   {
@@ -205,8 +100,16 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
     endsOn: "2026-12-05",
     organizer: "Amazon Web Services",
     place: "vegas",
-    coverImage: "https://images.unsplash.com/photo-1676299081847-824916de030a?auto=format&fit=crop&w=800&q=80",
     url: "https://reinvent.awsevents.com/",
+  },
+  {
+    id: "gitex",
+    name: "GITEX Global 2026",
+    startsOn: "2026-12-07",
+    endsOn: "2026-12-11",
+    organizer: "Dubai World Trade Centre",
+    place: "dubai",
+    url: "https://www.gitex.com/",
   },
   {
     id: "ces",
@@ -215,18 +118,202 @@ const POPULAR_TECH_EVENTS: TechEvent[] = [
     endsOn: "2027-01-09",
     organizer: "Consumer Technology Association",
     place: "vegas",
-    coverImage: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80",
     url: "https://www.ces.tech/",
   },
   {
     id: "mwc",
-    name: "Mobile World Congress 2027",
-    startsOn: "2027-02-22",
-    endsOn: "2027-02-25",
+    name: "MWC Barcelona 2027",
+    startsOn: "2027-03-01",
+    endsOn: "2027-03-04",
     organizer: "GSMA",
     place: "barcelona",
-    coverImage: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=800&q=80",
     url: "https://www.mwcbarcelona.com/",
+  },
+  {
+    id: "nvidia-gtc-2027",
+    name: "NVIDIA GTC 2027",
+    startsOn: "2027-03-15",
+    endsOn: "2027-03-18",
+    organizer: "NVIDIA",
+    place: "sanjose",
+    online: true,
+    url: "https://www.nvidia.com/gtc/",
+  },
+  {
+    id: "sxsw-2027",
+    name: "SXSW 2027",
+    startsOn: "2027-03-15",
+    endsOn: "2027-03-21",
+    organizer: "SXSW",
+    place: "austin",
+    url: "https://sxsw.com/",
+  },
+  {
+    id: "gitex-africa-2027",
+    name: "GITEX Africa 2027",
+    endsOn: "2027-04-30",
+    organizer: "Kaoun International",
+    place: "marrakech",
+    url: "https://gitexafrica.com/",
+  },
+  {
+    id: "google-io-2027",
+    name: "Google I/O 2027",
+    endsOn: "2027-05-31",
+    organizer: "Google",
+    place: "mountainview",
+    online: true,
+    url: "https://io.google/",
+  },
+  {
+    id: "web-summit-vancouver-2027",
+    name: "Web Summit Vancouver 2027",
+    startsOn: "2027-05-25",
+    endsOn: "2027-05-28",
+    organizer: "Web Summit",
+    place: "vancouver",
+    url: "https://vancouver.websummit.com/",
+  },
+  {
+    id: "toronto-tech-week-2027",
+    name: "Toronto Tech Week 2027",
+    startsOn: "2027-05-31",
+    endsOn: "2027-06-04",
+    organizer: "Toronto Tech Week",
+    place: "toronto",
+    url: "https://www.torontotechweek.com/",
+  },
+  {
+    id: "computex-2027",
+    name: "Computex 2027",
+    startsOn: "2027-06-01",
+    endsOn: "2027-06-04",
+    organizer: "TAITRA",
+    place: "taipei",
+    url: "https://www.computextaipei.com.tw/en/index.html",
+  },
+  {
+    id: "london-tech-week-2027",
+    name: "London Tech Week 2027",
+    startsOn: "2027-06-07",
+    endsOn: "2027-06-11",
+    organizer: "Informa Tech",
+    place: "london",
+    url: "https://londontechweek.com/",
+  },
+  {
+    id: "web-summit-rio-2027",
+    name: "Web Summit Rio 2027",
+    startsOn: "2027-06-14",
+    endsOn: "2027-06-17",
+    organizer: "Web Summit",
+    place: "rio",
+    url: "https://rio.websummit.com/en/",
+  },
+  {
+    id: "vivatech-2027",
+    name: "VivaTech 2027",
+    startsOn: "2027-06-16",
+    endsOn: "2027-06-19",
+    organizer: "Publicis Groupe and Les Echos",
+    place: "paris",
+    url: "https://vivatech.com/",
+  },
+  {
+    id: "microsoft-build-2027",
+    name: "Microsoft Build 2027",
+    endsOn: "2027-06-30",
+    organizer: "Microsoft",
+    place: "sf",
+    online: true,
+    url: "https://build.microsoft.com/",
+  },
+  {
+    id: "wwdc-2027",
+    name: "Apple WWDC 2027",
+    endsOn: "2027-06-30",
+    organizer: "Apple",
+    place: "cupertino",
+    online: true,
+    url: "https://developer.apple.com/wwdc/",
+  },
+  {
+    id: "black-hat-usa-2027",
+    name: "Black Hat USA 2027",
+    startsOn: "2027-07-31",
+    endsOn: "2027-08-05",
+    organizer: "Black Hat",
+    place: "vegas",
+    url: "https://blackhat.com/",
+  },
+  {
+    id: "dreamforce-2027",
+    name: "Dreamforce 2027",
+    startsOn: "2027-09-21",
+    endsOn: "2027-09-23",
+    organizer: "Salesforce",
+    place: "sf",
+    online: true,
+    url: "https://www.salesforce.com/dreamforce/",
+  },
+  {
+    id: "techcrunch-disrupt-2027",
+    name: "TechCrunch Disrupt 2027",
+    endsOn: "2027-10-31",
+    organizer: "TechCrunch",
+    place: "sf",
+    url: "https://techcrunch.com/events/techcrunch-disrupt/",
+  },
+  {
+    id: "gartner-symposium-2027",
+    name: "Gartner IT Symposium/Xpo 2027",
+    endsOn: "2027-10-31",
+    organizer: "Gartner",
+    place: "orlando",
+    url: "https://www.gartner.com/en/conferences/calendar/all/it-symposium-xpo",
+  },
+  {
+    id: "web-summit-2027",
+    name: "Web Summit 2027",
+    endsOn: "2027-11-30",
+    organizer: "Web Summit",
+    place: "lisbon",
+    url: "https://websummit.com/",
+  },
+  {
+    id: "microsoft-ignite-2027",
+    name: "Microsoft Ignite 2027",
+    endsOn: "2027-11-30",
+    organizer: "Microsoft",
+    place: "sf",
+    online: true,
+    url: "https://ignite.microsoft.com/",
+  },
+  {
+    id: "ai-summit-new-york-2027",
+    name: "The AI Summit New York 2027",
+    startsOn: "2027-12-08",
+    endsOn: "2027-12-09",
+    organizer: "Informa Tech",
+    place: "ny",
+    url: "https://newyork.theaisummit.com/",
+  },
+  {
+    id: "aws-reinvent-2027",
+    name: "AWS re:Invent 2027",
+    endsOn: "2027-12-31",
+    organizer: "Amazon Web Services",
+    place: "vegas",
+    online: true,
+    url: "https://aws.amazon.com/events/reinvent/",
+  },
+  {
+    id: "gitex-global-2027",
+    name: "GITEX Global 2027",
+    endsOn: "2027-12-31",
+    organizer: "Dubai World Trade Centre",
+    place: "dubai",
+    url: "https://www.gitex.com/",
   },
 ];
 
@@ -250,7 +337,7 @@ function upcomingTechEvents(now: Date = new Date()): TechEvent[] {
 }
 
 
-const FILTER_TABS = ["all", "event", "training", "workshop", "webinar"];
+const TYPE_FILTERS = ["all", "training", "workshop", "webinar", "event"] as const;
 
 const TYPE_COLORS: Record<string, string> = {
   TRAINING: "bg-[#2251A3]/10 text-[#2251A3]",
@@ -259,19 +346,11 @@ const TYPE_COLORS: Record<string, string> = {
   WEBINAR: "bg-teal-100 text-teal-700",
 };
 
-const TYPE_FALLBACK_IMAGE: Record<string, string> = {
-  TRAINING: "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=800&q=80",
-  WORKSHOP: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=800&q=80",
-  WEBINAR: "https://images.unsplash.com/photo-1587440871875-191322ee64b0?auto=format&fit=crop&w=800&q=80",
-  EVENT: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=800&q=80",
-};
-
 function formatDate(dateStr: string, locale: string) {
   const d = new Date(dateStr);
   return d.toLocaleDateString(locale, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
 }
 
-/** Money in the event's own currency, written the visitor's way. */
 function formatPrice(cents: number, currency: string, locale: string) {
   const whole = cents % 100 === 0;
   try {
@@ -288,14 +367,20 @@ function formatPrice(cents: number, currency: string, locale: string) {
 
 type T = (key: string, vars?: Record<string, string | number>) => string;
 
-/** "9–13 June 2026" in the visitor's language, from the ISO days. */
+/** "9–13 June 2026", or "Expected March 2027" when only the month is known. */
 function techEventWhen(ev: TechEvent, locale: string, t: T): string {
   const end = new Date(`${ev.endsOn}T12:00:00Z`);
-  if (!ev.startsOn) return t("pages.events.octNov", { y: end.getUTCFullYear() });
+  if (!ev.startsOn) {
+    const month = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric", timeZone: "UTC" }).format(end);
+    return t("pages.events.expected", { month });
+  }
   const start = new Date(`${ev.startsOn}T12:00:00Z`);
   const f = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
   return f.formatRange(start, end);
 }
+
+/** The month a conference belongs to in the calendar (its first day, or the expected month). */
+const monthKey = (ev: TechEvent) => (ev.startsOn ?? ev.endsOn).slice(0, 7);
 
 function NotifyModal({ eventName, eventSlug, onClose }: { eventName: string; eventSlug: string; onClose: () => void }) {
   const t = useT();
@@ -418,6 +503,26 @@ function hasFinished(event: EventItem, now: Date = new Date()): boolean {
   return end.getTime() + 24 * 60 * 60 * 1000 < now.getTime();
 }
 
+/** Big date badge: day and month, or "TBA". */
+function DateBadge({ iso, locale, tba }: { iso?: string | null; locale: string; tba: string }) {
+  if (!iso) {
+    return (
+      <div className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-2xl bg-[#F47C20]/10 text-[#B8500A]">
+        <Calendar size={20} aria-hidden />
+        <span className="mt-1 font-dm text-[11px] font-bold uppercase tracking-wide">{tba}</span>
+      </div>
+    );
+  }
+  const d = new Date(iso);
+  return (
+    <div className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-2xl bg-[#1B3A6B] text-white">
+      <span className="font-dm text-[11px] font-bold uppercase tracking-widest text-[#F9B47A]">{d.toLocaleDateString(locale, { month: "short" })}</span>
+      <span className="font-syne text-3xl font-extrabold leading-none">{d.getDate()}</span>
+      <span className="font-dm text-[10px] text-white/70">{d.getFullYear()}</span>
+    </div>
+  );
+}
+
 function EventCard({ event }: { event: EventItem }) {
   const t = useT();
   const locale = useLocale();
@@ -427,214 +532,140 @@ function EventCard({ event }: { event: EventItem }) {
   const typeColor = TYPE_COLORS[event.type] ?? "bg-gray-100 text-gray-700";
   const finished = hasFinished(event);
   const isOpen = event.registrationOpen && !finished;
-
-  const gradientBorder = isOpen
-    ? "linear-gradient(135deg, #22c55e, #16a34a)"
-    : "linear-gradient(135deg, #F47C20, #f9a738)";
-
-  // Tags prefixed with "module:" render as module pills on the card
-  const modules = event.tags.filter(t => t.startsWith("module:")).map(t => t.slice(7));
-
-  const inner = (
-    <div className={`bg-white flex flex-col h-full${isOpen ? " group" : ""}`} style={{ borderRadius: "16px", overflow: "hidden" }}>
-      <div className="relative w-full h-48 overflow-hidden flex-shrink-0">
-        <Image
-          src={event.coverImage || TYPE_FALLBACK_IMAGE[event.type] || TYPE_FALLBACK_IMAGE.EVENT}
-          alt={event.title}
-          fill
-          unoptimized
-          className={`object-cover transition-transform duration-500${isOpen ? " group-hover:scale-[1.02]" : ""}`}
-        />
-        {isOpen ? (
-          <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-green-500 text-white text-xs font-dm font-semibold px-3 py-1 rounded-full shadow">
-            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse inline-block" />
-            {t("pages.events.card.openNow")}
-          </div>
-        ) : finished ? (
-          // A cohort that has run is neither open nor coming: saying "Coming
-          // Soon" over a date that has passed is worse than saying nothing.
-          <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-[#3A4A5C] text-white text-xs font-dm font-semibold px-3 py-1 rounded-full shadow">
-            {t("pages.events.card.completed")}
-          </div>
-        ) : (
-          <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-[#F47C20] text-white text-xs font-dm font-semibold px-3 py-1 rounded-full shadow">
-            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse inline-block" />
-            {t("pages.events.card.comingSoon")}
-          </div>
-        )}
-      </div>
-
-      <div className="p-6 flex flex-col flex-1 gap-3">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className={`text-xs font-dm font-semibold px-2 py-0.5 rounded-full ${typeColor}`}>
-            {typeLabel.startsWith("pages.") ? event.type : typeLabel}
-          </span>
-          {event.featured && (
-            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20]">
-              {t("pages.events.card.featured")}
-            </span>
-          )}
-          {!isOpen && (
-            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20] ml-auto">
-              {event.price > 0
-                ? formatPrice(event.price, event.currency, locale)
-                : t("pages.events.card.priceTba")}
-            </span>
-          )}
-          {isOpen && (isFree ? (
-            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 ml-auto">{t("pages.events.card.free")}</span>
-          ) : (
-            <span className="text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20] ml-auto">
-              {formatPrice(event.price, event.currency, locale)}
-            </span>
-          ))}
-        </div>
-
-        <h3 className={`font-syne font-bold text-lg text-[#0D1B2A] leading-snug transition-colors${isOpen ? " group-hover:text-[#F47C20]" : ""}`}>
-          {event.title}
-        </h3>
-
-        <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed line-clamp-2">
-          {event.description}
-        </p>
-
-        {/* Module pills */}
-        {modules.length > 0 && (
-          <div className="flex flex-col gap-1.5">
-            <p className="font-dm text-[10px] font-semibold text-[#7A8FA6] uppercase tracking-widest">{t("pages.events.card.modules")}</p>
-            {modules.map((m, i) => (
-              <div key={m} className="flex items-start gap-2">
-                <span className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full bg-[#F47C20]/10 text-[#F47C20] font-syne font-bold text-[10px] flex items-center justify-center">{i + 1}</span>
-                <span className="font-dm text-xs text-[#0D1B2A] font-medium leading-snug">{m}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="flex flex-col gap-1.5 mt-auto">
-          {event.date && (
-            <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-              <Calendar size={13} /><span>{formatDate(event.date, locale)}</span>
-            </div>
-          )}
-          {event.timeSlot && (
-            <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-              <Clock size={13} /><span>{event.timeSlot}</span>
-            </div>
-          )}
-          <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-            <MapPin size={13} /><span>{event.location}</span>
-          </div>
-          {isOpen && event.spotsLeft != null && (
-            <div className={`flex items-center gap-2 text-xs font-dm font-semibold ${event.spotsLeft <= 5 ? "text-red-500" : "text-[#F47C20]"}`}>
-              <Users size={13} />
-              <span>
-                {event.spotsLeft === 0
-                  ? t("pages.events.card.soldOut")
-                  : event.spotsLeft === 1
-                  ? t("pages.events.card.onlyOne")
-                  : event.spotsLeft <= 5
-                  ? t("pages.events.card.onlyFew", { n: event.spotsLeft })
-                  : t("pages.events.card.seatsLeft", { n: event.spotsLeft.toLocaleString(locale) })}
-              </span>
-            </div>
-          )}
-          {!isOpen && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5 text-xs font-dm font-semibold px-2.5 py-0.5 rounded-full bg-[#F47C20]/10 text-[#F47C20]">
-                <Calendar size={12} /><span>{t("pages.events.card.thisJune")}</span>
-              </div>
-              {event.spots != null && (
-                <div className="flex items-center gap-1.5 text-xs font-dm font-semibold text-[#F47C20]">
-                  <Users size={13} /><span>{t("pages.events.card.seatsAvailable", { n: event.spots.toLocaleString(locale) })}</span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="pt-3 border-t border-[#D2DCE8]">
-          {isOpen ? (
-            <div className="w-full text-center font-dm font-semibold text-sm text-white bg-[#F47C20] group-hover:bg-[#e06a10] transition-colors py-2 rounded-xl">
-              {isFree ? t("pages.events.card.joinFree") : t("pages.events.card.register")}
-            </div>
-          ) : (
-            <div
-              onClick={e => { e.preventDefault(); e.stopPropagation(); setNotifyOpen(true); }}
-              className="w-full flex items-center justify-center gap-1.5 font-dm font-semibold text-sm text-white bg-[#1B3A6B] hover:bg-[#2251A3] transition-colors py-2 rounded-xl cursor-pointer"
-            >
-              <Bell size={13} /> {t("pages.events.card.waitlist")}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  // Tags prefixed with "module:" are the session's modules.
+  const modules = event.tags.filter((x) => x.startsWith("module:")).map((x) => x.slice(7));
+  const price = event.price > 0 ? formatPrice(event.price, event.currency, locale) : isOpen ? t("pages.events.card.free") : t("pages.events.card.priceTba");
 
   return (
     <>
       {notifyOpen && <NotifyModal eventName={event.title} eventSlug={event.slug} onClose={() => setNotifyOpen(false)} />}
-      <div style={{ padding: "2px", borderRadius: "18px", background: gradientBorder }} className="hover:-translate-y-0.5 transition-transform duration-300">
-        <Link href={`/events/${event.slug}`} className="h-full flex flex-col" style={{ borderRadius: "16px" }}>
-          {inner}
-        </Link>
-      </div>
+      <article className={`group relative flex flex-col gap-5 rounded-3xl border bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg sm:flex-row sm:p-6 ${isOpen ? "border-green-300" : "border-[#D2DCE8]"}`}>
+        <DateBadge iso={event.date} locale={locale} tba={t("pages.events.tba")} />
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`rounded-full px-2.5 py-0.5 font-dm text-xs font-semibold ${typeColor}`}>{typeLabel.startsWith("pages.") ? event.type : typeLabel}</span>
+            {isOpen ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-green-500 px-2.5 py-0.5 font-dm text-xs font-semibold text-white">
+                <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+                {t("pages.events.card.openNow")}
+              </span>
+            ) : finished ? (
+              <span className="rounded-full bg-[#3A4A5C] px-2.5 py-0.5 font-dm text-xs font-semibold text-white">{t("pages.events.card.completed")}</span>
+            ) : (
+              <span className="rounded-full bg-[#F47C20] px-2.5 py-0.5 font-dm text-xs font-semibold text-white">{t("pages.events.card.comingSoon")}</span>
+            )}
+            {event.featured && <span className="rounded-full bg-[#F47C20]/10 px-2.5 py-0.5 font-dm text-xs font-semibold text-[#B8500A]">{t("pages.events.card.featured")}</span>}
+          </div>
+          <h3 className="font-syne text-xl font-bold leading-snug text-[#0D1B2A]">
+            <Link href={`/events/${event.slug}`} className="after:absolute after:inset-0 after:content-[''] group-hover:text-[#2251A3]">
+              {event.title}
+            </Link>
+          </h3>
+          <p className="line-clamp-2 font-dm text-sm leading-relaxed text-[#3A4A5C]">{event.description}</p>
+          {modules.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {modules.map((m, i) => (
+                <span key={m} className="rounded-full bg-[#F4F7FB] px-2.5 py-1 font-dm text-xs font-medium text-[#1B3A6B]">
+                  {i + 1}. {m}
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 font-dm text-xs text-[#5A6E84]">
+            {event.date && (
+              <span className="inline-flex items-center gap-1.5"><Calendar size={13} aria-hidden />{formatDate(event.date, locale)}</span>
+            )}
+            {event.timeSlot && (
+              <span className="inline-flex items-center gap-1.5"><Clock size={13} aria-hidden />{event.timeSlot}</span>
+            )}
+            <span className="inline-flex items-center gap-1.5"><MapPin size={13} aria-hidden />{event.location}</span>
+            {isOpen && event.spotsLeft != null && (
+              <span className={`inline-flex items-center gap-1.5 font-semibold ${event.spotsLeft <= 5 ? "text-red-600" : "text-[#B8500A]"}`}>
+                <Users size={13} aria-hidden />
+                {event.spotsLeft === 0
+                  ? t("pages.events.card.soldOut")
+                  : event.spotsLeft === 1
+                    ? t("pages.events.card.onlyOne")
+                    : event.spotsLeft <= 5
+                      ? t("pages.events.card.onlyFew", { n: event.spotsLeft })
+                      : t("pages.events.card.seatsLeft", { n: event.spotsLeft.toLocaleString(locale) })}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="relative z-10 flex shrink-0 flex-row items-center justify-between gap-3 border-t border-[#E3E9F1] pt-4 sm:w-44 sm:flex-col sm:items-stretch sm:justify-center sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0">
+          <p className="font-syne text-2xl font-extrabold text-[#0D1B2A] sm:text-center">{price}</p>
+          {isOpen ? (
+            <Link href={`/events/${event.slug}`} className="rounded-xl bg-[#F47C20] px-4 py-2.5 text-center font-dm text-sm font-semibold text-white transition-colors hover:bg-[#e06a10]">
+              {isFree ? t("pages.events.card.joinFree") : t("pages.events.card.register")}
+            </Link>
+          ) : finished ? (
+            <Link href={`/events/${event.slug}`} className="rounded-xl border border-[#D2DCE8] px-4 py-2.5 text-center font-dm text-sm font-semibold text-[#1B3A6B] hover:bg-[#F4F7FB]">
+              {t("pages.events.card.details")}
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setNotifyOpen(true)}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#1B3A6B] px-4 py-2.5 font-dm text-sm font-semibold text-white transition-colors hover:bg-[#2251A3]"
+            >
+              <Bell size={14} aria-hidden /> {t("pages.events.card.waitlist")}
+            </button>
+          )}
+        </div>
+      </article>
     </>
   );
 }
 
-
-function TechEventCard({ ev }: { ev: TechEvent }) {
+/** One conference in the calendar: date, name, organizer, place, why it matters, official site. */
+function TechEventRow({ ev }: { ev: TechEvent }) {
   const t = useT();
   const locale = useLocale();
   const place = t(`pages.events.place.${ev.place}`);
+  const start = ev.startsOn ? new Date(`${ev.startsOn}T12:00:00Z`) : null;
   return (
-    <a
-      href={ev.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col group"
-    >
-      <div className="relative w-full h-40 overflow-hidden">
-        <Image
-          src={ev.coverImage}
-          alt={ev.name}
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-500"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-        <span className="absolute bottom-3 left-3 text-xs font-dm font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
-          {t("pages.events.industry.badge")}
-        </span>
+    <li className="group relative flex gap-4 rounded-2xl border border-[#E3E9F1] bg-white p-4 transition-all hover:border-[#2251A3]/40 hover:shadow-md sm:items-center sm:p-5">
+      <div className={`flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl ${start ? "bg-[#EBF0FA] text-[#1B3A6B]" : "border border-dashed border-[#F47C20]/50 text-[#B8500A]"}`}>
+        {start ? (
+          <>
+            <span className="font-dm text-[10px] font-bold uppercase tracking-widest">{start.toLocaleDateString(locale, { month: "short", timeZone: "UTC" })}</span>
+            <span className="font-syne text-2xl font-extrabold leading-none">{start.getUTCDate()}</span>
+          </>
+        ) : (
+          <span className="px-1 text-center font-dm text-[10px] font-bold uppercase leading-tight tracking-wide">{t("pages.events.expectedShort")}</span>
+        )}
       </div>
-      <div className="p-5 flex flex-col gap-2 flex-1">
-        <h3 className="font-syne font-bold text-base text-[#0D1B2A] group-hover:text-[#2251A3] transition-colors">{ev.name}</h3>
-        <p className="font-dm text-xs text-[#7A8FA6] font-medium">{ev.organizer}</p>
-        <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed flex-1 line-clamp-2">{t(`pages.events.tech.${ev.id}.desc`)}</p>
-        <div className="flex flex-col gap-1 mt-1">
-          <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-            <Calendar size={12} /><span>{techEventWhen(ev, locale, t)}</span>
-          </div>
-          <div className="flex items-center gap-2 text-[#7A8FA6] text-xs font-dm">
-            <MapPin size={12} /><span>{ev.online ? t("pages.events.online", { place }) : place}</span>
-          </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="font-syne text-base font-bold text-[#0D1B2A]">
+            <a href={ev.url} target="_blank" rel="noopener noreferrer" className="after:absolute after:inset-0 after:content-[''] group-hover:text-[#2251A3]">
+              {ev.name}
+            </a>
+          </h3>
+          {ev.online && <span className="rounded-full bg-teal-100 px-2 py-0.5 font-dm text-[11px] font-semibold text-teal-700">{t("pages.events.onlineToo")}</span>}
+          {!ev.startsOn && <span className="rounded-full bg-[#F47C20]/10 px-2 py-0.5 font-dm text-[11px] font-semibold text-[#B8500A]">{t("pages.events.datesTba")}</span>}
         </div>
-        <div className="pt-3 border-t border-[#D2DCE8] mt-1 flex items-center justify-between">
-          <span className="font-dm text-xs font-semibold text-[#2251A3] group-hover:text-[#F47C20] transition-colors">
-            {t("pages.events.industry.visit")}
-          </span>
-          <ExternalLink size={12} className="text-[#7A8FA6]" />
+        <p className="mt-0.5 line-clamp-2 font-dm text-sm leading-relaxed text-[#3A4A5C]">{t(`pages.events.tech.${ev.id}.desc`)}</p>
+        <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 font-dm text-xs text-[#5A6E84]">
+          <span className="inline-flex items-center gap-1.5"><Calendar size={12} aria-hidden />{techEventWhen(ev, locale, t)}</span>
+          <span className="inline-flex items-center gap-1.5"><MapPin size={12} aria-hidden />{place}</span>
+          <span>{ev.organizer}</span>
         </div>
       </div>
-    </a>
+      <ExternalLink size={16} className="hidden shrink-0 text-[#7A8FA6] group-hover:text-[#F47C20] sm:block" aria-hidden />
+    </li>
   );
 }
 
 export default function EventsPage() {
   const t = useT();
+  const locale = useLocale();
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState("all");
+  const [type, setType] = useState<(typeof TYPE_FILTERS)[number]>("all");
+  const [year, setYear] = useState<string>("all");
+  const [notifyGeneral, setNotifyGeneral] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -656,118 +687,177 @@ export default function EventsPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const filtered = events.filter((e) => {
-    if (activeFilter === "all") return true;
-    return e.type.toLowerCase() === activeFilter;
-  });
+  // Our sessions: upcoming first (soonest first, undated after), finished ones last.
+  const ours = useMemo(() => {
+    const live = events.filter((e) => !hasFinished(e));
+    const past = events.filter((e) => hasFinished(e));
+    const when = (e: EventItem) => (e.date ? new Date(e.date).getTime() : Number.MAX_SAFE_INTEGER);
+    return { live: live.sort((a, b) => when(a) - when(b)), past };
+  }, [events]);
+  const typesPresent = useMemo(() => new Set(ours.live.map((e) => e.type.toLowerCase())), [ours.live]);
+  const shown = ours.live.filter((e) => type === "all" || e.type.toLowerCase() === type);
 
-  // Computed once per mount rather than per render, so the list cannot shift
-  // underneath a re-render and server and client agree on the same day.
-  const upcomingEvents = useMemo(() => upcomingTechEvents(), []);
+  // Conferences: computed once per mount, so server and client agree on the day.
+  const conferences = useMemo(() => upcomingTechEvents(), []);
+  const years = useMemo(() => [...new Set(conferences.map((e) => monthKey(e).slice(0, 4)))].sort(), [conferences]);
+  const byMonth = useMemo(() => {
+    const list = conferences.filter((e) => year === "all" || monthKey(e).startsWith(year));
+    const groups = new Map<string, TechEvent[]>();
+    for (const e of list.sort((a, b) => (a.startsOn ?? a.endsOn).localeCompare(b.startsOn ?? b.endsOn))) {
+      const k = monthKey(e);
+      groups.set(k, [...(groups.get(k) ?? []), e]);
+    }
+    return [...groups.entries()];
+  }, [conferences, year]);
+  const monthTitle = (k: string) => new Intl.DateTimeFormat(locale, { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${k}-15T12:00:00Z`));
+
+  const chip = (on: boolean) =>
+    `flex-shrink-0 rounded-full px-4 py-2 font-dm text-sm font-medium transition-all ${on ? "bg-[#1B3A6B] text-white" : "bg-white text-[#3A4A5C] ring-1 ring-[#D2DCE8] hover:bg-[#EBF0FA] hover:text-[#1B3A6B]"}`;
 
   return (
     <div className="min-h-screen bg-[#F4F7FB]">
+      {notifyGeneral && <NotifyModal eventName={t("pages.events.ours.nextSession")} eventSlug="next-live-session" onClose={() => setNotifyGeneral(false)} />}
+
       {/* Hero */}
-      <section className="bg-gradient-to-br from-[#0D1B2A] via-[#1B3A6B] to-[#2251A3] text-white pt-28 sm:pt-36 lg:pt-44 pb-10 sm:pb-12 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 mb-6">
-            <span className="text-[#F47C20] text-sm">🎓</span>
-            <span className="font-dm text-sm text-white/80">{t("pages.events.hero.badge")}</span>
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#0D1B2A] via-[#1B3A6B] to-[#2251A3] px-4 pb-14 pt-28 text-white sm:pt-36 lg:pt-44">
+        <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-[#F47C20]/15 blur-3xl" />
+        <div className="relative mx-auto max-w-5xl">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5">
+            <Calendar size={14} className="text-[#F9B47A]" aria-hidden />
+            <span className="font-dm text-sm text-white/85">{t("pages.events.hero.badge")}</span>
           </div>
-          <h1 className="font-syne font-extrabold text-4xl sm:text-5xl lg:text-6xl mb-4 leading-tight">
-            {t("pages.events.hero.title")}
-          </h1>
-          <p className="font-dm text-lg sm:text-xl text-white/70 max-w-2xl mx-auto leading-relaxed">
-            {t("pages.events.hero.body")}
-          </p>
-        </div>
-      </section>
-
-      {/* Filter Tabs */}
-      <section className="bg-white border-b border-[#D2DCE8] sticky top-[89px] lg:top-[137px] z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-1 overflow-x-auto py-3 scrollbar-hide">
-            {FILTER_TABS.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveFilter(tab)}
-                className={`flex-shrink-0 px-4 py-2 rounded-full font-dm font-medium text-sm transition-all ${
-                  activeFilter === tab
-                    ? "bg-[#1B3A6B] text-white"
-                    : "text-[#3A4A5C] hover:bg-[#EBF0FA] hover:text-[#1B3A6B]"
-                }`}
-              >
-                {t(`pages.events.filter.${tab}`)}
-              </button>
-            ))}
+          <h1 className="max-w-3xl font-syne text-4xl font-extrabold leading-tight sm:text-5xl lg:text-6xl">{t("pages.events.hero.title")}</h1>
+          <p className="mt-4 max-w-2xl font-dm text-lg leading-relaxed text-white/75 sm:text-xl">{t("pages.events.hero.body")}</p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <a href="#live-sessions" className="inline-flex items-center gap-2 rounded-xl bg-[#F47C20] px-5 py-3 font-dm text-sm font-semibold text-white hover:bg-[#e06a10]">
+              {t("pages.events.hero.ctaSessions")} <ArrowRight size={16} aria-hidden />
+            </a>
+            <a href="#conferences" className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-5 py-3 font-dm text-sm font-semibold text-white hover:bg-white/20">
+              {t("pages.events.hero.ctaCalendar")}
+            </a>
           </div>
-        </div>
-      </section>
-
-      {/* TIBLOGICS Events Grid */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12">
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white border border-[#D2DCE8] rounded-2xl h-80 animate-pulse" />
-            ))}
-          </div>
-        ) : (
-          <>
-            {filtered.length === 0 ? (
-              // On "All" an empty TIBLOGICS list says nothing: the industry
-              // events below fill the page. Other tabs get a short note.
-              activeFilter === "all" && upcomingEvents.length > 0 ? null : (
-              <div className="text-center py-8">
-                <p className="font-syne font-bold text-xl text-[#1B3A6B] mb-2">
-                  {t(`pages.events.empty.${activeFilter}`)}
-                </p>
-                <p className="font-dm text-[#7A8FA6]">{t("pages.events.empty.body")}</p>
-              </div>
-              )
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filtered.map((event) => (
-                  <EventCard key={event.id} event={event} />
-                ))}
+          <dl className="mt-10 flex max-w-xl flex-wrap gap-3">
+            {/* Only when there is something to count: "0 live sessions" says the wrong thing. */}
+            {!loading && ours.live.length > 0 && (
+              <div className="min-w-[10rem] flex-1 rounded-2xl border border-white/15 bg-white/5 px-4 py-3">
+                <dt className="font-dm text-xs uppercase tracking-wide text-white/60">{t("pages.events.stats.sessions")}</dt>
+                <dd className="font-syne text-2xl font-extrabold">{ours.live.length}</dd>
               </div>
             )}
+            <div className="min-w-[10rem] flex-1 rounded-2xl border border-white/15 bg-white/5 px-4 py-3">
+              <dt className="font-dm text-xs uppercase tracking-wide text-white/60">{t("pages.events.stats.conferences")}</dt>
+              <dd className="font-syne text-2xl font-extrabold">{conferences.length}</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
 
-            {/* Popular Tech Events */}
-            {(activeFilter === "all" || activeFilter === "event") && upcomingEvents.length > 0 && (
-              <div className={filtered.length === 0 ? "" : "mt-12"}>
-                <div className="flex items-center gap-3 mb-6">
-                  <div>
-                    <h2 className="font-syne font-bold text-2xl text-[#0D1B2A]">{t("pages.events.industry.title")}</h2>
-                    <p className="font-dm text-sm text-[#7A8FA6] mt-1">{t("pages.events.industry.body")}</p>
-                  </div>
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        {/* Our live sessions */}
+        <section id="live-sessions" className="scroll-mt-28 pt-12">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="font-dm text-xs font-bold uppercase tracking-[0.18em] text-[#B8500A]">{t("pages.events.ours.kicker")}</p>
+              <h2 className="mt-1 font-syne text-2xl font-bold text-[#0D1B2A] sm:text-3xl">{t("pages.events.ours.title")}</h2>
+              <p className="mt-1 max-w-2xl font-dm text-sm text-[#5A6E84]">{t("pages.events.ours.body")}</p>
+            </div>
+          </div>
+          {ours.live.length > 0 && typesPresent.size > 1 && (
+            <div className="mt-5 flex gap-2 overflow-x-auto pb-1" role="group" aria-label={t("pages.events.filterLabel")}>
+              {TYPE_FILTERS.filter((f) => f === "all" || typesPresent.has(f)).map((f) => (
+                <button key={f} type="button" onClick={() => setType(f)} aria-pressed={type === f} className={chip(type === f)}>
+                  {t(`pages.events.filter.${f}`)}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="mt-6 space-y-4">
+            {loading ? (
+              [1, 2].map((i) => <div key={i} className="h-40 animate-pulse rounded-3xl border border-[#D2DCE8] bg-white" />)
+            ) : shown.length > 0 ? (
+              shown.map((e) => <EventCard key={e.id} event={e} />)
+            ) : (
+              <div className="grid gap-6 rounded-3xl border border-[#D2DCE8] bg-white p-6 sm:grid-cols-[1fr_auto] sm:items-center sm:p-8">
+                <div>
+                  <h3 className="font-syne text-xl font-bold text-[#0D1B2A]">{t("pages.events.ours.emptyTitle")}</h3>
+                  <p className="mt-2 max-w-xl font-dm text-sm leading-relaxed text-[#3A4A5C]">{t("pages.events.ours.emptyBody")}</p>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {upcomingEvents.map((ev) => (
-                    <TechEventCard key={ev.id} ev={ev} />
+                <div className="flex flex-col gap-2 sm:w-56">
+                  <Link href="/learning-box" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#F47C20] px-4 py-2.5 font-dm text-sm font-semibold text-white hover:bg-[#e06a10]">
+                    {t("pages.events.ours.learnNow")} <ArrowRight size={15} aria-hidden />
+                  </Link>
+                  <button type="button" onClick={() => setNotifyGeneral(true)} className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#D2DCE8] px-4 py-2.5 font-dm text-sm font-semibold text-[#1B3A6B] hover:bg-[#F4F7FB]">
+                    <Bell size={14} aria-hidden /> {t("pages.events.ours.notifyMe")}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          {ours.past.length > 0 && (
+            <details className="mt-4 rounded-2xl border border-[#E3E9F1] bg-white/60 p-4">
+              <summary className="cursor-pointer font-dm text-sm font-semibold text-[#3A4A5C]">{t("pages.events.ours.past", { n: ours.past.length })}</summary>
+              <ul className="mt-3 space-y-2">
+                {ours.past.map((e) => (
+                  <li key={e.id}>
+                    <Link href={`/events/${e.slug}`} className="font-dm text-sm text-[#2251A3] hover:underline">
+                      {e.title}
+                    </Link>
+                    {e.date && <span className="font-dm text-xs text-[#7A8FA6]"> · {formatDate(e.date, locale)}</span>}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </section>
+
+        {/* Conference calendar */}
+        {conferences.length > 0 && (
+          <section id="conferences" className="scroll-mt-28 pt-16">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="font-dm text-xs font-bold uppercase tracking-[0.18em] text-[#2251A3]">{t("pages.events.industry.kicker")}</p>
+                <h2 className="mt-1 font-syne text-2xl font-bold text-[#0D1B2A] sm:text-3xl">{t("pages.events.industry.title")}</h2>
+                <p className="mt-1 max-w-2xl font-dm text-sm text-[#5A6E84]">{t("pages.events.industry.body")}</p>
+              </div>
+              {years.length > 1 && (
+                <div className="flex gap-2" role="group" aria-label={t("pages.events.yearLabel")}>
+                  {["all", ...years].map((y) => (
+                    <button key={y} type="button" onClick={() => setYear(y)} aria-pressed={year === y} className={chip(year === y)}>
+                      {y === "all" ? t("pages.events.filter.all") : y}
+                    </button>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* CTA */}
-            <div className="mt-16 bg-gradient-to-r from-[#1B3A6B] to-[#2251A3] rounded-2xl p-8 sm:p-12 text-center text-white">
-              <h2 className="font-syne font-bold text-2xl sm:text-3xl mb-3">
-                {t("pages.events.cta.title")}
-              </h2>
-              <p className="font-dm text-white/70 mb-6 max-w-xl mx-auto">
-                {t("pages.events.cta.body")}
-              </p>
-              <Link
-                href="/book"
-                className="inline-flex items-center gap-2 bg-[#F47C20] hover:bg-[#e06a10] text-white font-dm font-semibold px-6 py-3 rounded-xl transition-colors"
-              >
-                {t("pages.events.cta.button")} <ArrowRight size={16} />
-              </Link>
+              )}
             </div>
-          </>
+            <div className="mt-6 space-y-8">
+              {byMonth.map(([k, list]) => (
+                <div key={k}>
+                  <h3 className="sticky top-[76px] z-10 -mx-1 mb-3 bg-[#F4F7FB]/95 px-1 py-1 font-syne text-lg font-bold capitalize text-[#1B3A6B] backdrop-blur lg:top-[120px]">{monthTitle(k)}</h3>
+                  <ul className="space-y-3">
+                    {list.map((ev) => (
+                      <TechEventRow key={ev.id} ev={ev} />
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 font-dm text-xs text-[#7A8FA6]">{t("pages.events.industry.note")}</p>
+          </section>
         )}
-      </section>
+
+        {/* Private training */}
+        <section className="py-16">
+          <div className="grid gap-6 rounded-3xl bg-gradient-to-r from-[#1B3A6B] to-[#2251A3] p-8 text-white sm:p-12 md:grid-cols-[1fr_auto] md:items-center">
+            <div>
+              <h2 className="font-syne text-2xl font-bold sm:text-3xl">{t("pages.events.cta.title")}</h2>
+              <p className="mt-3 max-w-xl font-dm text-white/75">{t("pages.events.cta.body")}</p>
+            </div>
+            <Link href="/book" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#F47C20] px-6 py-3 font-dm font-semibold text-white transition-colors hover:bg-[#e06a10]">
+              {t("pages.events.cta.button")} <ArrowRight size={16} aria-hidden />
+            </Link>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

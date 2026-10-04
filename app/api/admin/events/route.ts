@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { TRAINING_EVENT_SEED, TRAINING_EVENT_SLUG, PARENTS_EVENT_SEED, PARENTS_EVENT_SLUG } from "@/lib/event-seeds";
+import { TRAINING_EVENT_SEED, TRAINING_EVENT_SLUG, PARENTS_EVENT_SLUG } from "@/lib/event-seeds";
 import { requireAdmin } from "@/lib/require-admin";
 
 function slugify(title: string) {
@@ -27,14 +27,13 @@ export async function GET() {
       .catch((err) => {
         console.error("[admin/events] ensure training event", err);
       }),
+    // The AI for Parents live training is replaced by the AI for Parents
+    // track (/learning-box/ai-for-parents): no longer re-created, and taken
+    // off the public list (the row and its waitlist are kept).
     prisma.event
-      .upsert({
-        where: { slug: PARENTS_EVENT_SLUG },
-        create: PARENTS_EVENT_SEED,
-        update: { spots: 50, capacity: 50, price: PARENTS_EVENT_SEED.price },
-      })
+      .updateMany({ where: { slug: PARENTS_EVENT_SLUG, published: true }, data: { published: false, registrationOpen: false } })
       .catch((err) => {
-        console.error("[admin/events] ensure parents event", err);
+        console.error("[admin/events] retire parents event", err);
       }),
   ]);
 

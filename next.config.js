@@ -67,6 +67,9 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // The AI for Parents live training became the AI for Parents track.
+      { source: "/events/ai-training-for-parents", destination: "/learning-box/ai-for-parents", permanent: true },
+      { source: "/events/ai-training-for-parents/:path*", destination: "/learning-box/ai-for-parents", permanent: true },
       // One canonical host: www.tiblogics.com → tiblogics.com (301-equivalent
       // 308, path and query kept), so search engines never split signals
       // between two hosts.

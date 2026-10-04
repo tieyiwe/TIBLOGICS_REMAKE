@@ -61,9 +61,6 @@ export default async function EventPage({ params, searchParams }: Props) {
       raw = await prisma.event.create({ data: TRAINING_EVENT_SEED });
     }
 
-    if (!raw && slug === PARENTS_EVENT_SLUG) {
-      raw = await prisma.event.create({ data: PARENTS_EVENT_SEED });
-    }
 
     if (!raw) return notFound();
     if (!raw.published) return notFound();
