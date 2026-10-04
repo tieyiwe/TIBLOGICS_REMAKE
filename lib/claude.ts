@@ -56,6 +56,7 @@ export type AiTask =
   | "comms-translate"
   | "promo-translate"
   | "video-select"
+  | "lesson-recap"
   // Sonnet
   | "code-assist"
   | "grade-code"
@@ -130,6 +131,8 @@ export const ROUTES: Record<AiTask, Route> = {
   "promo-translate": { tier: "haiku", maxTokens: 600 },
   // Narrated lesson videos: does this lesson benefit from a video? (cached per content hash)
   "video-select": { tier: "haiku", maxTokens: 300 },
+  // Lesson recaps: key takeaways and recall cards from one lesson (stored per content hash).
+  "lesson-recap": { tier: "haiku", maxTokens: 900 },
 
   "code-assist": { tier: "sonnet", maxTokens: 8000, thinking: "adaptive", effort: "medium", cacheSystem: true },
   "grade-code": { tier: "sonnet", maxTokens: 4000, thinking: "adaptive", effort: "medium" },

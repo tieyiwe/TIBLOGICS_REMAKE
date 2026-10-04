@@ -63,6 +63,7 @@ export default function LessonPlayer({
   trackSlug,
   accentColor,
   loop,
+  recap,
   footer,
 }: {
   lesson: LessonView;
@@ -79,6 +80,8 @@ export default function LessonPlayer({
   accentColor: string;
   /** The Learning Loop strip, shown under the header. */
   loop?: React.ReactNode;
+  /** Key takeaways (lib/learn/recap), shown before the quick check. */
+  recap?: React.ReactNode;
   /** Shown at the end of the lesson, after the quick check (the reflection). */
   footer?: React.ReactNode;
 }) {
@@ -186,6 +189,9 @@ export default function LessonPlayer({
         <div className="mt-6">
           <PracticePad lessonId={lesson.id} bodyMd={lesson.bodyMd} sourceMd={lesson.sourceMd} accentColor={accentColor} />
         </div>
+
+        {/* What to remember, then the quick check */}
+        {recap && <div className="mt-6">{recap}</div>}
 
         {/* Quick check */}
         {microCheck && (

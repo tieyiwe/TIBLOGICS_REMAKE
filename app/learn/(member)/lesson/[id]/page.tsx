@@ -17,6 +17,8 @@ import TutorDock from "@/components/learn/tutor/TutorDock";
 import DiscussionSection from "@/components/learn/community/DiscussionSection";
 import { lessonVideoFor } from "@/lib/learn/video/store";
 import { isOwnerStudent } from "@/lib/learn/owner";
+import { lessonRecap } from "@/lib/learn/recap";
+import KeyTakeaways from "@/components/learn/recap/KeyTakeaways";
 
 export const dynamic = "force-dynamic";
 
@@ -125,6 +127,8 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
 
   // The lesson video (chapters, captions, the learner's place); null without one.
   const video = await lessonVideoFor(student.id, lesson, locale).catch(() => null);
+  // What to remember from this lesson (lib/learn/recap); null until written.
+  const recap = await lessonRecap(lesson, locale);
 
   // Flatten for prev/next
   const flat = modules.flatMap((m) => m.lessons.map((l) => l.id));
@@ -211,6 +215,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
             />
           )
         }
+        recap={recap ? <KeyTakeaways recap={recap} title={t("learn.recap.title")} accentColor={lesson.module.track.accentColor} /> : undefined}
         footer={
           loop && (
             <LessonReflection

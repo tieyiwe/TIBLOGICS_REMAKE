@@ -73,6 +73,9 @@ const JOBS = {
   // videos (default 2). Each job is claimed before it runs; idempotent.
   // Needs GOOGLE_TTS_API_KEY (or OPENAI_API_KEY) on the server.
   videos: { path: "/api/cron/videos", suggested: "every 15 minutes" },
+  // Lesson recaps (key takeaways and recall cards): writes the missing ones
+  // with the fast model, a batch per run; then only lessons whose text changed.
+  recaps: { path: "/api/cron/recaps", suggested: "daily" },
   // Command Center: recurring expenses for each period that came due, overdue
   // invoices, budget alerts, task due/overdue reminders in the admin bell and
   // a daily email digest per assignee (opt-out in My work; at most one per

@@ -6,6 +6,7 @@ import { ensureTrackPurchaseTable } from "@/lib/learn/purchases";
 import { trackPriceCents } from "@/lib/learn/pricing";
 import { learnerStats } from "@/lib/learn/admin/learners";
 import LearnersWidget from "./LearnersWidget";
+import RecapsCard from "./RecapsCard";
 
 export const dynamic = "force-dynamic";
 
@@ -88,7 +89,12 @@ export default async function LearnAdminPage() {
 
   return (
     <LearnAdminClient
-      learnersWidget={<LearnersWidget stats={stats} />}
+      learnersWidget={
+        <div className="space-y-4">
+          <LearnersWidget stats={stats} />
+          <RecapsCard />
+        </div>
+      }
       tablesReady={tablesReady}
       tracks={(tracks ?? []).map((t) => ({
         id: t.id,

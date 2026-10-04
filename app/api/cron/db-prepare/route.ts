@@ -44,6 +44,7 @@ const STEPS: Array<[string, () => Promise<unknown>]> = [
   ["lib/learn/inbox/notifications", () => import("@/lib/learn/inbox/notifications").then((m) => m.ensureNotificationTables())],
   ["lib/learn/support/db", () => import("@/lib/learn/support/db").then((m) => m.ensureSupportTables())],
   ["lib/learn/video/db", () => import("@/lib/learn/video/db").then((m) => m.ensureVideoTables())],
+  ["lib/learn/recap", () => import("@/lib/learn/recap").then((m) => m.ensureRecapTable())],
   ["lib/learn/mastery/db", () => import("@/lib/learn/mastery/db").then((m) => m.ensureMasteryTables())],
   ["lib/i18n/content", () => import("@/lib/i18n/content").then((m) => m.ensureTable())],
   ["lib/cache/public-data", () => import("@/lib/cache/public-data").then((m) => m.ensureTable())],

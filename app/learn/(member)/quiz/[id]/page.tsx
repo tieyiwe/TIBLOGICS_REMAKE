@@ -10,6 +10,8 @@ import QuizRunner from "@/components/learn/QuizRunner";
 import TestOutNotice from "@/components/learn/mastery/TestOutNotice";
 import { getLocale } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTrack } from "@/lib/i18n/sources/learn";
+import { moduleRecap } from "@/lib/learn/recap";
+import ModuleRecap from "@/components/learn/recap/ModuleRecap";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +69,7 @@ export default async function QuizPage({ params }: { params: Promise<{ id: strin
     );
   }
 
+  const tq = translatorFor(locale);
   const best = await prisma.quizAttempt
     .findFirst({
       where: { studentId: student.id, quizId: id },
@@ -88,6 +91,12 @@ export default async function QuizPage({ params }: { params: Promise<{ id: strin
       </nav>
 
       <TestOutNotice studentId={student.id} moduleId={quiz.module.id} />
+
+      <ModuleRecap
+        items={await moduleRecap(quiz.module.id, locale)}
+        accentColor={quiz.module.track.accentColor}
+        labels={{ title: tq("learn.recap.moduleTitle"), body: tq("learn.recap.moduleBody"), lessons: tq("learn.recap.lessons") }}
+      />
 
       <QuizRunner
         quizId={quiz.id}

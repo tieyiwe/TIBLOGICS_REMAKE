@@ -794,6 +794,7 @@ model Lesson {
   reflections LessonReflection[]
 
   @@index([moduleId])
+  recap         LessonRecap?
 }
 
 model LessonResource {
@@ -3143,4 +3144,15 @@ model StaffEvent {
   @@index([at])
   @@index([email, at])
   @@index([kind, at])
+}
+
+/// A lesson's recap: key takeaways and quick recall cards (lib/learn/recap),
+/// written by AI from the lesson (per content hash) or edited by staff.
+model LessonRecap {
+  lessonId    String   @id
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  contentHash String
+  data        Json
+  source      String   @default("ai")
+  updatedAt   DateTime @default(now())
 }
