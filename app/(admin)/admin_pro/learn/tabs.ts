@@ -9,5 +9,6 @@ export const LEARN_TABS: TabItem[] = [
   { label: "Community", href: "/admin_pro/learn/community" },
   { label: "Live", href: "/admin_pro/learn/live" },
   { label: "Videos", href: "/admin_pro/learn/videos" },
+  { label: "Certificates", href: "/admin_pro/learn/certificates" },
   { label: "Tutor", href: "/admin_pro/learn/tutor" },
 ];

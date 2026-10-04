@@ -393,3 +393,62 @@ export async function sendPasswordResetEmail(s: { email: string; name: string; t
 // The same branded layout for emails sent from elsewhere in Learn
 // (community: cohorts, reply digests).
 export { shell as learnEmailShell, esc as learnEmailEsc, p as learnEmailP, SITE as LEARN_SITE };
+
+// ── Certificates (lib/learn/cert) ───────────────────────────────────────────
+
+/** "You earned it: confirm the name to print." Sent when a certificate is issued. */
+export async function sendCertificateClaimEmail(s: { email: string; name: string; certificateName: string; reference: string; locale?: string | null }) {
+  const t = await tFor(s.email, s.locale);
+  const claimUrl = `${SITE}/learn/certificates/${encodeURIComponent(s.reference)}/claim`;
+  await arfaMailer.emails.send({
+    to: s.email,
+    subject: `🎓 ${t("learn.email.claim.subject", { cert: s.certificateName })}`,
+    html: shell(
+      t,
+      t("learn.email.claim.title", { name: esc(s.name.split(" ")[0]) }),
+      p(t("learn.email.claim.p1", { cert: `<strong style="color:#131A1B;">${esc(s.certificateName)}</strong>` })) + p(t("learn.email.claim.p2")),
+      { href: claimUrl, label: `${t("learn.email.claim.cta")} →` },
+    ),
+  });
+}
+
+/**
+ * Congratulations, with the certificate shown in the email and attached as a
+ * PDF. Sent once the learner has confirmed the name.
+ */
+export async function sendCertificateCongratsEmail(s: {
+  email: string;
+  name: string;
+  certificateName: string;
+  reference: string;
+  distinction: boolean;
+  verifyUrl: string;
+  linkedInUrl: string;
+  png: Buffer;
+  pdf: Buffer;
+  pdfName: string;
+  locale?: string | null;
+}) {
+  const t = await tFor(s.email, s.locale);
+  const viewUrl = `${SITE}/learn/certificates/${encodeURIComponent(s.reference)}?celebrate=1`;
+  const pdfUrl = `${SITE}/certificates/${encodeURIComponent(s.reference)}/pdf`;
+  const btn = (href: string, label: string, primary = false) =>
+    `<a href="${href}" style="display:inline-block;margin:4px;${primary ? "background:#1B3A6B;color:#fff;" : "background:#fff;color:#1B3A6B;border:2px solid #1B3A6B;"}font-weight:800;font-size:14px;text-decoration:none;padding:11px 22px;border-radius:50px;">${label}</a>`;
+  const body =
+    `<div style="text-align:center;font-size:40px;line-height:1;margin:0 0 10px;">🎉🎓🎉</div>` +
+    p(t(s.distinction ? "learn.email.congrats.p1Distinction" : "learn.email.congrats.p1", { cert: `<strong style="color:#131A1B;">${esc(s.certificateName)}</strong>` })) +
+    `<a href="${viewUrl}" style="display:block;margin:18px 0;border-radius:12px;overflow:hidden;border:1px solid #e6ebf1;"><img src="cid:certificate" alt="${esc(s.certificateName)}" width="496" style="display:block;width:100%;height:auto;"/></a>` +
+    p(t("learn.email.congrats.p2")) +
+    `<div style="text-align:center;margin:8px 0 18px;">${btn(pdfUrl, t("learn.email.congrats.download"))}${btn(s.linkedInUrl, t("learn.email.congrats.linkedin"))}</div>` +
+    p(`${t("learn.email.congrats.reference")} <strong style="color:#131A1B;font-family:monospace;">${esc(s.reference)}</strong><br/>${t("learn.email.congrats.verify")} <a href="${s.verifyUrl}" style="color:#F47C20;">${s.verifyUrl.replace(/^https?:\/\//, "")}</a>`);
+  await arfaMailer.emails.send({
+    to: s.email,
+    subject: `🎉 ${t("learn.email.congrats.subject", { cert: s.certificateName })}`,
+    html: shell(t, t("learn.email.congrats.title", { name: esc(s.name.split(" ")[0]) }), body, { href: viewUrl, label: `${t("learn.email.congrats.cta")} →` }),
+    attachments: [
+      { filename: "certificate.png", content: s.png, contentType: "image/png", cid: "certificate" },
+      { filename: s.pdfName, content: s.pdf, contentType: "application/pdf" },
+    ],
+  });
+}
+

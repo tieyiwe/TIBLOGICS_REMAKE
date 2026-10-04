@@ -1121,6 +1121,11 @@ model LearnCertificate {
   issuedAt        DateTime   @default(now())
   pdfUrl          String?
   revoked         Boolean    @default(false)
+  /// ARFA-<track>-<year>-<8 chars>: printed, LinkedIn credential ID, verify link (lib/learn/cert/ref.ts).
+  reference       String?    @unique
+  /// Set when the learner confirms the name to print; then it is emailed and downloadable.
+  nameConfirmedAt DateTime?
+  emailedAt       DateTime?
 
   @@unique([studentId, trackId])
   @@index([verificationId])

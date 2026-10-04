@@ -6,8 +6,8 @@ import type { Metadata } from "next";
 import { fmtDate } from "@/lib/learn/format";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTracks } from "@/lib/i18n/sources/learn";
-import { linkedInAddUrl } from "@/lib/learn/skill-badges/share";
-import { siteBase } from "@/lib/learn/skill-badges/signing";
+import { ensureCertificateColumns, linkedInCertUrl } from "@/lib/learn/cert/ref";
+import { verifyUrlFor } from "@/lib/learn/cert/data";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +20,7 @@ export default async function MyCertificatesPage() {
   const student = await getStudent();
   if (!student) redirect("/learn/login");
 
+  await ensureCertificateColumns().catch(() => {});
   const certs = await prisma.learnCertificate
     .findMany({
       where: { studentId: student.id },
@@ -77,29 +78,46 @@ export default async function MyCertificatesPage() {
                 )}
               </div>
 
-              {!c.revoked && (
-                <div className="mt-4 flex flex-wrap gap-2">
+              {!c.revoked && c.reference && !c.nameConfirmedAt && (
+                <div className="mt-4 rounded-xl bg-[#B8860B]/10 p-4" data-testid="cert-pending">
+                  <p className="text-sm font-bold text-[#7A5A08]">🎓 {t("learn.claim.pending")}</p>
+                  <p className="mt-1 text-xs text-[var(--ink2)]">{t("learn.claim.pendingBody")}</p>
                   <Link
-                    href={`/certificates/${c.verificationId}`}
-                    className="inline-block rounded-full px-5 py-2 text-xs font-bold text-white"
-                    style={{ background: c.track.accentColor }}
+                    href={`/learn/certificates/${encodeURIComponent(c.reference)}/claim`}
+                    className="mt-3 inline-block rounded-full bg-[#B8860B] px-5 py-2 text-xs font-bold text-white"
                   >
-                    {t("learn.certs.viewShare")} →
+                    {t("learn.claim.cta")} →
                   </Link>
-                  <a
-                    href={linkedInAddUrl({
-                      name: c.certificateName,
-                      issuedAt: c.issuedAt,
-                      certUrl: `${siteBase()}/certificates/${c.verificationId}`,
-                      certId: c.verificationId,
-                    })}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-block rounded-full bg-[#0A66C2] px-5 py-2 text-xs font-bold text-white"
-                  >
-                    {t("learn.cert.addToLinkedIn")}
-                  </a>
                 </div>
+              )}
+              {!c.revoked && c.reference && c.nameConfirmedAt && (
+                <>
+                  <Link href={`/learn/certificates/${encodeURIComponent(c.reference)}`} className="mt-4 block overflow-hidden rounded-xl border border-[var(--border)]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={`/certificates/${encodeURIComponent(c.reference)}/image?lang=${locale}`} alt={c.certificateName} loading="lazy" className="block h-auto w-full" />
+                  </Link>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Link
+                      href={`/learn/certificates/${encodeURIComponent(c.reference)}`}
+                      className="inline-block rounded-full px-5 py-2 text-xs font-bold text-white"
+                      style={{ background: c.track.accentColor }}
+                      data-testid="cert-view"
+                    >
+                      {t("learn.certview.view")} →
+                    </Link>
+                    <a href={`/certificates/${encodeURIComponent(c.reference)}/pdf?lang=${locale}`} className="inline-block rounded-full border border-[var(--border)] px-5 py-2 text-xs font-bold text-[var(--ink)]">
+                      {t("learn.certview.pdf")}
+                    </a>
+                    <a
+                      href={linkedInCertUrl({ certificateName: c.certificateName, reference: c.reference, issuedAt: c.issuedAt }, verifyUrlFor(c.reference))}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block rounded-full bg-[#0A66C2] px-5 py-2 text-xs font-bold text-white"
+                    >
+                      {t("learn.cert.addToLinkedIn")}
+                    </a>
+                  </div>
+                </>
               )}
             </div>
           ))}

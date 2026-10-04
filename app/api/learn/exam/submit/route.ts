@@ -10,6 +10,7 @@ import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { localizeQuestions } from "@/lib/i18n/sources/labs";
 import { gameDelta, gameSnapshot } from "@/lib/learn/badges";
 import { awardSkillBadgesSafe } from "@/lib/learn/skill-badges/engine";
+import { maybeIssueCertificate } from "@/lib/learn/certificates";
 
 // Re-validates against the SERVER clock. A submission after expiry is scored
 // on the answers saved up to expiry and marked `expired` — a network failure
@@ -83,7 +84,26 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Passing the exam may complete the track: issue the certificate now (it
+    // waits for the learner to confirm the name to print).
+    let certificateRef: string | null = null;
+    if (result.passed) {
+      const exam = await prisma.finalExam.findUnique({ where: { id: session.finalExamId }, select: { trackId: true } }).catch(() => null);
+      if (exam) {
+        await maybeIssueCertificate(student.id, exam.trackId).catch((err) => console.error("[exam/submit] certificate", err));
+        const rows = await prisma
+          .$queryRawUnsafe<Array<{ reference: string | null; nameConfirmedAt: Date | null }>>(
+            `SELECT "reference", "nameConfirmedAt" FROM "LearnCertificate" WHERE "studentId" = $1 AND "trackId" = $2`,
+            student.id,
+            exam.trackId,
+          )
+          .catch(() => []);
+        if (rows[0]?.reference && !rows[0].nameConfirmedAt) certificateRef = rows[0].reference;
+      }
+    }
+
     return NextResponse.json({
+      certificateRef,
       score: result.score,
       passed: result.passed,
       distinction: (result as { distinction?: boolean }).distinction ?? false,

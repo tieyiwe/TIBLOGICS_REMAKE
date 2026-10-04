@@ -83,6 +83,8 @@ export default function ExamRunner({
   const [result, setResult] = useState<{
     score: number; passed: boolean; distinction: boolean; graded: Graded[];
     perModuleScores: Record<string, number>; pointsAwarded: number; expired: boolean;
+    /** Set when passing completed the track: the certificate waits for the name. */
+    certificateRef?: string | null;
   } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -258,7 +260,16 @@ export default function ExamRunner({
           >
             {t("labs.exam.backToTrack")}
           </Link>
-          {result.passed && (
+          {result.certificateRef ? (
+            <Link
+              href={`/learn/certificates/${encodeURIComponent(result.certificateRef)}/claim`}
+              className="rounded-full bg-[#B8860B] px-6 py-2.5 text-sm font-bold text-white"
+              data-testid="claim-certificate"
+            >
+              🎓 {t("learn.claim.cta")}
+            </Link>
+          ) : null}
+          {result.passed && !result.certificateRef && (
             <Link
               href={`/learn/capstone/${trackSlug}`}
               className="rounded-full bg-[var(--ink)] px-6 py-2.5 text-sm font-bold text-white"

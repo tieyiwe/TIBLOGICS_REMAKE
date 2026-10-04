@@ -766,13 +766,14 @@ const resendCompat = {
 // ARFA-branded mailer — sends from arfa_edu@tiblogics.com
 export const arfaMailer = {
   emails: {
-    send(msg: { to: string | string[]; subject: string; html: string }) {
+    send(msg: { to: string | string[]; subject: string; html: string; attachments?: Array<{ filename: string; content: Buffer; contentType?: string; cid?: string }> }) {
       return getArfaTransport().sendMail({
         from: ARFA_FROM,
         replyTo: ARFA_ADDRESS,
         to: Array.isArray(msg.to) ? msg.to.join(", ") : msg.to,
         subject: msg.subject,
         html: msg.html,
+        ...(msg.attachments?.length ? { attachments: msg.attachments } : {}),
       });
     },
   },

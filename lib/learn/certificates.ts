@@ -4,7 +4,8 @@
 import prisma from "@/lib/prisma";
 import { certificationStatus } from "./assessments";
 import { awardPoints } from "./points";
-import { sendCertificateEmail } from "./emails";
+import { sendCertificateClaimEmail } from "./emails";
+import { assignReference, ensureCertificateColumns } from "./cert/ref";
 
 export type IssueResult =
   | { ok: true; certificateId: string; verificationId: string; created: boolean }
@@ -19,6 +20,7 @@ export async function issueCertificate(
   trackId: string,
   opts: { force?: boolean; issuedByAdmin?: boolean } = {},
 ): Promise<IssueResult> {
+  await ensureCertificateColumns();
   // Already issued? Return it rather than creating a second.
   const existing = await prisma.learnCertificate
     .findUnique({ where: { studentId_trackId: { studentId, trackId } } })
@@ -50,7 +52,7 @@ export async function issueCertificate(
   // batch rather than adding a third round trip.
   const [student, track, bestExam] = await Promise.all([
     prisma.student.findUnique({ where: { id: studentId }, select: { name: true, email: true } }),
-    prisma.learnTrack.findUnique({ where: { id: trackId }, select: { certificateName: true, title: true } }),
+    prisma.learnTrack.findUnique({ where: { id: trackId }, select: { certificateName: true, title: true, slug: true } }),
     // Distinction comes from the best passing exam score
     prisma.finalExamSession
       .findFirst({
@@ -81,14 +83,16 @@ export async function issueCertificate(
     });
 
     await awardPoints(studentId, "track_complete", trackId);
+    const reference = await assignReference(cert.id, track.slug, cert.issuedAt);
 
-    sendCertificateEmail({
+    // The learner first confirms the name to print (/learn/certificates/<ref>/claim);
+    // the congratulations email with the certificate follows that (lib/learn/cert/email.ts).
+    sendCertificateClaimEmail({
       email: student.email,
       name: student.name,
       certificateName: cert.certificateName,
-      verificationId: cert.verificationId,
-      distinction,
-    }).catch((err) => console.error("[issueCertificate] email", err));
+      reference,
+    }).catch((err) => console.error("[issueCertificate] claim email", err));
 
     return { ok: true, certificateId: cert.id, verificationId: cert.verificationId, created: true };
   } catch {
