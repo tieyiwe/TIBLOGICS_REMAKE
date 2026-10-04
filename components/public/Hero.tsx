@@ -50,7 +50,7 @@ export default async function Hero() {
                 on desktop with three competing type treatments and two orphaned
                 words; it was a third of the first screen by itself. */}
             <h1
-              className="anim-fade-up font-syne font-extrabold tracking-tight text-[#0D1B2A] text-[2.4rem] leading-[1.08] sm:text-5xl lg:text-[3.6rem]"
+              className="anim-fade-up font-syne font-extrabold tracking-tight text-[#0D1B2A] text-[2.4rem] leading-[1.08] [text-wrap:balance] sm:text-5xl lg:text-[3.6rem]"
               style={{ animationDelay: "0.08s" }}
             >
               {accent(t("home.hero.title"), (words, i) => (

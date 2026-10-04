@@ -14,7 +14,7 @@ const messages: Messages = {
 
     // Hero
     "home.hero.badge": "AI implementation · North America & Africa",
-    "home.hero.title": "We build AI that fixes <em>what's actually</em> holding you back.",
+    "home.hero.title": "We build AI and software that fix <em>what's actually</em> holding you back.",
     "home.hero.subtitle": "Agents, automation and full-stack products, scoped honestly and shipped fast, for businesses in North America, Africa and beyond.",
     "home.hero.ctaBook": "Book a free consultation",
     "home.hero.ctaServices": "Explore services",
@@ -180,7 +180,7 @@ const messages: Messages = {
     "home.meta.twitterDescription": "Agents IA sur mesure, automatisation des processus et produits numériques pour les entreprises ambitieuses.",
 
     "home.hero.badge": "Mise en œuvre de l'IA · Amérique du Nord et Afrique",
-    "home.hero.title": "Nous créons l'IA qui règle <em>ce qui vous freine</em> vraiment.",
+    "home.hero.title": "Nous créons l'IA et les logiciels qui règlent <em>ce qui vous freine</em> vraiment.",
     "home.hero.subtitle": "Agents, automatisation et produits complets, cadrés avec honnêteté et livrés rapidement, pour les entreprises d'Amérique du Nord, d'Afrique et d'ailleurs.",
     "home.hero.ctaBook": "Réserver une consultation gratuite",
     "home.hero.ctaServices": "Découvrir nos services",
@@ -336,7 +336,7 @@ const messages: Messages = {
     "home.meta.twitterDescription": "Mawakala wa AI maalum, uendeshaji otomatiki wa michakato na bidhaa za kidijitali kwa biashara zenye malengo makubwa.",
 
     "home.hero.badge": "Utekelezaji wa AI · Amerika Kaskazini na Afrika",
-    "home.hero.title": "Tunajenga AI inayoondoa <em>kile hasa</em> kinachokuzuia.",
+    "home.hero.title": "Tunajenga AI na programu zinazoondoa <em>kile hasa</em> kinachokuzuia.",
     "home.hero.subtitle": "Mawakala, uendeshaji otomatiki na bidhaa kamili za kidijitali, zilizopangwa kwa uaminifu na kukabidhiwa haraka, kwa biashara za Amerika Kaskazini, Afrika na kwingineko.",
     "home.hero.ctaBook": "Weka miadi ya ushauri bila malipo",
     "home.hero.ctaServices": "Tazama huduma",
