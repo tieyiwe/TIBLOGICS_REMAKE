@@ -42,8 +42,15 @@ export function ensureCertificateColumns(): Promise<void> {
   return ready;
 }
 
+/** Tracks whose initials would clash with another track's. */
+const CODE_OVERRIDES: Record<string, string> = {
+  "ai-for-parents": "PAR",
+  "ai-forward-professional": "FWD",
+};
+
 /** "ai-ml-fundamentals" -> "AMF", "ai-governance" -> "AG". */
 export function trackCode(slug: string): string {
+  if (CODE_OVERRIDES[slug]) return CODE_OVERRIDES[slug];
   const parts = slug.split(/[^a-z0-9]+/i).filter(Boolean);
   const code = parts.map((p) => p[0]).join("").toUpperCase();
   return (code.length >= 2 ? code : slug.replace(/[^a-z0-9]/gi, "").slice(0, 3).toUpperCase()).slice(0, 5);
