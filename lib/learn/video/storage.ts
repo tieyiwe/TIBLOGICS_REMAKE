@@ -89,7 +89,14 @@ export async function storeVideoFile(
   const { size } = await stat(file);
   const etag = await fileEtag(file);
   const ext = meta.contentType.includes("webm") ? "webm" : "mp4";
-  const obj = await objectClient();
+  // VIDEO_STORAGE=object: the bucket or nothing. A video never goes to the
+  // database instead; the job fails with the reason and is tried again later.
+  const strict = process.env.VIDEO_STORAGE?.toLowerCase() === "object";
+  let obj = await objectClient();
+  if (!obj && strict) {
+    client = null; // ask the bucket again, it may have been slow to answer
+    obj = await objectClient();
+  }
   if (obj) {
     const objectKey = `lesson-videos/${meta.lessonId}/${id}.${ext}`;
     const r = await obj.uploadFromFilename(objectKey, file);
@@ -98,7 +105,11 @@ export async function storeVideoFile(
         data: { id, lessonId: meta.lessonId, locale: meta.locale, contentType: meta.contentType, size, etag, storage: "object", objectKey, chunkSize: 0, durationSec: meta.durationSec },
       });
     }
-    console.warn("[video/storage] upload failed, storing in the database", r.error);
+    const why = r.error instanceof Error ? r.error.message : JSON.stringify(r.error ?? "").slice(0, 200);
+    if (strict) throw new Error(`Upload to Object Storage failed: ${why}`);
+    console.warn("[video/storage] upload failed, storing in the database", why);
+  } else if (strict) {
+    throw new Error("Object Storage did not answer (VIDEO_STORAGE=object). Check the bucket (VIDEO_BUCKET_ID) in Tools > Object Storage.");
   }
   // Database: the row first (chunks reference it), then 1 MB chunks.
   const row = await prisma.lessonVideoAsset.create({

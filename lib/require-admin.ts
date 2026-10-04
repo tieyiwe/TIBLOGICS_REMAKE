@@ -48,7 +48,16 @@ export async function requireAdmin(): Promise<NextResponse | null> {
 function requireStaffSession(session: Session): NextResponse | null {
   const user = session.user;
   if (user?.studentId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // One sign-in per browser: signing in to the learner area (same browser)
+    // replaced the staff sign-in. Say so, instead of a bare "Forbidden".
+    return NextResponse.json(
+      {
+        error:
+          "You are signed in to the ARFA learner area in this browser, which replaced your admin sign-in. Sign in again at /admin_pro/login, and use a private window for the learner view.",
+        code: "learner_session",
+      },
+      { status: 403 },
+    );
   }
   const isStaff = !!(user?.isOwner || user?.isAdmin || user?.collaboratorId);
   if (!isStaff) {

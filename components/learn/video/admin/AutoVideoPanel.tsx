@@ -304,9 +304,9 @@ export default function AutoVideoPanel() {
         )}
         {stalled && (
           <div data-testid="video-stalled"><Notice tone="warn" title="Queued videos are not being made">
-            {s.jobs.queued} videos are queued, and no video has started {lastMove ? `since ${ago(lastMove)}` : "yet"}. Videos are made by the
-            &ldquo;videos&rdquo; scheduled job (<code>npm run cron videos</code>, every 15 minutes), 2 at a time. Schedule it in Replit, or press
-            &ldquo;Make next video now&rdquo; to make one at a time from here.
+            {s.jobs.queued} videos are queued, and no video has started {lastMove ? `since ${ago(lastMove)}` : "yet"}. Press &ldquo;Make the next{" "}
+            {batchSize}&rdquo; above: the server makes them one after another and pauses for your review. Or schedule the &ldquo;videos&rdquo; job
+            (<code>npm run cron videos</code>) in Replit, at any interval.
           </Notice></div>
         )}
         {s.activity.lastError && (
