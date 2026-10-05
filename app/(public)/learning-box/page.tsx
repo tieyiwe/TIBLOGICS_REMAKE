@@ -4,6 +4,7 @@ import LevelPicker from "@/components/learn/LevelPicker";
 import Reveal from "@/components/learn/Reveal";
 import HowItWorks from "@/components/learn/method/HowItWorks";
 import { getCatalog } from "@/lib/learn/catalog";
+import { getStudent } from "@/lib/learn/session";
 import { fmtPrice } from "@/lib/learn/format";
 import { PLANS, FOUNDING_PRICING } from "@/lib/payments/provider";
 import { TRACK_BASE_PRICE_CENTS } from "@/lib/learn/pricing";
@@ -37,7 +38,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LearningBoxPage() {
-  const [catalog, locale, t, teamPricing, sales] = await Promise.all([getCatalog(), getLocale(), getT(), getTeamPricing(), pageSales()]);
+  const [catalog, locale, t, teamPricing, sales, student] = await Promise.all([getCatalog(), getLocale(), getT(), getTeamPricing(), pageSales(), getStudent()]);
   const { texts, pending } = await localizedTracks(
     locale === "en" ? [] : await loadTrackSources({ slug: { in: catalog.map((c) => c.slug) } }),
     locale,
@@ -151,6 +152,28 @@ export default async function LearningBoxPage() {
                   <strong className="text-white">{t("learn.price.perMonth", { price: fmtPrice(sales.monthly?.saleCents ?? monthly.amount, locale) })}</strong>{" "}
                   {t("learn.box.heroPriceTail", { from: fmtPrice(fromCents, locale) })}
                 </p>
+              </div>
+              {/* Returning learners: one click to their tracks. */}
+              <div
+                className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-white/10 pt-5 text-sm"
+                style={{ "--stagger-index": 3 } as React.CSSProperties}
+                data-testid="hero-signin"
+              >
+                {student ? (
+                  <>
+                    <span className="text-white/70">{t("learn.box.welcomeBack", { name: student.name.split(" ")[0] })}</span>
+                    <Link href="/learn" className="inline-flex items-center gap-1.5 rounded-full bg-white px-5 py-2 font-bold text-[var(--ink)] hover:bg-white/90">
+                      {t("learn.box.continueLearning")} →
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-white/70">{t("learn.box.haveAccount")}</span>
+                    <Link href="/learn/login" className="inline-flex items-center gap-1.5 rounded-full bg-white px-5 py-2 font-bold text-[var(--ink)] hover:bg-white/90">
+                      {t("learn.nav.signIn")} →
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
             <div style={{ "--stagger-index": 2 } as React.CSSProperties}>
