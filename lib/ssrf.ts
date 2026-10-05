@@ -38,6 +38,33 @@ function ipv4ToLong(ip: string): number | null {
   return out;
 }
 
+/** An IPv6 address (any textual form, optional zone id) as 16 bytes, or null. */
+function ipv6Bytes(addr: string): number[] | null {
+  let s = addr.split("%")[0];
+  // A trailing dotted IPv4 part becomes two hex groups.
+  const dotted = s.match(/^(.*:)(\d{1,3}(?:\.\d{1,3}){3})$/);
+  if (dotted) {
+    const n = ipv4ToLong(dotted[2]);
+    if (n === null) return null;
+    s = `${dotted[1]}${((n >>> 16) & 0xffff).toString(16)}:${(n & 0xffff).toString(16)}`;
+  }
+  const halves = s.split("::");
+  if (halves.length > 2) return null;
+  const parse = (part: string) => (part ? part.split(":") : []);
+  const head = parse(halves[0]);
+  const tail = halves.length === 2 ? parse(halves[1]) : [];
+  const missing = 8 - head.length - tail.length;
+  if (halves.length === 2 ? missing < 1 : missing !== 0) return null;
+  const groups = [...head, ...Array(Math.max(0, missing)).fill("0"), ...tail];
+  const out: number[] = [];
+  for (const g of groups) {
+    if (!/^[0-9a-f]{1,4}$/.test(g)) return null;
+    const n = parseInt(g, 16);
+    out.push(n >> 8, n & 0xff);
+  }
+  return out.length === 16 ? out : null;
+}
+
 /**
  * Is this address one we must never fetch?
  *
@@ -75,14 +102,30 @@ export function isBlockedAddress(addr: string): boolean {
 
   if (v === 6) {
     const lower = addr.toLowerCase().replace(/^\[|\]$/g, "");
-    if (lower === "::" || lower === "::1") return true;
-    // IPv4-mapped (::ffff:127.0.0.1) and IPv4-compatible: judge the IPv4 part.
-    const mapped = lower.match(/^::(?:ffff:)?(\d{1,3}(?:\.\d{1,3}){3})$/);
-    if (mapped) return isBlockedAddress(mapped[1]);
+    // Judged on the 16 parsed bytes, not the text. WHATWG URL rewrites
+    // [::ffff:127.0.0.1] as [::ffff:7f00:1], which the old dotted-only regex
+    // did not recognise, so http://[::ffff:127.0.0.1]:5000/ (loopback) and
+    // [::ffff:a9fe:a9fe] (metadata service) were allowed.
+    const b = ipv6Bytes(lower);
+    if (!b) return true; // unparseable: refuse rather than guess
+    const v4 = (o: number) => `${b[o]}.${b[o + 1]}.${b[o + 2]}.${b[o + 3]}`;
+    const zero = (from: number, to: number) => b.slice(from, to).every((x) => x === 0);
+    if (zero(0, 16)) return true; // ::
+    if (zero(0, 15) && b[15] === 1) return true; // ::1
+    // IPv4-mapped (::ffff:a.b.c.d) and IPv4-compatible (::a.b.c.d): judge the IPv4 part.
+    if (zero(0, 10) && ((b[10] === 0xff && b[11] === 0xff) || (b[10] === 0 && b[11] === 0))) return isBlockedAddress(v4(12));
+    // NAT64 64:ff9b::/96 and 64:ff9b:1::/48 embed an IPv4 address too.
+    if (b[0] === 0x00 && b[1] === 0x64 && b[2] === 0xff && b[3] === 0x9b) return isBlockedAddress(v4(12));
+    // 6to4 2002::/16 embeds the IPv4 address in bytes 2-5.
+    if (b[0] === 0x20 && b[1] === 0x02) return isBlockedAddress(v4(2));
     return (
-      /^f[cd]/.test(lower) ||   // fc00::/7 unique local
-      /^fe[89ab]/.test(lower) || // fe80::/10 link-local
-      /^ff/.test(lower)          // ff00::/8 multicast
+      (b[0] === 0x20 && b[1] === 0x01 && b[2] === 0x00 && b[3] === 0x00) || // 2001::/32 Teredo
+      (b[0] === 0x20 && b[1] === 0x01 && b[2] === 0x0d && b[3] === 0xb8) || // 2001:db8::/32 documentation
+      (b[0] === 0x01 && b[1] === 0x00 && zero(2, 8)) || // 100::/64 discard
+      (b[0] & 0xfe) === 0xfc ||               // fc00::/7 unique local
+      (b[0] === 0xfe && (b[1] & 0xc0) === 0x80) || // fe80::/10 link-local
+      (b[0] === 0xfe && (b[1] & 0xc0) === 0xc0) || // fec0::/10 site-local (deprecated)
+      b[0] === 0xff                           // ff00::/8 multicast
     );
   }
 
@@ -195,6 +238,29 @@ export async function safeFetch(
   }
 
   throw new SsrfBlockedError("too-many-redirects", current.toString());
+}
+
+/**
+ * The body as text, reading at most `maxBytes` and then cancelling the stream.
+ * `res.text()` buffers the whole body before any `.slice()`, so a scanned site
+ * that streams gigabytes (or never ends) could exhaust the server's memory.
+ */
+export async function readTextLimited(res: Response, maxBytes: number): Promise<string> {
+  if (!res.body) return "";
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (total < maxBytes) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      total += value.byteLength;
+    }
+  } finally {
+    reader.cancel().catch(() => {});
+  }
+  return Buffer.concat(chunks).subarray(0, maxBytes).toString("utf8");
 }
 
 export class SsrfBlockedError extends Error {

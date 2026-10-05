@@ -1,4 +1,4 @@
-import { checkTargetUrl, safeFetch, BLOCK_MESSAGES, SsrfBlockedError } from "@/lib/ssrf";
+import { checkTargetUrl, safeFetch, readTextLimited, BLOCK_MESSAGES, SsrfBlockedError } from "@/lib/ssrf";
 import { audit, type AuditResult, type Signals } from "@/lib/scanner/audit";
 import { checkDns, extraAudit, type ExtraResult } from "@/lib/scanner/extra";
 
@@ -29,7 +29,8 @@ async function probe(url: string, signal: AbortSignal, textFile = false): Promis
     // redirect: "follow" would follow a public URL to an internal one.
     const res = await safeFetch(url, { signal, headers: { "User-Agent": UA } });
     if (!res.ok) return null;
-    const body = (await res.text()).slice(0, 20_000);
+    // Capped read: a hostile site could stream an endless body.
+    const body = (await readTextLimited(res, 64_000)).slice(0, 20_000);
     if (textFile) {
       const type = res.headers.get("content-type") ?? "";
       if (/html/i.test(type) || /^\s*<(!doctype|html|head|body)/i.test(body) || !body.trim()) return null;
@@ -87,7 +88,8 @@ export async function scanSite(raw: string, timeoutMs = 20_000, opts: { extra?: 
     }
 
     const ttfb = Math.round(performance.now() - start);
-    const html = (await res.text()).slice(0, 900_000);
+    // Capped read (not res.text()): an endless body would exhaust memory.
+    const html = (await readTextLimited(res, 3_000_000)).slice(0, 900_000);
     const totalTime = Math.round(performance.now() - start);
 
     const encoding = res.headers.get("content-encoding") ?? "";

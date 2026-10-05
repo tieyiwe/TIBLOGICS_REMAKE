@@ -13,7 +13,10 @@ export async function isScannerStaff(): Promise<boolean> {
     const u = session?.user;
     if (!u) return false;
     if (u.studentId) return isOwnerStudent(u.studentId);
-    return !!(u.isOwner || u.isAdmin || u.collaboratorId);
+    if (u.isOwner || u.isAdmin) return true;
+    // A team member only with access to scanner leads: the rest of the team
+    // gets the same free limit and gated reports as a visitor.
+    return !!u.collaboratorId && (u.permissions ?? []).some((p) => p === "*" || p === "scanner_leads" || p.startsWith("scanner_leads:"));
   } catch {
     return false;
   }

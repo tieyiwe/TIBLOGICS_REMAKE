@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   if (r.kind === "emailSent") {
     const [team, inviter] = await Promise.all([
       prisma.team.findUnique({ where: { id: r.teamId }, select: { name: true } }),
-      prisma.student.findUnique({ where: { id: r.inviterId }, select: { name: true } }),
+      prisma.student.findUnique({ where: { id: r.inviterId }, select: { name: true, email: true } }),
     ]);
     try {
       await deliverInvite({
@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
         email: r.email,
         token: r.token,
         inviterName: inviter?.name ?? team?.name ?? "",
+        inviterEmail: inviter?.email ?? null,
         fallbackLocale: await getLocale(),
       });
     } catch (err) {

@@ -51,6 +51,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
       email: r.email,
       token: r.token,
       inviterName: g.student.name,
+      inviterEmail: g.student.email,
       fallbackLocale: await getLocale(),
     }).catch((err) => console.error("[team/members] resend email", err instanceof Error ? err.message : err));
     return NextResponse.json({ ok: true });

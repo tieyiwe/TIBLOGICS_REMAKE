@@ -152,10 +152,15 @@ export const stripeProvider: PaymentProvider = {
   },
 
   async updateTeamSeatPrice(subscriptionId: string, seatPriceCents: number, currency: string) {
-    if (process.env.STRIPE_LEARN_TEAM_PRICE_ID) return;
     const sub = await stripe.subscriptions.retrieve(subscriptionId);
     const item = sub.items?.data?.[0];
     if (!item) throw new Error("Team subscription has no item");
+    // Only a subscription on the fixed Stripe price is left alone. A volume
+    // band is always checked out with price_data (createTeamCheckout), even
+    // when STRIPE_LEARN_TEAM_PRICE_ID is set; returning early for every
+    // subscription whenever that secret existed let an owner buy 51 seats at
+    // the band price, drop to 2 and keep paying the band price in Stripe.
+    if (process.env.STRIPE_LEARN_TEAM_PRICE_ID && item.price?.id === process.env.STRIPE_LEARN_TEAM_PRICE_ID) return;
     const product = typeof item.price?.product === "string" ? item.price.product : item.price?.product?.id;
     if (!product) throw new Error("Team subscription item has no product");
     await stripe.subscriptions.update(subscriptionId, {

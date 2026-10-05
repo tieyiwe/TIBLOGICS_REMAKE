@@ -27,6 +27,7 @@ const esc = (s: string) => escapeHtml(s);
 
 const reportUrl = (l: ScannerLead) => `${SITE}/tools/scanner/report/${l.token}`;
 const bookUrl = (l: ScannerLead) => `${SITE}/book?scan=${l.token}`;
+const isHeld = (l: ScannerLead) => !!readExtra(l.extra)?.held && !l.unlockedAt;
 const localeOf = (l: ScannerLead): Locale => (isLocale(l.locale) ? l.locale : "en");
 
 function frame(title: string, body: string, footer: string): string {
@@ -85,6 +86,9 @@ function priceText(locale: Locale): string {
 export async function sendScanReportEmail(id: string): Promise<void> {
   const l = await prisma.scannerLead.findUnique({ where: { id } });
   if (!l?.email || !l.token || l.emailedAt) return;
+  // A held scan (bought over the free limit, not paid yet) shows nothing until
+  // paid; emailing its scores and problems would hand out the scan for free.
+  if (isHeld(l)) return;
   const locale = localeOf(l);
   const t = translatorFor(locale);
   const problems = allFindings(l).filter((f) => f.type !== "good");
@@ -116,6 +120,8 @@ const WHY_AREA: Record<Area, string> = {
 /** Follow-up 1 (day 3) or 2 (day 7). Returns false when it was not sent. */
 export async function sendFollowup(l: ScannerLead, stage: 1 | 2): Promise<boolean> {
   if (!l.email || !l.token || l.unlockedAt || l.bookedCallAt) return false;
+  if (isHeld(l)) return false; // nothing of a held scan is shown until it is paid
+
   if (await isSuppressed(l.email)) return false;
   const locale = localeOf(l);
   const t = translatorFor(locale);

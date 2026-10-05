@@ -142,6 +142,22 @@
   }
 }
 
+/* "Live" dot (home page scanner): a soft green glow that breathes. It does not
+   move, so it stays on for visitors who reduce motion, just slower. */
+@keyframes live-glow {
+  /* The first shadow is the dot's orange ring (Tailwind ring-2), kept here
+     because the animated box-shadow replaces it. */
+  0% { box-shadow: 0 0 0 2px #F47C20, 0 0 0 2px rgba(34, 197, 94, 0.8); }
+  70% { box-shadow: 0 0 0 2px #F47C20, 0 0 0 9px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 2px #F47C20, 0 0 0 2px rgba(34, 197, 94, 0); }
+}
+.live-pulse {
+  animation: live-glow 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-pulse { animation-duration: 3s; }
+}
+
 /* Chat bubbles */
 .chat-bubble-user {
   @apply bg-[#1B3A6B] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%] text-sm font-dm;

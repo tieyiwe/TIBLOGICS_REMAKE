@@ -1,4 +1,4 @@
-import { checkTargetUrl, safeFetch } from "@/lib/ssrf";
+import { checkTargetUrl, readTextLimited, safeFetch } from "@/lib/ssrf";
 import { extractPublishedDate } from "./freshness";
 
 /**
@@ -29,7 +29,8 @@ export async function fetchSource(url: string): Promise<{ text: string; publishe
     if (!res.ok) return null;
     const type = res.headers.get("content-type") ?? "";
     if (!/text\/html|application\/xhtml|text\/plain/i.test(type)) return null;
-    const raw = (await res.text()).slice(0, 2_000_000);
+    // Capped read: the URL comes from a public feed, the body could be endless.
+    const raw = (await readTextLimited(res, 4_000_000)).slice(0, 2_000_000);
     const text = extractArticleText(raw);
     return text ? { text, publishedAt: extractPublishedDate(raw) } : null;
   } catch {

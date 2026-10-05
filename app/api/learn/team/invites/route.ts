@@ -99,6 +99,7 @@ export async function POST(req: NextRequest) {
       email: o.email,
       token: o.token,
       inviterName: g.student.name,
+      inviterEmail: g.student.email,
       fallbackLocale: locale,
     }).catch((err) => {
       emailFailures++;

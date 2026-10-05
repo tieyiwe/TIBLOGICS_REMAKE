@@ -28,20 +28,33 @@ export async function sendTeamInvite(to: {
   email: string;
   teamName: string;
   inviterName: string;
+  /** Shown so the recipient knows exactly who sent it. */
+  inviterEmail?: string | null;
   token: string;
   expiresAt: Date;
   locale: string | null | undefined;
   name?: string | null;
   tracks?: string[];
   dueAt?: Date | null;
+  /** The recipient already has an ARFA account: the button signs them in. */
+  hasAccount?: boolean;
 }) {
   const t = translator(to.locale);
   const fmt = new Intl.DateTimeFormat(loc(to.locale), { dateStyle: "long" });
   const tracks = to.tracks ?? [];
   const first = to.name?.trim().split(/\s+/)[0];
+  const invite = inviteUrl(to.token);
+  const next = encodeURIComponent(`/join-team/${to.token}`);
+  const signupUrl = `${LEARN_SITE}/learn/signup?next=${next}&email=${encodeURIComponent(to.email)}`;
+  const loginUrl = `${LEARN_SITE}/learn/login?next=${next}`;
+  const link = (href: string, label: string) => `<a href="${href}" style="color:#1B2A5E;font-weight:700;">${esc(label)}</a>`;
   const body =
     (first ? p(esc(t("team.email.hello", { name: first }))) : "") +
-    p(t("team.email.invite.p1", { inviter: esc(to.inviterName), team: strong(esc(to.teamName)) })) +
+    p(t("team.email.invite.p1", { inviter: strong(esc(to.inviterName)), team: strong(esc(to.teamName)) })) +
+    (to.inviterEmail
+      ? `<p style="font-size:13px;color:#5b6b72;line-height:1.6;margin:0 0 14px;padding:10px 14px;background:#F4F7FB;border-radius:10px;">${t("team.email.invite.sentBy", { inviter: esc(to.inviterName), email: esc(to.inviterEmail), team: esc(to.teamName) })}</p>`
+      : "") +
+    p(esc(t("team.email.invite.about"))) +
     (tracks.length
       ? p(esc(t(tracks.length === 1 ? "team.email.invite.tracks.one" : "team.email.invite.tracks.other"))) +
         ul(tracks.map((x) => strong(esc(x)))) +
@@ -49,10 +62,23 @@ export async function sendTeamInvite(to: {
       : "") +
     p(t("team.email.invite.p2")) +
     p(t("team.email.invite.expires", { date: esc(fmt.format(to.expiresAt)) }));
+  // A new learner creates the account (email filled in) and lands back on the
+  // invitation to join; someone with an account signs in and does the same.
+  const after =
+    (to.hasAccount ? "" : `<p style="font-size:14px;color:#5b6b72;text-align:center;margin:0 0 12px;">${t("team.email.invite.haveAccount", { link: link(loginUrl, t("team.email.invite.signIn")) })}</p>`) +
+    `<p style="font-size:12px;color:#8A9BA0;line-height:1.6;margin:0;word-break:break-all;">${t("team.email.invite.fallback", { url: link(invite, invite) })}</p>`;
   await arfaMailer.emails.send({
     to: to.email,
-    subject: t("team.email.invite.subject", { team: to.teamName }),
-    html: shell(t, t("team.email.invite.title"), body, { href: inviteUrl(to.token), label: `${t("team.email.invite.cta")} →` }),
+    subject: t("team.email.invite.subject", { team: to.teamName, inviter: to.inviterName }),
+    html: shell(
+      t,
+      esc(t("team.email.invite.title", { inviter: to.inviterName, team: to.teamName })),
+      body,
+      to.hasAccount
+        ? { href: loginUrl, label: `${t("team.email.invite.ctaKnown")} →` }
+        : { href: signupUrl, label: `${t("team.email.invite.cta")} →` },
+      after,
+    ),
   });
 }
 
@@ -69,6 +95,7 @@ export async function deliverInvite(inv: {
   email: string;
   token: string;
   inviterName: string;
+  inviterEmail?: string | null;
   fallbackLocale: string;
 }) {
   const [plan, known] = await Promise.all([
@@ -81,12 +108,14 @@ export async function deliverInvite(inv: {
     email: inv.email,
     teamName: inv.teamName,
     inviterName: inv.inviterName,
+    inviterEmail: inv.inviterEmail ?? null,
     token: inv.token,
     expiresAt: new Date(Date.now() + TEAM_INVITE_DAYS * 86_400_000),
     locale,
     name: plan?.name,
     tracks: tracks.map((x) => x.title),
     dueAt: plan?.dueAt ?? null,
+    hasAccount: !!known,
   });
 }
 

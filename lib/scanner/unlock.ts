@@ -47,7 +47,11 @@ async function unlock(id: string, source: Source, data: { email?: string | null;
 
 /** Checkout paid (webhook, or the buyer's return to the report page). */
 export async function markReportPaid(leadId: string, session: Stripe.Checkout.Session): Promise<boolean> {
-  if (session.payment_status !== "paid") return false;
+  // A 100% promotion code completes with "no_payment_required"; that buyer
+  // must get the report too. Only a completed session counts, since an open
+  // one can already show "no_payment_required".
+  const paid = session.payment_status === "paid" || (session.status === "complete" && session.payment_status === "no_payment_required");
+  if (!paid) return false;
   if (session.metadata?.leadId !== leadId) return false;
   return unlock(leadId, "paid", {
     amountPaid: session.amount_total ?? 0,
@@ -71,7 +75,13 @@ export async function unlockByCall(token: unknown, email: string): Promise<boole
   if (lead.unlockedAt) return true;
   const today = await prisma.scannerLead.count({ where: { unlockSource: "call", unlockedAt: { gte: new Date(Date.now() - 86_400_000) } } });
   if (today >= callUnlocksPerDay()) return false;
-  return unlock(lead.id, "call", { email: normEmail(email) });
+  // One free report per booking email a month: repeated bookings with the
+  // same address do not keep unlocking reports (staff can still unlock).
+  const who = normEmail(email);
+  if (!who) return false;
+  const already = await prisma.scannerLead.count({ where: { unlockSource: "call", email: who, unlockedAt: { gte: new Date(Date.now() - 30 * 86_400_000) } } });
+  if (already > 0) return false;
+  return unlock(lead.id, "call", { email: who });
 }
 
 export async function unlockByAdmin(id: string): Promise<boolean> {

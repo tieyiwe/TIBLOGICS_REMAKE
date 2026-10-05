@@ -286,7 +286,9 @@ async function generatePost(
   // better than publishing guessed ones under the TIBLOGICS name.
   const source = sourceUrl ? await fetchSource(sourceUrl) : null;
   if (sourceUrl && !source) return null;
-  const sourceText = source?.text ?? null;
+  // The page is untrusted: it must not be able to close the <<<SOURCE ... SOURCE>>>
+  // fence below and put its own text outside the "data, not instructions" block.
+  const sourceText = source?.text ? source.text.replace(/<<<\s*SOURCE|SOURCE\s*>>>/gi, " ") : null;
   // Old news is not news: a source page dated outside the window is skipped.
   if (source && tooOld(source.publishedAt)) {
     console.info(`[auto-refresh] skipped old source (${describeAge(source.publishedAt)}): ${sourceUrl}`);

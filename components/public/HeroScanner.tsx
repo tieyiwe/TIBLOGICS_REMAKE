@@ -135,7 +135,7 @@ export default function HeroScanner() {
             {/* Green "live" pulse with an orange ring, so it reads as on-air rather than as a brand accent. */}
             <span className="relative flex h-2.5 w-2.5">
               <span className="absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-70 motion-safe:animate-ping" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#22C55E] ring-2 ring-[#F47C20]" />
+              <span className="live-pulse relative inline-flex h-2.5 w-2.5 rounded-full bg-[#22C55E] ring-2 ring-[#F47C20]" data-testid="live-dot" />
             </span>
             {t("home.scan.live")}
           </div>
