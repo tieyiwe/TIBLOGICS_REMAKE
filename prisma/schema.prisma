@@ -117,9 +117,39 @@ model ScannerLead {
   email         String?
   name          String?
   bookedCallAt  DateTime?
+  /// Columns below are created at runtime by lib/scanner/db.ts (and dbprep).
+  /// The site's key for the free-scan limit: lower-case host without "www.".
+  domain          String?
+  /// Secret report link: /tools/scanner/report/<token>.
+  token           String?   @unique
+  locale          String?
+  /// Growth and security scores, extra findings, detected tools, ideas, PageSpeed.
+  extra           Json?
+  unlockedAt      DateTime?
+  /// "paid" | "call" | "admin"
+  unlockSource    String?
+  stripeSessionId String?
+  amountPaid      Int?
+  /// The written full report (fix steps, build ideas), made once when unlocked.
+  report          Json?
+  reportStatus    String?
+  /// Competitor sites compared in the full report.
+  compare         Json?
+  /// A paid report includes one re-scan of the same site within 30 days.
+  rescanCredits   Int       @default(0)
+  rescanUntil     DateTime?
+  /// The scan this one re-measured, when it used a re-scan credit.
+  parentId        String?
+  emailedAt       DateTime?
+  followupStage   Int       @default(0)
+  followupAt      DateTime?
+  consentAt       DateTime?
+  growthLeadId    String?
 
   @@index([createdAt])
   @@index([aiScore])
+  @@index([domain, createdAt])
+  @@index([followupAt])
 }
 
 /// A paid Readiness Monitor: one customer site plus up to three competitors,

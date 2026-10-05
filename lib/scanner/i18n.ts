@@ -42,6 +42,8 @@ export function scanErrorText(t: T, error: string | null | undefined): string {
   for (const [reason, message] of Object.entries(BLOCK_MESSAGES)) {
     if (error.startsWith(message)) return t(`tools.block.${reason}`);
   }
+  const refused = /refused the scan \(HTTP (\d+)\)/.exec(error);
+  if (refused) return t("tools.sr.err.refused", { code: refused[1] });
   const timeout = /over (\d+) seconds|timed out \(>(\d+)s\)/i.exec(error);
   if (timeout) return t("tools.scanErr.timeout", { s: timeout[1] ?? timeout[2] });
   return t("tools.scanErr.unreachable");

@@ -124,6 +124,7 @@ export async function POST(req: Request) {
       company,
       goalNotes,
       sessionId,
+      scanToken,
     } = body;
 
     // Input validation
@@ -273,6 +274,14 @@ export async function POST(req: Request) {
       });
 
       await recordAttribution({ kind: "appointment", refId: appointment.id, cookieHeader: req.headers.get("cookie"), amountCents: 0 });
+
+      // Booked from a website scanner report (/book?scan=<token>): the call
+      // unlocks that report. Best-effort; never fails the booking.
+      if (typeof scanToken === "string" && scanToken) {
+        await import("@/lib/scanner/unlock")
+          .then((m) => m.unlockByCall(scanToken, String(email)))
+          .catch((err) => console.error("[appointments] scanner unlock", err));
+      }
 
       // Link chat session to this appointment for expert intelligence
       if (sessionId && typeof sessionId === "string") {

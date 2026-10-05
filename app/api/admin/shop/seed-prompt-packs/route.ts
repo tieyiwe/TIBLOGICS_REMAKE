@@ -4,11 +4,11 @@ import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
 import {
   PROMPT_PACKS,
-  PROMPT_PACK_CATEGORY,
   PROMPT_PACK_COLLECTION,
   PROMPT_PACK_COLLECTION_META,
   PROMPT_PACK_PRICE,
 } from "@/lib/shop/prompt-packs";
+import { promptPackData } from "@/lib/shop/ensure-catalog";
 import { resolveDownloadPath } from "@/lib/shop/delivery";
 import { revalidateShop } from "@/lib/shop/revalidate";
 
@@ -77,27 +77,7 @@ export async function POST() {
         );
       }
 
-      const data = {
-        name: pack.name,
-        tagline: pack.tagline,
-        description: pack.description,
-        price: PROMPT_PACK_PRICE,
-        currency: "USD",
-        images: [pack.coverImage],
-        category: PROMPT_PACK_CATEGORY,
-        collections: [PROMPT_PACK_COLLECTION],
-        tags: pack.tags,
-        stock: null, // digital — never runs out
-        digital: true,
-        // Wires into the delivery system: paid order -> grant -> token URL.
-        deliveryType: "download",
-        fileKey: pack.fileKey,
-        fileName: pack.fileName,
-        fileFormat: `PDF · ${pack.pages} pages · ${pack.prompts} prompts`,
-        fileSizeBytes: sizeBytes,
-        downloadDays: 365,
-        maxDownloads: 10,
-      };
+      const data = promptPackData(pack, sizeBytes);
 
       const existingId = existingBySlug.get(pack.slug);
       if (existingId) {

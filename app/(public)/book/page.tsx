@@ -91,6 +91,32 @@ export default function BookPage() {
   const [availSlots, setAvailSlots] = useState<string[]>(DEFAULT_AVAIL_SLOTS);
   const [blockedKeys, setBlockedKeys] = useState<string[]>([]);
   const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", phone: "", company: "", goalNotes: "" });
+  // From a website scanner report (/book?scan=<token>): the form is
+  // pre-filled with the report and the booking unlocks it.
+  const [scan, setScan] = useState<{ token: string; domain: string } | null>(null);
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get("scan");
+    if (!token || !/^[A-Za-z0-9_-]{16,64}$/.test(token)) return;
+    let cancelled = false;
+    fetch(`/api/scanner/report/${token}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((v: { domain?: string; url?: string; scores?: { overall?: number | null }; top?: { text: string }[] } | null) => {
+        if (cancelled || !v?.domain) return;
+        setScan({ token, domain: v.domain });
+        const problems = (v.top ?? []).map((f) => f.text).join("; ");
+        setFormData((p) => ({
+          ...p,
+          company: p.company || v.domain || "",
+          goalNotes: p.goalNotes || t("pages.book.scan.notes", { url: v.url ?? v.domain ?? "", score: v.scores?.overall ?? "-", problems }).slice(0, 1900),
+        }));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // Once on arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim());
@@ -219,6 +245,7 @@ export default function BookPage() {
           date: selectedDate ? toDateKey(selectedDate) : null,
           timeSlot: selectedSlot,
           ...formData,
+          ...(scan ? { scanToken: scan.token } : {}),
         }),
       });
       if (!res.ok) {
@@ -271,6 +298,11 @@ export default function BookPage() {
           <span className="section-tag">{t("pages.book.tag")}</span>
           <h1 className="font-syne font-extrabold text-3xl sm:text-4xl text-[#0D1B2A] mt-2">{t("pages.book.title")}</h1>
           <p className="font-dm text-[#3A4A5C] mt-2">{t("pages.book.subtitle")}</p>
+          {scan && (
+            <p className="mx-auto mt-4 max-w-2xl rounded-xl border border-[#F47C20]/30 bg-[#FEF0E3] px-4 py-3 font-dm text-sm text-[#0D1B2A]" data-testid="book-scan-banner">
+              {t("pages.book.scan.banner", { domain: scan.domain })}
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">

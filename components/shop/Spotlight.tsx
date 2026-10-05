@@ -2,43 +2,28 @@
 
 import Link from "next/link";
 import { ArrowRight, Check, Clock } from "lucide-react";
-import { formatMoney, type ShopProduct } from "./types";
+import type { ShopProduct } from "./types";
 import { useLocale, useT } from "@/lib/i18n/client";
-import ShopImage from "./ShopImage";
-
-const S = {
-  card: "#1A2223",
-  orange: "#F47C4C",
-  amber: "#F9A738",
-  muted: "#8A9BA0",
-  border: "rgba(255,255,255,0.08)",
-};
-const syne = "var(--font-syne), sans-serif";
+import { CoverStage, priceParts } from "./ProductCard";
+import { C, specChips } from "./theme";
 
 export const SPOTLIGHT_STYLES = `
-  .spot{
-    display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);
-    gap:44px;align-items:center;
+  .spot{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);border:1px solid ${C.line};border-radius:24px;overflow:hidden;background:${C.surface}}
+  .spot .st-stage{min-height:100%;padding:48px 0}
+  .spot .st-cover{width:min(62%,300px)}
+  .spot-body{padding:clamp(28px,4.5vw,56px);display:flex;flex-direction:column;justify-content:center;min-width:0}
+  .spot:hover .st-cover{transform:translateY(-6px)}
+  @media(max-width:860px){
+    .spot{grid-template-columns:1fr}
+    .spot .st-stage{padding:36px 0 40px}
+    .spot .st-cover{width:min(56%,240px)}
   }
-  @media(max-width:900px){ .spot{grid-template-columns:1fr;gap:28px} }
-  .spot-cover{
-    position:relative;border-radius:16px;overflow:hidden;
-    box-shadow:0 30px 60px -20px rgba(0,0,0,.75);
-    transform:perspective(1200px) rotateY(-6deg);
-    transition:transform .5s cubic-bezier(.16,1,.3,1);
-  }
-  .spot-cover:hover{ transform:perspective(1200px) rotateY(0deg) translateY(-6px); }
-  @media(max-width:900px){ .spot-cover{transform:none;max-width:320px;margin:0 auto} }
-  @media(prefers-reduced-motion:reduce){
-    .spot-cover,.spot-cover:hover{transform:none;transition:none}
-  }
-  .spot-cta{ transition:transform .2s,box-shadow .2s }
-  .spot-cta:hover{ transform:translateY(-2px);box-shadow:0 10px 26px -8px rgba(244,124,76,.6) }
+  @media(prefers-reduced-motion:reduce){.spot:hover .st-cover{transform:none}}
 `;
 
 /**
- * The rotating hero. `rotatesInDays` is shown as a soft scarcity cue that
- * happens to be true, rather than a fake countdown.
+ * The featured product at the top of the store. `rotatesInDays` is shown only
+ * when several products share the spotlight, and only because it is true.
  */
 export default function Spotlight({
   product,
@@ -51,209 +36,59 @@ export default function Spotlight({
 }) {
   const t = useT();
   const locale = useLocale();
-  const cover = product.images?.[0];
-  const money = (cents: number) => {
-    try {
-      return new Intl.NumberFormat(locale, {
-        style: "currency",
-        currency: product.currency || "USD",
-        maximumFractionDigits: 0,
-      }).format(cents / 100);
-    } catch {
-      return formatMoney(cents, product.currency);
-    }
-  };
-  const price = money(product.price);
-  const compare =
-    product.compareAtPrice && product.compareAtPrice > product.price
-      ? money(product.compareAtPrice)
-      : null;
-
-  // "PDF · 46 pages · 100 prompts" → chips, when the field is set that way.
-  const specs = (product.fileFormat ?? "").split("·").map((s) => s.trim()).filter(Boolean);
+  const price = priceParts(product, locale, t("pages.store.card.free"));
+  const specs = specChips(product.fileFormat, t);
 
   return (
-    <section
-      style={{
-        maxWidth: "1200px",
-        margin: "0 auto",
-        padding: "24px 24px 8px",
-      }}
-    >
-      <div
-        style={{
-          position: "relative",
-          background: `linear-gradient(135deg, ${S.card} 0%, #0F1617 100%)`,
-          border: `1px solid ${S.border}`,
-          borderRadius: "24px",
-          padding: "clamp(20px, 5vw, 40px)",
-          overflow: "hidden",
-        }}
-      >
-        {/* warm wash behind the cover */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "radial-gradient(70% 90% at 22% 50%, rgba(244,124,76,.18), transparent 70%)",
-            pointerEvents: "none",
-          }}
-        />
+    <section className="st-wrap" style={{ paddingTop: "8px", paddingBottom: "8px" }} aria-labelledby="spot-title">
+      <div className="spot">
+        <Link href={`/store/${product.slug}`} tabIndex={-1} aria-hidden="true" style={{ display: "block" }}>
+          {/* The store's largest paint: resized, modern format, fetched first. */}
+          <CoverStage src={product.images?.[0]} alt={product.name} sizes="(max-width: 860px) 60vw, 300px" priority />
+        </Link>
 
-        <div className="spot" style={{ position: "relative" }}>
-          {/* Cover */}
-          <Link href={`/store/${product.slug}`} className="spot-cover" style={{ display: "block" }}>
-            {cover ? (
-              // The store's largest paint: resized, modern format, fetched first.
-              <div style={{ position: "relative", width: "100%", aspectRatio: "17/22" }}>
-                <ShopImage src={cover} alt={product.name} sizes="(max-width: 760px) 90vw, 340px" priority />
-              </div>
-            ) : (
-              <div
-                style={{
-                  aspectRatio: "17/22",
-                  background: "linear-gradient(135deg,#1C2526,#0C1112)",
-                }}
-              />
-            )}
-          </Link>
+        <div className="spot-body">
+          <div className="st-kicker" style={{ marginBottom: "16px" }}>{t("pages.store.spot.badge")}</div>
+          <h2 id="spot-title" className="st-h" style={{ fontSize: "clamp(1.7rem,3.4vw,2.6rem)", lineHeight: 1.1, marginBottom: "12px" }}>
+            {product.name}
+          </h2>
+          {product.tagline && (
+            <p style={{ color: C.text, fontSize: "1.02rem", lineHeight: 1.55, margin: "0 0 16px" }}>{product.tagline}</p>
+          )}
+          <p style={{ color: C.muted, fontSize: ".95rem", lineHeight: 1.75, margin: "0 0 22px", maxWidth: "54ch" }}>
+            {firstParagraph(product.description)}
+          </p>
 
-          {/* Detail */}
-          <div style={{ minWidth: 0 }}>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                background: "rgba(249,167,56,.12)",
-                border: "1px solid rgba(249,167,56,.35)",
-                borderRadius: "30px",
-                padding: "6px 14px",
-                marginBottom: "18px",
-              }}
-            >
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  background: S.amber,
-                  display: "inline-block",
-                }}
-              />
-              <span style={{ fontSize: ".76rem", color: S.amber, fontWeight: 700, letterSpacing: ".04em" }}>
-                {t("pages.store.spot.badge")}
-              </span>
+          {specs.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "26px" }}>
+              {specs.map((s) => (
+                <span key={s} className="st-spec"><Check size={12} color={C.orange} aria-hidden="true" />{s}</span>
+              ))}
             </div>
+          )}
 
-            <h2
-              style={{
-                fontFamily: syne,
-                fontWeight: 800,
-                fontSize: "clamp(1.7rem,3.2vw,2.5rem)",
-                lineHeight: 1.12,
-                marginBottom: "10px",
-                color: "#fff",
-              }}
-            >
-              {product.name}
-            </h2>
-
-            {product.tagline && (
-              <p style={{ color: S.amber, fontSize: "1rem", fontWeight: 600, marginBottom: "16px" }}>
-                {product.tagline}
-              </p>
-            )}
-
-            {/* Short hook — first paragraph of the description, plain text */}
-            <p
-              style={{
-                color: "#B0C4CC",
-                fontSize: ".95rem",
-                lineHeight: 1.7,
-                marginBottom: "20px",
-                maxWidth: "52ch",
-              }}
-            >
-              {firstParagraph(product.description)}
-            </p>
-
-            {specs.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "22px" }}>
-                {specs.map((s) => (
-                  <span
-                    key={s}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      border: `1px solid ${S.border}`,
-                      borderRadius: "8px",
-                      padding: "5px 11px",
-                      fontSize: ".78rem",
-                      color: "#C8D8E0",
-                    }}
-                  >
-                    <Check size={12} color={S.orange} />
-                    {s}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            <div style={{ display: "flex", alignItems: "center", gap: "18px", flexWrap: "wrap" }}>
-              <Link
-                href={`/store/${product.slug}`}
-                className="spot-cta"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "9px",
-                  background: `linear-gradient(135deg,${S.orange},${S.amber})`,
-                  color: "#12191A",
-                  fontWeight: 800,
-                  fontSize: ".95rem",
-                  textDecoration: "none",
-                  padding: "13px 26px",
-                  borderRadius: "40px",
-                }}
-              >
-                {t("pages.store.spot.cta", { price })}
-                <ArrowRight size={17} />
-              </Link>
-
-              {compare && (
-                <span style={{ color: S.muted, fontSize: ".9rem" }}>
-                  <s>{compare}</s>
-                </span>
-              )}
-
-              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: S.muted, fontSize: ".82rem" }}>
-                <Check size={14} color="#22A387" />
+          <div style={{ display: "flex", alignItems: "center", gap: "16px 20px", flexWrap: "wrap" }}>
+            <Link href={`/store/${product.slug}`} className="st-btn st-btn-primary">
+              {t("pages.store.spot.cta", { price: price.now })}
+              <ArrowRight size={17} aria-hidden="true" />
+            </Link>
+            {price.was && <s style={{ color: C.muted, fontSize: ".95rem" }}>{price.was}</s>}
+            {product.digital && (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: C.muted, fontSize: ".84rem" }}>
+                <Check size={14} color={C.ok} aria-hidden="true" />
                 {t("pages.store.spot.instant")}
               </span>
-            </div>
-
-            {featuredCount > 1 && (
-              <p
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  color: S.muted,
-                  fontSize: ".78rem",
-                  marginTop: "18px",
-                }}
-              >
-                <Clock size={12} />
-                {rotatesInDays === 1
-                  ? t("pages.store.spot.rotatesOne")
-                  : t("pages.store.spot.rotatesMany", { n: rotatesInDays })}
-              </p>
             )}
           </div>
+
+          {featuredCount > 1 && (
+            <p style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: C.muted, fontSize: ".8rem", margin: "20px 0 0" }}>
+              <Clock size={12} aria-hidden="true" />
+              {rotatesInDays === 1
+                ? t("pages.store.spot.rotatesOne")
+                : t("pages.store.spot.rotatesMany", { n: rotatesInDays })}
+            </p>
+          )}
         </div>
       </div>
     </section>

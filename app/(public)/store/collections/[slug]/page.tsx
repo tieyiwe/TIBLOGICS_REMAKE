@@ -3,10 +3,11 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { cache } from "react";
 import prisma from "@/lib/prisma";
+import { ensureStoreCatalog, sortStoreProducts } from "@/lib/shop/ensure-catalog";
 
 /** Shared by generateMetadata and the page; see store/[slug] for why. */
 const getCollection = cache(async (slug: string) =>
-  prisma.collection.findUnique({ where: { slug } }).catch(() => null),
+  ensureStoreCatalog().then(() => prisma.collection.findUnique({ where: { slug } })).catch(() => null),
 );
 import CollectionView from "@/components/shop/CollectionView";
 import { getLocale, getT } from "@/lib/i18n/server";
@@ -46,11 +47,11 @@ export default async function CollectionPage({ params }: Props) {
     .findMany({ where: { published: true, collections: { has: slug } }, orderBy: [{ featured: "desc" }, { createdAt: "desc" }] })
     .catch(() => []);
 
-  const products: ShopProduct[] = withProductSales(raw, await pageSales()).map((p) => ({
+  const products: ShopProduct[] = withProductSales(sortStoreProducts(raw), await pageSales()).map((p) => ({
     id: p.id, slug: p.slug, name: p.name, tagline: p.tagline, description: p.description,
     price: p.price, compareAtPrice: p.compareAtPrice, currency: p.currency, images: p.images,
     category: p.category, collections: p.collections, tags: p.tags, stock: p.stock, digital: p.digital,
-    featured: p.featured, onSale: p.onSale, soldCount: p.soldCount,
+    featured: p.featured, onSale: p.onSale, soldCount: p.soldCount, fileFormat: p.fileFormat,
   }));
 
   return (

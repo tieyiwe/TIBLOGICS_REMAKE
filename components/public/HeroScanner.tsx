@@ -14,6 +14,8 @@ import { useLocale, useT } from "@/lib/i18n/client";
 
 type Scores = {
   url: string;
+  /** The saved report (/tools/scanner/report/<token>). */
+  token?: string;
   overallScore: number;
   seoScore: number;
   perfScore: number;
@@ -102,7 +104,9 @@ export default function HeroScanner() {
   }
 
   const topIssues = result?.findings.filter((f) => f.type === "bad").slice(0, 2) ?? [];
-  const fullReport = result ? `/tools/scanner?url=${encodeURIComponent(url.trim())}` : "/tools/scanner";
+  // The scan is saved: the full report opens it rather than scanning again
+  // (each site has two free scans a month).
+  const fullReport = result?.token ? `/tools/scanner/report/${result.token}` : "/tools/scanner";
 
   return (
     <div className="relative">

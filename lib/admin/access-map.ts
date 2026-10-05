@@ -120,6 +120,7 @@ export const API_RULES: AccessRule[] = [
   { path: "/api/admin/pm", key: "command_center" },
   { path: "/api/admin/projects", key: "command_center" },
   { path: "/api/admin/growth", key: "growth_content" },
+  { path: "/api/admin/scanner-leads", key: "scanner_leads" },
   { path: "/api/admin/growth/leads", key: "growth" },
   { path: "/api/admin/growth/outreach", key: "growth" },
   { path: "/api/admin/growth/outreach/approve", key: "growth", write: "growth.send" },

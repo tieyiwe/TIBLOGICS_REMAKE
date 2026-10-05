@@ -92,14 +92,14 @@ export default function CartDrawer() {
           width: "56px",
           height: "56px",
           borderRadius: "50%",
-          background: "linear-gradient(135deg,#F47C4C,#F9A738)",
+          background: "#F47C20",
           border: "none",
           cursor: "pointer",
-          boxShadow: "0 10px 30px rgba(244,124,76,.45)",
+          boxShadow: "0 10px 30px rgba(244,124,32,.45)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "#131A1B",
+          color: "#0F1E30",
         }}
       >
         <ShoppingBag size={22} strokeWidth={2.4} />
@@ -113,14 +113,14 @@ export default function CartDrawer() {
               height: "22px",
               padding: "0 5px",
               borderRadius: "11px",
-              background: "#131A1B",
+              background: "#0F1E30",
               color: "#fff",
               fontSize: "12px",
-              fontWeight: 800,
+              fontWeight: 700,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              border: "2px solid #F9A738",
+              border: "2px solid #F47C20",
             }}
           >
             {count}
@@ -144,29 +144,29 @@ export default function CartDrawer() {
           right: 0,
           bottom: 0,
           width: "min(420px, 92vw)",
-          background: "#131A1B",
+          background: "#0F1E30",
           borderLeft: "1px solid rgba(255,255,255,.08)",
           zIndex: 80,
           transform: open ? "translateX(0)" : "translateX(100%)",
           transition: "transform .32s cubic-bezier(.4,0,.2,1)",
           display: "flex",
           flexDirection: "column",
-          fontFamily: "var(--font-dm-sans), sans-serif",
+          fontFamily: "var(--font-brand-dm), 'DM Sans', sans-serif",
           color: "#fff",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 22px", borderBottom: "1px solid rgba(255,255,255,.08)" }}>
-          <div style={{ fontFamily: "var(--font-syne), sans-serif", fontWeight: 800, fontSize: "1.15rem" }}>
-            {t("pages.store.cart.title")} {count > 0 && <span style={{ color: "#8A9BA0", fontWeight: 500 }}>· {count}</span>}
+          <div style={{ fontFamily: "var(--font-brand-syne), 'Syne', sans-serif", fontWeight: 700, fontSize: "1.15rem" }}>
+            {t("pages.store.cart.title")} {count > 0 && <span style={{ color: "#93A3B8", fontWeight: 500 }}>· {count}</span>}
           </div>
-          <button onClick={() => setOpen(false)} aria-label={t("pages.store.cart.close")} style={{ background: "none", border: "none", color: "#8A9BA0", cursor: "pointer", padding: 4 }}>
+          <button onClick={() => setOpen(false)} aria-label={t("pages.store.cart.close")} style={{ background: "none", border: "none", color: "#93A3B8", cursor: "pointer", padding: 4 }}>
             <X size={22} />
           </button>
         </div>
 
         <div style={{ flex: 1, overflowY: "auto", padding: "16px 22px" }}>
           {lines.length === 0 ? (
-            <div style={{ textAlign: "center", color: "#8A9BA0", padding: "64px 0" }}>
+            <div style={{ textAlign: "center", color: "#93A3B8", padding: "64px 0" }}>
               <ShoppingBag size={40} style={{ margin: "0 auto 16px", opacity: 0.4 }} />
               <p style={{ fontSize: ".95rem" }}>{t("pages.store.cart.empty")}</p>
             </div>
@@ -176,21 +176,21 @@ export default function CartDrawer() {
                 <div style={{ width: "64px", height: "64px", borderRadius: "12px", overflow: "hidden", flexShrink: 0, background: "rgba(255,255,255,.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {l.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={l.image} alt={l.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <img src={l.image} alt={l.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                   ) : (
                     <ShoppingBag size={20} style={{ opacity: 0.4 }} />
                   )}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: ".9rem", marginBottom: "4px", lineHeight: 1.3 }}>{l.name}</div>
-                  <div style={{ color: "#F47C4C", fontWeight: 700, fontSize: ".88rem", marginBottom: "8px" }}>{formatMoney(l.price, "USD", locale)}</div>
+                  <div style={{ color: "#F47C20", fontWeight: 700, fontSize: ".88rem", marginBottom: "8px" }}>{formatMoney(l.price, "USD", locale)}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,.06)", borderRadius: "8px", overflow: "hidden" }}>
                       <button onClick={() => setQty(l.id, l.quantity - 1)} style={{ width: "28px", height: "28px", background: "none", border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Minus size={13} /></button>
                       <span style={{ minWidth: "24px", textAlign: "center", fontSize: ".85rem", fontWeight: 700 }}>{l.quantity}</span>
-                      <button onClick={() => setQty(l.id, l.quantity + 1)} style={{ width: "28px", height: "28px", background: "none", border: "none", color: "#F47C4C", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Plus size={13} /></button>
+                      <button onClick={() => setQty(l.id, l.quantity + 1)} style={{ width: "28px", height: "28px", background: "none", border: "none", color: "#F47C20", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Plus size={13} /></button>
                     </div>
-                    <button onClick={() => remove(l.id)} aria-label={t("pages.store.cart.remove")} style={{ background: "none", border: "none", color: "#8A9BA0", cursor: "pointer", padding: 4 }}><Trash2 size={15} /></button>
+                    <button onClick={() => remove(l.id)} aria-label={t("pages.store.cart.remove")} style={{ background: "none", border: "none", color: "#93A3B8", cursor: "pointer", padding: 4 }}><Trash2 size={15} /></button>
                   </div>
                 </div>
               </div>
@@ -201,8 +201,8 @@ export default function CartDrawer() {
         {lines.length > 0 && (
           <div style={{ borderTop: "1px solid rgba(255,255,255,.08)", padding: "20px 22px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "14px" }}>
-              <span style={{ color: "#8A9BA0" }}>{t("pages.store.cart.subtotal")}</span>
-              <span style={{ fontFamily: "var(--font-syne), sans-serif", fontWeight: 800, fontSize: "1.2rem" }}>{formatMoney(subtotal, "USD", locale)}</span>
+              <span style={{ color: "#93A3B8" }}>{t("pages.store.cart.subtotal")}</span>
+              <span style={{ fontFamily: "var(--font-brand-syne), 'Syne', sans-serif", fontWeight: 700, fontSize: "1.2rem" }}>{formatMoney(subtotal, "USD", locale)}</span>
             </div>
 
             {/* Save cart / reminder opt-in */}
@@ -213,12 +213,12 @@ export default function CartDrawer() {
                 onChange={(e) => { setEmail(e.target.value); setSavedEmail(false); }}
                 placeholder={t("pages.store.cart.reminder")}
                 aria-label={t("pages.store.cart.reminder")}
-                style={{ width: "100%", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: "12px", padding: "11px 40px 11px 14px", color: "#fff", fontSize: ".85rem", fontFamily: "var(--font-dm-sans), sans-serif", outline: "none" }}
+                style={{ width: "100%", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)", borderRadius: "12px", padding: "11px 40px 11px 14px", color: "#fff", fontSize: ".85rem", fontFamily: "var(--font-brand-dm), 'DM Sans', sans-serif", outline: "none" }}
               />
               {savedEmail && isEmail(email) && (
-                <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "#22A387", display: "flex" }}><Check size={16} /></span>
+                <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "#3DD6A6", display: "flex" }}><Check size={16} /></span>
               )}
-              <p style={{ color: "#8A9BA0", fontSize: ".7rem", marginTop: "6px", lineHeight: 1.4 }}>
+              <p style={{ color: "#93A3B8", fontSize: ".7rem", marginTop: "6px", lineHeight: 1.4 }}>
                 {t("pages.store.cart.reminderNote")}
               </p>
             </div>
@@ -240,9 +240,9 @@ export default function CartDrawer() {
                 padding: "15px",
                 borderRadius: "50px",
                 border: "none",
-                background: "linear-gradient(135deg,#F47C4C,#F9A738)",
-                color: "#131A1B",
-                fontFamily: "var(--font-syne), sans-serif",
+                background: "#F47C20",
+                color: "#0F1E30",
+                fontFamily: "var(--font-brand-syne), 'Syne', sans-serif",
                 fontWeight: 700,
                 fontSize: "1rem",
                 cursor: loading ? "default" : "pointer",
@@ -255,7 +255,7 @@ export default function CartDrawer() {
             >
               {loading ? (<><Loader2 size={18} className="animate-spin" /> {t("pages.store.cart.redirecting")}</>) : t("pages.store.cart.checkout")}
             </button>
-            <p style={{ textAlign: "center", color: "#8A9BA0", fontSize: ".72rem", marginTop: "12px" }}>{t("pages.store.cart.stripe")}</p>
+            <p style={{ textAlign: "center", color: "#93A3B8", fontSize: ".72rem", marginTop: "12px" }}>{t("pages.store.cart.stripe")}</p>
           </div>
         )}
       </aside>

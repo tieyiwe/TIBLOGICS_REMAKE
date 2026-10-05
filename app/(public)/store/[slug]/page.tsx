@@ -4,17 +4,20 @@ import type { Metadata } from "next";
 import { cache } from "react";
 import prisma from "@/lib/prisma";
 import { cachedPublicData } from "@/lib/cache/public-data";
+import { ensureStoreCatalog } from "@/lib/shop/ensure-catalog";
 
 /**
  * generateMetadata and the page component both need this row, and Next calls
  * them separately — so every product page ran the same findUnique twice.
  * React's cache() dedupes it within a single render pass.
  */
-const getProduct = cache(async (slug: string) =>
+const getProduct = cache(async (slug: string) => {
+  // A toolkit added in code must not 404 before anyone opens the store.
+  await ensureStoreCatalog();
   // Public data, cached until a product changes (lib/cache/public-data.ts).
   // Errors are not cached.
-  cachedPublicData("shop", `product:${slug}`, () => prisma.product.findUnique({ where: { slug } })).catch(() => null),
-);
+  return cachedPublicData("shop", `product:${slug}`, () => prisma.product.findUnique({ where: { slug } })).catch(() => null);
+});
 import ProductDetail from "@/components/shop/ProductDetail";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { fitTitle, pageMetadata, plain } from "@/lib/seo/meta";
@@ -36,13 +39,13 @@ function toShopProduct(p: {
   id: string; slug: string; name: string; tagline: string | null; description: string;
   price: number; compareAtPrice: number | null; currency: string; images: string[];
   category: string; collections: string[]; tags: string[]; stock: number | null; digital: boolean;
-  featured: boolean; onSale: boolean; soldCount: number;
+  featured: boolean; onSale: boolean; soldCount: number; fileFormat: string | null;
 }): ShopProduct {
   return {
     id: p.id, slug: p.slug, name: p.name, tagline: p.tagline, description: p.description,
     price: p.price, compareAtPrice: p.compareAtPrice, currency: p.currency, images: p.images,
     category: p.category, collections: p.collections, tags: p.tags, stock: p.stock, digital: p.digital,
-    featured: p.featured, onSale: p.onSale, soldCount: p.soldCount,
+    featured: p.featured, onSale: p.onSale, soldCount: p.soldCount, fileFormat: p.fileFormat,
   };
 }
 
@@ -72,8 +75,8 @@ export default async function ProductPage({ params }: Props) {
     cachedPublicData("shop", `related:${p.id}:${p.category}`, () =>
       prisma.product.findMany({
         where: { published: true, category: p.category, NOT: { id: p.id } },
-        orderBy: { createdAt: "desc" },
-        take: 4,
+        orderBy: [{ featured: "desc" }, { createdAt: "desc" }, { slug: "asc" }],
+        take: 3,
       }),
     ).catch(() => []),
     // Live automatic sale prices (admin: /admin_pro/promotions), display only.

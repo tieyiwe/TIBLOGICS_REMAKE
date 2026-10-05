@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { Globe, Mail, Phone, BarChart2 } from "lucide-react";
+import { Globe, Mail, Phone, BarChart2, DollarSign } from "lucide-react";
 import MetricCard from "@/components/admin/MetricCard";
 import { requireAdminPage } from "../_lib/admin-page-auth";
 import { getScannerLeads } from "@/lib/admin/metrics";
+import { formatMoney } from "@/lib/blueprint/config";
+import UnlockButton from "./UnlockButton";
 
 // Per-request and session-scoped: never cached or prerendered.
 export const dynamic = "force-dynamic";
@@ -56,15 +58,19 @@ export default async function ScannerLeadsPage() {
       {/* Header */}
       <div>
         <h1 className="font-syne font-bold text-[24px] leading-tight text-[var(--a-ink)] sm:text-[26px]">Scanner Leads</h1>
-        <p className="font-dm text-sm text-[var(--a-ink-3)] mt-0.5">Websites scanned via the AI Readiness Scanner tool</p>
+        <p className="font-dm text-sm text-[var(--a-ink-3)] mt-0.5">
+          Websites scanned with the scanner. Two free scans per site every 30 days; the full report is unlocked by payment, a booked call (from the report link) or here.
+          Visitors who leave their email also appear in Growth leads (source &quot;scanner&quot;) and get two follow-ups (day 3 and day 7).
+        </p>
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <MetricCard label="Total Scans" value={data.total} icon={Globe} iconColor="#2251A3" />
         <MetricCard label="Avg Overall Score" value={data.avgScore ?? "—"} suffix={data.avgScore == null ? "" : "/100"} icon={BarChart2} iconColor="#7c3aed" />
         <MetricCard label="Email Capture Rate" value={pct(data.withEmail)} suffix="%" icon={Mail} iconColor="#0F6E56" />
         <MetricCard label="Booking Conversion" value={pct(data.booked)} suffix="%" icon={Phone} iconColor="#F47C20" />
+        <MetricCard label={`Reports sold (${formatMoney(data.revenueCents)})`} value={data.paid} icon={DollarSign} iconColor="#16a34a" />
       </div>
 
       {/* Table */}
@@ -74,7 +80,7 @@ export default async function ScannerLeadsPage() {
         </div>
         {leads.length === 0 && (
           <p className="px-5 py-10 text-center font-dm text-sm text-[var(--a-ink-3)]">
-            No scans saved yet. Scans from the website scanner appear here once a visitor runs one and leaves their details.
+            No scans saved yet. Every scan from the website scanner (and the home page quick scan) is saved here.
           </p>
         )}
         <div className="overflow-x-auto">
@@ -88,6 +94,7 @@ export default async function ScannerLeadsPage() {
                 <th className="text-left px-5 py-3 font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em] min-w-[160px]">SEO / Perf / UX</th>
                 <th className="text-left px-5 py-3 font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em]">Email</th>
                 <th className="text-left px-5 py-3 font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em]">Booked</th>
+                <th className="text-left px-5 py-3 font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em]">Report</th>
                 <th className="px-5 py-3" />
               </tr>
             </thead>
@@ -97,8 +104,19 @@ export default async function ScannerLeadsPage() {
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-2">
                       <Globe size={13} className="text-[var(--a-ink-3)] flex-shrink-0" />
-                      <span className="font-dm text-sm font-medium text-[var(--a-ink)]">{lead.url}</span>
+                      <span className="font-dm text-sm font-medium text-[var(--a-ink)] break-all">{lead.domain ?? lead.url}</span>
                     </div>
+                    <p className="mt-0.5 font-dm text-[11px] text-[var(--a-ink-3)] break-all">{lead.url}</p>
+                    {(() => {
+                      const ex = lead.extra as { growthScore?: number; securityScore?: number; tech?: { cms?: string | null; shop?: string | null }; held?: boolean } | null;
+                      return ex ? (
+                        <p className="mt-0.5 font-dm text-[11px] text-[var(--a-ink-3)]">
+                          Leads {ex.growthScore ?? "—"} · Security {ex.securityScore ?? "—"}
+                          {ex.tech?.cms ? ` · ${ex.tech.cms}` : ""}{ex.tech?.shop ? ` · ${ex.tech.shop}` : ""}
+                          {ex.held && !lead.unlockedAt ? " · awaiting payment" : ""}
+                        </p>
+                      ) : null;
+                    })()}
                   </td>
                   <td className="px-5 py-4 font-dm text-sm text-[var(--a-ink-3)]">
                     {lead.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
@@ -131,6 +149,12 @@ export default async function ScannerLeadsPage() {
                           Captured
                         </span>
                         <p className="font-dm text-xs text-[var(--a-ink-3)] mt-1">{lead.email}</p>
+                        <p className="font-dm text-[11px] text-[var(--a-ink-3)]">
+                          {lead.emailedAt ? "Results sent" : "Not emailed"} · follow-ups {lead.followupStage}/2
+                          {lead.growthLeadId ? (
+                            <> · <Link href={`/admin_pro/growth/leads?open=${lead.growthLeadId}`} className="text-[var(--a-blue)] hover:underline">Growth lead</Link></>
+                          ) : null}
+                        </p>
                       </div>
                     ) : (
                       <span className="text-xs font-dm text-[var(--a-ink-3)]">—</span>
@@ -146,15 +170,28 @@ export default async function ScannerLeadsPage() {
                     )}
                   </td>
                   <td className="px-5 py-4">
-                    {/* Was a "View Report" button with no handler. There is no
-                        stored-report page, so it re-runs the live scan. */}
-                    <Link
-                      href={`/tools/scanner?url=${encodeURIComponent(lead.url)}`}
-                      target="_blank"
-                      className="text-xs font-dm text-[var(--a-blue)] hover:underline whitespace-nowrap"
-                    >
-                      Scan again ↗
-                    </Link>
+                    {lead.unlockedAt ? (
+                      <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 text-xs font-dm px-2 py-0.5 rounded-full whitespace-nowrap">
+                        {lead.unlockSource === "paid" ? `Paid ${formatMoney(lead.amountPaid ?? 0)}` : lead.unlockSource === "call" ? "Unlocked by call" : lead.unlockSource === "rescan" ? "Re-scan" : "Unlocked by staff"}
+                      </span>
+                    ) : (
+                      <span className="text-xs font-dm text-[var(--a-ink-3)]">Free view</span>
+                    )}
+                    {lead.unlockedAt && (
+                      <p className="mt-1 font-dm text-[11px] text-[var(--a-ink-3)]">
+                        {lead.reportStatus === "ready" ? "Written" : lead.reportStatus?.startsWith("failed") ? `Failed (${lead.reportStatus})` : "Writing"}
+                      </p>
+                    )}
+                  </td>
+                  <td className="px-5 py-4 space-y-1.5">
+                    {lead.token ? (
+                      <Link href={`/tools/scanner/report/${lead.token}`} target="_blank" className="block text-xs font-dm text-[var(--a-blue)] hover:underline whitespace-nowrap">
+                        Open report ↗
+                      </Link>
+                    ) : (
+                      <span className="block text-xs font-dm text-[var(--a-ink-3)] whitespace-nowrap">Saved before reports</span>
+                    )}
+                    {lead.token && !lead.unlockedAt && <UnlockButton id={lead.id} />}
                   </td>
                 </tr>
               ))}

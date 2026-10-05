@@ -15,6 +15,7 @@ export const KIND_LABEL: Record<string, string> = {
   learn_subscription_checkout: "AI Academy subscription",
   toolkit_checkout: "Toolkit subscription",
   blueprint: "Blueprint",
+  scanner: "Website report",
   order: "Store order",
   event_registration: "Event registration",
   appointment: "Booking",
@@ -70,7 +71,7 @@ async function resolveAttributions(from: Date, to?: Date): Promise<Resolved[]> {
   const ids = (kind: string) => rows.filter((r) => r.kind === kind).map((r) => r.refId);
 
   const trackPairs = ids("track_checkout").map((r) => r.split(":"));
-  const [purchases, subs, toolkit, blueprints, orders, regs, appts] = await Promise.all([
+  const [purchases, subs, toolkit, blueprints, orders, regs, appts, scans] = await Promise.all([
     trackPairs.length ? tryMany(() => prisma.trackPurchase.findMany({ where: { studentId: { in: trackPairs.map((p) => p[0]) } }, select: { studentId: true, trackId: true, amountCents: true } })) : [],
     ids("learn_subscription_checkout").length ? tryMany(() => prisma.learnSubscription.findMany({ where: { studentId: { in: ids("learn_subscription_checkout") } }, select: { studentId: true, status: true } })) : [],
     ids("toolkit_checkout").length ? tryMany(() => prisma.toolkitSubscription.findMany({ where: { studentId: { in: ids("toolkit_checkout") } }, select: { studentId: true, status: true } })) : [],
@@ -78,7 +79,9 @@ async function resolveAttributions(from: Date, to?: Date): Promise<Resolved[]> {
     ids("order").length ? tryMany(() => prisma.order.findMany({ where: { id: { in: ids("order") } }, select: { id: true, status: true, total: true } })) : [],
     ids("event_registration").length ? tryMany(() => prisma.eventRegistration.findMany({ where: { id: { in: ids("event_registration") } }, select: { id: true, status: true, price: true } })) : [],
     ids("appointment").length ? tryMany(() => prisma.appointment.findMany({ where: { id: { in: ids("appointment") } }, select: { id: true, status: true, paymentStatus: true, totalAmount: true } })) : [],
+    ids("scanner").length ? tryMany(() => prisma.scannerLead.findMany({ where: { id: { in: ids("scanner") } }, select: { id: true, unlockSource: true, amountPaid: true } })) : [],
   ]);
+  const scanMap = new Map(scans.map((s) => [s.id, s]));
   const purchaseMap = new Map(purchases.map((p) => [`${p.studentId}:${p.trackId}`, p.amountCents]));
   const subMap = new Map(subs.map((s) => [s.studentId, s.status]));
   const tkMap = new Map(toolkit.map((s) => [s.studentId, s.status]));
@@ -116,6 +119,11 @@ async function resolveAttributions(from: Date, to?: Date): Promise<Resolved[]> {
         const g = regMap.get(r.refId);
         if (g && g.status === "paid") { converted = true; revenue = g.price; }
         else if (g && g.price === 0 && g.status !== "cancelled") converted = true;
+        break;
+      }
+      case "scanner": {
+        const s = scanMap.get(r.refId);
+        if (s?.unlockSource === "paid") { converted = true; revenue = s.amountPaid ?? 0; }
         break;
       }
       case "appointment": {

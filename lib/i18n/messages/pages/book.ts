@@ -212,4 +212,14 @@ export default tri({
   "pages.bookSuccess.copy": ["Copy Link", "Copier le lien", "Nakili Kiungo"],
   "pages.bookSuccess.copied": ["✓ Copied!", "✓ Copié !", "✓ Imenakiliwa!"],
   "pages.bookSuccess.linkLabel": ["Meeting link", "Lien de la réunion", "Kiungo cha mkutano"],
+  "pages.book.scan.banner": [
+    "Booking a call about {domain}: we'll review your website report with you, and booking unlocks the full report for free.",
+    "Rendez-vous au sujet de {domain} : nous passerons votre rapport en revue avec vous, et la réservation débloque gratuitement le rapport complet.",
+    "Unaweka miadi kuhusu {domain}: tutapitia ripoti ya tovuti yako pamoja nawe, na kuweka miadi kunafungua ripoti kamili bila malipo.",
+  ],
+  "pages.book.scan.notes": [
+    "Website scan of {url}: {score}/100. Biggest problems: {problems}",
+    "Analyse du site {url} : {score}/100. Principaux problèmes : {problems}",
+    "Uchunguzi wa tovuti {url}: {score}/100. Matatizo makubwa: {problems}",
+  ],
 });

@@ -116,7 +116,7 @@ const nextConfig = {
         source: "/api/:path((?!blog/cover/).*)",
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       },
-      ...["/admin_pro", "/admin_pro/:path*", "/learn", "/learn/:path*", "/go/:path*", "/r/:path*", "/toolkit", "/blueprint/:path*", "/monitor/:path*"].map((source) => ({
+      ...["/admin_pro", "/admin_pro/:path*", "/learn", "/learn/:path*", "/go/:path*", "/r/:path*", "/toolkit", "/blueprint/:path*", "/monitor/:path*", "/tools/scanner/report/:path*"].map((source) => ({
         source,
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       })),

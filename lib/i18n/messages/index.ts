@@ -38,8 +38,10 @@ import inboxMsgs from "./inbox";
 import promoMsgs from "./promo";
 import seoMsgs from "./seo";
 import joinMsgs from "./join";
+import scannerChecks from "./scanner-checks";
+import scannerReport from "./scanner-report";
 
-const ALL: Messages[] = [common, home, site, tools, learn, labs, toolkit, calculator, pages, game, studio, studioAutomation, studioLoops, studioPrompt, studioSorter, studioRisk, studioWireframe, studioArena, studioCritic, studioBench, studioDoors, method, tutorMsgs, masteryMsgs, communityMsgs, videoMsgs, teamMsgs, resumeMsgs, liveMsgs, badgesMsgs, pwaMsgs, a11yMsgs, acquireMsgs, referralsMsgs, inboxMsgs, promoMsgs, seoMsgs, joinMsgs];
+const ALL: Messages[] = [common, home, site, tools, learn, labs, toolkit, calculator, pages, game, studio, studioAutomation, studioLoops, studioPrompt, studioSorter, studioRisk, studioWireframe, studioArena, studioCritic, studioBench, studioDoors, method, tutorMsgs, masteryMsgs, communityMsgs, videoMsgs, teamMsgs, resumeMsgs, liveMsgs, badgesMsgs, pwaMsgs, a11yMsgs, acquireMsgs, referralsMsgs, inboxMsgs, promoMsgs, seoMsgs, joinMsgs, scannerChecks, scannerReport];
 
 const cache = new Map<Locale, Record<string, string>>();
 

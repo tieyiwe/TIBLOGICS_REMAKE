@@ -1,126 +1,128 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { ShoppingBag, Check } from "lucide-react";
-import { useCart } from "./CartContext";
+import { ArrowRight, ShoppingBag } from "lucide-react";
 import { formatMoney, type ShopProduct } from "./types";
 import { useLocale, useT } from "@/lib/i18n/client";
 import ShopImage from "./ShopImage";
+import { C, specChips } from "./theme";
 
-const S = {
-  card: "#1A2223",
-  orange: "#F47C4C",
-  muted: "#8A9BA0",
-  border: "rgba(255,255,255,0.08)",
-};
-const syne = "var(--font-syne), sans-serif";
-
-export function AddButton({ p }: { p: ShopProduct }) {
-  const t = useT();
-  const { add } = useCart();
-  const [added, setAdded] = useState(false);
-  const soldOut = p.stock != null && p.stock <= 0;
-
-  function onAdd(e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (soldOut) return;
-    add({ id: p.id, slug: p.slug, name: p.name, price: p.price, image: p.images[0] ?? null, maxStock: p.stock });
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1400);
-  }
-
+/**
+ * A product's cover, shown whole at the book's own proportions (17:22, the
+ * size every toolkit cover is rendered at) on a navy stage. `contain`, so an
+ * image of any other shape is letterboxed rather than cropped.
+ */
+export function CoverStage({
+  src,
+  alt,
+  sizes,
+  priority = false,
+  className,
+  coverWidth,
+  style,
+}: {
+  src: string | undefined;
+  alt: string;
+  sizes: string;
+  priority?: boolean;
+  className?: string;
+  /** Width of the cover inside the stage, e.g. "64%". Defaults to the CSS. */
+  coverWidth?: string;
+  style?: React.CSSProperties;
+}) {
   return (
-    <button
-      onClick={onAdd}
-      disabled={soldOut}
-      aria-label={soldOut ? undefined : t("pages.store.card.addLabel", { name: p.name })}
-      style={{
-        border: "none",
-        borderRadius: "50px",
-        padding: "10px 18px",
-        fontFamily: syne,
-        fontWeight: 700,
-        fontSize: ".85rem",
-        cursor: soldOut ? "not-allowed" : "pointer",
-        background: soldOut ? "rgba(255,255,255,.08)" : added ? "#22A387" : "linear-gradient(135deg,#F47C4C,#F9A738)",
-        color: soldOut ? S.muted : "#131A1B",
-        display: "flex",
-        alignItems: "center",
-        gap: "6px",
-        whiteSpace: "nowrap",
-        transition: "opacity .2s",
-      }}
-    >
-      {soldOut ? t("pages.store.card.soldOut") : added ? (<><Check size={15} /> {t("pages.store.card.added")}</>) : (<><ShoppingBag size={15} /> {t("pages.store.card.add")}</>)}
-    </button>
+    <div className={`st-stage${className ? ` ${className}` : ""}`} style={style}>
+      {src ? (
+        <div className="st-cover" style={coverWidth ? { width: coverWidth } : undefined}>
+          <ShopImage src={src} alt={alt} sizes={sizes} priority={priority} fit="contain" />
+        </div>
+      ) : (
+        <ShoppingBag size={40} color={C.muted} style={{ opacity: 0.4 }} aria-hidden="true" />
+      )}
+    </div>
   );
 }
 
-/** `priority` for the first cards, which are above the fold (LCP). */
+/** Whole amounts without cents ("$79"), others as usual ("$79.50"). */
+function money(cents: number, currency: string, locale: string): string {
+  if (cents % 100 === 0) {
+    try {
+      return new Intl.NumberFormat(locale, { style: "currency", currency: currency || "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(cents / 100);
+    } catch {
+      /* unknown currency: fall through */
+    }
+  }
+  return formatMoney(cents, currency, locale);
+}
+
+/** Price as shown on cards and the detail page, with the sale price if any. */
+export function priceParts(p: ShopProduct, locale: string, freeLabel: string) {
+  const onSale = !!(p.onSale && p.compareAtPrice && p.compareAtPrice > p.price);
+  return {
+    now: p.price === 0 ? freeLabel : money(p.price, p.currency, locale),
+    was: onSale ? money(p.compareAtPrice!, p.currency, locale) : null,
+    pct: onSale ? Math.round(((p.compareAtPrice! - p.price) / p.compareAtPrice!) * 100) : 0,
+  };
+}
+
+/**
+ * One product in a grid. The whole card is the single call to action: it
+ * opens the product page, where the buying happens.
+ * `priority` for the first cards, which are above the fold (LCP).
+ */
 export default function ProductCard({ p, priority = false }: { p: ShopProduct; priority?: boolean }) {
   const t = useT();
   const locale = useLocale();
-  const onSale = p.onSale && p.compareAtPrice && p.compareAtPrice > p.price;
-  const pct = onSale ? Math.round(((p.compareAtPrice! - p.price) / p.compareAtPrice!) * 100) : 0;
+  const price = priceParts(p, locale, t("pages.store.card.free"));
+  const soldOut = p.stock != null && p.stock <= 0;
+  const specs = specChips(p.fileFormat, t);
 
   return (
-    <Link
-      href={`/store/${p.slug}`}
-      className="shop-card"
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        background: S.card,
-        border: `1px solid ${S.border}`,
-        borderRadius: "20px",
-        overflow: "hidden",
-        textDecoration: "none",
-        color: "#fff",
-      }}
-    >
-      <div style={{ position: "relative", aspectRatio: "4/5", background: "linear-gradient(135deg,#1C2526,#0C1112)", overflow: "hidden" }}>
-        {p.images[0] ? (
-          <ShopImage src={p.images[0]} alt={p.name} className="shop-card-img" sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px" priority={priority} />
-        ) : (
-          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: S.muted }}>
-            <ShoppingBag size={40} style={{ opacity: 0.3 }} />
-          </div>
-        )}
-        {onSale && (
-          <span style={{ position: "absolute", top: "12px", right: "12px", background: "linear-gradient(135deg,#F47C4C,#F9A738)", color: "#131A1B", fontFamily: syne, fontWeight: 800, fontSize: ".72rem", padding: "4px 10px", borderRadius: "20px" }}>
-            −{pct}%
-          </span>
-        )}
-        {p.featured && !onSale && (
-          <span style={{ position: "absolute", top: "12px", right: "12px", background: "rgba(19,26,27,.8)", color: "#F9A738", fontFamily: syne, fontWeight: 700, fontSize: ".7rem", padding: "4px 10px", borderRadius: "20px", border: "1px solid rgba(249,167,56,.4)" }}>
-            {t("pages.store.card.featured")}
+    <Link href={`/store/${p.slug}`} className="st-card" aria-label={t("pages.store.card.viewLabel", { name: p.name })}>
+      <div style={{ position: "relative" }}>
+        <CoverStage
+          src={p.images[0]}
+          alt={p.name}
+          sizes="(max-width: 560px) 45vw, (max-width: 960px) 30vw, 250px"
+          priority={priority}
+        />
+        {(price.was || (p.featured && !soldOut) || soldOut) && (
+          <span
+            className="st-badge"
+            style={{
+              position: "absolute", top: "12px", left: "12px", zIndex: 2,
+              background: price.was ? C.orange : "rgba(10,20,32,.78)",
+              color: price.was ? "#0A1420" : C.ink,
+              border: price.was ? "none" : `1px solid ${C.lineStrong}`,
+              backdropFilter: "blur(6px)",
+              fontSize: ".68rem", fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase",
+              padding: "5px 10px", borderRadius: "999px",
+            }}
+          >
+            {soldOut ? t("pages.store.card.soldOut") : price.was ? `−${price.pct}%` : t("pages.store.card.featured")}
           </span>
         )}
       </div>
-      <div style={{ padding: "18px", display: "flex", flexDirection: "column", flex: 1 }}>
-        <div style={{ fontSize: ".7rem", color: S.muted, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: "6px" }}>{p.category}</div>
-        <div style={{ fontFamily: syne, fontWeight: 700, fontSize: "1rem", lineHeight: 1.3, marginBottom: "6px" }}>{p.name}</div>
-        {p.tagline && <div style={{ color: S.muted, fontSize: ".82rem", lineHeight: 1.5, marginBottom: "14px" }}>{p.tagline}</div>}
-        <div style={{ marginTop: "auto", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: "8px", flexWrap: "wrap" }}>
-            <span style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.25rem", color: "#fff" }}>{p.price === 0 ? t("pages.store.card.free") : formatMoney(p.price, p.currency, locale)}</span>
-            {onSale && <span style={{ color: S.muted, fontSize: ".85rem", textDecoration: "line-through" }}>{formatMoney(p.compareAtPrice!, p.currency, locale)}</span>}
+      <div className="st-card-body">
+        <div className="st-kicker" style={{ fontSize: ".66rem", color: C.muted }}>{p.category}</div>
+        <div className="st-card-name">{p.name}</div>
+        {p.tagline && <div className="st-card-tag">{p.tagline}</div>}
+        {specs.length > 0 && (
+          <div className="st-card-spec" style={{ color: C.muted, fontSize: ".78rem", marginTop: "2px" }}>
+            {specs.join(" · ")}
           </div>
-          <AddButton p={p} />
+        )}
+        <div className="st-card-foot">
+          <span style={{ display: "inline-flex", alignItems: "baseline", gap: "8px", flexWrap: "wrap" }}>
+            <span className="st-price" style={{ fontSize: "1.12rem" }}>{price.now}</span>
+            {price.was && <s style={{ color: C.muted, fontSize: ".82rem" }}>{price.was}</s>}
+          </span>
+          <span className="st-view" aria-hidden="true">
+            <span className="st-view-label">{t("pages.store.card.view")}</span>
+            <ArrowRight size={15} />
+          </span>
         </div>
       </div>
     </Link>
   );
 }
-
-// Shared card grid + hover styles (injected once per page)
-export const SHOP_CARD_STYLES = `
-  .shop-card{transition:transform .3s ease,border-color .3s ease,box-shadow .3s ease}
-  .shop-card:hover{transform:translateY(-6px);border-color:rgba(244,124,76,.4);box-shadow:0 24px 48px rgba(0,0,0,.4)}
-  .shop-card-img{transition:transform .4s ease}
-  .shop-card:hover .shop-card-img{transform:scale(1.06)}
-  .shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:22px}
-  @media(max-width:560px){.shop-grid{grid-template-columns:repeat(2,1fr);gap:12px}}
-`;

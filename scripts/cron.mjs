@@ -76,6 +76,9 @@ const JOBS = {
   // Lesson recaps (key takeaways and recall cards): writes the missing ones
   // with the fast model, a batch per run; then only lessons whose text changed.
   recaps: { path: "/api/cron/recaps", suggested: "daily" },
+  // Website scanner: day-3 and day-7 follow-up emails to visitors who left
+  // their email, and paid reports whose writing did not finish. Idempotent.
+  scanner: { path: "/api/cron/scanner", suggested: "daily" },
   // Command Center: recurring expenses for each period that came due, overdue
   // invoices, budget alerts, task due/overdue reminders in the admin bell and
   // a daily email digest per assignee (opt-out in My work; at most one per
@@ -137,7 +140,7 @@ for (const name of names) {
     const res = await fetch(url, {
       headers: { authorization: `Bearer ${secret}` },
       // A news run generates several articles; give it room.
-      signal: AbortSignal.timeout(name === "news" || name === "videos" ? 900_000 : name === "monitor" || name === "blueprints" || name === "translate" || name === "growth" || name === "outreach" || name === "comms" ? 330_000 : 120_000),
+      signal: AbortSignal.timeout(name === "news" || name === "videos" ? 900_000 : name === "monitor" || name === "blueprints" || name === "translate" || name === "growth" || name === "outreach" || name === "comms" || name === "scanner" ? 330_000 : 120_000),
     });
     const body = await res.text();
     const secs = ((Date.now() - started) / 1000).toFixed(1);

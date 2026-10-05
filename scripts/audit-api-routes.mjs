@@ -75,7 +75,7 @@ const PUBLIC_BY_DESIGN = {
   "/api/learn/comms/unsubscribe": "unsubscribe link (signed token, rate limited)",
   "/api/admin/collaborators/accept": "invite acceptance (single-use invite token, rate limited)",
   "/api/blueprint": "paid blueprint links (unguessable token, rate limited)",
-  "/api/scanner-leads": "scanner lead capture (POST only; GET is staff); email attach only on a fresh lead without one",
+  "/api/scanner-leads": "GET is staff (scanner leads list); POST answers 410 (the scanner saves server-side)",
   "/api/sessions/chat": "anonymous chat history keyed by an unguessable client session id (rate limited, bounded)",
   "/api/stripe/checkout": "appointment payment (amount must match the stored appointment; rate limited)",
   "/api/learn/checkout": "checkout start (rate limited)",

@@ -13,6 +13,7 @@ export default function ShopImage({
   priority = false,
   className,
   style,
+  fit = "cover",
 }: {
   src: string;
   alt: string;
@@ -20,10 +21,12 @@ export default function ShopImage({
   priority?: boolean;
   className?: string;
   style?: React.CSSProperties;
+  /** "contain" shows the whole image (product covers); "cover" fills the box. */
+  fit?: "cover" | "contain";
 }) {
   const local = src.startsWith("/") && !src.startsWith("//") && !src.includes("?");
   if (local) {
-    return <Image src={src} alt={alt} fill sizes={sizes} priority={priority} className={className} style={{ objectFit: "cover", ...style }} />;
+    return <Image src={src} alt={alt} fill sizes={sizes} priority={priority} className={className} style={{ objectFit: fit, ...style }} />;
   }
   return (
     // eslint-disable-next-line @next/next/no-img-element
@@ -33,7 +36,7 @@ export default function ShopImage({
       loading={priority ? "eager" : "lazy"}
       decoding="async"
       className={className}
-      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", ...style }}
+      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: fit, ...style }}
     />
   );
 }

@@ -224,19 +224,31 @@ export async function getToolUsage() {
 export type ToolUsageData = Awaited<ReturnType<typeof getToolUsage>>;
 
 export async function getScannerLeads() {
-  const [rows, total, withEmail, booked, avg] = await Promise.all([
+  await (await import("@/lib/scanner/db")).ensureScannerColumns();
+  const [rows, total, withEmail, booked, avg, paid] = await Promise.all([
     prisma.scannerLead.findMany({
       orderBy: { createdAt: "desc" },
       take: 200,
       select: {
         id: true, url: true, createdAt: true, overallScore: true, aiScore: true,
         seoScore: true, perfScore: true, uxScore: true, email: true, name: true, bookedCallAt: true,
+        domain: true, token: true, unlockedAt: true, unlockSource: true, amountPaid: true, reportStatus: true,
+        followupStage: true, emailedAt: true, growthLeadId: true, parentId: true, extra: true,
       },
     }),
     prisma.scannerLead.count(),
     prisma.scannerLead.count({ where: { email: { not: null } } }),
     prisma.scannerLead.count({ where: { bookedCallAt: { not: null } } }),
     prisma.scannerLead.aggregate({ _avg: { overallScore: true } }),
+    prisma.scannerLead.aggregate({ where: { unlockSource: "paid" }, _count: { _all: true }, _sum: { amountPaid: true } }),
   ]);
-  return { rows, total, withEmail, booked, avgScore: avg._avg.overallScore == null ? null : Math.round(avg._avg.overallScore) };
+  return {
+    rows,
+    total,
+    withEmail,
+    booked,
+    paid: paid._count._all,
+    revenueCents: paid._sum.amountPaid ?? 0,
+    avgScore: avg._avg.overallScore == null ? null : Math.round(avg._avg.overallScore),
+  };
 }

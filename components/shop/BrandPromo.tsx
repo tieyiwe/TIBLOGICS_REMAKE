@@ -33,7 +33,7 @@ const LINKS = [
 export default function BrandPromo() {
   const t = useT();
   return (
-    <section style={{ maxWidth: "1200px", margin: "0 auto", padding: "40px 24px 8px" }}>
+    <section style={{ maxWidth: "1180px", margin: "0 auto", padding: "0 clamp(16px,4vw,24px)" }}>
       <style>{`
         @keyframes tb-pulse {
           0%,100% { transform: scale(1);    opacity: .55 }
@@ -75,7 +75,7 @@ export default function BrandPromo() {
           overflow: "hidden",
           borderRadius: "24px",
           border: "1px solid rgba(255,255,255,0.08)",
-          background: "linear-gradient(120deg,#10191A 0%,#0B1112 60%,#141E26 100%)",
+          background: "linear-gradient(120deg,#0F1E30 0%,#0D1B2A 60%,#14273F 100%)",
           padding: "34px 32px",
         }}
       >
@@ -83,7 +83,7 @@ export default function BrandPromo() {
           aria-hidden="true"
           style={{
             position: "absolute", inset: 0, pointerEvents: "none",
-            background: "radial-gradient(60% 120% at 12% 50%, rgba(244,124,76,.16), transparent 70%)",
+            background: "radial-gradient(60% 120% at 12% 50%, rgba(244,124,32,.16), transparent 70%)",
           }}
         />
 
@@ -92,9 +92,9 @@ export default function BrandPromo() {
                aria-label={t("pages.store.promo.markLabel")}>
             <defs>
               <linearGradient id="tbg" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#F9A738" />
-                <stop offset="55%" stopColor="#F47C4C" />
-                <stop offset="100%" stopColor="#E05020" />
+                <stop offset="0%" stopColor="#FFA25C" />
+                <stop offset="55%" stopColor="#F47C20" />
+                <stop offset="100%" stopColor="#D9600A" />
               </linearGradient>
             </defs>
             {LINKS.map((d, i) => (
@@ -111,7 +111,7 @@ export default function BrandPromo() {
           <div style={{ minWidth: 0 }}>
             <span style={{
               display: "inline-block", fontSize: ".72rem", fontWeight: 700, letterSpacing: ".14em",
-              color: "#F9A738", marginBottom: "12px",
+              color: "#F47C20", marginBottom: "12px",
             }}>
               {t("pages.store.promo.kicker")}
             </span>
@@ -130,8 +130,8 @@ export default function BrandPromo() {
                   className="tb-line"
                   style={{
                     gridArea: "1 / 1", margin: 0,
-                    fontFamily: "var(--font-syne), sans-serif",
-                    fontWeight: 800, fontSize: "clamp(1.25rem,2.3vw,1.7rem)",
+                    fontFamily: "var(--font-brand-syne), 'Syne', sans-serif",
+                    fontWeight: 700, fontSize: "clamp(1.25rem,2.3vw,1.7rem)",
                     lineHeight: 1.25, color: "#fff",
                     animationDelay: `${i * 3.5}s`,
                   }}
@@ -141,7 +141,7 @@ export default function BrandPromo() {
               ))}
             </div>
 
-            <p style={{ color: "#8A9BA0", fontSize: ".92rem", lineHeight: 1.65, maxWidth: "52ch", margin: "0 0 18px" }}>
+            <p style={{ color: "#93A3B8", fontSize: ".92rem", lineHeight: 1.65, maxWidth: "52ch", margin: "0 0 18px" }}>
               {t("pages.store.promo.body")}
             </p>
 
@@ -149,8 +149,8 @@ export default function BrandPromo() {
               href="/services"
               style={{
                 display: "inline-flex", alignItems: "center", gap: "8px",
-                border: "1px solid rgba(244,124,76,.4)", background: "rgba(244,124,76,.1)",
-                color: "#F9A738", borderRadius: "40px", padding: "10px 20px",
+                border: "1px solid rgba(244,124,32,.4)", background: "rgba(244,124,32,.1)",
+                color: "#F47C20", borderRadius: "40px", padding: "10px 20px",
                 fontSize: ".86rem", fontWeight: 700, textDecoration: "none",
               }}
             >

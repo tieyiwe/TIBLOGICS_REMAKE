@@ -11,6 +11,7 @@ import { MONITOR_PRODUCT } from "@/lib/monitor/config";
 import { upsertToolkitSubscription } from "@/lib/toolkit/billing";
 import { TOOLKIT_PRODUCT } from "@/lib/toolkit/config";
 import { markBlueprintPaid } from "@/lib/blueprint/billing";
+import { SCANNER_PRODUCT } from "@/lib/scanner/config";
 import { BLUEPRINT_PRODUCT } from "@/lib/blueprint/config";
 import { recordTrackPurchase } from "@/lib/learn/purchases";
 import { isTeamSubscription, markTeamPaymentFailed, syncTeamSubscription } from "@/lib/learn/team/service";
@@ -180,6 +181,12 @@ export async function POST(req: Request) {
       // ── Automation Blueprint (one-time) ──────────────────────────────────
       if (session.metadata?.product === BLUEPRINT_PRODUCT && session.metadata.blueprintId) {
         await markBlueprintPaid(session.metadata.blueprintId, session);
+      }
+
+      // ── Website scanner: full report (one-time) ──────────────────────────
+      if (session.metadata?.product === SCANNER_PRODUCT && session.metadata.leadId && session.mode === "payment") {
+        const { markReportPaid } = await import("@/lib/scanner/unlock");
+        await markReportPaid(session.metadata.leadId, session);
       }
 
       // ── Toolkit Live / Compliance Guard checkout ─────────────────────────

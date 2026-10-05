@@ -95,7 +95,7 @@ export default function ShopClient(initial: {
     load();
   }
 
-  // The four AI Toolkits are defined in lib/shop/prompt-packs.ts but only exist
+  // The AI Toolkits are defined in lib/shop/prompt-packs.ts but only exist
   // in the database once seeded. This puts that behind a button instead of a
   // hand-rolled POST, and surfaces the endpoint's warnings — it refuses to
   // publish a product whose PDF is missing, which is exactly what you want to

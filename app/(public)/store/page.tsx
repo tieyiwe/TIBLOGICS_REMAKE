@@ -4,6 +4,7 @@ import { cachedPublicData } from "@/lib/cache/public-data";
 import StoreFront from "@/components/shop/StoreFront";
 import type { ShopProduct, ShopCollection } from "@/components/shop/types";
 import { pickSpotlight, daysUntilRotation } from "@/lib/shop/spotlight";
+import { ensureStoreCatalog, sortStoreProducts } from "@/lib/shop/ensure-catalog";
 
 // Rendered on every request. A cached page went stale on the hosted
 // deployment (publishing a product in admin did not show it in the store),
@@ -15,6 +16,10 @@ export default async function ShopPage() {
   // instead of an empty storefront that looks like the shop has no products.
   // The rows are cached in process and dropped by any write to Product or
   // Collection (lib/cache/public-data.ts); errors are never cached.
+  //
+  // First, make sure every toolkit defined in code is in the database and
+  // renderable (once per process; see lib/shop/ensure-catalog.ts).
+  await ensureStoreCatalog();
   const [rawProducts, rawCollections, sales] = await Promise.all([
     cachedPublicData("shop", "products:published", () =>
       prisma.product.findMany({
@@ -32,7 +37,7 @@ export default async function ShopPage() {
     // strike-through price; checkout recomputes it on the server.
     pageSales(),
   ]);
-  const products: ShopProduct[] = withProductSales(rawProducts, sales).map((p) => ({
+  const products: ShopProduct[] = withProductSales(sortStoreProducts(rawProducts), sales).map((p) => ({
     id: p.id,
     slug: p.slug,
     name: p.name,

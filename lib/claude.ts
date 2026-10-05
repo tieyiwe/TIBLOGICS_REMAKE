@@ -57,6 +57,7 @@ export type AiTask =
   | "promo-translate"
   | "video-select"
   | "lesson-recap"
+  | "scanner-report"
   // Sonnet
   | "code-assist"
   | "grade-code"
@@ -159,6 +160,8 @@ export const ROUTES: Record<AiTask, Route> = {
   // Growth acquisition: a lead magnet (checklist, guide, quiz, template pack) and a landing page draft, as JSON.
   "acquire-magnet": { tier: "sonnet", maxTokens: 6000, thinking: "off", effort: "low" },
   "acquire-page": { tier: "sonnet", maxTokens: 4000, thinking: "off", effort: "low" },
+  // Website scanner: the paid full report (fix steps and build ideas) as JSON, once per unlocked scan.
+  "scanner-report": { tier: "sonnet", maxTokens: 7000, thinking: "off", effort: "low" },
 
   blueprint: { tier: "opus", maxTokens: 16000, thinking: "adaptive", effort: "medium" },
 };

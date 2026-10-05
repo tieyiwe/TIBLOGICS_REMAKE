@@ -33,6 +33,7 @@ export type ConversionKind =
   | "learn_subscription_checkout"
   | "toolkit_checkout"
   | "blueprint"
+  | "scanner"
   | "order"
   | "event_registration"
   | "appointment";

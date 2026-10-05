@@ -2,23 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ShoppingBag, Check, ArrowLeft, ShieldCheck, Zap, Plus, Minus, ChevronDown } from "lucide-react";
+import { ShoppingBag, Check, ShieldCheck, Download, Infinity as InfinityIcon, Plus, Minus, ChevronDown, ChevronRight, ArrowRight } from "lucide-react";
 import { useCart } from "./CartContext";
-import { formatMoney, type ShopProduct } from "./types";
+import type { ShopProduct } from "./types";
 import { useLocale, useT } from "@/lib/i18n/client";
 import ShopImage from "./ShopImage";
-
-const S = {
-  darker: "#0C1112",
-  dark: "#131A1B",
-  card: "#1A2223",
-  orange: "#F47C4C",
-  amber: "#F9A738",
-  muted: "#8A9BA0",
-  border: "rgba(255,255,255,0.08)",
-};
-const syne = "var(--font-syne), sans-serif";
-const dm = "var(--font-dm-sans), sans-serif";
+import ProductCard, { CoverStage, priceParts } from "./ProductCard";
+import { C, FONT_BODY, FONT_HEAD, STORE_CSS, specChips } from "./theme";
 
 /**
  * Renders a product description as structured copy.
@@ -52,8 +42,8 @@ function ProductCopy({ text }: { text: string }) {
         <h4
           key={i}
           style={{
-            fontFamily: syne, fontWeight: 700, fontSize: ".95rem",
-            color: "#DCE7EA", margin: i === 0 ? "0 0 8px" : "22px 0 8px",
+            fontFamily: FONT_HEAD, fontWeight: 700, fontSize: "1rem",
+            color: C.ink, margin: i === 0 ? "0 0 10px" : "26px 0 10px",
           }}
         >
           {lines[0]}
@@ -64,7 +54,7 @@ function ProductCopy({ text }: { text: string }) {
     if (lines.length > 1 && lines.every((l) => l.length <= 150)) {
       const items = clipLists ? lines.slice(0, PREVIEW_LIST_ITEMS) : lines;
       return (
-        <ul key={i} style={{ margin: "0 0 14px", paddingLeft: "18px" }}>
+        <ul key={i} style={{ margin: "0 0 14px", paddingLeft: "18px" }} className="pd-list">
           {items.map((l) => (
             <li key={l} style={{ marginBottom: "6px" }}>{l}</li>
           ))}
@@ -76,7 +66,7 @@ function ProductCopy({ text }: { text: string }) {
   };
 
   return (
-    <div style={{ color: "#B0C4CC", fontSize: ".92rem", lineHeight: 1.75 }}>
+    <div style={{ color: C.text, fontSize: ".95rem", lineHeight: 1.75 }}>
       <div style={{ position: "relative" }}>
         {shown.map(render)}
 
@@ -86,7 +76,7 @@ function ProductCopy({ text }: { text: string }) {
             aria-hidden="true"
             style={{
               position: "absolute", left: 0, right: 0, bottom: 0, height: "48px",
-              background: `linear-gradient(to bottom, rgba(19,26,27,0), ${S.dark})`,
+              background: `linear-gradient(to bottom, rgba(10,20,32,0), ${C.bg})`,
               pointerEvents: "none",
             }}
           />
@@ -102,7 +92,7 @@ function ProductCopy({ text }: { text: string }) {
             display: "inline-flex", alignItems: "center", gap: "7px",
             marginTop: expanded ? "14px" : "4px",
             background: "none", border: "none", cursor: "pointer", padding: 0,
-            color: S.orange, fontFamily: dm, fontSize: ".88rem", fontWeight: 700,
+            color: C.orange, fontFamily: FONT_BODY, fontSize: ".9rem", fontWeight: 700,
           }}
         >
           {expanded ? t("pages.store.detail.showLess") : t("pages.store.detail.readMore")}
@@ -116,6 +106,25 @@ function ProductCopy({ text }: { text: string }) {
   );
 }
 
+const DETAIL_CSS = `
+  .pd-top{padding-top:clamp(116px,14vw,178px)}
+  .pd-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(32px,5vw,72px);align-items:start}
+  .pd-gallery{position:sticky;top:120px}
+  .pd-gallery .st-stage{aspect-ratio:1/1.06;border-radius:22px;border:1px solid ${C.line}}
+  .pd-gallery .st-cover{width:62%}
+  .pd-list li{margin-bottom:6px}
+  .pd-list li::marker{color:${C.orange}}
+  .pd-trust{display:grid;gap:14px;border:1px solid ${C.line};border-radius:16px;padding:18px 20px;background:${C.surface}}
+  .pd-related{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+  @media(max-width:960px){.pd-related{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}}
+  @media(max-width:860px){
+    .pd-grid{grid-template-columns:1fr}
+    .pd-gallery{position:static}
+    .pd-gallery .st-cover{width:58%}
+  }
+  @media(max-width:560px){.pd-related{gap:12px}.pd-related > :nth-child(3){display:none}}
+`;
+
 export default function ProductDetail({ product: p, related }: { product: ShopProduct; related: ShopProduct[] }) {
   const t = useT();
   const locale = useLocale();
@@ -124,14 +133,16 @@ export default function ProductDetail({ product: p, related }: { product: ShopPr
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
 
-  const onSale = p.onSale && p.compareAtPrice && p.compareAtPrice > p.price;
-  const pct = onSale ? Math.round(((p.compareAtPrice! - p.price) / p.compareAtPrice!) * 100) : 0;
+  const price = priceParts(p, locale, t("pages.store.card.free"));
   const soldOut = p.stock != null && p.stock <= 0;
   const cap = p.stock ?? 99;
+  // A digital product is bought once; a quantity picker only adds doubt.
+  const showQty = !p.digital && !soldOut;
+  const specs = specChips(p.fileFormat, t);
 
   function addToCart(openDrawer: boolean) {
     if (soldOut) return;
-    add({ id: p.id, slug: p.slug, name: p.name, price: p.price, image: p.images[0] ?? null, maxStock: p.stock }, qty);
+    add({ id: p.id, slug: p.slug, name: p.name, price: p.price, image: p.images[0] ?? null, maxStock: p.stock }, showQty ? qty : 1);
     if (openDrawer) setOpen(true);
     else {
       setOpen(false);
@@ -140,37 +151,44 @@ export default function ProductDetail({ product: p, related }: { product: ShopPr
     }
   }
 
-  return (
-    <div style={{ background: S.darker, color: "#fff", fontFamily: dm, minHeight: "100vh" }}>
-      <style>{`
-        .pd-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px}
-        @media(max-width:840px){.pd-grid{grid-template-columns:1fr;gap:28px}}
-        .rel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:18px}
-        @media(max-width:560px){.rel-grid{grid-template-columns:repeat(2,1fr);gap:12px}}
-        .rel-card{transition:transform .3s,border-color .3s}
-        .rel-card:hover{transform:translateY(-4px);border-color:rgba(244,124,76,.4)}
-      `}</style>
+  const trust = [
+    { icon: ShieldCheck, label: t("pages.store.detail.secure"), note: t("pages.store.trust.secureNote") },
+    ...(p.digital
+      ? [
+          { icon: Download, label: t("pages.store.detail.instant"), note: t("pages.store.trust.instantNote") },
+          { icon: InfinityIcon, label: t("pages.store.trust.keep"), note: t("pages.store.trust.keepNote") },
+        ]
+      : []),
+  ];
 
-      <div style={{ maxWidth: "1080px", margin: "0 auto", padding: "120px 24px 100px" }}>
-        <Link href="/store" style={{ display: "inline-flex", alignItems: "center", gap: "6px", color: S.muted, textDecoration: "none", fontSize: ".88rem", marginBottom: "32px" }}>
-          <ArrowLeft size={16} /> {t("pages.store.backToStore").replace(/^←\s*/, "")}
-        </Link>
+  return (
+    <div className="st-page">
+      <style>{STORE_CSS + DETAIL_CSS}</style>
+
+      <div className="st-wrap pd-top" style={{ paddingBottom: "clamp(64px,9vw,110px)" }}>
+        {/* Breadcrumb */}
+        <nav aria-label={t("pages.store.detail.breadcrumb")} style={{ marginBottom: "28px" }}>
+          <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px", fontSize: ".85rem" }}>
+            <li><Link href="/store" className="st-link">{t("pages.store.meta.title")}</Link></li>
+            <li aria-hidden="true" style={{ color: C.muted, display: "inline-flex" }}><ChevronRight size={14} /></li>
+            {p.collections[0] ? (
+              <li><Link href={`/store/collections/${p.collections[0]}`} className="st-link">{p.category}</Link></li>
+            ) : (
+              <li className="st-muted">{p.category}</li>
+            )}
+          </ol>
+        </nav>
 
         <div className="pd-grid">
           {/* Gallery */}
-          <div>
-            <div style={{ position: "relative", aspectRatio: "1/1", borderRadius: "22px", overflow: "hidden", background: "linear-gradient(135deg,#1C2526,#0C1112)", border: `1px solid ${S.border}`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "14px" }}>
-              {p.images[activeImg] ? (
-                <ShopImage src={p.images[activeImg]} alt={p.name} sizes="(max-width: 900px) 100vw, 560px" priority={activeImg === 0} />
-              ) : (
-                <ShoppingBag size={56} style={{ opacity: 0.3 }} />
-              )}
-            </div>
+          <div className="pd-gallery">
+            <CoverStage src={p.images[activeImg]} alt={p.name} sizes="(max-width: 860px) 60vw, 340px" priority={activeImg === 0} />
             {p.images.length > 1 && (
-              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "14px" }}>
                 {p.images.map((img, i) => (
-                  <button key={i} onClick={() => setActiveImg(i)} aria-label={t("pages.store.detail.image", { n: i + 1 })} style={{ position: "relative", width: "68px", height: "68px", borderRadius: "12px", overflow: "hidden", border: `2px solid ${i === activeImg ? S.orange : S.border}`, cursor: "pointer", padding: 0, background: "none" }}>
-                    <ShopImage src={img} alt="" sizes="68px" />
+                  <button key={i} type="button" onClick={() => setActiveImg(i)} aria-label={t("pages.store.detail.image", { n: i + 1 })} aria-pressed={i === activeImg}
+                    style={{ position: "relative", width: "64px", height: "64px", borderRadius: "12px", overflow: "hidden", border: `2px solid ${i === activeImg ? C.orange : C.line}`, cursor: "pointer", padding: 0, background: C.surface }}>
+                    <ShopImage src={img} alt="" sizes="64px" fit="contain" />
                   </button>
                 ))}
               </div>
@@ -178,70 +196,88 @@ export default function ProductDetail({ product: p, related }: { product: ShopPr
           </div>
 
           {/* Info */}
-          <div>
-            <div style={{ fontSize: ".72rem", color: S.orange, letterSpacing: ".12em", textTransform: "uppercase", marginBottom: "12px", fontWeight: 600 }}>{p.category}</div>
-            <h1 style={{ fontFamily: syne, fontWeight: 800, fontSize: "clamp(1.8rem,3.5vw,2.6rem)", lineHeight: 1.12, marginBottom: "14px" }}>{p.name}</h1>
-            {p.tagline && <p style={{ color: "#B0C4CC", fontSize: "1.02rem", lineHeight: 1.6, marginBottom: "22px" }}>{p.tagline}</p>}
+          <div style={{ minWidth: 0 }}>
+            <div className="st-kicker" style={{ marginBottom: "14px" }}>{p.category}</div>
+            <h1 className="st-h" style={{ fontSize: "clamp(2rem,3.8vw,2.9rem)", lineHeight: 1.08, marginBottom: "14px" }}>{p.name}</h1>
+            {p.tagline && <p style={{ color: C.text, fontSize: "1.08rem", lineHeight: 1.6, margin: "0 0 22px" }}>{p.tagline}</p>}
 
-            <div style={{ display: "flex", alignItems: "baseline", gap: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
-              <span style={{ fontFamily: syne, fontWeight: 800, fontSize: "2.4rem" }}>{p.price === 0 ? t("pages.store.card.free") : formatMoney(p.price, p.currency, locale)}</span>
-              {onSale && (
+            {specs.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "26px" }}>
+                {specs.map((s) => (
+                  <span key={s} className="st-spec"><Check size={12} color={C.orange} aria-hidden="true" />{s}</span>
+                ))}
+              </div>
+            )}
+
+            {/* Price */}
+            <div style={{ display: "flex", alignItems: "baseline", gap: "12px", flexWrap: "wrap", marginBottom: "6px" }}>
+              <span className="st-price" style={{ fontSize: "clamp(2rem,3.4vw,2.5rem)", letterSpacing: "-.02em" }}>{price.now}</span>
+              {price.was && (
                 <>
-                  <span style={{ color: S.muted, fontSize: "1.1rem", textDecoration: "line-through" }}>{formatMoney(p.compareAtPrice!, p.currency, locale)}</span>
-                  <span style={{ background: "linear-gradient(135deg,#F47C4C,#F9A738)", color: "#131A1B", fontFamily: syne, fontWeight: 800, fontSize: ".78rem", padding: "4px 12px", borderRadius: "20px" }}>{t("pages.store.detail.save", { pct })}</span>
+                  <s style={{ color: C.muted, fontSize: "1.1rem" }}>{price.was}</s>
+                  <span style={{ background: C.orange, color: "#0A1420", fontWeight: 700, fontSize: ".75rem", padding: "4px 10px", borderRadius: "999px" }}>
+                    {t("pages.store.detail.save", { pct: price.pct })}
+                  </span>
                 </>
               )}
             </div>
+            <p className="st-muted" style={{ fontSize: ".86rem", margin: "0 0 22px" }}>
+              {p.digital ? t("pages.store.detail.oneTime") : null}
+            </p>
 
-            {/* Stock */}
+            {/* Stock, for products that track it */}
             {p.stock != null && (
-              <div style={{ fontSize: ".85rem", color: soldOut ? "#F87171" : p.stock <= 5 ? S.amber : "#4ade80", marginBottom: "20px", fontWeight: 600 }}>
+              <div style={{ fontSize: ".86rem", color: soldOut ? "#F87171" : p.stock <= 5 ? C.orange : C.ok, marginBottom: "18px", fontWeight: 600 }}>
                 {soldOut ? t("pages.store.detail.outOfStock") : p.stock <= 5 ? t("pages.store.detail.onlyLeft", { n: p.stock }) : t("pages.store.detail.inStock")}
               </div>
             )}
 
-            {/* Quantity + Add */}
-            {!soldOut && (
-              <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "16px", flexWrap: "wrap" }}>
-                <div style={{ display: "flex", alignItems: "center", background: S.card, border: `1px solid ${S.border}`, borderRadius: "50px", overflow: "hidden" }}>
-                  <button onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label={t("pages.store.detail.decrease")} style={{ width: "42px", height: "44px", background: "none", border: "none", color: "#fff", cursor: "pointer" }}><Minus size={16} style={{ margin: "0 auto" }} /></button>
-                  <span style={{ minWidth: "32px", textAlign: "center", fontWeight: 700 }}>{qty}</span>
-                  <button onClick={() => setQty((q) => Math.min(cap, q + 1))} aria-label={t("pages.store.detail.increase")} style={{ width: "42px", height: "44px", background: "none", border: "none", color: S.orange, cursor: "pointer" }}><Plus size={16} style={{ margin: "0 auto" }} /></button>
-                </div>
-                <button
-                  onClick={() => addToCart(false)}
-                  style={{ flex: 1, minWidth: "min(160px, 100%)", padding: "14px 20px", borderRadius: "50px", border: `1px solid ${S.border}`, background: added ? "#22A387" : "rgba(255,255,255,.06)", color: "#fff", fontFamily: syne, fontWeight: 700, fontSize: ".95rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
-                >
-                  {added ? (<><Check size={17} /> {t("pages.store.detail.addedToCart")}</>) : (<><ShoppingBag size={17} /> {t("pages.store.detail.addToCart")}</>)}
-                </button>
+            {showQty && (
+              <div style={{ display: "inline-flex", alignItems: "center", background: C.surface, border: `1px solid ${C.line}`, borderRadius: "999px", overflow: "hidden", marginBottom: "14px" }}>
+                <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label={t("pages.store.detail.decrease")} style={{ width: "44px", height: "44px", background: "none", border: "none", color: C.ink, cursor: "pointer" }}><Minus size={16} style={{ margin: "0 auto" }} /></button>
+                <span style={{ minWidth: "32px", textAlign: "center", fontWeight: 700 }} aria-live="polite">{qty}</span>
+                <button type="button" onClick={() => setQty((q) => Math.min(cap, q + 1))} aria-label={t("pages.store.detail.increase")} style={{ width: "44px", height: "44px", background: "none", border: "none", color: C.orange, cursor: "pointer" }}><Plus size={16} style={{ margin: "0 auto" }} /></button>
               </div>
             )}
-            <button
-              onClick={() => addToCart(true)}
-              disabled={soldOut}
-              style={{ width: "100%", padding: "16px 24px", borderRadius: "50px", border: "none", background: soldOut ? "rgba(255,255,255,.08)" : "linear-gradient(135deg,#F47C4C,#F9A738)", color: soldOut ? S.muted : "#131A1B", fontFamily: syne, fontWeight: 800, fontSize: "1.05rem", cursor: soldOut ? "not-allowed" : "pointer", marginBottom: "28px" }}
-            >
-              {soldOut ? t("pages.store.card.soldOut") : t("pages.store.detail.buyNow")}
-            </button>
 
-            {/* Trust badges */}
-            <div style={{ display: "flex", gap: "20px", flexWrap: "wrap", marginBottom: "28px" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: "7px", color: S.muted, fontSize: ".82rem" }}><ShieldCheck size={16} color={S.amber} /> {t("pages.store.detail.secure")}</span>
-              {p.digital && <span style={{ display: "flex", alignItems: "center", gap: "7px", color: S.muted, fontSize: ".82rem" }}><Zap size={16} color={S.amber} /> {t("pages.store.detail.instant")}</span>}
-            </div>
+            {/* The one call to action */}
+            <button type="button" className="st-btn st-btn-primary" onClick={() => addToCart(true)} disabled={soldOut} style={{ width: "100%", padding: "17px 24px", fontSize: "1.05rem" }}>
+              {soldOut ? t("pages.store.card.soldOut") : (<>{t("pages.store.detail.buyFor", { price: price.now })} <ArrowRight size={18} aria-hidden="true" /></>)}
+            </button>
+            {!soldOut && (
+              <button type="button" onClick={() => addToCart(false)}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", width: "100%", marginTop: "10px", padding: "10px", background: "none", border: "none", color: added ? C.ok : C.muted, fontFamily: FONT_BODY, fontWeight: 600, fontSize: ".9rem", cursor: "pointer" }}>
+                {added ? (<><Check size={16} aria-hidden="true" /> {t("pages.store.detail.addedToCart")}</>) : (<><ShoppingBag size={16} aria-hidden="true" /> {t("pages.store.detail.addToCartInstead")}</>)}
+              </button>
+            )}
+
+            {/* Trust */}
+            <ul className="pd-trust" style={{ listStyle: "none", margin: "22px 0 36px" }}>
+              {trust.map(({ icon: Icon, label, note }) => (
+                <li key={label} style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+                  <span style={{ flexShrink: 0, width: "32px", height: "32px", borderRadius: "10px", background: C.orangeSoft, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                    <Icon size={16} color={C.orange} aria-hidden="true" />
+                  </span>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: "block", fontWeight: 600, fontSize: ".9rem", color: C.ink }}>{label}</span>
+                    <span style={{ display: "block", fontSize: ".82rem", color: C.muted, marginTop: "1px" }}>{note}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
 
             {/* Description */}
             {p.description && (
-              <div style={{ borderTop: `1px solid ${S.border}`, paddingTop: "24px" }}>
-                <h3 style={{ fontFamily: syne, fontWeight: 700, fontSize: "1rem", marginBottom: "12px" }}>{t("pages.store.detail.details")}</h3>
+              <div style={{ borderTop: `1px solid ${C.line}`, paddingTop: "28px" }}>
+                <h2 className="st-h" style={{ fontSize: "1.25rem", marginBottom: "16px" }}>{t("pages.store.detail.details")}</h2>
                 <ProductCopy text={p.description} />
               </div>
             )}
 
             {p.tags.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "22px" }}>
-                {p.tags.map((t) => (
-                  <span key={t} style={{ background: "rgba(255,255,255,.05)", border: `1px solid ${S.border}`, borderRadius: "20px", padding: "5px 12px", fontSize: ".76rem", color: S.muted }}>{t}</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "26px" }}>
+                {p.tags.map((tag) => (
+                  <span key={tag} className="st-spec" style={{ borderRadius: "999px", color: C.muted }}>{tag}</span>
                 ))}
               </div>
             )}
@@ -250,32 +286,17 @@ export default function ProductDetail({ product: p, related }: { product: ShopPr
 
         {/* Related */}
         {related.length > 0 && (
-          <div style={{ marginTop: "72px" }}>
-            <h2 style={{ fontFamily: syne, fontWeight: 800, fontSize: "1.5rem", marginBottom: "24px" }}>{t("pages.store.detail.related")}</h2>
-            <div className="rel-grid">
-              {related.map((r) => {
-                const rSale = r.onSale && r.compareAtPrice && r.compareAtPrice > r.price;
-                return (
-                  <Link key={r.id} href={`/store/${r.slug}`} className="rel-card" style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: "16px", overflow: "hidden", textDecoration: "none", color: "#fff" }}>
-                    <div style={{ position: "relative", aspectRatio: "1/1", background: "linear-gradient(135deg,#1C2526,#0C1112)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {r.images[0] ? (
-                        <ShopImage src={r.images[0]} alt={r.name} sizes="(max-width: 640px) 50vw, 260px" />
-                      ) : (
-                        <ShoppingBag size={30} style={{ opacity: 0.3 }} />
-                      )}
-                    </div>
-                    <div style={{ padding: "14px" }}>
-                      <div style={{ fontFamily: syne, fontWeight: 700, fontSize: ".9rem", marginBottom: "6px", lineHeight: 1.3 }}>{r.name}</div>
-                      <div style={{ display: "flex", alignItems: "baseline", gap: "8px", flexWrap: "wrap" }}>
-                        <span style={{ fontFamily: syne, fontWeight: 800, color: S.orange }}>{r.price === 0 ? t("pages.store.card.free") : formatMoney(r.price, r.currency, locale)}</span>
-                        {rSale && <span style={{ color: S.muted, fontSize: ".78rem", textDecoration: "line-through" }}>{formatMoney(r.compareAtPrice!, r.currency, locale)}</span>}
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
+          <section style={{ marginTop: "clamp(64px,9vw,104px)", borderTop: `1px solid ${C.line}`, paddingTop: "clamp(40px,6vw,64px)" }} aria-labelledby="pd-related">
+            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "16px", flexWrap: "wrap", marginBottom: "26px" }}>
+              <h2 id="pd-related" className="st-h" style={{ fontSize: "clamp(1.35rem,2.4vw,1.8rem)" }}>{t("pages.store.detail.related")}</h2>
+              <Link href="/store" className="st-link" style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: ".88rem", fontWeight: 600 }}>
+                {t("pages.store.detail.seeAll")} <ArrowRight size={14} aria-hidden="true" />
+              </Link>
             </div>
-          </div>
+            <div className="pd-related">
+              {related.slice(0, 3).map((r) => <ProductCard key={r.id} p={r} />)}
+            </div>
+          </section>
         )}
       </div>
     </div>
