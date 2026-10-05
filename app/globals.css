@@ -154,9 +154,6 @@
 .live-pulse {
   animation: live-glow 1.6s ease-in-out infinite;
 }
-@media (prefers-reduced-motion: reduce) {
-  .live-pulse { animation-duration: 3s; }
-}
 
 /* Chat bubbles */
 .chat-bubble-user {
@@ -528,6 +525,12 @@ html {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
+  }
+  /* The exception: the "live" dot's glow does not move anything, so it keeps
+     breathing, slowly. (A class outranks * at equal !important.) */
+  .live-pulse {
+    animation-duration: 3s !important;
+    animation-iteration-count: infinite !important;
   }
 }
 

@@ -1,3 +1,4 @@
+import { INDEXNOW_SECTIONS, indexNowSoon } from "@/lib/seo/indexnow";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
@@ -30,6 +31,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.endDate !== undefined) data.endDate = body.endDate ? new Date(body.endDate) : null;
 
   const event = await prisma.event.update({ where: { id }, data });
+  indexNowSoon(INDEXNOW_SECTIONS.event(event.slug));
   return NextResponse.json({ event });
 }
 

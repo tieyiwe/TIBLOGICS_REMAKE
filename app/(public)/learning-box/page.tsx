@@ -28,8 +28,8 @@ type Props = { searchParams: Promise<{ lang?: string | string[] }> };
 
 /** ?lang=fr is the French page (lib/seo/learn-lang.ts); otherwise the visitor's language. */
 async function pageLocale(searchParams: Props["searchParams"]) {
-  const lang = learnLangParam((await searchParams).lang);
-  return { lang, locale: lang ?? (await getLocale()) };
+  const [lang, siteLocale] = await Promise.all([searchParams.then((p) => learnLangParam(p.lang)), getLocale()]);
+  return { lang, locale: lang ?? siteLocale, siteLocale };
 }
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
@@ -55,7 +55,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 }
 
 export default async function LearningBoxPage({ searchParams }: Props) {
-  const [catalog, { lang, locale }, teamPricing, sales, student] = await Promise.all([getCatalog(), pageLocale(searchParams), getTeamPricing(), pageSales(), getStudent()]);
+  const [catalog, { lang, locale, siteLocale }, teamPricing, sales, student] = await Promise.all([getCatalog(), pageLocale(searchParams), getTeamPricing(), pageSales(), getStudent()]);
   const t = translatorFor(locale);
   const { texts, pending } = await localizedTracks(
     locale === "en" ? [] : await loadTrackSources({ slug: { in: catalog.map((c) => c.slug) } }),
@@ -119,6 +119,14 @@ export default async function LearningBoxPage({ searchParams }: Props) {
             <p className="mt-2 text-sm">
               <Link href={learnLangPath("/learning-box", "fr")} hrefLang="fr" className="text-white/60 underline-offset-2 hover:text-white hover:underline">
                 {t("seo.lang.alsoIn")} <span lang="fr">Français</span>
+              </Link>
+            </p>
+          )}
+          {/* The French URL opened by someone whose site language is not French. */}
+          {lang === "fr" && siteLocale !== "fr" && (
+            <p className="mt-2 text-sm">
+              <Link href="/learning-box" hrefLang="en" className="text-white/60 underline-offset-2 hover:text-white hover:underline">
+                {t("seo.lang.alsoIn")} <span lang="en">English</span>
               </Link>
             </p>
           )}

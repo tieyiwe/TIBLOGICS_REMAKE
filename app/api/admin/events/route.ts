@@ -1,3 +1,4 @@
+import { INDEXNOW_SECTIONS, indexNowSoon } from "@/lib/seo/indexnow";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { TRAINING_EVENT_SEED, TRAINING_EVENT_SLUG, PARENTS_EVENT_SLUG } from "@/lib/event-seeds";
@@ -101,5 +102,7 @@ export async function POST(req: NextRequest) {
       stripePaymentLink: body.stripePaymentLink ?? null,
     },
   });
+  // Search engines and AI search (IndexNow) learn about the new event now.
+  indexNowSoon(INDEXNOW_SECTIONS.event(event.slug));
   return NextResponse.json({ event }, { status: 201 });
 }

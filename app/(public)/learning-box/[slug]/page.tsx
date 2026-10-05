@@ -39,9 +39,9 @@ async function textFor(slug: string, locale: Locale): Promise<{ text: TrackText 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ lang?: string | string[] }> };
 
 /** ?lang=fr is the French page (lib/seo/learn-lang.ts); otherwise the visitor's language. */
-async function pageLocale(searchParams: Props["searchParams"]): Promise<{ lang: "fr" | null; locale: Locale }> {
-  const lang = learnLangParam((await searchParams).lang);
-  return { lang, locale: lang ?? (await getLocale()) };
+async function pageLocale(searchParams: Props["searchParams"]): Promise<{ lang: "fr" | null; locale: Locale; siteLocale: Locale }> {
+  const [lang, siteLocale] = await Promise.all([searchParams.then((p) => learnLangParam(p.lang)), getLocale()]);
+  return { lang, locale: lang ?? siteLocale, siteLocale };
 }
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
@@ -82,7 +82,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 
 export default async function TrackLandingPage({ params, searchParams }: Props) {
   const { slug } = await params;
-  const [track, { lang, locale }, sales] = await Promise.all([getTrackBySlug(slug), pageLocale(searchParams), pageSales()]);
+  const [track, { lang, locale, siteLocale }, sales] = await Promise.all([getTrackBySlug(slug), pageLocale(searchParams), pageSales()]);
   const t = translatorFor(locale);
   if (!track) notFound();
   const { text: loaded, pending, frReady } = await textFor(slug, locale);
@@ -192,6 +192,14 @@ export default async function TrackLandingPage({ params, searchParams }: Props) 
             {frReady && locale !== "fr" && (
               <Link href={learnLangPath(`/learning-box/${track.slug}`, "fr")} hrefLang="fr" className="text-sm text-white/60 underline-offset-2 hover:text-white hover:underline">
                 {t("seo.lang.alsoIn")} <span lang="fr">Français</span>
+              </Link>
+            )}
+            {/* The French URL opened by someone whose site language is not
+                French: the switcher already shows their language, so offer
+                the way back here. */}
+            {lang === "fr" && siteLocale !== "fr" && (
+              <Link href={`/learning-box/${track.slug}`} hrefLang="en" className="text-sm text-white/60 underline-offset-2 hover:text-white hover:underline">
+                {t("seo.lang.alsoIn")} <span lang="en">English</span>
               </Link>
             )}
           </div>
