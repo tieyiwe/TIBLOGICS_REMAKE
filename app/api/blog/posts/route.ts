@@ -1,3 +1,4 @@
+import { setFeaturedPin } from "@/lib/blog/featured";
 import { translateArticleSoon } from "@/lib/i18n/sources/blog";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
@@ -105,7 +106,7 @@ export async function POST(req: NextRequest) {
         coverImage: body.coverImage ?? pickCover(category, body.title),
         author: body.author ?? "Echelon AI",
         readingTime: body.readingTime ?? Math.ceil(body.content.split(" ").length / 200),
-        featured: body.featured ?? false,
+        featured: false,
         published: body.published ?? true,
         aiGenerated: body.aiGenerated ?? false,
         sourceUrl: body.sourceUrl,
@@ -113,6 +114,8 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Featured on creation = pinned by staff (lib/blog/featured.ts).
+    if (body.featured === true) await setFeaturedPin(post.id, true).catch(() => {});
     // Stored in French and Swahili straight away, not on first view.
     translateArticleSoon(post);
     // Tell Bing/ChatGPT search and other IndexNow engines (no-op without INDEXNOW_KEY).

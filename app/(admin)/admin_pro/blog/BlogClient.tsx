@@ -41,6 +41,8 @@ const CATEGORY_LABELS: Record<string, string> = BLOG_CATEGORY_ADMIN_LABELS;
 
 export default function BlogClient(initial: {
   posts: Post[];
+  /** Articles featured by hand (kept until unfeatured); the rest are automatic. */
+  pins?: string[];
   breaking: BreakingNews | null;
   refreshStatus: RefreshStatus | null;
 }) {
@@ -49,13 +51,15 @@ export default function BlogClient(initial: {
   // Seeded from the server render; re-seeded whenever router.refresh()
   // delivers new props, so the page never shows a stale copy after a change.
   const [posts, setPosts] = useState<Post[]>(initial.posts);
+  const [pins, setPins] = useState<string[]>(initial.pins ?? []);
   const [breaking, setBreaking] = useState<BreakingNews | null>(initial.breaking);
   const [refreshStatus, setRefreshStatus] = useState<RefreshStatus | null>(initial.refreshStatus);
   useEffect(() => {
+    setPins(initial.pins ?? []);
     setPosts(initial.posts);
     setBreaking(initial.breaking);
     setRefreshStatus(initial.refreshStatus);
-  }, [initial.posts, initial.breaking, initial.refreshStatus]);
+  }, [initial.posts, initial.pins, initial.breaking, initial.refreshStatus]);
   const loading = false;
   const [refreshing, setRefreshing] = useState(false);
   const [repairing, setRepairing] = useState(false);
@@ -136,36 +140,24 @@ export default function BlogClient(initial: {
     );
   }
 
+  // The server decides the two featured articles (lib/blog/featured.ts): your
+  // picks first, kept until you unfeature them, then the newest news. Picking
+  // a third replaces your oldest pick; unfeaturing one stops it coming back.
   async function toggleFeatured(id: string, current: boolean) {
-    if (current) {
-      // Unfeature this article
-      await fetch(`/api/blog/posts/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ featured: false }),
-      });
-      setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, featured: false } : p)));
-      return;
-    }
-
-    // Featuring: if already at limit, auto-bump the oldest featured out first
-    const currentlyFeatured = posts.filter((p) => p.featured);
-    if (currentlyFeatured.length >= 2) {
-      const toBump = currentlyFeatured[0];
-      await fetch(`/api/blog/posts/${toBump.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ featured: false }),
-      });
-      setPosts((ps) => ps.map((p) => (p.id === toBump.id ? { ...p, featured: false } : p)));
-    }
-
-    await fetch(`/api/blog/posts/${id}`, {
+    setFeaturedError(null);
+    const res = await fetch(`/api/blog/posts/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ featured: true }),
+      body: JSON.stringify({ featured: !current }),
     });
-    setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, featured: true } : p)));
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok || !Array.isArray(j.featuredIds)) {
+      setFeaturedError(j.error ?? "Could not update the featured articles.");
+      return;
+    }
+    const ids = new Set<string>(j.featuredIds);
+    setPosts((ps) => ps.map((p) => ({ ...p, featured: ids.has(p.id) })));
+    if (Array.isArray(j.pins)) setPins(j.pins);
   }
 
   async function updateCategory(id: string, category: string) {
@@ -404,8 +396,8 @@ export default function BlogClient(initial: {
                               <span className="text-xs text-purple-500 font-dm">AI</span>
                             )}
                             {p.featured && (
-                              <span className="flex items-center gap-0.5 text-xs text-[#F47C20] font-dm">
-                                <Star size={10} /> Featured
+                              <span className="flex items-center gap-0.5 text-xs text-[#F47C20] font-dm" data-testid="featured-label">
+                                <Star size={10} /> {pins.includes(p.id) ? "Featured (your pick)" : "Featured (auto)"}
                               </span>
                             )}
                           </div>
@@ -471,7 +463,7 @@ export default function BlogClient(initial: {
                                   ? "bg-[#FEF0E3] text-[#F47C20] hover:bg-orange-100"
                                   : "hover:bg-[#FEF0E3] text-[var(--a-ink-3)] hover:text-[#F47C20]"
                               }`}
-                              title={p.featured ? "Unfeature" : featuredCount >= 2 ? "Feature this post (replaces oldest featured)" : "Feature this post"}
+                              title={p.featured ? (pins.includes(p.id) ? "Unfeature (your pick)" : "Unfeature (it will not be picked automatically again)") : featuredCount >= 2 ? "Feature this post (replaces an automatic pick, or your oldest pick)" : "Feature this post"}
                             >
                               <Star size={14} className={p.featured ? "fill-current" : ""} />
                             </button>

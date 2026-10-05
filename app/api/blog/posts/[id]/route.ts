@@ -1,4 +1,5 @@
 import { translateArticleSoon } from "@/lib/i18n/sources/blog";
+import { applyFeatured, featuredPins, setFeaturedPin } from "@/lib/blog/featured";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
@@ -37,15 +38,21 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         coverEmoji: typeof body.coverEmoji === "string" ? body.coverEmoji.slice(0, 10) : undefined,
         coverGradient: typeof body.coverGradient === "string" ? body.coverGradient.slice(0, 100) : undefined,
         coverImage: typeof body.coverImage === "string" ? body.coverImage : undefined,
-        featured: typeof body.featured === "boolean" ? body.featured : undefined,
         published: typeof body.published === "boolean" ? body.published : undefined,
       },
     });
+    // Featuring is a pin (kept until unfeatured); the two slots are then
+    // recomputed (lib/blog/featured.ts). Publishing changes can free a slot.
+    let featuredIds: string[] | undefined;
+    if (typeof body.featured === "boolean") {
+      await setFeaturedPin(id, body.featured);
+      featuredIds = await applyFeatured();
+    } else if (typeof body.published === "boolean") featuredIds = await applyFeatured().catch(() => undefined);
     // An edit changes the English, so the stored translations are redone now.
     translateArticleSoon(post);
     // Tell Bing/ChatGPT search and other IndexNow engines (no-op without INDEXNOW_KEY).
     indexNowSoon(INDEXNOW_SECTIONS.article(post.slug));
-    return NextResponse.json({ post });
+    return NextResponse.json({ post, ...(featuredIds ? { featuredIds, pins: await featuredPins() } : {}) });
   } catch {
     return NextResponse.json({ error: "Failed to update" }, { status: 500 });
   }

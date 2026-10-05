@@ -30,6 +30,7 @@ import { INDEXNOW_SECTIONS, indexNowSoon } from "@/lib/seo/indexnow";
 import { fetchAdvancedTechNews, type FeedItem } from "@/lib/blog/feeds";
 import { isBlogCategory } from "@/lib/blog/categories";
 import { planRun, type GenItem } from "@/lib/blog/plan-run";
+import { applyFeatured } from "@/lib/blog/featured";
 
 
 
@@ -708,72 +709,13 @@ async function patchAllMissingCovers(): Promise<void> {
 
 // Auto-feature rotation: only runs when admin has NOT manually selected featured articles.
 // If 2 articles are already marked featured, rotation is skipped to preserve manual choices.
+/** The two featured articles (lib/blog/featured.ts): the owner's pins, then the newest news. */
 async function patchFeaturedRotation(): Promise<void> {
   try {
-    const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-
-    const articles = await prisma.blogPost.findMany({
-      where: { published: true },
-      select: { id: true, featured: true },
-      orderBy: { createdAt: "desc" },
-    });
-    if (articles.length < 2) return;
-
-    const manuallyFeatured = articles.filter((a) => a.featured);
-
-    // Admin has manually chosen 2 — respect it, don't touch featured flags
-    if (manuallyFeatured.length >= 2) return;
-
-    // If 0 or 1 are featured, auto-fill remaining slots via weekly rotation
-    const newestId = articles[0].id;
-    const rest = articles.slice(1).filter((a) => !a.featured);
-
-    const [lastRotationSetting, indexSetting] = await Promise.all([
-      prisma.adminSettings.findUnique({ where: { key: "featured:last_rotation" } }),
-      prisma.adminSettings.findUnique({ where: { key: "featured:current_index" } }),
-    ]);
-    const lastRotation = lastRotationSetting ? parseInt(lastRotationSetting.value) : 0;
-    const needsRotation = Date.now() - lastRotation >= WEEK_MS;
-
-    let rotatingIndex = indexSetting ? parseInt(indexSetting.value) : 0;
-    if (needsRotation) rotatingIndex = (rotatingIndex + 1) % Math.max(rest.length, 1);
-
-    const idsToFeature = new Set<string>(manuallyFeatured.map((a) => a.id));
-    if (!idsToFeature.has(newestId)) idsToFeature.add(newestId);
-    if (idsToFeature.size < 2 && rest.length > 0) {
-      idsToFeature.add(rest[rotatingIndex % rest.length].id);
-    }
-
-    // Only update articles that need to change — never wipe existing manual flags
-    const toEnable = articles.filter((a) => idsToFeature.has(a.id) && !a.featured);
-    const toDisable = articles.filter((a) => !idsToFeature.has(a.id) && a.featured);
-
-    // Every row in a group gets the same flag, so two updateManys replace one
-    // UPDATE per article (this ran across the whole published library).
-    await Promise.all([
-      toEnable.length
-        ? prisma.blogPost.updateMany({ where: { id: { in: toEnable.map((a) => a.id) } }, data: { featured: true } })
-        : Promise.resolve(),
-      toDisable.length
-        ? prisma.blogPost.updateMany({ where: { id: { in: toDisable.map((a) => a.id) } }, data: { featured: false } })
-        : Promise.resolve(),
-    ]);
-
-    if (needsRotation) {
-      await Promise.all([
-        prisma.adminSettings.upsert({
-          where: { key: "featured:last_rotation" },
-          create: { key: "featured:last_rotation", value: String(Date.now()) },
-          update: { value: String(Date.now()) },
-        }),
-        prisma.adminSettings.upsert({
-          where: { key: "featured:current_index" },
-          create: { key: "featured:current_index", value: String(rotatingIndex) },
-          update: { value: String(rotatingIndex) },
-        }),
-      ]);
-    }
-  } catch { /* ignore */ }
+    await applyFeatured();
+  } catch (err) {
+    console.error("[auto-refresh] featured", err instanceof Error ? err.message : err);
+  }
 }
 
 // Editorial spotlights — always checked and inserted if missing (even when DB has posts)
@@ -1422,6 +1364,8 @@ export async function GET(req: NextRequest) {
     prisma.adminSettings.delete({ where: { key: LOCK_KEY } }).catch(() => { /* ignore */ }),
   ]);
 
+  // New articles: the automatic featured slots move to the freshest news.
+  if (postsAdded > 0 || curatedPublished.length > 0) await patchFeaturedRotation();
   if (postsAdded > 0) revalidateAiTimes();
   // New, corrected or updated articles are translated now, in the background,
   // so readers never wait for a translation.

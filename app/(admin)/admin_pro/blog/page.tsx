@@ -2,6 +2,7 @@ import prisma from "@/lib/prisma";
 import { requireAdminPage } from "../_lib/admin-page-auth";
 import { REFRESH_INTERVAL_MS } from "@/lib/blog/schedule";
 import BlogClient from "./BlogClient";
+import { featuredPins } from "@/lib/blog/featured";
 
 // Per-request and session-scoped: never cached or prerendered.
 export const dynamic = "force-dynamic";
@@ -13,7 +14,7 @@ export const dynamic = "force-dynamic";
 export default async function BlogAdminPage() {
   await requireAdminPage();
 
-  const [posts, breaking, last] = await Promise.all([
+  const [posts, breaking, last, pins] = await Promise.all([
     prisma.blogPost
       .findMany({
         orderBy: { createdAt: "desc" },
@@ -35,6 +36,7 @@ export default async function BlogAdminPage() {
       })
       .catch(() => null),
     prisma.adminSettings.findUnique({ where: { key: "blog_last_refresh" } }).catch(() => null),
+    featuredPins().catch(() => [] as string[]),
   ]);
 
   const lastRefresh = last ? new Date(last.value) : null;
@@ -42,6 +44,7 @@ export default async function BlogAdminPage() {
   return (
     <BlogClient
       posts={posts.map((p) => ({ ...p, createdAt: p.createdAt.toISOString() }))}
+      pins={pins}
       breaking={
         breaking
           ? { headline: breaking.headline, source: breaking.source ?? undefined, createdAt: breaking.createdAt.toISOString() }
