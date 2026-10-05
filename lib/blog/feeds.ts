@@ -1,3 +1,5 @@
+import { isDatedOldHeadline } from "./freshness";
+
 // Advanced-tech news sources for the AI Times news agent
 // (app/api/blog/auto-refresh/route.ts).
 //
@@ -204,6 +206,7 @@ export async function fetchAdvancedTechNews(
     const picked = items
       .filter((i) => !i.publishedAt || new Date(i.publishedAt).getTime() >= cutoff)
       .filter((i) => f.focused || isAdvancedTechHeadline(i.title))
+      .filter((i) => !isDatedOldHeadline(i.title))
       .slice(0, perFeed);
     out.push(...picked);
   }

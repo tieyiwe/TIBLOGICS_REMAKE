@@ -1,4 +1,5 @@
 import { checkTargetUrl, safeFetch } from "@/lib/ssrf";
+import { extractPublishedDate } from "./freshness";
 
 /**
  * The text of the article a news item links to, or null if it cannot be read.
@@ -10,6 +11,11 @@ import { checkTargetUrl, safeFetch } from "@/lib/ssrf";
  * URLs come from Hacker News and DEV.to, i.e. from anyone.
  */
 export async function fetchSourceText(url: string): Promise<string | null> {
+  return (await fetchSource(url))?.text ?? null;
+}
+
+/** The article text and, when the page states it, when it was published. */
+export async function fetchSource(url: string): Promise<{ text: string; publishedAt: Date | null } | null> {
   try {
     const checked = await checkTargetUrl(url);
     if (!checked.ok) return null;
@@ -24,7 +30,8 @@ export async function fetchSourceText(url: string): Promise<string | null> {
     const type = res.headers.get("content-type") ?? "";
     if (!/text\/html|application\/xhtml|text\/plain/i.test(type)) return null;
     const raw = (await res.text()).slice(0, 2_000_000);
-    return extractArticleText(raw);
+    const text = extractArticleText(raw);
+    return text ? { text, publishedAt: extractPublishedDate(raw) } : null;
   } catch {
     return null;
   }

@@ -31,9 +31,13 @@
 // failure rather than looking successful.
 
 const JOBS = {
-  // The route itself only publishes if 48h have passed, so calling it more
+  // The route itself only publishes once a day (AI_TIMES_REFRESH_HOURS) unless a
+  // major story breaks, so calling it more
   // often is safe — it answers "not due yet" and does nothing.
   news: { path: "/api/blog/auto-refresh", suggested: "every 6 hours" },
+  // One-off: publish a fresh AI Times run right now, whatever the schedule
+  // (same as "Refresh now" in the admin). Not part of "all".
+  "news-now": { path: "/api/blog/auto-refresh?force=true", suggested: "manually, when you want fresh articles now" },
   carts: { path: "/api/cron/cart-reminders", suggested: "hourly" },
   exams: { path: "/api/cron/exam-sweep", suggested: "every 15 minutes" },
   // Readiness Monitor rescans. Only subscribers whose week is up are scanned.
@@ -119,7 +123,7 @@ if (!secret) {
 console.log(`Target: ${base}`);
 
 const which = (process.argv[2] ?? "all").toLowerCase();
-const names = which === "all" ? Object.keys(JOBS).filter((n) => n !== "dbprep") : [which];
+const names = which === "all" ? Object.keys(JOBS).filter((n) => n !== "dbprep" && n !== "news-now") : [which];
 
 for (const name of names) {
   if (!JOBS[name]) {
@@ -140,7 +144,7 @@ for (const name of names) {
     const res = await fetch(url, {
       headers: { authorization: `Bearer ${secret}` },
       // A news run generates several articles; give it room.
-      signal: AbortSignal.timeout(name === "news" || name === "videos" ? 900_000 : name === "monitor" || name === "blueprints" || name === "translate" || name === "growth" || name === "outreach" || name === "comms" || name === "scanner" ? 330_000 : 120_000),
+      signal: AbortSignal.timeout(name === "news" || name === "news-now" || name === "videos" ? 900_000 : name === "monitor" || name === "blueprints" || name === "translate" || name === "growth" || name === "outreach" || name === "comms" || name === "scanner" ? 330_000 : 120_000),
     });
     const body = await res.text();
     const secs = ((Date.now() - started) / 1000).toFixed(1);

@@ -25,6 +25,11 @@ export interface CuratedArticle {
   /** HTML body, without the sources list — that is appended from `sources`. */
   content: string;
   sources: { label: string; url: string }[];
+  /**
+   * When the news happened (YYYY-MM-DD). An article whose news is more than
+   * 21 days old is not published (it would appear today as fresh news).
+   */
+  newsDate?: string;
 }
 
 export const CURATED_ARTICLES: CuratedArticle[] = [
