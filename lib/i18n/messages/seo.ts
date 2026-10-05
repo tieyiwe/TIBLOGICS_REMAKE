@@ -61,8 +61,8 @@ export default tri({
   ],
   "seo.meta.arfa.description": [
     "Learn AI online with ARFA: {n} self-paced AI courses, beginner to advanced, in English and French, each with a verifiable certificate. From {from}.",
-    "Apprenez l'IA en ligne avec ARFA : {n} cours d'IA à votre rythme, du débutant à l'avancé, en français et en anglais, avec certificat vérifiable. Dès {from}.",
-    "Jifunze AI mtandaoni na ARFA: kozi {n} za AI kwa kasi yako, kuanzia mwanzo hadi juu, kwa Kiingereza na Kifaransa, kila moja na cheti kinachothibitishwa. Kuanzia {from}.",
+    "Apprenez l'IA en ligne avec ARFA : {n} cours à votre rythme, du débutant à l'avancé, en français et en anglais, avec certificat vérifiable. Dès {from}.",
+    "Jifunze AI mtandaoni na ARFA: kozi {n} kwa kasi yako, mwanzo hadi juu, kwa Kiingereza na Kifaransa, kila moja na cheti kinachothibitishwa. Kuanzia {from}.",
   ],
   // Link to a page's French version (lib/seo/learn-lang.ts); the language
   // name itself is always written in French.

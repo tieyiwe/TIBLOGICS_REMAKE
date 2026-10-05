@@ -18,6 +18,7 @@ import { blueprintPrice, creditDays } from "@/lib/blueprint/config";
 import { monitorPricing } from "@/lib/monitor/config";
 import { LIBRARY_SIZE, LIBRARY_VERTICALS } from "@/lib/toolkit/library";
 import { academyFaq, academySummary, type AcademySummary } from "./academy";
+import { publicCatalog, type PublicCourse } from "./courses";
 import { plain } from "./meta";
 import { ORG, SITE_URL, absUrl } from "./site";
 
@@ -39,12 +40,14 @@ interface SiteData {
   events: Array<{ slug: string; title: string; description: string; date: Date | null; price: number; currency: string; location: string }>;
   posts: Array<{ slug: string; title: string; excerpt: string; createdAt: Date; category: string }>;
   team: { seatPriceCents: number; minSeats: number } | null;
+  /** Module outlines by slug (lib/seo/courses.ts). */
+  outlines: Map<string, PublicCourse>;
 }
 
 async function load(postLimit: number): Promise<SiteData> {
-  const catalog = await getCatalog();
-  const [academy, products, events, posts, team] = await Promise.all([
-    academySummary(catalog),
+  const [catalog, team] = await Promise.all([getCatalog(), getTeamPricing().catch(() => null)]);
+  const [academy, products, events, posts, outlines] = await Promise.all([
+    academySummary(catalog, undefined, team),
     prisma.product
       .findMany({
         where: { published: true },
@@ -67,7 +70,9 @@ async function load(postLimit: number): Promise<SiteData> {
         select: { slug: true, title: true, excerpt: true, createdAt: true, category: true },
       })
       .catch(() => []),
-    getTeamPricing().catch(() => null),
+    publicCatalog()
+      .then((c) => new Map(c.courses.map((x) => [x.slug, x])))
+      .catch(() => new Map<string, PublicCourse>()),
   ]);
   return {
     academy,
@@ -76,6 +81,7 @@ async function load(postLimit: number): Promise<SiteData> {
     events,
     posts,
     team: team ? { seatPriceCents: team.seatPriceCents, minSeats: team.minSeats } : null,
+    outlines,
   };
 }
 
@@ -96,11 +102,39 @@ function toolLines(): string[] {
 }
 
 function trackLine(c: AcademySummary["live"][number]): string {
-  return `- [${c.title}](${absUrl(`/learning-box/${c.slug}`)}): ${level(c.level, c.levelEnd)}; about ${c.hours} hours; ${money(c.shownPriceCents)} one time (or all tracks by subscription); certificate: ${c.certificateName}. ${oneLine(c.tagline, 160)}`;
+  return `- [${c.title}](${absUrl(`/learning-box/${c.slug}`)}): ${level(c.level, c.levelEnd)}; about ${c.hours} hours; ${money(c.shownPriceCents)} one time (or all tracks by subscription); certificate: ${c.certificateName}. ${oneLine(c.tagline, 160)} Markdown: ${absUrl(`/learning-box/${c.slug}.md`)}`;
+}
+
+const CERTIFICATES =
+  "Every ARFA certificate has its own reference and a public verification page at " +
+  absUrl("/certificates") +
+  "/<reference> showing the holder's name, the certificate and whether it is valid. It stays valid whether or not the holder keeps a subscription.";
+
+// Both files are rebuilt at most every few minutes per instance: each build
+// reads the catalog, store, events and articles, and AI crawlers can ask for
+// them often. A failed build is not kept.
+const TTL_MS = 10 * 60_000;
+const memo = new Map<string, { at: number; body: Promise<string> }>();
+function cached(key: string, build: () => Promise<string>): Promise<string> {
+  const hit = memo.get(key);
+  if (hit && Date.now() - hit.at < TTL_MS) return hit.body;
+  const body = build();
+  memo.set(key, { at: Date.now(), body });
+  body.catch(() => memo.delete(key));
+  return body;
 }
 
 /** /llms.txt: the short index. */
-export async function buildLlmsTxt(): Promise<string> {
+export function buildLlmsTxt(): Promise<string> {
+  return cached("llms", buildLlmsTxtNow);
+}
+
+/** /llms-full.txt: the long version, everything an assistant needs. */
+export function buildLlmsFullTxt(): Promise<string> {
+  return cached("llms-full", buildLlmsFullTxtNow);
+}
+
+async function buildLlmsTxtNow(): Promise<string> {
   const d = await load(10);
   const a = d.academy;
   const out: string[] = [];
@@ -119,7 +153,13 @@ export async function buildLlmsTxt(): Promise<string> {
     `- [ARFA catalog](${absUrl("/learning-box")}): ${a.live.length} self-paced certificate tracks in English and French${a.live.length ? `, ${money(a.minPriceCents)} to ${money(a.maxPriceCents)} per track one time, or ${money(a.monthlyCents)}/month for every track (cancel anytime)` : ""}.`,
   );
   for (const c of a.live) out.push(trackLine(c));
-  out.push("");
+  out.push(
+    `- [ARFA catalog as Markdown](${absUrl("/learning-box.md")}): what ARFA is, every track, prices and certificates in one page.`,
+    `- [Course catalog as JSON](${absUrl("/api/public/courses")}): every track with level, hours, price, outline and assessment; one track at ${absUrl("/api/public/courses")}/<slug>.`,
+    `- French pages: add ?lang=fr to any ARFA URL (for example ${absUrl("/learning-box?lang=fr")}).`,
+    `- Certificates: ${CERTIFICATES}`,
+    "",
+  );
 
   out.push("## Tools", "");
   out.push(...toolLines(), "");
@@ -157,8 +197,7 @@ export async function buildLlmsTxt(): Promise<string> {
   return out.join("\n");
 }
 
-/** /llms-full.txt: the long version, everything an assistant needs. */
-export async function buildLlmsFullTxt(): Promise<string> {
+async function buildLlmsFullTxtNow(): Promise<string> {
   const d = await load(30);
   const a = d.academy;
   const out: string[] = [];
@@ -196,7 +235,8 @@ export async function buildLlmsFullTxt(): Promise<string> {
     `- Every track: a subscription at ${money(a.monthlyCents)} a month, cancel anytime.`,
     d.team ? `- Teams: seats for companies, ${money(d.team.seatPriceCents)} per seat per month, ${d.team.minSeats} seats minimum.` : "",
     "- Assessment: three-question checks after lessons, a quiz per module (80% to pass, retakes allowed), a timed final exam, and a capstone project scored by a human reviewer against a published rubric.",
-    "- Certificates: each track has its own certificate with a public verification page.",
+    `- Certificates: each track has its own certificate. ${CERTIFICATES}`,
+    `- Machine-readable: ${absUrl("/api/public/courses")} (JSON) and ${absUrl("/learning-box.md")} (Markdown). French pages: add ?lang=fr to an ARFA URL.`,
     "- Learn anywhere: installs as an app; lessons can be downloaded for offline study.",
   );
   for (const c of a.live) {
@@ -213,6 +253,11 @@ export async function buildLlmsFullTxt(): Promise<string> {
     if (c.outcomes.length) {
       out.push("What you will be able to do:");
       for (const o of c.outcomes) out.push(`- ${plain(o)}`);
+    }
+    const outline = d.outlines.get(c.slug);
+    if (outline?.modules.length) {
+      out.push("Modules:");
+      outline.modules.forEach((m, i) => out.push(`${i + 1}. ${plain(m.title)}${m.summary ? `: ${oneLine(m.summary, 200)}` : ""}`));
     }
   }
   if (d.comingSoon.length) {

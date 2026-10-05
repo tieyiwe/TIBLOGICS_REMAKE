@@ -4,12 +4,16 @@ import { ensureLearnEditColumns } from "@/lib/learn/admin/columns";
 import { ensureAcquireTables } from "@/lib/growth/acquire/db";
 import { articleAlternates, articleLanguages, articleUrl } from "@/lib/seo/articles";
 import { absUrl } from "@/lib/seo/site";
+import { loadTrackSources } from "@/lib/i18n/sources/learn";
+import { learnAlternates, learnLangPath, tracksReadyInFrench } from "@/lib/seo/learn-lang";
 
 // The sitemap lists every public, indexable URL: the static pages, every
 // live or coming-soon ARFA track, published store products and collections,
 // published AI Times articles (with hreflang alternates for their ?lang=
 // translations), published events, and published lead magnets and landing
-// pages that are not flagged noindex. Private, noindex and confirmation pages
+// pages that are not flagged noindex. ARFA pages also list their French URL
+// (?lang=fr, lib/seo/learn-lang.ts) with hreflang, once a track's French
+// translation is ready. Private, noindex and confirmation pages
 // are left out (see app/robots.ts).
 //
 // Rendered on request so a newly published item appears at once (it is a
@@ -128,14 +132,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority,
   }));
 
+  // The catalog page is translated in full; each track once its French text is cached.
+  const languages = (path: string) => Object.fromEntries(Object.entries(learnAlternates(path)).map(([k, v]) => [k, absUrl(v)]));
+  const box = out.find((e) => e.url === absUrl("/learning-box"));
+  if (box) {
+    box.alternates = { languages: languages("/learning-box") };
+    out.push({ ...box, url: absUrl(learnLangPath("/learning-box", "fr")), priority: 0.85, alternates: { languages: languages("/learning-box") } });
+  }
+  const french = await safe(
+    loadTrackSources({ slug: { in: tracks.map((t) => t.slug) } }).then(tracksReadyInFrench),
+    new Set<string>(),
+  );
   for (const t of tracks) {
-    out.push({
-      url: absUrl(`/learning-box/${t.slug}`),
+    const path = `/learning-box/${t.slug}`;
+    const entry: Entry = {
+      url: absUrl(path),
       lastModified: t.updatedAt,
       changeFrequency: "monthly",
       priority: t.status === "live" ? 0.9 : 0.6,
       images: images([t.heroImage]),
-    });
+    };
+    out.push(entry);
+    if (french.has(t.slug)) {
+      entry.alternates = { languages: languages(path) };
+      out.push({ ...entry, url: absUrl(learnLangPath(path, "fr")), priority: t.status === "live" ? 0.8 : 0.5, alternates: { languages: languages(path) } });
+    }
   }
 
   for (const p of products) {

@@ -173,7 +173,9 @@ export default async function TrackLandingPage({ params, searchParams }: Props) 
   ];
 
   return (
-    <div className="bg-[var(--s2)] pb-28">
+    // lang: the root <html lang> follows the visitor's cookie and cannot see
+    // ?lang=, so the French page marks its own content as French.
+    <div className="bg-[var(--s2)] pb-28" lang={lang ?? undefined}>
       {/* Hero */}
       <section
         // pt clears the fixed Nav (5.5rem tall, 7.5rem from sm up) — without it

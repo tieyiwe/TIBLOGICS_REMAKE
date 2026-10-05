@@ -85,7 +85,9 @@ export default async function LearningBoxPage({ searchParams }: Props) {
   }));
 
   return (
-    <div className="bg-[var(--s2)]">
+    // lang: the root <html lang> follows the visitor's cookie and cannot see
+    // ?lang=, so the French page marks its own content as French.
+    <div className="bg-[var(--s2)]" lang={lang ?? undefined}>
       {/* Hero */}
       {/* pt clears the fixed Nav (5.5rem tall, 7.5rem from sm up) — without it
           the white header sits on top of the eyebrow and headline. */}

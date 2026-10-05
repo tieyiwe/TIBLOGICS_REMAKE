@@ -69,7 +69,8 @@ export function indexNowSoon(paths: Array<string | null | undefined>): void {
 export const INDEXNOW_SECTIONS = {
   article: (slug: string) => [`/ai-times/${slug}`, "/ai-times"],
   product: (slug: string) => [`/store/${slug}`, "/store"],
-  track: (slug: string) => [`/learning-box/${slug}`, "/learning-box"],
+  // With the French URLs (lib/seo/learn-lang.ts).
+  track: (slug: string) => [`/learning-box/${slug}`, "/learning-box", `/learning-box/${slug}?lang=fr`, "/learning-box?lang=fr"],
   magnet: (slug: string) => [`/free/${slug}`],
   page: (slug: string) => [`/lp/${slug}`],
   event: (slug: string) => [`/events/${slug}`, "/events"],
