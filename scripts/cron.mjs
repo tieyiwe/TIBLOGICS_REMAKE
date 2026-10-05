@@ -31,7 +31,7 @@
 // failure rather than looking successful.
 
 const JOBS = {
-  // The route itself only publishes once a day (AI_TIMES_REFRESH_HOURS) unless a
+  // The route itself only publishes every other day (AI_TIMES_REFRESH_HOURS) unless a
   // major story breaks, so calling it more
   // often is safe — it answers "not due yet" and does nothing.
   news: { path: "/api/blog/auto-refresh", suggested: "every 6 hours" },
