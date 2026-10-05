@@ -70,11 +70,12 @@ export default async function LearningBoxPage() {
       {/* Hero */}
       {/* pt clears the fixed Nav (5.5rem tall, 7.5rem from sm up) — without it
           the white header sits on top of the eyebrow and headline. */}
-      <section className="bg-[var(--ink)] px-4 pb-16 pt-32 text-white sm:pb-20 sm:pt-44">
+      <section className="bg-[var(--ink)] px-4 pb-12 pt-32 text-white sm:pb-14 sm:pt-44">
         <div className="learn-hero mx-auto max-w-6xl">
-          {/* ARFA is the TIBLOGICS AI Academy platform: the brand is the headline. */}
+          {/* ARFA is the TIBLOGICS AI Academy platform: the brand is the headline,
+              on one line from tablet width up. */}
           <h1
-            className="max-w-3xl text-3xl font-black leading-tight sm:text-5xl"
+            className="text-3xl font-black leading-tight sm:text-4xl md:whitespace-nowrap lg:text-5xl"
             style={{ "--stagger-index": 0 } as React.CSSProperties}
           >
             {brand.startsWith("ARFA") ? (
@@ -92,45 +93,65 @@ export default async function LearningBoxPage() {
           >
             AI Readiness For All
           </p>
-          <p
-            className="mt-6 max-w-3xl text-xl font-bold leading-snug sm:text-2xl"
-            style={{ "--stagger-index": 1 } as React.CSSProperties}
-          >
-            {t("learn.box.heroTitle")}
-          </p>
-          <p
-            className="mt-5 max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg"
-            style={{ "--stagger-index": 2 } as React.CSSProperties}
-          >
-            {t("learn.box.heroBody")}
-          </p>
-          <div
-            className="mt-8 flex flex-wrap items-center gap-4"
-            style={{ "--stagger-index": 3 } as React.CSSProperties}
-          >
-            <Link
-              href="/learning-box/join"
-              className="rounded-full bg-gradient-to-r from-[var(--orange)] to-[#F9A738] px-7 py-3.5 text-sm font-bold text-[var(--ink)] transition-opacity hover:opacity-90"
-            >
-              {t("learn.cta.startLearning")}
-            </Link>
-            <p className="text-sm text-white/60">
-              {FOUNDING_PRICING && (
-                <span className="mr-2 rounded-full bg-white/10 px-2.5 py-1 text-xs font-bold text-[var(--orange)]">
-                  {t("learn.billing.foundingRate")}
+
+          {/* Left: the offer and the weekly live sessions. Right: the key
+              takeaways, so the tracks start higher up the page. */}
+          <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start">
+            <div className="min-w-0">
+              <div
+                className="flex items-start gap-3 rounded-2xl border-2 border-[var(--orange)] bg-[var(--orange)]/10 px-4 py-3.5 sm:max-w-xl"
+                style={{ "--stagger-index": 1 } as React.CSSProperties}
+                data-testid="live-sessions-badge"
+              >
+                <span className="relative mt-1.5 flex h-3 w-3 shrink-0" aria-hidden="true">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-[#22C55E] opacity-75 motion-safe:animate-ping" />
+                  <span className="relative inline-flex h-3 w-3 rounded-full bg-[#22C55E]" />
                 </span>
-              )}
-              {sales.monthly ? <SalePrice sale={sales.monthly} recurring tone="dark" className="mr-2" /> : null}
-              <strong className="text-white">{t("learn.price.perMonth", { price: fmtPrice(sales.monthly?.saleCents ?? monthly.amount, locale) })}</strong>{" "}
-              {t("learn.box.heroPriceTail", { from: fmtPrice(fromCents, locale) })}
-            </p>
+                <span>
+                  <span className="block text-base font-black text-white sm:text-lg">{t("learn.box.liveTitle")}</span>
+                  <span className="mt-0.5 block text-sm leading-snug text-white/80">{t("learn.box.liveBody")}</span>
+                </span>
+              </div>
+              <p
+                className="mt-6 max-w-3xl text-xl font-bold leading-snug sm:text-2xl"
+                style={{ "--stagger-index": 1 } as React.CSSProperties}
+              >
+                {t("learn.box.heroTitle")}
+              </p>
+              <p
+                className="mt-4 max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg"
+                style={{ "--stagger-index": 2 } as React.CSSProperties}
+              >
+                {t("learn.box.heroBody")}
+              </p>
+              <div
+                className="mt-7 flex flex-wrap items-center gap-4"
+                style={{ "--stagger-index": 3 } as React.CSSProperties}
+              >
+                <Link
+                  href="/learning-box/join"
+                  className="rounded-full bg-gradient-to-r from-[var(--orange)] to-[#F9A738] px-7 py-3.5 text-sm font-bold text-[var(--ink)] transition-opacity hover:opacity-90"
+                >
+                  {t("learn.cta.startLearning")}
+                </Link>
+                <p className="text-sm text-white/60">
+                  {FOUNDING_PRICING && (
+                    <span className="mr-2 rounded-full bg-white/10 px-2.5 py-1 text-xs font-bold text-[var(--orange)]">
+                      {t("learn.billing.foundingRate")}
+                    </span>
+                  )}
+                  {sales.monthly ? <SalePrice sale={sales.monthly} recurring tone="dark" className="mr-2" /> : null}
+                  <strong className="text-white">{t("learn.price.perMonth", { price: fmtPrice(sales.monthly?.saleCents ?? monthly.amount, locale) })}</strong>{" "}
+                  {t("learn.box.heroPriceTail", { from: fmtPrice(fromCents, locale) })}
+                </p>
+              </div>
+            </div>
+            <div style={{ "--stagger-index": 2 } as React.CSSProperties}>
+              <KeyTakeaways title={t("seo.takeaways")} items={academyTakeaways(t, summary, money)} />
+            </div>
           </div>
         </div>
       </section>
-
-      <div className="mx-auto max-w-6xl px-4 pt-10">
-        <KeyTakeaways title={t("seo.takeaways")} items={academyTakeaways(t, summary, money)} />
-      </div>
 
       {pending && (
         <p role="status" className="mx-auto mt-6 max-w-6xl px-4 text-xs text-[var(--ink3)]">
