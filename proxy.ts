@@ -106,7 +106,10 @@ async function gate(req: NextRequest) {
 
     // Entitlement (active subscription) is re-checked server-side in the
     // member layout — this only blocks signed-out visitors.
-    if (!token?.studentId) {
+    // The owner's admin sign-in also opens the owner's learner account
+    // (lib/learn/session.ts), so it is let through; other staff are not.
+    const ownerStaff = !token?.studentId && token?.isOwner === true && !!token?.staffUntil && Number(token.staffUntil) > Date.now();
+    if (!token?.studentId && !ownerStaff) {
       const url = new URL("/learn/login", req.url);
       url.searchParams.set("next", pathname + search);
       return NextResponse.redirect(url);

@@ -60,7 +60,8 @@ export default async function JoinPage({
     accentColor: c.accentColor,
     priceCents: c.priceCents,
     saleCents: c.salePriceCents,
-    owned: !!access && access.purchased.includes(c.id),
+    owned: !!access && (access.all || access.purchased.includes(c.id)),
+    included: !!access?.all && !access.purchased.includes(c.id),
   }));
 
   // ?track / ?plan / ?team first; else what this learner chose last time.
@@ -99,6 +100,25 @@ export default async function JoinPage({
             ))}
           </ol>
         </header>
+        {access?.all && (() => {
+          // Already has every track (subscription, comp, team seat or the
+          // owner's account): say so first, rather than a page of prices.
+          const wanted = fromUrl?.kind === "track" ? live.find((c) => c.slug === fromUrl.slug) : null;
+          return (
+            <div className="mt-6 flex flex-col gap-3 rounded-2xl border-2 border-green-600/30 bg-green-50 p-5 sm:flex-row sm:items-center sm:justify-between" data-testid="all-access">
+              <div className="min-w-0">
+                <p className="text-base font-black text-[var(--ink)]">✓ {t("learn.join.allAccess.title")}</p>
+                <p className="mt-1 text-sm text-[var(--ink2)]">{t("learn.join.allAccess.body")}</p>
+              </div>
+              <Link
+                href={wanted ? `/learn/track/${wanted.slug}` : "/learn"}
+                className="shrink-0 rounded-full bg-[var(--ink)] px-5 py-2.5 text-center text-sm font-bold text-white hover:opacity-90"
+              >
+                {wanted ? t("learn.join.allAccess.ctaTrack", { track: wanted.title }) : t("learn.join.allAccess.cta")} →
+              </Link>
+            </div>
+          );
+        })()}
 
         <div className="mt-6">
           <JoinFlow

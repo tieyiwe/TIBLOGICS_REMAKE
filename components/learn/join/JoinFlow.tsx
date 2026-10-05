@@ -31,6 +31,8 @@ export interface JoinTrack {
   priceCents: number;
   saleCents: number | null;
   owned: boolean;
+  /** Open through all-tracks access (subscription, comp or the owner), not bought. */
+  included?: boolean;
 }
 
 export interface JoinFlowProps {
@@ -477,7 +479,7 @@ export default function JoinFlow(props: JoinFlowProps) {
                     </span>
                     <span className="mt-auto flex flex-wrap items-baseline gap-x-1.5 pl-7 pt-3">
                       {c.owned ? (
-                        <span className="rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-bold text-green-800">✓ {t("learn.join.owned")}</span>
+                        <span className="rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-bold text-green-800">✓ {t(c.included ? "learn.join.included" : "learn.join.owned")}</span>
                       ) : (
                         <>
                           <span className="text-base font-black text-[var(--ink)]">{fmtPrice(sale?.saleCents ?? c.priceCents, locale)}</span>

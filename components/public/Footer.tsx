@@ -30,8 +30,11 @@ const company = [
 
 export default async function Footer() {
   const t = await getT();
+  // On phones the fixed bottom bar (components/public/MobileBottomNav.tsx)
+  // covers the last ~76px of the page: the footer leaves room for it, or its
+  // legal links sit underneath.
   return (
-    <footer className="bg-[#1B3A6B] text-white pt-16 pb-8">
+    <footer className="bg-[#1B3A6B] text-white pt-16 pb-[calc(2rem+76px+env(safe-area-inset-bottom))] sm:pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
@@ -145,6 +148,9 @@ export default async function Footer() {
             </Link>
             <Link href="/terms" className="text-[#9DB9D6] hover:text-white text-xs font-dm transition-colors">
               {t("site.footer.terms")}
+            </Link>
+            <Link href="/privacy/agr" className="text-[#9DB9D6] hover:text-white text-xs font-dm transition-colors">
+              {t("site.footer.agrPrivacy")}
             </Link>
             <Link href="/accessibility" className="text-[#9DB9D6] hover:text-white text-xs font-dm transition-colors">
               {t("a11y.page.footerLink")}

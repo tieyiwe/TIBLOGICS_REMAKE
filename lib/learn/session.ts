@@ -56,14 +56,20 @@ async function readStudent(): Promise<StudentSession | null> {
   await ensureLearnEditColumns().catch((err) => console.error("[learn] editedAt columns", err));
   let studentId: string | undefined;
   let sv = 0;
+  let ownerStaff = false;
   try {
     const session = await getServerSession(authOptions);
     studentId = session?.user?.studentId;
     sv = session?.user?.sv ?? 0;
+    // The owner signed in to the admin (one sign-in per browser) is the
+    // owner's learner account too, so checking a track never meets a sign-in
+    // page or a paywall. Only the owner: other staff have no learner account.
+    ownerStaff = !studentId && session?.user?.isOwner === true;
   } catch (err) {
     console.error("[learn/session] session resolution failed", err);
     return null;
   }
+  if (ownerStaff) return ownerLearner();
   if (!studentId) return null;
 
   // Account status (admin suspend / block / delete) and "sign out
@@ -91,6 +97,26 @@ async function readStudent(): Promise<StudentSession | null> {
     return null;
   }
   return state.mustChangePassword ? { ...student, mustChangePassword: true } : student;
+}
+
+/** The owner's learner account, created on first use (as the learner sign-in does). */
+async function ownerLearner(): Promise<StudentSession | null> {
+  const email = OWNER_EMAIL.toLowerCase();
+  const select = { id: true, email: true, name: true, accessibilityMode: true, locale: true } as const;
+  try {
+    const found = await prisma.student.findUnique({ where: { email }, select });
+    if (found) return found;
+    const { randomBytes } = await import("crypto");
+    const bcrypt = (await import("bcryptjs")).default;
+    return await prisma.student.create({
+      data: { email, name: process.env.ADMIN_NAME ?? "Tieyiwe", passwordHash: await bcrypt.hash(randomBytes(32).toString("hex"), 12) },
+      select,
+    });
+  } catch (err) {
+    // A concurrent first request created it.
+    console.error("[learn/session] owner learner", err);
+    return prisma.student.findUnique({ where: { email }, select }).catch(() => null);
+  }
 }
 
 export type Entitlement = {
