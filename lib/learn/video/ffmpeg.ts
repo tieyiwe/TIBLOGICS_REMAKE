@@ -10,7 +10,10 @@ import { LEAD_SEC, TAIL_SEC } from "./timing";
 //
 //   VIDEO_KEN_BURNS=1     slow zoom on each slide (more CPU)
 //   VIDEO_FFMPEG_THREADS  encoder threads (default 2)
-//   VIDEO_FPS             default 25
+//   VIDEO_FPS             default 15 (slides are stills: 15 keeps the fades smooth
+//                         and encodes about a third faster than 25)
+//   VIDEO_X264_PRESET     default "superfast"; "ultrafast" is faster again but the
+//                         files are about 3x bigger (slower for learners on mobile data)
 //   VIDEO_AUDIO_WARMTH=0  turn off the voice polish (bass lift, gentle compression, even loudness)
 
 let resolved: string | null = null;
@@ -164,11 +167,11 @@ export interface Shot {
 
 export async function composeVideo(opts: { shots: Shot[]; audio: string[]; totalSeconds: number; out: string; tmp: string }): Promise<void> {
   const { shots, audio, out, tmp } = opts;
-  const fps = Number(process.env.VIDEO_FPS) || 25;
+  const fps = Number(process.env.VIDEO_FPS) || 15;
   const kenBurns = process.env.VIDEO_KEN_BURNS === "1";
   const threads = ["-threads", process.env.VIDEO_FFMPEG_THREADS || "2", "-filter_threads", "1", "-filter_complex_threads", "1"];
   const encode = [
-    "-c:v", "libx264", "-preset", "veryfast", "-tune", "stillimage", "-crf", "24",
+    "-c:v", "libx264", "-preset", process.env.VIDEO_X264_PRESET || "superfast", "-tune", "stillimage", "-crf", "24",
     // No lookahead: the frames are stills, and it saves memory.
     "-x264-params", "rc-lookahead=0:sync-lookahead=0",
     "-maxrate", "3M", "-bufsize", "6M", "-pix_fmt", "yuv420p", "-profile:v", "high", "-level", "4.1",
