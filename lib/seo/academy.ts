@@ -6,6 +6,7 @@
 import { getCatalog, type CatalogTrack } from "@/lib/learn/catalog";
 import { totalHours } from "@/lib/learn/format";
 import { PLANS } from "@/lib/payments/provider";
+import { CERT_LEVELS } from "@/lib/learn/levels";
 import type { T } from "@/lib/i18n/server";
 import type { QA } from "./jsonld";
 
@@ -19,6 +20,14 @@ export interface AcademySummary {
   minHours: number;
   maxHours: number;
   monthlyCents: number;
+  /** Team plans, when known: base seat price, minimum seats, lowest volume price. */
+  team: { seatCents: number; minSeats: number; lowestSeatCents: number } | null;
+}
+
+export interface TeamPricingInput {
+  seatPriceCents: number;
+  minSeats: number;
+  tiers: Array<{ seatPriceCents: number }>;
 }
 
 /** "beginner to intermediate" in the visitor's language, for running text. */
@@ -43,6 +52,7 @@ export function trackHours(t: Pick<CatalogTrack, "lessonMinutes" | "handsOnMinut
 export async function academySummary(
   catalog?: Array<CatalogTrack & { salePriceCents?: number | null }>,
   monthlyCents: number = PLANS.monthly.amount,
+  team?: TeamPricingInput | null,
 ): Promise<AcademySummary> {
   const rows = catalog ?? (await getCatalog());
   const live = rows
@@ -57,6 +67,13 @@ export async function academySummary(
     minHours: hours.length ? Math.floor(Math.min(...hours)) : 0,
     maxHours: hours.length ? Math.ceil(Math.max(...hours)) : 0,
     monthlyCents,
+    team: team
+      ? {
+          seatCents: team.seatPriceCents,
+          minSeats: team.minSeats,
+          lowestSeatCents: Math.min(team.seatPriceCents, ...team.tiers.map((x) => x.seatPriceCents)),
+        }
+      : null,
   };
 }
 
@@ -82,12 +99,22 @@ export function academyFaq(t: T, s: AcademySummary, money: (cents: number) => st
   if (s.live.length) {
     out.push(qa("cost", { from: money(s.minPriceCents), to: money(s.maxPriceCents), monthly: money(s.monthlyCents) }));
   }
-  out.push(qa("french"), qa("cert"), qa("start"));
+  out.push(qa("french"), qa("cert"), qa("verify"), qa("start"));
+  // Where a newcomer should begin: Level 1 of the certification path
+  // (lib/learn/levels.ts), named only while that track is live.
+  const first = s.live.find((c) => c.slug === CERT_LEVELS[0].slug);
+  if (first) {
+    out.push(qa("first", { track: first.title, hours: Math.round(first.hours), tagline: sentence(first.tagline ?? first.description.split(/(?<=\.)\s/)[0]) }));
+  }
   if (s.maxHours > 0) out.push(qa("time", { min: s.minHours, max: s.maxHours }));
   const smb = s.live.find((c) => c.slug === "ai-small-business");
   if (smb) out.push(qa("business", { track: smb.title, tagline: sentence(smb.tagline ?? smb.description.split(/(?<=\.)\s/)[0]) }));
   const parents = s.live.find((c) => c.slug === "ai-for-parents");
   if (parents) out.push(qa("parents", { track: parents.title, tagline: sentence(parents.tagline ?? parents.description.split(/(?<=\.)\s/)[0]) }));
+  if (s.team) {
+    const volume = s.team.lowestSeatCents < s.team.seatCents ? ` ${t("seo.arfa.faq.teams.volume", { low: money(s.team.lowestSeatCents) })}` : "";
+    out.push({ q: t("seo.arfa.faq.teams.q"), a: `${t("seo.arfa.faq.teams.a", { price: money(s.team.seatCents), min: s.team.minSeats })}${volume}` });
+  }
   out.push(qa("offline"));
   return out;
 }

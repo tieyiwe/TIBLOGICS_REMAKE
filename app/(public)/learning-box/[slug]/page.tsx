@@ -10,7 +10,7 @@ import { trackPriceCents } from "@/lib/learn/pricing";
 import { getTrackBySlug, trackTime } from "@/lib/learn/catalog";
 import { fmtBreakdown, fmtMinutes, fmtPacing, fmtPrice, levelLabel, totalHours } from "@/lib/learn/format";
 import { PLANS } from "@/lib/payments/provider";
-import { getLocale, getT } from "@/lib/i18n/server";
+import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTrack, trackText, type TrackText } from "@/lib/i18n/sources/learn";
 import type { Locale } from "@/lib/i18n/config";
 import { pageSales } from "@/lib/promotions/display";
@@ -19,33 +19,49 @@ import JsonLd from "@/components/seo/JsonLd";
 import { KeyTakeaways } from "@/components/seo/AnswerBlocks";
 import { breadcrumbNode, courseNode, faqNode } from "@/lib/seo/jsonld";
 import { levelText } from "@/lib/seo/academy";
+import { learnAlternates, learnLangParam, learnLangPath, tracksReadyInFrench } from "@/lib/seo/learn-lang";
 
 export const dynamic = "force-dynamic";
 
-/** The track's text in the visitor's language (English while pending). */
-async function textFor(slug: string, locale: Locale): Promise<{ text: TrackText | null; pending: boolean }> {
+/**
+ * The track's text in the page's language (English while pending), and
+ * whether its French translation is ready (for the French URL and hreflang;
+ * a cache read only, never a model call).
+ */
+async function textFor(slug: string, locale: Locale): Promise<{ text: TrackText | null; pending: boolean; frReady: boolean }> {
   const [src] = await loadTrackSources({ slug });
-  if (!src) return { text: null, pending: false };
-  if (locale === "en") return { text: trackText(src), pending: false };
-  return localizedTrack(src, locale);
+  if (!src) return { text: null, pending: false, frReady: false };
+  const frReady = (await tracksReadyInFrench([src])).has(slug);
+  if (locale === "en") return { text: trackText(src), pending: false, frReady };
+  return { ...(await localizedTrack(src, locale)), frReady };
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
+type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ lang?: string | string[] }> };
+
+/** ?lang=fr is the French page (lib/seo/learn-lang.ts); otherwise the visitor's language. */
+async function pageLocale(searchParams: Props["searchParams"]): Promise<{ lang: "fr" | null; locale: Locale }> {
+  const lang = learnLangParam((await searchParams).lang);
+  return { lang, locale: lang ?? (await getLocale()) };
+}
+
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const [track, t, locale] = await Promise.all([getTrackBySlug(slug), getT(), getLocale()]);
+  const [track, { lang, locale }] = await Promise.all([getTrackBySlug(slug), pageLocale(searchParams)]);
+  const t = translatorFor(locale);
   // A real 404 (not a 200 with a "not found" title) for crawlers that get
   // blocking metadata; see htmlLimitedBots in next.config.js.
   if (!track) notFound();
-  const { text } = await textFor(slug, locale);
+  const { text, frReady } = await textFor(slug, locale);
+  const path = `/learning-box/${track.slug}`;
   const title = text?.title ?? track.title;
   const time = trackTime(track);
   const hours = totalHours(time.lessonMinutes, time.handsOnMinutes, track.estimatedHours);
   return pageMetadata({
-    path: `/learning-box/${track.slug}`,
+    // The French URL is its own canonical once the translation is ready;
+    // until then ?lang=fr shows English, so it points at the English page.
+    path: learnLangPath(path, lang && frReady ? lang : null),
+    languages: frReady ? learnAlternates(path) : undefined,
+    markdown: `${path}.md`,
     locale,
     // Long track names would push "· ARFA AI Academy | TIBLOGICS" past what
     // search results show; fitTitle drops the suffixes until it fits.
@@ -64,15 +80,12 @@ export async function generateMetadata({
   });
 }
 
-export default async function TrackLandingPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function TrackLandingPage({ params, searchParams }: Props) {
   const { slug } = await params;
-  const [track, t, locale, sales] = await Promise.all([getTrackBySlug(slug), getT(), getLocale(), pageSales()]);
+  const [track, { lang, locale }, sales] = await Promise.all([getTrackBySlug(slug), pageLocale(searchParams), pageSales()]);
+  const t = translatorFor(locale);
   if (!track) notFound();
-  const { text: loaded, pending } = await textFor(slug, locale);
+  const { text: loaded, pending, frReady } = await textFor(slug, locale);
 
   const fallbackOutcomes = Array.isArray(track.outcomes) ? (track.outcomes as string[]) : [];
   const text: TrackText = loaded ?? {
@@ -169,9 +182,17 @@ export default async function TrackLandingPage({
         style={{ background: `linear-gradient(135deg, var(--ink) 0%, ${track.accentColor}22 100%), var(--ink)` }}
       >
         <div className="learn-hero mx-auto max-w-5xl">
-          <Link href="/learning-box" className="text-sm text-white/50 hover:text-white/80">
-            ← {t("learn.catalog.allTracks")}
-          </Link>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Link href={learnLangPath("/learning-box", lang)} className="text-sm text-white/50 hover:text-white/80">
+              ← {t("learn.catalog.allTracks")}
+            </Link>
+            {/* A crawlable link to the French page (and a shortcut for people). */}
+            {frReady && locale !== "fr" && (
+              <Link href={learnLangPath(`/learning-box/${track.slug}`, "fr")} hrefLang="fr" className="text-sm text-white/60 underline-offset-2 hover:text-white hover:underline">
+                {t("seo.lang.alsoIn")} <span lang="fr">Français</span>
+              </Link>
+            )}
+          </div>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <LevelBadge level={track.level} levelEnd={track.levelEnd} size="md" />
             {comingSoon && (
@@ -356,13 +377,18 @@ export default async function TrackLandingPage({
             audience: text.audience,
             image: track.heroImage,
             available: !comingSoon,
+            syllabus: track.modules.map((m) => ({
+              name: text.modules[m.id]?.title ?? m.title,
+              description: text.modules[m.id]?.summary ?? m.summary,
+              minutes: m.estimatedMinutes,
+            })),
           }),
           // The questions shown in the FAQ section above, word for word.
-          faqNode(faqs.map((f) => ({ q: f.q, a: f.a })), `/learning-box/${track.slug}`),
+          faqNode(faqs.map((f) => ({ q: f.q, a: f.a })), learnLangPath(`/learning-box/${track.slug}`, lang)),
           breadcrumbNode([
             { name: t("seo.home"), path: "/" },
-            { name: t("seo.academy"), path: "/learning-box" },
-            { name: text.title, path: `/learning-box/${track.slug}` },
+            { name: t("seo.academy"), path: learnLangPath("/learning-box", lang) },
+            { name: text.title, path: learnLangPath(`/learning-box/${track.slug}`, lang) },
           ]),
         ]}
       />

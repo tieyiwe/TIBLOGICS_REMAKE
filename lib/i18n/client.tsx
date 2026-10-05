@@ -82,6 +82,15 @@ export function useSetLocale() {
       document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
       // Signed-in learners keep the choice on their account too.
       fetch("/api/i18n/locale", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ locale: next }) }).catch(() => {});
+      // On the ARFA pages ?lang= pins the page's language (lib/seo/learn-lang.ts),
+      // so it would override the choice just made: drop it. (AI Times keeps its
+      // own ?lang=, which switches only the article.)
+      const url = new URL(window.location.href);
+      if (url.pathname.startsWith("/learning-box") && url.searchParams.has("lang")) {
+        url.searchParams.delete("lang");
+        router.replace(url.pathname + url.search + url.hash);
+        return;
+      }
       router.refresh();
     },
     [router],

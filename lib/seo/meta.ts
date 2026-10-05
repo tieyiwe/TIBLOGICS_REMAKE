@@ -72,6 +72,14 @@ export interface PageMetaInput {
   noindex?: boolean;
   nofollow?: boolean;
   keywords?: string[];
+  /**
+   * hreflang: language code to path or URL, plus "x-default". Only for pages
+   * that have a real URL per language (the site's language is otherwise a
+   * cookie on one URL, which search engines cannot follow).
+   */
+  languages?: Record<string, string>;
+  /** A Markdown version of the page for AI agents (<link rel="alternate" type="text/markdown">). */
+  markdown?: string;
   /** Extra Open Graph fields for articles. */
   article?: { publishedTime?: string; modifiedTime?: string; authors?: string[]; section?: string; tags?: string[] };
 }
@@ -104,7 +112,11 @@ export function pageMetadata(i: PageMetaInput): Metadata {
   const meta: Metadata = {
     title: withSuffix ? i.title : { absolute: bare },
     description,
-    alternates: { canonical: url },
+    alternates: {
+      canonical: url,
+      languages: i.languages ? Object.fromEntries(Object.entries(i.languages).map(([k, v]) => [k, absUrl(v)])) : undefined,
+      types: i.markdown ? { "text/markdown": absUrl(i.markdown) } : undefined,
+    },
     openGraph: {
       type: i.type ?? "website",
       url,

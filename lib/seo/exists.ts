@@ -22,8 +22,9 @@ const SLUG = /^[A-Za-z0-9][A-Za-z0-9._~%-]{0,200}$/;
 
 const ROUTES: Array<{ re: RegExp; check: Check }> = [
   {
-    // Not /learning-box/join (the one-page join flow).
-    re: /^\/learning-box\/(?!join$)([^/]+)$/,
+    // Not /learning-box/join (the one-page join flow). A trailing ".md" is the
+    // track's Markdown version (a rewrite in next.config.js): check the track.
+    re: /^\/learning-box\/(?!join$)([^/]+?)(?:\.md)?$/,
     check: async (slug) => !!(await prisma.learnTrack.findFirst({ where: { slug, status: { in: ["live", "coming_soon"] } }, select: { id: true } })),
   },
   {

@@ -210,6 +210,8 @@ export interface CourseInput {
   available: boolean;
   modules?: number;
   lessons?: number;
+  /** The module outline, as shown in the page's curriculum. */
+  syllabus?: Array<{ name: string; description?: string | null; minutes?: number | null }>;
 }
 
 const LEVEL_NAME: Record<string, string> = {
@@ -256,16 +258,27 @@ export function courseNode(c: CourseInput): JsonLdNode {
       recognizedBy: ref(ARFA_ID),
     },
     offers: [offer],
+    // Google's Course info: courseMode plus courseWorkload (self-paced, so no
+    // courseSchedule). No instructor: schema.org expects a Person there, and
+    // naming one would not be true of a self-paced track.
     hasCourseInstance: [
       {
         "@type": "CourseInstance",
         courseMode: "Online",
         courseWorkload: isoHours(c.estimatedHours),
         inLanguage: ["en", "fr"],
-        instructor: { "@type": "Organization", "@id": ARFA_ID, name: "ARFA AI Academy" },
         offers: offer,
       },
     ],
+    // The module outline, the same titles the curriculum section shows.
+    syllabusSections: c.syllabus?.length
+      ? c.syllabus.map((m) => ({
+          "@type": "Syllabus",
+          name: m.name,
+          description: m.description || undefined,
+          timeRequired: m.minutes ? isoHours(m.minutes / 60) : undefined,
+        }))
+      : undefined,
   };
 }
 

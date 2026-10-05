@@ -8,7 +8,7 @@ import { getStudent } from "@/lib/learn/session";
 import { fmtPrice } from "@/lib/learn/format";
 import { PLANS, FOUNDING_PRICING } from "@/lib/payments/provider";
 import { TRACK_BASE_PRICE_CENTS } from "@/lib/learn/pricing";
-import { getLocale, getT } from "@/lib/i18n/server";
+import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTracks, withTrackText } from "@/lib/i18n/sources/learn";
 import TeamsOffer from "@/components/learn/team/TeamsOffer";
 import { getTeamPricing } from "@/lib/learn/team/settings";
@@ -20,25 +20,43 @@ import { FaqBlock, KeyTakeaways } from "@/components/seo/AnswerBlocks";
 import { academyFaq, academySummary, academyTakeaways } from "@/lib/seo/academy";
 import { arfaNode, breadcrumbNode, itemListNode } from "@/lib/seo/jsonld";
 import { ARFA_OG_IMAGE } from "@/lib/seo/site";
+import { learnAlternates, learnLangParam, learnLangPath } from "@/lib/seo/learn-lang";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const [t, locale] = await Promise.all([getT(), getLocale()]);
+type Props = { searchParams: Promise<{ lang?: string | string[] }> };
+
+/** ?lang=fr is the French page (lib/seo/learn-lang.ts); otherwise the visitor's language. */
+async function pageLocale(searchParams: Props["searchParams"]) {
+  const lang = learnLangParam((await searchParams).lang);
+  return { lang, locale: lang ?? (await getLocale()) };
+}
+
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const [{ lang, locale }, catalog] = await Promise.all([pageLocale(searchParams), getCatalog()]);
+  const t = translatorFor(locale);
+  // The lowest one-time price, from the same catalog the page lists.
+  const live = catalog.filter((c) => c.status === "live");
+  const from = live.length ? Math.min(...live.map((c) => c.priceCents)) : 0;
   return pageMetadata({
-    path: "/learning-box",
+    path: learnLangPath("/learning-box", lang),
+    // The page's interface is translated in both languages, so both URLs are
+    // real pages from the start (track texts follow as they are translated).
+    languages: learnAlternates("/learning-box"),
+    markdown: "/learning-box.md",
     locale,
-    // Absolute: the brand lockup already names TIBLOGICS.
-    title: t("learn.box.metaTitle"),
+    // Absolute: the title already names ARFA.
+    title: t("seo.meta.arfa.title"),
     absoluteTitle: true,
-    description: t("learn.box.metaDescription"),
+    description: live.length ? t("seo.meta.arfa.description", { n: live.length, from: fmtPrice(from, locale) }) : t("learn.box.metaDescription"),
     // The academy's own preview, not the main site's.
     image: ARFA_OG_IMAGE,
   });
 }
 
-export default async function LearningBoxPage() {
-  const [catalog, locale, t, teamPricing, sales, student] = await Promise.all([getCatalog(), getLocale(), getT(), getTeamPricing(), pageSales(), getStudent()]);
+export default async function LearningBoxPage({ searchParams }: Props) {
+  const [catalog, { lang, locale }, teamPricing, sales, student] = await Promise.all([getCatalog(), pageLocale(searchParams), getTeamPricing(), pageSales(), getStudent()]);
+  const t = translatorFor(locale);
   const { texts, pending } = await localizedTracks(
     locale === "en" ? [] : await loadTrackSources({ slug: { in: catalog.map((c) => c.slug) } }),
     locale,
@@ -53,7 +71,7 @@ export default async function LearningBoxPage() {
   // Takeaways and FAQ: the facts people ask AI assistants about ARFA, from
   // the same catalog and prices this page shows (lib/seo/academy.ts).
   const money = (c: number) => fmtPrice(c, locale);
-  const summary = await academySummary(tracks, sales.monthly?.saleCents ?? monthly.amount);
+  const summary = await academySummary(tracks, sales.monthly?.saleCents ?? monthly.amount, teamPricing);
 
   const approach = [
     { l: t("learn.certLevel.1.name"), t: t("learn.box.approach.1.title"), d: t("learn.box.approach.1.body") },
@@ -94,6 +112,14 @@ export default async function LearningBoxPage() {
           >
             AI Readiness For All
           </p>
+          {/* A crawlable link to the French page (and a shortcut for people). */}
+          {locale !== "fr" && (
+            <p className="mt-2 text-sm">
+              <Link href={learnLangPath("/learning-box", "fr")} hrefLang="fr" className="text-white/60 underline-offset-2 hover:text-white hover:underline">
+                {t("seo.lang.alsoIn")} <span lang="fr">Français</span>
+              </Link>
+            </p>
+          )}
 
           {/* Left: the offer and the weekly live sessions. Right: the key
               takeaways, so the tracks start higher up the page. */}
@@ -262,7 +288,7 @@ export default async function LearningBoxPage() {
 
       {/* FAQ: visible answers, repeated as FAQPage structured data */}
       <div className="mx-auto max-w-4xl px-4 pb-16">
-        <FaqBlock title={t("seo.faq")} path="/learning-box" items={academyFaq(t, summary, money)} />
+        <FaqBlock title={t("seo.faq")} path={learnLangPath("/learning-box", lang)} items={academyFaq(t, summary, money)} />
       </div>
       <JsonLd
         data={[
@@ -274,7 +300,7 @@ export default async function LearningBoxPage() {
           }),
           breadcrumbNode([
             { name: t("seo.home"), path: "/" },
-            { name: t("seo.academy"), path: "/learning-box" },
+            { name: t("seo.academy"), path: learnLangPath("/learning-box", lang) },
           ]),
         ]}
       />

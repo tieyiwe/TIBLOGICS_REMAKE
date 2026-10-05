@@ -51,6 +51,22 @@ export default tri({
     "Cours d'IA en ligne, niveau {level}, de l'Académie IA ARFA : environ {hours} h, {price} en une fois ou tous les parcours à {monthly}/mois, certificat inclus. {tagline}",
     "Kozi ya AI mtandaoni, kiwango cha {level}, kutoka Chuo cha AI cha ARFA: takriban saa {hours}, {price} mara moja au kozi zote kwa {monthly}/mwezi, pamoja na cheti. {tagline}",
   ],
+  // The ARFA catalog's title and description, written for what people type
+  // into search and ask AI assistants ("learn AI online", "AI course with
+  // certificate"). {n} and {from} come from the live catalog.
+  "seo.meta.arfa.title": [
+    "Learn AI Online: Certificate Courses · ARFA AI Academy",
+    "Apprendre l'IA en ligne : cours certifiants · ARFA",
+    "Jifunze AI Mtandaoni: Kozi zenye Vyeti · ARFA",
+  ],
+  "seo.meta.arfa.description": [
+    "Learn AI online with ARFA: {n} self-paced AI courses, beginner to advanced, in English and French, each with a verifiable certificate. From {from}.",
+    "Apprenez l'IA en ligne avec ARFA : {n} cours d'IA à votre rythme, du débutant à l'avancé, en français et en anglais, avec certificat vérifiable. Dès {from}.",
+    "Jifunze AI mtandaoni na ARFA: kozi {n} za AI kwa kasi yako, kuanzia mwanzo hadi juu, kwa Kiingereza na Kifaransa, kila moja na cheti kinachothibitishwa. Kuanzia {from}.",
+  ],
+  // Link to a page's French version (lib/seo/learn-lang.ts); the language
+  // name itself is always written in French.
+  "seo.lang.alsoIn": ["Also in", "Aussi en", "Pia kwa"],
   "seo.levelRange": ["{a} to {b}", "{a} à {b}", "{a} hadi {b}"],
 
   // ── Home: the questions people ask about the company ────────────────────
@@ -129,11 +145,31 @@ export default tri({
     "Oui. Chaque parcours se termine par son propre certificat, une fois réussis tous les quiz de module, l'examen final chronométré et un projet final relu par une personne. Chaque certificat a une page de vérification publique que n'importe qui, un employeur par exemple, peut consulter.",
     "Ndiyo. Kila kozi inaishia na cheti chake baada ya kufaulu majaribio yote ya moduli, mtihani wa mwisho wenye muda na mradi wa mwisho unaokaguliwa na mtu. Kila cheti kina ukurasa wa uthibitisho wa umma ambao mtu yeyote, kama mwajiri, anaweza kuuangalia.",
   ],
+  "seo.arfa.faq.verify.q": [
+    "How can an employer check an ARFA certificate?",
+    "Comment un employeur peut-il vérifier un certificat ARFA ?",
+    "Mwajiri anawezaje kuthibitisha cheti cha ARFA?",
+  ],
+  "seo.arfa.faq.verify.a": [
+    "Every certificate has its own reference and a public verification page at tiblogics.com/certificates/ followed by that reference. Anyone can open it to see the holder's name, the certificate earned and whether it is still valid. A certificate stays valid whether or not the holder keeps a subscription.",
+    "Chaque certificat a sa propre référence et une page de vérification publique à l'adresse tiblogics.com/certificates/ suivie de cette référence. Tout le monde peut l'ouvrir pour voir le nom du titulaire, le certificat obtenu et s'il est toujours valable. Un certificat reste valable, que son titulaire garde un abonnement ou non.",
+    "Kila cheti kina namba yake ya marejeo na ukurasa wa uthibitisho wa umma kwenye tiblogics.com/certificates/ ikifuatiwa na namba hiyo. Mtu yeyote anaweza kuufungua kuona jina la mmiliki, cheti alichopata na kama bado ni halali. Cheti kinabaki halali iwe mmiliki anaendelea na usajili au la.",
+  ],
   "seo.arfa.faq.start.q": ["Do I need any experience with AI?", "Faut-il déjà connaître l'IA ?", "Je, nahitaji uzoefu wowote wa AI?"],
   "seo.arfa.faq.start.a": [
     "No. The first level starts from your first prompt. Each level assumes the one before it, so you can start at a higher level if you already use AI every day.",
     "Non. Le premier niveau part de votre tout premier prompt. Chaque niveau suppose acquis le précédent : vous pouvez donc commencer plus haut si vous utilisez déjà l'IA tous les jours.",
     "Hapana. Kiwango cha kwanza kinaanzia prompt yako ya kwanza kabisa. Kila kiwango kinadhani umemaliza kilichotangulia, kwa hiyo unaweza kuanza juu zaidi ikiwa tayari unatumia AI kila siku.",
+  ],
+  "seo.arfa.faq.first.q": [
+    "I'm new to AI. Which track should I start with?",
+    "Je débute en IA. Par quel parcours commencer ?",
+    "Mimi ni mgeni katika AI. Nianze na kozi gani?",
+  ],
+  "seo.arfa.faq.first.a": [
+    "Start with {track}, Level 1 of the ARFA certification path. It assumes no experience with AI and takes about {hours} hours. {tagline}",
+    "Commencez par {track}, le niveau 1 du parcours de certification ARFA. Il ne suppose aucune expérience de l'IA et demande environ {hours} heures. {tagline}",
+    "Anza na {track}, Kiwango cha 1 cha njia ya vyeti ya ARFA. Haihitaji uzoefu wowote wa AI na inachukua takriban saa {hours}. {tagline}",
   ],
   "seo.arfa.faq.time.q": ["How long does a track take?", "Combien de temps dure un parcours ?", "Kozi moja inachukua muda gani?"],
   "seo.arfa.faq.time.a": [
@@ -152,6 +188,21 @@ export default tri({
     "Yes: {track}. {tagline}",
     "Oui : {track}. {tagline}",
     "Ndiyo: {track}. {tagline}",
+  ],
+  "seo.arfa.faq.teams.q": [
+    "Can my company train a whole team?",
+    "Mon entreprise peut-elle former toute une équipe ?",
+    "Je, kampuni yangu inaweza kufundisha timu nzima?",
+  ],
+  "seo.arfa.faq.teams.a": [
+    "Yes. Team plans cost {price} per seat per month, from {min} seats, billed monthly. Every seat opens every track, and seats can be added or removed at any time.",
+    "Oui. Les offres équipe coûtent {price} par siège et par mois, à partir de {min} sièges, facturés chaque mois. Chaque siège donne accès à tous les parcours, et vous pouvez ajouter ou retirer des sièges à tout moment.",
+    "Ndiyo. Mipango ya timu inagharimu {price} kwa kiti kwa mwezi, kuanzia viti {min}, ikilipwa kila mwezi. Kila kiti kinafungua kozi zote, na viti vinaweza kuongezwa au kupunguzwa wakati wowote.",
+  ],
+  "seo.arfa.faq.teams.volume": [
+    "Larger teams pay less, down to {low} per seat.",
+    "Les grandes équipes paient moins, jusqu'à {low} par siège.",
+    "Timu kubwa hulipa kidogo, hadi {low} kwa kiti.",
   ],
   "seo.arfa.faq.offline.q": ["Can I learn on my phone or offline?", "Puis-je apprendre sur mon téléphone ou hors ligne ?", "Je, naweza kusoma kwenye simu au bila mtandao?"],
   "seo.arfa.faq.offline.a": [

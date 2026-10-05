@@ -99,6 +99,14 @@ const nextConfig = {
   },
   async rewrites() {
     return {
+      // A track as Markdown for AI agents: /learning-box/<slug>.md
+      // (lib/seo/markdown.ts). beforeFiles, so it wins over the
+      // /learning-box/[slug] page, which would otherwise read "x.md" as a slug.
+      // proxy.ts still sees the original path; lib/seo/exists.ts strips the
+      // ".md" so a real track is not 404ed there.
+      beforeFiles: [
+        { source: "/learning-box/:slug([A-Za-z0-9-]+)\\.md", destination: "/api/public/courses/:slug/markdown" },
+      ],
       // IndexNow key file: /<INDEXNOW_KEY>.txt (lib/seo/indexnow.ts). An
       // afterFiles rewrite, so real files and routes (robots.txt, llms.txt)
       // always win; the route 404s for any other key.

@@ -35,8 +35,11 @@ const PRIVATE = [
 ];
 
 // Article cover images are served from here; keep them crawlable for image
-// search and rich results even though the rest of /api is closed.
-const ALLOW = ["/", "/api/blog/cover/"];
+// search and rich results even though the rest of /api is closed. The public
+// course catalog (/api/public/courses, listed in /llms.txt) is open so AI
+// agents can read accurate track facts; it is read-only and holds nothing
+// that is not on the track pages.
+const ALLOW = ["/", "/api/blog/cover/", "/api/public/"];
 
 /** Search engines and AI crawlers, by their published user-agent tokens. */
 const CRAWLERS = [
