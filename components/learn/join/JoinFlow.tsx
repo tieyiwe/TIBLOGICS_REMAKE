@@ -419,6 +419,31 @@ export default function JoinFlow(props: JoinFlowProps) {
             </span>
           </label>
 
+          {/* Teams, surfaced near the top: the full team option is further down. */}
+          {!isTeam && (
+            <div className="mt-3 flex flex-col gap-3 rounded-2xl border-2 border-dashed border-[var(--blue3)] bg-white p-4 sm:flex-row sm:items-center sm:justify-between" data-testid="team-shortcut">
+              <span className="min-w-0">
+                <span className="block text-sm font-black text-[var(--ink)]">{t("learn.join.teamShortcut.title")}</span>
+                <span className="mt-0.5 block text-xs leading-relaxed text-[var(--ink2)]">
+                  {t("learn.join.teamShortcut.body", {
+                    from: fmtPrice(team.seatPriceCents, locale),
+                    to: fmtPrice(Math.min(team.seatPriceCents, ...team.tiers.map((x) => x.seatPriceCents)), locale),
+                  })}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  pick({ kind: "team", seats });
+                  setTimeout(() => document.getElementById(`${uid}-teams`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+                }}
+                className="shrink-0 rounded-full bg-[var(--ink)] px-5 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
+              >
+                {t("learn.join.teamShortcut.cta")} →
+              </button>
+            </div>
+          )}
+
           {/* One track, for life */}
           <div className="mt-6 flex flex-wrap items-baseline justify-between gap-2">
             <h3 className="text-sm font-bold text-[var(--ink)]">{t("learn.subscribe.pickTitle")}</h3>
@@ -473,7 +498,7 @@ export default function JoinFlow(props: JoinFlowProps) {
           </p>
 
           {/* Teams */}
-          <label className={`${radioCard} ${isTeam ? "" : "border-[var(--border)]"} mt-6 p-5`}>
+          <label id={`${uid}-teams`} className={`${radioCard} ${isTeam ? "" : "border-[var(--border)]"} mt-6 scroll-mt-32 p-5`}>
             <input type="radio" name="join-plan" className="sr-only" checked={isTeam} onChange={() => pick({ kind: "team", seats })} />
             <span className="flex items-start gap-3">
               {dot(isTeam)}

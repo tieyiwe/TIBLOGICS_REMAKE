@@ -134,7 +134,14 @@ export default async function LearningBoxPage() {
                 >
                   {t("learn.cta.startLearning")}
                 </Link>
-                <p className="text-sm text-white/60">
+                <Link
+                  href="/learning-box/join?team=1"
+                  className="rounded-full border border-white/40 px-6 py-3.5 text-sm font-bold text-white transition-colors hover:bg-white/10"
+                  data-testid="hero-teams-cta"
+                >
+                  {t("learn.box.teamsCta", { price: fmtPrice(Math.min(teamPricing.seatPriceCents, ...teamPricing.tiers.map((x) => x.seatPriceCents)), locale) })}
+                </Link>
+                <p className="basis-full text-sm text-white/60">
                   {FOUNDING_PRICING && (
                     <span className="mr-2 rounded-full bg-white/10 px-2.5 py-1 text-xs font-bold text-[var(--orange)]">
                       {t("learn.billing.foundingRate")}
