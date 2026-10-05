@@ -109,11 +109,12 @@ export const stripeProvider: PaymentProvider = {
   },
 
   // ── Team plans ──────────────────────────────────────────────────────────
-  // STRIPE_LEARN_TEAM_PRICE_ID (optional): a monthly per-seat Price. Without
-  // it the seat price is sent inline, so per-team prices set by staff apply.
+  // STRIPE_LEARN_TEAM_PRICE_ID (optional): a monthly per-seat Price for the
+  // base band. Without it (and always for a volume band, which a single
+  // Price cannot express) the seat price is sent inline.
   async createTeamCheckout(req: TeamCheckoutRequest) {
     const metadata = { product: "learn-team", teamId: req.teamId, ownerStudentId: req.ownerStudentId };
-    const priceId = process.env.STRIPE_LEARN_TEAM_PRICE_ID;
+    const priceId = req.volumeBand ? undefined : process.env.STRIPE_LEARN_TEAM_PRICE_ID;
     const lineItem = priceId
       ? { price: priceId, quantity: req.seats }
       : {

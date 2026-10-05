@@ -90,10 +90,10 @@ export default async function TeamsAdminPage() {
       <div className="grid gap-6 xl:grid-cols-2">
         <Card
           title="Defaults for new teams"
-          subtitle="Existing teams keep the price they bought at (change one on its page). If STRIPE_LEARN_TEAM_PRICE_ID is set, Stripe bills that Price instead; keep the two equal."
+          subtitle="Existing teams keep the price they bought at (change one on its page). If STRIPE_LEARN_TEAM_PRICE_ID is set, Stripe bills that Price for the base band (keep the two equal); volume bands are always billed at the band price."
         >
           <div className="font-dm text-[13px] font-semibold text-[var(--a-ink-2)]">
-            <DefaultsForm seatPriceCents={pricing.seatPriceCents} minSeats={pricing.minSeats} />
+            <DefaultsForm seatPriceCents={pricing.seatPriceCents} minSeats={pricing.minSeats} tiers={pricing.tiers} />
           </div>
         </Card>
         <Card

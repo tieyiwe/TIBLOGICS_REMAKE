@@ -33,9 +33,14 @@ export async function POST(req: NextRequest) {
 const Defaults = z.object({
   seatPriceCents: z.number().int().min(100).max(1_000_000),
   minSeats: z.number().int().min(1).max(TEAM_MAX_SEATS),
+  /** Volume bands: from `minSeats` seats, each seat costs `seatPriceCents`. */
+  tiers: z
+    .array(z.object({ minSeats: z.number().int().min(2).max(TEAM_MAX_SEATS), seatPriceCents: z.number().int().min(100).max(1_000_000) }))
+    .max(10)
+    .optional(),
 });
 
-/** Defaults for new teams: price per seat per month and the minimum seats. */
+/** Defaults for new teams: price per seat per month, the minimum seats and the volume bands. */
 export async function PUT(req: NextRequest) {
   const authErr = await requirePermission("*");
   if (authErr) return authErr;

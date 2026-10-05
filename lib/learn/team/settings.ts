@@ -43,7 +43,42 @@ async function readStored(): Promise<Record<string, unknown> | null> {
   }
 }
 
+/**
+ * Team price structure set by the owner in code, applied once per database
+ * (recorded in AdminSettings) so production picks it up without an admin
+ * visit. Later edits in Admin > Learn > Teams are kept.
+ *
+ *   2 to 10 seats    the current seat price (whatever it is when this runs)
+ *   11 to 25 seats   $10 less per seat
+ *   26 to 50 seats   $49 per seat
+ *   51+ seats        $33.97 per seat
+ */
+const PRICING_REV = { key: "learn.team.pricing-rev:2026-10-volume-bands", minSeats: 2 };
+let revApplied = false;
+
+async function applyPricingRevision(): Promise<void> {
+  if (revApplied) return;
+  const done = await prisma.adminSettings.findUnique({ where: { key: PRICING_REV.key } }).catch(() => null);
+  if (!done) {
+    const v = await readStored();
+    const base = int(v?.seatPriceCents, 100, 1_000_000) ?? envTeamPricing().seatPriceCents;
+    const tiers: SeatTier[] = [
+      { minSeats: 11, seatPriceCents: Math.max(100, base - 1000) },
+      { minSeats: 26, seatPriceCents: 4900 },
+      { minSeats: 51, seatPriceCents: 3397 },
+    ];
+    await setTeamPricing({ seatPriceCents: base, minSeats: PRICING_REV.minSeats, tiers });
+    await prisma.adminSettings.upsert({
+      where: { key: PRICING_REV.key },
+      create: { key: PRICING_REV.key, value: JSON.stringify({ base, tiers }) },
+      update: {},
+    });
+  }
+  revApplied = true;
+}
+
 export async function getTeamPricing(): Promise<TeamPricing> {
+  await applyPricingRevision().catch((err) => console.error("[learn/team] pricing revision", err));
   const base = envTeamPricing();
   const v = await readStored();
   if (!v) return base;

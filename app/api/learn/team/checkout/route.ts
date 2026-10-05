@@ -63,6 +63,7 @@ export async function POST(req: NextRequest) {
       email: student.email,
       seats: parsed.data.seats,
       seatPriceCents: quote.seatPriceCents,
+      volumeBand: quote.tier !== null,
       currency: TEAM_CURRENCY,
       // The confirm route activates the team at once (the webhook does the
       // same, idempotently), so the owner never lands on a locked page.

@@ -65,6 +65,8 @@ export interface TeamCheckoutRequest extends CheckoutDiscountFields {
   seats: number;
   /** Cents per seat per month, from lib/learn/team/settings.ts. Never from the client. */
   seatPriceCents: number;
+  /** A volume band's price applies: bill it inline even if STRIPE_LEARN_TEAM_PRICE_ID is set. */
+  volumeBand?: boolean;
   currency: string;
   successUrl: string;
   cancelUrl: string;

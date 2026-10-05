@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { fmtPrice } from "@/lib/learn/format";
 import { useLocale, useT } from "@/lib/i18n/client";
+import SeatBands from "./SeatBands";
 import { quoteSeats, type SeatTier } from "@/lib/learn/team/config";
 import { joinPath } from "@/lib/learn/join/choice";
 
@@ -93,14 +94,8 @@ export default function TeamsOffer({
         </p>
       </div>
       {tiers.length > 0 && (
-        <div className="mt-3 rounded-xl bg-[var(--s2)] px-4 py-3 text-sm">
-          <p className="text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">{t("team.offer.volume")}</p>
-          <ul className="mt-1 space-y-0.5 text-[var(--ink2)]">
-            <li>{t("team.offer.tierBase", { n: minSeats, price: fmtPrice(seatPriceCents, locale) })}</li>
-            {tiers.map((x) => (
-              <li key={x.minSeats}>{t("team.offer.tierLine", { n: x.minSeats, price: fmtPrice(x.seatPriceCents, locale) })}</li>
-            ))}
-          </ul>
+        <div className="mt-3">
+          <SeatBands seatPriceCents={seatPriceCents} minSeats={minSeats} tiers={tiers} seats={open ? seats : undefined} />
         </div>
       )}
       <ul className="mt-4 grid gap-1.5 text-sm text-[var(--ink2)] sm:grid-cols-2">

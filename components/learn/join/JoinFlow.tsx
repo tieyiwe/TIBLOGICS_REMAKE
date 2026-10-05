@@ -10,6 +10,7 @@ import PromoCodeField from "@/components/promo/PromoCodeField";
 import { getStoredCode, setStoredCode, useStoredCode } from "@/lib/promotions/client-code";
 import type { TargetT } from "@/lib/promotions/lines";
 import { quoteSeats, type SeatTier } from "@/lib/learn/team/config";
+import SeatBands from "@/components/learn/team/SeatBands";
 import { choiceKey, joinPath, type JoinChoice } from "@/lib/learn/join/choice";
 import { trackEvent } from "@/components/public/AnalyticsTracker";
 
@@ -481,11 +482,21 @@ export default function JoinFlow(props: JoinFlowProps) {
                   <span className="text-base font-black text-[var(--ink)]">{t("team.offer.title")}</span>
                   <span className="text-sm text-[var(--ink2)]">
                     <strong className="text-[var(--ink)]">{fmtPrice(team.seatPriceCents, locale)}</strong> {t("team.offer.perSeat")}
+                    {team.tiers.length > 0 && (
+                      <span className="block text-right text-xs text-[var(--ink3)]">
+                        {t("team.offer.fromPrice", { price: fmtPrice(Math.min(...team.tiers.map((x) => x.seatPriceCents)), locale) })}
+                      </span>
+                    )}
                   </span>
                 </span>
                 <span className="mt-1 block text-sm leading-relaxed text-[var(--ink2)]">
                   {t("team.offer.blurb", { price: fmtPrice(team.seatPriceCents, locale), n: team.minSeats })}
                 </span>
+                {team.tiers.length > 0 && (
+                  <span className="mt-3 block">
+                    <SeatBands seatPriceCents={team.seatPriceCents} minSeats={team.minSeats} tiers={team.tiers} seats={isTeam && Number.isInteger(seats) ? seats : undefined} />
+                  </span>
+                )}
               </span>
             </span>
           </label>
