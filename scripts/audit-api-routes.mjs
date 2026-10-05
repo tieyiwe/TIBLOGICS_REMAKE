@@ -58,6 +58,7 @@ const PUBLIC_BY_DESIGN = {
   "/api/claude": "public sales chat / advisor (rate limited, AI budget guarded)",
   "/api/tools": "public free tools (rate limited)",
   "/api/scanner": "public website scanner (rate limited, SSRF-guarded)",
+  "/api/public": "public read-only course catalogue for search engines and AI assistants (no private data)",
   "/api/analytics": "first-party page-view beacon (rate limited)",
   "/api/tool-usage": "anonymous tool usage counter (rate limited)",
   "/api/appointments": "public booking (rate limited)",
