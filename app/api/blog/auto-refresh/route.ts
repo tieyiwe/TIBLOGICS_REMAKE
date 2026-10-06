@@ -176,7 +176,7 @@ function isNewsworthy(title: string): boolean {
  * A story big enough to publish ahead of the normal cadence — a frontier model
  * or a named company shipping something. Ordinary AI commentary waits its turn.
  */
-export function isMajorStory(title: string): boolean {
+function isMajorStory(title: string): boolean {
   const event = EVENT_RE.test(title);
   return (
     (COMPANY_RE.test(title) && event) ||
