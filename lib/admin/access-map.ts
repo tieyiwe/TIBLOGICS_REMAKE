@@ -57,6 +57,7 @@ export const PAGE_RULES: AccessRule[] = [
   { path: "/admin_pro/communications/support", key: "learners" },
   { path: "/admin_pro/learn", key: "events" },
   { path: "/admin_pro/learn/learners", key: "learners" },
+  { path: "/admin_pro/learn/exams", key: "learners" },
   { path: "/admin_pro/blog", key: "blog" },
   { path: "/admin_pro/newsletter", key: "blog" },
   { path: "/admin_pro/events", key: "events" },

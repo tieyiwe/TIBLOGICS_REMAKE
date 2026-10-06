@@ -21,6 +21,7 @@ import { composerContext } from "../../../communications/_components/context";
 import { Conversation } from "../../../communications/_components/Conversation";
 import { ActionButton, CertificateRevoke, LearnerHeaderActions, type LearnerSummary } from "./LearnerActions";
 import { NotesPanel, TagsEditor } from "./NotesPanel";
+import Assessments from "./Assessments";
 import { ago, avatarHue, day, dt, human, initials, money } from "../_components/format";
 
 export const dynamic = "force-dynamic";
@@ -353,6 +354,7 @@ export default async function LearnerDetailPage({
               </div>
             )}
           </Card>
+          <Assessments studentId={s.id} />
           <Card title="Certificates" icon={Award}>
             {d.certificates.length === 0 ? (
               <p className="font-dm text-[13.5px] text-[var(--a-ink-3)]">None yet.</p>
