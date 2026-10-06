@@ -267,7 +267,7 @@ export default function PortfolioClient({
           aria-pressed={filters.starred}
           onClick={() => set({ starred: !filters.starred })}
           className={cn(
-            "inline-flex h-9 items-center gap-1.5 rounded-[var(--a-radius-control)] border px-3 font-dm text-[13px] font-semibold",
+            "inline-flex h-10 items-center gap-1.5 rounded-[var(--a-radius-control)] border px-3 font-dm text-[13px] font-semibold sm:h-9",
             filters.starred ? "border-[var(--a-orange)] bg-[var(--a-orange-bg)] text-[var(--a-orange-text)]" : "border-[var(--a-border-strong)] bg-[var(--a-surface)] text-[var(--a-ink-2)] hover:bg-[var(--a-surface-2)]",
           )}
         >

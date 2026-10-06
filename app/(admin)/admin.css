@@ -179,6 +179,15 @@
     :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), select, textarea):not(.a-keep-size) {
     font-size: 16px;
   }
+  /* Comfortable touch height for form fields (40px minimum). */
+  .admin-root
+    :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), select, textarea):not(.a-keep-size) {
+    min-height: 40px;
+  }
+  /* The row label (first cell) of a scrolled table never collapses to "AI…". */
+  .admin-root :is(.overflow-x-auto, .overflow-auto, .a-table-scroll) > table > tbody > tr > td:first-child:not(:has(> input[type="checkbox"])) {
+    min-width: 9rem;
+  }
   .admin-root .a-table-scroll {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
@@ -194,6 +203,31 @@
   }
   .admin-root .a-table-scroll > table > thead > tr > th:first-child {
     background: var(--a-surface-2);
+  }
+}
+
+/*
+ * Phones and tablets: a table inside a horizontal scroller keeps its words
+ * whole and scrolls, instead of being squeezed into one-letter columns.
+ * (globals.css sets `word-break: break-word` on td/th/span, which lets the
+ * browser shrink every cell to a single character before it scrolls.)
+ */
+@media (max-width: 1023.98px) {
+  /* A single-column grid sizes its track to the widest child's min-content;
+     a wide table or code line in one card then pushes every card off screen. */
+  .admin-root #admin-main .grid > * {
+    min-width: 0;
+  }
+  .admin-root :is(.overflow-x-auto, .overflow-auto, .a-table-scroll) > table :is(th, td, td span, td a) {
+    word-break: normal;
+  }
+  .admin-root :is(.overflow-x-auto, .overflow-auto, .a-table-scroll) > table > thead th {
+    white-space: nowrap;
+  }
+  /* Keep absolutely positioned bits (sr-only labels) inside the scroller
+     instead of stretching the page sideways. */
+  .admin-root :is(.overflow-x-auto, .overflow-auto, .a-table-scroll) > table {
+    position: relative;
   }
 }
 

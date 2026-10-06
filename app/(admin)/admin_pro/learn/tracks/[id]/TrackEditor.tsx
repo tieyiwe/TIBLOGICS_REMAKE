@@ -196,7 +196,7 @@ function ModuleCard({ module: m, index, last, labs }: { module: ModuleRow; index
     <div className="rounded-[var(--a-radius-control)] border border-[#E6EBF1]">
       <div className="flex flex-wrap items-start justify-between gap-2 bg-[var(--a-surface-2)] rounded-t-xl px-4 py-3">
         {editing ? (
-          <div className="flex-1 min-w-[240px] space-y-2">
+          <div className="flex-[1_1_240px] space-y-2">
             <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} />
             <textarea className={`${inputCls} min-h-[60px]`} value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="Summary (optional)" />
             <div className="flex gap-2">

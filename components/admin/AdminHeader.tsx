@@ -158,7 +158,7 @@ export default function AdminHeader() {
 
   return (
     <>
-      <header className="flex h-16 shrink-0 items-center gap-2 border-b border-[var(--a-border)] bg-[var(--a-surface)]/95 px-3 backdrop-blur sm:gap-3 sm:px-6">
+      <header className="relative z-30 flex h-16 shrink-0 items-center gap-2 border-b border-[var(--a-border)] bg-[var(--a-surface)]/95 px-3 backdrop-blur sm:gap-3 sm:px-6">
         <button
           type="button"
           onClick={() => setMobileNavOpen(true)}

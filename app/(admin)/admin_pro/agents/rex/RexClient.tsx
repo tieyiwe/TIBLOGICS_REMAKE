@@ -233,7 +233,7 @@ export default function RexClient({
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Link href="/admin_pro/agents" className="text-[var(--a-ink-3)] hover:text-[#1B3A6B] transition-colors">
+        <Link href="/admin_pro/agents" aria-label="Back to agents" className="-m-3 shrink-0 p-3 text-[var(--a-ink-3)] hover:text-[#1B3A6B] transition-colors">
           <ArrowLeft size={18} />
         </Link>
         <div className="flex items-center gap-3 flex-1">

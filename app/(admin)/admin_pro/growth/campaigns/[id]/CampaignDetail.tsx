@@ -234,7 +234,7 @@ export default function CampaignDetail({
           )}
         </div>
 
-        <aside className="space-y-5">
+        <aside className="min-w-0 space-y-5">
           <Card title={<span className="inline-flex items-center gap-1.5"><Link2 size={15} className="text-[var(--a-ink-3)]" aria-hidden /> Share links</span>} subtitle="Use these for bio links, WhatsApp, newsletters and ads.">
             {(c.assets.links ?? []).length === 0 ? <p className="font-dm text-[13px] text-[var(--a-ink-3)]">No share links.</p> : (
               <ul className="space-y-2">

@@ -41,7 +41,7 @@ export default function WaitlistClient({ entries }: { entries: Entry[] }) {
       {filtered.length === 0 ? (
         <div className="text-center py-16 text-[var(--a-ink-3)] font-dm">No sign-ups yet.</div>
       ) : (
-        <div className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] overflow-hidden">
+        <div className="a-table-scroll bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-[var(--a-border)]">

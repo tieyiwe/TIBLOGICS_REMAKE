@@ -35,7 +35,7 @@ export function PageHeader({
               <li key={i} className="flex items-center gap-1">
                 {i > 0 ? <ChevronRight size={12} aria-hidden /> : null}
                 {c.href ? (
-                  <Link href={c.href} className="hover:text-[var(--a-ink)] hover:underline">
+                  <Link href={c.href} className="-my-3 inline-block py-3 hover:text-[var(--a-ink)] hover:underline sm:my-0 sm:py-0">
                     {c.label}
                   </Link>
                 ) : (

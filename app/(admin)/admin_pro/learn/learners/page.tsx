@@ -99,7 +99,7 @@ export default async function LearnersPage({
       />
 
       <form method="get" aria-label="Filter learners" className="flex flex-wrap items-end gap-3 rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] p-4 shadow-[var(--a-shadow-card)]">
-        <label className="flex min-w-[220px] flex-1 flex-col gap-1 text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--a-ink-3)]">
+        <label className="flex flex-[1_1_220px] flex-col gap-1 text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--a-ink-3)]">
           Search
           <input name="q" defaultValue={f.q} placeholder="Name or email" className={input} />
         </label>

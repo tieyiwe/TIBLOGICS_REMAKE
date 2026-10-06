@@ -84,10 +84,10 @@ export default function TestAccessClient({ canGrant, learn, toolkit, monitors }:
         {learn.length > 0 && (
           <ul className="divide-y divide-[var(--a-border)] border border-[var(--a-border)] rounded-[var(--a-radius-control)]">
             {learn.map((em) => (
-              <li key={em} className="flex items-center justify-between px-4 py-2.5 font-dm text-sm">
-                <span>{em}</span>
+              <li key={em} className="flex items-center justify-between gap-3 px-4 py-2.5 font-dm text-sm">
+                <span className="min-w-0 break-all">{em}</span>
                 <button
-                  className="text-red-600 text-xs font-semibold"
+                  className="-my-2 shrink-0 whitespace-nowrap px-1 py-3 text-red-600 text-xs font-semibold sm:my-0 sm:p-0"
                   disabled={busy === `lb-${em}`}
                   onClick={() => run(`lb-${em}`, { tool: "learn", action: "revoke", email: em }, "Revoked.")}
                 >
@@ -131,10 +131,10 @@ export default function TestAccessClient({ canGrant, learn, toolkit, monitors }:
         {toolkit.length > 0 && (
           <ul className="divide-y divide-[var(--a-border)] border border-[var(--a-border)] rounded-[var(--a-radius-control)]">
             {toolkit.map((t) => (
-              <li key={t.email} className="flex items-center justify-between px-4 py-2.5 font-dm text-sm">
-                <span>{t.email} <span className="text-[var(--a-ink-3)]">· {t.plan === "guard" ? "Guard only" : "Toolkit Live"}</span></span>
+              <li key={t.email} className="flex items-center justify-between gap-3 px-4 py-2.5 font-dm text-sm">
+                <span className="min-w-0 break-all">{t.email} <span className="text-[var(--a-ink-3)]">· {t.plan === "guard" ? "Guard only" : "Toolkit Live"}</span></span>
                 <button
-                  className="text-red-600 text-xs font-semibold"
+                  className="-my-2 shrink-0 whitespace-nowrap px-1 py-3 text-red-600 text-xs font-semibold sm:my-0 sm:p-0"
                   disabled={busy === `tk-${t.email}`}
                   onClick={() => run(`tk-${t.email}`, { tool: "toolkit", action: "revoke", email: t.email }, "Revoked.")}
                 >

@@ -18,7 +18,7 @@ export function SearchInput({
   ...rest
 }: Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & { label?: string }) {
   return (
-    <label className={cn("relative flex min-w-0 flex-1 items-center sm:max-w-xs", className)}>
+    <label className={cn("relative flex min-w-0 flex-1 basis-full items-center sm:basis-auto sm:max-w-xs", className)}>
       <span className="sr-only">{label}</span>
       <Search size={15} className="pointer-events-none absolute left-3 text-[var(--a-ink-3)]" aria-hidden />
       <input

@@ -73,7 +73,7 @@ export default function ContentClient({
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
       <Card title="Catalog" subtitle={`${catalog.length} items, built from AI Academy tracks, the Store, Toolkit, tools, services, events, live sessions and AI Times.`}>
         <div className="flex flex-wrap gap-2 mb-3">
-          <div className="relative flex-1 min-w-[200px]">
+          <div className="relative flex-[1_1_200px]">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--a-ink-3)]" />
             <input aria-label="Search the catalog" className={`${input} pl-9`} placeholder="Search products…" value={q} onChange={(e) => setQ(e.target.value)} />
           </div>

@@ -33,8 +33,8 @@ export function Card({
       )}
     >
       {title || action ? (
-        <header className="flex items-start justify-between gap-3 border-b border-[var(--a-border)] px-5 py-3.5">
-          <div className="min-w-0">
+        <header className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2.5 border-b border-[var(--a-border)] px-5 py-3.5">
+          <div className="min-w-0 flex-1 basis-[12rem]">
             {title ? (
               <h2 className="flex items-center gap-2 font-dm text-[14px] font-semibold text-[var(--a-ink)]">
                 {Icon ? <Icon size={16} className="text-[var(--a-ink-3)]" aria-hidden /> : null}
@@ -43,7 +43,7 @@ export function Card({
             ) : null}
             {subtitle ? <p className="mt-0.5 font-dm text-[12.5px] text-[var(--a-ink-3)]">{subtitle}</p> : null}
           </div>
-          {action ? <div className="flex shrink-0 items-center gap-2">{action}</div> : null}
+          {action ? <div className="flex max-w-full shrink-0 flex-wrap items-center gap-2">{action}</div> : null}
         </header>
       ) : null}
       <div className={cn(padded && "p-5", bodyClassName)}>{children}</div>

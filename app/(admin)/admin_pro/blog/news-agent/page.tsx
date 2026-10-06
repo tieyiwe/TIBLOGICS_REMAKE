@@ -160,7 +160,8 @@ export default function NewsAgentPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/admin_pro/blog"
-            className="text-[var(--a-ink-3)] hover:text-[#1B3A6B] transition-colors"
+            aria-label="Back to the blog"
+            className="-m-3 shrink-0 p-3 text-[var(--a-ink-3)] hover:text-[#1B3A6B] transition-colors"
           >
             <ArrowLeft size={18} />
           </Link>
@@ -174,9 +175,9 @@ export default function NewsAgentPage() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex shrink-0 items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-green-500" />
-          <span className="text-xs font-dm text-[var(--a-ink-3)]">Connected</span>
+          <span className="whitespace-nowrap text-xs font-dm text-[var(--a-ink-3)]">Connected</span>
         </div>
       </div>
 

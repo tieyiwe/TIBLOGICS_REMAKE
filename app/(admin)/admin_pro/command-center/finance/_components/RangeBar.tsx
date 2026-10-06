@@ -31,15 +31,15 @@ export function RangeBar({ range, exportKind }: { range: { from: string; to: str
         <option value="custom">Custom</option>
       </Select>
       <form
-        className="flex items-center gap-1.5"
+        className="flex w-full flex-wrap items-center gap-1.5 sm:w-auto sm:flex-nowrap"
         onSubmit={(e) => {
           e.preventDefault();
           if (from && to && from <= to) router.push(`${pathname}?from=${from}&to=${to}`);
         }}
       >
-        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="From" className={`${inputCls} w-[150px]`} />
-        <span className="font-dm text-[13px] text-[var(--a-ink-3)]">to</span>
-        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="To" className={`${inputCls} w-[150px]`} />
+        <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="From" className={`${inputCls} flex-1 basis-[9.5rem] sm:w-[150px] sm:flex-none sm:basis-auto`} />
+        <span className="shrink-0 font-dm text-[13px] text-[var(--a-ink-3)]">to</span>
+        <input type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="To" className={`${inputCls} flex-1 basis-[9.5rem] sm:w-[150px] sm:flex-none sm:basis-auto`} />
         <Button size="sm" type="submit" disabled={from === range.from && to === range.to}>
           Apply
         </Button>
