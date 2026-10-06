@@ -1,5 +1,10 @@
 import { tri } from "./_tri";
 
+// The About page (app/(public)/about/page.tsx). Every statement here must be
+// true and already published elsewhere on the site (fact sheet, services,
+// Learning Box, footer, lib/seo/site.ts). No invented numbers, clients,
+// awards, dates or testimonials.
+
 export default tri({
   "pages.about.meta.title": [
     "About TIBLOGICS | AI Implementation Agency",
@@ -17,9 +22,9 @@ export default tri({
     "Kuhusu TIBLOGICS: Utekelezaji wa AI na Suluhisho za Kidijitali",
   ],
   "pages.about.meta.ogDescription": [
-    "We don't just talk about AI. We implement it. Learn about our mission, our team, and how we deliver measurable outcomes.",
-    "Nous ne nous contentons pas de parler d'IA. Nous la mettons en œuvre. Découvrez notre mission, notre équipe et notre façon d'obtenir des résultats mesurables.",
-    "Hatuzungumzii AI tu. Tunaitekeleza. Fahamu dhamira yetu, timu yetu, na jinsi tunavyoleta matokeo yanayopimika.",
+    "We don't just talk about AI. We implement it. Our mission, our founder, how we work, and ARFA, our AI academy.",
+    "Nous ne nous contentons pas de parler d'IA. Nous la mettons en œuvre. Notre mission, notre fondateur, notre méthode et ARFA, notre académie IA.",
+    "Hatuzungumzii AI tu. Tunaitekeleza. Dhamira yetu, mwanzilishi wetu, jinsi tunavyofanya kazi, na ARFA, chuo chetu cha AI.",
   ],
   "pages.about.meta.twitterDescription": [
     "AI implementation agency built for businesses ready to stop watching the future arrive and start leading it.",
@@ -27,19 +32,55 @@ export default tri({
     "Wakala wa utekelezaji wa AI kwa biashara zilizo tayari kuacha kutazama mustakabali ukija na kuanza kuuongoza.",
   ],
 
+  // ── Hero ────────────────────────────────────────────────────────────────
   "pages.about.hero.tag": ["About TIBLOGICS", "À propos de TIBLOGICS", "Kuhusu TIBLOGICS"],
   "pages.about.hero.title": [
-    "We don't just talk about AI.",
-    "Nous ne nous contentons pas de parler d'IA.",
-    "Hatuzungumzii AI tu.",
+    "We don't just talk about AI. <em>We implement it.</em>",
+    "Nous ne nous contentons pas de parler d'IA. <em>Nous la mettons en œuvre.</em>",
+    "Hatuzungumzii AI tu. <em>Tunaitekeleza.</em>",
   ],
-  "pages.about.hero.titleAccent": ["We implement it.", "Nous la mettons en œuvre.", "Tunaitekeleza."],
   "pages.about.hero.body": [
     "TIBLOGICS is an AI implementation and digital solutions agency built for businesses that are ready to stop watching the future arrive and start leading it.",
     "TIBLOGICS est une agence de mise en œuvre de l'IA et de solutions numériques, conçue pour les entreprises prêtes à cesser de regarder l'avenir arriver et à commencer à le mener.",
     "TIBLOGICS ni wakala wa utekelezaji wa akili bandia (AI) na suluhisho za kidijitali, uliojengwa kwa ajili ya biashara zilizo tayari kuacha kutazama mustakabali ukija na kuanza kuuongoza.",
   ],
+  "pages.about.hero.ctaBook": ["Book a free consultation", "Réserver une consultation gratuite", "Weka miadi ya ushauri bila malipo"],
+  "pages.about.hero.ctaLearn": ["Start learning", "Commencer à apprendre", "Anza kujifunza"],
 
+  // ── At a glance (hero card) ─────────────────────────────────────────────
+  "pages.about.glance.title": ["At a glance", "En bref", "Kwa ufupi"],
+  "pages.about.glance.company.k": ["Company", "Entreprise", "Kampuni"],
+  "pages.about.glance.company.v": [
+    "TIBLOGICS, a brand of TILO GROUP, LLC",
+    "TIBLOGICS, une marque de TILO GROUP, LLC",
+    "TIBLOGICS, chapa ya TILO GROUP, LLC",
+  ],
+  "pages.about.glance.founder.k": ["Founder", "Fondateur", "Mwanzilishi"],
+  "pages.about.glance.founder.v": [
+    "{name}, Founder & CEO",
+    "{name}, fondateur et PDG",
+    "{name}, Mwanzilishi na Mkurugenzi Mtendaji",
+  ],
+  "pages.about.glance.markets.k": ["Markets", "Marchés", "Masoko"],
+  "pages.about.glance.markets.v": [
+    "United States, Canada and Africa, including francophone Africa",
+    "États-Unis, Canada et Afrique, y compris l'Afrique francophone",
+    "Marekani, Kanada na Afrika, ikiwemo Afrika inayozungumza Kifaransa",
+  ],
+  "pages.about.glance.lang.k": ["Languages", "Langues", "Lugha"],
+  "pages.about.glance.lang.v": [
+    "Services in English and French",
+    "Services en anglais et en français",
+    "Huduma kwa Kiingereza na Kifaransa",
+  ],
+  "pages.about.glance.start.k": ["First step", "Première étape", "Hatua ya kwanza"],
+  "pages.about.glance.start.v": [
+    "A free 30-minute discovery call",
+    "Un appel découverte gratuit de 30 minutes",
+    "Simu ya utambuzi ya bure ya dakika 30",
+  ],
+
+  // ── Mission ─────────────────────────────────────────────────────────────
   "pages.about.mission.tag": ["Our Mission", "Notre mission", "Dhamira Yetu"],
   "pages.about.mission.p1": [
     "To make intelligent technology <strong class=\"text-[#0D1B2A]\">accessible, practical, and transformative</strong>, empowering businesses of every size to operate smarter, move faster, and compete in a world where AI is no longer optional.",
@@ -51,13 +92,53 @@ export default tri({
     "Notre travail couvre l'ensemble de la chaîne numérique : intégration de l'IA, automatisation des processus, développement web et mobile, analyse de données et cybersécurité. Que vous soyez une entreprise locale en croissance ou un grand groupe présent dans plusieurs pays, nous appliquons la même exigence : une ingénierie précise, des résultats mesurables et une technologie que vos équipes peuvent réellement utiliser.",
     "Kazi yetu inagusa nyanja zote za kidijitali: kuunganisha AI, uendeshaji otomatiki wa michakato ya kazi, utengenezaji wa tovuti na app za simu, uchambuzi wa data, na usalama wa mtandao. Iwe wewe ni biashara ya ndani inayokua au kampuni kubwa inayofanya kazi katika nchi kadhaa, tunaleta kiwango kilekile: uhandisi makini, matokeo yanayopimika, na teknolojia ambayo timu yako inaweza kuitumia kweli.",
   ],
-  "pages.about.markets.title": ["Serving Markets Worldwide", "Au service de marchés du monde entier", "Tunahudumia Masoko Duniani Kote"],
-  "pages.about.markets.body": [
-    "While our primary focus is the <strong>United States and African markets</strong>, we are equipped to serve clients across the globe, with bilingual English and French delivery.",
-    "Bien que nous nous concentrions surtout sur les <strong>marchés américain et africains</strong>, nous sommes en mesure de servir des clients partout dans le monde, en anglais comme en français.",
-    "Ingawa lengo letu kuu ni <strong>masoko ya Marekani na Afrika</strong>, tuna uwezo wa kuhudumia wateja duniani kote, kwa Kiingereza na Kifaransa.",
-  ],
 
+  // ── What we do (four pillars) ───────────────────────────────────────────
+  "pages.about.do.tag": ["What We Do", "Ce que nous faisons", "Tunachofanya"],
+  "pages.about.do.title": [
+    "Four ways to put AI to work.",
+    "Quatre façons de mettre l'IA au travail.",
+    "Njia nne za kuifanya AI ikufanyie kazi.",
+  ],
+  "pages.about.do.body": [
+    "We build for clients, we teach, we give away tools, and we explain the field in plain language.",
+    "Nous construisons pour nos clients, nous formons, nous offrons des outils et nous expliquons le domaine simplement.",
+    "Tunajenga kwa ajili ya wateja, tunafundisha, tunatoa zana bure, na tunaeleza fani hii kwa lugha rahisi.",
+  ],
+  "pages.about.pillar.services.title": [
+    "AI implementation & digital solutions",
+    "Mise en œuvre de l'IA et solutions numériques",
+    "Utekelezaji wa AI na suluhisho za kidijitali",
+  ],
+  "pages.about.pillar.services.desc": [
+    "AI agents, workflow automation, web and mobile apps, AI strategy, data and cybersecurity, built around how your business actually runs.",
+    "Agents IA, automatisation des processus, applications web et mobiles, stratégie IA, données et cybersécurité, conçus autour du fonctionnement réel de votre activité.",
+    "Mawakala wa AI, otomatiki ya michakato, tovuti na app za simu, mkakati wa AI, data na usalama wa mtandao, vilivyojengwa kulingana na jinsi biashara yako inavyofanya kazi kweli.",
+  ],
+  "pages.about.pillar.services.cta": ["Explore services", "Découvrir nos services", "Tazama huduma"],
+  "pages.about.pillar.academy.title": ["ARFA AI Academy", "Académie IA ARFA", "Chuo cha AI cha ARFA"],
+  "pages.about.pillar.academy.desc": [
+    "Self-paced AI certificate tracks in English and French, with hands-on labs, exams and a human-reviewed capstone.",
+    "Des parcours certifiants en IA, à votre rythme, en anglais et en français, avec ateliers pratiques, examens et projet final évalué par une personne.",
+    "Kozi za vyeti vya AI kwa kasi yako, kwa Kiingereza na Kifaransa, zenye maabara ya vitendo, mitihani na mradi wa mwisho unaokaguliwa na mtu.",
+  ],
+  "pages.about.pillar.academy.cta": ["See the tracks", "Voir les parcours", "Tazama kozi"],
+  "pages.about.pillar.tools.title": ["Free AI tools", "Outils IA gratuits", "Zana za AI za bure"],
+  "pages.about.pillar.tools.desc": [
+    "Check your site with the Website AI Scanner or price an idea with the AI Product Cost Calculator, free.",
+    "Analysez votre site avec le scanner IA de site web ou chiffrez une idée avec le calculateur de coûts de produit IA, gratuitement.",
+    "Kagua tovuti yako kwa Skana ya AI ya Tovuti au kadiria gharama ya wazo kwa Kikokotoo cha Gharama za Bidhaa ya AI, bila malipo.",
+  ],
+  "pages.about.pillar.tools.cta": ["Try the tools", "Essayer les outils", "Jaribu zana"],
+  "pages.about.pillar.aitimes.title": ["AI Times", "AI Times", "AI Times"],
+  "pages.about.pillar.aitimes.desc": [
+    "AI and advanced tech, made digestible: reads of under five minutes on AI for business and frontier tech, in English, French and Swahili.",
+    "L'IA et les technologies de pointe, simplement expliquées : des lectures de moins de cinq minutes sur l'IA pour les entreprises et les technologies de pointe, en anglais, en français et en swahili.",
+    "AI na teknolojia ya kisasa, kwa lugha rahisi: makala ya chini ya dakika tano kuhusu AI kwa biashara na teknolojia ya kisasa, kwa Kiingereza, Kifaransa na Kiswahili.",
+  ],
+  "pages.about.pillar.aitimes.cta": ["Read AI Times", "Lire AI Times", "Soma AI Times"],
+
+  // ── What sets us apart ──────────────────────────────────────────────────
   "pages.about.apart.tag": ["What Sets Us Apart", "Ce qui nous distingue", "Kinachotutofautisha"],
   "pages.about.apart.title": [
     "Scope. Experience. Cultural intelligence.",
@@ -84,26 +165,13 @@ export default tri({
     "L'un de nos engagements les plus profonds est de veiller à ce que les particuliers et les petites entreprises <strong class=\"text-[#0D1B2A]\">ne soient pas laissés pour compte</strong> alors que le monde bascule rapidement vers l'IA. Nous pensons que la préparation à l'IA n'est pas un luxe réservé aux grandes entreprises ; c'est une nécessité pour quiconque veut rester compétitif. Nous sommes là pour rendre cette transition accessible, concrète et transformatrice pour chacun de nos clients.",
     "Mojawapo ya ahadi zetu kuu ni kuhakikisha kwamba watu binafsi na biashara ndogo <strong class=\"text-[#0D1B2A]\">hawaachwi nyuma</strong> wakati dunia inahamia kwa kasi kwenye AI. Tunaamini kuwa tayari kwa AI si anasa ya makampuni makubwa pekee; ni hitaji kwa yeyote anayetaka kuendelea kushindana. Tuko hapa kufanya mabadiliko hayo yafikike, yawe ya vitendo, na yalete mageuzi kwa kila mteja tunayemhudumia.",
   ],
+  "pages.about.markets.title": ["Where we work", "Où nous intervenons", "Tunakofanya kazi"],
+  "pages.about.markets.body": [
+    "We primarily serve the <strong class=\"text-[#0D1B2A]\">United States, Canada and Africa</strong>, including francophone Africa, and work with clients worldwide, in English and French.",
+    "Nous servons principalement les <strong class=\"text-[#0D1B2A]\">États-Unis, le Canada et l'Afrique</strong>, y compris l'Afrique francophone, et travaillons avec des clients du monde entier, en anglais et en français.",
+    "Tunahudumia hasa <strong class=\"text-[#0D1B2A]\">Marekani, Kanada na Afrika</strong>, ikiwemo Afrika inayozungumza Kifaransa, na tunafanya kazi na wateja duniani kote, kwa Kiingereza na Kifaransa.",
+  ],
 
-  "pages.about.founder.tag": ["Founder", "Fondateur", "Mwanzilishi"],
-  "pages.about.founder.quote": [
-    "At my core, I believe in first-principles thinking. By stripping every challenge down to its fundamental truths, I ensure we never lose sight of what is essential; this approach effectively eliminates the noise of unnecessary costs and complexity. I invest heavily in studying the core of a problem so that the eventual implementation is not just fast, but precise. There is nothing more rewarding than delivering a solution that buys a company its time back while fueling its growth and service quality.",
-    "Au fond, je crois à la réflexion à partir des principes fondamentaux. En ramenant chaque défi à ses vérités essentielles, je m'assure que nous ne perdons jamais de vue l'essentiel ; cette approche élimine efficacement le bruit des coûts et de la complexité inutiles. J'investis beaucoup dans l'étude du cœur d'un problème, afin que la mise en œuvre soit non seulement rapide, mais précise. Rien n'est plus gratifiant que de livrer une solution qui rend du temps à une entreprise tout en nourrissant sa croissance et la qualité de son service.",
-    "Kwa msingi wangu, ninaamini katika fikra za misingi ya kwanza. Kwa kuivua kila changamoto hadi ukweli wake wa msingi, ninahakikisha hatupotezi mwelekeo wa kilicho muhimu; mbinu hii huondoa kelele za gharama na utata usio wa lazima. Ninawekeza sana katika kuchunguza kiini cha tatizo ili utekelezaji wa mwisho usiwe wa haraka tu, bali pia sahihi. Hakuna kinachoridhisha zaidi kuliko kuleta suluhisho linalorudishia kampuni muda wake huku likichochea ukuaji wake na ubora wa huduma zake.",
-  ],
-  "pages.about.founder.book": ["Book a Meeting", "Réserver un rendez-vous", "Weka Miadi"],
-
-  "pages.about.track.tag": ["Track Record", "Nos réalisations", "Rekodi ya Kazi"],
-  "pages.about.track.title": [
-    "Real results. Real deployments.",
-    "De vrais résultats. De vrais déploiements.",
-    "Matokeo halisi. Mifumo halisi kazini.",
-  ],
-  "pages.about.track.body": [
-    "Our work is backed by years of hands-on experience, a team of excellent technology professionals, and a portfolio of deployed AI solutions serving clients from local businesses to international airports.",
-    "Notre travail s'appuie sur des années d'expérience de terrain, une équipe d'excellents professionnels de la technologie et un portefeuille de solutions d'IA déployées, au service de clients allant des commerces locaux aux aéroports internationaux.",
-    "Kazi yetu inaungwa mkono na miaka ya uzoefu wa vitendo, timu ya wataalamu bora wa teknolojia, na mkusanyiko wa suluhisho za AI zinazofanya kazi, zikihudumia wateja kuanzia biashara za ndani hadi viwanja vya ndege vya kimataifa.",
-  ],
   "pages.about.track.who": ["Who we work with", "Avec qui nous travaillons", "Tunaofanya nao kazi"],
   "pages.about.industry.healthcare": ["Healthcare & Social Work", "Santé et action sociale", "Afya na Ustawi wa Jamii"],
   "pages.about.industry.education": ["Education & EdTech", "Éducation et EdTech", "Elimu na EdTech"],
@@ -114,6 +182,7 @@ export default tri({
   "pages.about.industry.nonprofits": ["Nonprofits", "Associations et ONG", "Mashirika Yasiyo ya Faida"],
   "pages.about.industry.enterprise": ["Enterprise", "Grandes entreprises", "Makampuni Makubwa"],
 
+  // ── How we work ─────────────────────────────────────────────────────────
   "pages.about.principles.tag": ["How We Work", "Notre façon de travailler", "Jinsi Tunavyofanya Kazi"],
   "pages.about.principles.title": ["Our operating principles.", "Nos principes de travail.", "Kanuni zetu za kazi."],
   "pages.about.principle.integrity.title": ["Integrity, Always", "L'intégrité, toujours", "Uadilifu, Daima"],
@@ -156,18 +225,62 @@ export default tri({
     "Nous mesurons notre performance à ce qui change dans votre entreprise, et non aux livrables que nous remettons.",
     "Tunapima utendaji wetu kwa kile kinachobadilika katika biashara yako, si kwa bidhaa tunazokabidhi.",
   ],
+  "pages.about.steps.tag": ["From first call to launch", "Du premier appel au lancement", "Kutoka simu ya kwanza hadi uzinduzi"],
 
-  "pages.about.services.tag": ["Key Services", "Services clés", "Huduma Kuu"],
-  "pages.about.service.implementation": ["AI Implementation", "Mise en œuvre de l'IA", "Utekelezaji wa AI"],
-  "pages.about.service.consulting": ["AI Consulting", "Conseil en IA", "Ushauri wa AI"],
-  "pages.about.service.automation": ["Workflow Automation", "Automatisation des processus", "Otomatiki ya Michakato"],
-  "pages.about.service.web": ["Web & Mobile Development", "Développement web et mobile", "Utengenezaji wa Tovuti na Simu"],
-  "pages.about.service.security": ["Cybersecurity", "Cybersécurité", "Usalama wa Mtandao"],
-  "pages.about.service.data": ["Data Analytics", "Analyse de données", "Uchambuzi wa Data"],
-  "pages.about.service.agents": ["AI Agent Development", "Développement d'agents IA", "Utengenezaji wa Mawakala wa AI"],
-  "pages.about.service.saas": ["SaaS Product Development", "Développement de produits SaaS", "Utengenezaji wa Bidhaa za SaaS"],
-  "pages.about.service.transformation": ["Digital Transformation", "Transformation numérique", "Mageuzi ya Kidijitali"],
+  // ── Founder ─────────────────────────────────────────────────────────────
+  "pages.about.founder.tag": ["Founder", "Fondateur", "Mwanzilishi"],
+  "pages.about.founder.role": [
+    "Founder & CEO, TIBLOGICS",
+    "Fondateur et PDG, TIBLOGICS",
+    "Mwanzilishi na Mkurugenzi Mtendaji, TIBLOGICS",
+  ],
+  "pages.about.founder.photoAlt": [
+    "{name}, Founder & CEO of TIBLOGICS",
+    "{name}, fondateur et PDG de TIBLOGICS",
+    "{name}, Mwanzilishi na Mkurugenzi Mtendaji wa TIBLOGICS",
+  ],
+  "pages.about.founder.quote": [
+    "At my core, I believe in first-principles thinking. By stripping every challenge down to its fundamental truths, I ensure we never lose sight of what is essential; this approach effectively eliminates the noise of unnecessary costs and complexity. I invest heavily in studying the core of a problem so that the eventual implementation is not just fast, but precise. There is nothing more rewarding than delivering a solution that buys a company its time back while fueling its growth and service quality.",
+    "Au fond, je crois à la réflexion à partir des principes fondamentaux. En ramenant chaque défi à ses vérités essentielles, je m'assure que nous ne perdons jamais de vue l'essentiel ; cette approche élimine efficacement le bruit des coûts et de la complexité inutiles. J'investis beaucoup dans l'étude du cœur d'un problème, afin que la mise en œuvre soit non seulement rapide, mais précise. Rien n'est plus gratifiant que de livrer une solution qui rend du temps à une entreprise tout en nourrissant sa croissance et la qualité de son service.",
+    "Kwa msingi wangu, ninaamini katika fikra za misingi ya kwanza. Kwa kuivua kila changamoto hadi ukweli wake wa msingi, ninahakikisha hatupotezi mwelekeo wa kilicho muhimu; mbinu hii huondoa kelele za gharama na utata usio wa lazima. Ninawekeza sana katika kuchunguza kiini cha tatizo ili utekelezaji wa mwisho usiwe wa haraka tu, bali pia sahihi. Hakuna kinachoridhisha zaidi kuliko kuleta suluhisho linalorudishia kampuni muda wake huku likichochea ukuaji wake na ubora wa huduma zake.",
+  ],
+  "pages.about.founder.book": ["Book a Meeting", "Réserver un rendez-vous", "Weka Miadi"],
 
+  // ── ARFA ────────────────────────────────────────────────────────────────
+  "pages.about.arfa.tag": ["The TIBLOGICS AI Academy", "L'académie IA de TIBLOGICS", "Chuo cha AI cha TIBLOGICS"],
+  "pages.about.arfa.title": [
+    "ARFA: <em>AI Readiness For All.</em>",
+    "ARFA : <em>AI Readiness For All.</em>",
+    "ARFA: <em>AI Readiness For All.</em>",
+  ],
+  "pages.about.arfa.body": [
+    "Our commitment to leaving no one behind, as a school. Self-paced certificate tracks in English and French, from your first prompt to leading AI across an organisation.",
+    "Notre engagement à ne laisser personne de côté, sous forme d'école. Des parcours certifiants à votre rythme, en anglais et en français, de votre premier prompt jusqu'au pilotage de l'IA dans toute une organisation.",
+    "Ahadi yetu ya kutomwacha mtu nyuma, katika umbo la shule. Kozi za vyeti kwa kasi yako, kwa Kiingereza na Kifaransa, kuanzia prompt yako ya kwanza hadi kuongoza AI katika shirika zima.",
+  ],
+  "pages.about.arfa.f1": [
+    "A certification path: Basic, Intermediate, Expert",
+    "Un parcours certifiant : Essentiel, Intermédiaire, Expert",
+    "Njia ya vyeti: Msingi, Kati, Mtaalamu",
+  ],
+  "pages.about.arfa.f2": [
+    "Specialist tracks for one audience or one skill",
+    "Des parcours spécialisés pour un public ou une compétence",
+    "Kozi maalum kwa hadhira moja au ujuzi mmoja",
+  ],
+  "pages.about.arfa.f3": [
+    "Hands-on labs and a quiz in every module",
+    "Des ateliers pratiques et un quiz dans chaque module",
+    "Maabara ya vitendo na jaribio katika kila moduli",
+  ],
+  "pages.about.arfa.f4": [
+    "A timed final exam and a capstone reviewed by a person",
+    "Un examen final chronométré et un projet final évalué par une personne",
+    "Mtihani wa mwisho wenye muda na mradi wa mwisho unaokaguliwa na mtu",
+  ],
+  "pages.about.arfa.cta": ["Start learning", "Commencer à apprendre", "Anza kujifunza"],
+
+  // ── Closing CTA ─────────────────────────────────────────────────────────
   "pages.about.cta.kicker": ["Ready to build?", "Prêt à construire ?", "Uko tayari kujenga?"],
   "pages.about.cta.title": ["We are not a vendor.", "Nous ne sommes pas un simple prestataire.", "Sisi si wauzaji tu."],
   "pages.about.cta.titleAccent": [
@@ -181,5 +294,5 @@ export default tri({
     "Ikiwa uko tayari kujenga kitu chenye maana, kuendesha kiotomatiki kinachokuchelewesha, au kupata suluhisho sahihi za AI kwa biashara yako, hatua yako inayofuata inaanzia hapa.",
   ],
   "pages.about.cta.book": ["Book a Free Discovery Call", "Réserver un appel découverte gratuit", "Weka Simu ya Utambuzi Bila Malipo"],
-  "pages.about.cta.services": ["Explore Our Services →", "Découvrir nos services →", "Tazama Huduma Zetu →"],
+  "pages.about.cta.learn": ["Start learning with ARFA", "Apprendre avec ARFA", "Jifunze na ARFA"],
 });

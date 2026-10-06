@@ -55,7 +55,7 @@ function NavRow({
           aria-label={collapsed ? item.label : undefined}
           title={collapsed ? item.label : undefined}
           className={cn(
-            "relative flex min-h-[36px] flex-1 items-center gap-3 rounded-[8px] font-dm text-[13.5px] font-medium transition-colors duration-150",
+            "relative flex min-h-[44px] flex-1 items-center gap-3 rounded-[8px] lg:min-h-[36px] font-dm text-[13.5px] font-medium transition-colors duration-150",
             collapsed ? "justify-center px-0" : "px-2.5",
             inBranch ? "bg-white/[.09] text-white" : "text-white/70 hover:bg-white/[.06] hover:text-white",
           )}
@@ -69,7 +69,7 @@ function NavRow({
             collapsed ? (
               <span className="absolute right-2 top-1.5 h-2 w-2 rounded-full bg-[var(--a-orange)]" aria-label={`${badge} new`} />
             ) : (
-              <span className={cn("rounded-full bg-[var(--a-orange)] px-1.5 text-[11px] font-bold leading-[18px] text-[#0D1B2A] tabular-nums", hasSubs && "mr-7")}>
+              <span className={cn("rounded-full bg-[var(--a-orange)] px-1.5 text-[11px] font-bold leading-[18px] text-[#0D1B2A] tabular-nums", hasSubs && "mr-10 lg:mr-7")}>
                 {badge > 99 ? "99+" : badge}
               </span>
             )
@@ -81,7 +81,7 @@ function NavRow({
             onClick={onToggleExpand}
             aria-expanded={expanded}
             aria-label={`${expanded ? "Collapse" : "Expand"} ${item.label}`}
-            className="absolute right-1 flex h-7 w-7 items-center justify-center rounded-md text-white/50 hover:bg-white/10 hover:text-white"
+            className="absolute right-1 flex h-10 w-10 items-center justify-center rounded-md text-white/50 lg:h-7 lg:w-7 hover:bg-white/10 hover:text-white"
           >
             <ChevronDown size={14} className={cn("transition-transform duration-150", !expanded && "-rotate-90")} aria-hidden />
           </button>
@@ -98,7 +98,7 @@ function NavRow({
                   onClick={onNavigate}
                   aria-current={on ? "page" : undefined}
                   className={cn(
-                    "flex min-h-[32px] items-center rounded-[7px] px-2.5 font-dm text-[13px] transition-colors duration-150",
+                    "flex min-h-[40px] items-center rounded-[7px] px-2.5 font-dm text-[13px] lg:min-h-[32px] transition-colors duration-150",
                     on ? "bg-white/[.09] font-semibold text-white" : "text-white/60 hover:bg-white/[.06] hover:text-white",
                   )}
                 >
@@ -228,7 +228,7 @@ function SidebarBody({
                   type="button"
                   onClick={() => toggleGroup(s.id)}
                   aria-expanded={!closed}
-                  className="mb-1 flex w-full items-center justify-between rounded-md px-2.5 py-1 text-left font-dm text-[11px] font-semibold uppercase tracking-[.08em] text-white/50 hover:text-white/80"
+                  className="mb-1 flex min-h-[40px] w-full items-center justify-between rounded-md px-2.5 py-1 text-left lg:min-h-0 font-dm text-[11px] font-semibold uppercase tracking-[.08em] text-white/50 hover:text-white/80"
                 >
                   {s.label}
                   <ChevronDown size={12} className={cn("transition-transform duration-150", closed && "-rotate-90")} aria-hidden />
@@ -260,7 +260,7 @@ function SidebarBody({
       </nav>
 
       {/* Bottom */}
-      <div className={cn("shrink-0 space-y-1 border-t border-white/[.08]", collapsed ? "p-2" : "p-3")}>
+      <div className={cn("shrink-0 space-y-1 border-t border-white/[.08]", collapsed ? "p-2" : "p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]")}>
         {collapsed && onToggleCollapsed ? (
           <button
             type="button"
@@ -278,7 +278,7 @@ function SidebarBody({
           aria-label={collapsed ? "View website" : undefined}
           title={collapsed ? "View website" : undefined}
           className={cn(
-            "flex h-9 items-center gap-2.5 rounded-[8px] font-dm text-[13px] font-medium text-white/70 hover:bg-white/[.06] hover:text-white",
+            "flex h-11 items-center gap-2.5 rounded-[8px] font-dm text-[13px] font-medium text-white/70 hover:bg-white/[.06] hover:text-white lg:h-9",
             collapsed ? "justify-center" : "px-2.5",
           )}
         >
@@ -291,7 +291,7 @@ function SidebarBody({
           aria-label={collapsed ? "Sign out" : undefined}
           title={collapsed ? "Sign out" : undefined}
           className={cn(
-            "flex h-9 w-full items-center gap-2.5 rounded-[8px] font-dm text-[13px] font-medium text-white/70 hover:bg-white/[.06] hover:text-[#fca5a5]",
+            "flex h-11 w-full items-center gap-2.5 rounded-[8px] font-dm text-[13px] font-medium text-white/70 hover:bg-white/[.06] hover:text-[#fca5a5] lg:h-9",
             collapsed ? "justify-center" : "px-2.5",
           )}
         >

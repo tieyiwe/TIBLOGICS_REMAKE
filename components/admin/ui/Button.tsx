@@ -15,9 +15,10 @@ const VARIANT: Record<ButtonVariant, string> = {
   danger: "bg-[var(--a-danger)] text-white border border-transparent hover:bg-[#991b1b]",
 };
 
+// Phones get 40px-tall targets; sm and up keep the compact desktop sizes.
 const SIZE: Record<ButtonSize, string> = {
-  sm: "h-8 px-3 text-[13px] gap-1.5",
-  md: "h-9 px-4 text-sm gap-2",
+  sm: "h-10 sm:h-8 px-3 text-[13px] gap-1.5",
+  md: "h-10 sm:h-9 px-4 text-sm gap-2",
 };
 
 export function buttonClasses(variant: ButtonVariant = "secondary", size: ButtonSize = "md", className?: string) {
@@ -115,7 +116,7 @@ export function IconButton({
       {...rest}
       variant={variant}
       size={size}
-      className={cn(size === "sm" ? "w-8 px-0" : "w-9 px-0", className)}
+      className={cn(size === "sm" ? "w-10 px-0 sm:w-8" : "w-10 px-0 sm:w-9", className)}
       icon={Icon}
     />
   );

@@ -388,7 +388,7 @@ export function MessageComposer({
           title="Message"
           aside={
             context.templates.length ? (
-              <Select label="Start from a template" value={templateId} onChange={(e) => applyTemplate(e.target.value)} className="h-8 max-w-[220px] text-[13px]">
+              <Select label="Start from a template" value={templateId} onChange={(e) => applyTemplate(e.target.value)} className="h-10 max-w-[220px] text-[13px] sm:h-8">
                 <option value="">Start from a template</option>
                 {context.templates.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>

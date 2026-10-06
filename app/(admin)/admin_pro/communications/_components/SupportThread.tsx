@@ -139,7 +139,7 @@ export function SupportThread({
               ))}
             </div>
             {canned.length ? (
-              <Select label="Insert a canned reply" value="" onChange={(e) => insertCanned(e.target.value)} className="h-8 max-w-[240px] text-[13px]" data-testid="canned-select">
+              <Select label="Insert a canned reply" value="" onChange={(e) => insertCanned(e.target.value)} className="h-10 max-w-[240px] text-[13px] sm:h-8" data-testid="canned-select">
                 <option value="">Insert a canned reply</option>
                 {canned.map((c) => (
                   <option key={c.id} value={c.id}>{c.title}</option>

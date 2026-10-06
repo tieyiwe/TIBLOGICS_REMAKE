@@ -228,7 +228,7 @@ export function DataTable<T>({
  * look. Usage: <div className={tableStyles.wrap}><table className={tableStyles.table}>...
  */
 export const tableStyles = {
-  wrap: "relative min-w-0 overflow-x-auto rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] shadow-[var(--a-shadow-card)]",
+  wrap: "a-table-scroll relative min-w-0 overflow-x-auto rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] shadow-[var(--a-shadow-card)]",
   table: "w-full border-collapse font-dm text-[13.5px]",
   thead: "bg-[var(--a-surface-2)]",
   th: "whitespace-nowrap border-b border-[var(--a-border)] px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[.08em] text-[var(--a-ink-3)]",

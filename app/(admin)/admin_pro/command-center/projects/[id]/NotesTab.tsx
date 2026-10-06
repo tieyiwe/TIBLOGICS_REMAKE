@@ -240,7 +240,7 @@ function NoteEditor({ note, startEditing, onSaved, onDelete, onTaskCreated }: { 
             schedule(e.target.value, body);
           }}
           aria-label="Note title"
-          className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1 py-0.5 font-syne text-[19px] font-bold text-[var(--a-ink)] hover:border-[var(--a-border)] focus:border-[var(--a-blue)] focus:outline-none"
+          className="a-keep-size min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1 py-0.5 font-syne text-[19px] font-bold text-[var(--a-ink)] hover:border-[var(--a-border)] focus:border-[var(--a-blue)] focus:outline-none"
         />
         <span className={cn("font-dm text-[12px]", state === "error" ? "text-[var(--a-danger)]" : "text-[var(--a-ink-3)]")} aria-live="polite">
           {state === "saving" ? "Saving" : state === "dirty" ? "Unsaved" : state === "error" ? "Not saved" : "Saved"}

@@ -168,6 +168,35 @@
   animation: a-shimmer 1.4s ease infinite;
 }
 
+/*
+ * Phones (< 640px). Desktop and tablet are untouched.
+ * - 16px form text so iOS Safari does not zoom the page on focus.
+ * - Wide native tables (kit `tableStyles.wrap`) scroll inside their card with
+ *   the first column pinned, so the row label stays visible while scrolling.
+ */
+@media (max-width: 639.98px) {
+  .admin-root
+    :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), select, textarea):not(.a-keep-size) {
+    font-size: 16px;
+  }
+  .admin-root .a-table-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+  .admin-root .a-table-scroll > table > thead > tr > th:first-child,
+  .admin-root .a-table-scroll > table > tbody > tr > td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    max-width: 52vw;
+    background: var(--a-surface);
+    box-shadow: inset -1px 0 0 var(--a-border);
+  }
+  .admin-root .a-table-scroll > table > thead > tr > th:first-child {
+    background: var(--a-surface-2);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .admin-root *,
   .admin-root *::before,

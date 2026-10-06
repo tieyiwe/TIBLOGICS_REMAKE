@@ -73,21 +73,23 @@ export function Drawer({
       >
         {!hideHeader ? (
           <div className="flex items-center justify-between gap-3 border-b border-[var(--a-border)] px-5 py-3.5">
-            <h2 id={titleId} className="font-syne text-[17px] font-bold text-[var(--a-ink)]">
+            <h2 id={titleId} className="min-w-0 font-syne text-[17px] font-bold text-[var(--a-ink)]">
               {title}
             </h2>
             <button
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="flex h-9 w-9 items-center justify-center rounded-[var(--a-radius-control)] text-[var(--a-ink-3)] hover:bg-[var(--a-surface-2)] hover:text-[var(--a-ink)]"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--a-radius-control)] text-[var(--a-ink-3)] sm:h-9 sm:w-9 hover:bg-[var(--a-surface-2)] hover:text-[var(--a-ink)]"
             >
               <X size={18} aria-hidden />
             </button>
           </div>
         ) : null}
         <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
-        {footer ? <div className="border-t border-[var(--a-border)] px-5 py-3">{footer}</div> : null}
+        {footer ? (
+          <div className="border-t border-[var(--a-border)] px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">{footer}</div>
+        ) : null}
       </div>
     </div>
   );
