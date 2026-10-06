@@ -83,10 +83,16 @@ function levelNumber(level: string, levelEnd: string | null): 1 | 2 | 3 {
   return 1;
 }
 
-export const signatory = () => ({
-  name: process.env.CERT_SIGNATORY_NAME || "Tieyiwe Bass",
-  title: process.env.CERT_SIGNATORY_TITLE || "Founder, TIBLOGICS",
-});
+/**
+ * Certificates are issued by the organisation, not signed by a person (as
+ * the big-tech certificates are): the block reads "Issued by TIBLOGICS · ARFA
+ * AI Academy", and the reference and QR code prove it. A personal signature
+ * appears only if CERT_SIGNATORY_NAME is set (with CERT_SIGNATORY_TITLE).
+ */
+export const signatory = (): { name: string; title: string } | null => {
+  const name = process.env.CERT_SIGNATORY_NAME?.trim();
+  return name ? { name, title: process.env.CERT_SIGNATORY_TITLE?.trim() || "TIBLOGICS" } : null;
+};
 
 function Corner({ color, pos }: { color: string; pos: "tl" | "tr" | "bl" | "br" }) {
   const s = 120, w = 10;
@@ -198,12 +204,25 @@ async function certificate(d: CertificateData) {
           </div>
 
           <div style={{ display: "flex", alignItems: "flex-end", gap: 30, width: 640, justifyContent: "flex-end" }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 400 }}>
-              <div style={{ display: "flex", fontFamily: "Great Vibes", fontSize: sig.name.length > 18 ? 52 : 66, color: NAVY2, lineHeight: 1.1, whiteSpace: "nowrap" }}>{sig.name}</div>
-              <div style={{ display: "flex", width: 380, height: 3, background: NAVY, marginTop: 6 }} />
-              <div style={{ display: "flex", marginTop: 10, fontSize: 24, fontWeight: 700 }}>{sig.name}</div>
-              <div style={{ display: "flex", fontSize: 22, color: INK2 }}>{sig.title}</div>
-            </div>
+            {sig ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 400 }}>
+                <div style={{ display: "flex", fontFamily: "Great Vibes", fontSize: sig.name.length > 18 ? 52 : 66, color: NAVY2, lineHeight: 1.1, whiteSpace: "nowrap" }}>{sig.name}</div>
+                <div style={{ display: "flex", width: 380, height: 3, background: NAVY, marginTop: 6 }} />
+                <div style={{ display: "flex", marginTop: 10, fontSize: 24, fontWeight: 700 }}>{sig.name}</div>
+                <div style={{ display: "flex", fontSize: 22, color: INK2 }}>{sig.title}</div>
+              </div>
+            ) : (
+              // The issuing organisation, as on big-tech certificates: no person's name.
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 400 }}>
+                <div style={{ display: "flex", fontSize: 20, fontWeight: 700, letterSpacing: 3, color: INK2, textTransform: "uppercase" }}>{t("learn.certdoc.issuedBy")}</div>
+                <div style={{ display: "flex", width: 380, height: 3, background: NAVY, marginTop: 12, marginBottom: 14 }} />
+                <div style={{ display: "flex", fontSize: 40, fontWeight: 700, color: NAVY2, letterSpacing: 1 }}>
+                  <span>TIB</span>
+                  <span style={{ color: ORANGE }}>LOGICS</span>
+                </div>
+                <div style={{ display: "flex", marginTop: 4, fontSize: 22, color: INK2 }}>{t("learn.certdoc.issuer")}</div>
+              </div>
+            )}
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={qr} width={170} height={170} alt="" />

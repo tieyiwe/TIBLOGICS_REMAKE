@@ -14,7 +14,7 @@ interface TrackRow {
   accentColor: string;
 }
 
-export default function CertificateDesigns({ tracks, signatory }: { tracks: TrackRow[]; signatory: { name: string; title: string } }) {
+export default function CertificateDesigns({ tracks, signatory }: { tracks: TrackRow[]; signatory: { name: string; title: string } | null }) {
   const [lang, setLang] = useState("en");
   const [distinction, setDistinction] = useState(false);
   const [name, setName] = useState("Jane Amani Doe");
@@ -42,7 +42,12 @@ export default function CertificateDesigns({ tracks, signatory }: { tracks: Trac
           </div>
         </div>
         <p className="mt-3 font-dm text-[12.5px] text-[var(--a-ink-3)]">
-          Signed by <b>{signatory.name}</b>, {signatory.title}. Change it with the Secrets <code>CERT_SIGNATORY_NAME</code> and <code>CERT_SIGNATORY_TITLE</code>. The reference shown is a sample;
+          {signatory ? (
+            <>Signed by <b>{signatory.name}</b>, {signatory.title} (the Secret <code>CERT_SIGNATORY_NAME</code>). Remove that Secret to show the organisation only.</>
+          ) : (
+            <>Issued by <b>TIBLOGICS · ARFA AI Academy</b>, with no personal signature. A signatory can be added with the Secrets <code>CERT_SIGNATORY_NAME</code> and <code>CERT_SIGNATORY_TITLE</code>.</>
+          )}{" "}
+          The reference shown is a sample;
           each issued certificate gets its own (ARFA-track-year-8 characters).
         </p>
       </Card>
