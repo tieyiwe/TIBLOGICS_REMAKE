@@ -319,9 +319,6 @@ export default async function AboutPage() {
                 <span className="font-display text-5xl not-italic leading-[0] text-[#F47C20] align-[-0.35em] mr-1" aria-hidden>&ldquo;</span>
                 {t("pages.about.founder.quote")}
               </p>
-              {!SHOW_FOUNDER && (
-                <footer className="mt-4 font-dm text-sm font-semibold text-[#5A6E84]">— {t("pages.about.founder.role")}</footer>
-              )}
             </blockquote>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link href="/book" className="btn-primary justify-center text-sm">
