@@ -37,7 +37,7 @@ export interface LetterData {
 }
 
 // The scholar seal (a sunrise), the same mark as on the site.
-const SEAL_SRC = `data:image/svg+xml;base64,${Buffer.from(SEAL_SVG("letter-ring")).toString("base64")}`;
+const SEAL_SRC = `data:image/svg+xml;base64,${Buffer.from(SEAL_SVG("letter")).toString("base64")}`;
 
 function Seal() {
   // eslint-disable-next-line @next/next/no-img-element
