@@ -44,6 +44,16 @@ export interface ScholarshipRow {
   emailedAt: Date | null;
   claimedAt: Date | null;
   revokedAt: Date | null;
+  sponsorName: string | null;
+  sponsorEmail: string | null;
+  pickDays: number | null;
+  completeDays: number | null;
+  /** Choose-by date and completion target (once accepted). */
+  pickBy: Date | null;
+  completeBy: Date | null;
+  applicationId: string | null;
+  partnerName: string | null;
+  partnerRole: string | null;
   student: { id: string; name: string; email: string; lastLoginAt: Date | null } | null;
   /** An ARFA account with the awarded address (before it is accepted too). */
   accountId: string | null;
@@ -54,12 +64,13 @@ export interface ScholarshipRow {
   progress: number | null;
 }
 
-export async function listScholarships(f: { status?: string | null; q?: string | null; ids?: string[] } = {}): Promise<ScholarshipRow[]> {
+export async function listScholarships(f: { status?: string | null; q?: string | null; ids?: string[]; sponsor?: string | null } = {}): Promise<ScholarshipRow[]> {
   await ensureScholarshipTables();
   const q = f.q?.trim().slice(0, 100) || null;
   const rows = await prisma.scholarship.findMany({
     where: {
       ...(f.ids ? { id: { in: f.ids } } : {}),
+      ...(f.sponsor ? { sponsorName: { equals: f.sponsor, mode: "insensitive" } } : {}),
       ...(f.status && ["draft", "approved", "claimed", "revoked"].includes(f.status) ? { status: f.status } : {}),
       ...(q ? { OR: [{ name: { contains: q, mode: "insensitive" } }, { email: { contains: q, mode: "insensitive" } }, { code: { contains: q, mode: "insensitive" } }] } : {}),
     },
@@ -160,6 +171,15 @@ export async function listScholarships(f: { status?: string | null; q?: string |
       emailedAt: r.emailedAt,
       claimedAt: r.claimedAt,
       revokedAt: r.revokedAt,
+      sponsorName: r.sponsorName,
+      sponsorEmail: r.sponsorEmail,
+      pickDays: r.pickDays,
+      completeDays: r.completeDays,
+      pickBy: r.claimedAt && r.pickDays ? new Date(r.claimedAt.getTime() + r.pickDays * 86_400_000) : null,
+      completeBy: r.claimedAt && r.completeDays ? new Date(r.claimedAt.getTime() + r.completeDays * 86_400_000) : null,
+      applicationId: r.applicationId,
+      partnerName: r.partnerName,
+      partnerRole: r.partnerRole,
       student: r.studentId ? studentById.get(r.studentId) ?? null : null,
       accountId: r.studentId ?? accountByEmail.get(r.email) ?? null,
       picks: mine,
@@ -181,4 +201,74 @@ export async function scholarshipsOfLearner(studentId: string, email: string): P
     console.error("[scholarship] learner", err);
     return [];
   }
+}
+
+// ── Sponsors ──────────────────────────────────────────────────────────────
+
+export interface SponsorSummary {
+  name: string;
+  email: string | null;
+  awarded: number;
+  accepted: number;
+  tracksUnlocked: number;
+  coveredCents: number;
+  progress: number | null;
+  certificates: number;
+}
+
+/** Every sponsor named on an award (not drafts or revoked), with totals. */
+export function sponsorSummaries(rows: ScholarshipRow[]): SponsorSummary[] {
+  const by = new Map<string, ScholarshipRow[]>();
+  for (const r of rows) {
+    if (!r.sponsorName || r.status === "draft" || r.status === "revoked") continue;
+    const k = r.sponsorName.trim().toLowerCase();
+    by.set(k, [...(by.get(k) ?? []), r]);
+  }
+  return [...by.values()]
+    .map((list) => {
+      const lessons = list.flatMap((r) => r.picks);
+      const total = lessons.reduce((n, p) => n + p.lessonsTotal, 0);
+      return {
+        name: list[0].sponsorName!,
+        email: list.find((r) => r.sponsorEmail)?.sponsorEmail ?? null,
+        awarded: list.length,
+        accepted: list.filter((r) => r.status === "claimed").length,
+        tracksUnlocked: lessons.length,
+        coveredCents: list.reduce((n, r) => n + r.coveredCents, 0),
+        progress: total ? Math.round((lessons.reduce((n, p) => n + p.lessonsDone, 0) / total) * 100) : null,
+        certificates: lessons.filter((p) => p.certificate).length,
+      };
+    })
+    .sort((a, b) => b.awarded - a.awarded);
+}
+
+/** "Ama M.": what sponsors see of a scholar. */
+export const publicName = (name: string) => {
+  const parts = name.trim().split(/\s+/);
+  return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.` : parts[0];
+};
+
+/** The impact report for one sponsor (aggregates, scholars by first name and initial). */
+export async function sponsorReport(sponsor: string) {
+  const rows = (await listScholarships({ sponsor })).filter((r) => r.status === "approved" || r.status === "claimed");
+  const picks = rows.flatMap((r) => r.picks);
+  return {
+    sponsor: rows[0]?.sponsorName ?? sponsor,
+    email: rows.find((r) => r.sponsorEmail)?.sponsorEmail ?? null,
+    awarded: rows.length,
+    accepted: rows.filter((r) => r.status === "claimed").length,
+    tracksUnlocked: picks.length,
+    coveredCents: rows.reduce((n, r) => n + r.coveredCents, 0),
+    lessonsDone: picks.reduce((n, p) => n + p.lessonsDone, 0),
+    lessonsTotal: picks.reduce((n, p) => n + p.lessonsTotal, 0),
+    certificates: picks.filter((p) => p.certificate).length,
+    examsPassed: picks.filter((p) => p.examPassed).length,
+    scholars: rows
+      .filter((r) => r.status === "claimed")
+      .map((r) => ({
+        who: publicName(r.student?.name ?? r.name),
+        since: r.claimedAt,
+        tracks: r.picks.map((p) => ({ title: p.trackTitle, done: p.lessonsDone, total: p.lessonsTotal, certified: !!p.certificate })),
+      })),
+  };
 }

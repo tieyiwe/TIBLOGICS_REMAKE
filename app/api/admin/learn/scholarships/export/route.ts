@@ -22,13 +22,13 @@ export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const rows = await listScholarships({ status: sp.get("status"), q: sp.get("q") });
   const header = [
-    "Code", "Name", "Email", "Status", "Coverage %", "Tracks awarded", "Tracks chosen", "Approved (UTC)", "Accepted (UTC)",
+    "Code", "Name", "Email", "Partner", "Sponsor", "Status", "Coverage %", "Tracks awarded", "Tracks chosen", "Approved (UTC)", "Accepted (UTC)",
     "Learner account", "Last sign-in (UTC)", "Track", "List price USD", "Paid USD", "Covered USD", "Lessons done", "Lessons total", "Best exam %", "Certificate",
   ];
   const lines: string[] = [];
   for (const r of rows) {
     const base = [
-      r.code, r.name, r.email, r.expired ? "expired" : r.status, r.coveragePct, r.trackCount, r.picks.length, iso(r.approvedAt), iso(r.claimedAt),
+      r.code, r.name, r.email, r.partnerName ?? "", r.sponsorName ?? "", r.expired ? "expired" : r.status, r.coveragePct, r.trackCount, r.picks.length, iso(r.approvedAt), iso(r.claimedAt),
       r.accountId ?? "", iso(r.student?.lastLoginAt ?? null),
     ];
     if (!r.picks.length) lines.push([...base, "", "", "", "", "", "", "", ""].map(cell).join(","));

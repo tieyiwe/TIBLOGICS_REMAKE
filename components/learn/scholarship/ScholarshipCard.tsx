@@ -23,7 +23,10 @@ export default async function ScholarshipCard({ studentId, variant }: { studentI
         <ScholarSeal size={44} />
         <div className="min-w-0 flex-1">
           <p className="font-black text-[var(--ink)]">{t("learn.scholar.nudge.title")}</p>
-          <p className="text-sm text-[var(--ink2)]">{remaining === 1 ? t("learn.scholar.nudge.one") : t("learn.scholar.nudge.other", { n: String(remaining) })}</p>
+          <p className="text-sm text-[var(--ink2)]">
+            {remaining === 1 ? t("learn.scholar.nudge.one") : t("learn.scholar.nudge.other", { n: String(remaining) })}
+            {mine.find((s) => s.pickBy && s.remaining > 0)?.pickBy ? ` ${t("learn.scholar.welcome.pickBy", { date: fmtDate(mine.find((s) => s.pickBy && s.remaining > 0)!.pickBy!, locale) })}` : ""}
+          </p>
         </div>
         <Link href="/scholarship" className="inline-flex min-h-11 items-center rounded-full bg-[var(--ink)] px-5 text-sm font-bold text-white hover:opacity-90">
           {t("learn.scholar.nudge.cta")} →
@@ -61,9 +64,38 @@ export default async function ScholarshipCard({ studentId, variant }: { studentI
               <dd className="font-semibold text-[var(--ink)]">{fmtDate(s.claimedAt, locale)}</dd>
             </div>
           )}
+          {s.partner && (
+            <div className="flex justify-between gap-4">
+              <dt className="text-[var(--ink3)]">{t("learn.scholar.partner.label")}</dt>
+              <dd className="break-words text-right font-semibold text-[var(--ink)]">{s.partner.name}</dd>
+            </div>
+          )}
+          {s.sponsorName && (
+            <div className="flex justify-between gap-4">
+              <dt className="text-[var(--ink3)]">{t("learn.scholar.letter.sponsor")}</dt>
+              <dd className="break-words text-right font-semibold text-[var(--ink)]">{s.sponsorName}</dd>
+            </div>
+          )}
+          {s.pickBy && !s.picksClosed && s.remaining > 0 && (
+            <div className="flex justify-between gap-4">
+              <dt className="text-[var(--ink3)]">{t("learn.scholar.account.pickBy")}</dt>
+              <dd className="font-semibold text-[var(--ink)]">{fmtDate(s.pickBy, locale)}</dd>
+            </div>
+          )}
+          {s.completeBy && (
+            <div className="flex justify-between gap-4">
+              <dt className="text-[var(--ink3)]">{t("learn.scholar.account.completeBy")}</dt>
+              <dd className="font-semibold text-[var(--ink)]">{fmtDate(s.completeBy, locale)}</dd>
+            </div>
+          )}
         </dl>
       ))}
-      <div className="px-6 pb-5">
+      <div className="flex flex-wrap gap-2 px-6 pb-5">
+        {mine[0] && (
+          <a href={`/api/learn/scholarship/letter?id=${encodeURIComponent(mine[0].id)}`} className="inline-flex min-h-11 items-center rounded-full border border-[var(--border)] px-4 text-sm font-semibold text-[var(--ink)]">
+            ↓ {t("learn.scholar.page.letter")}
+          </a>
+        )}
         <Link href="/scholarship" className="inline-flex min-h-11 items-center rounded-full bg-[var(--ink)] px-5 text-sm font-bold text-white hover:opacity-90">
           {remaining > 0 ? t("learn.scholar.account.choose") : t("learn.scholar.account.view")} →
         </Link>

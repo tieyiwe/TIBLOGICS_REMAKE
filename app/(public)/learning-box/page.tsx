@@ -11,6 +11,7 @@ import { TRACK_BASE_PRICE_CENTS } from "@/lib/learn/pricing";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTracks, withTrackText } from "@/lib/i18n/sources/learn";
 import TeamsOffer from "@/components/learn/team/TeamsOffer";
+import ScholarSeal from "@/components/learn/scholarship/ScholarSeal";
 import { getTeamPricing } from "@/lib/learn/team/settings";
 import { pageSales, withTrackSales } from "@/lib/promotions/display";
 import SalePrice from "@/components/promo/SalePrice";
@@ -294,6 +295,19 @@ export default async function LearningBoxPage({ searchParams }: Props) {
       {/* Team plans: seats for a company */}
       <div className="mx-auto max-w-6xl px-4 py-14">
         <TeamsOffer mode="link" seatPriceCents={teamPricing.seatPriceCents} minSeats={teamPricing.minSeats} />
+        {/* The Tilo Vision Scholarship (/tilo-vision-scholarship) */}
+        <Link
+          href="/tilo-vision-scholarship"
+          className="mt-5 flex flex-wrap items-center gap-4 rounded-2xl border border-[#F4C9A0] bg-gradient-to-r from-[#FFFBF6] to-white p-5 hover:border-[#F47C20]"
+          data-testid="academy-scholarship"
+        >
+          <ScholarSeal size={48} />
+          <span className="min-w-0 flex-1">
+            <span className="block font-black text-[var(--ink)]">{t("learn.scholarApply.promo.title")}</span>
+            <span className="block text-sm text-[var(--ink2)]">{t("learn.scholarApply.promo.body")}</span>
+          </span>
+          <span className="text-sm font-bold text-[var(--orange2)]">{t("learn.scholarApply.cta")} →</span>
+        </Link>
       </div>
 
       {/* FAQ: visible answers, repeated as FAQPage structured data */}

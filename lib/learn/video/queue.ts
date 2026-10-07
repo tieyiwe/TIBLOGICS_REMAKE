@@ -358,7 +358,7 @@ export async function queueRevoice(): Promise<number> {
   return n;
 }
 
-// ── Automatic batches ("Make the next 10") ──────────────────────────────────
+// ── Automatic batches ("Make the next 25") ──────────────────────────────────
 // Staff start a batch; the server makes queued videos one after another,
 // in the background, until the batch size is reached (then it pauses for a
 // review), the queue is empty, several fail in a row, or staff stop it. The

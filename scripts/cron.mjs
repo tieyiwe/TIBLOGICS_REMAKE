@@ -83,6 +83,10 @@ const JOBS = {
   // Website scanner: day-3 and day-7 follow-up emails to visitors who left
   // their email, and paid reports whose writing did not finish. Idempotent.
   scanner: { path: "/api/cron/scanner", suggested: "daily" },
+  // Tilo Vision Scholarship: offer reminders, track-choice and completion
+  // reminders, monthly progress and the completion congratulations. Each sent
+  // once per scholarship. Idempotent.
+  scholarship: { path: "/api/cron/scholarship", suggested: "daily" },
   // Command Center: recurring expenses for each period that came due, overdue
   // invoices, budget alerts, task due/overdue reminders in the admin bell and
   // a daily email digest per assignee (opt-out in My work; at most one per
@@ -144,7 +148,7 @@ for (const name of names) {
     const res = await fetch(url, {
       headers: { authorization: `Bearer ${secret}` },
       // A news run generates several articles; give it room.
-      signal: AbortSignal.timeout(name === "news" || name === "news-now" || name === "videos" ? 900_000 : name === "monitor" || name === "blueprints" || name === "translate" || name === "growth" || name === "outreach" || name === "comms" || name === "scanner" ? 330_000 : 120_000),
+      signal: AbortSignal.timeout(name === "news" || name === "news-now" || name === "videos" ? 900_000 : name === "monitor" || name === "blueprints" || name === "translate" || name === "growth" || name === "outreach" || name === "comms" || name === "scanner" || name === "scholarship" ? 330_000 : 120_000),
     });
     const body = await res.text();
     const secs = ((Date.now() - started) / 1000).toFixed(1);

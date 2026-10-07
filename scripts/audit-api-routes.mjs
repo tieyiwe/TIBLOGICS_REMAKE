@@ -43,6 +43,7 @@ const ZOD = /\bfrom "zod"|\.safeParse\(|\.parse\(/;
 
 // Public on purpose. Prefix match on the route path.
 const PUBLIC_BY_DESIGN = {
+  "/api/learn/scholarship/apply": "public Tilo Vision Scholarship application (rate limited, honeypot, one per address under review)",
   "/api/auth/[...nextauth]": "NextAuth itself (rate limited per email inside lib/auth.ts)",
   "/api/i18n": "locale switch cookie",
   "/api/indexnow-key": "IndexNow key file (public by protocol)",

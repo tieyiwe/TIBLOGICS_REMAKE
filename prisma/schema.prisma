@@ -3226,6 +3226,21 @@ model Scholarship {
   revokedBy      String?
   /// Stripe coupon (percent_off = coveragePct) shown as the scholarship discount at checkout.
   stripeCouponId String?
+  /// Who funds it (impact reports go to sponsorEmail).
+  sponsorName    String?
+  sponsorEmail   String?
+  /// Days after accepting to choose the tracks (unused ones then expire).
+  pickDays       Int?
+  /// Target days after accepting to complete the tracks (reminders only).
+  completeDays   Int?
+  welcomedAt     DateTime?
+  /// The public application it came from, if any.
+  applicationId  String?
+  /// The partner organisation it is given through, and how the mention
+  /// reads: partnership ("In partnership with") | nominated ("Nominated by")
+  /// | through ("Awarded through"). Printed on the email and award letter.
+  partnerName    String?
+  partnerRole    String?
   createdBy      String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @default(now())
@@ -3233,6 +3248,7 @@ model Scholarship {
   @@index([email])
   @@index([studentId])
   @@index([status, createdAt])
+  @@index([sponsorName])
 }
 
 /// A track unlocked with a scholarship: free (paidCents 0) or paid at the
@@ -3250,4 +3266,40 @@ model ScholarshipTrack {
 
   @@unique([scholarshipId, trackId])
   @@index([studentId])
+}
+
+/// A reminder or update already sent for a scholarship (kind: offer-reminder,
+/// pick-7, pick-1, complete-half, complete-14, progress-<n>, completed), so
+/// the daily job sends each once.
+model ScholarshipNotice {
+  id            String   @id
+  scholarshipId String
+  kind          String
+  sentAt        DateTime @default(now())
+
+  @@unique([scholarshipId, kind])
+}
+
+/// An application from the public page /tilo-vision-scholarship.
+/// status: new | shortlisted | declined | awarded (scholarshipId).
+model ScholarshipApplication {
+  id            String    @id
+  name          String
+  email         String
+  country       String?
+  locale        String    @default("en")
+  background    String?
+  motivation    String
+  goals         String?
+  trackIds      String[]  @default([])
+  links         String?
+  status        String    @default("new")
+  reviewNote    String?
+  reviewedAt    DateTime?
+  reviewedBy    String?
+  scholarshipId String?
+  createdAt     DateTime  @default(now())
+
+  @@index([email])
+  @@index([status, createdAt])
 }

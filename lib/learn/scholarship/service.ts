@@ -9,6 +9,8 @@ import { normEmail } from "@/lib/growth/outreach/normalize";
 import { ensureScholarshipTables } from "./db";
 import { sendScholarshipAward } from "./emails";
 import { createCoupon } from "@/lib/promotions/stripe-ops";
+import { awardLetterPdf, letterFileName, type LetterData } from "./letter";
+import { sendScholarshipWelcome } from "./emails";
 
 // The Tilo Vision Scholarship: staff award it to one or more people, review
 // the details, then approve it. Approval emails the recipient a single-use
@@ -23,6 +25,13 @@ export const SCHOLARSHIP_NAME = "Tilo Vision Scholarship";
 export const MAX_TRACKS = 20;
 export const MAX_RECIPIENTS = 50;
 export const OFFER_DAYS = { min: 3, max: 180, default: 30 };
+/** Optional conditions: days after accepting to choose tracks, and to complete them. */
+export const PICK_DAYS = { min: 7, max: 365 };
+export const COMPLETE_DAYS = { min: 14, max: 730 };
+/** How a partner organisation is mentioned on the award. */
+export const PARTNER_ROLES = ["partnership", "nominated", "through"] as const;
+export type PartnerRole = (typeof PARTNER_ROLES)[number];
+export const partnerRoleOf = (v: unknown): PartnerRole => (PARTNER_ROLES.includes(v as PartnerRole) ? (v as PartnerRole) : "partnership");
 /** Stripe will not charge less than this; a smaller remainder is rounded up. */
 const STRIPE_MIN_CENTS = 50;
 
@@ -92,6 +101,14 @@ export interface AwardInput {
   message?: string | null;
   note?: string | null;
   offerDays?: number | null;
+  sponsorName?: string | null;
+  sponsorEmail?: string | null;
+  pickDays?: number | null;
+  completeDays?: number | null;
+  partnerName?: string | null;
+  partnerRole?: string | null;
+  /** The public application this award answers. */
+  applicationId?: string | null;
 }
 
 export class ScholarshipError extends Error {
@@ -128,6 +145,7 @@ export async function createDrafts(input: AwardInput, actorEmail: string): Promi
   if (input.recipients.length > MAX_RECIPIENTS) throw new ScholarshipError(`At most ${MAX_RECIPIENTS} recipients at a time.`);
   const trackIds = await validateTerms(input.trackCount, input.coveragePct, input.trackIds);
   const offerDays = clampOfferDays(input.offerDays);
+  const extra = conditions(input);
 
   const created: Array<{ id: string; email: string }> = [];
   const skipped: Array<{ email: string; reason: string }> = [];
@@ -169,12 +187,38 @@ export async function createDrafts(input: AwardInput, actorEmail: string): Promi
         message: cleanText(input.message, 1000),
         note: cleanText(input.note, 1000),
         offerDays,
+        ...extra,
+        applicationId: input.applicationId ?? null,
         createdBy: actorEmail,
       },
     });
     created.push({ id, email });
   }
   return { created, skipped };
+}
+
+/** Sponsor and deadlines, checked. Undefined fields are left out (for edits). */
+function conditions(v: { sponsorName?: string | null; sponsorEmail?: string | null; pickDays?: number | null; completeDays?: number | null; partnerName?: string | null; partnerRole?: string | null }) {
+  const out: { sponsorName?: string | null; sponsorEmail?: string | null; pickDays?: number | null; completeDays?: number | null; partnerName?: string | null; partnerRole?: string | null } = {};
+  if (v.sponsorName !== undefined) out.sponsorName = cleanText(v.sponsorName, 120);
+  if (v.partnerName !== undefined) {
+    out.partnerName = cleanText(v.partnerName, 120);
+    out.partnerRole = out.partnerName ? partnerRoleOf(v.partnerRole) : null;
+  } else if (v.partnerRole !== undefined) out.partnerRole = partnerRoleOf(v.partnerRole);
+  if (v.sponsorEmail !== undefined) {
+    const e = v.sponsorEmail ? normEmail(v.sponsorEmail) : null;
+    if (v.sponsorEmail && !e) throw new ScholarshipError("The sponsor email is not a valid address.");
+    out.sponsorEmail = e;
+  }
+  const days = (n: number | null | undefined, r: { min: number; max: number }, what: string) => {
+    if (n == null) return null;
+    if (!Number.isInteger(n) || n < r.min || n > r.max) throw new ScholarshipError(`${what} must be from ${r.min} to ${r.max} days.`);
+    return n;
+  };
+  if (v.pickDays !== undefined) out.pickDays = days(v.pickDays, PICK_DAYS, "Time to choose tracks");
+  if (v.completeDays !== undefined) out.completeDays = days(v.completeDays, COMPLETE_DAYS, "Time to complete");
+  if (out.pickDays && out.completeDays && out.completeDays < out.pickDays) throw new ScholarshipError("Time to complete must be at least the time to choose tracks.");
+  return out;
 }
 
 function clampOfferDays(v: number | null | undefined): number {
@@ -192,12 +236,19 @@ export interface EditInput {
   message?: string | null;
   note?: string | null;
   offerDays?: number;
+  sponsorName?: string | null;
+  sponsorEmail?: string | null;
+  pickDays?: number | null;
+  completeDays?: number | null;
+  partnerName?: string | null;
+  partnerRole?: string | null;
 }
 
 /**
  * Edits an award. A draft can change anything. Once approved, the recipient
  * has been told the terms: only the number of tracks (never below what is
- * used), the track list and the internal note can change.
+ * used), the track list, the deadlines (to give more time), the sponsor, the
+ * partner mention and the internal note can change.
  */
 export async function editScholarship(id: string, patch: EditInput): Promise<void> {
   await ensureScholarshipTables();
@@ -206,7 +257,7 @@ export async function editScholarship(id: string, patch: EditInput): Promise<voi
   if (s.status === "revoked") throw new ScholarshipError("This scholarship was revoked.", 409);
   const draft = s.status === "draft";
   const lockedField = (["name", "email", "locale", "coveragePct", "message", "offerDays"] as const).find((k) => patch[k] !== undefined);
-  if (!draft && lockedField) throw new ScholarshipError("Only the number of tracks, the track list and the note can change after approval.", 409);
+  if (!draft && lockedField) throw new ScholarshipError("After approval only the number of tracks, the track list, the deadlines, the sponsor and the note can change.", 409);
 
   const trackCount = patch.trackCount ?? s.trackCount;
   const coveragePct = patch.coveragePct ?? s.coveragePct;
@@ -214,7 +265,11 @@ export async function editScholarship(id: string, patch: EditInput): Promise<voi
   const used = await prisma.scholarshipTrack.count({ where: { scholarshipId: id } });
   if (trackCount < used) throw new ScholarshipError(`${used} track(s) are already unlocked with it.`, 409);
 
-  const data: Record<string, unknown> = { trackCount, trackIds, updatedAt: new Date() };
+  const cond = conditions(patch);
+  const pickDays = cond.pickDays !== undefined ? cond.pickDays : s.pickDays;
+  const completeDays = cond.completeDays !== undefined ? cond.completeDays : s.completeDays;
+  if (pickDays && completeDays && completeDays < pickDays) throw new ScholarshipError("Time to complete must be at least the time to choose tracks.");
+  const data: Record<string, unknown> = { trackCount, trackIds, ...cond, updatedAt: new Date() };
   if (patch.note !== undefined) data.note = cleanText(patch.note, 1000);
   if (draft) {
     if (patch.name !== undefined) {
@@ -244,7 +299,34 @@ export async function deleteDraft(id: string): Promise<boolean> {
   return n.count === 1;
 }
 
-async function emailAward(id: string, token: string): Promise<void> {
+type Row = NonNullable<Awaited<ReturnType<typeof prisma.scholarship.findUnique>>>;
+
+/** What the award letter shows, for one scholarship in one language. */
+export async function letterData(s: Row, locale: string): Promise<LetterData> {
+  const all = await liveTracks();
+  return {
+    name: s.name,
+    code: s.code,
+    coveragePct: s.coveragePct,
+    trackCount: s.trackCount,
+    tracks: s.trackIds.length ? eligibleTracks(all, s.trackIds).map((t) => (locale === "fr" && t.titleFr ? t.titleFr : t.title)) : [],
+    issuedAt: s.approvedAt ?? new Date(),
+    acceptBy: s.status === "approved" || s.status === "draft" ? s.offerExpiresAt ?? (s.status === "draft" ? new Date(Date.now() + s.offerDays * 86_400_000) : null) : null,
+    pickDays: s.pickDays,
+    completeDays: s.completeDays,
+    sponsorName: s.sponsorName,
+    partner: s.partnerName ? { name: s.partnerName, role: partnerRoleOf(s.partnerRole) } : null,
+    locale,
+    draft: s.status === "draft",
+  };
+}
+
+/** The award letter PDF for a scholarship (DRAFT watermark before approval). */
+export async function letterFor(s: Row, locale?: string): Promise<{ pdf: Buffer; filename: string }> {
+  return { pdf: await awardLetterPdf(await letterData(s, locale && isLocale(locale) ? locale : s.locale)), filename: letterFileName(s.code) };
+}
+
+async function emailAward(id: string, token: string, opts: { reminder?: boolean } = {}): Promise<void> {
   const s = await prisma.scholarship.findUnique({ where: { id } });
   if (!s || !s.offerExpiresAt) return;
   const [known, all] = await Promise.all([
@@ -252,7 +334,18 @@ async function emailAward(id: string, token: string): Promise<void> {
     liveTracks(),
   ]);
   const locale = known?.locale && isLocale(known.locale) ? known.locale : s.locale;
+  // The award letter rides along as a PDF; the email still goes if it fails.
+  const letter = opts.reminder ? null : await letterFor(s, locale).catch((err) => {
+    console.error("[scholarship] letter", id, err instanceof Error ? err.message : err);
+    return null;
+  });
   await sendScholarshipAward({
+    letter,
+    reminder: opts.reminder,
+    sponsorName: s.sponsorName,
+    partner: s.partnerName ? { name: s.partnerName, role: partnerRoleOf(s.partnerRole) } : null,
+    pickDays: s.pickDays,
+    completeDays: s.completeDays,
     email: s.email,
     name: s.name,
     code: s.code,
@@ -323,6 +416,17 @@ export async function resendScholarship(id: string): Promise<{ emailed: boolean 
 }
 
 /**
+ * Reminder before the offer ends: a new link (the emailed one is only stored
+ * hashed, so it cannot be repeated), same end date. Daily job.
+ */
+export async function sendOfferReminder(id: string): Promise<void> {
+  const token = newToken();
+  const n = await prisma.scholarship.updateMany({ where: { id, status: "approved" }, data: { tokenHash: hashToken(token), updatedAt: new Date() } });
+  if (n.count !== 1) return;
+  await emailAward(id, token, { reminder: true });
+}
+
+/**
  * Revokes an award: the link stops working and no more tracks can be chosen.
  * Tracks already unlocked stay, unless removeFree: then the free ones (paid
  * nothing) are taken away. Tracks the learner paid for always stay.
@@ -363,6 +467,7 @@ export interface ScholarshipOffer {
   studentId: string | null;
   expired: boolean;
   expiresAt: Date | null;
+  partner: { name: string; role: PartnerRole } | null;
 }
 
 /** What an emailed link points to, or null for an unknown, replaced or revoked link. */
@@ -383,6 +488,7 @@ export async function previewOffer(token: string): Promise<ScholarshipOffer | nu
     studentId: s.studentId,
     expired: s.status === "approved" && (!s.offerExpiresAt || s.offerExpiresAt <= new Date()),
     expiresAt: s.offerExpiresAt,
+    partner: s.partnerName ? { name: s.partnerName, role: partnerRoleOf(s.partnerRole) } : null,
   };
 }
 
@@ -401,9 +507,45 @@ export async function acceptOffer(token: string, student: { id: string; email: s
     where: { id: offer.id, status: "approved", tokenHash: hashToken(token) },
     data: { status: "claimed", studentId: student.id, claimedAt: new Date(), updatedAt: new Date() },
   });
-  if (n.count === 1) return "ok";
+  if (n.count === 1) {
+    await welcome(offer.id).catch((err) => console.error("[scholarship] welcome", offer.id, err instanceof Error ? err.message : err));
+    return "ok";
+  }
   const now = await prisma.scholarship.findUnique({ where: { id: offer.id }, select: { studentId: true } });
   return now?.studentId === student.id ? "ok" : "invalid";
+}
+
+/** The welcome email, once, when a scholarship is accepted. */
+async function welcome(id: string): Promise<void> {
+  const n = await prisma.scholarship.updateMany({ where: { id, welcomedAt: null }, data: { welcomedAt: new Date() } });
+  if (n.count !== 1) return;
+  const s = await prisma.scholarship.findUnique({ where: { id } });
+  if (!s || !s.studentId) return;
+  const st = await prisma.student.findUnique({ where: { id: s.studentId }, select: { name: true, email: true, locale: true } });
+  if (!st) return;
+  const d = deadlines(s);
+  await sendScholarshipWelcome({
+    email: st.email,
+    name: st.name,
+    locale: st.locale,
+    code: s.code,
+    coveragePct: s.coveragePct,
+    trackCount: s.trackCount,
+    pickBy: d.pickBy,
+    completeBy: d.completeBy,
+    sponsorName: s.sponsorName,
+    partner: s.partnerName ? { name: s.partnerName, role: partnerRoleOf(s.partnerRole) } : null,
+  });
+}
+
+/** When the tracks must be chosen by, and the completion target, from acceptance. */
+export function deadlines(s: { claimedAt: Date | null; pickDays: number | null; completeDays: number | null }): { pickBy: Date | null; completeBy: Date | null } {
+  if (!s.claimedAt) return { pickBy: null, completeBy: null };
+  const at = s.claimedAt.getTime();
+  return {
+    pickBy: s.pickDays ? new Date(at + s.pickDays * 86_400_000) : null,
+    completeBy: s.completeDays ? new Date(at + s.completeDays * 86_400_000) : null,
+  };
 }
 
 export interface MyScholarship {
@@ -414,7 +556,14 @@ export interface MyScholarship {
   trackIds: string[];
   claimedAt: Date | null;
   picks: Array<{ trackId: string; paidCents: number; coveredCents: number; createdAt: Date }>;
+  /** Tracks still to choose (0 once the choice deadline has passed). */
   remaining: number;
+  pickBy: Date | null;
+  completeBy: Date | null;
+  /** The time to choose tracks is over (unused tracks expired). */
+  picksClosed: boolean;
+  sponsorName: string | null;
+  partner: { name: string; role: PartnerRole } | null;
 }
 
 /** The learner's accepted scholarships (normally one), with what they unlocked. */
@@ -426,6 +575,8 @@ export async function scholarshipsFor(studentId: string): Promise<MyScholarship[
     const picks = await prisma.scholarshipTrack.findMany({ where: { scholarshipId: { in: rows.map((r) => r.id) } }, orderBy: { createdAt: "asc" } });
     return rows.map((r) => {
       const mine = picks.filter((p) => p.scholarshipId === r.id);
+      const d = deadlines(r);
+      const picksClosed = !!d.pickBy && d.pickBy.getTime() <= Date.now();
       return {
         id: r.id,
         code: r.code,
@@ -434,7 +585,12 @@ export async function scholarshipsFor(studentId: string): Promise<MyScholarship[
         trackIds: r.trackIds,
         claimedAt: r.claimedAt,
         picks: mine.map((p) => ({ trackId: p.trackId, paidCents: p.paidCents, coveredCents: p.coveredCents, createdAt: p.createdAt })),
-        remaining: Math.max(0, r.trackCount - mine.length),
+        remaining: picksClosed ? 0 : Math.max(0, r.trackCount - mine.length),
+        pickBy: d.pickBy,
+        completeBy: d.completeBy,
+        picksClosed,
+        sponsorName: r.sponsorName,
+        partner: r.partnerName ? { name: r.partnerName, role: partnerRoleOf(r.partnerRole) } : null,
       };
     });
   } catch (err) {
@@ -476,7 +632,7 @@ const freeKey = (scholarshipId: string, trackId: string) => `scholarship:${schol
 export type PickResult =
   | { kind: "unlocked"; slug: string }
   | { kind: "checkout"; track: LiveTrack; amountCents: number; scholarshipId: string; code: string; coveragePct: number; couponId: string | null }
-  | { kind: "error"; error: "notFound" | "full" | "notEligible" | "owned"; status: number };
+  | { kind: "error"; error: "notFound" | "full" | "notEligible" | "owned" | "closed"; status: number };
 
 /**
  * Uses one of the learner's scholarship tracks. Free (100%): the track opens
@@ -487,6 +643,8 @@ export async function pickTrack(student: { id: string }, scholarshipId: string, 
   await ensureScholarshipTables();
   const s = await prisma.scholarship.findUnique({ where: { id: scholarshipId } });
   if (!s || s.status !== "claimed" || s.studentId !== student.id) return { kind: "error", error: "notFound", status: 404 };
+  const due = deadlines(s).pickBy;
+  if (due && due.getTime() <= Date.now()) return { kind: "error", error: "closed", status: 410 };
   const track = eligibleTracks(await liveTracks(), s.trackIds).find((t) => t.id === trackId);
   if (!track) return { kind: "error", error: "notEligible", status: 400 };
   if (ownedTrackIds.includes(trackId)) return { kind: "error", error: "owned", status: 409 };

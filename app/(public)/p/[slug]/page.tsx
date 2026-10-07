@@ -7,6 +7,7 @@ import { fmtNumber } from "@/lib/learn/format";
 import { loadPortfolio, publicPortfolioOwner } from "@/lib/learn/method/portfolio";
 import PortfolioView from "@/components/learn/method/PortfolioView";
 import { cardUrl } from "@/lib/seo/og-card";
+import { isScholar } from "@/lib/learn/scholarship/status";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,7 @@ const load = cache(async (slug: string) => {
     includeWork: owner.settings.includeWork,
     hidden: owner.settings.hidden,
   }).catch(() => null);
-  return data ? { data, settings: owner.settings } : null;
+  return data ? { data, settings: owner.settings, scholar: await isScholar(owner.studentId) } : null;
 });
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -61,13 +62,18 @@ export default async function PublicPortfolioPage({ params }: { params: Promise<
 
   if (!hit) notFound();
 
-  const { data, settings } = hit;
+  const { data, settings, scholar } = hit;
   return (
     <div className="bg-[var(--s2)] px-4 pb-16 pt-32 sm:pt-44">
       <div className="mx-auto max-w-5xl">
         <header className="rounded-3xl bg-[var(--ink)] p-6 text-white sm:p-10">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--orange)]">{t("method.public.eyebrow")}</p>
           <h1 className="mt-2 text-2xl font-black leading-tight sm:text-4xl">{t("method.public.title", { name: data.displayName })}</h1>
+          {scholar ? (
+            <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#F9A738]" data-testid="portfolio-scholar">
+              ★ {t("learn.scholar.badge")}
+            </p>
+          ) : null}
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/70">{t("method.public.intro")}</p>
           <p className="mt-4 text-sm font-bold text-[var(--orange)]">{t("method.portfolio.xp", { n: fmtNumber(data.totalXp, locale) })}</p>
         </header>

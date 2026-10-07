@@ -16,6 +16,7 @@ export function certData(c: CertView, locale: string, override?: { name?: string
     accentColor: c.track.accentColor,
     hours: c.track.estimatedHours,
     distinction: c.distinction,
+    scholar: !!c.scholar,
     issuedAt: c.issuedAt,
     reference: c.reference,
     verifyUrl: verifyUrlFor(c.reference),

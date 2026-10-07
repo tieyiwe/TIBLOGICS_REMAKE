@@ -5,7 +5,7 @@ import { audit } from "@/lib/admin/audit";
 import { scholarshipWriter } from "@/lib/learn/scholarship/guard";
 import { ensureScholarshipTables } from "@/lib/learn/scholarship/db";
 import {
-  approveScholarship, deleteDraft, editScholarship, MAX_TRACKS, OFFER_DAYS, resendScholarship, revokeScholarship, ScholarshipError,
+  approveScholarship, COMPLETE_DAYS, deleteDraft, editScholarship, MAX_TRACKS, OFFER_DAYS, PICK_DAYS, resendScholarship, revokeScholarship, ScholarshipError,
 } from "@/lib/learn/scholarship/service";
 
 // One scholarship: edit (PATCH), delete a draft (DELETE), and the actions
@@ -21,6 +21,12 @@ const Edit = z.object({
   message: z.string().max(2000).nullable().optional(),
   note: z.string().max(2000).nullable().optional(),
   offerDays: z.number().int().min(OFFER_DAYS.min).max(OFFER_DAYS.max).optional(),
+  sponsorName: z.string().max(200).nullable().optional(),
+  sponsorEmail: z.string().max(320).nullable().optional(),
+  pickDays: z.number().int().min(PICK_DAYS.min).max(PICK_DAYS.max).nullable().optional(),
+  completeDays: z.number().int().min(COMPLETE_DAYS.min).max(COMPLETE_DAYS.max).nullable().optional(),
+  partnerName: z.string().max(200).nullable().optional(),
+  partnerRole: z.enum(["partnership", "nominated", "through"]).nullable().optional(),
 });
 const Action = z.discriminatedUnion("action", [
   z.object({ action: z.literal("approve") }),

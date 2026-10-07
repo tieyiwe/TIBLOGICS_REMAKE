@@ -91,6 +91,12 @@ export default async function VerifyCertificatePage({
           ✓ {t("learn.cert.verified")}: {cert.recipientName} · {cert.certificateName}
           {cert.distinction ? ` · ${t("learn.cert.withDistinction")}` : ""}
         </div>
+        {cert.scholar ? (
+          <p className="mt-3 text-center text-sm font-semibold text-[#1B2A5E]" data-testid="cert-scholar">
+            <span className="mr-1.5 inline-block rounded-full bg-[#1B2A5E] px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-[#F9A738]">{t("learn.certdoc.scholar")}</span>
+            {t("learn.cert.scholarLine")}
+          </p>
+        ) : null}
         <div className="mt-5">
           <CertificateView
             reference={cert.reference}

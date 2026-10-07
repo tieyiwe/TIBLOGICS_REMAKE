@@ -1,5 +1,6 @@
 import { randomInt } from "crypto";
 import prisma from "@/lib/prisma";
+import { isScholarTrack } from "@/lib/learn/scholarship/status";
 
 // Certificate reference numbers and the learner's name confirmation.
 //
@@ -94,6 +95,8 @@ export interface CertView {
   nameConfirmedAt: Date | null;
   emailedAt: Date | null;
   revoked: boolean;
+  /** Earned on a track unlocked with the Tilo Vision Scholarship. */
+  scholar?: boolean;
   track: { slug: string; title: string; level: string; levelEnd: string | null; accentColor: string; tagline: string | null; estimatedHours: number };
 }
 
@@ -114,7 +117,8 @@ export async function findCertificate(key: string): Promise<CertView | null> {
   const r = rows[0];
   if (!r) return null;
   const { slug, title, level, levelEnd, accentColor, tagline, estimatedHours, ...c } = r;
-  return { ...c, track: { slug, title, level, levelEnd, accentColor, tagline, estimatedHours: Number(estimatedHours) || 0 } };
+  const scholar = await isScholarTrack(c.studentId, c.trackId);
+  return { ...c, scholar, track: { slug, title, level, levelEnd, accentColor, tagline, estimatedHours: Number(estimatedHours) || 0 } };
 }
 
 /**

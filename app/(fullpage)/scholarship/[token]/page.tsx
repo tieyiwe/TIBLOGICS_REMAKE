@@ -87,6 +87,7 @@ export default async function ScholarshipOfferPage({ params }: { params: Promise
             {offer && offer.status === "approved" && !offer.expired && (
               <>
                 <p className="mt-2 text-sm text-[var(--ink2)]">{t("learn.scholar.claim.sub")}</p>
+                {offer.partner && <p className="mt-1 text-sm font-bold text-[#B4530F]">{t(`learn.scholar.partner.${offer.partner.role}`, { partner: offer.partner.name })}</p>}
                 <dl className="mt-4 divide-y divide-[var(--border)] rounded-xl border border-[#F4C9A0] bg-[#FFFBF6] px-4 text-sm">
                   <div className="flex justify-between gap-4 py-2.5">
                     <dt className="text-[var(--ink3)]">{t("learn.scholar.award.coverage")}</dt>

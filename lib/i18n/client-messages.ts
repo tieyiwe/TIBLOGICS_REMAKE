@@ -16,7 +16,8 @@ import { dictionary } from "./messages";
 /** Read only on the server (emails, API errors, SEO, legal pages): never sent. */
 const SERVER_ONLY = [
   "seo.", "comms.", "updates.", "accountStatus.",
-  "learn.email.", "team.email.", "learn.scholar.email.",
+  "learn.email.", "team.email.", "learn.scholar.email.", "learn.scholar.notice.", "learn.scholar.welcome.", "learn.scholar.remind.",
+  "learn.scholar.letter.", "learn.scholarApply.email.received.", "learn.scholarApply.email.declined.", "learn.scholarApply.meta.",
   "pages.terms.", "pages.privacy.", "pages.api.",
   // Sections rendered by server components only (getT).
   "pages.about.", "pages.products.", "a11y.page.", "site.footer.", "site.meta.",

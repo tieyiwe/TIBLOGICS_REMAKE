@@ -3,12 +3,13 @@ import { Download, GraduationCap } from "lucide-react";
 import { Badge, Card, EmptyState, PageHeader, StatCard, type BadgeTone } from "@/components/admin/ui";
 import { requireLearnerPage } from "@/lib/learn/account-status/admin-auth";
 import { canAward } from "@/lib/learn/scholarship/guard";
-import { listScholarships, type ScholarshipRow } from "@/lib/learn/scholarship/admin";
+import { listScholarships, sponsorSummaries, type ScholarshipRow } from "@/lib/learn/scholarship/admin";
+import { applicationsOpen, listApplications } from "@/lib/learn/scholarship/applications";
 import { liveTracks } from "@/lib/learn/scholarship/service";
 import { scholarshipTablesReady } from "@/lib/learn/scholarship/db";
 import ScholarSeal from "@/components/learn/scholarship/ScholarSeal";
 import { LEARN_TABS } from "../tabs";
-import { ApproveAll, ApproveButton, AwardActions, AwardForm, DeleteDraft, EditScholarship } from "./ScholarshipsAdmin";
+import { ApplicationActions, ApplicationsToggle, ApproveAll, ApproveButton, AwardActions, AwardForm, DeleteDraft, EditScholarship, SponsorReportButton } from "./ScholarshipsAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,17 @@ export default async function ScholarshipsPage({ searchParams }: { searchParams:
   const trackOptions = tracks.map((t) => ({ id: t.id, title: t.title, priceCents: t.priceCents }));
   const scholars = all.filter((r) => r.status === "claimed");
   const qs = new URLSearchParams([...(status ? [["status", status]] : []), ...(q ? [["q", q]] : [])]);
+  const appFilter = one(sp.apps) || "open";
+  const [apps, appsOpen] = ready ? await Promise.all([listApplications(), applicationsOpen()]) : [[], true];
+  const appsShown = apps.filter((a) => (appFilter === "all" ? true : appFilter === "open" ? a.status === "new" || a.status === "shortlisted" : a.status === appFilter));
+  const sponsors = sponsorSummaries(all);
+  const editable = (r: ScholarshipRow) => ({
+    id: r.id, status: r.status, name: r.name, email: r.email, locale: r.locale, trackCount: r.trackCount, coveragePct: r.coveragePct, trackIds: r.trackIds,
+    message: r.message, note: r.note, offerDays: r.offerDays, used: r.picks.length, sponsorName: r.sponsorName, sponsorEmail: r.sponsorEmail, pickDays: r.pickDays, completeDays: r.completeDays,
+    partnerName: r.partnerName, partnerRole: r.partnerRole,
+  });
+  const terms = (r: ScholarshipRow) =>
+    [r.partnerName ? `${r.partnerRole === "nominated" ? "Nominated by" : r.partnerRole === "through" ? "Awarded through" : "In partnership with"} ${r.partnerName}` : null, r.sponsorName ? `Sponsor: ${r.sponsorName}` : null, r.pickDays ? `Choose within ${r.pickDays} days` : null, r.completeDays ? `Complete within ${r.completeDays} days` : null].filter(Boolean).join(" · ");
 
   return (
     <div className="space-y-5">
@@ -63,12 +75,67 @@ export default async function ScholarshipsPage({ searchParams }: { searchParams:
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+        <StatCard label="New applications" value={apps.filter((a) => a.status === "new").length} />
         <StatCard label="To review" value={drafts.length} />
         <StatCard label="Awarded" value={all.filter((r) => r.status === "approved" || r.status === "claimed").length} />
         <StatCard label="Accepted (scholars)" value={scholars.length} />
         <StatCard label="Tracks unlocked" value={all.reduce((n, r) => n + r.picks.length, 0)} />
         <StatCard label="Value covered" value={usd(all.reduce((n, r) => n + r.coveredCents, 0))} />
+      </div>
+
+      <div id="applications" className="scroll-mt-24">
+        <Card
+          title={`Applications (${apps.filter((a) => a.status === "new" || a.status === "shortlisted").length} to review)`}
+          subtitle={
+            <>
+              From the public page{" "}
+              <a href="/tilo-vision-scholarship" target="_blank" rel="noreferrer" className="font-semibold text-[var(--a-blue)] hover:underline">/tilo-vision-scholarship</a>. Applications are{" "}
+              <strong>{appsOpen ? "open" : "closed"}</strong>.
+            </>
+          }
+          action={award ? <ApplicationsToggle open={appsOpen} /> : null}
+        >
+          <div className="mb-3 flex flex-wrap gap-2 font-dm text-[12.5px]">
+            {[["open", "To review"], ["shortlisted", "Shortlisted"], ["awarded", "Awarded"], ["declined", "Declined"], ["all", "All"]].map(([k, l]) => (
+              <Link
+                key={k}
+                href={`/admin_pro/learn/scholarships?${new URLSearchParams({ ...(status ? { status } : {}), ...(q ? { q } : {}), apps: k })}#applications`}
+                className={`rounded-full border px-3 py-1 font-semibold ${appFilter === k ? "border-[var(--a-orange-text)] bg-[#FFF1E3] text-[var(--a-orange-text)]" : "border-[var(--a-border-strong)] text-[var(--a-ink-2)]"}`}
+              >
+                {l} ({k === "all" ? apps.length : k === "open" ? apps.filter((a) => a.status === "new" || a.status === "shortlisted").length : apps.filter((a) => a.status === k).length})
+              </Link>
+            ))}
+          </div>
+          {appsShown.length === 0 ? (
+            <p className="font-dm text-[13.5px] text-[var(--a-ink-3)]">No applications here.</p>
+          ) : (
+            <ul className="space-y-3" data-testid="applications">
+              {appsShown.map((a) => (
+                <li key={a.id} className="rounded-lg border border-[var(--a-border)] p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="break-words font-dm text-[14px] font-semibold text-[var(--a-ink)]">{a.name}</span>
+                    <Badge tone={a.status === "new" ? "info" : a.status === "shortlisted" ? "orange" : a.status === "awarded" ? "success" : "neutral"}>{a.status === "new" ? "New" : a.status[0].toUpperCase() + a.status.slice(1)}</Badge>
+                    <span className="font-mono text-[11.5px] text-[var(--a-ink-3)]">{a.reference}</span>
+                  </div>
+                  <p className="break-all font-dm text-[12.5px] text-[var(--a-ink-2)]">
+                    {a.email} · {a.country ?? "Country not given"} · {a.background ? a.background[0].toUpperCase() + a.background.slice(1) : "Background not given"} · {LANG[a.locale] ?? a.locale} · {day(a.createdAt)}
+                    {a.hasAccount ? " · Has an ARFA account" : ""}
+                  </p>
+                  <details className="mt-2">
+                    <summary className="cursor-pointer font-dm text-[13px] font-semibold text-[var(--a-ink)]">Motivation and goals</summary>
+                    <p className="mt-2 whitespace-pre-line rounded-md bg-[var(--a-surface-2)] px-3 py-2 font-dm text-[13px] text-[var(--a-ink)]">{a.motivation}</p>
+                    {a.goals && <p className="mt-2 whitespace-pre-line font-dm text-[13px] text-[var(--a-ink-2)]"><strong>Goals:</strong> {a.goals}</p>}
+                    {a.links && <p className="mt-1 break-all font-dm text-[12.5px] text-[var(--a-ink-2)]"><strong>Links:</strong> {a.links}</p>}
+                  </details>
+                  {a.trackTitles.length > 0 && <p className="mt-1 font-dm text-[12.5px] text-[var(--a-ink-2)]">Interested in: {a.trackTitles.join(", ")}</p>}
+                  {a.reviewedAt && <p className="mt-1 font-dm text-[11.5px] text-[var(--a-ink-3)]">Reviewed {day(a.reviewedAt)} by {a.reviewedBy ?? "staff"}</p>}
+                  {award && <ApplicationActions id={a.id} name={a.name} status={a.status} tracks={trackOptions} suggested={a.trackIds.filter((id) => trackOptions.some((t) => t.id === id))} />}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
       </div>
 
       {award ? (
@@ -101,8 +168,15 @@ export default async function ScholarshipsPage({ searchParams }: { searchParams:
                       {d.accountId ? " · Has an ARFA account" : " · No ARFA account yet"}
                     </p>
                     {d.message && <p className="mt-2 whitespace-pre-line rounded-md bg-[var(--a-surface-2)] px-3 py-2 font-dm text-[12.5px] text-[var(--a-ink)]">“{d.message}”</p>}
+                    {terms(d) && <p className="mt-1 font-dm text-[12.5px] text-[var(--a-ink-2)]">{terms(d)}</p>}
                     {d.note && <p className="mt-1 font-dm text-[12px] text-[var(--a-ink-3)]">Note: {d.note}</p>}
-                    <p className="mt-1 font-dm text-[11.5px] text-[var(--a-ink-3)]">{d.code} · created {day(d.createdAt)} by {d.createdBy ?? "staff"}</p>
+                    <p className="mt-1 font-dm text-[11.5px] text-[var(--a-ink-3)]">
+                      {d.code} · created {day(d.createdAt)} by {d.createdBy ?? "staff"}
+                      {d.applicationId ? " · from an application" : ""} ·{" "}
+                      <a href={`/api/admin/learn/scholarships/${d.id}/letter`} target="_blank" rel="noreferrer" className="font-semibold text-[var(--a-blue)] hover:underline" data-testid="letter-preview">
+                        Preview award letter
+                      </a>
+                    </p>
                   </div>
                   {award && (
                     <div className="flex flex-wrap items-start gap-2">
@@ -113,7 +187,7 @@ export default async function ScholarshipsPage({ searchParams }: { searchParams:
                 </div>
                 {award && (
                   <EditScholarship
-                    s={{ id: d.id, status: d.status, name: d.name, email: d.email, locale: d.locale, trackCount: d.trackCount, coveragePct: d.coveragePct, trackIds: d.trackIds, message: d.message, note: d.note, offerDays: d.offerDays, used: 0 }}
+                    s={editable(d)}
                     tracks={trackOptions}
                   />
                 )}
@@ -177,6 +251,14 @@ export default async function ScholarshipsPage({ searchParams }: { searchParams:
                         <div><dt className="text-[var(--a-ink-3)]">Last sign-in</dt><dd className="font-semibold">{day(r.student?.lastLoginAt ?? null)}</dd></div>
                       </dl>
                       {r.trackIds.length > 0 && <p className="mt-1 font-dm text-[12px] text-[var(--a-ink-3)]">Only: {r.trackTitles.join(", ")}</p>}
+                      {terms(r) && <p className="mt-1 font-dm text-[12.5px] text-[var(--a-ink-2)]">{terms(r)}</p>}
+                      {(r.pickBy || r.completeBy) && (
+                        <p className="mt-0.5 font-dm text-[12px] text-[var(--a-ink-3)]">
+                          {r.pickBy ? `Choose tracks by ${day(r.pickBy)}${r.pickBy.getTime() < Date.now() ? " (passed)" : ""}` : ""}
+                          {r.pickBy && r.completeBy ? " · " : ""}
+                          {r.completeBy ? `Complete by ${day(r.completeBy)}` : ""}
+                        </p>
+                      )}
                       {r.note && <p className="mt-1 font-dm text-[12px] text-[var(--a-ink-3)]">Note: {r.note}</p>}
                       {r.picks.length > 0 && (
                         <div className="mt-3 overflow-x-auto">
@@ -211,6 +293,12 @@ export default async function ScholarshipsPage({ searchParams }: { searchParams:
                         {r.approvedAt ? ` · approved ${day(r.approvedAt)} by ${r.approvedBy ?? "staff"}` : ""}
                         {r.emailedAt ? ` · emailed ${day(r.emailedAt)}` : r.status === "approved" ? " · email not sent" : ""}
                         {r.revokedAt ? ` · revoked ${day(r.revokedAt)}` : ""}
+                        {r.status !== "revoked" ? (
+                          <>
+                            {" · "}
+                            <a href={`/api/admin/learn/scholarships/${r.id}/letter`} target="_blank" rel="noreferrer" className="font-semibold text-[var(--a-blue)] hover:underline">Award letter</a>
+                          </>
+                        ) : null}
                       </p>
                     </div>
                     {award && r.status !== "draft" && r.status !== "revoked" && (
@@ -221,13 +309,35 @@ export default async function ScholarshipsPage({ searchParams }: { searchParams:
                   </div>
                   {award && (r.status === "approved" || r.status === "claimed") && (
                     <EditScholarship
-                      s={{ id: r.id, status: r.status, name: r.name, email: r.email, locale: r.locale, trackCount: r.trackCount, coveragePct: r.coveragePct, trackIds: r.trackIds, message: r.message, note: r.note, offerDays: r.offerDays, used: r.picks.length }}
+                      s={editable(r)}
                       tracks={trackOptions}
                     />
                   )}
                 </li>
               );
             })}
+          </ul>
+        )}
+      </Card>
+      <Card title="Sponsors" subtitle="Who funds the awards, and the impact of their support. Reports show scholars by first name and initial only." padded={false}>
+        {sponsors.length === 0 ? (
+          <p className="p-5 font-dm text-[13.5px] text-[var(--a-ink-3)]">No sponsor named on an award yet. Add one in the award form.</p>
+        ) : (
+          <ul className="divide-y divide-[var(--a-border)]" data-testid="sponsors">
+            {sponsors.map((x) => (
+              <li key={x.name} className="flex flex-wrap items-start justify-between gap-3 p-4">
+                <div className="min-w-0">
+                  <p className="break-words font-dm text-[14px] font-semibold text-[var(--a-ink)]">{x.name}</p>
+                  <p className="font-dm text-[12.5px] text-[var(--a-ink-2)]">
+                    {x.awarded} awarded · {x.accepted} scholars · {x.tracksUnlocked} tracks · {usd(x.coveredCents)} covered · progress {x.progress != null ? `${x.progress}%` : "–"} · {x.certificates} certificates
+                  </p>
+                  <Link href={`/admin_pro/learn/scholarships/impact?sponsor=${encodeURIComponent(x.name)}`} className="font-dm text-[12.5px] font-semibold text-[var(--a-blue)] hover:underline">
+                    Open impact report
+                  </Link>
+                </div>
+                {award && <SponsorReportButton sponsor={x.name} email={x.email} />}
+              </li>
+            ))}
           </ul>
         )}
       </Card>

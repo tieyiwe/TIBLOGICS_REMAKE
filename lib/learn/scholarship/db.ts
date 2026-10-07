@@ -34,6 +34,15 @@ const STATEMENTS = [
     CONSTRAINT "Scholarship_pkey" PRIMARY KEY ("id")
   )`,
   `ALTER TABLE "Scholarship" ADD COLUMN IF NOT EXISTS "stripeCouponId" TEXT`,
+  `ALTER TABLE "Scholarship" ADD COLUMN IF NOT EXISTS "sponsorName" TEXT`,
+  `ALTER TABLE "Scholarship" ADD COLUMN IF NOT EXISTS "sponsorEmail" TEXT`,
+  `ALTER TABLE "Scholarship" ADD COLUMN IF NOT EXISTS "pickDays" INTEGER`,
+  `ALTER TABLE "Scholarship" ADD COLUMN IF NOT EXISTS "completeDays" INTEGER`,
+  `ALTER TABLE "Scholarship" ADD COLUMN IF NOT EXISTS "welcomedAt" TIMESTAMP(3)`,
+  `ALTER TABLE "Scholarship" ADD COLUMN IF NOT EXISTS "applicationId" TEXT`,
+  `ALTER TABLE "Scholarship" ADD COLUMN IF NOT EXISTS "partnerName" TEXT`,
+  `ALTER TABLE "Scholarship" ADD COLUMN IF NOT EXISTS "partnerRole" TEXT`,
+  `CREATE INDEX IF NOT EXISTS "Scholarship_sponsorName_idx" ON "Scholarship"("sponsorName")`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "Scholarship_code_key" ON "Scholarship"("code")`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "Scholarship_tokenHash_key" ON "Scholarship"("tokenHash")`,
   `CREATE INDEX IF NOT EXISTS "Scholarship_email_idx" ON "Scholarship"("email")`,
@@ -54,6 +63,35 @@ const STATEMENTS = [
   `CREATE UNIQUE INDEX IF NOT EXISTS "ScholarshipTrack_stripeSessionId_key" ON "ScholarshipTrack"("stripeSessionId")`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "ScholarshipTrack_scholarshipId_trackId_key" ON "ScholarshipTrack"("scholarshipId", "trackId")`,
   `CREATE INDEX IF NOT EXISTS "ScholarshipTrack_studentId_idx" ON "ScholarshipTrack"("studentId")`,
+  `CREATE TABLE IF NOT EXISTS "ScholarshipNotice" (
+    "id" TEXT NOT NULL,
+    "scholarshipId" TEXT NOT NULL,
+    "kind" TEXT NOT NULL,
+    "sentAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "ScholarshipNotice_pkey" PRIMARY KEY ("id")
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "ScholarshipNotice_scholarshipId_kind_key" ON "ScholarshipNotice"("scholarshipId", "kind")`,
+  `CREATE TABLE IF NOT EXISTS "ScholarshipApplication" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "country" TEXT,
+    "locale" TEXT NOT NULL DEFAULT 'en',
+    "background" TEXT,
+    "motivation" TEXT NOT NULL,
+    "goals" TEXT,
+    "trackIds" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+    "links" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'new',
+    "reviewNote" TEXT,
+    "reviewedAt" TIMESTAMP(3),
+    "reviewedBy" TEXT,
+    "scholarshipId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "ScholarshipApplication_pkey" PRIMARY KEY ("id")
+  )`,
+  `CREATE INDEX IF NOT EXISTS "ScholarshipApplication_email_idx" ON "ScholarshipApplication"("email")`,
+  `CREATE INDEX IF NOT EXISTS "ScholarshipApplication_status_createdAt_idx" ON "ScholarshipApplication"("status", "createdAt")`,
 ];
 
 let ready: Promise<void> | null = null;

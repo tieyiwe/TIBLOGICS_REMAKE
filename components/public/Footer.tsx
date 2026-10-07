@@ -12,6 +12,7 @@ const products = [
   { label: "CareFlow AI", href: "#" },
   { label: "ShipFrica", href: "#" },
   { label: "AI Academy", href: "/learning-box" },
+  { label: "Tilo Vision Scholarship", href: "/tilo-vision-scholarship" },
   { label: "RoofGuard", href: "#" },
   { label: "Tibintel", href: "https://tibintel.com" },
   { label: "Goal Tester", href: "#" },

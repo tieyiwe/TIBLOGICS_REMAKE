@@ -115,6 +115,49 @@ function CoverageInput({ value, onChange }: { value: number; onChange: (n: numbe
   );
 }
 
+type CondKey = "sponsor" | "sponsorEmail" | "pickDays" | "completeDays" | "partner" | "partnerRole";
+
+/** Sponsor and the optional deadlines (days after accepting). */
+function ConditionsFields(v: { sponsor: string; sponsorEmail: string; pickDays: string; completeDays: string; partner: string; partnerRole: string; onChange: (k: CondKey, v: string) => void }) {
+  const num = (x: string) => x.replace(/[^0-9]/g, "").slice(0, 3);
+  return (
+    <div className="grid gap-5 lg:grid-cols-2">
+      <fieldset className="space-y-3 lg:col-span-2">
+        <legend className={label}>Partner mention (optional)</legend>
+        <p className={hint}>When the scholarship is given through a partner or another organisation. Printed on the congratulations email and the award letter.</p>
+        <div className="grid gap-3 sm:grid-cols-[1fr_240px]">
+          <input className={input + " mt-0"} placeholder="Organisation name" maxLength={120} value={v.partner} onChange={(e) => v.onChange("partner", e.target.value)} aria-label="Partner organisation" />
+          <select className={input + " mt-0"} value={v.partnerRole || "partnership"} onChange={(e) => v.onChange("partnerRole", e.target.value)} aria-label="How the partner is mentioned">
+            <option value="partnership">“Awarded in partnership with …”</option>
+            <option value="nominated">“Nominated by …”</option>
+            <option value="through">“Awarded through …”</option>
+          </select>
+        </div>
+      </fieldset>
+      <fieldset className="space-y-3">
+        <legend className={label}>Sponsor (optional)</legend>
+        <p className={hint}>Who funds it. Shown to the scholar; the sponsor can get an impact report (first name and initial only).</p>
+        <input className={input} placeholder="Sponsor name" maxLength={120} value={v.sponsor} onChange={(e) => v.onChange("sponsor", e.target.value)} aria-label="Sponsor name" />
+        <input className={input} type="email" placeholder="Sponsor email for reports (not shown to the scholar)" maxLength={254} value={v.sponsorEmail} onChange={(e) => v.onChange("sponsorEmail", e.target.value)} aria-label="Sponsor email" />
+      </fieldset>
+      <fieldset className="space-y-3">
+        <legend className={label}>Conditions (optional)</legend>
+        <p className={hint}>Days after accepting. Reminders are sent automatically; tracks not chosen in time expire. Leave empty for no limit.</p>
+        <div className="grid grid-cols-2 gap-3">
+          <label className={label}>
+            Choose tracks within
+            <input className={input} inputMode="numeric" placeholder="e.g. 30" value={v.pickDays} onChange={(e) => v.onChange("pickDays", num(e.target.value))} aria-label="Choose tracks within days" />
+          </label>
+          <label className={label}>
+            Complete within
+            <input className={input} inputMode="numeric" placeholder="e.g. 90" value={v.completeDays} onChange={(e) => v.onChange("completeDays", num(e.target.value))} aria-label="Complete within days" />
+          </label>
+        </div>
+      </fieldset>
+    </div>
+  );
+}
+
 /** Award the scholarship to one or more people: each becomes a draft to review. */
 export function AwardForm({ tracks }: { tracks: TrackOption[] }) {
   const [rows, setRows] = useState<Recipient[]>([{ name: "", email: "", locale: "en" }]);
@@ -126,6 +169,12 @@ export function AwardForm({ tracks }: { tracks: TrackOption[] }) {
   const [days, setDays] = useState(30);
   const [message, setMessage] = useState("");
   const [note, setNote] = useState("");
+  const [sponsor, setSponsor] = useState("");
+  const [sponsorEmail, setSponsorEmail] = useState("");
+  const [pickDays, setPickDays] = useState("");
+  const [completeDays, setCompleteDays] = useState("");
+  const [partner, setPartner] = useState("");
+  const [partnerRole, setPartnerRole] = useState("partnership");
   const { busy, msg, run } = useAction();
 
   const pool = limit ? tracks.filter((t) => chosen.includes(t.id)) : tracks;
@@ -151,6 +200,12 @@ export function AwardForm({ tracks }: { tracks: TrackOption[] }) {
             message: message.trim() || null,
             note: note.trim() || null,
             offerDays: days,
+            sponsorName: sponsor.trim() || null,
+            sponsorEmail: sponsorEmail.trim() || null,
+            pickDays: pickDays ? parseInt(pickDays, 10) : null,
+            completeDays: completeDays ? parseInt(completeDays, 10) : null,
+            partnerName: partner.trim() || null,
+            partnerRole: partner.trim() ? partnerRole : null,
           });
           const skipped = (r.skipped as Array<{ email: string; reason: string }>).map((s) => `${s.email}: ${s.reason}`);
           if (r.created.length) setRows([{ name: "", email: "", locale: "en" }]);
@@ -263,10 +318,23 @@ export function AwardForm({ tracks }: { tracks: TrackOption[] }) {
         </div>
       </div>
 
+      <ConditionsFields
+        sponsor={sponsor}
+        sponsorEmail={sponsorEmail}
+        pickDays={pickDays}
+        completeDays={completeDays}
+        partner={partner}
+        partnerRole={partnerRole}
+        onChange={(k, v) => ({ sponsor: setSponsor, sponsorEmail: setSponsorEmail, pickDays: setPickDays, completeDays: setCompleteDays, partner: setPartner, partnerRole: setPartnerRole })[k](v)}
+      />
+
       <div className="rounded-lg border border-[#F4C9A0] bg-[#FFFBF6] px-4 py-3 font-dm text-[13px] text-[var(--a-ink)]">
         Each recipient: <strong>{count} track{count === 1 ? "" : "s"}</strong> at <strong>{pct >= 100 ? "100% (free)" : `${pct}% covered`}</strong>
         {limit ? ` from ${chosen.length} chosen track${chosen.length === 1 ? "" : "s"}` : " from any live track"}. Worth up to <strong>{usd(worth)}</strong> per person.
-        Individual tracks only: never team plans or the monthly plan.
+        {pickDays ? ` Tracks to be chosen within ${pickDays} days of accepting.` : ""}
+        {completeDays ? ` Completion target: ${completeDays} days.` : ""}
+        {partner.trim() ? ` ${partnerRole === "nominated" ? "Nominated by" : partnerRole === "through" ? "Awarded through" : "In partnership with"} ${partner.trim()}.` : ""}
+        {sponsor.trim() ? ` Sponsored by ${sponsor.trim()}.` : ""} Individual tracks only: never team plans or the monthly plan.
       </div>
 
       <div>
@@ -352,6 +420,12 @@ export interface EditableScholarship {
   note: string | null;
   offerDays: number;
   used: number;
+  sponsorName: string | null;
+  sponsorEmail: string | null;
+  pickDays: number | null;
+  completeDays: number | null;
+  partnerName: string | null;
+  partnerRole: string | null;
 }
 
 /** Edit a draft (everything) or an approved/accepted award (tracks and note). */
@@ -368,7 +442,17 @@ export function EditScholarship({ s, tracks }: { s: EditableScholarship; tracks:
       onSubmit={(e) => {
         e.preventDefault();
         void run(async () => {
-          const body: Record<string, unknown> = { trackCount: f.trackCount, trackIds: f.trackIds, note: f.note };
+          const body: Record<string, unknown> = {
+            trackCount: f.trackCount,
+            trackIds: f.trackIds,
+            note: f.note,
+            sponsorName: f.sponsorName?.trim() || null,
+            sponsorEmail: f.sponsorEmail?.trim() || null,
+            pickDays: f.pickDays || null,
+            completeDays: f.completeDays || null,
+            partnerName: f.partnerName?.trim() || null,
+            partnerRole: f.partnerName?.trim() ? f.partnerRole || "partnership" : null,
+          };
           if (draft) Object.assign(body, { name: f.name, email: f.email, locale: f.locale, coveragePct: f.coveragePct, message: f.message, offerDays: f.offerDays });
           await send(`/api/admin/learn/scholarships/${s.id}`, "PATCH", body);
           setOpen(false);
@@ -431,6 +515,25 @@ export function EditScholarship({ s, tracks }: { s: EditableScholarship; tracks:
           <textarea className={area} rows={3} maxLength={1000} value={f.message ?? ""} onChange={(e) => set("message", e.target.value)} />
         </label>
       )}
+      <ConditionsFields
+        sponsor={f.sponsorName ?? ""}
+        sponsorEmail={f.sponsorEmail ?? ""}
+        pickDays={f.pickDays ? String(f.pickDays) : ""}
+        completeDays={f.completeDays ? String(f.completeDays) : ""}
+        partner={f.partnerName ?? ""}
+        partnerRole={f.partnerRole ?? "partnership"}
+        onChange={(k, v) =>
+          k === "sponsor"
+            ? set("sponsorName", v)
+            : k === "sponsorEmail"
+              ? set("sponsorEmail", v)
+              : k === "partner"
+                ? set("partnerName", v)
+                : k === "partnerRole"
+                  ? set("partnerRole", v)
+                  : set(k, v ? parseInt(v, 10) : null)
+        }
+      />
       <label className={label}>
         Internal note
         <input className={input} maxLength={1000} value={f.note ?? ""} onChange={(e) => set("note", e.target.value)} />
@@ -523,6 +626,167 @@ export function AwardActions({ id, status, freeTracks }: { id: string; status: s
         </div>
       )}
       <Msg msg={msg} />
+    </div>
+  );
+}
+
+/** Open or close public applications (/tilo-vision-scholarship). */
+export function ApplicationsToggle({ open }: { open: boolean }) {
+  const { busy, msg, run } = useAction();
+  return (
+    <div className="flex flex-col items-end">
+      <button
+        type="button"
+        className={open ? ghost : btn}
+        disabled={busy}
+        data-testid="apps-toggle"
+        onClick={() =>
+          void run(async () => {
+            await send("/api/admin/learn/scholarships/applications", "POST", { open: !open });
+            return open ? "Applications closed. The page now says so." : "Applications open.";
+          })
+        }
+      >
+        {open ? "Close applications" : "Open applications"}
+      </button>
+      <Msg msg={msg} />
+    </div>
+  );
+}
+
+/** Shortlist, decline (optionally with a kind email) or award an application. */
+export function ApplicationActions({ id, name, status, tracks, suggested }: { id: string; name: string; status: string; tracks: TrackOption[]; suggested: string[] }) {
+  const { busy, msg, run } = useAction();
+  const [mode, setMode] = useState<"none" | "decline" | "award">("none");
+  const [notify, setNotify] = useState(true);
+  const [count, setCount] = useState(Math.max(1, Math.min(3, suggested.length || 1)));
+  const [pct, setPct] = useState(100);
+  const [limit, setLimit] = useState(suggested.length > 0);
+  const [chosen, setChosen] = useState<string[]>(suggested);
+  const [sponsor, setSponsor] = useState("");
+  const [sponsorEmail, setSponsorEmail] = useState("");
+  const [pickDays, setPickDays] = useState("");
+  const [completeDays, setCompleteDays] = useState("");
+  const [message, setMessage] = useState("");
+  const [partner, setPartner] = useState("");
+  const [partnerRole, setPartnerRole] = useState("partnership");
+  const act = (body: Record<string, unknown>, done: string) => void run(async () => {
+    await send(`/api/admin/learn/scholarships/applications/${id}`, "POST", body);
+    setMode("none");
+    return done;
+  });
+  if (status === "awarded") return <Msg msg={msg} />;
+  return (
+    <div className="mt-3 w-full">
+      <div className="flex flex-wrap gap-2">
+        <button type="button" className={btn} disabled={busy} onClick={() => setMode(mode === "award" ? "none" : "award")} data-testid="app-award">Award</button>
+        {status !== "shortlisted" && (
+          <button type="button" className={ghost} disabled={busy} onClick={() => act({ action: "shortlist" }, "Shortlisted.")}>Shortlist</button>
+        )}
+        {status !== "declined" && (
+          <button type="button" className={danger} disabled={busy} onClick={() => setMode(mode === "decline" ? "none" : "decline")}>Decline</button>
+        )}
+      </div>
+      {mode === "decline" && (
+        <div className="mt-2 rounded-lg border border-red-200 bg-red-50 p-3 font-dm text-[13px] text-red-900">
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} /> Send {name} a kind “not this time” email
+          </label>
+          <button type="button" className={`${danger} mt-2`} disabled={busy} onClick={() => act({ action: "decline", notify }, notify ? "Declined and emailed." : "Declined (no email).")}>
+            Confirm decline
+          </button>
+        </div>
+      )}
+      {mode === "award" && (
+        <form
+          className="mt-2 space-y-3 rounded-lg border border-[var(--a-border)] bg-[var(--a-surface-2)] p-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            act(
+              {
+                action: "award",
+                trackCount: count,
+                coveragePct: pct,
+                trackIds: limit ? chosen : [],
+                sponsorName: sponsor.trim() || null,
+                sponsorEmail: sponsorEmail.trim() || null,
+                pickDays: pickDays ? parseInt(pickDays, 10) : null,
+                completeDays: completeDays ? parseInt(completeDays, 10) : null,
+                partnerName: partner.trim() || null,
+                partnerRole: partner.trim() ? partnerRole : null,
+                message: message.trim() || null,
+              },
+              "Award draft created: review and approve it in “Waiting for your review”.",
+            );
+          }}
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <span className={label}>Coverage</span>
+              <CoverageInput value={pct} onChange={setPct} />
+            </div>
+            <label className={label}>
+              Number of tracks
+              <input className={input} type="number" min={1} max={20} value={count} onChange={(e) => setCount(Math.max(1, parseInt(e.target.value, 10) || 1))} />
+            </label>
+          </div>
+          <label className="flex items-center gap-2 font-dm text-[13px]">
+            <input type="checkbox" checked={limit} onChange={(e) => setLimit(e.target.checked)} /> Only the tracks chosen below
+          </label>
+          {limit && (
+            <div className="grid gap-1.5 sm:grid-cols-2">
+              {tracks.map((t) => (
+                <label key={t.id} className="flex items-center gap-2 font-dm text-[13px]">
+                  <input type="checkbox" checked={chosen.includes(t.id)} onChange={(e) => setChosen((c) => (e.target.checked ? [...c, t.id] : c.filter((x) => x !== t.id)))} />
+                  <span className="break-words">{t.title}{suggested.includes(t.id) ? " · asked for" : ""}</span>
+                </label>
+              ))}
+            </div>
+          )}
+          <ConditionsFields
+            sponsor={sponsor}
+            sponsorEmail={sponsorEmail}
+            pickDays={pickDays}
+            completeDays={completeDays}
+            partner={partner}
+            partnerRole={partnerRole}
+            onChange={(k, v) => ({ sponsor: setSponsor, sponsorEmail: setSponsorEmail, pickDays: setPickDays, completeDays: setCompleteDays, partner: setPartner, partnerRole: setPartnerRole })[k](v)}
+          />
+          <label className={label}>
+            Personal message (optional)
+            <textarea className={area} rows={2} maxLength={1000} value={message} onChange={(e) => setMessage(e.target.value)} />
+          </label>
+          <button type="submit" className={btn} disabled={busy || (limit && chosen.length < count)}>{busy ? "Creating…" : "Create award draft"}</button>
+        </form>
+      )}
+      <Msg msg={msg} />
+    </div>
+  );
+}
+
+/** Email a sponsor their impact report. */
+export function SponsorReportButton({ sponsor, email }: { sponsor: string; email: string | null }) {
+  const { busy, msg, run } = useAction();
+  const [to, setTo] = useState(email ?? "");
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+      <input className={input + " mt-0 sm:w-64"} type="email" value={to} onChange={(e) => setTo(e.target.value)} placeholder="Sponsor email" aria-label={`Email for ${sponsor}`} />
+      <div>
+        <button
+          type="button"
+          className={ghost}
+          disabled={busy || !to.trim()}
+          onClick={() =>
+            void run(async () => {
+              const r = await send("/api/admin/learn/scholarships/sponsors", "POST", { sponsor, to: to.trim() });
+              return `Impact report sent to ${r.to}.`;
+            })
+          }
+        >
+          {busy ? "Sending…" : "Email report"}
+        </button>
+        <Msg msg={msg} />
+      </div>
     </div>
   );
 }

@@ -29,7 +29,7 @@ export default function AutoVideoPanel() {
   const [s, setS] = useState<VideoSummary | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [batchSize, setBatchSize] = useState(10);
+  const [batchSize, setBatchSize] = useState(25);
 
   const load = useCallback(async (): Promise<VideoSummary | null> => {
     try {
@@ -206,7 +206,7 @@ export default function AutoVideoPanel() {
                   className="h-8 rounded-[10px] border border-[var(--a-border-strong)] bg-[var(--a-surface)] px-1.5 font-dm text-[12.5px] text-[var(--a-ink)]"
                   data-testid="video-batch-size"
                 >
-                  {[5, 10, 20].map((n) => (
+                  {[5, 10, 25, 50].map((n) => (
                     <option key={n} value={n}>
                       {n}
                     </option>

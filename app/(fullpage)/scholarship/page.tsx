@@ -85,6 +85,18 @@ export default async function MyScholarshipPage({ searchParams }: { searchParams
                   </div>
                   <div className="px-6 py-5 sm:px-8">
                     {welcome === "1" && <p className="mb-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900">{t("learn.scholar.page.welcome")}</p>}
+                    {s.partner && <p className="mb-1 text-sm font-bold text-[#B4530F]" data-testid="scholar-partner">{t(`learn.scholar.partner.${s.partner.role}`, { partner: s.partner.name })}</p>}
+                    {s.sponsorName && <p className="mb-3 text-sm font-semibold text-[var(--ink)]">{t("learn.scholar.letter.sponsorLine", { sponsor: s.sponsorName })}</p>}
+                    {(s.pickBy || s.completeBy) && (
+                      <ul className="mb-4 space-y-1 rounded-xl border border-[#F4C9A0] bg-[#FFFBF6] px-4 py-3 text-sm" data-testid="scholar-deadlines">
+                        {s.pickBy && (
+                          <li className={s.picksClosed ? "text-[var(--ink3)]" : "font-semibold text-[var(--ink)]"}>
+                            {s.picksClosed ? t("learn.scholar.page.pickClosed", { date: fmtDate(s.pickBy, locale, true) }) : t("learn.scholar.welcome.pickBy", { date: fmtDate(s.pickBy, locale, true) })}
+                          </li>
+                        )}
+                        {s.completeBy && <li className="font-semibold text-[var(--ink)]">{t("learn.scholar.welcome.completeBy", { date: fmtDate(s.completeBy, locale, true) })}</li>}
+                      </ul>
+                    )}
                     {s.remaining > 0 ? (
                       <>
                         <h2 className="text-base font-black text-[var(--ink)]">
@@ -93,9 +105,12 @@ export default async function MyScholarshipPage({ searchParams }: { searchParams
                         <p className="mt-1 text-xs text-[var(--ink3)]">{t("learn.scholar.page.final")}</p>
                       </>
                     ) : (
-                      <p className="text-sm text-[var(--ink2)]">{t("learn.scholar.page.allUsed")}</p>
+                      <p className="text-sm text-[var(--ink2)]">{s.picksClosed && s.picks.length < s.trackCount ? t("learn.scholar.page.closedBody") : t("learn.scholar.page.allUsed")}</p>
                     )}
                     <p className="mt-2 text-xs text-[var(--ink3)]">{t("learn.scholar.scope")}</p>
+                    <a href={`/api/learn/scholarship/letter?id=${encodeURIComponent(s.id)}`} className="mt-3 inline-flex min-h-11 items-center rounded-full border border-[var(--border)] px-4 text-sm font-semibold text-[var(--ink)] hover:border-[var(--ink3)]" data-testid="letter-download">
+                      ↓ {t("learn.scholar.page.letter")}
+                    </a>
                   </div>
                 </div>
 

@@ -23,6 +23,8 @@ export interface CertificateData {
   accentColor: string;
   hours: number;
   distinction: boolean;
+  /** "Tilo Vision Scholar": earned on a track unlocked with the scholarship. */
+  scholar?: boolean;
   issuedAt: Date;
   reference: string;
   verifyUrl: string;
@@ -41,7 +43,8 @@ type Font = { name: string; data: Buffer; weight: 400 | 700; style: "normal" | "
 let fontsP: Promise<Font[]> | null = null;
 let logoP: Promise<string> | null = null;
 
-function fonts(): Promise<Font[]> {
+/** The certificate fonts (also used by the scholarship award letter). */
+export function fonts(): Promise<Font[]> {
   fontsP ??= (async () => {
     const dir = path.join(process.cwd(), "lib", "og", "fonts");
     const f = (n: string) => readFile(path.join(dir, n));
@@ -70,7 +73,8 @@ function fonts(): Promise<Font[]> {
   return fontsP!;
 }
 
-function logo(): Promise<string> {
+/** The TIBLOGICS logo as a data URL (also used by the award letter). */
+export function logo(): Promise<string> {
   logoP ??= readFile(path.join(process.cwd(), "lib", "og", "cert-logo.png")).then((b) => `data:image/png;base64,${b.toString("base64")}`);
   return logoP;
 }
@@ -168,6 +172,11 @@ async function certificate(d: CertificateData) {
           {d.distinction ? (
             <div style={{ display: "flex", padding: "8px 26px", borderRadius: 999, background: GOLD, fontSize: 24, fontWeight: 700, letterSpacing: 4, color: "white", textTransform: "uppercase" }}>
               {t("learn.certdoc.distinction")}
+            </div>
+          ) : null}
+          {d.scholar ? (
+            <div style={{ display: "flex", padding: "8px 26px", borderRadius: 999, background: NAVY2, fontSize: 24, fontWeight: 700, letterSpacing: 4, color: "#F9A738", textTransform: "uppercase" }}>
+              {t("learn.certdoc.scholar")}
             </div>
           ) : null}
         </div>

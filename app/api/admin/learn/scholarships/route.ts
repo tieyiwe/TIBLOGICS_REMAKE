@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { audit } from "@/lib/admin/audit";
 import { scholarshipWriter } from "@/lib/learn/scholarship/guard";
-import { createDrafts, MAX_RECIPIENTS, MAX_TRACKS, OFFER_DAYS, ScholarshipError } from "@/lib/learn/scholarship/service";
+import { COMPLETE_DAYS, createDrafts, MAX_RECIPIENTS, MAX_TRACKS, OFFER_DAYS, PICK_DAYS, ScholarshipError } from "@/lib/learn/scholarship/service";
 
 // Award the Tilo Vision Scholarship to one or more people. Each becomes a
 // draft for review; nothing is sent until it is approved ([id], action approve).
@@ -18,6 +18,12 @@ const Body = z.object({
   message: z.string().max(2000).nullish(),
   note: z.string().max(2000).nullish(),
   offerDays: z.number().int().min(OFFER_DAYS.min).max(OFFER_DAYS.max).optional(),
+  sponsorName: z.string().max(200).nullish(),
+  sponsorEmail: z.string().max(320).nullish(),
+  pickDays: z.number().int().min(PICK_DAYS.min).max(PICK_DAYS.max).nullish(),
+  completeDays: z.number().int().min(COMPLETE_DAYS.min).max(COMPLETE_DAYS.max).nullish(),
+  partnerName: z.string().max(200).nullish(),
+  partnerRole: z.enum(["partnership", "nominated", "through"]).nullish(),
 });
 
 export async function POST(req: NextRequest) {
