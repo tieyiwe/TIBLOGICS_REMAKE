@@ -44,7 +44,10 @@ externalPort = 80
 [deployment]
 deploymentTarget = "gce"
 run = ["sh", "-c", "npm run start"]
-build = ["sh", "-c", "npm run build"]
+# The build caches (.next/cache, several GB, and the dev server's .next/dev)
+# are not used by the running site; left in, they push the published image
+# over Replit's 8 GiB limit ("image size is over the limit").
+build = ["sh", "-c", "npm run build && rm -rf .next/cache .next/dev"]
 
 [postMerge]
 path = "scripts/post-merge.sh"
