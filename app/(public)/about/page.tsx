@@ -10,7 +10,7 @@ import { getLocale, getT } from "@/lib/i18n/server";
 import { pageMetadata } from "@/lib/seo/meta";
 import JsonLd from "@/components/seo/JsonLd";
 import { breadcrumbNode, webPageNode } from "@/lib/seo/jsonld";
-import { absUrl, ARFA_ID, FOUNDER_ID, ORG, ORG_ID } from "@/lib/seo/site";
+import { absUrl, ARFA_ID, FOUNDER_ID, ORG, ORG_ID, SHOW_FOUNDER } from "@/lib/seo/site";
 import { accent } from "@/components/public/accent";
 import Html from "../_i18n/Html";
 import { DonateSection } from "@/components/donate/Donate";
@@ -33,7 +33,7 @@ export async function generateMetadata(): Promise<Metadata> {
     socialTitle: t("pages.about.meta.ogTitle"),
     socialDescription: t("pages.about.meta.ogDescription"),
     keywords: [
-      "about TIBLOGICS", "AI agency mission", "AI implementation company", "Tieyiwe Bassole",
+      "about TIBLOGICS", "AI agency mission", "AI implementation company", ...(SHOW_FOUNDER ? [ORG.founder.name] : []),
       "AI consulting firm", "digital solutions agency", "AI for African businesses",
       "bilingual AI agency", "AI first principles", "ARFA AI Academy", "TILO GROUP LLC",
     ],
@@ -67,7 +67,8 @@ const industries = [
   { id: "enterprise", icon: Building2 },
 ] as const;
 
-const glance = ["company", "founder", "markets", "lang", "start"] as const;
+// The founder row (name) only while SHOW_FOUNDER is on.
+const glance = (SHOW_FOUNDER ? ["company", "founder", "markets", "lang", "start"] : ["company", "markets", "lang", "start"]) as Array<"company" | "founder" | "markets" | "lang" | "start">;
 
 const orangeAccent = (words: string, i: number) => (
   <span key={i} className="font-display italic font-semibold text-[#F47C20]">{words}</span>
@@ -91,11 +92,11 @@ export default async function AboutPage() {
               inLanguage: locale,
             }),
             mainEntity: { "@id": ORG_ID },
-            mentions: [{ "@id": FOUNDER_ID }, { "@id": ARFA_ID }],
-            primaryImageOfPage: { "@type": "ImageObject", url: absUrl(FOUNDER_PHOTO), width: 1200, height: 500 },
+            mentions: SHOW_FOUNDER ? [{ "@id": FOUNDER_ID }, { "@id": ARFA_ID }] : [{ "@id": ARFA_ID }],
+            ...(SHOW_FOUNDER ? { primaryImageOfPage: { "@type": "ImageObject", url: absUrl(FOUNDER_PHOTO), width: 1200, height: 500 } } : {}),
           },
           // Adds the photo to the founder entity the root layout already declares.
-          { "@type": "Person", "@id": FOUNDER_ID, name: founder, jobTitle: ORG.founder.jobTitle, image: absUrl(FOUNDER_PHOTO) },
+          ...(SHOW_FOUNDER ? [{ "@type": "Person", "@id": FOUNDER_ID, name: founder, jobTitle: ORG.founder.jobTitle, image: absUrl(FOUNDER_PHOTO) }] : []),
           breadcrumbNode([{ name: t("seo.home"), path: "/" }, { name: t("seo.about"), path: "/about" }]),
         ]}
       />
@@ -293,8 +294,10 @@ export default async function AboutPage() {
 
       {/* ── Founder ──────────────────────────────────────────────────────── */}
       <section aria-labelledby="about-founder" className="bg-white">
-        <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-4 py-16 sm:px-6 sm:py-24 md:grid-cols-[minmax(0,320px)_1fr] lg:gap-16 lg:px-8">
-          <figure className="mx-auto w-full max-w-[320px]">
+        <div className={SHOW_FOUNDER
+          ? "mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-4 py-16 sm:px-6 sm:py-24 md:grid-cols-[minmax(0,320px)_1fr] lg:gap-16 lg:px-8"
+          : "mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8"}>
+          {SHOW_FOUNDER && <figure className="mx-auto w-full max-w-[320px]">
             <div className="relative aspect-[4/5] overflow-hidden rounded-3xl bg-[#F47C20] shadow-[0_24px_60px_-24px_rgba(184,80,10,0.55)]">
               <Image
                 src={FOUNDER_PHOTO}
@@ -308,7 +311,7 @@ export default async function AboutPage() {
               <span className="block font-syne text-lg font-bold text-[#0D1B2A]">{founder}</span>
               <span className="block font-dm text-sm text-[#5A6E84]">{t("pages.about.founder.role")}</span>
             </figcaption>
-          </figure>
+          </figure>}
           <div className="min-w-0">
             <h2 id="about-founder" className="section-tag">{t("pages.about.founder.tag")}</h2>
             <blockquote className="mt-5">
@@ -316,6 +319,9 @@ export default async function AboutPage() {
                 <span className="font-display text-5xl not-italic leading-[0] text-[#F47C20] align-[-0.35em] mr-1" aria-hidden>&ldquo;</span>
                 {t("pages.about.founder.quote")}
               </p>
+              {!SHOW_FOUNDER && (
+                <footer className="mt-4 font-dm text-sm font-semibold text-[#5A6E84]">— {t("pages.about.founder.role")}</footer>
+              )}
             </blockquote>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link href="/book" className="btn-primary justify-center text-sm">

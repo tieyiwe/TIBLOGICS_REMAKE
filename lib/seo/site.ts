@@ -30,6 +30,12 @@ export const HTML_LANG: Record<Locale, string> = { en: "en", fr: "fr", sw: "sw" 
 export const ORG_ID = `${SITE_URL}/#organization`;
 export const WEBSITE_ID = `${SITE_URL}/#website`;
 export const FOUNDER_ID = `${SITE_URL}/#founder`;
+/**
+ * The founder's name and photo stay off the public site (About page,
+ * structured data, llms.txt) until the brand is a known name. Set to true to
+ * bring them back everywhere.
+ */
+export const SHOW_FOUNDER = false;
 export const ARFA_ID = `${SITE_URL}/learning-box#arfa`;
 
 /** Absolute URL on the canonical origin for a path ("/x") or an absolute URL. */
@@ -53,7 +59,7 @@ export const ORG = {
   /** The founder's address (about page). */
   founderEmail: "ai@tiblogics.com",
   /** ARFA AI Academy and training enquiries (training terms, event emails). */
-  academyEmail: "arfa_edu@tiblogics.com",
+  academyEmail: "arfa@tiblogics.com",
   founder: { name: "Tieyiwe Bassole", jobTitle: "Founder & CEO" },
   /** Official social profiles linked from the site's structured data. */
   sameAs: ["https://linkedin.com/company/tiblogics", "https://twitter.com/tiblogics"],

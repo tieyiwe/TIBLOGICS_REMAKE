@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { maskEmail } from "@/lib/log/redact";
 import prisma from "@/lib/prisma";
+import { alertCheckoutSale, alertInvoiceSale } from "@/lib/payments/sale-alert";
 import { sendConfirmationEmail, sendTiweNotification, sendEventWelcomeEmail, sendAdminNewRegistrationAlert, sendOrderConfirmationEmail, sendAdminOrderAlert } from "@/lib/resend";
 import { recordScholarshipPayment } from "@/lib/learn/scholarship/service";
 import { DONATION_PRODUCT, markDonationCanceled, recordDonation, recordDonationRenewal } from "@/lib/learn/scholarship/donations";
@@ -87,6 +88,7 @@ export async function POST(req: Request) {
 
     // ── Tilo Vision Scholarship: each monthly gift renewal ─────────────────
     if (event.type === "invoice.paid") {
+      await alertInvoiceSale(event.data.object as Stripe.Invoice);
       await recordDonationRenewal(event.data.object as Stripe.Invoice).catch((err) => {
         console.error("[stripe/webhook] donation renewal FAILED, asking Stripe to retry", err);
         retry = true;
@@ -128,6 +130,7 @@ export async function POST(req: Request) {
       if (session.metadata?.product === "learn-track") await trackPurchase(session);
       if (session.metadata?.product === DONATION_PRODUCT) await recordDonation(session).catch((err) => console.error("[stripe/webhook] donation (async)", err));
       await recordRedemption(session);
+      await alertCheckoutSale(session);
     }
 
     if (event.type === "checkout.session.completed") {
@@ -140,6 +143,8 @@ export async function POST(req: Request) {
       // (delayed methods are recorded on async_payment_succeeded above).
       // Idempotent per session; never throws.
       if (session.payment_status !== "unpaid") await recordRedemption(session);
+      // Sales alert to sales@tiblogics.com (paid sessions only, once each).
+      await alertCheckoutSale(session);
 
       // ── Learn subscription checkout ─────────────────────────────────────
       if (session.metadata?.product === "learn" && session.mode === "subscription") {

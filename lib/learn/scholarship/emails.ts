@@ -1,5 +1,5 @@
-import { arfaMailer } from "@/lib/resend";
-import { ARFA_EMAIL, LEARN_SITE, learnEmailEsc as esc, learnEmailP as p, learnEmailShell as shell } from "@/lib/learn/emails";
+import { SCHOLARSHIP_ADDRESS, scholarshipMailer } from "@/lib/resend";
+import { LEARN_SITE, learnEmailEsc as esc, learnEmailP as p, learnEmailShell as shell } from "@/lib/learn/emails";
 import { translator, type T } from "@/lib/learn/i18n";
 import { isLocale } from "@/lib/i18n/config";
 
@@ -112,7 +112,7 @@ export async function sendScholarshipAward(to: {
     (to.hasAccount ? "" : `<p style="font-size:14px;color:#5b6b72;text-align:center;margin:0 0 12px;">${t("learn.scholar.email.haveAccount", { link: a(loginUrl, t("learn.scholar.signIn")) })}</p>`) +
     `<p style="font-size:12px;color:#8A9BA0;line-height:1.6;margin:0;word-break:break-all;">${t("learn.scholar.email.fallback", { url: a(link, link) })}</p>`;
 
-  await arfaMailer.emails.send({
+  await scholarshipMailer.emails.send({
     to: to.email,
     subject: to.reminder ? t("learn.scholar.remind.offer.subject") : t("learn.scholar.email.subject", { name: first }),
     html: shell(
@@ -156,7 +156,7 @@ export async function sendScholarshipWelcome(to: {
     (dates.length ? box(dates.map((c) => `<p style="font-size:13px;font-weight:700;color:#131A1B;line-height:1.6;margin:0 0 4px;">${esc(c)}</p>`).join("")) : "") +
     p(esc(t("learn.scholar.welcome.letter"))) +
     scholarFooter(t);
-  await arfaMailer.emails.send({
+  await scholarshipMailer.emails.send({
     to: to.email,
     subject: t("learn.scholar.welcome.subject", { name: first }),
     html: shell(t, esc(t("learn.scholar.welcome.title")), body, { href: PAGE, label: `${t("learn.scholar.nudge.cta")} →` }),
@@ -212,7 +212,7 @@ export async function sendScholarNotice(to: {
       : to.kind === "completed"
         ? { href: `${LEARN_SITE}/learn/certificates`, label: `${t("learn.scholar.notice.completed.cta")} →` }
         : { href: `${LEARN_SITE}/learn`, label: `${t("learn.scholar.notice.continue")} →` };
-  await arfaMailer.emails.send({ to: to.email, subject, html: shell(t, esc(t(`${k}.title`, vars)), body, cta) });
+  await scholarshipMailer.emails.send({ to: to.email, subject, html: shell(t, esc(t(`${k}.title`, vars)), body, cta) });
 }
 
 // ── Applications (public page /tilo-vision-scholarship) ──────────────────
@@ -226,7 +226,7 @@ export async function sendApplicationReceived(to: { email: string; name: string;
     p(esc(t("learn.scholarApply.email.received.p2"))) +
     box(`<p style="font-size:13px;color:#5b6b72;margin:0;">${esc(t("learn.scholarApply.email.reference"))} ${strong(esc(to.reference))}</p>`) +
     small(esc(t("learn.scholarApply.email.received.p3")));
-  await arfaMailer.emails.send({
+  await scholarshipMailer.emails.send({
     to: to.email,
     subject: t("learn.scholarApply.email.received.subject"),
     html: shell(t, esc(t("learn.scholarApply.email.received.title")), body, { href: `${LEARN_SITE}/learning-box`, label: `${t("learn.scholarApply.email.explore")} →` }),
@@ -237,7 +237,7 @@ export async function sendApplicationDeclined(to: { email: string; name: string;
   const t = translator(to.locale);
   const first = to.name.trim().split(/\s+/)[0];
   const body = p(esc(t("learn.scholar.email.hello", { name: first }))) + p(esc(t("learn.scholarApply.email.declined.p1"))) + p(esc(t("learn.scholarApply.email.declined.p2")));
-  await arfaMailer.emails.send({
+  await scholarshipMailer.emails.send({
     to: to.email,
     subject: t("learn.scholarApply.email.declined.subject"),
     html: shell(t, esc(t("learn.scholarApply.email.declined.title")), body, { href: `${LEARN_SITE}/learning-box`, label: `${t("learn.scholarApply.email.explore")} →` }),
@@ -254,8 +254,8 @@ export async function sendApplicationAlert(a: { id: string; name: string; email:
       ${row("Tracks of interest", esc(a.tracks.join(", ") || "Any"))}
     </table>` +
     `<div style="margin:0 0 14px;padding:12px 16px;background:#F4F7FB;border-radius:8px;font-size:14px;line-height:1.7;color:#131A1B;white-space:pre-line;">${esc(a.motivation.slice(0, 1500))}</div>`;
-  await arfaMailer.emails.send({
-    to: ARFA_EMAIL,
+  await scholarshipMailer.emails.send({
+    to: SCHOLARSHIP_ADDRESS,
     subject: `New Tilo Vision Scholarship application: ${a.name}`,
     html: shell(t, "New scholarship application", body, { href: `${LEARN_SITE}/admin_pro/learn/scholarships#applications`, label: "Review applications →" }),
   });
@@ -294,7 +294,7 @@ export async function sendSponsorReport(to: string, r: SponsorReport) {
       .map((s) => `<p style="font-size:14px;font-weight:800;color:#131A1B;margin:16px 0 2px;">${esc(s.who)}</p>${s.tracks.length ? progressTable(t, s.tracks) : `<p style="font-size:13px;color:#8A9BA0;margin:0 0 8px;">Choosing tracks.</p>`}`)
       .join("") +
     small("Scholars are shown by first name and initial only. Questions: reply to this email.");
-  await arfaMailer.emails.send({
+  await scholarshipMailer.emails.send({
     to,
     subject: `Your Tilo Vision Scholarship impact report: ${r.sponsor}`,
     html: shell(t, esc(`Impact report: ${r.sponsor}`), body, { href: `${LEARN_SITE}/tilo-vision-scholarship`, label: "About the scholarship →" }),
@@ -319,7 +319,7 @@ export async function sendDonationThanks(to: { email: string; name: string | nul
     p(esc(t("donate.email.p3"))) +
     (to.manage ? p(t("donate.email.manage", { link: `<a href="${to.manage}" style="color:#1B2A5E;font-weight:700;">${esc(t("donate.email.manageLink"))}</a>` })) : "") +
     small(esc(t("donate.email.legal")));
-  await arfaMailer.emails.send({
+  await scholarshipMailer.emails.send({
     to: to.email,
     subject: t("donate.email.subject"),
     html: shell(t, esc(t("donate.email.title")), body, { href: `${LEARN_SITE}/tilo-vision-scholarship`, label: `${t("donate.email.cta")} →` }),
@@ -329,8 +329,8 @@ export async function sendDonationThanks(to: { email: string; name: string | nul
 /** Staff alert (English): a new gift. */
 export async function sendDonationAlert(d: { name: string | null; email: string | null; amountCents: number; frequency: "once" | "monthly" }) {
   const t = translator("en");
-  await arfaMailer.emails.send({
-    to: ARFA_EMAIL,
+  await scholarshipMailer.emails.send({
+    to: SCHOLARSHIP_ADDRESS,
     subject: `New scholarship donation: ${money(d.amountCents, "en")}${d.frequency === "monthly" ? " monthly" : ""}`,
     html: shell(
       t,

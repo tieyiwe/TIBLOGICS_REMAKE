@@ -1,6 +1,6 @@
 // Transactional emails for ARFA (AI Readiness For All), the AI Academy of
 // TIBLOGICS. Every learner email goes through the ARFA mailer
-// (arfa_edu@tiblogics.com) so they match the training emails.
+// (arfa@tiblogics.com) so they match the training emails.
 import { arfaMailer } from "@/lib/resend";
 import prisma from "@/lib/prisma";
 import { translator, type T } from "./i18n";
@@ -24,7 +24,7 @@ const SITE = (
 ).replace(/\/$/, "");
 
 /** ARFA = AI Readiness For All. The education contact for every learner email. */
-export const ARFA_EMAIL = process.env.ARFA_SMTP_USER ?? "arfa_edu@tiblogics.com";
+export const ARFA_EMAIL = process.env.ARFA_SMTP_USER ?? "arfa@tiblogics.com";
 
 // The branded header, "ARFA · AI Academy" over "AI Readiness For All": the
 // ARFA wordmark (navy "AR", orange "FA", as on public/arfa-banner.png) in live
@@ -98,7 +98,7 @@ function stepRows(t: T, items: Array<{ key: string; href: string }>) {
  * "Welcome to ARFA (AI Readiness For All)": sent on every new learner
  * account, from the sign-up form (app/api/learn/auth/signup) and from the
  * first "Continue with Google" (lib/learn/google-auth.ts). In the learner's
- * language, from and reply-to arfa_edu@tiblogics.com.
+ * language, from and reply-to arfa@tiblogics.com.
  */
 export function studentWelcomeEmail(s: { name: string }, t: T) {
   const first = esc(s.name.split(" ")[0] || s.name);

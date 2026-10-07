@@ -1,7 +1,7 @@
 // Branded ARFA emails for the communications center: a campaign message,
 // an admin reply in an Inbox thread, and the "learner replied" alert to the
 // ARFA team. Always through arfaMailer (from and reply-to
-// arfa_edu@tiblogics.com), so learner replies to an email reach the team.
+// arfa@tiblogics.com), so learner replies to an email reach the team.
 import { arfaMailer } from "@/lib/resend";
 import { translator } from "@/lib/learn/i18n";
 import { learnEmailShell, learnEmailEsc, learnEmailP, LEARN_SITE, ARFA_EMAIL } from "@/lib/learn/emails";

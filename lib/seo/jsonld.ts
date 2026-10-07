@@ -8,7 +8,7 @@
 //   - Output goes through serializeJsonLd, which escapes "<", ">" and "&" so
 //     text from the database can never close the <script> tag (XSS).
 
-import { ARFA_ID, FOUNDER_ID, LOGO_URL, OG_IMAGE, ORG, ORG_ID, SITE_NAME, SITE_URL, WEBSITE_ID, absUrl } from "./site";
+import { ARFA_ID, FOUNDER_ID, SHOW_FOUNDER, LOGO_URL, OG_IMAGE, ORG, ORG_ID, SITE_NAME, SITE_URL, WEBSITE_ID, absUrl } from "./site";
 
 export type JsonLdValue = string | number | boolean | null | undefined | JsonLdNode | JsonLdValue[];
 export interface JsonLdNode {
@@ -62,7 +62,7 @@ export function organizationNode(): JsonLdNode {
     image: OG_IMAGE,
     description: ORG.description,
     email: ORG.email,
-    founder: ref(FOUNDER_ID),
+    ...(SHOW_FOUNDER ? { founder: ref(FOUNDER_ID) } : {}),
     sameAs: [...ORG.sameAs],
     areaServed: ORG.areaServed.map((a) => ({ ...a })),
     knowsLanguage: [...ORG.serviceLanguages],

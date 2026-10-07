@@ -56,7 +56,7 @@ export default async function InboxThreadPage({ params }: { params: Promise<{ th
             <Link href={`/admin_pro/learn/learners/${student.id}`} className="mt-3 inline-flex items-center gap-1 font-dm text-[13px] font-semibold text-[var(--a-blue)] hover:underline">
               Open profile <ExternalLink size={12} aria-hidden />
             </Link>
-            <p className="mt-4 font-dm text-[12px] text-[var(--a-ink-3)]">Your reply appears in their ARFA Inbox and, unless you untick it, by email from arfa_edu@tiblogics.com.</p>
+            <p className="mt-4 font-dm text-[12px] text-[var(--a-ink-3)]">Your reply appears in their ARFA Inbox and, unless you untick it, by email from arfa@tiblogics.com.</p>
           </Card>
         ) : null}
       </div>

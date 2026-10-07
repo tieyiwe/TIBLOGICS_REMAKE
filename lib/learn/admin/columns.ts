@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { invalidatePublicData } from "@/lib/cache/public-data";
 
 // Adds the `editedAt` columns the content editor relies on, and the track's
 // optional one-time price override (`LearnTrack.priceCents`). The Learn tables
@@ -35,9 +36,15 @@ export function ensureLearnEditColumns(): Promise<void> {
 const PRICE_REVISIONS: Array<{ key: string; slug: string; priceCents: number }> = [
   { key: "price-rev:2026-10-ai-apps-agents-897", slug: "ai-apps-agents", priceCents: 89700 },
   { key: "price-rev:2026-10-ai-small-business-497", slug: "ai-small-business", priceCents: 49700 },
+  { key: "price-rev:2026-10b-ai-systems-expert-877", slug: "ai-systems-expert", priceCents: 87700 },
+  { key: "price-rev:2026-10b-vibe-coding-engineer-1200", slug: "vibe-coding-engineer", priceCents: 120000 },
+  { key: "price-rev:2026-10b-ai-for-parents-497", slug: "ai-for-parents", priceCents: 49700 },
+  { key: "price-rev:2026-10b-ai-small-business-897", slug: "ai-small-business", priceCents: 89700 },
+  { key: "price-rev:2026-10b-ai-governance-899", slug: "ai-governance", priceCents: 89900 },
 ];
 
 async function applyPriceRevisions(): Promise<void> {
+  let changed = false;
   for (const r of PRICE_REVISIONS) {
     const done = await prisma.adminSettings.findUnique({ where: { key: r.key } }).catch(() => null);
     if (done) continue;
@@ -45,6 +52,9 @@ async function applyPriceRevisions(): Promise<void> {
     // Only recorded once the track exists, so a database seeded later still gets it.
     if (n > 0) {
       await prisma.adminSettings.upsert({ where: { key: r.key }, create: { key: r.key, value: String(r.priceCents) }, update: {} });
+      changed = true;
     }
   }
+  // Cached catalog and price lists show the new prices at once.
+  if (changed) invalidatePublicData("learn");
 }

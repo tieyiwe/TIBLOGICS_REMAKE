@@ -20,7 +20,7 @@ import { LIBRARY_SIZE, LIBRARY_VERTICALS } from "@/lib/toolkit/library";
 import { academyFaq, academySummary, type AcademySummary } from "./academy";
 import { publicCatalog, type PublicCourse } from "./courses";
 import { plain } from "./meta";
-import { ORG, SITE_URL, absUrl } from "./site";
+import { ORG, SHOW_FOUNDER, SITE_URL, absUrl } from "./site";
 
 const t = translatorFor("en");
 const money = (c: number) => fmtPrice(c, "en-US");
@@ -140,7 +140,7 @@ async function buildLlmsTxtNow(): Promise<string> {
   const out: string[] = [];
   out.push("# TIBLOGICS", "", `> ${SUMMARY}`, "");
   out.push(
-    `Founder and CEO: ${ORG.founder.name}. Contact: ${ORG.email}. ${ORG.discoveryCall}: ${absUrl("/book")}. Services are delivered in English and French; the website is in English, French and Swahili.`,
+    `${SHOW_FOUNDER ? `Founder and CEO: ${ORG.founder.name}. ` : ""}Contact: ${ORG.email}. ${ORG.discoveryCall}: ${absUrl("/book")}. Services are delivered in English and French; the website is in English, French and Swahili.`,
     "",
   );
 

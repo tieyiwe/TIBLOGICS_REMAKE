@@ -3329,3 +3329,10 @@ model ScholarshipDonation {
   @@index([createdAt])
   @@index([stripeSubscriptionId])
 }
+
+/// One row per payment already announced to sales@ (lib/payments/sale-alert.ts,
+/// created at runtime). The id is the Stripe Checkout session or invoice id.
+model SaleAlert {
+  id        String   @id
+  createdAt DateTime @default(now())
+}

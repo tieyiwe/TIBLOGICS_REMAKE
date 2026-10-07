@@ -386,9 +386,9 @@ export default tri({
   ],
   "seo.facts.founder.k": ["Founder", "Fondateur", "Mwanzilishi"],
   "seo.facts.founder.v": [
-    "TIBLOGICS was founded by Tieyiwe Bassole, its Founder and CEO.",
-    "TIBLOGICS a été fondée par Tieyiwe Bassole, son fondateur et PDG.",
-    "TIBLOGICS ilianzishwa na Tieyiwe Bassole, Mwanzilishi na Mkurugenzi Mtendaji wake.",
+    "TIBLOGICS is led by its Founder and CEO.",
+    "TIBLOGICS est dirigée par son fondateur et PDG.",
+    "TIBLOGICS inaongozwa na Mwanzilishi na Mkurugenzi Mtendaji wake.",
   ],
   "seo.facts.where.k": ["Where it works", "Où elle intervient", "Inakofanya kazi"],
   "seo.facts.where.v": [

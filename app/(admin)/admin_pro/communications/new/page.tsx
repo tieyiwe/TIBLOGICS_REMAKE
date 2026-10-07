@@ -29,7 +29,7 @@ export default async function NewMessagePage({ searchParams }: { searchParams: P
     <div>
       <PageHeader
         title="New message"
-        subtitle="Write once. ARFA sends it in each learner's language when you add a French version, from arfa_edu@tiblogics.com."
+        subtitle="Write once. ARFA sends it in each learner's language when you add a French version, from arfa@tiblogics.com."
         breadcrumb={[{ label: "Communications", href: "/admin_pro/communications" }, { label: "New message" }]}
       />
       <MessageComposer context={ctx} initial={{ audience, templateId: ctx.templates.some((t) => t.id === template) ? template : undefined }} />

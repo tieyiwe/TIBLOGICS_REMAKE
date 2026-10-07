@@ -23,6 +23,7 @@ const STEPS: Array<[string, () => Promise<unknown>]> = [
   ["lib/toolkit/db", () => import("@/lib/toolkit/db").then((m) => m.ensureToolkitTables())],
   ["lib/promotions/db", () => import("@/lib/promotions/db").then((m) => m.ensurePromotionTables())],
   ["lib/monitor/db", () => import("@/lib/monitor/db").then((m) => m.ensureMonitorTables())],
+  ["lib/payments/sale-alert", () => import("@/lib/payments/sale-alert").then((m) => m.ensureSaleAlertTable())],
   ["lib/scanner/db", () => import("@/lib/scanner/db").then((m) => m.ensureScannerColumns())],
   ["lib/blueprint/db", () => import("@/lib/blueprint/db").then((m) => m.ensureBlueprintTables())],
   ["lib/learn/community/db", () => import("@/lib/learn/community/db").then((m) => m.ensureCommunityTables())],

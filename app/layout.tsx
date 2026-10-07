@@ -6,7 +6,7 @@ import { coreMessages } from "@/lib/i18n/client-messages";
 import { I18nProvider } from "@/lib/i18n/client";
 import JsonLd from "@/components/seo/JsonLd";
 import { founderNode, organizationNode, websiteNode } from "@/lib/seo/jsonld";
-import { OG_IMAGE, OG_LOCALE, SITE_NAME, SITE_URL } from "@/lib/seo/site";
+import { OG_IMAGE, OG_LOCALE, ORG, SHOW_FOUNDER, SITE_NAME, SITE_URL } from "@/lib/seo/site";
 import { brandDm, brandSyne } from "@/lib/fonts/brand";
 
 const syne = Lora({
@@ -80,7 +80,7 @@ export async function generateMetadata(): Promise<Metadata> {
       "Francophone Africa tech", "TIBLOGICS", "AI strategy consulting",
       "custom AI solutions", "business automation", "AI productivity tools",
     ],
-    authors: [{ name: "Tieyiwe Bassole", url: SITE_URL }],
+    authors: [{ name: SHOW_FOUNDER ? ORG.founder.name : SITE_NAME, url: SITE_URL }],
     creator: "TIBLOGICS",
     publisher: "TIBLOGICS",
     category: "Technology",
@@ -125,7 +125,7 @@ export async function generateMetadata(): Promise<Metadata> {
 // Site-wide entities only: the organisation, its founder and the website.
 // Page-specific data (FAQ, courses, products, articles, breadcrumbs) lives on
 // the page it describes; an FAQPage here used to be repeated on every URL.
-const siteJsonLd = [organizationNode(), founderNode(), websiteNode()];
+const siteJsonLd = [organizationNode(), ...(SHOW_FOUNDER ? [founderNode()] : []), websiteNode()];
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();

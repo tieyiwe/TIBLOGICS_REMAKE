@@ -214,7 +214,7 @@ export default function ConfirmedPage({
 
           <p style={{ color: S.muted, fontSize: "1rem", lineHeight: 1.7, maxWidth: "480px", margin: "0 auto" }}>
             Your spot is secured. A welcome email with all session details is on its way to your inbox from{" "}
-            <span style={{ color: "#fff" }}>arfa_edu@tiblogics.com</span>.
+            <span style={{ color: "#fff" }}>arfa@tiblogics.com</span>.
           </p>
         </div>
 
@@ -338,7 +338,7 @@ export default function ConfirmedPage({
             ← Back to event page
           </a>
           <div style={{ marginTop: "32px", color: "rgba(255,255,255,.18)", fontSize: ".72rem" }}>
-            © 2026 TIBLOGICS · arfa_edu@tiblogics.com
+            © 2026 TIBLOGICS · arfa@tiblogics.com
           </div>
         </div>
 
