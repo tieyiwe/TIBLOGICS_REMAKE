@@ -300,3 +300,43 @@ export async function sendSponsorReport(to: string, r: SponsorReport) {
     html: shell(t, esc(`Impact report: ${r.sponsor}`), body, { href: `${LEARN_SITE}/tilo-vision-scholarship`, label: "About the scholarship →" }),
   });
 }
+
+// ── Donations to the scholarship fund ─────────────────────────────────────
+
+const money = (cents: number, locale: string) =>
+  new Intl.NumberFormat(isLocale(locale) ? locale : "en", { style: "currency", currency: "USD", minimumFractionDigits: cents % 100 ? 2 : 0, maximumFractionDigits: 2 }).format(cents / 100);
+
+/** The thank-you for a gift (once per checkout), in the donor's language. */
+export async function sendDonationThanks(to: { email: string; name: string | null; locale: string; amountCents: number; frequency: "once" | "monthly"; manage: string | null }) {
+  const t = translator(to.locale);
+  const first = to.name?.trim().split(/\s+/)[0];
+  const amount = money(to.amountCents, to.locale);
+  const body =
+    p(esc(first ? t("donate.email.hello", { name: first }) : t("donate.email.helloAnon"))) +
+    p(t(to.frequency === "monthly" ? "donate.email.p1Monthly" : "donate.email.p1Once", { amount: strong(esc(amount)) })) +
+    p(esc(t("donate.email.p2"))) +
+    encouragement(t, true) +
+    p(esc(t("donate.email.p3"))) +
+    (to.manage ? p(t("donate.email.manage", { link: `<a href="${to.manage}" style="color:#1B2A5E;font-weight:700;">${esc(t("donate.email.manageLink"))}</a>` })) : "") +
+    small(esc(t("donate.email.legal")));
+  await arfaMailer.emails.send({
+    to: to.email,
+    subject: t("donate.email.subject"),
+    html: shell(t, esc(t("donate.email.title")), body, { href: `${LEARN_SITE}/tilo-vision-scholarship`, label: `${t("donate.email.cta")} →` }),
+  });
+}
+
+/** Staff alert (English): a new gift. */
+export async function sendDonationAlert(d: { name: string | null; email: string | null; amountCents: number; frequency: "once" | "monthly" }) {
+  const t = translator("en");
+  await arfaMailer.emails.send({
+    to: ARFA_EMAIL,
+    subject: `New scholarship donation: ${money(d.amountCents, "en")}${d.frequency === "monthly" ? " monthly" : ""}`,
+    html: shell(
+      t,
+      "New gift to the Tilo Vision Scholarship fund",
+      p(`${strong(esc(money(d.amountCents, "en")))} ${d.frequency === "monthly" ? "every month" : "one time"} from ${esc(d.name ?? "a donor")}${d.email ? ` (${esc(d.email)})` : ""}. A thank-you email was sent.`),
+      { href: `${LEARN_SITE}/admin_pro/learn/scholarships#donations`, label: "See donations →" },
+    ),
+  });
+}

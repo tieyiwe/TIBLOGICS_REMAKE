@@ -3303,3 +3303,28 @@ model ScholarshipApplication {
   @@index([email])
   @@index([status, createdAt])
 }
+
+/// A gift to the Tilo Vision Scholarship fund (public donate box). One row per
+/// payment: stage first (the checkout; thanked by email) or renewal (each
+/// monthly invoice). frequency: once | monthly. canceledAt: a monthly gift
+/// stopped (on its first row).
+model ScholarshipDonation {
+  id                   String    @id
+  frequency            String
+  stage                String    @default("first")
+  amountCents          Int
+  currency             String    @default("usd")
+  email                String?
+  name                 String?
+  locale               String    @default("en")
+  stripeSessionId      String?   @unique
+  stripeInvoiceId      String?   @unique
+  stripeSubscriptionId String?
+  stripeCustomerId     String?
+  thankedAt            DateTime?
+  canceledAt           DateTime?
+  createdAt            DateTime  @default(now())
+
+  @@index([createdAt])
+  @@index([stripeSubscriptionId])
+}

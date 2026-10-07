@@ -12,6 +12,7 @@ import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTracks, withTrackText } from "@/lib/i18n/sources/learn";
 import TeamsOffer from "@/components/learn/team/TeamsOffer";
 import ScholarSeal from "@/components/learn/scholarship/ScholarSeal";
+import { DonateSection } from "@/components/donate/Donate";
 import { getTeamPricing } from "@/lib/learn/team/settings";
 import { pageSales, withTrackSales } from "@/lib/promotions/display";
 import SalePrice from "@/components/promo/SalePrice";
@@ -308,6 +309,9 @@ export default async function LearningBoxPage({ searchParams }: Props) {
           </span>
           <span className="text-sm font-bold text-[var(--orange2)]">{t("learn.scholarApply.cta")} →</span>
         </Link>
+        <div className="mt-4">
+          <DonateSection from="arfa" />
+        </div>
       </div>
 
       {/* FAQ: visible answers, repeated as FAQPage structured data */}

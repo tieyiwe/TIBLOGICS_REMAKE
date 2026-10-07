@@ -5,6 +5,7 @@ import { requireLearnerPage } from "@/lib/learn/account-status/admin-auth";
 import { canAward } from "@/lib/learn/scholarship/guard";
 import { listScholarships, sponsorSummaries, type ScholarshipRow } from "@/lib/learn/scholarship/admin";
 import { applicationsOpen, listApplications } from "@/lib/learn/scholarship/applications";
+import { donationSummary } from "@/lib/learn/scholarship/donations";
 import { liveTracks } from "@/lib/learn/scholarship/service";
 import { scholarshipTablesReady } from "@/lib/learn/scholarship/db";
 import ScholarSeal from "@/components/learn/scholarship/ScholarSeal";
@@ -52,6 +53,7 @@ export default async function ScholarshipsPage({ searchParams }: { searchParams:
   const [apps, appsOpen] = ready ? await Promise.all([listApplications(), applicationsOpen()]) : [[], true];
   const appsShown = apps.filter((a) => (appFilter === "all" ? true : appFilter === "open" ? a.status === "new" || a.status === "shortlisted" : a.status === appFilter));
   const sponsors = sponsorSummaries(all);
+  const donations = ready ? await donationSummary().catch(() => null) : null;
   const editable = (r: ScholarshipRow) => ({
     id: r.id, status: r.status, name: r.name, email: r.email, locale: r.locale, trackCount: r.trackCount, coveragePct: r.coveragePct, trackIds: r.trackIds,
     message: r.message, note: r.note, offerDays: r.offerDays, used: r.picks.length, sponsorName: r.sponsorName, sponsorEmail: r.sponsorEmail, pickDays: r.pickDays, completeDays: r.completeDays,
@@ -319,6 +321,44 @@ export default async function ScholarshipsPage({ searchParams }: { searchParams:
           </ul>
         )}
       </Card>
+      <div id="donations" className="scroll-mt-24">
+        <Card
+          title="Donations to the scholarship fund"
+          subtitle="Gifts from the donate box (ARFA, the scholarship page, Partners, About). Each donor gets a thank-you email; payment receipts come from Stripe."
+          padded={false}
+        >
+          {!donations || donations.recent.length === 0 ? (
+            <p className="p-5 font-dm text-[13.5px] text-[var(--a-ink-3)]">No donations yet.</p>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-3 p-4 lg:grid-cols-4">
+                <StatCard label="Raised" value={usd(donations.raisedCents)} />
+                <StatCard label="Donors" value={donations.donors} />
+                <StatCard label="Monthly donors" value={donations.monthlyActive} />
+                <StatCard label="Monthly pledged" value={usd(donations.monthlyCents)} />
+              </div>
+              <ul className="divide-y divide-[var(--a-border)]" data-testid="donations">
+                {donations.recent.map((d) => (
+                  <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 font-dm text-[13px]">
+                    <span className="min-w-0 break-words">
+                      <strong className="text-[var(--a-ink)]">{d.name ?? "Donor"}</strong>
+                      {d.email ? <span className="text-[var(--a-ink-3)]"> · {d.email}</span> : null}
+                    </span>
+                    <span className="flex flex-wrap items-center gap-2">
+                      <Badge tone={d.frequency === "monthly" ? (d.canceled ? "neutral" : "orange") : "info"}>
+                        {d.frequency === "monthly" ? (d.stage === "renewal" ? "Monthly renewal" : d.canceled ? "Monthly (stopped)" : "Monthly") : "One time"}
+                      </Badge>
+                      <strong>{usd(d.amountCents)}</strong>
+                      <span className="text-[var(--a-ink-3)]">{day(d.at)}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </Card>
+      </div>
+
       <Card title="Sponsors" subtitle="Who funds the awards, and the impact of their support. Reports show scholars by first name and initial only." padded={false}>
         {sponsors.length === 0 ? (
           <p className="p-5 font-dm text-[13.5px] text-[var(--a-ink-3)]">No sponsor named on an award yet. Add one in the award form.</p>

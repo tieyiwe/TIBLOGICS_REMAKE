@@ -3,6 +3,7 @@ import { maskEmail } from "@/lib/log/redact";
 import prisma from "@/lib/prisma";
 import { sendConfirmationEmail, sendTiweNotification, sendEventWelcomeEmail, sendAdminNewRegistrationAlert, sendOrderConfirmationEmail, sendAdminOrderAlert } from "@/lib/resend";
 import { recordScholarshipPayment } from "@/lib/learn/scholarship/service";
+import { DONATION_PRODUCT, markDonationCanceled, recordDonation, recordDonationRenewal } from "@/lib/learn/scholarship/donations";
 import Stripe from "stripe";
 import { createMeeting } from "@/lib/meeting-providers";
 import stripe from "@/lib/stripe";
@@ -70,6 +71,8 @@ export async function POST(req: Request) {
       if (sub.metadata?.product === MONITOR_PRODUCT) {
         await syncMonitorSubscription(sub);
       }
+      // ── Tilo Vision Scholarship: a monthly gift stopped ──────────────────
+      if (sub.metadata?.product === DONATION_PRODUCT) await markDonationCanceled(sub);
       if (sub.metadata?.product === TOOLKIT_PRODUCT && sub.metadata?.studentId) {
         await upsertToolkitSubscription(sub);
       }
@@ -80,6 +83,14 @@ export async function POST(req: Request) {
           retry = true;
         });
       }
+    }
+
+    // ── Tilo Vision Scholarship: each monthly gift renewal ─────────────────
+    if (event.type === "invoice.paid") {
+      await recordDonationRenewal(event.data.object as Stripe.Invoice).catch((err) => {
+        console.error("[stripe/webhook] donation renewal FAILED, asking Stripe to retry", err);
+        retry = true;
+      });
     }
 
     if (event.type === "invoice.payment_failed") {
@@ -115,6 +126,7 @@ export async function POST(req: Request) {
     if (event.type === "checkout.session.async_payment_succeeded") {
       const session = event.data.object as Stripe.Checkout.Session;
       if (session.metadata?.product === "learn-track") await trackPurchase(session);
+      if (session.metadata?.product === DONATION_PRODUCT) await recordDonation(session).catch((err) => console.error("[stripe/webhook] donation (async)", err));
       await recordRedemption(session);
     }
 
@@ -172,6 +184,14 @@ export async function POST(req: Request) {
               retry = true;
             });
         }
+      }
+
+      // ── Tilo Vision Scholarship fund: a gift (thank-you email once) ──────
+      if (session.metadata?.product === DONATION_PRODUCT) {
+        await recordDonation(session).catch((err) => {
+          console.error("[stripe/webhook] donation FAILED, asking Stripe to retry", err);
+          retry = true;
+        });
       }
 
       // ── Learning Box: one track, one payment, lifetime access ────────────

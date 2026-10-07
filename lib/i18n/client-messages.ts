@@ -17,7 +17,7 @@ import { dictionary } from "./messages";
 const SERVER_ONLY = [
   "seo.", "comms.", "updates.", "accountStatus.",
   "learn.email.", "team.email.", "learn.scholar.email.", "learn.scholar.notice.", "learn.scholar.welcome.", "learn.scholar.remind.",
-  "learn.scholar.letter.", "learn.scholarApply.email.received.", "learn.scholarApply.email.declined.", "learn.scholarApply.meta.",
+  "learn.scholar.letter.", "donate.email.", "learn.scholarApply.email.received.", "learn.scholarApply.email.declined.", "learn.scholarApply.meta.",
   "pages.terms.", "pages.privacy.", "pages.api.",
   // Sections rendered by server components only (getT).
   "pages.about.", "pages.products.", "a11y.page.", "site.footer.", "site.meta.",
@@ -34,7 +34,7 @@ const SERVER_ONLY = [
  */
 const STUDIO_TOOLS = /^studio\.(automation-builder|loop-mapper|prompt-builder|task-sorter|spot-the-risk|wireframe-builder|prompt-arena|critic-mode|test-bench|security-doors)\.(?!(name|desc)$)/;
 
-export type MessageArea = "learn" | "member" | "tools" | "calculator" | "toolkit" | "studio";
+export type MessageArea = "learn" | "member" | "tools" | "calculator" | "toolkit" | "studio" | "donate";
 
 /**
  * Namespaces sent only inside an area:
@@ -58,6 +58,8 @@ const AREAS: Record<MessageArea, string[]> = {
   calculator: ["calculator."],
   toolkit: ["toolkit.", "tools."],
   studio: ["studio."],
+  // The scholarship donate box (ARFA, the scholarship page, Partners, About).
+  donate: ["donate."],
 };
 
 const AREA_PREFIXES = Object.values(AREAS).flat();

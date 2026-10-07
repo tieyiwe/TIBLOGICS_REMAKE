@@ -7,6 +7,7 @@ import { liveTracks } from "@/lib/learn/scholarship/service";
 import { applicationsOpen } from "@/lib/learn/scholarship/applications";
 import ScholarSeal from "@/components/learn/scholarship/ScholarSeal";
 import ApplyForm from "@/components/learn/scholarship/ApplyForm";
+import { DonateInline } from "@/components/donate/Donate";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,9 @@ export default async function TiloVisionScholarshipPage() {
                   {t("learn.scholarApply.cta")} →
                 </a>
               ) : null}
+              <a href="#donate" className="inline-flex min-h-12 items-center rounded-full border border-[#F9A738] px-6 text-sm font-bold text-[#F9A738] hover:bg-white/10" data-testid="hero-donate">
+                {t("donate.button")}
+              </a>
               <Link href="/learning-box" className="inline-flex min-h-12 items-center rounded-full border border-white/30 px-6 text-sm font-bold text-white hover:bg-white/10">
                 {t("learn.scholarApply.seeTracks")}
               </Link>
@@ -108,6 +112,18 @@ export default async function TiloVisionScholarshipPage() {
               <p className="mt-2 text-sm text-[var(--ink2)]">{t("learn.scholarApply.closedBody")}</p>
             </div>
           )}
+        </section>
+
+        <section id="donate" className="mt-10 scroll-mt-28 grid gap-6 rounded-3xl bg-gradient-to-br from-[#1B2A5E] to-[#27407F] p-6 text-white sm:p-10 lg:grid-cols-[1fr_1.1fr] lg:items-center">
+          <div>
+            <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-[#F9A738]">{t("donate.kicker")}</p>
+            <h2 className="mt-2 text-2xl font-black sm:text-3xl">{t("donate.title")}</h2>
+            <p className="mt-3 text-sm leading-relaxed text-white/85 sm:text-base">{t("donate.explain")}</p>
+            <p className="mt-3 text-sm leading-relaxed text-white/70">{t("donate.where")}</p>
+          </div>
+          <div className="rounded-2xl bg-white p-5 text-[#0D1B2A] sm:p-6">
+            <DonateInline from="scholarship" />
+          </div>
         </section>
 
         <section className="mt-10">

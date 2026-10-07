@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, Lightbulb, Compass, Hammer, Rocket } from "lucide-react";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { pageMetadata } from "@/lib/seo/meta";
+import { DonateSection } from "@/components/donate/Donate";
 
 export async function generateMetadata(): Promise<Metadata> {
   const [t, locale] = await Promise.all([getT(), getLocale()]);
@@ -296,6 +297,9 @@ export default async function ProductsPage() {
           >
             {t("pages.products.partner.cta")} <ArrowRight size={14} />
           </Link>
+        </div>
+        <div className="mt-6">
+          <DonateSection from="products" />
         </div>
       </div>
     </div>

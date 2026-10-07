@@ -13,6 +13,7 @@ import { breadcrumbNode, webPageNode } from "@/lib/seo/jsonld";
 import { absUrl, ARFA_ID, FOUNDER_ID, ORG, ORG_ID } from "@/lib/seo/site";
 import { accent } from "@/components/public/accent";
 import Html from "../_i18n/Html";
+import { DonateSection } from "@/components/donate/Donate";
 
 // The About page. Every statement comes from copy already published on the
 // site (lib/i18n/messages/pages/about.ts says where); nothing here invents
@@ -356,6 +357,10 @@ export default async function AboutPage() {
               </li>
             ))}
           </ul>
+        </div>
+        {/* Fund a Tilo Vision Scholarship (components/donate) */}
+        <div className="relative mx-auto max-w-7xl px-4 pb-16 sm:px-6 sm:pb-24 lg:px-8">
+          <DonateSection from="about" tone="dark" />
         </div>
       </section>
 

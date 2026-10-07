@@ -5,6 +5,7 @@ import { Mail, Clock, MessageSquare, Handshake, Building2, User, Phone, Globe, M
 import { useState } from "react";
 import OpenTiboButton from "@/components/public/OpenTiboButton";
 import { useT } from "@/lib/i18n/client";
+import { DonateCallout } from "@/components/donate/DonateBox";
 
 const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c);
@@ -343,6 +344,9 @@ export default function ContactPage() {
                 </div>
                 <span className="text-[#1B3A6B] shrink-0 font-syne font-bold text-sm">{t("pages.contact.quick.apply")}</span>
               </button>
+
+              {/* Partners can also fund a Tilo Vision Scholarship */}
+              <DonateCallout from="partners" />
             </div>
           </div>
         </div>

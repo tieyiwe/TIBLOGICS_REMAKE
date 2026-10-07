@@ -92,6 +92,28 @@ const STATEMENTS = [
   )`,
   `CREATE INDEX IF NOT EXISTS "ScholarshipApplication_email_idx" ON "ScholarshipApplication"("email")`,
   `CREATE INDEX IF NOT EXISTS "ScholarshipApplication_status_createdAt_idx" ON "ScholarshipApplication"("status", "createdAt")`,
+  `CREATE TABLE IF NOT EXISTS "ScholarshipDonation" (
+    "id" TEXT NOT NULL,
+    "frequency" TEXT NOT NULL,
+    "stage" TEXT NOT NULL DEFAULT 'first',
+    "amountCents" INTEGER NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'usd',
+    "email" TEXT,
+    "name" TEXT,
+    "locale" TEXT NOT NULL DEFAULT 'en',
+    "stripeSessionId" TEXT,
+    "stripeInvoiceId" TEXT,
+    "stripeSubscriptionId" TEXT,
+    "stripeCustomerId" TEXT,
+    "thankedAt" TIMESTAMP(3),
+    "canceledAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "ScholarshipDonation_pkey" PRIMARY KEY ("id")
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "ScholarshipDonation_stripeSessionId_key" ON "ScholarshipDonation"("stripeSessionId")`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "ScholarshipDonation_stripeInvoiceId_key" ON "ScholarshipDonation"("stripeInvoiceId")`,
+  `CREATE INDEX IF NOT EXISTS "ScholarshipDonation_createdAt_idx" ON "ScholarshipDonation"("createdAt")`,
+  `CREATE INDEX IF NOT EXISTS "ScholarshipDonation_stripeSubscriptionId_idx" ON "ScholarshipDonation"("stripeSubscriptionId")`,
 ];
 
 let ready: Promise<void> | null = null;

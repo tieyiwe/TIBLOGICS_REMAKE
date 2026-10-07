@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { pageMetadata } from "@/lib/seo/meta";
+import ClientMessages from "@/components/i18n/ClientMessages";
 
 export async function generateMetadata(): Promise<Metadata> {
   const [t, locale] = await Promise.all([getT(), getLocale()]);
@@ -14,6 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
+// The donate box on this page (Partners) needs its texts on the client.
 export default function ContactLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return <ClientMessages area="donate">{children}</ClientMessages>;
 }
