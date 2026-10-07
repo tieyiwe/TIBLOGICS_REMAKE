@@ -3357,3 +3357,17 @@ model TrackSubscription {
 
   @@index([studentId])
 }
+
+/// Instant-feedback quiz session (lib/learn/quiz-session.ts, created at
+/// runtime): the questions served and the answers locked as they were shown.
+model QuizSession {
+  id          String   @id
+  studentId   String
+  mode        String
+  refId       String
+  questionIds String[]
+  locks       Json     @default("{}")
+  createdAt   DateTime @default(now())
+
+  @@index([studentId])
+}

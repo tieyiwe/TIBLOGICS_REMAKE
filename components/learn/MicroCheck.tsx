@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useT } from "@/lib/i18n/client";
+import InstantOptions, { type InstantFeedback } from "./InstantOptions";
 import { bumpPractice, celebrate } from "@/lib/learn/game-client";
 import ResultFlair from "./game/ResultFlair";
 import { readableOn } from "@/lib/a11y/contrast";
@@ -39,6 +40,33 @@ export default function MicroCheck({
   const [questions, setQuestions] = useState<Question[] | null>(null);
   const [pending, setPending] = useState(false);
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  // Instant feedback (components/learn/InstantOptions.tsx): each answer is
+  // checked and locked on the server as soon as it is picked.
+  const [session, setSession] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<Record<string, InstantFeedback>>({});
+  const [checking, setChecking] = useState<string | null>(null);
+  async function pick(questionId: string, choice: number) {
+    if (feedback[questionId] || checking) return;
+    setAnswers((a) => ({ ...a, [questionId]: choice }));
+    if (!session) return;
+    setChecking(questionId);
+    try {
+      const res = await fetch("/api/learn/quiz/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "micro", id: microCheckId, session, questionId, choice }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data && typeof data.correctIndex === "number") {
+        setFeedback((f) => ({ ...f, [questionId]: data as InstantFeedback }));
+        setAnswers((a) => ({ ...a, [questionId]: data.choice }));
+      }
+    } catch {
+      /* no feedback: the answer still counts at submit */
+    } finally {
+      setChecking(null);
+    }
+  }
   const [result, setResult] = useState<{ score: number; passed: boolean; graded: Graded[]; pointsAwarded: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -59,6 +87,8 @@ export default function MicroCheck({
       setQuestions(data.questions);
       setPending(!!data.pending);
       setAnswers({});
+      setSession(typeof data.session === "string" ? data.session : null);
+      setFeedback({});
       setResult(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("labs.error.generic"));
@@ -75,7 +105,7 @@ export default function MicroCheck({
       const res = await fetch("/api/learn/quiz/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "micro", id: microCheckId, answers }),
+        body: JSON.stringify({ mode: "micro", id: microCheckId, answers, ...(session ? { session } : {}) }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? t("labs.micro.scoreError"));
@@ -199,27 +229,14 @@ export default function MicroCheck({
               <legend className="text-sm font-semibold text-[var(--ink)]">
                 {i + 1}. {q.question}
               </legend>
-              <div className="mt-2.5 space-y-2">
-                {q.options.map((o, oi) => (
-                  <label
-                    key={oi}
-                    className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors ${
-                      answers[q.id] === oi
-                        ? "border-[var(--blue3)] bg-[var(--blue-light)]"
-                        : "border-[var(--border)] hover:border-[var(--ink3)]"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name={q.id}
-                      checked={answers[q.id] === oi}
-                      onChange={() => setAnswers((a) => ({ ...a, [q.id]: oi }))}
-                      className="mt-0.5"
-                    />
-                    <span className="text-[var(--ink2)]">{o}</span>
-                  </label>
-                ))}
-              </div>
+              <InstantOptions
+                name={q.id}
+                options={q.options}
+                picked={answers[q.id]}
+                feedback={feedback[q.id]}
+                checking={checking === q.id}
+                onPick={(oi) => void pick(q.id, oi)}
+              />
             </fieldset>
           </li>
         ))}

@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { canAccessTrack, getAccess, getStudent } from "@/lib/learn/session";
 import TrackPaywall from "@/components/learn/TrackPaywall";
 import { finalExamPassed } from "@/lib/learn/assessments";
+import { isOwnerStudent } from "@/lib/learn/owner";
 import Markdown from "@/components/learn/Markdown";
 import CapstoneSubmitForm from "@/components/learn/CapstoneSubmitForm";
 import CapstoneStatus from "@/components/learn/CapstoneStatus";
@@ -40,7 +41,8 @@ export default async function CapstonePage({ params }: { params: Promise<{ slug:
       where: { studentId: student.id, capstoneId: capstone.id },
       orderBy: { createdAt: "desc" },
     }).catch(() => []),
-    finalExamPassed(student.id, track.id),
+    // The owner can open every step to test it (lib/learn/owner.ts).
+    isOwnerStudent(student.id).then((o) => o || finalExamPassed(student.id, track.id)),
   ]);
 
   const latest = submissions[0] ?? null;

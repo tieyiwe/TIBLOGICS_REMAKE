@@ -6,7 +6,8 @@ import { trackOfLesson } from "@/lib/learn/track-of";
 import { markLessonComplete } from "@/lib/learn/progress";
 import { computeStreak, getTotalPoints, levelFor } from "@/lib/learn/points";
 import { checkHalfway, checkLevelUp } from "@/lib/learn/milestones";
-import { getT } from "@/lib/i18n/server";
+import { getLocale, getT } from "@/lib/i18n/server";
+import { lessonVideoFor } from "@/lib/learn/video/store";
 import { gameDelta, gameSnapshot } from "@/lib/learn/badges";
 
 const Body = z.object({ lessonId: z.string().min(1) });
@@ -23,6 +24,16 @@ export async function POST(req: NextRequest) {
   if (!lt) return NextResponse.json({ error: t("learn.api.lessonNotFound") }, { status: 404 });
   const denied = lt.isPreview ? null : await denyTrack(access, lt.trackId);
   if (denied) return denied;
+
+  // A lesson video must be watched before the lesson counts as done (the
+  // owner's account is exempt: noSkip is false for it).
+  const lessonRow = await prisma.lesson.findUnique({ where: { id: parsed.data.lessonId }, select: { id: true, videoUrl: true } });
+  if (lessonRow) {
+    const video = await lessonVideoFor(student.id, lessonRow, await getLocale()).catch(() => null);
+    if (video && video.noSkip && !video.watched) {
+      return NextResponse.json({ error: t("learn.lesson.videoFirst"), code: "video_unwatched" }, { status: 409 });
+    }
+  }
 
   // Capture the total BEFORE the award so a level crossing can be detected
   // (and the earned badge set, so newly earned ones can be celebrated).

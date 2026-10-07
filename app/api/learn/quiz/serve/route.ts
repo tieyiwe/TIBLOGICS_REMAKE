@@ -6,6 +6,7 @@ import { trackOfMicroCheck, trackOfQuiz } from "@/lib/learn/track-of";
 import { presentQuestion, seededShuffle, serveQuestion } from "@/lib/learn/assessments";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { localizeQuestions } from "@/lib/i18n/sources/labs";
+import { openQuizSession } from "@/lib/learn/quiz-session";
 
 // Serves a randomized subset of a micro-check or module quiz.
 // Correct answers and explanations are stripped — the client cannot see them
@@ -55,6 +56,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         id: check.id,
         passScore: check.passScore,
+        // Instant feedback: answers are checked and locked one by one.
+        session: await openQuizSession(student.id, "micro", check.id, picked.map((q) => q.id)),
         questions: picked.map((q) => serveQuestion(presentQuestion(byId.get(q.id) ?? q, student.id))),
         pending,
       });
@@ -73,6 +76,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       id: quiz.id,
       passScore: quiz.passScore,
+      session: await openQuizSession(student.id, "quiz", quiz.id, picked.map((q) => q.id)),
       questions: picked.map((q) => serveQuestion(presentQuestion(byId.get(q.id) ?? q, student.id))),
       pending,
     });

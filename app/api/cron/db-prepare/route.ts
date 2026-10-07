@@ -38,6 +38,7 @@ const STEPS: Array<[string, () => Promise<unknown>]> = [
   ["lib/learn/drafts/db", () => import("@/lib/learn/drafts/db").then((m) => m.ensureDraftTable())],
   ["lib/learn/account-status/db", () => import("@/lib/learn/account-status/db").then((m) => m.ensureAccountTables())],
   ["lib/learn/track-subscriptions", () => import("@/lib/learn/track-subscriptions").then((m) => m.ensureTrackSubscriptionTables())],
+  ["lib/learn/quiz-session", () => import("@/lib/learn/quiz-session").then((m) => m.ensureQuizSessionTable())],
   ["lib/learn/purchases", () => import("@/lib/learn/purchases").then((m) => m.ensureTrackPurchaseTable())],
   ["lib/learn/scholarship/db", () => import("@/lib/learn/scholarship/db").then((m) => m.ensureScholarshipTables())],
   ["lib/learn/join/pending", () => import("@/lib/learn/join/pending").then((m) => m.ensurePendingEnrollmentTable())],

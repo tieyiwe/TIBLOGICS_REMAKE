@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LessonVideo from "./LessonVideo";
 import LessonMedia from "./video/LessonMedia";
 import type { LessonVideoData } from "@/lib/learn/video/shared";
@@ -93,9 +93,28 @@ export default function LessonPlayer({
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState("");
   const [outlineOpen, setOutlineOpen] = useState(false);
+  // A lesson video must be watched to the end before moving on (the owner's
+  // account is exempt: video.noSkip is false). The server enforces it too.
+  const [videoDone, setVideoDone] = useState(!lesson.video || lesson.video.noSkip === false || !!lesson.video.watched);
+  const [videoWarn, setVideoWarn] = useState(false);
+  useEffect(() => {
+    const on = (e: Event) => {
+      if ((e as CustomEvent).detail === lesson.id) {
+        setVideoDone(true);
+        setVideoWarn(false);
+      }
+    };
+    window.addEventListener("arfa:video-watched", on);
+    return () => window.removeEventListener("arfa:video-watched", on);
+  }, [lesson.id]);
+  const blockForVideo = () => {
+    setVideoWarn(true);
+    document.querySelector("video")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
 
   async function complete() {
     if (saving) return;
+    if (!videoDone) return blockForVideo();
     setSaving(true);
     try {
       // Offline (a downloaded lesson): keep it on this device and send it
@@ -113,6 +132,10 @@ export default function LessonPlayer({
         return;
       }
       const data = await res.json().catch(() => ({}));
+      if (res.status === 409 && data.code === "video_unwatched") {
+        setVideoDone(false);
+        return blockForVideo();
+      }
       if (res.ok) {
         setDone(true);
         if (data.pointsAwarded > 0) setToast(t("learn.lesson.pointsToast", { n: data.pointsAwarded }));
@@ -231,7 +254,15 @@ export default function LessonPlayer({
           {nextId ? (
             <Link
               href={`/learn/lesson/${nextId}`}
-              className="rounded-full bg-[var(--ink)] px-6 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
+              onClick={(e) => {
+                if (!videoDone) {
+                  e.preventDefault();
+                  blockForVideo();
+                }
+              }}
+              aria-disabled={!videoDone || undefined}
+              className={`rounded-full bg-[var(--ink)] px-6 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 ${videoDone ? "" : "opacity-60"}`}
+              data-testid="lesson-next"
             >
               {t("learn.lesson.next")} →
             </Link>
@@ -242,6 +273,12 @@ export default function LessonPlayer({
             >
               {t("learn.lesson.backToTrack")} →
             </Link>
+          )}
+
+          {videoWarn && (
+            <p role="alert" className="w-full rounded-lg bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900" data-testid="video-first">
+              {t("learn.lesson.videoFirst")}
+            </p>
           )}
 
           {toast && (

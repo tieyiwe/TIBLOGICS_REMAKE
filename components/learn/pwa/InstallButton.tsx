@@ -63,13 +63,15 @@ export default function InstallButton({ variant = "icon" }: { variant?: "icon" |
         aria-expanded={prompt ? undefined : open}
         aria-haspopup={prompt ? undefined : "dialog"}
         title={t("pwa.prompt.title")}
-        className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[var(--border)] bg-white px-3 text-xs font-bold text-[var(--ink)] hover:bg-[var(--s2)]"
+        // An obvious call to action: orange, never wrapping. Phones get the
+        // short label ("Install"), wider screens the full one.
+        className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--orange)] px-3.5 text-xs font-black text-[var(--ink)] shadow-sm ring-2 ring-[var(--orange)]/30 transition hover:brightness-105"
         data-testid="install-button"
         data-platform={env.platform}
       >
-        <Download size={14} aria-hidden />
-        <span className="hidden sm:inline">{t("pwa.prompt.install")}</span>
-        <span className="sr-only sm:hidden">{t("pwa.prompt.title")}</span>
+        <Download size={15} strokeWidth={2.5} aria-hidden />
+        <span className="lg:hidden">{t("pwa.prompt.install")}</span>
+        <span className="hidden lg:inline">{t("pwa.prompt.title")}</span>
       </button>
       {open && !prompt ? (
         <div

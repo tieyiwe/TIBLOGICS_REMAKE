@@ -103,6 +103,8 @@ export default function LessonMedia({
             sources={video.sources}
             voiceLang={video.voiceLang}
             noSkip={video.noSkip !== false}
+            // Opens "Next" and "Mark complete" in the lesson (LessonPlayer).
+            onWatched={() => window.dispatchEvent(new CustomEvent("arfa:video-watched", { detail: lessonId }))}
           />
           {video.voiceLang && (
             <p className="mt-2 text-xs text-[var(--ink3)]" data-testid="video-ai-voice">

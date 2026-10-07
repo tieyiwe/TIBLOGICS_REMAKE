@@ -13,6 +13,7 @@ import { localizeQuestions } from "@/lib/i18n/sources/labs";
 import { gameDelta, gameSnapshot } from "@/lib/learn/badges";
 import { awardSkillBadgesSafe } from "@/lib/learn/skill-badges/engine";
 import { applyTestOut } from "@/lib/learn/mastery/testout";
+import { sessionLocks } from "@/lib/learn/quiz-session";
 
 // Scores micro-checks (mode: "micro") and module quizzes (mode: "quiz").
 // Correct answers are read here and NOWHERE else — the client never receives
@@ -21,6 +22,8 @@ const Body = z.object({
   mode: z.enum(["micro", "quiz"]),
   id: z.string().min(1),                       // microCheckId | quizId
   answers: z.record(z.string(), z.number().int().min(0).max(10)),
+  /** Instant-feedback session (lib/learn/quiz-session.ts): its locked answers win. */
+  session: z.string().uuid().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -31,7 +34,11 @@ export async function POST(req: NextRequest) {
 
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: t("labs.api.invalidSubmission") }, { status: 400 });
-  const { mode, id, answers } = parsed.data;
+  const { mode, id } = parsed.data;
+  // An answer already shown as right or wrong cannot be changed afterwards.
+  const answers = parsed.data.session
+    ? { ...parsed.data.answers, ...(await sessionLocks(parsed.data.session, student.id, mode, id)) }
+    : parsed.data.answers;
 
   if (mode === "micro") {
     const lt = await trackOfMicroCheck(id);
