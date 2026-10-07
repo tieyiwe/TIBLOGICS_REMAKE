@@ -1,3 +1,4 @@
+import ClientMessages from "@/components/i18n/ClientMessages";
 import type { Metadata } from "next";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { pageMetadata } from "@/lib/seo/meta";
@@ -16,9 +17,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function ShopLayout({ children }: { children: React.ReactNode }) {
   return (
-    <CartProvider>
-      {children}
-      <CartDrawer />
-    </CartProvider>
+    <ClientMessages area="pagesStore">
+      <CartProvider>
+        {children}
+        <CartDrawer />
+      </CartProvider>
+    </ClientMessages>
   );
 }

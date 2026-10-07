@@ -34,7 +34,7 @@ const SERVER_ONLY = [
  */
 const STUDIO_TOOLS = /^studio\.(automation-builder|loop-mapper|prompt-builder|task-sorter|spot-the-risk|wireframe-builder|prompt-arena|critic-mode|test-bench|security-doors)\.(?!(name|desc)$)/;
 
-export type MessageArea = "learn" | "member" | "tools" | "calculator" | "toolkit" | "studio" | "donate";
+export type MessageArea = "learn" | "member" | "tools" | "calculator" | "toolkit" | "studio" | "donate" | "pagesBook" | "pagesServices" | "pagesBlog" | "pagesEvents" | "pagesContact" | "pagesStore";
 
 /**
  * Namespaces sent only inside an area:
@@ -60,6 +60,14 @@ const AREAS: Record<MessageArea, string[]> = {
   studio: ["studio."],
   // The scholarship donate box (ARFA, the scholarship page, Partners, About).
   donate: ["donate."],
+  // Public page texts, sent only with their own section (app/(public)/<x>/layout.tsx)
+  // instead of with every page of the site.
+  pagesBook: ["pages.book.", "pages.bookSuccess."],
+  pagesServices: ["pages.services.", "pages.getStarted."],
+  pagesBlog: ["pages.aiTimes.", "pages.article.", "pages.newsletter.", "pages.promo."],
+  pagesEvents: ["pages.events."],
+  pagesContact: ["pages.contact."],
+  pagesStore: ["pages.store."],
 };
 
 const AREA_PREFIXES = Object.values(AREAS).flat();

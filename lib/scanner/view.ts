@@ -7,6 +7,7 @@ import type { ExtraFinding, OpportunityKey, PageSpeedResult, Tech } from "./extr
 import { findingText } from "./i18n";
 import { reportPrice } from "./config";
 import { readReport, type WrittenReport } from "./report-shape";
+import { hideOwnStack, isOwnSite } from "./own";
 
 // What a visitor sees of a scan, by how much they have unlocked:
 //
@@ -115,10 +116,12 @@ export function allFindings(lead: Pick<ScannerLead, "findings" | "extra">): AnyF
   );
 }
 
-export function readExtra(v: unknown): StoredExtra | null {
+/** With the scanned URL, our own site's stack is left out (see ./own). */
+export function readExtra(v: unknown, url?: string | null): StoredExtra | null {
   if (!v || typeof v !== "object") return null;
   const e = v as StoredExtra;
-  return typeof e.growthScore === "number" ? e : null;
+  if (typeof e.growthScore !== "number") return null;
+  return e.tech && isOwnSite(url) ? { ...e, tech: hideOwnStack(e.tech, url) } : e;
 }
 
 type T = (key: string, vars?: Vars) => string;
@@ -157,7 +160,7 @@ function topThree(problems: AnyFinding[]): AnyFinding[] {
 }
 
 export async function buildView(lead: ScannerLead, t: T, locale: Locale, opts: { staff?: boolean } = {}): Promise<ReportView> {
-  const extra = readExtra(lead.extra);
+  const extra = readExtra(lead.extra, lead.url);
   const held = !!extra?.held && !lead.unlockedAt && !opts.staff;
   const level: Level = held ? "free" : levelOf(lead, opts.staff);
   const findings = allFindings(lead);

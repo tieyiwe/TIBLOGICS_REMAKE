@@ -5,6 +5,11 @@ import type { Messages } from "./types";
 // chat widget, root metadata, the 404 page and the loading state.
 const messages: Messages = {
   en: {
+    "site.newsSignup.title": "AI Times newsletter",
+    "site.newsSignup.placeholder": "Your email",
+    "site.newsSignup.cta": "Subscribe",
+    "site.newsSignup.done": "Thank you. You are subscribed to AI Times.",
+    "site.newsSignup.error": "Could not subscribe. Please try again.",
     // Root metadata
     "site.meta.title": "TIBLOGICS: AI Implementation & Digital Solutions",
     "site.meta.description": "TIBLOGICS builds AI agents, workflow automation, and full-stack digital products for businesses in North America, Africa, and beyond. AI-first. Tech-complete.",
@@ -107,6 +112,11 @@ const messages: Messages = {
     "site.loading": "Loading…",
   },
   fr: {
+    "site.newsSignup.title": "Lettre d’information AI Times",
+    "site.newsSignup.placeholder": "Votre e-mail",
+    "site.newsSignup.cta": "S’abonner",
+    "site.newsSignup.done": "Merci. Vous êtes abonné à AI Times.",
+    "site.newsSignup.error": "Inscription impossible. Veuillez réessayer.",
     "site.meta.title": "TIBLOGICS : mise en œuvre de l'IA et solutions numériques",
     "site.meta.description": "TIBLOGICS conçoit des agents IA, de l'automatisation des processus et des produits numériques complets pour les entreprises d'Amérique du Nord, d'Afrique et d'ailleurs. L'IA d'abord. Une technologie complète.",
     "site.meta.ogImageAlt": "TIBLOGICS : des solutions IA. Un impact réel sur votre activité.",
@@ -203,6 +213,11 @@ const messages: Messages = {
     "site.loading": "Chargement…",
   },
   sw: {
+    "site.newsSignup.title": "Jarida la AI Times",
+    "site.newsSignup.placeholder": "Barua pepe yako",
+    "site.newsSignup.cta": "Jiandikishe",
+    "site.newsSignup.done": "Asante. Umejiandikisha kwa AI Times.",
+    "site.newsSignup.error": "Imeshindwa kujiandikisha. Tafadhali jaribu tena.",
     "site.meta.title": "TIBLOGICS: utekelezaji wa AI na suluhisho za kidijitali",
     "site.meta.description": "TIBLOGICS hujenga mawakala wa AI, uendeshaji otomatiki wa michakato na bidhaa kamili za kidijitali kwa biashara za Amerika Kaskazini, Afrika na kwingineko. AI kwanza. Teknolojia kamili.",
     "site.meta.ogImageAlt": "TIBLOGICS: suluhisho za AI. Matokeo halisi kwa biashara.",

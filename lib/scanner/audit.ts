@@ -125,6 +125,48 @@ function jsonLdTypes(html: string): string[] {
   return [...types];
 }
 
+const AI_AGENTS = /^(gptbot|chatgpt-user|oai-searchbot|claudebot|claude-user|claude-searchbot|anthropic-ai|perplexitybot|perplexity-user|ccbot|google-extended|applebot-extended|meta-externalagent|bytespider|amazonbot|mistralai-user|duckassistbot)$/i;
+
+/**
+ * True when robots.txt shuts the AI crawlers out of the whole site: a group
+ * naming an AI crawler (or every crawler, "*") with "Disallow: /" and no
+ * "Allow: /". Hiding some paths (an admin area, checkout pages) is normal
+ * and does not count; this used to flag any Disallow line at all.
+ */
+export function robotsBlocksAi(robots: string): boolean {
+  const groups: Array<{ agents: string[]; allowAll: boolean; disallowAll: boolean }> = [];
+  let cur: (typeof groups)[number] | null = null;
+  let lastWasAgent = false;
+  for (const raw of robots.split(/\r?\n/)) {
+    const line = raw.replace(/#.*$/, "").trim();
+    if (!line) continue;
+    const m = /^([a-z-]+)\s*:\s*(.*)$/i.exec(line);
+    if (!m) continue;
+    const field = m[1].toLowerCase();
+    const value = m[2].trim();
+    if (field === "user-agent") {
+      if (!cur || !lastWasAgent) {
+        cur = { agents: [], allowAll: false, disallowAll: false };
+        groups.push(cur);
+      }
+      cur.agents.push(value.toLowerCase());
+      lastWasAgent = true;
+      continue;
+    }
+    lastWasAgent = false;
+    if (!cur) continue;
+    if (field === "disallow" && (value === "/" || value === "/*")) cur.disallowAll = true;
+    if (field === "allow" && (value === "/" || value === "/*")) cur.allowAll = true;
+  }
+  const blocked = (g: (typeof groups)[number]) => g.disallowAll && !g.allowAll;
+  const aiGroups = groups.filter((g) => g.agents.some((a) => AI_AGENTS.test(a)));
+  // A crawler follows its own group when there is one, else the "*" group.
+  if (aiGroups.some(blocked)) return true;
+  const named = new Set(aiGroups.flatMap((g) => g.agents.filter((a) => AI_AGENTS.test(a))));
+  const star = groups.find((g) => g.agents.includes("*"));
+  return !!star && blocked(star) && named.size < 3;
+}
+
 export function audit(s: Signals): AuditResult {
   const html = s.html;
   const lower = html.toLowerCase();
@@ -159,11 +201,8 @@ export function audit(s: Signals): AuditResult {
     .trim();
   const words = text ? text.split(" ").length : 0;
 
-  const robots = s.robotsTxt ?? "";
   // Blocking the AI crawlers is a choice, but it is the opposite of AI-ready.
-  const blocksAiCrawlers = /user-agent:\s*(gptbot|claudebot|perplexitybot|ccbot|google-extended)/i.test(
-    robots,
-  ) && /disallow:\s*\//i.test(robots);
+  const blocksAiCrawlers = robotsBlocksAi(s.robotsTxt ?? "");
 
   const checks: Check[] = [
     // ── SEO ────────────────────────────────────────────────────────────────

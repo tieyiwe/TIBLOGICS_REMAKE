@@ -111,7 +111,7 @@ export async function reportPdf(l: ScannerLead, locale: Locale): Promise<Buffer>
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
   const date = new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(l.createdAt);
   const w = new Writer(doc, font, bold, `TIBLOGICS · ${t("tools.sr.pdf.title")} · ${l.domain ?? ""} · ${date} · tiblogics.com`);
-  const extra = readExtra(l.extra);
+  const extra = readExtra(l.extra, l.url);
   const report = readReport(l.report);
 
   // Cover band
@@ -207,7 +207,9 @@ export async function reportPdf(l: ScannerLead, locale: Locale): Promise<Buffer>
   }
 
   w.heading(t("tools.sr.pdf.next"));
-  w.text(t("tools.sr.pdf.nextBody"), { size: 10.5 });
+  // The offer to fix what was found, when anything was.
+  const issues = findings.filter((f) => f.type !== "good").length;
+  w.text(issues > 0 ? t("tools.sr.pdf.fix", { n: String(issues) }) : t("tools.sr.pdf.nextBody"), { size: 10.5 });
   w.text("tiblogics.com/book", { bold: true, color: ORANGE, size: 11 });
 
   return Buffer.from(await doc.save());

@@ -17,5 +17,5 @@ export async function generateMetadata(): Promise<Metadata> {
 
 // The donate box on this page (Partners) needs its texts on the client.
 export default function ContactLayout({ children }: { children: React.ReactNode }) {
-  return <ClientMessages area="donate">{children}</ClientMessages>;
+  return <ClientMessages area={["donate", "pagesContact"]}>{children}</ClientMessages>;
 }

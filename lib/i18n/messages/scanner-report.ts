@@ -167,10 +167,11 @@ export default tri({
     "Kuandika ripoti kunachukua muda zaidi ya kawaida. Tutakutumia kwa barua pepe ikiwa tayari.",
   ],
   "tools.sr.staffPreview": [
-    "Staff preview: the written fix plan is made when the report is unlocked.",
-    "Aperçu équipe : le plan écrit est rédigé au déblocage du rapport.",
-    "Muonekano wa wafanyakazi: mpango ulioandikwa hutengenezwa ripoti inapofunguliwa.",
+    "Staff preview: this report is not unlocked, so no written fix plan yet. Write it now if you need it.",
+    "Aperçu équipe : ce rapport n'est pas débloqué, le plan écrit n'existe pas encore. Rédigez-le maintenant si besoin.",
+    "Muonekano wa wafanyakazi: ripoti hii haijafunguliwa, kwa hiyo mpango ulioandikwa bado haupo. Uandike sasa ukiuhitaji.",
   ],
+  "tools.sr.staffWrite": ["Write the fix plan", "Rédiger le plan", "Andika mpango"],
   "tools.sr.pdf": ["Download PDF", "Télécharger le PDF", "Pakua PDF"],
   "tools.sr.share": ["Copy share link", "Copier le lien", "Nakili kiungo"],
   "tools.sr.copied": ["Link copied", "Lien copié", "Kiungo kimenakiliwa"],
@@ -359,6 +360,25 @@ export default tri({
   // ── PDF ─────────────────────────────────────────────────────────────────
   "tools.sr.pdf.title": ["Website Report", "Rapport de site web", "Ripoti ya Tovuti"],
   "tools.sr.pdf.scores": ["Scores", "Scores", "Alama"],
+  "tools.sr.fix.tag": ["Done for you", "On s'en occupe", "Tunakufanyia"],
+  "tools.sr.fix.title.one": ["We'll fix this issue for you", "Nous corrigeons ce problème pour vous", "Tutarekebisha tatizo hili kwa ajili yako"],
+  "tools.sr.fix.title.other": ["We'll fix these {n} issues for you", "Nous corrigeons ces {n} problèmes pour vous", "Tutarekebisha matatizo haya {n} kwa ajili yako"],
+  "tools.sr.fix.body": [
+    "The TIBLOGICS team fixes what this report found: security settings, speed, search, lead capture and AI readiness. You keep running your business; we hand back a site that scores higher.",
+    "L'équipe TIBLOGICS corrige ce que ce rapport a trouvé : sécurité, vitesse, référencement, captation de prospects et préparation à l'IA. Vous gérez votre activité, nous vous rendons un site mieux noté.",
+    "Timu ya TIBLOGICS inarekebisha yaliyopatikana kwenye ripoti hii: usalama, kasi, utafutaji, kupata wateja na utayari wa AI. Wewe endelea na biashara yako; tunakurudishia tovuti yenye alama za juu.",
+  ],
+  "tools.sr.fix.cta": ["Get my issues fixed", "Faire corriger mes problèmes", "Nirekebishiwe matatizo"],
+  "tools.sr.fix.note": [
+    "Free 30-minute call: we go through this report with you and give you a fixed price and timeline.",
+    "Appel gratuit de 30 minutes : nous parcourons ce rapport avec vous et vous donnons un prix fixe et un délai.",
+    "Simu ya bure ya dakika 30: tunapitia ripoti hii pamoja nawe na kukupa bei maalum na muda.",
+  ],
+  "tools.sr.pdf.fix": [
+    "We can fix the {n} issues on this report for you, at a fixed price. Book a free 30-minute call and bring this report:",
+    "Nous pouvons corriger les {n} problèmes de ce rapport pour vous, à prix fixe. Réservez un appel gratuit de 30 minutes avec ce rapport :",
+    "Tunaweza kukurekebishia matatizo {n} yaliyo kwenye ripoti hii, kwa bei maalum. Weka simu ya bure ya dakika 30 ukiwa na ripoti hii:",
+  ],
   "tools.sr.pdf.next": ["Want it done for you?", "Vous voulez qu'on s'en occupe ?", "Ungependa tukufanyie?"],
   "tools.sr.pdf.nextBody": [
     "TIBLOGICS builds AI and software for businesses: websites, booking and lead capture, AI assistants and automation. Book a free 30-minute call:",

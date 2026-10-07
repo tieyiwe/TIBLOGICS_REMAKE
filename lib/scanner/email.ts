@@ -51,7 +51,7 @@ const button = (href: string, label: string, secondary = false) =>
 const color = (n: number) => (n >= 70 ? "#16a34a" : n >= 50 ? "#F47C20" : "#dc2626");
 
 function scoreTable(l: ScannerLead, t: ReturnType<typeof translatorFor>): string {
-  const extra = readExtra(l.extra);
+  const extra = readExtra(l.extra, l.url);
   const rows: Array<[string, number | null]> = [
     [t("tools.sr.area.growth"), extra?.growthScore ?? null],
     [t("tools.sr.area.ai"), l.aiScore],
@@ -127,7 +127,7 @@ export async function sendFollowup(l: ScannerLead, stage: 1 | 2): Promise<boolea
   const t = translatorFor(locale);
   const domain = l.domain ?? l.url;
   const problems = allFindings(l).filter((f) => f.type !== "good");
-  const extra = readExtra(l.extra);
+  const extra = readExtra(l.extra, l.url);
   if (stage === 1) {
     const top = problems[0];
     if (!top) return false;
@@ -195,7 +195,7 @@ export async function sendReportReadyEmail(id: string): Promise<void> {
 export async function sendOwnerScanAlert(id: string, kind: "email" | "paid" | "call"): Promise<void> {
   const l = await prisma.scannerLead.findUnique({ where: { id } });
   if (!l) return;
-  const extra = readExtra(l.extra);
+  const extra = readExtra(l.extra, l.url);
   const t = translatorFor("en");
   const services = servicesNeeded(l).map((s) => t(`tools.service.${s}`));
   const problems = allFindings(l).filter((f) => f.type === "bad").slice(0, 6).map((f) => findingText(t, "en", f));

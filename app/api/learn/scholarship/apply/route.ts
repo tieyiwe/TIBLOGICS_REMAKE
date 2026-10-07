@@ -27,7 +27,9 @@ const Body = z.object({
 export async function POST(req: NextRequest) {
   const t = await getT();
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-  if (!(await checkRateLimit(`scholarship-apply:${ip}`, 30, 3_600_000))) {
+  // Generous per network: a whole event venue can apply over one Wi-Fi.
+  // The per-address limit below and the hidden field stop repeat and bot posts.
+  if (!(await checkRateLimit(`scholarship-apply:${ip}`, 200, 3_600_000))) {
     return NextResponse.json({ error: t("learn.scholarApply.error.tooMany") }, { status: 429 });
   }
   const parsed = Body.safeParse(await req.json().catch(() => ({})));

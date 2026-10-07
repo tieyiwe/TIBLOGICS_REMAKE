@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle, ArrowRight, CalendarCheck, Check, CheckCircle2, Copy, Download, FileText, Gauge, Lightbulb,
-  Loader2, Lock, RefreshCw, Rocket, ScanSearch, Shield, Sparkles, Users, XCircle, Zap,
+  Loader2, Lock, RefreshCw, Rocket, ScanSearch, Shield, Sparkles, Users, Wrench, XCircle, Zap,
 } from "lucide-react";
 import { useLocale, useT } from "@/lib/i18n/client";
 import type { Area, ReportView as View, ViewFinding } from "@/lib/scanner/view";
@@ -153,6 +153,15 @@ export default function ReportView({ initial, paidReturn = false, canceled = fal
     if (!consent) return setErr(t("tools.sr.email.needConsent"));
     const r = await post(`/api/scanner/report/${v.token}/email`, { email, consent: true }, "email");
     if (r) setV(await r.json());
+  }
+
+  // Staff preview of a locked report: write the fix plan now.
+  async function writePlan() {
+    const r = await post(`/api/scanner/report/${v.token}/write`, {}, "write");
+    if (r) {
+      polls.current = 0;
+      await refresh();
+    }
   }
 
   async function buy() {
@@ -313,6 +322,9 @@ export default function ReportView({ initial, paidReturn = false, canceled = fal
         </div>
       )}
 
+      {/* ── We fix it for you ───────────────────────────────────────────── */}
+      <FixOffer n={v.problemsTotal} href={bookHref} />
+
       {/* ── Unlock ───────────────────────────────────────────────────────── */}
       {locked && (
         <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-[#0D1B2A] to-[#1B3A6B] p-6 text-white sm:p-8" data-testid="unlock">
@@ -354,7 +366,26 @@ export default function ReportView({ initial, paidReturn = false, canceled = fal
       )}
 
       {/* ── Full report ──────────────────────────────────────────────────── */}
-      {v.full && <FullReport v={v} busy={busy} err={err} onCompare={compare} competitors={competitors} setCompetitors={setCompetitors} onRescan={rescan} onCopy={copyLink} copied={copied} />}
+      {v.full && <FullReport v={v} busy={busy} err={err} onCompare={compare} competitors={competitors} setCompetitors={setCompetitors} onRescan={rescan} onCopy={copyLink} copied={copied} onWrite={writePlan} />}
+    </div>
+  );
+}
+
+/** "We'll fix these issues for you": shown on every report with problems. */
+function FixOffer({ n, href }: { n: number; href: string }) {
+  const t = useT();
+  if (n <= 0) return null;
+  return (
+    <div className="flex flex-col gap-4 rounded-2xl border-2 border-[#F47C20] bg-gradient-to-br from-[#FFF6EE] to-white p-6 sm:flex-row sm:items-center sm:p-7" data-testid="fix-offer">
+      <div className="min-w-0 flex-1">
+        <p className="font-dm text-xs font-semibold uppercase tracking-[0.16em] text-[#E06D12]">{t("tools.sr.fix.tag")}</p>
+        <h2 className="mt-1 font-syne text-xl font-bold text-[#0D1B2A]">{n === 1 ? t("tools.sr.fix.title.one") : t("tools.sr.fix.title.other", { n: String(n) })}</h2>
+        <p className="mt-1.5 font-dm text-sm leading-relaxed text-[#3A4A5C]">{t("tools.sr.fix.body")}</p>
+        <p className="mt-1.5 font-dm text-xs text-[#7A8FA6]">{t("tools.sr.fix.note")}</p>
+      </div>
+      <Link href={href} className="btn-primary shrink-0 justify-center rounded-xl px-6 py-3" data-testid="fix-offer-cta">
+        <Wrench size={16} aria-hidden /> {t("tools.sr.fix.cta")}
+      </Link>
     </div>
   );
 }
@@ -369,6 +400,7 @@ function FullReport(props: {
   onRescan: () => void;
   onCopy: () => void;
   copied: boolean;
+  onWrite: () => void;
 }) {
   const { v, busy, err } = props;
   const t = useT();
@@ -397,8 +429,19 @@ function FullReport(props: {
         </div>
         {!r ? (
           <div className="mt-4 flex items-center gap-3 rounded-xl bg-[#F4F7FB] p-4 font-dm text-sm text-[#3A4A5C]" data-testid="report-writing">
-            {failed ? <AlertTriangle size={18} className="text-[#E06D12]" aria-hidden /> : <Loader2 size={18} className="animate-spin text-[#F47C20]" aria-hidden />}
-            {failed ? t("tools.sr.writingFailed") : f.unlockSource ? t("tools.sr.writing") : t("tools.sr.staffPreview")}
+            {failed ? (
+              <AlertTriangle size={18} className="shrink-0 text-[#E06D12]" aria-hidden />
+            ) : f.unlockSource ? (
+              <Loader2 size={18} className="shrink-0 animate-spin text-[#F47C20]" aria-hidden />
+            ) : (
+              <FileText size={18} className="shrink-0 text-[#1B3A6B]" aria-hidden />
+            )}
+            <span className="flex-1">{failed ? t("tools.sr.writingFailed") : f.unlockSource ? t("tools.sr.writing") : t("tools.sr.staffPreview")}</span>
+            {!failed && !f.unlockSource && (
+              <button type="button" onClick={props.onWrite} disabled={busy === "write"} className="inline-flex items-center gap-1.5 rounded-lg bg-[#F47C20] px-3 py-2 font-dm text-sm font-semibold text-white hover:bg-[#E06D12] disabled:opacity-60" data-testid="staff-write">
+                {busy === "write" && <Loader2 size={15} className="animate-spin" aria-hidden />} {t("tools.sr.staffWrite")}
+              </button>
+            )}
           </div>
         ) : (
           <div className="mt-4 space-y-5">

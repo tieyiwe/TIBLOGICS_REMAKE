@@ -1,8 +1,10 @@
-import { Mail } from "lucide-react";
+import { Linkedin, Mail, MessageCircle, Phone, Twitter } from "lucide-react";
+import { ORG } from "@/lib/seo/site";
 import Link from "next/link";
 import Image from "next/image";
 import { getT } from "@/lib/i18n/server";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import FooterNewsletter from "./FooterNewsletter";
 
 // Dictionary keys under site.footer.svc.*
 const services = ["ai", "automation", "strategy", "web", "security", "data", "mobile", "training"];
@@ -29,6 +31,16 @@ const company = [
   { key: "contact", href: "/contact" },
 ];
 
+// Optional contact channels (Replit Secrets): CONTACT_PHONE, e.g.
+// "+1 202 555 0147", and WHATSAPP_NUMBER (digits with country code). Each
+// shows only when set.
+const phone = process.env.CONTACT_PHONE?.trim() || null;
+const whatsapp = process.env.WHATSAPP_NUMBER?.replace(/\D/g, "") || null;
+const social = [
+  ...ORG.sameAs.filter((u) => /linkedin\.com/.test(u)).map((href) => ({ href, label: "LinkedIn", Icon: Linkedin })),
+  ...ORG.sameAs.filter((u) => /(?:twitter|x)\.com/.test(u)).map((href) => ({ href, label: "X (Twitter)", Icon: Twitter })),
+];
+
 export default async function Footer() {
   const t = await getT();
   // On phones the fixed bottom bar (components/public/MobileBottomNav.tsx)
@@ -45,7 +57,7 @@ export default async function Footer() {
               {/* The network mark is an image; the wordmark is live text so it
                   stays crisp at any size (the old baked-in wordmark had a flaw on the "L"). */}
               <a href="/" className="inline-flex items-center gap-3" aria-label="TIBLOGICS home">
-                <Image src="/logo-mark.png" alt="" width={300} height={173} className="h-14 w-auto" />
+                <Image src="/logo-mark.png" alt="TIBLOGICS" width={300} height={173} className="h-14 w-auto" />
                 <span className="font-dm text-[1.7rem] font-extrabold leading-none tracking-tight">
                   <span className="text-white">TIB</span>
                   <span className="text-[#F47C20]">LOGICS</span>
@@ -62,6 +74,34 @@ export default async function Footer() {
               <Mail size={14} />
               info@tiblogics.com
             </a>
+            {(phone || whatsapp) && (
+              <div className="mt-2 flex flex-col gap-2">
+                {phone && (
+                  <a href={`tel:${phone.replace(/[^\d+]/g, "")}`} className="inline-flex items-center gap-2 text-[#F9A738] hover:text-[#FEF0E3] text-sm font-dm font-medium transition-colors">
+                    <Phone size={14} aria-hidden="true" />
+                    {phone}
+                  </a>
+                )}
+                {whatsapp && (
+                  <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-[#F9A738] hover:text-[#FEF0E3] text-sm font-dm font-medium transition-colors">
+                    <MessageCircle size={14} aria-hidden="true" />
+                    WhatsApp
+                  </a>
+                )}
+              </div>
+            )}
+            {social.length > 0 && (
+              <ul className="mt-4 flex items-center gap-2" aria-label="TIBLOGICS on social media">
+                {social.map(({ href, label, Icon }) => (
+                  <li key={href}>
+                    <a href={href} target="_blank" rel="noopener noreferrer me" aria-label={label} title={label} className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-[#F47C20]">
+                      <Icon size={16} aria-hidden="true" />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <FooterNewsletter />
             <div className="mt-5">
               <LanguageSwitcher tone="dark" />
             </div>

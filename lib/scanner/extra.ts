@@ -14,6 +14,7 @@
 //     the page, the response headers and public DNS. Wording says "exposes",
 //     "advertises" or "missing", never that a site is vulnerable.
 
+import { hideOwnStack } from "./own";
 import { resolveTxt, resolveMx } from "node:dns/promises";
 import type { Finding, FindingType } from "./audit";
 
@@ -305,6 +306,10 @@ const CRM: [string, RegExp][] = [
   ["Omnisend", /omnisnippet|omnisend\.com/i],
 ];
 
+/** A chat launcher built into the site: labelled or named as chat. */
+const CUSTOM_CHAT =
+  /<(?:button|a|div)\b[^>]*(?:aria-label|title)=["'][^"']*\b(?:chat with|live chat|open (?:the )?chat|chat now|start (?:a )?chat|ask our (?:ai )?assistant|discuter avec|ouvrir le chat|zungumza na)\b[^"']*["']|(?:id|class)=["'][^"']*\b(?:chat-widget|chatbot|chat-launcher|live-chat|chat-bubble)\b/i;
+
 const SOCIAL: [string, RegExp][] = [
   ["Facebook", /^https?:\/\/(?:[\w-]+\.)?facebook\.com\/(?!sharer|share\.php|dialog|plugins|tr\b)[\w.-]+/i],
   ["Instagram", /^https?:\/\/(?:www\.)?instagram\.com\/(?!p\/|explore)[\w.-]+/i],
@@ -422,6 +427,9 @@ function countForms(html: string): { native: number; embeds: string[]; signup: b
   return { native, embeds: allMatches(html, FORM_EMBEDS), signup };
 }
 
+const LANGUAGE_NAMES =
+  />\s*(English|Français|Francais|Español|Espanol|Deutsch|Italiano|Português|Portugues|Nederlands|Kiswahili|Swahili|العربية|中文|日本語|Русский|Polski|Türkçe)\s*</gi;
+
 function detectLanguages(html: string): { languages: string[]; switcher: boolean } {
   const langs = new Set<string>();
   const htmlLang = /<html[^>]+lang=["']([a-z]{2,3})/i.exec(html);
@@ -436,7 +444,13 @@ function detectLanguages(html: string): { languages: string[]; switcher: boolean
   for (const m of html.matchAll(/<a\b[^>]*href=["'](?:https?:\/\/[^/"']+)?\/(en|fr|es|de|it|pt|nl|sw|ar|zh|ja|ru|pl|tr)(?:[-_][a-z]{2})?\/?["'#?]/gi)) {
     pathLangs.add(m[1].toLowerCase());
   }
-  const switcher = plugin || anchorHreflang || pathLangs.size >= 2 ||
+  // A dropdown of language names (English / Français / Kiswahili ...).
+  let selectSwitcher = false;
+  for (const m of html.matchAll(/<select\b[\s\S]*?<\/select>/gi)) {
+    const names = (m[0].match(LANGUAGE_NAMES) ?? []).map((n) => n.toLowerCase());
+    if (new Set(names).size >= 2) { selectSwitcher = true; break; }
+  }
+  const switcher = plugin || anchorHreflang || selectSwitcher || pathLangs.size >= 2 ||
     (pathLangs.size === 1 && !!htmlLang && !pathLangs.has(htmlLang[1].toLowerCase()));
   return { languages: [...langs], switcher };
 }
@@ -491,6 +505,8 @@ export function extraAudit(s: ExtraSignals): ExtraResult {
   );
   const whatsapp = /(?:href=["'](?:https?:\/\/)?(?:wa\.me\/|api\.whatsapp\.com\/send|web\.whatsapp\.com\/send)|whatsapp:\/\/send)/i.test(html);
   const chat = allMatches(html, CHAT);
+  // A site's own chat assistant (no vendor script): a launcher labelled as chat.
+  if (!chat.length && CUSTOM_CHAT.test(html)) chat.push("Built-in chat assistant");
   if (whatsapp) chat.push("WhatsApp");
 
   const { native, embeds, signup } = countForms(html);
@@ -736,7 +752,7 @@ export function extraAudit(s: ExtraSignals): ExtraResult {
     growthScore: byArea("growth"),
     securityScore: byArea("security"),
     findings,
-    tech,
+    tech: hideOwnStack(tech, s.finalUrl),
     opportunities,
   };
 }

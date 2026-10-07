@@ -31,7 +31,7 @@ const offerFor = (service: string | undefined) => (service ? OFFER_FOR[service] 
 export async function upsertScannerGrowthLead(lead: ScannerLead, event: "scanner_email" | "scanner_paid" | "scanner_call"): Promise<string | null> {
   if (!lead.email) return null;
   await ensureOutreachTables();
-  const extra = readExtra(lead.extra);
+  const extra = readExtra(lead.extra, lead.url);
   const services = servicesNeeded(lead);
   const summary = [
     `Website scan of ${lead.url}: overall ${lead.overallScore}/100 (AI ${lead.aiScore}, SEO ${lead.seoScore}, speed ${lead.perfScore}, UX ${lead.uxScore}` +

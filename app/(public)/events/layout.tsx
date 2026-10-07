@@ -1,3 +1,4 @@
+import ClientMessages from "@/components/i18n/ClientMessages";
 import type { Metadata } from "next";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { pageMetadata } from "@/lib/seo/meta";
@@ -14,5 +15,5 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function EventsLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <ClientMessages area="pagesEvents">{children}</ClientMessages>;
 }

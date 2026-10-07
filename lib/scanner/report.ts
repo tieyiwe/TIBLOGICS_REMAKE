@@ -95,7 +95,7 @@ export async function writeReport(id: string): Promise<"ready" | "skipped" | "fa
   if (!(await claim(id))) return "skipped";
   const lead = await prisma.scannerLead.findUnique({ where: { id } });
   if (!lead) return "skipped";
-  let extra = readExtra(lead.extra);
+  let extra = readExtra(lead.extra, lead.url);
   try {
     // PageSpeed first (optional key), so the written report can use it.
     if (extra && !extra.pageSpeedAt) {

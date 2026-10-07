@@ -14,7 +14,7 @@ export default function LanguageSwitcher({ tone = "light", className = "" }: { t
   const pathname = usePathname() ?? "";
   const options: readonly Locale[] = LEARN_PATH.test(pathname) ? LEARN_LOCALES : LOCALES;
   return (
-    <label className={`inline-flex items-center gap-1.5 text-xs font-semibold ${tone === "dark" ? "text-white/80" : "text-[#3A4A5C]"} ${className}`}>
+    <label className={`language-switcher inline-flex items-center gap-1.5 text-xs font-semibold ${tone === "dark" ? "text-white/80" : "text-[#3A4A5C]"} ${className}`}>
       <Globe size={14} aria-hidden="true" />
       <span className="sr-only">{t("common.language")}</span>
       <select

@@ -43,6 +43,13 @@ function buildSha() {
   }
 }
 
+// Google Analytics 4 (optional): set the Secret GA_MEASUREMENT_ID (G-XXXXXXX)
+// before building; the public layout then loads the tag and the CSP below
+// allows Google's analytics hosts. Without it, nothing of Google's loads.
+const GA = /^G-[A-Z0-9]{4,20}$/.test(process.env.GA_MEASUREMENT_ID ?? "");
+const GA_SCRIPT = GA ? " https://www.googletagmanager.com" : "";
+const GA_CONNECT = GA ? " https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com" : "";
+
 const nextConfig = {
   htmlLimitedBots: new RegExp(`${DEFAULT_HTML_LIMITED_BOTS}|${AI_CRAWLERS}`, "i"),
   allowedDevOrigins: [process.env.REPLIT_DEV_DOMAIN].filter(Boolean),
@@ -149,11 +156,11 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline'",
+              `script-src 'self' 'unsafe-inline'${GA_SCRIPT}`,
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' https: data: blob:",
-              "connect-src 'self' https://api.anthropic.com https://api.resend.com https://api.stripe.com",
+              `connect-src 'self' https://api.anthropic.com https://api.resend.com https://api.stripe.com${GA_CONNECT}`,
               // Lesson videos embed YouTube/Vimeo (see components/learn/LessonVideo.tsx).
               // Without these the iframes are silently blocked in production.
               "frame-src https://js.stripe.com https://hooks.stripe.com https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com",
@@ -174,7 +181,20 @@ const nextConfig = {
         ],
       },
       {
+        // Pages: always revalidated (never served stale after a deploy) and
+        // never stored by shared caches, but not "no-store", which would
+        // switch off the browser's instant back/forward cache.
         source: "/((?!_next/static|_next/image|fonts|favicon)(?:[^.]*|.*\\.html))",
+        headers: [{ key: "Cache-Control", value: "private, no-cache, max-age=0, must-revalidate" }],
+      },
+      {
+        // Signed-in areas keep no-store: account and admin pages must not be
+        // kept in the browser's history cache.
+        source: "/:area(learn|admin_pro|scholarship|join-team)/:path*",
+        headers: [{ key: "Cache-Control", value: "no-store, no-cache, must-revalidate" }],
+      },
+      {
+        source: "/:area(learn|admin_pro|scholarship)",
         headers: [{ key: "Cache-Control", value: "no-store, no-cache, must-revalidate" }],
       },
       {
