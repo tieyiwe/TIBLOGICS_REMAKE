@@ -1,4 +1,5 @@
 import { pageSales, withProductSales } from "@/lib/promotions/display";
+import { cleanCopy, cleanLine } from "@/lib/text/clean-copy";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { cache } from "react";
@@ -33,7 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     locale,
     title: fitTitle([c.name]),
     absoluteTitle: true,
-    description: c.description || t("pages.store.meta.collectionDescription", { name: c.name }),
+    description: (c.description && cleanLine(c.description)) || t("pages.store.meta.collectionDescription", { name: c.name }),
     image: c.image ? { url: c.image, alt: c.name } : undefined,
   });
 }
@@ -48,7 +49,7 @@ export default async function CollectionPage({ params }: Props) {
     .catch(() => []);
 
   const products: ShopProduct[] = withProductSales(sortStoreProducts(raw), await pageSales()).map((p) => ({
-    id: p.id, slug: p.slug, name: p.name, tagline: p.tagline, description: p.description,
+    id: p.id, slug: p.slug, name: cleanLine(p.name), tagline: p.tagline ? cleanLine(p.tagline) : null, description: cleanCopy(p.description),
     price: p.price, compareAtPrice: p.compareAtPrice, currency: p.currency, images: p.images,
     category: p.category, collections: p.collections, tags: p.tags, stock: p.stock, digital: p.digital,
     featured: p.featured, onSale: p.onSale, soldCount: p.soldCount, fileFormat: p.fileFormat,
@@ -56,7 +57,7 @@ export default async function CollectionPage({ params }: Props) {
 
   return (
     <CollectionView
-      collection={{ slug: c.slug, name: c.name, description: c.description, image: c.image, featured: c.featured }}
+      collection={{ slug: c.slug, name: cleanLine(c.name), description: c.description ? cleanCopy(c.description) : c.description, image: c.image, featured: c.featured }}
       products={products}
     />
   );

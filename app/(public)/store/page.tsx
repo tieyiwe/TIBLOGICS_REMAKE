@@ -1,4 +1,5 @@
 import { pageSales, withProductSales } from "@/lib/promotions/display";
+import { cleanCopy, cleanLine } from "@/lib/text/clean-copy";
 import prisma from "@/lib/prisma";
 import { cachedPublicData } from "@/lib/cache/public-data";
 import StoreFront from "@/components/shop/StoreFront";
@@ -40,9 +41,10 @@ export default async function ShopPage() {
   const products: ShopProduct[] = withProductSales(sortStoreProducts(rawProducts), sales).map((p) => ({
     id: p.id,
     slug: p.slug,
-    name: p.name,
-    tagline: p.tagline,
-    description: p.description,
+    // Pasted copy can carry markdown and stray characters (lib/text/clean-copy).
+    name: cleanLine(p.name),
+    tagline: p.tagline ? cleanLine(p.tagline) : null,
+    description: cleanCopy(p.description),
     price: p.price,
     compareAtPrice: p.compareAtPrice,
     currency: p.currency,
@@ -60,8 +62,8 @@ export default async function ShopPage() {
 
   const collections: ShopCollection[] = rawCollections.map((c) => ({
     slug: c.slug,
-    name: c.name,
-    description: c.description,
+    name: cleanLine(c.name),
+    description: c.description ? cleanCopy(c.description) : c.description,
     image: c.image,
     featured: c.featured,
   }));

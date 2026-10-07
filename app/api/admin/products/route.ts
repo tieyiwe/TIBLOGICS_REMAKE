@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cleanCopy, cleanLine } from "@/lib/text/clean-copy";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requirePermission } from "@/lib/require-admin";
 import { auditFromRequest } from "@/lib/admin/audit";
@@ -40,7 +41,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const name = String(body.name ?? "").trim();
+    // Saved clean: no markdown or stray characters from pasted copy.
+    const name = cleanLine(String(body.name ?? ""));
     if (!name) return NextResponse.json({ error: "Name is required" }, { status: 400 });
     if (body.published) {
       const denied = await requirePermission("store.publish");
@@ -71,8 +73,8 @@ export async function POST(req: NextRequest) {
       data: {
         slug,
         name,
-        tagline: body.tagline ? String(body.tagline).slice(0, 160) : null,
-        description: String(body.description ?? ""),
+        tagline: body.tagline ? cleanLine(String(body.tagline)).slice(0, 160) || null : null,
+        description: cleanCopy(String(body.description ?? "")),
         price,
         compareAtPrice,
         currency: body.currency || "USD",

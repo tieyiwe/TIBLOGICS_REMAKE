@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cleanCopy, cleanLine } from "@/lib/text/clean-copy";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, requirePermission } from "@/lib/require-admin";
 import { revalidateShop } from "@/lib/shop/revalidate";
@@ -17,9 +18,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const body = await req.json();
     const data: Record<string, unknown> = {};
 
-    if (body.name != null) data.name = String(body.name).trim();
-    if (body.tagline !== undefined) data.tagline = body.tagline ? String(body.tagline).slice(0, 160) : null;
-    if (body.description != null) data.description = String(body.description);
+    // Saved clean: no markdown or stray characters from pasted copy.
+    if (body.name != null) data.name = cleanLine(String(body.name));
+    if (body.tagline !== undefined) data.tagline = body.tagline ? cleanLine(String(body.tagline)).slice(0, 160) || null : null;
+    if (body.description != null) data.description = cleanCopy(String(body.description));
     if (body.price != null) data.price = Math.max(0, Math.round(Number(body.price) || 0));
     if (body.compareAtPrice !== undefined)
       data.compareAtPrice = body.compareAtPrice ? Math.max(0, Math.round(Number(body.compareAtPrice))) : null;

@@ -1,4 +1,5 @@
 import { pageSales, withProductSales } from "@/lib/promotions/display";
+import { cleanCopy, cleanLine } from "@/lib/text/clean-copy";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { cache } from "react";
@@ -42,7 +43,8 @@ function toShopProduct(p: {
   featured: boolean; onSale: boolean; soldCount: number; fileFormat: string | null;
 }): ShopProduct {
   return {
-    id: p.id, slug: p.slug, name: p.name, tagline: p.tagline, description: p.description,
+    // Pasted copy can carry markdown and stray characters (lib/text/clean-copy).
+    id: p.id, slug: p.slug, name: cleanLine(p.name), tagline: p.tagline ? cleanLine(p.tagline) : null, description: cleanCopy(p.description),
     price: p.price, compareAtPrice: p.compareAtPrice, currency: p.currency, images: p.images,
     category: p.category, collections: p.collections, tags: p.tags, stock: p.stock, digital: p.digital,
     featured: p.featured, onSale: p.onSale, soldCount: p.soldCount, fileFormat: p.fileFormat,
@@ -60,7 +62,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     locale,
     title: fitTitle([p.name]),
     absoluteTitle: true,
-    description: (p.tagline ? `${p.tagline} ${plain(p.description)}` : plain(p.description)) || `${p.name}. ${t("seo.meta.store.description")}`,
+    description: (p.tagline ? `${cleanLine(p.tagline)} ${plain(cleanCopy(p.description))}` : plain(cleanCopy(p.description))) || `${p.name}. ${t("seo.meta.store.description")}`,
     image: p.images?.[0] ? { url: p.images[0], alt: p.name } : undefined,
   });
 }
@@ -93,7 +95,7 @@ export default async function ProductPage({ params }: Props) {
           productNode({
             slug: p.slug,
             name: p.name,
-            description: plain(p.tagline ? `${p.tagline} ${p.description}` : p.description).slice(0, 5000),
+            description: plain(cleanCopy(p.tagline ? `${p.tagline}\n\n${p.description}` : p.description)).slice(0, 5000),
             priceCents: shown.price,
             currency: p.currency,
             images: p.images,

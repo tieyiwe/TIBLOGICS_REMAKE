@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cleanCopy, cleanLine } from "@/lib/text/clean-copy";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
 
@@ -10,8 +11,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     const body = await req.json();
     const data: Record<string, unknown> = {};
-    if (body.name != null) data.name = String(body.name).trim();
-    if (body.description != null) data.description = String(body.description);
+    if (body.name != null) data.name = cleanLine(String(body.name));
+    if (body.description != null) data.description = cleanCopy(String(body.description));
     if (body.image !== undefined) data.image = body.image ? String(body.image) : null;
     if (body.featured != null) data.featured = !!body.featured;
     if (body.published != null) data.published = !!body.published;

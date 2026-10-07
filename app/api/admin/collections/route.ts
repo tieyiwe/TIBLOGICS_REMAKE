@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cleanCopy, cleanLine } from "@/lib/text/clean-copy";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
 import { revalidateShop } from "@/lib/shop/revalidate";
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const name = String(body.name ?? "").trim();
+    const name = cleanLine(String(body.name ?? ""));
     if (!name) return NextResponse.json({ error: "Name is required" }, { status: 400 });
 
     let base = slugify(body.slug || name) || `collection-${Date.now()}`;
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
       data: {
         slug,
         name,
-        description: String(body.description ?? ""),
+        description: cleanCopy(String(body.description ?? "")),
         image: body.image ? String(body.image) : null,
         featured: !!body.featured,
         published: body.published !== false,
