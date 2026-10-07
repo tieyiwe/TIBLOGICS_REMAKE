@@ -3,7 +3,7 @@ import Link from "next/link";
 import JoinFlow, { type JoinTrack } from "@/components/learn/join/JoinFlow";
 import HelpWidget from "@/components/learn/support/HelpWidget";
 import { getCatalog } from "@/lib/learn/catalog";
-import { getAccess, getStudent } from "@/lib/learn/session";
+import { canAccessTrack, getAccess, getStudent } from "@/lib/learn/session";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTracks, withTrackText } from "@/lib/i18n/sources/learn";
 import { pageSales, withTrackSales } from "@/lib/promotions/display";
@@ -60,8 +60,8 @@ export default async function JoinPage({
     accentColor: c.accentColor,
     priceCents: c.priceCents,
     saleCents: c.salePriceCents,
-    owned: !!access && (access.all || access.purchased.includes(c.id)),
-    included: !!access?.all && !access.purchased.includes(c.id),
+    owned: !!access && canAccessTrack(access, c.id),
+    included: !!access && canAccessTrack(access, c.id) && !access.purchased.includes(c.id),
   }));
 
   // ?track / ?plan / ?team first; else what this learner chose last time.
@@ -101,6 +101,12 @@ export default async function JoinPage({
           </ol>
         </header>
         {access?.all && (() => {
+          // A track the plan leaves out (sold on its own monthly plan): no
+          // "you already have every track" banner for it.
+          const slug = fromUrl?.kind === "track" ? fromUrl.slug : fromUrl?.kind === "monthly" ? fromUrl.track ?? null : null;
+          const target = slug ? live.find((c) => c.slug === slug) : null;
+          return !target || canAccessTrack(access, target.id);
+        })() && (() => {
           // Already has every track (subscription, comp, team seat or the
           // owner's account): say so first, rather than a page of prices.
           const wanted = fromUrl?.kind === "track" ? live.find((c) => c.slug === fromUrl.slug) : null;

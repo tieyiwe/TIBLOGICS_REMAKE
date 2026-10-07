@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import PlanPicker from "@/components/learn/PlanPicker";
 import ArfaWordmark from "@/components/learn/ArfaWordmark";
-import { getLearnContext } from "@/lib/learn/session";
+import { canAccessTrack, getLearnContext } from "@/lib/learn/session";
+import { trackMonthlyCents } from "@/lib/learn/track-monthly";
 import { getCatalog } from "@/lib/learn/catalog";
 import { PLANS } from "@/lib/payments/provider";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -52,6 +53,9 @@ export default async function SubscribePage({
   const live = withTrackSales(catalog.filter((c) => c.status === "live").map((c) => withTrackText(c, texts.get(c.slug))), sales);
   const chosen = trackParam ? live.find((c) => c.slug === trackParam) ?? null : null;
   const owns = (id: string) => access.purchased.includes(id);
+  // A track the all-tracks plan leaves out (sold on its own monthly plan),
+  // chosen by a subscriber who does not have it yet.
+  const chosenLeftOut = !!chosen && access.all && !canAccessTrack(access, chosen.id);
 
   // Every track is already open: only buying a chosen track to keep it
   // forever is left to do here.
@@ -59,14 +63,18 @@ export default async function SubscribePage({
   const teamPricing = await getTeamPricing();
 
   const lapsed = entitlement.status === "canceled" || entitlement.status === "past_due";
-  const heading = access.all
+  const heading = chosenLeftOut
+    ? t("learn.subscribe.upgradeTitle")
+    : access.all
     ? chosen ? t("learn.locked.keepForever", { price: fmtPrice(chosen.priceCents, locale) }) : t("team.offer.title")
     : access.any
       ? t("learn.subscribe.upgradeTitle")
       : lapsed
         ? t("learn.subscribe.reactivate")
         : t("learn.subscribe.youreIn", { name: student.name.split(" ")[0] });
-  const body = access.all
+  const body = chosenLeftOut
+    ? t("learn.subscribe.upgradeBody")
+    : access.all
     ? chosen ? t("learn.locked.keepForeverBody") : t("team.offer.subscribedBody")
     : access.any
       ? t("learn.subscribe.upgradeBody")
@@ -165,8 +173,9 @@ export default async function SubscribePage({
             {chosen && !owns(chosen.id) && (
               <div className="mb-6">
                 <PlanPicker
-                  track={{ slug: chosen.slug, title: chosen.title, priceCents: chosen.priceCents, owned: false, salePriceCents: chosen.salePriceCents }}
-                  showSubscribe={false}
+                  track={{ slug: chosen.slug, title: chosen.title, priceCents: chosen.priceCents, owned: false, salePriceCents: chosen.salePriceCents, monthlyActive: access.subscribed.includes(chosen.id) }}
+                  // A track with its own monthly plan offers it beside the one-time price.
+                  showSubscribe={trackMonthlyCents(chosen.slug) != null}
                 />
               </div>
             )}

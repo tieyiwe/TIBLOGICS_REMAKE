@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { trackMonthlyCents } from "@/lib/learn/track-monthly";
 import { redirect } from "next/navigation";
 import { canAccessTrack, getAccess, getStudent } from "@/lib/learn/session";
 import { PLANS } from "@/lib/payments/provider";
@@ -111,7 +112,9 @@ export default async function MyTracksPage() {
                 {!open && time.get(track.slug) && (
                   <p className="mt-2 text-xs font-semibold text-[var(--ink2)]">
                     🔒 {t("learn.locked.badge")} · {t("learn.offer.trackLine", { price: fmtPrice(time.get(track.slug)!.priceCents, locale) })} ·{" "}
-                    {t("learn.offer.orAllLine", { price: fmtPrice(PLANS.monthly.amount, locale) })}
+                    {trackMonthlyCents(track.slug) != null
+                      ? t("learn.offer.orMonthlyLine", { price: fmtPrice(trackMonthlyCents(track.slug) as number, locale) })
+                      : t("learn.offer.orAllLine", { price: fmtPrice(PLANS.monthly.amount, locale) })}
                   </p>
                 )}
               </div>

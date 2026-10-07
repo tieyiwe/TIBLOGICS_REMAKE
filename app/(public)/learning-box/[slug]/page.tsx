@@ -10,6 +10,7 @@ import { trackPriceCents } from "@/lib/learn/pricing";
 import { getTrackBySlug, trackTime } from "@/lib/learn/catalog";
 import { fmtBreakdown, fmtMinutes, fmtPacing, fmtPrice, levelLabel, totalHours } from "@/lib/learn/format";
 import { PLANS } from "@/lib/payments/provider";
+import { trackMonthlyCents } from "@/lib/learn/track-monthly";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTrack, trackText, type TrackText } from "@/lib/i18n/sources/learn";
 import type { Locale } from "@/lib/i18n/config";
@@ -67,12 +68,12 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     // search results show; fitTitle drops the suffixes until it fits.
     title: fitTitle([t("learn.track.metaTitle", { title }), `${title} · ARFA`, title]),
     absoluteTitle: true,
-    description: t("seo.meta.track.description", {
+    description: t(trackMonthlyCents(track.slug) != null ? "seo.meta.track.descriptionOwn" : "seo.meta.track.description", {
       tagline: text?.tagline ?? track.tagline ?? "",
       level: levelText(t, track.level, track.levelEnd),
       hours: hours.toLocaleString(locale),
       price: fmtPrice(trackPriceCents(track.level, track.priceCents), locale),
-      monthly: fmtPrice(PLANS.monthly.amount, locale),
+      monthly: fmtPrice(trackMonthlyCents(track.slug) ?? PLANS.monthly.amount, locale),
     }),
     socialDescription: text?.tagline ?? track.tagline ?? undefined,
     // A track's own picture, else its own ARFA card (title and promise).
@@ -135,9 +136,9 @@ export default async function TrackLandingPage({ params, searchParams }: Props) 
     },
     {
       q: t("learn.track.faq.cost.q"),
-      a: t("learn.track.faq.cost.a", {
+      a: t(trackMonthlyCents(track.slug) != null ? "learn.track.faq.cost.aOwn" : "learn.track.faq.cost.a", {
         track: fmtPrice(priceCents, locale),
-        monthly: fmtPrice(PLANS.monthly.amount, locale),
+        monthly: fmtPrice(trackMonthlyCents(track.slug) ?? PLANS.monthly.amount, locale),
       }),
     },
   ];
@@ -279,7 +280,7 @@ export default async function TrackLandingPage({ params, searchParams }: Props) 
               t("seo.track.tldr.size", { hours: hours.toLocaleString(locale), modules: track.modules.length, lessons: lessonCount }),
               ...(comingSoon
                 ? []
-                : [t("seo.track.tldr.price", { price: fmtPrice(trackSale?.saleCents ?? priceCents, locale), monthly: fmtPrice(PLANS.monthly.amount, locale) })]),
+                : [t(trackMonthlyCents(track.slug) != null ? "seo.track.tldr.priceOwn" : "seo.track.tldr.price", { price: fmtPrice(trackSale?.saleCents ?? priceCents, locale), monthly: fmtPrice(trackMonthlyCents(track.slug) ?? PLANS.monthly.amount, locale) })]),
               t("seo.track.tldr.cert", { cert: track.certificateName }),
               t("seo.track.tldr.lang"),
             ]}

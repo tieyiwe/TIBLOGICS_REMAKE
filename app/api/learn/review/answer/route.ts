@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireEntitledStudent } from "@/lib/learn/session";
+import { requireEntitledStudent, scopedTrackIds } from "@/lib/learn/session";
 import { checkRateLimit } from "@/lib/require-admin";
 import { answerCard } from "@/lib/learn/method/review";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: t("learn.api.invalidRequest") }, { status: 400 });
   const { questionId, choice, round } = parsed.data;
   try {
-    const result = await answerCard(student.id, questionId, choice, round, locale, access.all ? null : access.purchased);
+    const result = await answerCard(student.id, questionId, choice, round, locale, await scopedTrackIds(access));
     if (!result) return NextResponse.json({ error: t("method.api.noCard") }, { status: 404 });
     return NextResponse.json(result);
   } catch (err) {

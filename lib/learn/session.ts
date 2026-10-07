@@ -7,6 +7,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { authOptions, OWNER_EMAIL } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { ensureTrackSubscriptionTables, separateMonthlyTrackIds, subscribedTrackIds } from "@/lib/learn/track-subscriptions";
 import { ensureLearnEditColumns } from "@/lib/learn/admin/columns";
 import { getT } from "@/lib/i18n/server";
 import { purchasedTrackIds } from "@/lib/learn/purchases";
@@ -128,6 +129,12 @@ export type Entitlement = {
   cancelAtPeriodEnd: boolean;
   /** Set when access comes from a team seat (lib/learn/team). */
   team?: { id: string; name: string; role: string };
+  /**
+   * Also opens the tracks sold on their own monthly plan
+   * (lib/learn/track-monthly.ts): comps, the owner, team seats, and
+   * subscribers from before those tracks were split off.
+   */
+  includesSeparate?: boolean;
 };
 
 const NONE: Entitlement = {
@@ -135,7 +142,7 @@ const NONE: Entitlement = {
   graceUntil: null, currentPeriodEnd: null, cancelAtPeriodEnd: false,
 };
 
-const COMPED: Entitlement = { ...NONE, entitled: true, status: "comped" };
+const COMPED: Entitlement = { ...NONE, entitled: true, status: "comped", includesSeparate: true };
 
 /**
  * Entitled = active | trialing | comped, or past_due still inside the 7-day
@@ -164,6 +171,7 @@ export async function getEntitlement(studentId: string | null | undefined): Prom
       currentPeriodEnd: null,
       cancelAtPeriodEnd: false,
       team: { id: m.team.id, name: m.team.name, role: m.role },
+      includesSeparate: true,
     };
   }
   return own;
@@ -206,51 +214,93 @@ export async function getIndividualEntitlement(studentId: string | null | undefi
     graceUntil: sub.graceUntil,
     currentPeriodEnd: sub.currentPeriodEnd,
     cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
+    // Comps from the admin cover everything; a referral's free month is a
+    // month of the all-tracks plan as sold today.
+    includesSeparate: (sub.status === "comped" && sub.plan !== "referral") || sub.allTracksLegacy,
   };
 }
 
 // ── Per-track access ──────────────────────────────────────────────────────
 //
-// Two ways in:
+// Three ways in:
 //   - an all-access subscription (active | trialing | comped | past_due in
-//     grace, or the owner's account): every track;
+//     grace, or the owner's account): every track, except the tracks sold on
+//     their own monthly plan (lib/learn/track-monthly.ts) unless the
+//     entitlement includes them (comps, team seats, earlier subscribers);
+//   - a track's own monthly plan (TrackSubscription): that track while paid;
 //   - a one-time purchase (TrackPurchase): that track, forever, whatever the
 //     subscription does later.
 // A learner with neither is sent to /learn/subscribe by the member layout.
 
 export interface LearnAccess {
   entitlement: Entitlement;
-  /** Every track (subscription, comped or owner). */
+  /** Every track (subscription, comped or owner), minus `excluded`. */
   all: boolean;
+  /** Tracks the all-tracks plan leaves out for this learner (sold on their own monthly plan). */
+  excluded: string[];
   /** Tracks bought outright. */
   purchased: string[];
+  /** Tracks open through their own monthly plan. */
+  subscribed: string[];
   /** At least one track is open: may enter the member area. */
   any: boolean;
 }
 
-const NO_ACCESS: LearnAccess = { entitlement: NONE, all: false, purchased: [], any: false };
+const NO_ACCESS: LearnAccess = { entitlement: NONE, all: false, excluded: [], purchased: [], subscribed: [], any: false };
 
-/** Subscription + purchases in two queries. Cached per request in pages. */
+/** Subscription, purchases and track plans. Cached per request in pages. */
 export const getAccess = cache(async (studentId: string | null | undefined): Promise<LearnAccess> => {
   if (!studentId) return NO_ACCESS;
-  const [entitlement, purchased] = await Promise.all([getEntitlement(studentId), purchasedTrackIds(studentId)]);
-  return { entitlement, all: entitlement.entitled, purchased, any: entitlement.entitled || purchased.length > 0 };
+  await ensureTrackSubscriptionTables().catch(() => {});
+  const [entitlement, purchased, subscribed] = await Promise.all([
+    getEntitlement(studentId),
+    purchasedTrackIds(studentId),
+    subscribedTrackIds(studentId),
+  ]);
+  const excluded = entitlement.entitled && !entitlement.includesSeparate ? await separateMonthlyTrackIds() : [];
+  return {
+    entitlement,
+    all: entitlement.entitled,
+    excluded,
+    purchased,
+    subscribed,
+    any: entitlement.entitled || purchased.length > 0 || subscribed.length > 0,
+  };
 });
 
 /** Pure check against an access already loaded. */
 export function canAccessTrack(access: LearnAccess, trackId: string | null | undefined): boolean {
   if (!trackId) return false;
-  return access.all || access.purchased.includes(trackId);
+  if (access.purchased.includes(trackId) || access.subscribed.includes(trackId)) return true;
+  return access.all && !access.excluded.includes(trackId);
+}
+
+/**
+ * The tracks a list should show for this learner: "all" (every track), or
+ * explicit ids. With exclusions, "all" becomes "every track but these".
+ */
+export function trackScope(access: LearnAccess): { all: true; except: string[] } | { all: false; ids: string[] } {
+  const own = [...new Set([...access.purchased, ...access.subscribed])];
+  if (access.all) return { all: true, except: access.excluded.filter((id) => !own.includes(id)) };
+  return { all: false, ids: own };
 }
 
 export async function hasTrackAccess(studentId: string | null | undefined, trackId: string): Promise<boolean> {
   return canAccessTrack(await getAccess(studentId), trackId);
 }
 
-/** "all", or the ids of the tracks this learner may open (batched: two queries). */
+/** For queries scoped to the learner's tracks: null = every track, else the ids. */
+export async function scopedTrackIds(access: LearnAccess): Promise<string[] | null> {
+  const scope = trackScope(access);
+  if (!scope.all) return scope.ids;
+  if (!scope.except.length) return null;
+  const rows = await prisma.learnTrack.findMany({ where: { id: { notIn: scope.except } }, select: { id: true } }).catch(() => []);
+  return rows.map((r) => r.id);
+}
+
+/** "all", or the ids of the tracks this learner may open. */
 export async function accessibleTrackIds(studentId: string | null | undefined): Promise<"all" | string[]> {
-  const a = await getAccess(studentId);
-  return a.all ? "all" : a.purchased;
+  return (await scopedTrackIds(await getAccess(studentId))) ?? "all";
 }
 
 /** Convenience for pages: student + entitlement + access in one call. */

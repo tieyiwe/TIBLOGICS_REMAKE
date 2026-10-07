@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { trackMonthlyCents } from "@/lib/learn/track-monthly";
 import { useEffect, useState } from "react";
 import WaitlistForm from "./WaitlistForm";
 import { PLANS, FOUNDING_PRICING } from "@/lib/payments/provider";
@@ -62,7 +63,10 @@ export default function StickyEnrollBar({
                 <strong className="text-[var(--ink2)]">
                   {t("learn.offer.trackLine", { price: fmtPrice(salePriceCents ?? priceCents, locale) })}
                 </strong>{" "}
-                · {t("learn.offer.orAllLine", { price: fmtPrice(PLANS.monthly.amount, locale) })}
+                ·{" "}
+                {trackMonthlyCents(trackSlug) != null
+                  ? t("learn.offer.orMonthlyLine", { price: fmtPrice(trackMonthlyCents(trackSlug) as number, locale) })
+                  : t("learn.offer.orAllLine", { price: fmtPrice(PLANS.monthly.amount, locale) })}
               </>
             )}
           </p>

@@ -4,7 +4,8 @@ import { getT, getLocale } from "@/lib/i18n/server";
 import { fmtPrice } from "@/lib/learn/format";
 import { trackPriceCents } from "@/lib/learn/pricing";
 import { PLANS } from "@/lib/payments/provider";
-import { getAccess } from "@/lib/learn/session";
+import { canAccessTrack, getAccess } from "@/lib/learn/session";
+import { trackMonthlyCents } from "@/lib/learn/track-monthly";
 import { choiceOf, getPendingChoice } from "@/lib/learn/join/pending";
 import { joinPath } from "@/lib/learn/join/choice";
 import { pageSales } from "@/lib/promotions/display";
@@ -31,6 +32,13 @@ export default async function PendingEnrollmentCard({ studentId }: { studentId: 
     const price = trackPriceCents(track.level, track.priceCents);
     const sale = sales.track(track.id, price)?.saleCents ?? price;
     label = t("learn.join.choice.track", { track: (locale === "fr" && track.titleFr) || track.title, price: fmtPrice(sale, locale) });
+  } else if (choice.kind === "monthly" && trackMonthlyCents(choice.track) != null) {
+    // A track sold on its own monthly plan.
+    const track = await prisma.learnTrack
+      .findUnique({ where: { slug: choice.track as string }, select: { id: true, title: true, titleFr: true, status: true } })
+      .catch(() => null);
+    if (!track || track.status !== "live" || canAccessTrack(access, track.id)) return null;
+    label = t("learn.join.choice.trackMonthly", { track: (locale === "fr" && track.titleFr) || track.title, price: fmtPrice(trackMonthlyCents(choice.track) as number, locale) });
   } else if (choice.kind === "monthly") {
     if (access.all) return null;
     label = t("learn.join.choice.monthly", { price: fmtPrice(sales.monthly?.saleCents ?? PLANS.monthly.amount, locale) });

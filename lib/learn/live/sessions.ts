@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { awardPoints } from "@/lib/learn/points";
-import type { LearnAccess } from "@/lib/learn/session";
+import { canAccessTrack, type LearnAccess } from "@/lib/learn/session";
 import { publicName } from "@/lib/learn/community/shared";
 import { ensureLiveTables } from "./db";
 import { joinOpen, rsvpOpen, type Resource } from "./shared";
@@ -79,7 +79,7 @@ export function canAttend(access: LearnAccess): boolean {
 
 /** True when the session is for every track or one this learner can open. */
 export function forMyTracks(access: LearnAccess, s: Pick<SessionRow, "trackIds">): boolean {
-  return s.trackIds.length === 0 || access.all || s.trackIds.some((id) => access.purchased.includes(id));
+  return s.trackIds.length === 0 || s.trackIds.some((id) => canAccessTrack(access, id));
 }
 
 // ── RSVPs and the waitlist ─────────────────────────────────────────────────

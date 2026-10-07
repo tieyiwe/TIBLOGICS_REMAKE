@@ -1105,6 +1105,9 @@ model LearnSubscription {
   currentPeriodEnd     DateTime?
   graceUntil           DateTime?
   cancelAtPeriodEnd    Boolean   @default(false)
+  /// Created at runtime (lib/learn/track-subscriptions.ts): this all-tracks
+  /// plan still includes the tracks now sold on their own monthly plan.
+  allTracksLegacy      Boolean   @default(false)
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
@@ -3335,4 +3338,22 @@ model ScholarshipDonation {
 model SaleAlert {
   id        String   @id
   createdAt DateTime @default(now())
+}
+
+/// One track on its own monthly plan (lib/learn/track-subscriptions.ts,
+/// created at runtime). One row per Stripe subscription.
+model TrackSubscription {
+  id                   String    @id
+  studentId            String
+  trackId              String
+  stripeSubscriptionId String    @unique
+  stripeCustomerId     String?
+  status               String
+  currentPeriodEnd     DateTime?
+  graceUntil           DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @default(now())
+
+  @@index([studentId])
 }

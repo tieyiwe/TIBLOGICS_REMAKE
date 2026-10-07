@@ -10,6 +10,7 @@ import PromoCodeField from "@/components/promo/PromoCodeField";
 import { getStoredCode } from "@/lib/promotions/client-code";
 import type { TargetT } from "@/lib/promotions/lines";
 import { joinPath } from "@/lib/learn/join/choice";
+import { separateMonthlyNames, trackMonthlyCents } from "@/lib/learn/track-monthly";
 
 export interface PurchaseTrack {
   slug: string;
@@ -20,12 +21,16 @@ export interface PurchaseTrack {
   owned?: boolean;
   /** Price under a live automatic sale (server-computed), display only. */
   salePriceCents?: number | null;
+  /** Already on this track's own monthly plan (tracks sold that way only). */
+  monthlyActive?: boolean;
 }
 
 /**
  * The two ways to buy, side by side:
  *   Own this track: $297 one time, lifetime access
  *   All tracks: $89/month
+ * A track sold on its own monthly plan (lib/learn/track-monthly.ts) offers
+ * that plan instead of the all-tracks one: "This track, monthly: $99".
  *
  * mode "checkout" (signed-in learner) starts Stripe Checkout; mode "link"
  * (public pages) opens the one-page join flow (/learning-box/join) with the
@@ -91,10 +96,12 @@ export default function PurchaseOptions({
       ? { saleCents: track.salePriceCents, originalCents: track.priceCents }
       : null;
   const trackPrice = trackSale?.saleCents ?? track?.priceCents ?? 0;
-  const monthlyPrice = monthlySale?.saleCents ?? monthlyCents;
+  // This track has its own monthly plan: the second card sells that plan.
+  const ownMonthly = trackMonthlyCents(track?.slug);
+  const monthlyPrice = ownMonthly ?? monthlySale?.saleCents ?? monthlyCents;
   const promoTargets: TargetT[] = [
     ...(track && !track.owned ? [{ kind: "track" as const, slug: track.slug }] : []),
-    ...(showSubscribe ? [{ kind: "arfa_monthly" as const }] : []),
+    ...(showSubscribe && ownMonthly == null ? [{ kind: "arfa_monthly" as const }] : []),
     ...(extraPromoTargets ?? []),
   ].slice(0, 12);
 
@@ -135,7 +142,39 @@ export default function PurchaseOptions({
           </div>
         )}
 
-        {showSubscribe && (
+        {showSubscribe && ownMonthly != null && track && (
+          <div className="flex min-w-0 flex-col rounded-2xl border border-[var(--border)] bg-white p-6" data-testid="track-monthly">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-[var(--ink3)]">{t("learn.offer.trackMonthly.title")}</h3>
+            <p className="mt-1 truncate text-sm font-semibold text-[var(--ink)]" title={track.title}>
+              {track.title}
+            </p>
+            <p className="mt-3 flex flex-wrap items-baseline gap-x-2">
+              <span className="text-3xl font-black text-[var(--ink)]">{fmtPrice(ownMonthly, locale)}</span>
+              <span className="text-sm text-[var(--ink3)]">{t("learn.plan.per.month")}</span>
+            </p>
+            <p className="mt-3 flex-1 text-sm leading-relaxed text-[var(--ink2)]">{t("learn.offer.trackMonthly.blurb")}</p>
+            {track.monthlyActive || track.owned ? (
+              <p className="mt-5 rounded-full bg-green-50 px-4 py-3 text-center text-sm font-bold text-green-800">
+                ✓ {t(track.owned ? "learn.offer.owned" : "learn.offer.trackMonthly.active")}
+              </p>
+            ) : mode === "link" ? (
+              <Link href={monthlyHref} className={`${btnBase} bg-gradient-to-r from-[var(--orange)] to-[#F9A738] text-[var(--ink)]`}>
+                {t("learn.offer.trackMonthly.cta", { price: fmtPrice(ownMonthly, locale) })}
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => start("monthly")}
+                disabled={busy !== null}
+                className={`${btnBase} bg-gradient-to-r from-[var(--orange)] to-[#F9A738] text-[var(--ink)]`}
+              >
+                {busy === "monthly" ? t("learn.plan.opening") : t("learn.offer.trackMonthly.cta", { price: fmtPrice(ownMonthly, locale) })}
+              </button>
+            )}
+          </div>
+        )}
+
+        {showSubscribe && ownMonthly == null && (
           <div className="flex min-w-0 flex-col rounded-2xl border border-[var(--border)] bg-white p-6">
             <h3 className="text-sm font-bold uppercase tracking-wide text-[var(--ink3)]">{t("learn.offer.all.title")}</h3>
             <p className="mt-1 text-sm font-semibold text-[var(--ink)]">{t("learn.billing.everyTrack")}</p>
@@ -150,7 +189,9 @@ export default function PurchaseOptions({
                 <span className="font-bold text-[var(--orange2)]">{t("learn.billing.foundingRate")}</span>
               </p>
             )}
-            <p className="mt-3 flex-1 text-sm leading-relaxed text-[var(--ink2)]">{t("learn.offer.all.blurb")}</p>
+            <p className="mt-3 flex-1 text-sm leading-relaxed text-[var(--ink2)]">
+              {t("learn.offer.all.blurb")} {t("learn.offer.all.except", { tracks: separateMonthlyNames() })}
+            </p>
             {mode === "link" ? (
               <Link
                 href={monthlyHref}

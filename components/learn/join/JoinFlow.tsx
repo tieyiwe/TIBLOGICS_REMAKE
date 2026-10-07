@@ -12,6 +12,7 @@ import type { TargetT } from "@/lib/promotions/lines";
 import { quoteSeats, type SeatTier } from "@/lib/learn/team/config";
 import SeatBands from "@/components/learn/team/SeatBands";
 import { choiceKey, joinPath, type JoinChoice } from "@/lib/learn/join/choice";
+import { separateMonthlyNames, trackMonthlyCents } from "@/lib/learn/track-monthly";
 import { trackEvent } from "@/components/public/AnalyticsTracker";
 
 // The one-page "Join ARFA" flow (/learning-box/join), as one client island:
@@ -81,6 +82,17 @@ export default function JoinFlow(props: JoinFlowProps) {
   const [company, setCompany] = useState("");
   const chosenTrack = choice?.kind === "track" ? tracks.find((x) => x.slug === choice.slug) ?? null : null;
   const contextTrack = choice?.kind === "monthly" && choice.track ? tracks.find((x) => x.slug === choice.track) ?? null : null;
+  // A track sold on its own monthly plan (lib/learn/track-monthly.ts): a
+  // monthly choice naming it buys that track's plan, not all tracks.
+  // Also the track the visitor arrived with, so the option stays on screen
+  // after they look at the all-tracks plan.
+  const arrivedSlug = props.initial?.kind === "track" ? props.initial.slug : props.initial?.kind === "monthly" ? props.initial.track ?? null : null;
+  const arrivedTrack = arrivedSlug ? tracks.find((x) => x.slug === arrivedSlug) ?? null : null;
+  const ownMonthlyTrack = [contextTrack, chosenTrack, arrivedTrack].find((x) => x && trackMonthlyCents(x.slug) != null) ?? null;
+  const ownMonthlyCents = ownMonthlyTrack ? (trackMonthlyCents(ownMonthlyTrack.slug) as number) : null;
+  const isOwnMonthly = choice?.kind === "monthly" && !!ownMonthlyTrack && choice.track === ownMonthlyTrack.slug;
+  /** The all-tracks plan, landing on a track only when that track is in the plan. */
+  const allTracksChoice = (slug: string | null | undefined): JoinChoice => ({ kind: "monthly", track: slug && trackMonthlyCents(slug) == null ? slug : null });
   const quote = quoteSeats(team, Number.isInteger(seats) ? Math.max(seats, 0) : team.minSeats);
   const seatsValid = Number.isInteger(seats) && seats >= team.minSeats && seats <= 500;
   const fullChoice: JoinChoice | null = choice?.kind === "team" ? { kind: "team", seats, company: company.trim() || null } : choice;
@@ -120,7 +132,13 @@ export default function JoinFlow(props: JoinFlowProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const promoTargets: TargetT[] =
-    choice?.kind === "track" ? [{ kind: "track", slug: choice.slug }] : choice?.kind === "monthly" ? [{ kind: "arfa_monthly" }] : [];
+    choice?.kind === "track"
+      ? [{ kind: "track", slug: choice.slug }]
+      : isOwnMonthly && ownMonthlyTrack
+        ? [{ kind: "track", slug: ownMonthlyTrack.slug }]
+        : choice?.kind === "monthly"
+          ? [{ kind: "arfa_monthly" }]
+          : [];
 
   // ── Step 2: the account ───────────────────────────────────────────────
   const [mode, setMode] = useState<Mode>("create");
@@ -294,6 +312,14 @@ export default function JoinFlow(props: JoinFlowProps) {
         note: t("learn.join.sum.trackNote"),
       };
     }
+    if (choice.kind === "monthly" && isOwnMonthly && ownMonthlyTrack && ownMonthlyCents != null) {
+      return {
+        what: t("learn.join.choice.trackMonthly", { track: ownMonthlyTrack.title, price: fmtPrice(ownMonthlyCents, locale) }),
+        price: t("learn.price.perMonth", { price: fmtPrice(ownMonthlyCents, locale) }),
+        was: null,
+        note: t("learn.offer.trackMonthly.blurb"),
+      };
+    }
     if (choice.kind === "monthly") {
       return {
         what: t("learn.join.monthly.title"),
@@ -355,7 +381,7 @@ export default function JoinFlow(props: JoinFlowProps) {
       {on && <span className="h-2.5 w-2.5 rounded-full bg-[var(--orange)]" />}
     </span>
   );
-  const isMonthly = choice?.kind === "monthly";
+  const isMonthly = choice?.kind === "monthly" && !isOwnMonthly;
   const isTeam = choice?.kind === "team";
 
   return (
@@ -374,6 +400,32 @@ export default function JoinFlow(props: JoinFlowProps) {
         <fieldset className="mt-4">
           <legend className="sr-only">{t("learn.join.step1")}</legend>
 
+          {/* This track, monthly (a track sold on its own monthly plan) */}
+          {ownMonthlyTrack && ownMonthlyCents != null && (
+            <label className={`${radioCard} ${isOwnMonthly ? "" : "border-[var(--border)]"} mb-3 p-5`} data-testid="join-track-monthly">
+              <input
+                type="radio"
+                name="join-plan"
+                className="sr-only"
+                checked={isOwnMonthly}
+                disabled={!!ownMonthlyTrack.owned}
+                onChange={() => pick({ kind: "monthly", track: ownMonthlyTrack.slug })}
+              />
+              <span className="flex items-start gap-3">
+                {dot(isOwnMonthly)}
+                <span className="min-w-0 flex-1">
+                  <span className="block text-base font-black text-[var(--ink)]">{t("learn.offer.trackMonthly.title")}</span>
+                  <span className="block text-sm font-semibold text-[var(--ink)]">{ownMonthlyTrack.title}</span>
+                  <span className="mt-1 block text-sm leading-relaxed text-[var(--ink2)]">{t("learn.offer.trackMonthly.blurb")}</span>
+                  <span className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <span className="text-2xl font-black text-[var(--ink)]">{fmtPrice(ownMonthlyCents, locale)}</span>
+                    <span className="text-sm text-[var(--ink3)]">{t("learn.plan.per.month")}</span>
+                  </span>
+                </span>
+              </span>
+            </label>
+          )}
+
           {/* All tracks, monthly */}
           <label className={`${radioCard} ${isMonthly ? "" : "border-[var(--border)]"} p-5`}>
             <input
@@ -382,7 +434,7 @@ export default function JoinFlow(props: JoinFlowProps) {
               className="sr-only"
               checked={isMonthly}
               disabled={monthly.active}
-              onChange={() => pick({ kind: "monthly", track: chosenTrack?.slug ?? contextTrack?.slug ?? null })}
+              onChange={() => pick(allTracksChoice(chosenTrack?.slug ?? contextTrack?.slug ?? null))}
             />
             <span className="flex items-start gap-3">
               {dot(isMonthly)}
@@ -393,7 +445,9 @@ export default function JoinFlow(props: JoinFlowProps) {
                     {t("learn.join.monthly.badge")}
                   </span>
                 </span>
-                <span className="mt-1 block text-sm leading-relaxed text-[var(--ink2)]">{t("learn.offer.all.blurb")}</span>
+                <span className="mt-1 block text-sm leading-relaxed text-[var(--ink2)]">
+                  {t("learn.offer.all.blurb")} {t("learn.offer.all.except", { tracks: separateMonthlyNames() })}
+                </span>
                 <span className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
                   <span className="text-2xl font-black text-[var(--ink)]">{fmtPrice(monthly.sale?.saleCents ?? monthly.cents, locale)}</span>
                   <span className="text-sm text-[var(--ink3)]">{t("learn.plan.per.month")}</span>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { trackMonthlyCents } from "@/lib/learn/track-monthly";
 import LevelBadge from "./LevelBadge";
 import WaitlistForm from "./WaitlistForm";
 import { fmtBreakdown, fmtPacing, fmtPrice, totalHours } from "@/lib/learn/format";
@@ -119,7 +120,9 @@ export default function TrackCard({ track }: { track: CatalogTrack }) {
             ) : null}
             <p className="font-semibold text-[var(--ink)]">{t("learn.offer.trackLine", { price: fmtPrice(track.salePriceCents ?? track.priceCents, locale) })}</p>
             <p className="mt-0.5">
-              {t("learn.offer.orAllLine", { price: fmtPrice(PLANS.monthly.amount, locale) })}
+              {trackMonthlyCents(track.slug) != null
+                ? t("learn.offer.orMonthlyLine", { price: fmtPrice(trackMonthlyCents(track.slug) as number, locale) })
+                : t("learn.offer.orAllLine", { price: fmtPrice(PLANS.monthly.amount, locale) })}
             </p>
           </div>
         )}

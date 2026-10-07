@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
-import { requireEntitledStudent } from "@/lib/learn/session";
+import { requireEntitledStudent, scopedTrackIds } from "@/lib/learn/session";
 import { checkRateLimit } from "@/lib/require-admin";
 import { buildSession } from "@/lib/learn/method/review";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
@@ -22,7 +22,7 @@ export async function GET(req: Request) {
     // review). The banks are still scoped to the learner's open tracks.
     const focus = new URL(req.url).searchParams.get("module");
     const focusModuleId = focus && /^[A-Za-z0-9_-]{1,64}$/.test(focus) ? focus : null;
-    const { questions, pending, remaining } = await buildSession(student.id, locale, round, access.all ? null : access.purchased, { focusModuleId });
+    const { questions, pending, remaining } = await buildSession(student.id, locale, round, await scopedTrackIds(access), { focusModuleId });
     return NextResponse.json(
       { round, questions, pending, remaining },
       { headers: { "Cache-Control": "no-store" } },

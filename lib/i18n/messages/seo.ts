@@ -46,6 +46,11 @@ export default tri({
     "TIBLOGICS en bref : qui nous sommes, ce que nous faisons, où nous travaillons, nos services d'IA, l'Académie IA ARFA, nos outils et nos contacts.",
     "TIBLOGICS kwa ufupi: sisi ni nani, tunachofanya, tunakofanya kazi, huduma zetu za AI, Chuo cha AI cha ARFA, zana zetu na jinsi ya kuwasiliana nasi.",
   ],
+  "seo.meta.track.descriptionOwn": [
+    "Online {level} AI course from the ARFA AI Academy: about {hours} hours, {price} once or {monthly}/month, certificate included. {tagline}",
+    "Cours d'IA en ligne, niveau {level}, de l'Académie IA ARFA : environ {hours} h, {price} en une fois ou {monthly}/mois, certificat inclus. {tagline}",
+    "Kozi ya AI mtandaoni, kiwango cha {level}, kutoka Chuo cha AI cha ARFA: takriban saa {hours}, {price} mara moja au {monthly}/mwezi, pamoja na cheti. {tagline}",
+  ],
   "seo.meta.track.description": [
     "Online {level} AI course from the ARFA AI Academy: about {hours} hours, {price} once or every track for {monthly}/month, certificate included. {tagline}",
     "Cours d'IA en ligne, niveau {level}, de l'Académie IA ARFA : environ {hours} h, {price} en une fois ou tous les parcours à {monthly}/mois, certificat inclus. {tagline}",
@@ -221,6 +226,11 @@ export default tri({
     "About {hours} hours: {modules} modules and {lessons} lessons, with hands-on practice.",
     "Environ {hours} heures : {modules} modules et {lessons} leçons, avec de la pratique.",
     "Takriban saa {hours}: moduli {modules} na masomo {lessons}, pamoja na mazoezi ya vitendo.",
+  ],
+  "seo.track.tldr.priceOwn": [
+    "{price} once for lifetime access to this track, or {monthly} a month for this track.",
+    "{price} en une fois pour un accès à vie à ce parcours, ou {monthly} par mois pour ce parcours.",
+    "{price} mara moja kwa ufikiaji wa kudumu wa kozi hii, au {monthly} kwa mwezi kwa kozi hii.",
   ],
   "seo.track.tldr.price": [
     "{price} once for lifetime access to this track, or every track for {monthly} a month.",

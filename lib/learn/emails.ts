@@ -2,6 +2,7 @@
 // TIBLOGICS. Every learner email goes through the ARFA mailer
 // (arfa_edu@tiblogics.com) so they match the training emails.
 import { arfaMailer } from "@/lib/resend";
+import { trackMonthlyCents } from "@/lib/learn/track-monthly";
 import prisma from "@/lib/prisma";
 import { translator, type T } from "./i18n";
 import type { JoinChoice } from "./join/choice";
@@ -173,6 +174,7 @@ export type JoinWelcomeState =
 
 function choiceLabel(t: T, choice: JoinChoice, trackTitle: string | null) {
   if (choice.kind === "track") return t("learn.email.join.choice.track", { track: esc(trackTitle ?? choice.slug) });
+  if (choice.kind === "monthly" && trackMonthlyCents(choice.track) != null) return t("learn.email.join.choice.trackMonthly", { track: esc(trackTitle ?? choice.track ?? "") });
   if (choice.kind === "monthly") return t("learn.email.join.choice.monthly");
   return t("learn.email.join.choice.team", { n: Math.max(1, choice.seats) });
 }

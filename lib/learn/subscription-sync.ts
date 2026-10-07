@@ -46,7 +46,13 @@ export async function upsertLearnSubscription(sub: Stripe.Subscription, studentI
         : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   }
 
+  // A new subscription (resubscribing after a cancel) is on today's terms: the
+  // tracks now sold separately are no longer included.
+  const prevSub = await prisma.learnSubscription.findUnique({ where: { studentId }, select: { stripeSubscriptionId: true } }).catch(() => null);
+  const newSubscription = !!prevSub?.stripeSubscriptionId && prevSub.stripeSubscriptionId !== sub.id;
+
   const data = {
+    ...(newSubscription ? { allTracksLegacy: false } : {}),
     stripeCustomerId: customerId,
     stripeSubscriptionId: sub.id,
     status,

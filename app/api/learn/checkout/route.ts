@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import payments from "@/lib/payments";
 import prisma from "@/lib/prisma";
-import { getAccess, requireStudent } from "@/lib/learn/session";
+import { canAccessTrack, getAccess, requireStudent } from "@/lib/learn/session";
+import { trackMonthlyCents } from "@/lib/learn/track-monthly";
 import { checkRateLimit } from "@/lib/require-admin";
 import { getT } from "@/lib/i18n/server";
 import { ensureLearnEditColumns } from "@/lib/learn/admin/columns";
@@ -105,6 +106,47 @@ export async function POST(req: NextRequest) {
       });
       // Growth attribution; paid status is resolved from TrackPurchase at report time.
       await recordAttribution({ kind: "track_checkout", refId: `${student.id}:${track.id}`, cookieHeader: req.headers.get("cookie"), amountCents: amount - discount.discountCents });
+      return NextResponse.json({ url });
+    }
+
+    // ── One track on its own monthly plan (lib/learn/track-monthly.ts) ──
+    // A monthly choice made from such a track buys that track's plan.
+    const ownMonthly = trackMonthlyCents(parsed.data.track);
+    if (ownMonthly != null && parsed.data.track) {
+      const slug = parsed.data.track;
+      const track = await prisma.learnTrack.findUnique({ where: { slug }, select: { id: true, slug: true, title: true, status: true } });
+      if (!track || track.status !== "live") {
+        return NextResponse.json({ error: t("learn.api.trackNotForSale") }, { status: 404 });
+      }
+      const access = await getAccess(student.id);
+      if (canAccessTrack(access, track.id)) {
+        return NextResponse.json({ error: t("learn.api.alreadyOwned") }, { status: 409 });
+      }
+      const discount = await resolveCheckoutDiscount({
+        lines: [{ key: "tracks", id: track.id, amountCents: ownMonthly }],
+        recurring: true,
+        code: parsed.data.promoCode,
+        buyer: { studentId: student.id, email: student.email },
+        referral: () => referralCouponFor(student.id),
+      });
+      const { url } = await payments.createTrackMonthlyCheckout({
+        studentId: student.id,
+        email: student.email,
+        couponId: discount.couponId,
+        allowPromotionCodes: discount.allowPromotionCodes,
+        promoMetadata: discount.metadata,
+        trackId: track.id,
+        trackSlug: track.slug,
+        trackTitle: track.title,
+        amount: ownMonthly,
+        currency: TRACK_CURRENCY,
+        successUrl: `${SITE}${CONFIRM}`,
+        cancelUrl:
+          parsed.data.from === "join"
+            ? `${SITE}${joinPath({ kind: "monthly", track: track.slug })}&checkout=cancelled`
+            : `${SITE}/learn/subscribe?track=${track.slug}&checkout=cancelled`,
+      });
+      await recordAttribution({ kind: "learn_subscription_checkout", refId: student.id, cookieHeader: req.headers.get("cookie"), amountCents: ownMonthly - discount.discountCents });
       return NextResponse.json({ url });
     }
 

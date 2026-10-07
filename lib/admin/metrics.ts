@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { trackMonthlyCents } from "@/lib/learn/track-monthly";
 import { PLANS } from "@/lib/payments/provider";
 import { ensureTrackPurchaseTable } from "@/lib/learn/purchases";
 import { teamMrr } from "@/lib/learn/team/admin";
@@ -84,6 +85,17 @@ async function estimatedLearnMrr(): Promise<{
   for (const s of subs) {
     n += s._count._all;
     cents += s.plan === "annual" ? Math.round((PLANS.annual.amount / 12) * s._count._all) : PLANS.monthly.amount * s._count._all;
+  }
+  // Tracks on their own monthly plan (lib/learn/track-monthly.ts).
+  const own = await prisma.trackSubscription.findMany({ where: { status: "active" }, select: { trackId: true } }).catch(() => []);
+  if (own.length) {
+    const slugs = new Map(
+      (await prisma.learnTrack.findMany({ where: { id: { in: [...new Set(own.map((x) => x.trackId))] } }, select: { id: true, slug: true } })).map((x) => [x.id, x.slug]),
+    );
+    for (const x of own) {
+      n++;
+      cents += trackMonthlyCents(slugs.get(x.trackId)) ?? 0;
+    }
   }
   return { cents: cents + teams.cents, activeSubscribers: n, teamCents: teams.cents, activeTeams: teams.teams, teamSeats: teams.seats };
 }

@@ -48,6 +48,13 @@ export default async function AccountPage() {
   const sub = await prisma.learnSubscription
     .findUnique({ where: { studentId: student.id }, select: { plan: true, stripeCustomerId: true } })
     .catch(() => null);
+  const trackSubs = await prisma.trackSubscription
+    .findMany({ where: { studentId: student.id, status: { not: "canceled" } }, orderBy: { createdAt: "asc" } })
+    .catch(() => []);
+  const trackTitles = new Map(
+    (trackSubs.length ? await prisma.learnTrack.findMany({ where: { id: { in: trackSubs.map((x) => x.trackId) } }, select: { id: true, title: true } }).catch(() => []) : []).map((x) => [x.id, x.title]),
+  );
+  const trackPlans = trackSubs.map((x) => ({ ...x, title: trackTitles.get(x.trackId) ?? "" }));
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -147,7 +154,25 @@ export default async function AccountPage() {
           </p>
         )}
 
-        {sub?.stripeCustomerId && (
+        {/* Tracks on their own monthly plan (lib/learn/track-monthly.ts). */}
+        {trackPlans.length > 0 && (
+          <div className="mt-5 border-t border-[var(--border)] pt-4" data-testid="track-plans">
+            <h3 className="text-xs font-bold uppercase tracking-wide text-[var(--ink3)]">{t("learn.account.trackPlans")}</h3>
+            <ul className="mt-2 space-y-2 text-sm">
+              {trackPlans.map((p) => (
+                <li key={p.id} className="flex flex-wrap justify-between gap-2">
+                  <span className="font-semibold text-[var(--ink)]">{p.title}</span>
+                  <span className="text-[var(--ink2)]">
+                    {has(`learn.sub.${p.status}`) ? t(`learn.sub.${p.status}`) : p.status}
+                    {p.currentPeriodEnd ? ` · ${p.cancelAtPeriodEnd ? t("learn.account.accessUntil") : t("learn.account.renews")} ${fmtDate(p.currentPeriodEnd, locale)}` : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {(sub?.stripeCustomerId || trackPlans.some((p) => p.stripeCustomerId)) && (
           <div className="mt-5">
             <BillingPortalButton />
           </div>

@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import payments from "@/lib/payments";
 import { requireStudent } from "@/lib/learn/session";
 import { getT } from "@/lib/i18n/server";
+import { trackSubscriptionCustomer } from "@/lib/learn/track-subscriptions";
 
 const SITE = (
   process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
@@ -17,13 +18,15 @@ export async function POST() {
     .findUnique({ where: { studentId: student.id }, select: { stripeCustomerId: true } })
     .catch(() => null);
 
-  if (!sub?.stripeCustomerId) {
+  // A learner on a track's own monthly plan only: that subscription's customer.
+  const customerId = sub?.stripeCustomerId ?? (await trackSubscriptionCustomer(student.id));
+  if (!customerId) {
     return NextResponse.json({ error: t("learn.api.noBilling") }, { status: 404 });
   }
 
   try {
     const { url } = await payments.createBillingPortal(
-      sub.stripeCustomerId,
+      customerId,
       `${SITE}/learn/account/subscription`,
     );
     return NextResponse.json({ url });

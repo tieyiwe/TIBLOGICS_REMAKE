@@ -43,6 +43,20 @@ export interface CheckoutRequest extends CheckoutDiscountFields {
   cancelUrl: string;
 }
 
+/** One track on its own monthly plan (lib/learn/track-monthly.ts). */
+export interface TrackMonthlyCheckoutRequest extends CheckoutDiscountFields {
+  studentId: string;
+  email: string;
+  trackId: string;
+  trackSlug: string;
+  trackTitle: string;
+  /** Cents per month, from lib/learn/track-monthly.ts. Never from the client. */
+  amount: number;
+  currency: string;
+  successUrl: string;
+  cancelUrl: string;
+}
+
 /** One-time purchase of one track: lifetime access to it. */
 export interface TrackCheckoutRequest extends CheckoutDiscountFields {
   studentId: string;
@@ -82,6 +96,8 @@ export interface PaymentProvider {
   createCheckout(req: CheckoutRequest): Promise<{ url: string }>;
   /** Hosted one-time checkout for a single track. */
   createTrackCheckout(req: TrackCheckoutRequest): Promise<{ url: string }>;
+  /** One track, monthly subscription (only for tracks sold that way). */
+  createTrackMonthlyCheckout(req: TrackMonthlyCheckoutRequest): Promise<{ url: string }>;
   /** Hosted billing/self-service portal for an existing customer. */
   createBillingPortal(customerId: string, returnUrl: string): Promise<{ url: string }>;
   /** Hosted subscription checkout for a team's seats. */

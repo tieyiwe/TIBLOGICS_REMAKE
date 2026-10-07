@@ -5,6 +5,8 @@ import { getStudent } from "@/lib/learn/session";
 import { checkRateLimit } from "@/lib/require-admin";
 import { recordTrackPurchase } from "@/lib/learn/purchases";
 import { upsertLearnSubscription } from "@/lib/learn/subscription-sync";
+import { TRACK_MONTHLY_PRODUCT } from "@/lib/learn/track-monthly";
+import { upsertTrackSubscription } from "@/lib/learn/track-subscriptions";
 import { completePendingEnrollment } from "@/lib/learn/join/pending";
 import { isSlug } from "@/lib/learn/join/choice";
 import { recordScholarshipPayment } from "@/lib/learn/scholarship/service";
@@ -60,6 +62,20 @@ export async function GET(req: NextRequest) {
         await recordScholarshipPayment(session).catch((err) => console.error("[checkout/confirm] scholarship", err));
       }
       return go(track ? `/learn/track/${track.slug}?welcome=1` : "/learn?welcome=1");
+    }
+
+    // ── One track on its own monthly plan ───────────────────────────────
+    if (product === TRACK_MONTHLY_PRODUCT && session.mode === "subscription") {
+      const slug = isSlug(session.metadata?.trackSlug) ? session.metadata.trackSlug : null;
+      const subId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id ?? null;
+      if (paid && session.status === "complete" && subId) {
+        const sub = await stripe.subscriptions.retrieve(subId);
+        await upsertTrackSubscription(sub, { studentId: student.id, trackId: session.metadata?.trackId });
+        if (sub.status === "active" || sub.status === "trialing") {
+          await completePendingEnrollment(student.id, { kind: "monthly", track: slug });
+        }
+      }
+      return go(slug ? `/learn/track/${slug}?welcome=1` : "/learn?welcome=1");
     }
 
     // ── All tracks, monthly ─────────────────────────────────────────────

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import prisma from "@/lib/prisma";
-import { getAccess, getStudent } from "@/lib/learn/session";
+import { getAccess, getStudent, scopedTrackIds } from "@/lib/learn/session";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { communityTablesReady } from "@/lib/learn/community/db";
 import { cohortEnded, listCohorts, myCohorts } from "@/lib/learn/community/cohorts";
@@ -30,12 +30,13 @@ export default async function CommunityHub() {
     return <p className="rounded-2xl bg-white p-6 text-sm text-[var(--ink2)]">{t("community.err.unavailable")}</p>;
   }
 
+  const ids = await scopedTrackIds(access);
   const tracks = await prisma.learnTrack.findMany({
-    where: { status: "live", ...(access.all ? {} : { id: { in: access.purchased } }) },
+    where: { status: "live", ...(ids ? { id: { in: ids } } : {}) },
     orderBy: { sortOrder: "asc" },
     select: { id: true, slug: true, title: true, accentColor: true },
   });
-  const scope = access.all ? ("all" as const) : access.purchased;
+  const scope = ids ?? ("all" as const);
   const [mine, all, texts, counts] = await Promise.all([
     myCohorts(student.id),
     listCohorts({ trackIds: tracks.map((x) => x.id) }),

@@ -6,6 +6,7 @@ import { fmtBreakdown, fmtPrice } from "@/lib/learn/format";
 import { useLocale, useT } from "@/lib/i18n/client";
 import { readableOn } from "@/lib/a11y/contrast";
 import SalePrice from "@/components/promo/SalePrice";
+import { trackMonthlyCents } from "@/lib/learn/track-monthly";
 
 /**
  * The Basic → Intermediate → Expert path, as three connected steps.
@@ -166,7 +167,9 @@ export default function CertificationLadder({
                   <p className="font-semibold text-[var(--ink)]">{tr("learn.offer.trackLine", { price: fmtPrice(t.salePriceCents ?? t.priceCents, locale) })}</p>
                   {monthlyCents != null && (
                     <p className="mt-0.5">
-                      {tr("learn.offer.orAllLine", { price: fmtPrice(monthlyCents, locale) })}
+                      {trackMonthlyCents(t.slug) != null
+                        ? tr("learn.offer.orMonthlyLine", { price: fmtPrice(trackMonthlyCents(t.slug) as number, locale) })
+                        : tr("learn.offer.orAllLine", { price: fmtPrice(monthlyCents, locale) })}
                     </p>
                   )}
                 </div>

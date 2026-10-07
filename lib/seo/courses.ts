@@ -8,6 +8,7 @@
 // lesson bodies, quiz questions, answers, capstone briefs or anything about
 // learners. English: the source language (French is served on the pages).
 
+import { separateMonthlyNames } from "@/lib/learn/track-monthly";
 import { getCatalog, getTrackBySlug, trackTime, type CatalogTrack } from "@/lib/learn/catalog";
 import { trackPriceCents } from "@/lib/learn/pricing";
 import { cachedPublicData } from "@/lib/cache/public-data";
@@ -140,7 +141,7 @@ export async function publicCatalog(): Promise<PublicCatalog> {
     provider: { name: "TIBLOGICS", academy: "ARFA AI Academy (AI Readiness For All)", url: absUrl("/learning-box"), email: ORG.academyEmail },
     generatedAt: new Date().toISOString(),
     languages: ["en", "fr"],
-    subscription: { amount: dollars(PLANS.monthly.amount), currency: "USD", interval: "month", includes: "Every track; cancel anytime." },
+    subscription: { amount: dollars(PLANS.monthly.amount), currency: "USD", interval: "month", includes: `Every track except ${separateMonthlyNames()} (sold on its own monthly plan); cancel anytime.` },
     teams: team
       ? {
           seatPrice: dollars(team.seatPriceCents),

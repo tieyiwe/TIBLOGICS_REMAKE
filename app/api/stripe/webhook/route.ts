@@ -2,6 +2,8 @@ import { headers } from "next/headers";
 import { maskEmail } from "@/lib/log/redact";
 import prisma from "@/lib/prisma";
 import { alertCheckoutSale, alertInvoiceSale } from "@/lib/payments/sale-alert";
+import { TRACK_MONTHLY_PRODUCT } from "@/lib/learn/track-monthly";
+import { markTrackSubscriptionPastDue, upsertTrackSubscription } from "@/lib/learn/track-subscriptions";
 import { sendConfirmationEmail, sendTiweNotification, sendEventWelcomeEmail, sendAdminNewRegistrationAlert, sendOrderConfirmationEmail, sendAdminOrderAlert } from "@/lib/resend";
 import { recordScholarshipPayment } from "@/lib/learn/scholarship/service";
 import { DONATION_PRODUCT, markDonationCanceled, recordDonation, recordDonationRenewal } from "@/lib/learn/scholarship/donations";
@@ -69,6 +71,13 @@ export async function POST(req: Request) {
       if (sub.metadata?.product === "learn" && sub.metadata?.studentId) {
         await upsertLearnSubscription(sub);
       }
+      // ── One track on its own monthly plan ────────────────────────────────
+      if (sub.metadata?.product === TRACK_MONTHLY_PRODUCT) {
+        await upsertTrackSubscription(sub).catch((err) => {
+          console.error("[stripe/webhook] track monthly sync FAILED, asking Stripe to retry", err);
+          retry = true;
+        });
+      }
       if (sub.metadata?.product === MONITOR_PRODUCT) {
         await syncMonitorSubscription(sub);
       }
@@ -101,6 +110,7 @@ export async function POST(req: Request) {
       if (subId) {
         // Team plans get the same 7-day grace (no-op for other subscriptions).
         await markTeamPaymentFailed(subId).catch((err) => console.error("[stripe/webhook] team payment_failed", err));
+        await markTrackSubscriptionPastDue(subId).catch((err) => console.error("[stripe/webhook] track monthly payment_failed", err));
         const existing = await prisma.learnSubscription
           .findUnique({ where: { stripeSubscriptionId: subId } })
           .catch(() => null);
@@ -170,6 +180,26 @@ export async function POST(req: Request) {
             });
           }
           console.log(`[stripe/webhook] ✓ Learn subscription active for student ${studentId}`);
+        }
+      }
+
+      // ── One track on its own monthly plan: open it ──────────────────────
+      if (session.metadata?.product === TRACK_MONTHLY_PRODUCT && session.mode === "subscription") {
+        const studentId = session.metadata.studentId || session.client_reference_id;
+        const subId = typeof session.subscription === "string" ? session.subscription : null;
+        if (studentId && subId) {
+          await stripe.subscriptions
+            .retrieve(subId)
+            .then(async (full) => {
+              await upsertTrackSubscription(full, { studentId, trackId: session.metadata?.trackId });
+              if (full.status === "active" || full.status === "trialing") {
+                await completePendingEnrollment(studentId, { kind: "monthly", track: session.metadata?.trackSlug || null });
+              }
+            })
+            .catch((err) => {
+              console.error("[stripe/webhook] track monthly activation FAILED, asking Stripe to retry", err);
+              retry = true;
+            });
         }
       }
 

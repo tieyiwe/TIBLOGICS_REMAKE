@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 import { joinPath, type JoinChoice } from "./choice";
+import { trackMonthlyCents } from "@/lib/learn/track-monthly";
 
 // The plan a learner chose on the one-page join flow, kept until they pay.
 //
@@ -215,7 +216,7 @@ export async function sweepPendingEnrollments(now = new Date()): Promise<{ check
     });
     out.checked = rows.length;
     if (!rows.length) return out;
-    const { getAccess } = await import("@/lib/learn/session");
+    const { canAccessTrack, getAccess } = await import("@/lib/learn/session");
     const { sendJoinWelcomeEmail } = await import("@/lib/learn/emails");
     for (const row of rows) {
       try {
@@ -230,8 +231,9 @@ export async function sweepPendingEnrollments(now = new Date()): Promise<{ check
         const access = await getAccess(row.studentId);
         const track = row.trackSlug ? await trackInfo({ slug: row.trackSlug }) : null;
         const done =
-          (choice?.kind === "track" && track && (access.all || access.purchased.includes(track.id))) ||
-          (choice?.kind === "monthly" && access.all) ||
+          (choice?.kind === "track" && track && canAccessTrack(access, track.id)) ||
+          // A track with its own monthly plan: done once that track is open.
+          (choice?.kind === "monthly" && (trackMonthlyCents(row.trackSlug) != null ? !!track && canAccessTrack(access, track.id) : access.all)) ||
           (choice?.kind === "team" && access.entitlement.team?.role === "owner");
         if (done || !choice) {
           const purchase: CompletedPurchase =

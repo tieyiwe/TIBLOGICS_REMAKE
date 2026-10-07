@@ -8,7 +8,9 @@ import {
   type PlanDefinition,
   type TeamCheckoutRequest,
   type TrackCheckoutRequest,
+  type TrackMonthlyCheckoutRequest,
 } from "./provider";
+import { TRACK_MONTHLY_PRODUCT } from "@/lib/learn/track-monthly";
 import type { CheckoutDiscountFields } from "./provider";
 
 /** One coupon, or Stripe's code box, never both (Stripe allows one or the other). */
@@ -74,6 +76,36 @@ export const stripeProvider: PaymentProvider = {
       },
     });
 
+    if (!session.url) throw new Error("Stripe did not return a checkout URL");
+    return { url: session.url };
+  },
+
+  async createTrackMonthlyCheckout(req: TrackMonthlyCheckoutRequest) {
+    const metadata = { product: TRACK_MONTHLY_PRODUCT, studentId: req.studentId, trackId: req.trackId, trackSlug: req.trackSlug };
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: req.currency.toLowerCase(),
+            unit_amount: req.amount,
+            recurring: { interval: "month" },
+            product_data: {
+              name: `ARFA by TIBLOGICS: ${req.trackTitle} (monthly)`,
+              description: "This track, its assessments and certificate. Cancel anytime.",
+            },
+          },
+        },
+      ],
+      customer_email: req.email,
+      ...discountParams(req),
+      success_url: req.successUrl,
+      cancel_url: req.cancelUrl,
+      client_reference_id: req.studentId,
+      metadata: { ...req.promoMetadata, ...metadata },
+      subscription_data: { metadata },
+    });
     if (!session.url) throw new Error("Stripe did not return a checkout URL");
     return { url: session.url };
   },

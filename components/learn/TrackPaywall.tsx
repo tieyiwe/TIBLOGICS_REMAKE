@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import PlanPicker from "./PlanPicker";
 import { PLANS } from "@/lib/payments/provider";
 import { trackPriceCents } from "@/lib/learn/pricing";
+import { trackMonthlyCents } from "@/lib/learn/track-monthly";
 import { fmtPrice } from "@/lib/learn/format";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTrack } from "@/lib/i18n/sources/learn";
@@ -46,7 +47,9 @@ export default async function TrackPaywall({ trackId, compact = false }: { track
         </h2>
         <p className="mt-1 text-sm font-semibold text-[var(--ink)]">{title}</p>
         <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-[var(--ink2)]">
-          {t("learn.locked.body", { price: fmtPrice(price, locale), monthly: fmtPrice(PLANS.monthly.amount, locale) })}
+          {trackMonthlyCents(track.slug) != null
+            ? t("learn.locked.bodyTrackMonthly", { price: fmtPrice(price, locale), monthly: fmtPrice(trackMonthlyCents(track.slug) as number, locale) })
+            : t("learn.locked.body", { price: fmtPrice(price, locale), monthly: fmtPrice(PLANS.monthly.amount, locale) })}
         </p>
       </div>
       <div className="mt-6">

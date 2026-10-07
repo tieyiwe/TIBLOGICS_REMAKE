@@ -70,6 +70,7 @@ const messages: Messages = {
     "learn.join.bar.pay": "Pay",
     "learn.join.choice.track": "{track} · {price} once",
     "learn.join.choice.monthly": "All tracks · {price}/month",
+    "learn.join.choice.trackMonthly": "{track} · {price}/month",
     "learn.join.choice.team": "Team plan · {n} seats",
     "learn.join.resume.kicker": "Finish your enrolment",
     "learn.join.resume.title": "Your plan is saved",
@@ -90,6 +91,7 @@ const messages: Messages = {
 
     "learn.email.join.choice.track": "{track}: one payment, lifetime access",
     "learn.email.join.choice.monthly": "All tracks, monthly: every track, current and future",
+    "learn.email.join.choice.trackMonthly": "{track}, monthly",
     "learn.email.join.choice.team": "Team plan: {n} seats, billed monthly",
     "learn.email.join.paid.subject.track": "Welcome to ARFA: your {track} access is active",
     "learn.email.join.paid.subject.monthly": "Welcome to ARFA: your all-tracks access is active",
@@ -187,6 +189,7 @@ const messages: Messages = {
     "learn.join.bar.pay": "Payer",
     "learn.join.choice.track": "{track} · {price} en une fois",
     "learn.join.choice.monthly": "Tous les parcours · {price}/mois",
+    "learn.join.choice.trackMonthly": "{track} · {price}/mois",
     "learn.join.choice.team": "Formule équipe · {n} places",
     "learn.join.resume.kicker": "Terminez votre inscription",
     "learn.join.resume.title": "Votre formule est enregistrée",
@@ -207,6 +210,7 @@ const messages: Messages = {
 
     "learn.email.join.choice.track": "{track} : un seul paiement, accès à vie",
     "learn.email.join.choice.monthly": "Tous les parcours, au mois : tous les parcours, actuels et à venir",
+    "learn.email.join.choice.trackMonthly": "{track}, au mois",
     "learn.email.join.choice.team": "Formule équipe : {n} places, facturées chaque mois",
     "learn.email.join.paid.subject.track": "Bienvenue chez ARFA : votre accès à {track} est actif",
     "learn.email.join.paid.subject.monthly": "Bienvenue chez ARFA : votre accès à tous les parcours est actif",

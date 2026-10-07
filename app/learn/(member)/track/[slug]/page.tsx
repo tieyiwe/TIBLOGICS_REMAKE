@@ -155,7 +155,7 @@ export default async function TrackHome({
   }
   // A subscriber who has not bought this track can keep it for life.
   const keepForever =
-    access.all && !access.purchased.includes(track.id) && track.status === "live" && access.entitlement.status !== "comped"
+    canAccessTrack(access, track.id) && !access.purchased.includes(track.id) && track.status === "live" && access.entitlement.status !== "comped"
       ? fmtPrice(trackPriceCents(track.level, track.priceCents), locale)
       : null;
 
