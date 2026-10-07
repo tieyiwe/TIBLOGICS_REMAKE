@@ -4,10 +4,10 @@ expertMode = true
 
 [nix]
 channel = "stable-25_05"
-# postgresql_17: pg_dump refuses to dump a server newer than itself, and the
-# Replit runtime ships 16.x while Supabase runs 17.x. Needed for the one-off
-# data migration; safe to drop again once that is done.
-packages = ["psmisc", "postgresql_17"]
+# postgresql_17 (pg_dump for the one-off Supabase migration) was removed: it
+# is no longer needed and failed to install, which put the workspace in
+# recovery mode. Add it back only for another dump from a 17.x server.
+packages = ["psmisc"]
 
 [workflows]
 runButton = "Project"
