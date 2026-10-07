@@ -67,11 +67,10 @@ export const ORG = {
   /** Where the agency works (about page: "United States and African markets"). */
   areaServed: [
     { "@type": "Country", name: "United States" },
-    { "@type": "Country", name: "Canada" },
     { "@type": "Continent", name: "Africa" },
   ],
-  /** ISO codes used on the contact points (francophone Africa included). */
-  contactAreas: ["US", "CA", "FR", "SN", "CI", "CM"],
+  /** ISO codes used on the contact points. */
+  contactAreas: ["US", "FR", "SN", "CI", "CM"],
   /** Delivery languages for services; the website is also in Swahili. */
   serviceLanguages: ["English", "French"],
   siteLanguages: ["en", "fr", "sw"],

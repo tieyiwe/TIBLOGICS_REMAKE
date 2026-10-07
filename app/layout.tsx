@@ -77,7 +77,7 @@ export async function generateMetadata(): Promise<Metadata> {
       "digital transformation", "AI for small business", "LLM integration",
       "RAG systems", "n8n automation", "Next.js development", "AI readiness",
       "AI implementation North America", "AI implementation Africa",
-      "Francophone Africa tech", "TIBLOGICS", "AI strategy consulting",
+      "Africa tech", "TIBLOGICS", "AI strategy consulting",
       "custom AI solutions", "business automation", "AI productivity tools",
     ],
     authors: [{ name: SHOW_FOUNDER ? ORG.founder.name : SITE_NAME, url: SITE_URL }],

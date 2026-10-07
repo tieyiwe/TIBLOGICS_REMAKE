@@ -90,9 +90,9 @@ export default tri({
   ],
   "seo.home.faq.4.q": ["Which markets and languages does TIBLOGICS serve?", "Quels marchés et quelles langues TIBLOGICS couvre-t-elle ?", "TIBLOGICS huhudumia masoko na lugha zipi?"],
   "seo.home.faq.4.a": [
-    "TIBLOGICS primarily serves the United States and African markets, including francophone Africa, with bilingual English and French delivery, and works with clients worldwide. The website is also available in Swahili.",
-    "TIBLOGICS sert principalement les marchés américain et africains, y compris l'Afrique francophone, en anglais comme en français, et travaille avec des clients du monde entier. Le site existe aussi en swahili.",
-    "TIBLOGICS huhudumia hasa masoko ya Marekani na Afrika, ikiwemo Afrika inayozungumza Kifaransa, kwa Kiingereza na Kifaransa, na hufanya kazi na wateja duniani kote. Tovuti inapatikana pia kwa Kiswahili.",
+    "TIBLOGICS primarily serves the United States and African markets, with bilingual English and French delivery, and works with clients worldwide. The website is also available in Swahili.",
+    "TIBLOGICS sert principalement les marchés américain et africains, en anglais comme en français, et travaille avec des clients du monde entier. Le site existe aussi en swahili.",
+    "TIBLOGICS huhudumia hasa masoko ya Marekani na Afrika, kwa Kiingereza na Kifaransa, na hufanya kazi na wateja duniani kote. Tovuti inapatikana pia kwa Kiswahili.",
   ],
 
   // ── ARFA catalog (/learning-box) ─────────────────────────────────────────
@@ -392,9 +392,9 @@ export default tri({
   ],
   "seo.facts.where.k": ["Where it works", "Où elle intervient", "Inakofanya kazi"],
   "seo.facts.where.v": [
-    "TIBLOGICS primarily serves the United States, Canada and Africa, including francophone Africa, and works with clients worldwide.",
-    "TIBLOGICS sert principalement les États-Unis, le Canada et l'Afrique, y compris l'Afrique francophone, et travaille avec des clients du monde entier.",
-    "TIBLOGICS huhudumia hasa Marekani, Kanada na Afrika, ikiwemo Afrika inayozungumza Kifaransa, na hufanya kazi na wateja duniani kote.",
+    "TIBLOGICS primarily serves the United States and Africa, and works with clients worldwide.",
+    "TIBLOGICS sert principalement les États-Unis et l'Afrique, et travaille avec des clients du monde entier.",
+    "TIBLOGICS huhudumia hasa Marekani na Afrika, na hufanya kazi na wateja duniani kote.",
   ],
   "seo.facts.lang.k": ["Languages", "Langues", "Lugha"],
   "seo.facts.lang.v": [

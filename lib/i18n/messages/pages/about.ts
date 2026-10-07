@@ -63,9 +63,9 @@ export default tri({
   ],
   "pages.about.glance.markets.k": ["Markets", "Marchés", "Masoko"],
   "pages.about.glance.markets.v": [
-    "United States, Canada and Africa, including francophone Africa",
-    "États-Unis, Canada et Afrique, y compris l'Afrique francophone",
-    "Marekani, Kanada na Afrika, ikiwemo Afrika inayozungumza Kifaransa",
+    "United States and Africa",
+    "États-Unis et Afrique",
+    "Marekani na Afrika",
   ],
   "pages.about.glance.lang.k": ["Languages", "Langues", "Lugha"],
   "pages.about.glance.lang.v": [
@@ -167,9 +167,9 @@ export default tri({
   ],
   "pages.about.markets.title": ["Where we work", "Où nous intervenons", "Tunakofanya kazi"],
   "pages.about.markets.body": [
-    "We primarily serve the <strong class=\"text-[#0D1B2A]\">United States, Canada and Africa</strong>, including francophone Africa, and work with clients worldwide, in English and French.",
-    "Nous servons principalement les <strong class=\"text-[#0D1B2A]\">États-Unis, le Canada et l'Afrique</strong>, y compris l'Afrique francophone, et travaillons avec des clients du monde entier, en anglais et en français.",
-    "Tunahudumia hasa <strong class=\"text-[#0D1B2A]\">Marekani, Kanada na Afrika</strong>, ikiwemo Afrika inayozungumza Kifaransa, na tunafanya kazi na wateja duniani kote, kwa Kiingereza na Kifaransa.",
+    "We primarily serve the <strong class=\"text-[#0D1B2A]\">United States and Africa</strong>, and work with clients worldwide, in English and French.",
+    "Nous servons principalement les <strong class=\"text-[#0D1B2A]\">États-Unis et l'Afrique</strong>, et travaillons avec des clients du monde entier, en anglais et en français.",
+    "Tunahudumia hasa <strong class=\"text-[#0D1B2A]\">Marekani na Afrika</strong>, na tunafanya kazi na wateja duniani kote, kwa Kiingereza na Kifaransa.",
   ],
 
   "pages.about.track.who": ["Who we work with", "Avec qui nous travaillons", "Tunaofanya nao kazi"],

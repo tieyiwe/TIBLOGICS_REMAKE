@@ -20,8 +20,8 @@ const OPS: { op: RewriteOp; label: string; icon: typeof Zap; title: string }[] =
   { op: "regenerate", label: "Regenerate", icon: RefreshCw, title: "A fresh version with a new angle" },
   { op: "shorter", label: "Shorter", icon: Minimize2, title: "About 40% shorter" },
   { op: "punchier", label: "Punchier", icon: Zap, title: "Stronger hook, tighter sentences" },
-  { op: "local-africa", label: "Francophone Africa", icon: MapPin, title: "More local for Francophone West and Central Africa" },
-  { op: "local-na", label: "North America", icon: Globe2, title: "More local for US and Canada small businesses" },
+  { op: "local-africa", label: "Africa", icon: MapPin, title: "More local for business owners in Africa" },
+  { op: "local-na", label: "North America", icon: Globe2, title: "More local for US small businesses" },
   { op: "variants", label: "2 A/B variants", icon: Shuffle, title: "Two different hooks to test" },
 ];
 
@@ -82,7 +82,7 @@ const OP_LABEL: Record<RewriteOp, string> = {
   regenerate: "New version",
   shorter: "Shorter",
   punchier: "Punchier",
-  "local-africa": "Francophone Africa",
+  "local-africa": "Africa",
   "local-na": "North America",
   variants: "A/B variant",
   translate: "Translation",

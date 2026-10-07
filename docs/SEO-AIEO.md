@@ -142,7 +142,7 @@ stays off. The old placeholder verification tag has been removed.
 5. **Update `/about/facts`** when something changes (new service, new
    region, founding year if you want it public) and bump `FACTS_REVIEWED`.
 6. **Get mentioned.** Podcasts, guest articles, partner pages and press in
-   francophone Africa and North America. AI engines weigh what others say.
+   Africa and North America. AI engines weigh what others say.
 7. **Translate.** The French versions of tracks and articles are a real
    advantage: few AI courses rank in French.
 

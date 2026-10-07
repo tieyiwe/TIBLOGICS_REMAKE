@@ -51,7 +51,7 @@ export const DEFAULT_SETTINGS: GrowthSettingsData = {
     {
       id: "smb-na",
       name: "SMB owners, North America",
-      region: "United States and Canada",
+      region: "United States",
       timezone: "America/New_York",
       language: "en",
       pains: "Too much admin work, slow follow-up with leads, not sure which AI tools are worth paying for.",
@@ -60,8 +60,8 @@ export const DEFAULT_SETTINGS: GrowthSettingsData = {
     },
     {
       id: "francophone-africa",
-      name: "Francophone Africa (business owners and professionals)",
-      region: "Côte d'Ivoire, Burkina Faso, Senegal, Cameroon and neighbours",
+      name: "Africa (business owners and professionals)",
+      region: "Africa",
       timezone: "Africa/Abidjan",
       language: "fr",
       pains: "Few AI resources in French, limited budgets, mobile-first customers on WhatsApp.",

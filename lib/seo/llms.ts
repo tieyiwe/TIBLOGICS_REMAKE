@@ -86,7 +86,7 @@ async function load(postLimit: number): Promise<SiteData> {
 }
 
 const SUMMARY =
-  "TIBLOGICS is an AI implementation agency serving businesses in North America and Africa, including francophone Africa, in English and French. It builds AI agents, workflow automation and full-stack digital products, and runs ARFA (AI Readiness For All), an online AI academy whose courses end in verifiable certificates.";
+  "TIBLOGICS is an AI implementation agency serving businesses in North America and Africa, in English and French. It builds AI agents, workflow automation and full-stack digital products, and runs ARFA (AI Readiness For All), an online AI academy whose courses end in verifiable certificates.";
 
 function toolLines(): string[] {
   const tk = toolkitPlans();

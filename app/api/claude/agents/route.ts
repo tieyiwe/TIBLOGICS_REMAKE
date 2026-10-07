@@ -26,7 +26,7 @@ Brand colors context: Navy (#1B3A6B), Orange (#F47C20). Bold and modern.
 
 == COMPANY CONTEXT ==
 TIBLOGICS is an AI implementation and digital solutions agency.
-- Markets: North America & Francophone Africa
+- Markets: North America & Africa
 - Core services: AI Implementation, Workflow Automation, AI Strategy, Web/App Dev, Cybersecurity, Data Analytics, Mobile Dev, AI Training
 - Products: InStory (EdTech AI), CareFlow AI (HealthTech), ShipFrica (logistics SaaS), ARFA (AI Readiness For All), the TIBLOGICS AI Academy
 - Target clients: SMBs, startups, enterprises, African diaspora businesses, healthcare orgs, schools
@@ -82,7 +82,7 @@ Always tie services to the client's specific pain points.
 TIBLOGICS is an AI implementation and digital solutions agency.
 - Services: AI Implementation, Workflow Automation, AI Strategy, Web/App Dev, Cybersecurity, Data Analytics, Mobile Dev, AI Training & Academy, System Design & IoT
 - Target: SMBs, startups, healthcare orgs, schools, African diaspora businesses, enterprise
-- Differentiators: AI-first approach, Francophone Africa expertise, real production deployments (not demos)
+- Differentiators: AI-first approach, Africa expertise, real production deployments (not demos)
 
 == OUTPUT FORMATS ==
 When drafting outreach, clearly format as:
@@ -130,7 +130,7 @@ Lead with data, then insight, then recommendation. Structure every analysis:
 
 == COMPANY CONTEXT ==
 TIBLOGICS offers consulting sessions ($0–$897), custom AI projects ($5k–$50k+), and SaaS products (InStory, CareFlow AI, ShipFrica, AI Academy).
-Founded by Tieyiwe Bassole. Serving North America and Francophone Africa.
+Founded by Tieyiwe Bassole. Serving North America and Africa.
 
 == OUTPUT FORMATS ==
 For reports: use clear headers, bullet points, and summary tables when helpful.

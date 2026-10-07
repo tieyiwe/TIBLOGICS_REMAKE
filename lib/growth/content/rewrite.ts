@@ -7,7 +7,7 @@ import { adWhere, checkText, claimContext, emailWhere, lengthWarning, postWhere 
 import { isLanguage, PLATFORM_INFO, type Language } from "./platforms";
 
 // Per-item rewrites in the kit editor: regenerate, shorter, punchier, more
-// local (Francophone Africa or North America), two A/B variants, or a
+// local (Africa or North America), two A/B variants, or a
 // translation EN <-> FR. One Haiku call per click. The model sees the same
 // product facts and brand rules as the kit, and every result goes back
 // through the claim checks before the editor shows it.
@@ -22,8 +22,8 @@ const OP_TEXT: Record<RewriteOp, string> = {
   regenerate: "Write a fresh version with a different angle and hook. Same platform, same purpose.",
   shorter: "Make it about 40% shorter. Keep the key message and the call to action.",
   punchier: "Make it punchier: a stronger first line, shorter sentences, active verbs, no filler.",
-  "local-africa": "Adapt it for business owners and professionals in Francophone West and Central Africa (Côte d'Ivoire, Senegal, Burkina Faso, Cameroon): mobile-first, WhatsApp-friendly, budget-conscious, practical local examples (markets, transport, shops, SMEs). Do not invent places, prices or statistics. Keep the same language as the input unless told otherwise.",
-  "local-na": "Adapt it for small business owners and professionals in the United States and Canada: concrete local small-business examples, time saved, peer tone. Do not invent places, prices or statistics. Keep the same language as the input.",
+  "local-africa": "Adapt it for business owners and professionals in Africa: mobile-first, WhatsApp-friendly, budget-conscious, practical local examples (markets, transport, shops, SMEs). Do not invent places, prices or statistics. Keep the same language as the input unless told otherwise.",
+  "local-na": "Adapt it for small business owners and professionals in the United States: concrete local small-business examples, time saved, peer tone. Do not invent places, prices or statistics. Keep the same language as the input.",
   variants: "Write TWO clearly different A/B test variants (different hook and angle, same facts and call to action).",
   translate: "Translate it. Natural, idiomatic copy for the target audience, not a word-for-word translation. Keep every fact, number and call to action.",
 };
