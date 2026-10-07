@@ -2,6 +2,8 @@ import React from "react";
 import TryBlock from "./TryBlock";
 import Playground from "./Playground";
 import dynamic from "next/dynamic";
+import { GlossTerm } from "./glossary/GlossaryContext";
+import { formsPattern, type GlossEntry } from "@/lib/learn/glossary/pattern";
 
 // Loaded only by lessons that embed a Studio tool: StudioHost brings
 // framer-motion and the tool registry, which most lessons never need.
@@ -16,8 +18,42 @@ const StudioEmbed = dynamic(() => import("./studio/StudioEmbed"), {
 
 type Inline = React.ReactNode;
 
+/** Glossary terms to underline (first use of each per lesson), components/learn/glossary. */
+interface Gloss {
+  re: RegExp;
+  idOf: Map<string, string>;
+  seen: Set<string>;
+}
+
+function makeGloss(entries: GlossEntry[] | undefined): Gloss | undefined {
+  if (!entries?.length) return undefined;
+  const idOf = new Map<string, string>();
+  for (const e of entries) for (const f of e.forms) if (!idOf.has(f.toLowerCase())) idOf.set(f.toLowerCase(), e.id);
+  if (!idOf.size) return undefined;
+  return { re: new RegExp(formsPattern([...idOf.keys()]), "giu"), idOf, seen: new Set() };
+}
+
+/** Plain text with the first use of each glossary term wrapped. */
+function glossText(text: string, key: string, gl: Gloss | undefined): Inline[] {
+  if (!gl || !text) return [text];
+  const out: Inline[] = [];
+  let last = 0;
+  let n = 0;
+  gl.re.lastIndex = 0;
+  for (const m of text.matchAll(gl.re)) {
+    const id = gl.idOf.get(m[0].toLowerCase());
+    if (!id || gl.seen.has(id) || m.index === undefined) continue;
+    gl.seen.add(id);
+    if (m.index > last) out.push(text.slice(last, m.index));
+    out.push(<GlossTerm key={`${key}-g${n++}`} id={id}>{m[0]}</GlossTerm>);
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
+
 /** Bold, italic, inline code and links — applied in that order. */
-function renderInline(text: string, keyPrefix: string): Inline[] {
+function renderInline(text: string, keyPrefix: string, gl?: Gloss): Inline[] {
   const nodes: Inline[] = [];
   // `code` | **bold** | *italic* | [label](url)
   const pattern = /(`[^`]+`)|(\*\*[^*]+\*\*)|(\*[^*]+\*)|(\[[^\]]+\]\([^)]+\))/g;
@@ -26,7 +62,7 @@ function renderInline(text: string, keyPrefix: string): Inline[] {
   let i = 0;
 
   while ((m = pattern.exec(text)) !== null) {
-    if (m.index > last) nodes.push(text.slice(last, m.index));
+    if (m.index > last) nodes.push(...glossText(text.slice(last, m.index), `${keyPrefix}-t${i}`, gl));
     const token = m[0];
     const key = `${keyPrefix}-i${i++}`;
 
@@ -39,7 +75,7 @@ function renderInline(text: string, keyPrefix: string): Inline[] {
     } else if (token.startsWith("**")) {
       nodes.push(
         <strong key={key} className="font-bold text-[var(--ink)]">
-          {token.slice(2, -2)}
+          {glossText(token.slice(2, -2), `${key}-b`, gl)}
         </strong>,
       );
     } else if (token.startsWith("*")) {
@@ -76,7 +112,7 @@ function renderInline(text: string, keyPrefix: string): Inline[] {
     }
     last = m.index + token.length;
   }
-  if (last < text.length) nodes.push(text.slice(last));
+  if (last < text.length) nodes.push(...glossText(text.slice(last), `${keyPrefix}-tz`, gl));
   return nodes;
 }
 
@@ -102,7 +138,8 @@ function codeBlock(block: { lang: string; lines: string[] }, key: string): React
   );
 }
 
-export default function Markdown({ source }: { source: string }) {
+export default function Markdown({ source, glossary }: { source: string; glossary?: GlossEntry[] }) {
+  const gl = makeGloss(glossary);
   const lines = source.replace(/\r\n/g, "\n").split("\n");
   const blocks: React.ReactNode[] = [];
 
@@ -128,7 +165,7 @@ export default function Markdown({ source }: { source: string }) {
     if (paragraph.length === 0) return;
     blocks.push(
       <p key={`p${k++}`} className="mb-4 text-[0.9375rem] leading-[1.75] text-[var(--ink2)]">
-        {renderInline(paragraph.join(" "), `p${k}`)}
+        {renderInline(paragraph.join(" "), `p${k}`, gl)}
       </p>,
     );
     paragraph = [];
@@ -145,7 +182,7 @@ export default function Markdown({ source }: { source: string }) {
         }`}
       >
         {list.items.map((it, ii) => (
-          <li key={ii}>{renderInline(it, `l${k}-${ii}`)}</li>
+          <li key={ii}>{renderInline(it, `l${k}-${ii}`, gl)}</li>
         ))}
       </Tag>,
     );
@@ -159,7 +196,7 @@ export default function Markdown({ source }: { source: string }) {
         key={`q${k++}`}
         className="mb-4 border-l-4 border-[var(--orange)] bg-[var(--s2)] py-3 pl-4 pr-3 text-[0.9375rem] italic leading-[1.75] text-[var(--ink2)]"
       >
-        {renderInline(quote.join(" "), `q${k}`)}
+        {renderInline(quote.join(" "), `q${k}`, gl)}
       </blockquote>,
     );
     quote = [];

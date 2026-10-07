@@ -10,6 +10,8 @@ import MicroCheck from "./MicroCheck";
 import PracticePanel from "./PracticePanel";
 import PracticePad from "./PracticePad";
 import Markdown from "./Markdown";
+import { GlossaryProvider, type GlossaryLabels } from "./glossary/GlossaryContext";
+import type { GlossEntry } from "@/lib/learn/glossary/pattern";
 import { fmtMinutes } from "@/lib/learn/format";
 import { useT } from "@/lib/i18n/client";
 import { celebrate } from "@/lib/learn/game-client";
@@ -65,6 +67,8 @@ export default function LessonPlayer({
   loop,
   recap,
   footer,
+  glossary,
+  glossaryLabels,
 }: {
   lesson: LessonView;
   resources: ResourceView[];
@@ -82,6 +86,9 @@ export default function LessonPlayer({
   loop?: React.ReactNode;
   /** Key takeaways (lib/learn/recap), shown before the quick check. */
   recap?: React.ReactNode;
+  /** Glossary terms used in this lesson, and the pop-up's labels (components/learn/glossary). */
+  glossary?: GlossEntry[];
+  glossaryLabels?: GlossaryLabels;
   /** Shown at the end of the lesson, after the quick check (the reflection). */
   footer?: React.ReactNode;
 }) {
@@ -148,6 +155,7 @@ export default function LessonPlayer({
   }
 
   return (
+    <GlossaryProvider entries={glossary ?? []} labels={glossaryLabels ?? { heading: "Glossary", close: "Close", more: "Open the glossary" }}>
     <div data-focus-grid className="lg:grid lg:grid-cols-[1fr_300px] lg:gap-8">
       {/* ── Main column ─────────────────────────────────────────────────── */}
       <article id="lesson-article" className="min-w-0">
@@ -181,7 +189,7 @@ export default function LessonPlayer({
           <LessonMedia lessonId={lesson.id} title={lesson.title} video={lesson.video} accentColor={accentColor}>
             {lesson.bodyMd && (
               <div data-narrate className="rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
-                <Markdown source={lesson.bodyMd} />
+                <Markdown source={lesson.bodyMd} glossary={glossary} />
               </div>
             )}
           </LessonMedia>
@@ -195,7 +203,7 @@ export default function LessonPlayer({
 
             {lesson.bodyMd && (
               <div data-narrate className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
-                <Markdown source={lesson.bodyMd} />
+                <Markdown source={lesson.bodyMd} glossary={glossary} />
               </div>
             )}
           </>
@@ -373,8 +381,17 @@ export default function LessonPlayer({
               </div>
             ))}
           </div>
+          {/* Quick access to every AI and tech term (lib/learn/glossary). */}
+          <Link
+            href="/learning-box/glossary"
+            className="mt-4 flex items-center gap-2 rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm font-bold text-[var(--ink)] hover:border-[var(--orange)]"
+            data-testid="glossary-link"
+          >
+            <span aria-hidden="true">📖</span> {glossaryLabels?.nav ?? "AI glossary"}
+          </Link>
         </nav>
       </aside>
     </div>
+    </GlossaryProvider>
   );
 }

@@ -16,6 +16,7 @@ import { readDraft } from "@/lib/learn/drafts/server";
 import TutorDock from "@/components/learn/tutor/TutorDock";
 import DiscussionSection from "@/components/learn/community/DiscussionSection";
 import { lessonVideoFor } from "@/lib/learn/video/store";
+import { termsInText } from "@/lib/learn/glossary/match";
 import { isOwnerStudent } from "@/lib/learn/owner";
 import { lessonRecap } from "@/lib/learn/recap";
 import KeyTakeaways from "@/components/learn/recap/KeyTakeaways";
@@ -200,6 +201,13 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
         alreadyComplete={isDone}
         prevId={prevId}
         nextId={nextId}
+        glossary={termsInText(text.bodyMd ?? "", locale)}
+        glossaryLabels={{
+          heading: t("learn.glossary.heading"),
+          close: t("learn.glossary.close"),
+          more: t("learn.glossary.more"),
+          nav: t("learn.glossary.nav"),
+        }}
         trackSlug={lesson.module.track.slug}
         accentColor={lesson.module.track.accentColor}
         loop={
