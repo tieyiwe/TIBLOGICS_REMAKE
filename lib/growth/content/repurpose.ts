@@ -231,12 +231,14 @@ export async function runRepurpose(opts?: { batch?: number }): Promise<Repurpose
   const settings = await getGrowthSettings();
   const items = await findNewItems(since);
   // Skip items fully drafted already (cheap; no model call).
-  const pending: RepurposeItem[] = [];
-  for (const it of items) {
-    const n = await prisma.growthPost.count({ where: { sourceKey: { startsWith: `${it.key}:` } } });
-    const expected = targets(settings).reduce((s, t) => s + t.platforms.length, 0);
-    if (n < expected) pending.push(it);
-  }
+  // One query for every expected draft key, not a count per item.
+  const tgs = targets(settings);
+  const keysOf = (it: RepurposeItem) => tgs.flatMap((t) => t.platforms.map((p) => `${it.key}:${p}:${t.language}`));
+  const allKeys = items.flatMap(keysOf);
+  const have = new Set(
+    allKeys.length ? (await prisma.growthPost.findMany({ where: { sourceKey: { in: allKeys } }, select: { sourceKey: true } })).map((p) => p.sourceKey) : [],
+  );
+  const pending: RepurposeItem[] = items.filter((it) => keysOf(it).some((k) => !have.has(k)));
 
   const errors: string[] = [];
   let drafts = 0;

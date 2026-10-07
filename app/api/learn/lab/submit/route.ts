@@ -87,6 +87,21 @@ export async function POST(req: NextRequest) {
     let evaluation: LabEvaluation;
     let submission: Record<string, unknown>;
 
+    // The same work sent again (same answers, same language) gets the grade it
+    // already had: the AI grader is not called a second time for it.
+    const sameAs = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+    const lastGraded = async (sub: Record<string, unknown>): Promise<LabEvaluation | null> => {
+      const prev = await prisma.labAttempt
+        .findFirst({
+          where: { studentId: student.id, labId, status: "submitted", score: { not: null } },
+          orderBy: { createdAt: "desc" },
+          select: { submission: true, score: true, passed: true, feedbackMd: true, breakdown: true },
+        })
+        .catch(() => null);
+      if (!prev || prev.score == null || !prev.feedbackMd || !sameAs(prev.submission, sub)) return null;
+      return { score: prev.score, passed: !!prev.passed, feedbackMd: prev.feedbackMd, breakdown: prev.breakdown } as unknown as LabEvaluation;
+    };
+
     if (config.kind === "critique") {
       const picked = selections ?? [];
       submission = { selections: picked };
@@ -115,8 +130,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: t("labs.api.missingWritten", { list: missing.map((f) => f.label).join(", ") }) }, { status: 400 });
       }
       const transcript = Array.isArray(attempt?.transcript) ? (attempt!.transcript as Array<{ prompt?: string }>) : [];
-      submission = { code, checkResults: checkResults ?? [], commits: commits ?? [], answers: work };
-      evaluation = await evaluateCode({
+      submission = { code, checkResults: checkResults ?? [], commits: commits ?? [], answers: work, requests: transcript.length, lang: locale };
+      evaluation = (await lastGraded(submission)) ?? await evaluateCode({
         brief: lab.briefMd,
         config,
         code,
@@ -140,8 +155,8 @@ export async function POST(req: NextRequest) {
           { status: 400 },
         );
       }
-      submission = { answers: work };
-      evaluation = await evaluateWorkbench(lab.briefMd, lab.scenarioMd, config, work, objectives, lab.passScore, locale);
+      submission = { answers: work, lang: locale };
+      evaluation = (await lastGraded(submission)) ?? await evaluateWorkbench(lab.briefMd, lab.scenarioMd, config, work, objectives, lab.passScore, locale);
     } else {
       // Prompt lab — grade the latest prompt against the response it produced
       const text = (prompt ?? (attempt?.submission as { prompt?: string } | null)?.prompt ?? "").trim();

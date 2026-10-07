@@ -1,6 +1,5 @@
 export const maxDuration = 300;
-import { postFields, postKey, translateArticlesSoon } from "@/lib/i18n/sources/blog";
-import { translated } from "@/lib/i18n/content";
+import { translateArticlesSoon } from "@/lib/i18n/sources/blog";
 import { escapeAiText, sanitizeAiHtml } from "@/lib/ai-html";
 import { NextRequest, NextResponse } from "next/server";
 import { REFRESH_INTERVAL_MS } from "@/lib/blog/schedule";
@@ -279,7 +278,7 @@ async function generatePost(
   title: string,
   sourceUrl: string | undefined,
   sourceTitle: string
-): Promise<{ headline: string; excerpt: string; content: string; category: string; tags: string[] } | null> {
+): Promise<{ headline: string; excerpt: string; content: string; category: string; tags: string[]; tips?: string[] } | null> {
   const shape = pickShape(title);
 
   // A news item with a link is written from what the linked article says. If
@@ -394,6 +393,7 @@ Also determine:
   mentioned.
 - tags: 3-5 relevant lowercase tags as JSON array
 - excerpt: 1 compelling sentence (max 160 chars)
+- tips: 2-3 short, practical, specific tips a reader can act on, each one sentence (max 160 chars)
 
 Return a JSON object:
 {
@@ -401,7 +401,8 @@ Return a JSON object:
   "excerpt": "...",
   "content": "<h2>...</h2><p>...</p>...",
   "category": "...",
-  "tags": ["...", "..."]
+  "tags": ["...", "..."],
+  "tips": ["...", "..."]
 }`;
 
   try {
@@ -429,6 +430,8 @@ Return a JSON object:
     // The model's category is a suggestion: anything off the list would
     // create a post no filter tab can reach.
     if (!isBlogCategory(parsed.category)) parsed.category = "industry";
+    // The tips come with the article (one call, not two).
+    parsed.tips = Array.isArray(parsed.tips) ? parsed.tips.filter((x: unknown) => typeof x === "string" && x.trim()).slice(0, 3).map((x: string) => x.trim().slice(0, 180)) : [];
     return parsed;
   } catch {
     return null;
@@ -468,26 +471,16 @@ Return ONLY a JSON array:
   }
 }
 
-/**
- * Translate an article into French or Swahili and store it where the article
- * page reads it (lib/i18n/sources/blog.ts, the shared ContentTranslation
- * cache), so readers get it instantly. Replaces the old "tx:" copies, which
- * the page no longer reads and which cut long articles off at 6,000
- * characters.
- */
-async function translatePostContent(
-  slug: string,
-  post: { title: string; excerpt: string; content: string },
-  language: "fr" | "sw"
-): Promise<void> {
-  await translated(postKey(slug), language, postFields(post), "wait");
-}
-
 /** Articles without an up-to-date translation are handled by the shared job. */
 async function patchMissingTranslations(limit = 2): Promise<number> {
-  await translateArticlesSoon(limit * 2).catch(() => {});
+  if (translateNow) await translateArticlesSoon(limit * 2).catch(() => {});
   return 0;
 }
+
+// French and Swahili copies are made by the translate job (npm run cron
+// translate, hourly) through the Message Batches API at half price. Only
+// with TRANSLATE_BATCH_API=0 are they made here, at once, at full price.
+const translateNow = process.env.TRANSLATE_BATCH_API === "0";
 
 async function patchMissingTips(limit = 3): Promise<number> {
   let patched = 0;
@@ -801,9 +794,6 @@ async function publishCurated(): Promise<string[]> {
       });
       indexNowSoon(INDEXNOW_SECTIONS.article(a.slug));
       published.push(a.slug);
-      for (const lang of ["fr", "sw"] as const) {
-        translatePostContent(a.slug, { title: a.title, excerpt: a.excerpt, content }, lang).catch(() => {});
-      }
     } catch (err) {
       console.error("[auto-refresh] curated publish failed", a.slug, err instanceof Error ? err.message : err);
     }
@@ -1124,9 +1114,6 @@ export async function GET(req: NextRequest) {
         existingTitles.add(sp.title.toLowerCase().trim());
         // Fire translations in background — don't block the refresh response
         const spotlightPost = { title: sp.title, excerpt: sp.excerpt, content: sp.content };
-        for (const lang of ["fr", "sw"] as const) {
-          translatePostContent(slug, spotlightPost, lang).catch(() => {});
-        }
       } catch { /* skip duplicate */ }
     }
 
@@ -1182,9 +1169,6 @@ export async function GET(req: NextRequest) {
         postsAdded++;
         existingTitles.add(sp.title.toLowerCase().trim());
         const seedPost = { title: sp.title, excerpt: sp.excerpt, content: sp.content };
-        for (const lang of ["fr", "sw"] as const) {
-          translatePostContent(slug, seedPost, lang).catch(() => {});
-        }
       } catch { /* skip duplicate */ }
     }
   } catch (err) {
@@ -1293,7 +1277,8 @@ export async function GET(req: NextRequest) {
         // For topic-bank items, enforce the intended category regardless of Claude's pick
         const finalCategory = item.category || generated.category;
         const meta = CATEGORY_META[finalCategory] ?? CATEGORY_META["industry"];
-        const tipsHtml = await generateTips(headline, generated.content);
+        // Tips written with the article; a separate call only if it gave none.
+        const tipsHtml = generated.tips && generated.tips.length >= 2 ? buildTipsHtml(generated.tips) : await generateTips(headline, generated.content);
 
         const baseSlug = headline.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "-").slice(0, 70);
         let slug = baseSlug; let si = 1;
@@ -1321,9 +1306,6 @@ export async function GET(req: NextRequest) {
         indexNowSoon(INDEXNOW_SECTIONS.article(slug));
         postsAdded++;
         const newPost = { title: headline, excerpt: generated.excerpt, content: generated.content + tipsHtml };
-        for (const lang of ["fr", "sw"] as const) {
-          translatePostContent(slug, newPost, lang).catch(() => {});
-        }
       } catch (e) {
         errors.push(String(e));
       }
@@ -1367,8 +1349,8 @@ export async function GET(req: NextRequest) {
   // New articles: the automatic featured slots move to the freshest news.
   if (postsAdded > 0 || curatedPublished.length > 0) await patchFeaturedRotation();
   if (postsAdded > 0) revalidateAiTimes();
-  // New, corrected or updated articles are translated now, in the background,
-  // so readers never wait for a translation.
-  void translateArticlesSoon();
+  // New, corrected or updated articles: the translate job picks them up (see
+  // translateNow); until then readers see the English text with a note.
+  if (translateNow) void translateArticlesSoon();
   return NextResponse.json({ message: `Added ${postsAdded + curatedPublished.length} new posts`, postsAdded: postsAdded + curatedPublished.length, curatedPublished, retracted, corrected: corrected.length, imagesPatched, tipsPatched, translationsPatched });
 }

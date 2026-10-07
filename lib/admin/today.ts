@@ -35,13 +35,19 @@ const OPTIONAL = [
 ] as const;
 type Opt = (typeof OPTIONAL)[number];
 
+// Tables never disappear: once every optional table exists, the answer is
+// kept for the life of the process and the probe query is skipped.
+let allPresent: Record<Opt, boolean> | null = null;
+
 async function present(): Promise<Record<Opt, boolean>> {
+  if (allPresent) return allPresent;
   const names = [...OPTIONAL] as string[];
   const out = Object.fromEntries(OPTIONAL.map((t) => [t, false])) as Record<Opt, boolean>;
   try {
     const rows = await prisma.$queryRaw<Array<{ t: string; ok: boolean }>>`
       SELECT t, to_regclass(quote_ident(t)) IS NOT NULL AS ok FROM unnest(${names}::text[]) AS t`;
     for (const r of rows) if (r.ok) out[r.t as Opt] = true;
+    if (OPTIONAL.every((t) => out[t])) allPresent = out;
   } catch (err) {
     console.error("[admin/today] table probe", err);
   }

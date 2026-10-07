@@ -51,37 +51,45 @@ export default async function TrackHome({
   const student = await getStudent();
   if (!student) redirect("/learn/login");
 
-  const track = await prisma.learnTrack
-    .findUnique({
-      where: { slug },
-      include: {
-        modules: {
-          orderBy: { sortOrder: "asc" },
-          include: {
-            lessons: {
-              orderBy: { sortOrder: "asc" },
-              select: { id: true, title: true, durationMinutes: true, isPreview: true, microCheck: { select: { id: true } } },
+  // The track, its sources (for translations), the owner check and access
+  // are independent: one round trip.
+  const [track, t, locale, [src], owner, access] = await Promise.all([
+    prisma.learnTrack
+      .findUnique({
+        where: { slug },
+        include: {
+          modules: {
+            orderBy: { sortOrder: "asc" },
+            include: {
+              lessons: {
+                orderBy: { sortOrder: "asc" },
+                select: { id: true, title: true, durationMinutes: true, isPreview: true, microCheck: { select: { id: true } } },
+              },
+              quiz: { select: { id: true, passScore: true } },
             },
-            quiz: { select: { id: true, passScore: true } },
+          },
+          finalExam: { select: { id: true, title: true, timeLimitMinutes: true, questionsServed: true, passScore: true } },
+          capstone: { select: { id: true } },
+          labs: {
+            where: { isPublished: true },
+            orderBy: { sortOrder: "asc" },
+            select: {
+              id: true, slug: true, title: true, labType: true,
+              estimatedMinutes: true, points: true, moduleId: true, lesson: { select: { moduleId: true } },
+            },
           },
         },
-        finalExam: { select: { id: true, title: true, timeLimitMinutes: true, questionsServed: true, passScore: true } },
-        capstone: { select: { id: true } },
-        labs: {
-          where: { isPublished: true },
-          orderBy: { sortOrder: "asc" },
-          select: {
-            id: true, slug: true, title: true, labType: true,
-            estimatedMinutes: true, points: true, moduleId: true, lesson: { select: { moduleId: true } },
-          },
-        },
-      },
-    })
-    .catch(() => null);
+      })
+      .catch(() => null),
+    getT(),
+    getLocale(),
+    loadTrackSources({ slug }),
+    isOwnerStudent(student.id),
+    getAccess(student.id),
+  ]);
 
   if (!track) notFound();
 
-  const [t, locale, [src]] = await Promise.all([getT(), getLocale(), loadTrackSources({ slug })]);
   const { text, pending } = src
     ? locale === "en"
       ? { text: trackText(src), pending: false }
@@ -91,8 +99,6 @@ export default async function TrackHome({
   // Per-track access. Without it the outline stays visible as a preview,
   // lessons are locked (free-preview ones excepted) and the two ways to
   // unlock are offered.
-  const owner = await isOwnerStudent(student.id);
-  const access = await getAccess(student.id);
   if (!canAccessTrack(access, track.id)) {
     return (
       <div className="space-y-8">
@@ -164,7 +170,8 @@ export default async function TrackHome({
     estimatedHours: track.estimatedHours,
   };
 
-  const [progress, gates, done, quizPasses, cert] = await Promise.all([
+  // Everything about this learner in this track, in one round trip.
+  const [progress, gates, done, quizPasses, cert, labPasses, mastery, masteredIds, resume, newLessons] = await Promise.all([
     getTrackProgress(student.id, track.id),
     getTrackGates(student.id, track.id),
     prisma.lessonProgress.findMany({
@@ -179,29 +186,31 @@ export default async function TrackHome({
       where: { studentId: student.id, trackId: track.id, revoked: false },
       select: { verificationId: true, distinction: true },
     }),
+    prisma.labAttempt
+      .findMany({
+        where: { studentId: student.id, passed: true, lab: { trackId: track.id } },
+        select: { labId: true },
+        distinct: ["labId"],
+      })
+      .catch(() => []),
+    // Mastery paths: diagnostic estimates, tested-out modules and lessons.
+    trackMastery(student.id, track.id).catch((err) => {
+      console.error("[track] mastery", err);
+      return [];
+    }),
+    masteredLessonIds(student.id, track.id),
+    // "Continue where you left off" (the exact next thing in this track) and
+    // lessons added to modules the learner had already finished.
+    getResumeTarget(student.id, { trackId: track.id }).catch(() => null),
+    newLessonsInTrack(student.id, track.id),
   ]);
 
-  const labPasses = await prisma.labAttempt
-    .findMany({
-      where: { studentId: student.id, passed: true, lab: { trackId: track.id } },
-      select: { labId: true },
-      distinct: ["labId"],
-    })
-    .catch(() => []);
   const passedLabIds = new Set(labPasses.map((l) => l.labId));
 
   const doneIds = new Set(done.map((d) => d.lessonId));
   const passedQuizIds = new Set(quizPasses.filter((q) => q.passed).map((q) => q.quizId));
   // A quiz already attempted stays open even if a lesson was added since.
   const triedQuizIds = new Set(quizPasses.map((q) => q.quizId));
-  // Mastery paths: diagnostic estimates, tested-out modules and lessons.
-  const [mastery, masteredIds] = await Promise.all([
-    trackMastery(student.id, track.id).catch((err) => {
-      console.error("[track] mastery", err);
-      return [];
-    }),
-    masteredLessonIds(student.id, track.id),
-  ]);
   const masteryOf = new Map(mastery.map((m) => [m.moduleId, m]));
 
   const quest = await buildQuest({
@@ -222,12 +231,6 @@ export default async function TrackHome({
   // Mastery paths: tested-out modules show as mastered on the map.
   for (const qm of quest?.modules ?? []) qm.mastered = !!masteryOf.get(qm.id)?.testedOut;
 
-  // "Continue where you left off" (the exact next thing in this track) and
-  // lessons added to modules the learner had already finished.
-  const [resume, newLessons] = await Promise.all([
-    getResumeTarget(student.id, { trackId: track.id }).catch(() => null),
-    newLessonsInTrack(student.id, track.id),
-  ]);
   const newIds = new Set(newLessons.map((l) => l.id));
   const resumeHref = resume?.href ?? (progress.nextLessonId ? `/learn/lesson/${progress.nextLessonId}` : null);
 
@@ -588,11 +591,11 @@ async function buildQuest({
   // Mastery paths: the "tested out" award is keyed on the module id.
   refs.push(...track.modules.map((m) => m.id));
   if (track.finalExam) refs.push(track.finalExam.id);
-  const earnedRows = await prisma.pointsLedger.findMany({
+  const earnedSum = await prisma.pointsLedger.aggregate({
     where: { studentId, refId: { in: refs }, source: { not: "streak_bonus" } },
-    select: { points: true },
+    _sum: { points: true },
   });
-  const earned = earnedRows.reduce((n, r) => n + r.points, 0);
+  const earned = earnedSum._sum.points ?? 0;
   const available =
     lessonIds.length * POINT_VALUES.lesson_complete +
     microIds.length * POINT_VALUES.micro_check_pass +

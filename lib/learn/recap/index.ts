@@ -178,10 +178,33 @@ export async function moduleRecap(moduleId: string, locale: string): Promise<Arr
     orderBy: { sortOrder: "asc" },
     select: { id: true, title: true, objective: true, bodyMd: true },
   });
+  if (!lessons.length) return [];
+  // Every recap of the module in one query, then the translations together.
+  const rows = await (async () => {
+    try {
+      await ensureRecapTable();
+      return await prisma.$queryRawUnsafe<Array<{ lessonId: string; contentHash: string; data: unknown; source: string }>>(
+        `SELECT "lessonId", "contentHash", "data", "source" FROM "LessonRecap" WHERE "lessonId" = ANY($1::text[])`,
+        lessons.map((l) => l.id),
+      );
+    } catch {
+      return [];
+    }
+  })();
+  const byId = new Map(rows.map((r) => [r.lessonId, r]));
+  const recaps = await Promise.all(
+    lessons.map(async (l) => {
+      const r = byId.get(l.id);
+      // Written for an older version of the lesson: not shown.
+      if (!r || (r.source !== "staff" && r.contentHash !== contentHash(l))) return null;
+      const recap = readRecap(r.data);
+      return recap ? localized(l.id, recap, locale).catch(() => null) : null;
+    }),
+  );
   const out: Array<{ lessonId: string; title: string; recap: Recap }> = [];
-  for (const l of lessons) {
-    const recap = await lessonRecap(l, locale);
+  lessons.forEach((l, i) => {
+    const recap = recaps[i];
     if (recap) out.push({ lessonId: l.id, title: l.title, recap });
-  }
+  });
   return out;
 }

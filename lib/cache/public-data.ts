@@ -51,7 +51,9 @@ function onlyCounters(table: string, sql: string): boolean {
 }
 
 const MAX_AGE_MS = 5 * 60_000;
-const CHECK_MS = 3_000;
+// How often other instances' invalidations are picked up. Local ones are
+// immediate; production runs one instance, so this only needs to be prompt.
+const CHECK_MS = 15_000;
 const SETTLE_MS = 1_500;
 const MAX_ENTRIES = 1000;
 
@@ -122,8 +124,11 @@ async function bumpShared(tag: CacheTag) {
 
 /** Drop a tag here and on every other instance. Never throws. */
 export function invalidatePublicData(tag: CacheTag): void {
+  // A burst of writes (a translation batch of hundreds of rows) shares one
+  // shared bump now and one when it settles, not two per row.
+  const inBurst = !!S.settle[tag];
   dropLocal(tag);
-  void bumpShared(tag);
+  if (!inBurst) void bumpShared(tag);
   // Once more after the writing transaction has surely committed.
   if (S.settle[tag]) clearTimeout(S.settle[tag]);
   S.settle[tag] = setTimeout(() => {

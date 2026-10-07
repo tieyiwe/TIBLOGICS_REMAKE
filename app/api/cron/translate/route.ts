@@ -19,8 +19,8 @@ import { warm as warmBlog } from "@/lib/i18n/sources/blog";
 // cached a run costs nothing. Run hourly:
 //   npm run cron translate
 //
-// With TRANSLATE_BATCH_API=1 the job uses the Message Batches API instead
-// (half price): a run first collects the results of the batch it sent last
+// By default the job uses the Message Batches API (half price;
+// TRANSLATE_BATCH_API=0 switches back to direct calls): a run first collects the results of the batch it sent last
 // time, then sends every unit still missing (up to TRANSLATE_BATCH, default
 // 300 in this mode) as one new batch. The cache is the same either way.
 export const maxDuration = 300;
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
   if (!process.env.ANTHROPIC_API_KEY) return NextResponse.json({ error: "ANTHROPIC_API_KEY is not set" }, { status: 503 });
 
   const n = Number(process.env.TRANSLATE_BATCH);
-  const useBatchApi = process.env.TRANSLATE_BATCH_API === "1";
+  const useBatchApi = process.env.TRANSLATE_BATCH_API !== "0";
 
   if (useBatchApi) {
     try {

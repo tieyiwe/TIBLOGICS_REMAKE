@@ -108,27 +108,28 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
   const doneIds = new Set(completed.map((c) => c.lessonId));
   const isDone = doneIds.has(lesson.id);
 
-  // The Learning Loop (Understand, Try, Play, Apply, Reflect). Never blocks
-  // the lesson: if it cannot be worked out, the strip is simply not shown.
-  const loop = await loadLoopState(student.id, { id: lesson.id, moduleId: lesson.moduleId, sourceMd: lesson.bodyMd }, locale, isDone).catch(
-    (err) => {
+  // Independent reads, one round trip:
+  //  - the Learning Loop (Understand, Try, Play, Apply, Reflect): never blocks
+  //    the lesson; if it cannot be worked out, the strip is not shown;
+  //  - where the learner was in this lesson last time (any device), to offer
+  //    "Jump back to where you were" (never scrolls on its own);
+  //  - the lesson video (chapters, captions, the learner's place), or null;
+  //  - what to remember from this lesson (lib/learn/recap), null until written;
+  //  - owner check (opens every module quiz, lib/learn/owner.ts).
+  const [loop, savedPos, video, recap, owner] = await Promise.all([
+    loadLoopState(student.id, { id: lesson.id, moduleId: lesson.moduleId, sourceMd: lesson.bodyMd }, locale, isDone).catch((err) => {
       console.error("[lesson] learning loop", err);
       return null;
-    },
-  );
-
-  // Where the learner was in this lesson last time (any device), to offer
-  // "Jump back to where you were". Never scrolls on its own.
-  const savedPos = await readDraft(student.id, `pos:${lesson.id}`);
+    }),
+    readDraft(student.id, `pos:${lesson.id}`),
+    lessonVideoFor(student.id, lesson, locale).catch(() => null),
+    lessonRecap(lesson, locale),
+    isOwnerStudent(student.id),
+  ]);
   const savedPct =
     savedPos && typeof (savedPos.value as { pct?: unknown })?.pct === "number"
       ? Math.round((savedPos.value as { pct: number }).pct)
       : null;
-
-  // The lesson video (chapters, captions, the learner's place); null without one.
-  const video = await lessonVideoFor(student.id, lesson, locale).catch(() => null);
-  // What to remember from this lesson (lib/learn/recap); null until written.
-  const recap = await lessonRecap(lesson, locale);
 
   // Flatten for prev/next
   const flat = modules.flatMap((m) => m.lessons.map((l) => l.id));
@@ -139,8 +140,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
   // Quiz becomes available once every lesson in the module is complete
   const moduleLessonIds = lesson.module.lessons?.map((l) => l.id) ?? [];
   // The owner can open every module quiz to check it (lib/learn/owner.ts).
-  const moduleComplete =
-    (moduleLessonIds.length > 0 && moduleLessonIds.every((lid) => doneIds.has(lid))) || (await isOwnerStudent(student.id));
+  const moduleComplete = (moduleLessonIds.length > 0 && moduleLessonIds.every((lid) => doneIds.has(lid))) || owner;
 
   return (
     <div>
