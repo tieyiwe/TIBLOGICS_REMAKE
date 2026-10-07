@@ -89,7 +89,10 @@ export async function POST(req: NextRequest) {
 
     // The same work sent again (same answers, same language) gets the grade it
     // already had: the AI grader is not called a second time for it.
-    const sameAs = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+    // Key order is not kept by the database (jsonb), so compare canonically.
+    const canon = (v: unknown): unknown =>
+      Array.isArray(v) ? v.map(canon) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon((v as Record<string, unknown>)[k])])) : v;
+    const sameAs = (a: unknown, b: unknown) => JSON.stringify(canon(a)) === JSON.stringify(canon(b));
     const lastGraded = async (sub: Record<string, unknown>): Promise<LabEvaluation | null> => {
       const prev = await prisma.labAttempt
         .findFirst({
