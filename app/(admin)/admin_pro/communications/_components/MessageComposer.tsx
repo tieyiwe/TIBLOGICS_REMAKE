@@ -410,7 +410,7 @@ export function MessageComposer({
             <legend className="mb-1.5 font-dm text-[12.5px] font-semibold text-[var(--a-ink-2)]">Channels</legend>
             <div className="flex flex-wrap gap-2">
               {[
-                { on: viaEmail, set: setViaEmail, icon: Mail, label: "Email", hint: "From arfa@tiblogics.com" },
+                { on: viaEmail, set: setViaEmail, icon: Mail, label: "Email", hint: "From arfa_edu@tiblogics.com" },
                 notif
                   ? { on: viaInbox, set: setViaInbox, icon: BellRing, label: "In-app notification", hint: "Inbox, Notifications tab" }
                   : { on: viaInbox, set: setViaInbox, icon: Inbox, label: "In-app Inbox", hint: "Learner can reply" },
@@ -505,7 +505,7 @@ export function MessageComposer({
               <p className="mt-1 font-dm text-[12px] text-[var(--a-ink-3)]">
                 {notif
                   ? `Keep it short (${(lang === "fr" ? bodyFr : body).length}/1000). Light formatting works. Learners cannot reply to a notification.`
-                  : "Light formatting: **bold**, *italic*, [text](https://link), lines starting with “- ”. Replies go to arfa@tiblogics.com and the Inbox tab. Opens are not tracked."}
+                  : "Light formatting: **bold**, *italic*, [text](https://link), lines starting with “- ”. Replies go to arfa_edu@tiblogics.com and the Inbox tab. Opens are not tracked."}
               </p>
             </div>
             {notif ? (
@@ -587,7 +587,7 @@ export function MessageComposer({
                   <span className="border-l-2 border-[#1B2A5E] pl-3 font-dm text-[10px] font-bold uppercase leading-tight tracking-[.08em] text-[#F47C20]">AI Readiness<br />For All</span>
                 </div>
                 <div className="px-4 py-4">
-                  <p className="font-dm text-[11px] text-[var(--a-ink-3)]">From ARFA · AI Readiness For All &lt;arfa@tiblogics.com&gt;</p>
+                  <p className="font-dm text-[11px] text-[var(--a-ink-3)]">From ARFA · AI Readiness For All &lt;arfa_edu@tiblogics.com&gt;</p>
                   <p className="mt-2 font-dm text-[16px] font-bold leading-snug text-[#131A1B]">{applyMerge(shownSubject || "Subject", mergeValues)}</p>
                   <div
                     className="mt-3 font-dm text-[13.5px] leading-relaxed text-[#3b4a52] [&_a]:font-semibold [&_a]:text-[#C2560E] [&_p+p]:mt-2.5 [&_ul]:mt-2 [&_ul]:list-disc [&_ul]:pl-5"

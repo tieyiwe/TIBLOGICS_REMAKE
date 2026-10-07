@@ -8,7 +8,7 @@
 //                 the mail client (that reply does not reach the admin thread,
 //                 the footer says so).
 //   Learner ack   "We got your message", in the learner's language, through
-//                 arfaMailer (arfa@tiblogics.com).
+//                 arfaMailer (arfa_edu@tiblogics.com).
 //   Visitor reply a staff answer to a signed-out visitor (they have no Inbox).
 //
 // Everything typed by a user is escaped (renderMarkdownLite escapes first);

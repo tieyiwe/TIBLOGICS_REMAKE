@@ -1,5 +1,5 @@
 // Account notices sent by admin actions, in the learner's language, from the
-// ARFA mailer (arfa@tiblogics.com) with the ARFA email layout.
+// ARFA mailer (arfa_edu@tiblogics.com) with the ARFA email layout.
 import { arfaMailer } from "@/lib/resend";
 import { translator } from "@/lib/learn/i18n";
 import { learnEmailShell, learnEmailEsc, learnEmailP, LEARN_SITE } from "@/lib/learn/emails";

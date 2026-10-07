@@ -44,7 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         ${body.replace(/\n/g, "<br/>")}
         <p style="color:#7A8FA6;font-size:13px;margin-top:32px;border-top:1px solid #eee;padding-top:16px;">
           This message was sent to ${safeTitle} participants by TIBLOGICS.<br/>
-          Questions? Reply to this email or write to arfa@tiblogics.com
+          Questions? Reply to this email or write to arfa_edu@tiblogics.com
         </p>
       </div>
     </div>`;

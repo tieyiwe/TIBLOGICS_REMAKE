@@ -484,7 +484,7 @@ function WaitlistForm({ eventSlug, eventTitle, content }: { eventSlug: string; e
         </button>
         {status==="error" && (
           <p style={{ color:"#F87171", fontSize:".83rem", textAlign:"center", marginTop:"12px" }}>
-            {msg || "Something went wrong. Please try again or email arfa@tiblogics.com"}
+            {msg || "Something went wrong. Please try again or email arfa_edu@tiblogics.com"}
           </p>
         )}
         <div style={{ textAlign:"center", marginTop:"18px", color:S.muted, fontSize:".78rem" }}>
@@ -918,7 +918,7 @@ function RegistrationForm({ eventSlug, eventTitle, price, currency, location, pr
           </button>
           {formStatus==="error" && (
             <p style={{ color:"#F87171", fontSize:".83rem", textAlign:"center", marginTop:"12px" }}>
-              {toastMsg || "Something went wrong. Please try again or email arfa@tiblogics.com"}
+              {toastMsg || "Something went wrong. Please try again or email arfa_edu@tiblogics.com"}
             </p>
           )}
           <div style={{ textAlign:"center", marginTop:"18px", color:S.muted, fontSize:".78rem" }}>
@@ -992,7 +992,7 @@ export default function TrainingLandingPage({
             </div>
             <div style={{ fontFamily: dm, fontSize: ".85rem", color: "rgba(255,255,255,.85)" }}>
               {confirmationNumber && <>Confirmation <strong>{confirmationNumber}</strong> · </>}
-              Check your inbox — a welcome email is on its way from arfa@tiblogics.com
+              Check your inbox — a welcome email is on its way from arfa_edu@tiblogics.com
             </div>
           </div>
         </div>

@@ -79,7 +79,7 @@ export default function TrainingTermsPage() {
           <strong>Last Updated:</strong> June 1, 2026<br/>
           <strong>Issued by:</strong> TIBLOGICS · Maryland, USA<br/>
           <strong>Contact:</strong>{" "}
-          <a href="mailto:arfa@tiblogics.com">arfa@tiblogics.com</a>{" "}·{" "}
+          <a href="mailto:arfa_edu@tiblogics.com">arfa_edu@tiblogics.com</a>{" "}·{" "}
           <a href="https://www.tiblogics.com" target="_blank" rel="noopener">www.tiblogics.com</a>
         </div>
 
@@ -148,7 +148,7 @@ export default function TrainingTermsPage() {
             </tbody>
           </table>
 
-          <p><strong>4.1 Full Refund:</strong> Submit a written cancellation to <a href="mailto:arfa@tiblogics.com">arfa@tiblogics.com</a> at least 5 days before Session 1 (by June 22, 2026).</p>
+          <p><strong>4.1 Full Refund:</strong> Submit a written cancellation to <a href="mailto:arfa_edu@tiblogics.com">arfa_edu@tiblogics.com</a> at least 5 days before Session 1 (by June 22, 2026).</p>
           <p><strong>4.2 Partial Refund:</strong> Cancellations 3–4 days before Session 1 (June 23–24, 2026) are eligible for a 50% refund. Administrative costs are non-refundable.</p>
           <p><strong>4.3 No Refund:</strong> No refunds for requests received less than 48 hours before Session 1 or after Session 1 has begun.</p>
           <p><strong>4.4 No-Show Policy:</strong> Participants who do not attend without prior written notice are not entitled to a refund. Session recordings will still be accessible.</p>
@@ -171,7 +171,7 @@ export default function TrainingTermsPage() {
           <div className="section-head"><span className="section-num">6</span><span className="section-title">Code of Conduct &amp; Community Standards</span></div>
           <p><strong>6.1</strong> Participants agree not to engage in harassment, discrimination, hate speech, or bullying during sessions, in the WhatsApp group, or in any TIBLOGICS community space. Violations result in immediate removal without refund.</p>
           <p><strong>6.2</strong> Participants may not share or distribute screenshots, recordings, or materials from training sessions without prior written permission from TIBLOGICS.</p>
-          <p><strong>6.3</strong> Participants agree not to make false or defamatory statements about TIBLOGICS in any public forum. Legitimate feedback may be submitted directly to <a href="mailto:arfa@tiblogics.com">arfa@tiblogics.com</a>.</p>
+          <p><strong>6.3</strong> Participants agree not to make false or defamatory statements about TIBLOGICS in any public forum. Legitimate feedback may be submitted directly to <a href="mailto:arfa_edu@tiblogics.com">arfa_edu@tiblogics.com</a>.</p>
         </div>
 
         <div className="section">
@@ -236,7 +236,7 @@ export default function TrainingTermsPage() {
 
         <div className="footer">
           TIBLOGICS · Maryland, USA<br/>
-          <a href="mailto:arfa@tiblogics.com">arfa@tiblogics.com</a> &nbsp;·&nbsp;
+          <a href="mailto:arfa_edu@tiblogics.com">arfa_edu@tiblogics.com</a> &nbsp;·&nbsp;
           <a href="https://www.tiblogics.com" target="_blank" rel="noopener">www.tiblogics.com</a><br/>
           2026 TIBLOGICS. All rights reserved.
         </div>

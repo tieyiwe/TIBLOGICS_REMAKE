@@ -59,7 +59,7 @@ export const ORG = {
   /** The founder's address (about page). */
   founderEmail: "ai@tiblogics.com",
   /** ARFA AI Academy and training enquiries (training terms, event emails). */
-  academyEmail: "arfa@tiblogics.com",
+  academyEmail: "arfa_edu@tiblogics.com",
   founder: { name: "Tieyiwe Bassole", jobTitle: "Founder & CEO" },
   /** Official social profiles linked from the site's structured data. */
   sameAs: ["https://linkedin.com/company/tiblogics", "https://twitter.com/tiblogics"],

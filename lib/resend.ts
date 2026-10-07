@@ -186,12 +186,12 @@ export async function sendRescheduleEmail(data: {
 
 // ARFA = AI Readiness For All, the AI Academy of TIBLOGICS. Every
 // learner-facing email sends from (and takes replies at) this address.
-const ARFA_ADDRESS = process.env.ARFA_SMTP_USER ?? "arfa@tiblogics.com";
+const ARFA_ADDRESS = process.env.ARFA_SMTP_USER ?? "arfa_edu@tiblogics.com";
 const ARFA_FROM = { name: "ARFA · AI Readiness For All", address: ARFA_ADDRESS };
 
 function getArfaTransport() {
   // NEVER fall back to TITAN_SMTP_USER — that's info@tiblogics.com with a different password
-  const user = process.env.ARFA_SMTP_USER ?? "arfa@tiblogics.com";
+  const user = process.env.ARFA_SMTP_USER ?? "arfa_edu@tiblogics.com";
   const pass = process.env.ARFA_SMTP_PASS;
   const host = process.env.TITAN_SMTP_HOST ?? "smtp.titan.email";
   const port = Number(process.env.TITAN_SMTP_PORT ?? 465);
@@ -274,7 +274,7 @@ export async function sendEventRegistrationConfirmation(reg: {
 
           <p style="color:#7A8FA6;font-size:12px;margin:0;border-top:1px solid #E2E8F0;padding-top:20px;">
             Questions? Reply to this email or write to
-            <a href="mailto:arfa@tiblogics.com" style="color:#2251A3;">arfa@tiblogics.com</a>
+            <a href="mailto:arfa_edu@tiblogics.com" style="color:#2251A3;">arfa_edu@tiblogics.com</a>
             <br style="line-height:1.8">
             <a href="https://tiblogics.com" style="color:#2251A3;">www.tiblogics.com</a>
           </p>
@@ -285,7 +285,7 @@ export async function sendEventRegistrationConfirmation(reg: {
 
 // "You're in — let's build" welcome email, sent AFTER payment is successful.
 // firstName is captured from the registration and injected into the greeting.
-// Sent from the Titan-hosted arfa@tiblogics.com mailbox.
+// Sent from the Titan-hosted arfa_edu@tiblogics.com mailbox.
 export async function sendEventWelcomeEmail(reg: {
   firstName: string;
   email: string;
@@ -490,7 +490,7 @@ export async function sendEventWelcomeEmail(reg: {
 
     <div class="rule-box"><div class="rule-icon">📌</div><div><div class="rule-title">The one rule for this training</div><div class="rule-text">No passive watching. Every session has hands-on labs — bring your laptop and be ready to participate. The participants who get the most out of this training are the ones who try things, share results, and ask questions. There are no wrong answers at this stage.</div></div></div>
 
-    <div class="cta-wrap"><a href="https://www.tiblogics.com" class="cta-btn">Visit www.tiblogics.com</a><div class="cta-sub">Questions? Reply to this email or message us at arfa@tiblogics.com</div></div>
+    <div class="cta-wrap"><a href="https://www.tiblogics.com" class="cta-btn">Visit www.tiblogics.com</a><div class="cta-sub">Questions? Reply to this email or message us at arfa_edu@tiblogics.com</div></div>
 
     <div class="closing-quote">"Success only comes before work in the dictionary. You showed up. That is already more than most people do. Now let's build something real."</div>
     <div class="closing-sign">See you on June 27 at 9:30AM 🚀<strong>The TIBLOGICS Team</strong></div>
@@ -499,7 +499,7 @@ export async function sendEventWelcomeEmail(reg: {
   <div class="footer">
     <div class="footer-logo">TIBLOGICS</div>
     <div class="footer-links">
-      <a href="mailto:arfa@tiblogics.com">arfa@tiblogics.com</a>
+      <a href="mailto:arfa_edu@tiblogics.com">arfa_edu@tiblogics.com</a>
       <span style="color:rgba(255,255,255,0.2);font-size:12px;margin:0 8px;">|</span>
       <a href="https://www.tiblogics.com">www.tiblogics.com</a>
     </div>
@@ -521,7 +521,7 @@ export async function sendAdminNewRegistrationAlert(reg: {
   confirmationNumber?: string;
   whatsapp?: string | null;
 }) {
-  const adminEmail = process.env.ARFA_SMTP_USER ?? "arfa@tiblogics.com";
+  const adminEmail = process.env.ARFA_SMTP_USER ?? "arfa_edu@tiblogics.com";
   await getArfaTransport().sendMail({
     from: ARFA_FROM,
     to: adminEmail,
@@ -731,7 +731,7 @@ export async function sendSessionReminder(reg: {
   <div class="footer">
     <div class="footer-logo">TIBLOGICS</div>
     <div class="footer-links">
-      <a href="mailto:arfa@tiblogics.com">arfa@tiblogics.com</a>
+      <a href="mailto:arfa_edu@tiblogics.com">arfa_edu@tiblogics.com</a>
       <span style="color:rgba(255,255,255,0.2);font-size:12px;margin:0 8px;">|</span>
       <a href="https://www.tiblogics.com">www.tiblogics.com</a>
     </div>
@@ -763,7 +763,7 @@ const resendCompat = {
   },
 };
 
-// ARFA-branded mailer — sends from arfa@tiblogics.com
+// ARFA-branded mailer — sends from arfa_edu@tiblogics.com
 export const arfaMailer = {
   emails: {
     send(msg: { to: string | string[]; subject: string; html: string; attachments?: Array<{ filename: string; content: Buffer; contentType?: string; cid?: string }> }) {

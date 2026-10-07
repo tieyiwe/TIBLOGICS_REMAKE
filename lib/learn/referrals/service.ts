@@ -336,7 +336,7 @@ async function emailReferrer(studentId: string, grant: string) {
   const t = translatorFor(learnLocale(isLocale(s.locale) ? s.locale : "en"));
   const first = escapeHtml(s.name.split(" ")[0] || s.name);
   const body = grant === "manual_credit" ? t("referrals.email.credit") : t("referrals.email.comp", { days: REWARD_DAYS });
-  // Learner-facing: sent from the ARFA mailbox (arfa@tiblogics.com).
+  // Learner-facing: sent from the ARFA mailbox (arfa_edu@tiblogics.com).
   await arfaMailer.emails.send({
     to: s.email,
     subject: t("referrals.email.subject"),

@@ -517,7 +517,7 @@ export default async function LearnerDetailPage({
 
       {tab === "messages" ? (
         <div className="space-y-5">
-          <Card title="Conversations" icon={MessageSquare} subtitle="In-app Inbox threads with this learner. Replies also reach arfa@tiblogics.com.">
+          <Card title="Conversations" icon={MessageSquare} subtitle="In-app Inbox threads with this learner. Replies also reach arfa_edu@tiblogics.com.">
             {threads.length === 0 ? (
               <EmptyState icon={Inbox} title="No conversations yet" body="Use Message at the top of the page to write to this learner." compact />
             ) : (

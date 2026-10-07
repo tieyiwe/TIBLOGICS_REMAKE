@@ -57,7 +57,7 @@ export default async function CommunicationsPage({ searchParams }: { searchParam
     <div className="space-y-6">
       <PageHeader
         title="Communications"
-        subtitle="Write to learners by email and in their ARFA Inbox, answer their replies, and keep templates. Replies also reach arfa@tiblogics.com."
+        subtitle="Write to learners by email and in their ARFA Inbox, answer their replies, and keep templates. Replies also reach arfa_edu@tiblogics.com."
         actions={<Button href="/admin_pro/communications/new" variant="primary" icon={PenSquare}>New message</Button>}
         tabs={[
           { label: "Messages", href: tabHref("messages"), count: campaigns.length },
@@ -156,7 +156,7 @@ export default async function CommunicationsPage({ searchParams }: { searchParam
           </nav>
           {inbox.threads.length === 0 ? (
             <div className="rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)]">
-              <EmptyState icon={CheckCircle2} title={view === "unread" ? "Nothing awaiting a reply" : "No conversations here"} body="When a learner replies to a message in their Inbox, the conversation appears here and arfa@tiblogics.com gets an alert." />
+              <EmptyState icon={CheckCircle2} title={view === "unread" ? "Nothing awaiting a reply" : "No conversations here"} body="When a learner replies to a message in their Inbox, the conversation appears here and arfa_edu@tiblogics.com gets an alert." />
             </div>
           ) : (
             <ul className="divide-y divide-[var(--a-border)] overflow-hidden rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)] shadow-[var(--a-shadow-card)]">
