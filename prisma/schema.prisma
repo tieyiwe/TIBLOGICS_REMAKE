@@ -3191,3 +3191,63 @@ model LessonRecap {
   source      String   @default("ai")
   updatedAt   DateTime @default(now())
 }
+
+// ── Tilo Vision Scholarship (admin: /admin_pro/learn/scholarships) ─────────
+// Tables are created at runtime by lib/learn/scholarship/db.ts (no
+// migrations); keep the two in step. No relations, so they never touch the
+// shared models. Individual tracks only: never team plans or the monthly plan.
+
+/// One award to one person. status: draft (being reviewed) | approved
+/// (congratulations email sent, waiting to be accepted) | claimed (accepted by
+/// the learner `studentId`) | revoked. The offer link expires at
+/// offerExpiresAt while approved. trackIds: the tracks it may be used on
+/// (empty = any live track). coveragePct: 1-100 (100 = free).
+model Scholarship {
+  id             String    @id
+  code           String    @unique
+  name           String
+  email          String
+  locale         String    @default("en")
+  trackCount     Int
+  coveragePct    Int
+  trackIds       String[]  @default([])
+  message        String?
+  note           String?
+  status         String    @default("draft")
+  tokenHash      String?   @unique
+  offerDays      Int       @default(30)
+  offerExpiresAt DateTime?
+  approvedAt     DateTime?
+  approvedBy     String?
+  emailedAt      DateTime?
+  studentId      String?
+  claimedAt      DateTime?
+  revokedAt      DateTime?
+  revokedBy      String?
+  /// Stripe coupon (percent_off = coveragePct) shown as the scholarship discount at checkout.
+  stripeCouponId String?
+  createdBy      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now())
+
+  @@index([email])
+  @@index([studentId])
+  @@index([status, createdAt])
+}
+
+/// A track unlocked with a scholarship: free (paidCents 0) or paid at the
+/// scholarship price through Stripe (stripeSessionId).
+model ScholarshipTrack {
+  id              String   @id
+  scholarshipId   String
+  studentId       String
+  trackId         String
+  listCents       Int
+  paidCents       Int
+  coveredCents    Int
+  stripeSessionId String?  @unique
+  createdAt       DateTime @default(now())
+
+  @@unique([scholarshipId, trackId])
+  @@index([studentId])
+}

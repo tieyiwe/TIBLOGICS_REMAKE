@@ -23,6 +23,7 @@ import ResumeCard from "@/components/learn/ResumeCard";
 import { NewLessonsChip } from "@/components/learn/NewLessons";
 import { newLessonsByTrack } from "@/lib/learn/track-updates";
 import TeamDashboardCard from "@/components/learn/team/TeamDashboardCard";
+import ScholarshipCard from "@/components/learn/scholarship/ScholarshipCard";
 import YoureInBanner from "@/components/learn/join/YoureInBanner";
 import PendingEnrollmentCard from "@/components/learn/join/PendingEnrollmentCard";
 import InstallHint from "@/components/learn/pwa/InstallHint";
@@ -120,6 +121,10 @@ export default async function LearnDashboard({ searchParams }: { searchParams: P
         {/* Team plans: "Your team learning plan", at the top (nothing without a team) */}
         <div className="mt-5 empty:hidden">
           <TeamDashboardCard studentId={student.id} />
+        </div>
+        {/* Tilo Vision Scholarship: tracks left to choose (nothing otherwise) */}
+        <div className="mt-5 empty:hidden">
+          <ScholarshipCard studentId={student.id} variant="nudge" />
         </div>
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
           <div className="rounded-2xl border border-[var(--border)] bg-white p-5">

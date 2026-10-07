@@ -54,6 +54,8 @@ export interface TrackCheckoutRequest extends CheckoutDiscountFields {
   currency: string;
   successUrl: string;
   cancelUrl: string;
+  /** Tilo Vision Scholarship: the award (session metadata) and the line shown at checkout. */
+  scholarship?: { id: string; code: string; coveragePct: number; listCents: number; description: string; couponId?: string | null };
 }
 
 /** Team plan: a monthly subscription, quantity = seats (lib/learn/team). */

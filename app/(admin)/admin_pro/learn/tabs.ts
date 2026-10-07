@@ -5,6 +5,7 @@ export const LEARN_TABS: TabItem[] = [
   { label: "Overview", href: "/admin_pro/learn" },
   { label: "Learners", href: "/admin_pro/learn/learners" },
   { label: "Exams", href: "/admin_pro/learn/exams" },
+  { label: "Scholarships", href: "/admin_pro/learn/scholarships" },
   { label: "Teams", href: "/admin_pro/learn/teams" },
   { label: "Cohorts", href: "/admin_pro/learn/cohorts" },
   { label: "Community", href: "/admin_pro/learn/community" },

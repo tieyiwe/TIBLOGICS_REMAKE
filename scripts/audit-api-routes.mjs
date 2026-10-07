@@ -30,7 +30,7 @@ const ROOT = new URL("..", import.meta.url).pathname;
 const API = join(ROOT, "app/api");
 
 const MARKERS = {
-  staff: /\b(teamApi|requireAdmin|requirePermission|requireGrowth|requireGrowthAdmin|requireSender|requireAcquireAdmin|learnerStaff|requireToolkit|isGrowthAdmin|requireLearnerAdmin|requireStaff|promoAdmin|canViewAnalytics|canSee)\s*\(|session\??\.user\??\.(isAdmin|isOwner|collaboratorId)/,
+  staff: /\b(teamApi|requireAdmin|requirePermission|requireGrowth|requireGrowthAdmin|requireSender|requireAcquireAdmin|learnerStaff|requireToolkit|isGrowthAdmin|requireLearnerAdmin|requireStaff|promoAdmin|scholarshipWriter|canViewAnalytics|canSee)\s*\(|session\??\.user\??\.(isAdmin|isOwner|collaboratorId)/,
   learner: /\b(requireStudent|requireEntitledStudent|getStudent|requireTeamMember|requireTeamManager|requireTeamOwner|tutorGuard|getLearnContext|communityGuard|liveGuard)\s*\(|session\??\.user\??\.studentId/,
   cron: /CRON_SECRET/,
   webhook: /constructEvent|x-hub-signature|createHmac\([^)]*\)[\s\S]{0,400}timingSafeEqual|verifyWebhook|verifySignature/,

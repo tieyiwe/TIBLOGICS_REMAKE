@@ -58,6 +58,7 @@ export const PAGE_RULES: AccessRule[] = [
   { path: "/admin_pro/learn", key: "events" },
   { path: "/admin_pro/learn/learners", key: "learners" },
   { path: "/admin_pro/learn/exams", key: "learners" },
+  { path: "/admin_pro/learn/scholarships", key: "learners" },
   { path: "/admin_pro/blog", key: "blog" },
   { path: "/admin_pro/newsletter", key: "blog" },
   { path: "/admin_pro/events", key: "events" },
@@ -115,6 +116,7 @@ export const API_RULES: AccessRule[] = [
   { path: "/api/admin/registrations", key: "events" },
   { path: "/api/admin/learn", key: "events" },
   { path: "/api/admin/learn/learners", key: "learners" },
+  { path: "/api/admin/learn/scholarships", key: "learners" },
   // The message composer's learner picker.
   { path: "/api/admin/learn/learners/search", key: "communications" },
   { path: "/api/admin/finance", key: "finance" },

@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { maskEmail } from "@/lib/log/redact";
 import prisma from "@/lib/prisma";
 import { sendConfirmationEmail, sendTiweNotification, sendEventWelcomeEmail, sendAdminNewRegistrationAlert, sendOrderConfirmationEmail, sendAdminOrderAlert } from "@/lib/resend";
+import { recordScholarshipPayment } from "@/lib/learn/scholarship/service";
 import Stripe from "stripe";
 import { createMeeting } from "@/lib/meeting-providers";
 import stripe from "@/lib/stripe";
@@ -427,6 +428,8 @@ async function handleTrackPurchase(session: Stripe.Checkout.Session) {
       typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null,
   });
   console.log(`[stripe/webhook] Learn track ${trackId} for student ${studentId}: ${created ? "purchase recorded" : "already recorded"}`);
+  // Tilo Vision Scholarship checkout: the scholarship track (throws, so Stripe retries).
+  if (session.metadata?.scholarshipId) await recordScholarshipPayment(session);
   await completePendingEnrollment(studentId, { kind: "track", trackId });
   await recordReferralPayment({
     studentId,

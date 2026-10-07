@@ -17,6 +17,7 @@ import { pageSales, withTrackSales } from "@/lib/promotions/display";
 import SalePrice from "@/components/promo/SalePrice";
 import PromoBanner from "@/components/promo/PromoBanner";
 import PendingEnrollmentCard from "@/components/learn/join/PendingEnrollmentCard";
+import ScholarshipCard from "@/components/learn/scholarship/ScholarshipCard";
 
 export const dynamic = "force-dynamic";
 
@@ -117,6 +118,11 @@ export default async function SubscribePage({
         {/* One-page join flow: a plan chosen there but not paid yet. */}
         <div className="mt-6 empty:hidden">
           <PendingEnrollmentCard studentId={student.id} />
+        </div>
+
+        {/* A scholar with tracks left to choose: the scholarship comes first. */}
+        <div className="mt-6 empty:hidden">
+          <ScholarshipCard studentId={student.id} variant="nudge" />
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">

@@ -14,6 +14,7 @@ import { ensureLeaderboardColumn } from "@/lib/learn/leaderboard";
 import StudyReminders from "@/components/learn/pwa/StudyReminders";
 import AppInstall from "@/components/learn/pwa/AppInstall";
 import { getReminderSettings } from "@/lib/learn/reminders/store";
+import ScholarshipCard from "@/components/learn/scholarship/ScholarshipCard";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +74,9 @@ export default async function AccountPage() {
           )}
         </dl>
       </section>
+
+      {/* Tilo Vision Scholarship: shown to scholars only */}
+      <ScholarshipCard studentId={student.id} variant="account" />
 
       <section className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6" data-testid="account-inbox">
         <h2 className="text-sm font-bold text-[var(--ink)]">{t("inbox.account.title")}</h2>

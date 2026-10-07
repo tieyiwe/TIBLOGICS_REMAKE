@@ -1,0 +1,236 @@
+import Link from "next/link";
+import { Download, GraduationCap } from "lucide-react";
+import { Badge, Card, EmptyState, PageHeader, StatCard, type BadgeTone } from "@/components/admin/ui";
+import { requireLearnerPage } from "@/lib/learn/account-status/admin-auth";
+import { canAward } from "@/lib/learn/scholarship/guard";
+import { listScholarships, type ScholarshipRow } from "@/lib/learn/scholarship/admin";
+import { liveTracks } from "@/lib/learn/scholarship/service";
+import { scholarshipTablesReady } from "@/lib/learn/scholarship/db";
+import ScholarSeal from "@/components/learn/scholarship/ScholarSeal";
+import { LEARN_TABS } from "../tabs";
+import { ApproveAll, ApproveButton, AwardActions, AwardForm, DeleteDraft, EditScholarship } from "./ScholarshipsAdmin";
+
+export const dynamic = "force-dynamic";
+
+// The Tilo Vision Scholarship: award it (one or more people), review the
+// drafts and approve them (that sends the congratulations email), then follow
+// every scholar: what they chose, what it was worth, and how they are doing.
+
+const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
+const day = (d: Date | null) => (d ? d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : "–");
+const usd = (c: number) => `$${(c / 100).toLocaleString("en-US", { minimumFractionDigits: c % 100 ? 2 : 0, maximumFractionDigits: 2 })}`;
+const coverage = (pct: number) => (pct >= 100 ? "100% · Free" : `${pct}%`);
+const LANG: Record<string, string> = { en: "English", fr: "French", sw: "Swahili" };
+const fieldInput =
+  "h-9 rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] bg-[var(--a-surface)] px-3 font-dm text-[13.5px] text-[var(--a-ink)]";
+
+function statusOf(r: ScholarshipRow): { label: string; tone: BadgeTone } {
+  if (r.status === "draft") return { label: "Draft · to review", tone: "warn" };
+  if (r.status === "revoked") return { label: "Revoked", tone: "danger" };
+  if (r.status === "claimed") return { label: "Accepted", tone: "success" };
+  return r.expired ? { label: "Offer expired", tone: "danger" } : { label: "Sent · waiting", tone: "info" };
+}
+
+export default async function ScholarshipsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const session = await requireLearnerPage("read");
+  const award = canAward(session);
+  const sp = await searchParams;
+  const status = one(sp.status) || null;
+  const q = one(sp.q) || null;
+  const ready = await scholarshipTablesReady();
+  const [rows, tracks, everything] = ready
+    ? await Promise.all([listScholarships({ status, q }), liveTracks().catch(() => []), status || q ? listScholarships() : null])
+    : [[], [], null];
+  const all = everything ?? rows;
+  const drafts = all.filter((r) => r.status === "draft");
+  const listed = rows.filter((r) => r.status !== "draft" || status === "draft");
+  const trackOptions = tracks.map((t) => ({ id: t.id, title: t.title, priceCents: t.priceCents }));
+  const scholars = all.filter((r) => r.status === "claimed");
+  const qs = new URLSearchParams([...(status ? [["status", status]] : []), ...(q ? [["q", q]] : [])]);
+
+  return (
+    <div className="space-y-5">
+      <PageHeader
+        title="Scholarships"
+        subtitle="The Tilo Vision Scholarship: award tracks at a chosen coverage (up to 100%, free). Individual tracks only, never team plans or the monthly plan."
+        breadcrumb={[{ label: "ARFA · AI Academy", href: "/admin_pro/learn" }, { label: "Scholarships" }]}
+        tabs={LEARN_TABS}
+        activeTab="/admin_pro/learn/scholarships"
+        actions={
+          <a href={`/api/admin/learn/scholarships/export?${qs}`} className="inline-flex h-9 items-center gap-1.5 rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] px-3 font-dm text-[13px] font-semibold text-[var(--a-ink)] hover:bg-[var(--a-surface-2)]" data-testid="scholarships-csv">
+            <Download size={14} aria-hidden /> Download CSV
+          </a>
+        }
+      />
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <StatCard label="To review" value={drafts.length} />
+        <StatCard label="Awarded" value={all.filter((r) => r.status === "approved" || r.status === "claimed").length} />
+        <StatCard label="Accepted (scholars)" value={scholars.length} />
+        <StatCard label="Tracks unlocked" value={all.reduce((n, r) => n + r.picks.length, 0)} />
+        <StatCard label="Value covered" value={usd(all.reduce((n, r) => n + r.coveredCents, 0))} />
+      </div>
+
+      {award ? (
+        <Card title="Award the Tilo Vision Scholarship" subtitle="Create one or more awards. Each is saved as a draft for you to check, then approve to send the congratulations email.">
+          <AwardForm tracks={trackOptions} />
+        </Card>
+      ) : (
+        <Card>
+          <p className="font-dm text-[13.5px] text-[var(--a-ink-2)]">You can view scholarships. Awarding them needs the “Grant free access” permission (Team &amp; Roles).</p>
+        </Card>
+      )}
+
+      {drafts.length > 0 && (
+        <Card title={`Waiting for your review (${drafts.length})`} subtitle="Check each recipient and the terms. Approving sends the congratulations email with their link." action={award ? <ApproveAll ids={drafts.map((d) => d.id)} /> : null}>
+          <ul className="space-y-3" data-testid="drafts">
+            {drafts.map((d) => (
+              <li key={d.id} className="rounded-lg border border-[var(--a-border)] p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words font-dm text-[14px] font-semibold text-[var(--a-ink)]">{d.name}</p>
+                    <p className="break-all font-dm text-[13px] text-[var(--a-ink-2)]">{d.email}</p>
+                    <dl className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 font-dm text-[12.5px] sm:grid-cols-4">
+                      <div><dt className="text-[var(--a-ink-3)]">Coverage</dt><dd className="font-semibold">{coverage(d.coveragePct)}</dd></div>
+                      <div><dt className="text-[var(--a-ink-3)]">Tracks</dt><dd className="font-semibold">{d.trackCount}</dd></div>
+                      <div><dt className="text-[var(--a-ink-3)]">Email language</dt><dd className="font-semibold">{LANG[d.locale] ?? d.locale}</dd></div>
+                      <div><dt className="text-[var(--a-ink-3)]">Offer valid</dt><dd className="font-semibold">{d.offerDays} days</dd></div>
+                    </dl>
+                    <p className="mt-2 font-dm text-[12.5px] text-[var(--a-ink-2)]">
+                      {d.trackIds.length ? `Only: ${d.trackTitles.join(", ")}` : "Any live track"}
+                      {d.accountId ? " · Has an ARFA account" : " · No ARFA account yet"}
+                    </p>
+                    {d.message && <p className="mt-2 whitespace-pre-line rounded-md bg-[var(--a-surface-2)] px-3 py-2 font-dm text-[12.5px] text-[var(--a-ink)]">“{d.message}”</p>}
+                    {d.note && <p className="mt-1 font-dm text-[12px] text-[var(--a-ink-3)]">Note: {d.note}</p>}
+                    <p className="mt-1 font-dm text-[11.5px] text-[var(--a-ink-3)]">{d.code} · created {day(d.createdAt)} by {d.createdBy ?? "staff"}</p>
+                  </div>
+                  {award && (
+                    <div className="flex flex-wrap items-start gap-2">
+                      <ApproveButton id={d.id} name={d.name} />
+                      <DeleteDraft id={d.id} />
+                    </div>
+                  )}
+                </div>
+                {award && (
+                  <EditScholarship
+                    s={{ id: d.id, status: d.status, name: d.name, email: d.email, locale: d.locale, trackCount: d.trackCount, coveragePct: d.coveragePct, trackIds: d.trackIds, message: d.message, note: d.note, offerDays: d.offerDays, used: 0 }}
+                    tracks={trackOptions}
+                  />
+                )}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      <Card title="Scholars and awards" subtitle="Everyone awarded, what they chose, and their progress on those tracks." padded={false}>
+        <form method="get" className="flex flex-wrap items-end gap-2 border-b border-[var(--a-border)] p-4">
+          <label className="font-dm text-[12px] text-[var(--a-ink-3)]">
+            Status
+            <select name="status" defaultValue={status ?? ""} className={`${fieldInput} mt-1 block`}>
+              <option value="">All</option>
+              <option value="draft">To review</option>
+              <option value="approved">Sent, waiting</option>
+              <option value="claimed">Accepted</option>
+              <option value="revoked">Revoked</option>
+            </select>
+          </label>
+          <label className="min-w-0 flex-1 font-dm text-[12px] text-[var(--a-ink-3)]">
+            Search
+            <input name="q" defaultValue={q ?? ""} placeholder="Name, email or code" className={`${fieldInput} mt-1 block w-full`} />
+          </label>
+          <button type="submit" className="inline-flex h-9 items-center rounded-[var(--a-radius-control)] bg-[var(--a-ink)] px-4 font-dm text-[13px] font-semibold text-white">Filter</button>
+        </form>
+        {listed.length === 0 ? (
+          <div className="p-5">
+            <EmptyState icon={GraduationCap} title="No scholarships here yet" body="Awards appear here once approved; drafts wait in the review list above." />
+          </div>
+        ) : (
+          <ul className="divide-y divide-[var(--a-border)]" data-testid="scholars">
+            {listed.map((r) => {
+              const st = statusOf(r);
+              const free = r.picks.filter((p) => p.paidCents === 0).length;
+              return (
+                <li key={r.id} className="p-4">
+                  <div className="flex flex-wrap items-start gap-3">
+                    {r.status === "claimed" ? <ScholarSeal size={36} /> : null}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {r.accountId ? (
+                          <Link href={`/admin_pro/learn/learners/${r.accountId}`} className="break-words font-dm text-[14px] font-semibold text-[var(--a-blue)] hover:underline">{r.name}</Link>
+                        ) : (
+                          <span className="break-words font-dm text-[14px] font-semibold text-[var(--a-ink)]">{r.name}</span>
+                        )}
+                        <Badge tone={st.tone} dot>{st.label}</Badge>
+                        <span className="font-mono text-[11.5px] text-[var(--a-ink-3)]">{r.code}</span>
+                      </div>
+                      <p className="break-all font-dm text-[12.5px] text-[var(--a-ink-2)]">{r.email}</p>
+                      <dl className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 font-dm text-[12.5px] sm:grid-cols-3 lg:grid-cols-6">
+                        <div><dt className="text-[var(--a-ink-3)]">Coverage</dt><dd className="font-semibold">{coverage(r.coveragePct)}</dd></div>
+                        <div><dt className="text-[var(--a-ink-3)]">Tracks chosen</dt><dd className="font-semibold">{r.picks.length} of {r.trackCount}</dd></div>
+                        <div><dt className="text-[var(--a-ink-3)]">Progress</dt><dd className="font-semibold">{r.progress != null ? `${r.progress}%` : "–"}</dd></div>
+                        <div><dt className="text-[var(--a-ink-3)]">Covered / paid</dt><dd className="font-semibold">{usd(r.coveredCents)} / {usd(r.paidCents)}</dd></div>
+                        <div>
+                          <dt className="text-[var(--a-ink-3)]">{r.status === "claimed" ? "Accepted" : r.status === "approved" ? "Offer ends" : "Approved"}</dt>
+                          <dd className="font-semibold">{day(r.status === "claimed" ? r.claimedAt : r.status === "approved" ? r.offerExpiresAt : r.approvedAt)}</dd>
+                        </div>
+                        <div><dt className="text-[var(--a-ink-3)]">Last sign-in</dt><dd className="font-semibold">{day(r.student?.lastLoginAt ?? null)}</dd></div>
+                      </dl>
+                      {r.trackIds.length > 0 && <p className="mt-1 font-dm text-[12px] text-[var(--a-ink-3)]">Only: {r.trackTitles.join(", ")}</p>}
+                      {r.note && <p className="mt-1 font-dm text-[12px] text-[var(--a-ink-3)]">Note: {r.note}</p>}
+                      {r.picks.length > 0 && (
+                        <div className="mt-3 overflow-x-auto">
+                          <table className="w-full min-w-[560px] font-dm text-[12.5px]">
+                            <thead>
+                              <tr className="text-left text-[var(--a-ink-3)]">
+                                <th className="py-1 pr-3 font-semibold">Track</th>
+                                <th className="py-1 pr-3 font-semibold">Unlocked</th>
+                                <th className="py-1 pr-3 font-semibold">Paid</th>
+                                <th className="py-1 pr-3 font-semibold">Lessons</th>
+                                <th className="py-1 pr-3 font-semibold">Best exam</th>
+                                <th className="py-1 font-semibold">Certificate</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {r.picks.map((p) => (
+                                <tr key={p.trackId} className="border-t border-[var(--a-border)]">
+                                  <td className="py-1.5 pr-3 font-semibold text-[var(--a-ink)]">{p.trackTitle}</td>
+                                  <td className="py-1.5 pr-3">{day(p.at)}</td>
+                                  <td className="py-1.5 pr-3">{p.paidCents ? `${usd(p.paidCents)} of ${usd(p.listCents)}` : "Free"}</td>
+                                  <td className="py-1.5 pr-3">{p.lessonsDone}/{p.lessonsTotal}</td>
+                                  <td className="py-1.5 pr-3">{p.examBest != null ? `${p.examBest}%${p.examPassed ? " · passed" : ""}` : "–"}</td>
+                                  <td className="py-1.5">{p.certificate ? <a href={`/certificates/${p.certificate}`} className="text-[var(--a-blue)] hover:underline" target="_blank" rel="noreferrer">Issued</a> : "–"}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                      <p className="mt-2 font-dm text-[11.5px] text-[var(--a-ink-3)]">
+                        Created {day(r.createdAt)} by {r.createdBy ?? "staff"}
+                        {r.approvedAt ? ` · approved ${day(r.approvedAt)} by ${r.approvedBy ?? "staff"}` : ""}
+                        {r.emailedAt ? ` · emailed ${day(r.emailedAt)}` : r.status === "approved" ? " · email not sent" : ""}
+                        {r.revokedAt ? ` · revoked ${day(r.revokedAt)}` : ""}
+                      </p>
+                    </div>
+                    {award && r.status !== "draft" && r.status !== "revoked" && (
+                      <div className="w-full sm:w-auto">
+                        <AwardActions id={r.id} status={r.status} freeTracks={free} />
+                      </div>
+                    )}
+                  </div>
+                  {award && (r.status === "approved" || r.status === "claimed") && (
+                    <EditScholarship
+                      s={{ id: r.id, status: r.status, name: r.name, email: r.email, locale: r.locale, trackCount: r.trackCount, coveragePct: r.coveragePct, trackIds: r.trackIds, message: r.message, note: r.note, offerDays: r.offerDays, used: r.picks.length }}
+                      tracks={trackOptions}
+                    />
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Card>
+    </div>
+  );
+}

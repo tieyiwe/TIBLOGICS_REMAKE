@@ -38,7 +38,7 @@ export async function sendSignupNotification(s: {
   }).format(s.createdAt) + " UTC";
   const source = [
     s.track ? `Track page: ${s.track}` : null,
-    s.next ? (s.next.startsWith("/join-team/") ? "Team invitation" : `Continuing to ${s.next}`) : null,
+    s.next ? (s.next.startsWith("/join-team/") ? "Team invitation" : s.next.startsWith("/scholarship") ? "Tilo Vision Scholarship" : `Continuing to ${s.next}`) : null,
     !s.track && !s.next && s.referer ? `Referred from ${s.referer}` : null,
   ].filter((x): x is string => !!x);
   const adminUrl = `${SITE}/admin_pro/learn/learners/${encodeURIComponent(s.studentId)}`;

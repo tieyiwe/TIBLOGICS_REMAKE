@@ -79,7 +79,12 @@ export const stripeProvider: PaymentProvider = {
   },
 
   async createTrackCheckout(req: TrackCheckoutRequest) {
-    const metadata = { product: "learn-track", studentId: req.studentId, trackId: req.trackId };
+    const metadata: Record<string, string> = { product: "learn-track", studentId: req.studentId, trackId: req.trackId };
+    // A scholarship price is final: no promotion code on top of it.
+    if (req.scholarship) Object.assign(metadata, { scholarshipId: req.scholarship.id, scholarshipCode: req.scholarship.code, listCents: String(req.scholarship.listCents) });
+    // Scholarship with its coupon: the full price, and Stripe shows the
+    // scholarship as a discount line (the saving) and the total owed.
+    const scholarshipCoupon = req.scholarship?.couponId ?? null;
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: [
@@ -87,16 +92,16 @@ export const stripeProvider: PaymentProvider = {
           quantity: 1,
           price_data: {
             currency: req.currency.toLowerCase(),
-            unit_amount: req.amount,
+            unit_amount: scholarshipCoupon ? req.scholarship!.listCents : req.amount,
             product_data: {
               name: `ARFA by TIBLOGICS: ${req.trackTitle}`,
-              description: "One-time payment. Lifetime access to this track.",
+              description: req.scholarship?.description ?? "One-time payment. Lifetime access to this track.",
             },
           },
         },
       ],
       customer_email: req.email,
-      ...discountParams(req),
+      ...(req.scholarship ? (scholarshipCoupon ? { discounts: [{ coupon: scholarshipCoupon }] } : {}) : discountParams(req)),
       success_url: req.successUrl,
       cancel_url: req.cancelUrl,
       client_reference_id: req.studentId,

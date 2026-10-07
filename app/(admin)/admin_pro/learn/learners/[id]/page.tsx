@@ -22,6 +22,7 @@ import { Conversation } from "../../../communications/_components/Conversation";
 import { ActionButton, CertificateRevoke, LearnerHeaderActions, type LearnerSummary } from "./LearnerActions";
 import { NotesPanel, TagsEditor } from "./NotesPanel";
 import Assessments from "./Assessments";
+import { scholarshipsOfLearner } from "@/lib/learn/scholarship/admin";
 import { ago, avatarHue, day, dt, human, initials, money } from "../_components/format";
 
 export const dynamic = "force-dynamic";
@@ -105,6 +106,7 @@ export default async function LearnerDetailPage({
     canManage ? composerContext(session.user.email) : Promise.resolve(null),
     prisma.$queryRaw<Array<{ tag: string }>>`SELECT DISTINCT unnest("tags") AS tag FROM "LearnerAccount" ORDER BY 1 LIMIT 200`.catch(() => []),
   ]);
+  const scholarships = await scholarshipsOfLearner(id, d.student.email);
   const statusRow = await prisma.learnerAccount.findUnique({ where: { studentId: id }, select: { statusChangedAt: true, statusChangedBy: true } }).catch(() => null);
 
   const { student: s, plan } = d;
@@ -189,6 +191,7 @@ export default async function LearnerDetailPage({
             {state.mustChangePassword ? <Badge tone="warn">Must change password</Badge> : null}
             {state.marketingOptOut ? <Badge tone="neutral">Unsubscribed from news</Badge> : null}
             {isOwnerAccount ? <Badge tone="orange">Owner account</Badge> : null}
+            {scholarships.some((x) => x.status === "claimed") ? <Badge tone="orange" dot>Tilo Vision Scholar</Badge> : null}
             {state.tags.map((t) => (
               <Badge key={t} tone="orange">#{t}</Badge>
             ))}
@@ -277,6 +280,44 @@ export default async function LearnerDetailPage({
                 )}
               </div>
             </Card>
+
+            {scholarships.length > 0 && (
+              <Card
+                title="Tilo Vision Scholarship"
+                icon={Award}
+                action={<Link href={`/admin_pro/learn/scholarships?q=${encodeURIComponent(s.email)}`} className="font-dm text-[12.5px] font-semibold text-[var(--a-blue)] hover:underline">Manage</Link>}
+              >
+                <ul className="space-y-4">
+                  {scholarships.map((x) => (
+                    <li key={x.id}>
+                      <div className="flex flex-wrap items-center gap-2 font-dm text-[13.5px]">
+                        <span className="font-mono text-[12px] text-[var(--a-ink-3)]">{x.code}</span>
+                        <Badge tone={x.status === "claimed" ? "success" : x.status === "revoked" ? "danger" : x.status === "draft" ? "warn" : "info"}>
+                          {x.status === "claimed" ? "Accepted" : x.status === "approved" ? (x.expired ? "Offer expired" : "Sent, waiting") : x.status === "draft" ? "Draft" : "Revoked"}
+                        </Badge>
+                      </div>
+                      <dl className="mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <Field k="Coverage" v={x.coveragePct >= 100 ? "100% (free)" : `${x.coveragePct}%`} />
+                        <Field k="Tracks chosen" v={`${x.picks.length} of ${x.trackCount}`} />
+                        <Field k="Value covered" v={money(x.coveredCents, "usd")} />
+                        <Field k="Accepted" v={x.claimedAt ? day(x.claimedAt) : "Not yet"} />
+                      </dl>
+                      {x.picks.length > 0 && (
+                        <ul className="mt-2 space-y-1 font-dm text-[13px] text-[var(--a-ink-2)]">
+                          {x.picks.map((p) => (
+                            <li key={p.trackId}>
+                              <span className="font-semibold text-[var(--a-ink)]">{p.trackTitle}</span> · {p.paidCents ? `paid ${money(p.paidCents, "usd")}` : "free"} · {p.lessonsDone}/{p.lessonsTotal} lessons
+                              {p.examBest != null ? ` · best exam ${p.examBest}%` : ""}
+                              {p.certificate ? " · certificate issued" : ""}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
 
             <Card title="Learning at a glance" icon={Sparkles}>
               {d.tracks.length === 0 ? (

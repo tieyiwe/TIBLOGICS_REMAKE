@@ -7,6 +7,7 @@ import { recordTrackPurchase } from "@/lib/learn/purchases";
 import { upsertLearnSubscription } from "@/lib/learn/subscription-sync";
 import { completePendingEnrollment } from "@/lib/learn/join/pending";
 import { isSlug } from "@/lib/learn/join/choice";
+import { recordScholarshipPayment } from "@/lib/learn/scholarship/service";
 
 // Stripe Checkout's success_url for one track and for the monthly plan
 // (app/api/learn/checkout). Reads the session back from Stripe (trusting
@@ -56,6 +57,7 @@ export async function GET(req: NextRequest) {
             typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null,
         });
         await completePendingEnrollment(student.id, { kind: "track", trackId: track.id });
+        await recordScholarshipPayment(session).catch((err) => console.error("[checkout/confirm] scholarship", err));
       }
       return go(track ? `/learn/track/${track.slug}?welcome=1` : "/learn?welcome=1");
     }
