@@ -7,6 +7,7 @@ import { trackPriceCents } from "@/lib/learn/pricing";
 import { learnerStats } from "@/lib/learn/admin/learners";
 import LearnersWidget from "./LearnersWidget";
 import RecapsCard from "./RecapsCard";
+import ScholarshipWidget from "./ScholarshipWidget";
 
 export const dynamic = "force-dynamic";
 
@@ -92,6 +93,7 @@ export default async function LearnAdminPage() {
       learnersWidget={
         <div className="space-y-4">
           <LearnersWidget stats={stats} />
+          <ScholarshipWidget />
           <RecapsCard />
         </div>
       }

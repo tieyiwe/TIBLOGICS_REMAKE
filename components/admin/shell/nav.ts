@@ -51,6 +51,9 @@ import {
   ShieldCheck,
   TicketPercent,
   LifeBuoy,
+  Award,
+  ClipboardCheck,
+  BadgeCheck,
 } from "lucide-react";
 
 export interface NavSubItem {
@@ -172,6 +175,9 @@ export const NAV_SECTIONS: NavSection[] = [
     label: "ARFA · AI Academy",
     items: [
       { label: "Learn admin", href: "/admin_pro/learn", icon: GraduationCap, keywords: "arfa ai academy learning tracks lessons" },
+      { label: "Scholarships", href: "/admin_pro/learn/scholarships", icon: Award, keywords: "tilo vision scholarship award applications donations sponsors partners donate fund" },
+      { label: "Exams", href: "/admin_pro/learn/exams", icon: ClipboardCheck, keywords: "exam results attempts scores" },
+      { label: "Certificates", href: "/admin_pro/learn/certificates", icon: BadgeCheck, keywords: "certificate designs issued" },
       { label: "Teams", href: "/admin_pro/learn/teams", icon: UsersRound },
       { label: "Cohorts", href: "/admin_pro/learn/cohorts", icon: Layers },
       { label: "Community", href: "/admin_pro/learn/community", icon: MessagesSquare, keywords: "forum reports" },
@@ -271,6 +277,9 @@ export const NAV_PERMISSION_MAP: Record<string, string> = {
   "/admin_pro/shop": "shop",
   "/admin_pro/learn": "events",
   "/admin_pro/learn/learners": "learners",
+  "/admin_pro/learn/scholarships": "learners",
+  "/admin_pro/learn/exams": "learners",
+  "/admin_pro/learn/certificates": "events",
   "/admin_pro/learn/live": "events",
   "/admin_pro/learn/teams": "events", // (inherited, new link)
   "/admin_pro/learn/cohorts": "events", // (inherited, new link)

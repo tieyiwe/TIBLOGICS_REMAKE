@@ -32,6 +32,9 @@ const OPTIONAL = [
   "TrackPurchase",
   "Blueprint",
   "SupportTicket",
+  "Scholarship",
+  "ScholarshipApplication",
+  "ScholarshipDonation",
 ] as const;
 type Opt = (typeof OPTIONAL)[number];
 
@@ -93,7 +96,12 @@ export interface TodayData {
     blogDrafts: number;
     /** Learner support requests waiting for the team (lib/learn/support). */
     support: number;
+    /** Tilo Vision Scholarship: new applications and award drafts to approve. */
+    scholarshipApps: number;
+    scholarshipDrafts: number;
   };
+  /** Gifts to the scholarship fund this month (cents) and active monthly donors. */
+  donations: { mtd: number; monthlyDonors: number };
   activity: Array<{ kind: string; title: string; detail: string; href: string; at: Date }>;
 }
 
@@ -162,7 +170,11 @@ export async function getToday(): Promise<TodayData> {
       (SELECT count(*) FROM "ServiceRequest" WHERE "status" = 'NEW') AS service_requests,
       (SELECT count(*) FROM "Appointment" WHERE "status" = 'PENDING' AND "date" >= ${todayStart}) AS pending_appts,
       (SELECT count(*) FROM "BlogPost" WHERE "published" = false) AS blog_drafts,
-      ${has.SupportTicket ? Prisma.sql`(SELECT count(*) FROM "SupportTicket" WHERE "status" = 'open')` : Prisma.sql`0`} AS support_open`;
+      ${has.SupportTicket ? Prisma.sql`(SELECT count(*) FROM "SupportTicket" WHERE "status" = 'open')` : Prisma.sql`0`} AS support_open,
+      ${has.ScholarshipApplication ? Prisma.sql`(SELECT count(*) FROM "ScholarshipApplication" WHERE "status" = 'new')` : Prisma.sql`0`} AS scholarship_apps,
+      ${has.Scholarship ? Prisma.sql`(SELECT count(*) FROM "Scholarship" WHERE "status" = 'draft')` : Prisma.sql`0`} AS scholarship_drafts,
+      ${has.ScholarshipDonation ? Prisma.sql`(SELECT coalesce(sum("amountCents"), 0) FROM "ScholarshipDonation" WHERE "createdAt" >= ${monthStart})` : Prisma.sql`0`} AS donations_mtd,
+      ${has.ScholarshipDonation ? Prisma.sql`(SELECT count(*) FROM "ScholarshipDonation" WHERE "stage" = 'first' AND "frequency" = 'monthly' AND "canceledAt" IS NULL)` : Prisma.sql`0`} AS monthly_donors`;
 
   // 5. Upcoming appointments (next 30 days, capped).
   const upcomingQ = prisma.appointment.findMany({
@@ -187,6 +199,16 @@ export async function getToday(): Promise<TodayData> {
       ${
         has.GrowthLead
           ? Prisma.sql`UNION ALL (SELECT 'lead', "companyName", "source", "id", "createdAt" FROM "GrowthLead" ORDER BY "createdAt" DESC LIMIT 5)`
+          : Prisma.empty
+      }
+      ${
+        has.ScholarshipApplication
+          ? Prisma.sql`UNION ALL (SELECT 'scholarship_application', "name", 'Scholarship application', "id", "createdAt" FROM "ScholarshipApplication" ORDER BY "createdAt" DESC LIMIT 5)`
+          : Prisma.empty
+      }
+      ${
+        has.ScholarshipDonation
+          ? Prisma.sql`UNION ALL (SELECT 'donation', coalesce("name", 'Donor'), '$' || to_char("amountCents" / 100.0, 'FM999G999D00') || CASE WHEN "frequency" = 'monthly' THEN ' monthly' ELSE '' END || ' to the scholarship fund', "id", "createdAt" FROM "ScholarshipDonation" WHERE "stage" = 'first' ORDER BY "createdAt" DESC LIMIT 5)`
           : Prisma.empty
       }
     ) x ORDER BY at DESC LIMIT 10`;
@@ -236,6 +258,8 @@ export async function getToday(): Promise<TodayData> {
     service_request: () => "/admin_pro/service-requests",
     prospect: () => "/admin_pro/prospects",
     lead: () => "/admin_pro/growth/leads",
+    scholarship_application: () => "/admin_pro/learn/scholarships#applications",
+    donation: () => "/admin_pro/learn/scholarships#donations",
   };
 
   return {
@@ -257,7 +281,10 @@ export async function getToday(): Promise<TodayData> {
       pendingAppointments: n(c.pending_appts),
       blogDrafts: n(c.blog_drafts),
       support: n(c.support_open),
+      scholarshipApps: n(c.scholarship_apps),
+      scholarshipDrafts: n(c.scholarship_drafts),
     },
+    donations: { mtd: n(c.donations_mtd), monthlyDonors: n(c.monthly_donors) },
     activity: activity.map((a) => ({
       kind: a.kind,
       title: a.title,

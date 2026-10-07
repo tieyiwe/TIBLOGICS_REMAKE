@@ -17,6 +17,7 @@ import {
   UserPlus,
   Users,
   type LucideIcon,
+  HandHeart, Award,
 } from "lucide-react";
 import { requireAdminPage } from "./_lib/admin-page-auth";
 import { getToday } from "@/lib/admin/today";
@@ -72,6 +73,8 @@ const ACTIVITY: Record<string, { icon: LucideIcon; label: string; cls: string }>
   service_request: { icon: Briefcase, label: "Service request", cls: "bg-[var(--a-warn-bg)] text-[var(--a-warn)]" },
   prospect: { icon: Users, label: "Prospect", cls: "bg-[var(--a-surface-2)] text-[var(--a-ink-2)]" },
   lead: { icon: UserPlus, label: "Growth lead", cls: "bg-[var(--a-surface-2)] text-[var(--a-ink-2)]" },
+  scholarship_application: { icon: Award, label: "Scholarship application", cls: "bg-[var(--a-orange-bg)] text-[var(--a-orange-text)]" },
+  donation: { icon: HandHeart, label: "Scholarship donation", cls: "bg-[var(--a-success-bg)] text-[var(--a-success)]" },
 };
 
 // Nav route whose permission decides whether a staff member sees that activity.
@@ -82,6 +85,8 @@ const ACTIVITY_GATE: Record<string, string> = {
   service_request: "/admin_pro/service-requests",
   prospect: "/admin_pro/prospects",
   lead: "/admin_pro/growth/leads",
+  scholarship_application: "/admin_pro/learn/scholarships",
+  donation: "/admin_pro/learn/scholarships",
 };
 
 export default async function AdminDashboardPage() {
@@ -147,6 +152,16 @@ export default async function AdminDashboardPage() {
         icon={Users}
       />
     ),
+    see("/admin_pro/learn/scholarships") && (d.donations.mtd > 0 || d.donations.monthlyDonors > 0) && (
+      <StatCard
+        key="donations"
+        label="Scholarship gifts"
+        value={`$${(d.donations.mtd / 100).toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
+        hint={`this month · ${d.donations.monthlyDonors} monthly donor${d.donations.monthlyDonors === 1 ? "" : "s"}`}
+        href="/admin_pro/learn/scholarships#donations"
+        icon={HandHeart}
+      />
+    ),
     see("/admin_pro/appointments") && (
       <StatCard
         key="appts"
@@ -163,6 +178,8 @@ export default async function AdminDashboardPage() {
   const inbox: InboxRow[] = (
     [
       { key: "support", icon: LifeBuoy, count: d.inbox.support, label: "learner support requests waiting", action: "Answer", href: "/admin_pro/communications/support", tone: "danger" },
+      { key: "schapps", icon: Award, count: d.inbox.scholarshipApps, label: "new scholarship applications", action: "Review", href: "/admin_pro/learn/scholarships#applications", tone: "orange" },
+      { key: "schdrafts", icon: Award, count: d.inbox.scholarshipDrafts, label: "scholarship awards waiting for approval", action: "Approve", href: "/admin_pro/learn/scholarships", tone: "warn" },
       { key: "growth", icon: Megaphone, count: d.inbox.growthDrafts, label: "social posts awaiting approval", action: "Review posts", href: "/admin_pro/growth/content", tone: "orange" },
       { key: "outreach", icon: Mail, count: d.inbox.outreachDrafts, label: "outreach emails awaiting approval", action: "Approve emails", href: "/admin_pro/growth/outreach", tone: "orange" },
       { key: "hot", icon: Flame, count: d.inbox.hotLeads, label: "hot leads to follow up", action: "Open leads", href: "/admin_pro/growth/leads", tone: "danger" },
