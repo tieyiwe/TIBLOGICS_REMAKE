@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import { isLocale } from "@/lib/i18n/config";
 import { normEmail } from "@/lib/growth/outreach/normalize";
 import { ensureScholarshipTables } from "./db";
-import { cleanText, createDrafts, liveTracks, ScholarshipError, type AwardInput } from "./service";
+import { approveScholarship, cleanText, createDrafts, liveTracks, ScholarshipError, type AwardInput } from "./service";
 import { sendApplicationAlert, sendApplicationDeclined, sendApplicationReceived } from "./emails";
 
 // Applications from the public page /tilo-vision-scholarship. Staff review
@@ -24,11 +24,20 @@ export async function setApplicationsOpen(open: boolean): Promise<void> {
   await prisma.adminSettings.upsert({ where: { key: SETTING }, create: { key: SETTING, value: open ? "open" : "closed" }, update: { value: open ? "open" : "closed" } });
 }
 
+/** "+233 24 123 4567" style: digits, spaces, +, -, (), dots; 7 to 15 digits. */
+export function cleanPhone(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const s = v.replace(/[^0-9+()\-. ]/g, "").replace(/\s+/g, " ").trim().slice(0, 30);
+  const digits = s.replace(/\D/g, "").length;
+  return digits >= 7 && digits <= 15 ? s : null;
+}
+
 export const applicationRef = (id: string) => `TVA-${id.replace(/-/g, "").slice(0, 8).toUpperCase()}`;
 
 export interface ApplicationInput {
   name: string;
   email: string;
+  phone?: string | null;
   country?: string | null;
   locale?: string | null;
   background?: string | null;
@@ -49,7 +58,7 @@ export async function submitApplication(input: ApplicationInput): Promise<{ ok: 
   const email = normEmail(input.email);
   const name = cleanText(input.name, 120);
   const motivation = cleanText(input.motivation, 2000);
-  if (!email || !name || !motivation || motivation.length < 80) throw new ScholarshipError("invalid", 400);
+  if (!email || !name || !motivation || motivation.length < 80 || !cleanPhone(input.phone)) throw new ScholarshipError("invalid", 400);
   const live = await liveTracks().catch(() => []);
   const trackIds = [...new Set(input.trackIds ?? [])].filter((id) => live.some((t) => t.id === id)).slice(0, 5);
   const background = BACKGROUNDS.includes(input.background as (typeof BACKGROUNDS)[number]) ? (input.background as string) : null;
@@ -67,6 +76,7 @@ export async function submitApplication(input: ApplicationInput): Promise<{ ok: 
       id,
       name,
       email,
+      phone: cleanPhone(input.phone),
       country: cleanText(input.country, 80),
       locale,
       background,
@@ -82,6 +92,7 @@ export async function submitApplication(input: ApplicationInput): Promise<{ ok: 
     id,
     name,
     email,
+    phone: cleanPhone(input.phone),
     country: cleanText(input.country, 80),
     background,
     motivation,
@@ -95,6 +106,7 @@ export interface ApplicationRow {
   reference: string;
   name: string;
   email: string;
+  phone: string | null;
   country: string | null;
   locale: string;
   background: string | null;
@@ -154,7 +166,8 @@ export async function awardApplication(
   id: string,
   terms: Omit<AwardInput, "recipients" | "applicationId">,
   actorEmail: string,
-): Promise<{ scholarshipId: string }> {
+  opts: { approveNow?: boolean } = {},
+): Promise<{ scholarshipId: string; approved: boolean; emailed: boolean }> {
   await ensureScholarshipTables();
   const a = await prisma.scholarshipApplication.findUnique({ where: { id } });
   if (!a) throw new ScholarshipError("Application not found.", 404);
@@ -162,5 +175,11 @@ export async function awardApplication(
   const r = await createDrafts({ ...terms, recipients: [{ name: a.name, email: a.email, locale: a.locale }], applicationId: id }, actorEmail);
   if (!r.created.length) throw new ScholarshipError(r.skipped[0]?.reason ?? "Could not create the award.", 409);
   await prisma.scholarshipApplication.update({ where: { id }, data: { status: "awarded", scholarshipId: r.created[0].id, reviewedAt: new Date(), reviewedBy: actorEmail } });
-  return { scholarshipId: r.created[0].id };
+  // "Approve and send now": the congratulations email goes at once, to the
+  // address on the application (the one the scholarship is linked to).
+  if (opts.approveNow) {
+    const a = await approveScholarship(r.created[0].id, actorEmail);
+    return { scholarshipId: r.created[0].id, approved: true, emailed: a.emailed };
+  }
+  return { scholarshipId: r.created[0].id, approved: false, emailed: false };
 }

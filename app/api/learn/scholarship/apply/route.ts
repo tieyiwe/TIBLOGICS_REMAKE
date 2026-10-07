@@ -12,6 +12,7 @@ const Id = z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/);
 const Body = z.object({
   name: z.string().trim().min(2).max(120),
   email: z.string().trim().max(254),
+  phone: z.string().trim().min(7).max(30),
   country: z.string().trim().max(80).optional().nullable(),
   locale: z.enum(["en", "fr", "sw"]).optional(),
   background: z.string().max(40).optional().nullable(),

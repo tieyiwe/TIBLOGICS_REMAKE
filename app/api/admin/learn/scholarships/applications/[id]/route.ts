@@ -26,6 +26,7 @@ const Body = z.discriminatedUnion("action", [
     partnerName: z.string().max(200).nullish(),
     partnerRole: z.enum(["partnership", "nominated", "through"]).nullish(),
     message: z.string().max(2000).nullish(),
+    approveNow: z.boolean().default(false),
   }),
 ]);
 
@@ -42,10 +43,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const b = parsed.data;
   try {
     if (b.action === "award") {
-      const { action: _a, ...terms } = b;
+      const { action: _a, approveNow, ...terms } = b;
       void _a;
-      const r = await awardApplication(id, terms, session.user.email ?? "staff");
-      await audit(session, "scholarship.application.award", target, { scholarshipId: r.scholarshipId, coveragePct: b.coveragePct, trackCount: b.trackCount });
+      const r = await awardApplication(id, terms, session.user.email ?? "staff", { approveNow });
+      await audit(session, "scholarship.application.award", target, { scholarshipId: r.scholarshipId, coveragePct: b.coveragePct, trackCount: b.trackCount, approved: r.approved });
+      if (r.approved) await audit(session, "scholarship.approve", { type: "scholarship", id: r.scholarshipId, label: a.email }, { emailed: r.emailed });
       return NextResponse.json(r);
     }
     await reviewApplication(id, b.action, session.user.email ?? "staff", { notify: b.action === "decline" ? b.notify : false, note: b.note });

@@ -245,12 +245,12 @@ export async function sendApplicationDeclined(to: { email: string; name: string;
 }
 
 /** Staff alert (English): a new application to review. */
-export async function sendApplicationAlert(a: { id: string; name: string; email: string; country: string | null; background: string | null; motivation: string; tracks: string[] }) {
+export async function sendApplicationAlert(a: { id: string; name: string; email: string; phone?: string | null; country: string | null; background: string | null; motivation: string; tracks: string[] }) {
   const t = translator("en");
   const row = (k: string, v: string) => `<tr><td style="padding:4px 12px 4px 0;font-size:13px;color:#5b6b72;vertical-align:top;">${k}</td><td style="padding:4px 0;font-size:14px;color:#131A1B;">${v}</td></tr>`;
   const body =
     `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 14px;">
-      ${row("Name", esc(a.name))}${row("Email", esc(a.email))}${row("Country", esc(a.country ?? "–"))}${row("Background", esc(a.background ?? "–"))}
+      ${row("Name", esc(a.name))}${row("Email", esc(a.email))}${row("Phone", esc(a.phone ?? "–"))}${row("Country", esc(a.country ?? "–"))}${row("Background", esc(a.background ?? "–"))}
       ${row("Tracks of interest", esc(a.tracks.join(", ") || "Any"))}
     </table>` +
     `<div style="margin:0 0 14px;padding:12px 16px;background:#F4F7FB;border-radius:8px;font-size:14px;line-height:1.7;color:#131A1B;white-space:pre-line;">${esc(a.motivation.slice(0, 1500))}</div>`;

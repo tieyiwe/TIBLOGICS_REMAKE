@@ -670,6 +670,7 @@ export function ApplicationActions({ id, name, status, tracks, suggested }: { id
   const [message, setMessage] = useState("");
   const [partner, setPartner] = useState("");
   const [partnerRole, setPartnerRole] = useState("partnership");
+  const [approveNow, setApproveNow] = useState(false);
   const act = (body: Record<string, unknown>, done: string) => void run(async () => {
     await send(`/api/admin/learn/scholarships/applications/${id}`, "POST", body);
     setMode("none");
@@ -715,8 +716,11 @@ export function ApplicationActions({ id, name, status, tracks, suggested }: { id
                 partnerName: partner.trim() || null,
                 partnerRole: partner.trim() ? partnerRole : null,
                 message: message.trim() || null,
+                approveNow,
               },
-              "Award draft created: review and approve it in “Waiting for your review”.",
+              approveNow
+                ? `Approved: ${name} is emailed the congratulations, with the award letter, at the address on the application.`
+                : "Award draft created: review and approve it in “Waiting for your review”.",
             );
           }}
         >
@@ -756,7 +760,13 @@ export function ApplicationActions({ id, name, status, tracks, suggested }: { id
             Personal message (optional)
             <textarea className={area} rows={2} maxLength={1000} value={message} onChange={(e) => setMessage(e.target.value)} />
           </label>
-          <button type="submit" className={btn} disabled={busy || (limit && chosen.length < count)}>{busy ? "Creating…" : "Create award draft"}</button>
+          <label className="flex items-start gap-2 font-dm text-[13px]">
+            <input type="checkbox" className="mt-0.5" checked={approveNow} onChange={(e) => setApproveNow(e.target.checked)} data-testid="app-approve-now" />
+            <span>Approve and send the congratulations email now (skip the draft review). The scholarship is linked to the email on the application.</span>
+          </label>
+          <button type="submit" className={btn} disabled={busy || (limit && chosen.length < count)}>
+            {busy ? "Working…" : approveNow ? "Award and send now" : "Create award draft"}
+          </button>
         </form>
       )}
       <Msg msg={msg} />

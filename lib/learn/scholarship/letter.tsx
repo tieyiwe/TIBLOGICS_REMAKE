@@ -3,6 +3,7 @@ import { PDFDocument } from "pdf-lib";
 import { translatorFor } from "@/lib/i18n/server";
 import { isLocale, type Locale } from "@/lib/i18n/config";
 import { fonts, logo } from "@/lib/learn/cert/render";
+import { SEAL_SVG } from "@/components/learn/scholarship/ScholarSeal";
 
 // The Tilo Vision Scholarship award letter: an A4 portrait page in the
 // certificate's style (TIBLOGICS logo, ARFA wordmark, the scholar seal), with
@@ -35,18 +36,12 @@ export interface LetterData {
   draft?: boolean;
 }
 
+// The scholar seal (a sunrise), the same mark as on the site.
+const SEAL_SRC = `data:image/svg+xml;base64,${Buffer.from(SEAL_SVG("letter-ring")).toString("base64")}`;
+
 function Seal() {
-  return (
-    <div style={{ display: "flex", flexShrink: 0, alignItems: "center", justifyContent: "center", width: 210, height: 210, borderRadius: 999, background: `linear-gradient(135deg, #F47C4C, ${AMBER})` }}>
-      <div style={{ display: "flex", flexShrink: 0, flexDirection: "column", alignItems: "center", justifyContent: "center", width: 178, height: 178, borderRadius: 999, background: NAVY2 }}>
-        <div style={{ display: "flex", flexShrink: 0, fontSize: 15, fontWeight: 700, letterSpacing: 2, color: AMBER }}>TILO VISION</div>
-        <div style={{ display: "flex", flexShrink: 0, width: 90, height: 46, marginTop: 8, borderRadius: 999, border: "5px solid white", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ display: "flex", flexShrink: 0, width: 22, height: 22, borderRadius: 999, background: AMBER }} />
-        </div>
-        <div style={{ display: "flex", flexShrink: 0, marginTop: 8, fontSize: 15, fontWeight: 700, letterSpacing: 3, color: "white" }}>SCHOLAR</div>
-      </div>
-    </div>
-  );
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={SEAL_SRC} width={210} height={210} alt="" style={{ flexShrink: 0 }} />;
 }
 
 async function letter(d: LetterData) {

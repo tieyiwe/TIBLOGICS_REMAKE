@@ -121,7 +121,7 @@ export default async function ScholarshipsPage({ searchParams }: { searchParams:
                     <span className="font-mono text-[11.5px] text-[var(--a-ink-3)]">{a.reference}</span>
                   </div>
                   <p className="break-all font-dm text-[12.5px] text-[var(--a-ink-2)]">
-                    {a.email} · {a.country ?? "Country not given"} · {a.background ? a.background[0].toUpperCase() + a.background.slice(1) : "Background not given"} · {LANG[a.locale] ?? a.locale} · {day(a.createdAt)}
+                    {a.email}{a.phone ? ` · ${a.phone}` : ""} · {a.country ?? "Country not given"} · {a.background ? a.background[0].toUpperCase() + a.background.slice(1) : "Background not given"} · {LANG[a.locale] ?? a.locale} · {day(a.createdAt)}
                     {a.hasAccount ? " · Has an ARFA account" : ""}
                   </p>
                   <details className="mt-2">

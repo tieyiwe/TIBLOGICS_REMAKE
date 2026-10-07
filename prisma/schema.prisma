@@ -3286,6 +3286,7 @@ model ScholarshipApplication {
   id            String    @id
   name          String
   email         String
+  phone         String?
   country       String?
   locale        String    @default("en")
   background    String?

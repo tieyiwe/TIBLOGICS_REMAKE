@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useT } from "@/lib/i18n/client";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const phoneOk = (v: string) => { const d = v.replace(/\D/g, "").length; return d >= 7 && d <= 15; };
 const BACKGROUNDS = ["student", "jobseeker", "professional", "business", "educator", "other"] as const;
 const input =
   "mt-1 w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--ink)] focus:border-[var(--blue2)] focus:outline-none focus:ring-2 focus:ring-[var(--blue2)]/20";
@@ -12,7 +13,7 @@ const label = "block text-sm font-semibold text-[var(--ink)]";
 /** The Tilo Vision Scholarship application. Our own messages, in the page's language. */
 export default function ApplyForm({ tracks, locale }: { tracks: Array<{ id: string; title: string }>; locale: string }) {
   const t = useT();
-  const [f, setF] = useState({ name: "", email: "", country: "", background: "", motivation: "", goals: "", links: "", website: "" });
+  const [f, setF] = useState({ name: "", email: "", phone: "", country: "", background: "", motivation: "", goals: "", links: "", website: "" });
   const [picked, setPicked] = useState<string[]>([]);
   const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -28,6 +29,7 @@ export default function ApplyForm({ tracks, locale }: { tracks: Array<{ id: stri
     const e: Record<string, string> = {};
     if (f.name.trim().length < 2) e.name = t("learn.scholarApply.err.name");
     if (!EMAIL_RE.test(f.email.trim())) e.email = t("learn.scholarApply.err.email");
+    if (!phoneOk(f.phone)) e.phone = t("learn.scholarApply.err.phone");
     if (f.motivation.trim().length < 80) e.motivation = t("learn.scholarApply.err.motivation");
     if (!consent) e.consent = t("learn.scholarApply.err.consent");
     setErrors(e);
@@ -80,6 +82,11 @@ export default function ApplyForm({ tracks, locale }: { tracks: Array<{ id: stri
           {t("learn.scholarApply.f.email")}
           <input className={input} type="email" value={f.email} onChange={(e) => set("email", e.target.value)} autoComplete="email" maxLength={254} aria-invalid={!!errors.email} />
           {errors.email && <span className="mt-1 block text-xs text-red-700">{errors.email}</span>}
+        </label>
+        <label className={label}>
+          {t("learn.scholarApply.f.phone")}
+          <input className={input} type="tel" inputMode="tel" value={f.phone} onChange={(e) => set("phone", e.target.value)} autoComplete="tel" maxLength={30} placeholder="+233 24 123 4567" aria-invalid={!!errors.phone} />
+          {errors.phone && <span className="mt-1 block text-xs text-red-700">{errors.phone}</span>}
         </label>
         <label className={label}>
           {t("learn.scholarApply.f.country")}

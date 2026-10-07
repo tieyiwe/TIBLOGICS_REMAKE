@@ -90,6 +90,7 @@ const STATEMENTS = [
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "ScholarshipApplication_pkey" PRIMARY KEY ("id")
   )`,
+  `ALTER TABLE "ScholarshipApplication" ADD COLUMN IF NOT EXISTS "phone" TEXT`,
   `CREATE INDEX IF NOT EXISTS "ScholarshipApplication_email_idx" ON "ScholarshipApplication"("email")`,
   `CREATE INDEX IF NOT EXISTS "ScholarshipApplication_status_createdAt_idx" ON "ScholarshipApplication"("status", "createdAt")`,
   `CREATE TABLE IF NOT EXISTS "ScholarshipDonation" (
