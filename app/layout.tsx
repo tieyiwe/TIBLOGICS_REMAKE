@@ -8,6 +8,7 @@ import JsonLd from "@/components/seo/JsonLd";
 import { founderNode, organizationNode, websiteNode } from "@/lib/seo/jsonld";
 import { OG_IMAGE, OG_LOCALE, ORG, SHOW_FOUNDER, SITE_NAME, SITE_URL } from "@/lib/seo/site";
 import { brandDm, brandSyne } from "@/lib/fonts/brand";
+import UpdateWatcher from "@/components/UpdateWatcher";
 
 const syne = Lora({
   subsets: ["latin"],
@@ -164,7 +165,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <JsonLd data={siteJsonLd} />
       </head>
       <body className="font-dm antialiased">
-        <I18nProvider locale={locale} dict={coreMessages(locale)}>{children}</I18nProvider>
+        <I18nProvider locale={locale} dict={coreMessages(locale)}>
+          {children}
+          <UpdateWatcher />
+        </I18nProvider>
       </body>
     </html>
   );

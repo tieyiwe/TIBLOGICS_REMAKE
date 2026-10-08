@@ -47,6 +47,7 @@ const PUBLIC_BY_DESIGN = {
   "/api/learn/scholarship/apply": "public Tilo Vision Scholarship application (rate limited, honeypot, one per address under review)",
   "/api/auth/[...nextauth]": "NextAuth itself (rate limited per email inside lib/auth.ts)",
   "/api/i18n": "locale switch cookie",
+  "/api/version": "build time of the running version, so open tabs refresh after a publish (no data)",
   "/api/indexnow-key": "IndexNow key file (public by protocol)",
   "/api/blog": "public articles and cover images",
   "/api/badges": "public badge verification / Open Badges JSON",
