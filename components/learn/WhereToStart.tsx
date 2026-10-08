@@ -174,13 +174,13 @@ export default function WhereToStart({
     return (
       <button
         onClick={() => setOpen(true)}
-        className="flex w-full flex-wrap items-center justify-between gap-4 rounded-2xl border border-[var(--border)] bg-gradient-to-r from-[var(--blue-light)] to-[var(--orange-light)] p-5 text-left transition-shadow hover:shadow-md"
+        className="flex w-full flex-col items-stretch gap-4 rounded-2xl border border-[var(--border)] bg-gradient-to-r from-[var(--blue-light)] to-[var(--orange-light)] p-5 text-left transition-shadow hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
       >
-        <span className="min-w-0 flex-1">
+        <span className="min-w-0 sm:flex-1">
           <span className="block text-base font-bold text-[var(--ink)]">{t("learn.wts.ctaTitle")}</span>
           <span className="mt-1 block text-sm text-[var(--ink2)]">{t("learn.wts.ctaBody")}</span>
         </span>
-        <span className="shrink-0 rounded-full bg-[var(--ink)] px-4 py-2 text-sm font-bold text-white">
+        <span className="rounded-full bg-[var(--ink)] px-4 py-2 text-center text-sm font-bold text-white sm:shrink-0">
           {t("learn.wts.ctaButton")} →
         </span>
       </button>

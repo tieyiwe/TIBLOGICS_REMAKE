@@ -95,7 +95,7 @@ export default async function MyTracksPage() {
             <Link
               key={track.id}
               href={`/learn/track/${track.slug}`}
-              className="flex flex-wrap items-center gap-5 rounded-2xl border border-[var(--border)] bg-white p-5 transition-shadow hover:shadow-md"
+              className="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-2xl border border-[var(--border)] bg-white p-5 transition-shadow hover:shadow-md"
             >
               <ProgressRing percent={progress.percent} color={track.accentColor} size={64} />
               <div className="min-w-0 flex-1">
@@ -118,7 +118,7 @@ export default async function MyTracksPage() {
                   </p>
                 )}
               </div>
-              <span className="text-sm font-bold" style={{ color: track.accentColor }}>
+              <span className="w-full text-sm font-bold sm:w-auto" style={{ color: track.accentColor }}>
                 {!open
                   ? t("learn.locked.unlock")
                   : progress.completedLessons === 0

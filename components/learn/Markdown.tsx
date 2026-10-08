@@ -252,7 +252,7 @@ export default function Markdown({
           <thead className="bg-[var(--s2)]">
             <tr>
               {head.map((c, ci) => (
-                <th key={ci} scope="col" className="border-b border-[var(--border)] px-3 py-2 font-bold text-[var(--ink)]">
+                <th key={ci} scope="col" className="min-w-[8rem] border-b border-[var(--border)] px-3 py-2 font-bold text-[var(--ink)] [overflow-wrap:break-word] [word-break:normal]">
                   {renderInline(c, `${key}-h${ci}`)}
                 </th>
               ))}
@@ -262,7 +262,7 @@ export default function Markdown({
             {body.map((r, ri) => (
               <tr key={ri} className="align-top even:bg-[var(--s2)]/40">
                 {head.map((_, ci) => (
-                  <td key={ci} className="border-t border-[var(--border)] px-3 py-2 text-[var(--ink2)]">
+                  <td key={ci} className="min-w-[8rem] border-t border-[var(--border)] px-3 py-2 text-[var(--ink2)] [overflow-wrap:break-word] [word-break:normal]">
                     {renderInline(r[ci] ?? "", `${key}-${ri}-${ci}`)}
                   </td>
                 ))}
