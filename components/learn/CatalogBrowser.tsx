@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import TrackCard from "./TrackCard";
+import TrackTile from "./TrackTile";
 import WhereToStart from "./WhereToStart";
 import { LEVEL_META, TRACK_LEVELS, type TrackLevel } from "@/lib/learn/types";
 import { levelLabel, levelMeaning } from "@/lib/learn/format";
@@ -53,11 +54,11 @@ export default function CatalogBrowser({
 
       {filter && (
         <div className={recommender ? "mt-10" : ""}>
-          <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t("learn.catalog.filterLabel")}>
+          <div className="-mx-4 flex snap-x items-center gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden" role="group" aria-label={t("learn.catalog.filterLabel")}>
             <button
               onClick={() => setActive("all")}
               aria-pressed={active === "all"}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+              className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
                 active === "all"
                   ? "bg-[var(--ink)] text-white"
                   : "border border-[var(--border)] bg-white text-[var(--ink2)] hover:border-[var(--ink3)]"
@@ -74,7 +75,7 @@ export default function CatalogBrowser({
                   onClick={() => setActive(lv)}
                   aria-pressed={on}
                   title={levelMeaning(t, lv)}
-                  className="rounded-full px-4 py-2 text-sm font-semibold transition-colors"
+                  className="shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors"
                   style={on ? { background: meta.color, color: "#fff" } : { background: meta.bg, color: meta.color }}
                 >
                   <span aria-hidden="true">{meta.emoji}</span> {levelLabel(t, lv)}
@@ -98,7 +99,7 @@ export default function CatalogBrowser({
       ) : (
         /* Keyed on the active filter so the entrance stagger replays
            when the grid contents change. */
-        <div key={active} className={`learn-stagger grid gap-6 sm:grid-cols-2 lg:grid-cols-3 ${filter || recommender ? "mt-6" : ""}`}>
+        <div key={active} className={`learn-stagger grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3 ${filter || recommender ? "mt-6" : ""}`}>
           {ordered.map((x, i) => (
             <div
               key={x.id}
@@ -111,7 +112,13 @@ export default function CatalogBrowser({
                   ★ {t("learn.catalog.recommended")}
                 </p>
               )}
-              <TrackCard track={x} />
+              {/* Phones: a compact tile, two to a row. Wider screens: the full card. */}
+              <div className="h-full sm:hidden">
+                <TrackTile track={x} href={`/learning-box/${x.slug}`} />
+              </div>
+              <div className="hidden h-full sm:block">
+                <TrackCard track={x} />
+              </div>
             </div>
           ))}
         </div>

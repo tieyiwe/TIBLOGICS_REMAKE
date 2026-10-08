@@ -358,6 +358,30 @@ html {
   box-shadow: 0 12px 28px -8px rgba(13, 27, 42, 0.18);
 }
 
+/* Phone tiles and sheets: a press feedback like a native app, and a sheet
+   that slides up from the bottom. */
+.learn-press {
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.learn-press:active {
+  transform: scale(0.97);
+}
+@keyframes learnSheetUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes learnSheetFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.learn-sheet-up { animation: learnSheetUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.learn-sheet-fade { animation: learnSheetFade 0.2s ease both; }
+@media (prefers-reduced-motion: reduce) {
+  .learn-press:active { transform: none; }
+  .learn-sheet-up, .learn-sheet-fade { animation: none; }
+}
+
 /* Accordion panel expand */
 @keyframes learnAccordionOpen {
   from { opacity: 0; transform: translateY(-6px); }

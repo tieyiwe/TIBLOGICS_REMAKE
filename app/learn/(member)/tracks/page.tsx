@@ -12,6 +12,7 @@ import { getLocale, getT } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTracks } from "@/lib/i18n/sources/learn";
 import ProgressRing from "@/components/learn/ProgressRing";
 import CertificationLadder from "@/components/learn/CertificationLadder";
+import TrackTile from "@/components/learn/TrackTile";
 import { LEVEL_SLUGS } from "@/lib/learn/levels";
 import prisma from "@/lib/prisma";
 
@@ -90,7 +91,37 @@ export default async function MyTracksPage() {
       {others.length > 0 && <h2 className="mt-10 text-lg font-bold text-[var(--ink)]">{t("learn.tracks.more")}</h2>}
 
       {others.length > 0 && (
-        <div className="mt-4 space-y-4">
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:hidden" data-testid="tracks-tiles">
+          {others.map(({ track, progress: pr, open }) => {
+            const c = time.get(track.slug);
+            return (
+              <TrackTile
+                key={track.id}
+                href={`/learn/track/${track.slug}`}
+                progress={pr.percent}
+                locked={!open}
+                track={{
+                  slug: track.slug,
+                  title: track.title,
+                  accentColor: track.accentColor,
+                  estimatedHours: track.estimatedHours,
+                  level: c?.level,
+                  levelEnd: c?.levelEnd,
+                  lessonCount: pr.totalLessons,
+                  labCount: c?.labCount,
+                  lessonMinutes: c?.lessonMinutes,
+                  handsOnMinutes: c?.handsOnMinutes,
+                  priceCents: c?.priceCents,
+                  salePriceCents: c?.salePriceCents ?? null,
+                }}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {others.length > 0 && (
+        <div className="mt-4 hidden space-y-4 sm:block">
           {others.map(({ track, progress, open }) => (
             <Link
               key={track.id}

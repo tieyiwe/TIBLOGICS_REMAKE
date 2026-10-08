@@ -23,7 +23,10 @@ export default function LevelPicker({ tracks }: { tracks: CatalogTrack[] }) {
 
   useEffect(() => {
     if (!recommended) return;
-    const el = document.getElementById(`track-${recommended}`);
+    // The phone list and the wide-screen cards are both on the page; scroll to the one showing.
+    const el = [`track-m-${recommended}`, `track-${recommended}`]
+      .map((id) => document.getElementById(id))
+      .find((x) => x && x.offsetParent !== null);
     if (!el) return;
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     const id = window.setTimeout(() => el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" }), 150);

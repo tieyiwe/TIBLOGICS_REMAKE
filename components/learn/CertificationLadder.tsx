@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { CERT_LEVELS } from "@/lib/learn/levels";
-import { fmtBreakdown, fmtPrice } from "@/lib/learn/format";
+import { fmtBreakdown, fmtPrice, totalHours } from "@/lib/learn/format";
 import { useLocale, useT } from "@/lib/i18n/client";
 import { readableOn } from "@/lib/a11y/contrast";
 import SalePrice from "@/components/promo/SalePrice";
@@ -63,7 +63,70 @@ export default function CertificationLadder({
   const bySlug = new Map(tracks.map((t) => [t.slug, t]));
 
   return (
-    <ol className="relative grid gap-5 lg:grid-cols-3 lg:gap-6">
+    <>
+    {/* Phones: the three levels as one compact list, like a native app's
+        grouped table, so the path fits on one screen. */}
+    <ol className="divide-y divide-[var(--border)] overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-[0_1px_3px_rgba(13,27,42,0.08)] sm:hidden" data-testid="ladder-compact">
+      {CERT_LEVELS.map((lvl) => {
+        const t = bySlug.get(lvl.slug);
+        const live = !!t && (t.status === undefined || t.status === "live");
+        const p = progress?.[lvl.slug];
+        const accent = readableOn(t?.accentColor ?? "#7A8FA6");
+        const href = live ? (mode === "learner" ? `/learn/track/${lvl.slug}` : `/learning-box/${lvl.slug}`) : null;
+        const locked = mode === "learner" && !!t?.locked;
+        const price = t?.priceCents != null ? (t.salePriceCents ?? t.priceCents) : null;
+        const hours = t ? totalHours(t.lessonMinutes ?? 0, t.handsOnMinutes ?? 0, t.estimatedHours) : 0;
+        const sub = !live
+          ? tr("learn.catalog.comingSoon")
+          : [
+              tr("learn.tile.hours", { n: hours }),
+              t?.moduleCount ? tr(`learn.count.modules.${t.moduleCount === 1 ? "one" : "other"}`, { n: t.moduleCount }) : null,
+              price != null && (mode === "public" || locked) ? tr("learn.tile.lifetime", { price: fmtPrice(price, locale) }) : null,
+            ]
+              .filter(Boolean)
+              .join(" · ");
+        const row = (
+          <div className={`flex items-center gap-3 px-4 py-3.5 ${highlight === lvl.slug ? "bg-[var(--orange-light)]" : ""}`}>
+            <span
+              aria-hidden
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-lg font-black text-white"
+              style={{ background: live ? accent : "var(--ink3)" }}
+            >
+              {p?.certified ? "✓" : lvl.level}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: accent }}>
+                {tr("learn.ladder.levelTag", { n: lvl.level, name: tr(`learn.certLevel.${lvl.level}.name`) })}
+                {highlight === lvl.slug ? ` · ${tr("learn.catalog.recommended")}` : ""}
+              </span>
+              <span className="mt-0.5 block text-[15px] font-bold leading-snug text-[var(--ink)]">{t?.title ?? tr(`learn.certLevel.${lvl.level}.name`)}</span>
+              <span className="mt-0.5 block text-xs text-[var(--ink3)]">
+                {locked ? "🔒 " : ""}
+                {sub}
+              </span>
+              {mode === "learner" && live && p && !p.certified && !locked && (
+                <span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-[var(--s2)]">
+                  <span className="block h-full rounded-full" style={{ width: `${p.percent}%`, background: accent }} />
+                </span>
+              )}
+            </span>
+            {live && <span aria-hidden className="shrink-0 text-xl text-[var(--ink3)]">›</span>}
+          </div>
+        );
+        return (
+          <li key={lvl.level} id={`track-m-${lvl.slug}`} className="scroll-mt-28">
+            {href ? (
+              <Link href={href} className="learn-press block active:bg-[var(--s2)]">
+                {row}
+              </Link>
+            ) : (
+              row
+            )}
+          </li>
+        );
+      })}
+    </ol>
+    <ol className="relative hidden gap-5 sm:grid lg:grid-cols-3 lg:gap-6">
       {CERT_LEVELS.map((lvl, i) => {
         const t = bySlug.get(lvl.slug);
         const live = !!t && (t.status === undefined || t.status === "live");
@@ -225,5 +288,6 @@ export default function CertificationLadder({
         );
       })}
     </ol>
+    </>
   );
 }
