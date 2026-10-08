@@ -145,11 +145,14 @@ model ScannerLead {
   followupAt      DateTime?
   consentAt       DateTime?
   growthLeadId    String?
+  /// The booking made from this report (/book?scan=<token>).
+  appointmentId   String?
 
   @@index([createdAt])
   @@index([aiScore])
   @@index([domain, createdAt])
   @@index([followupAt])
+  @@index([appointmentId])
 }
 
 /// A paid Readiness Monitor: one customer site plus up to three competitors,

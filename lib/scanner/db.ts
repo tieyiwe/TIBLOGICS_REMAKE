@@ -24,6 +24,9 @@ const STATEMENTS = [
   `ALTER TABLE "ScannerLead" ADD COLUMN IF NOT EXISTS "followupAt" TIMESTAMP(3)`,
   `ALTER TABLE "ScannerLead" ADD COLUMN IF NOT EXISTS "consentAt" TIMESTAMP(3)`,
   `ALTER TABLE "ScannerLead" ADD COLUMN IF NOT EXISTS "growthLeadId" TEXT`,
+  // The booking made from the report (/book?scan=<token>), for the admin.
+  `ALTER TABLE "ScannerLead" ADD COLUMN IF NOT EXISTS "appointmentId" TEXT`,
+  `CREATE INDEX IF NOT EXISTS "ScannerLead_appointmentId_idx" ON "ScannerLead"("appointmentId")`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "ScannerLead_token_key" ON "ScannerLead"("token")`,
   `CREATE INDEX IF NOT EXISTS "ScannerLead_domain_createdAt_idx" ON "ScannerLead"("domain", "createdAt")`,
   `CREATE INDEX IF NOT EXISTS "ScannerLead_followupAt_idx" ON "ScannerLead"("followupAt")`,

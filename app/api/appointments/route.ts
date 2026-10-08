@@ -279,7 +279,7 @@ export async function POST(req: Request) {
       // unlocks that report. Best-effort; never fails the booking.
       if (typeof scanToken === "string" && scanToken) {
         await import("@/lib/scanner/unlock")
-          .then((m) => m.unlockByCall(scanToken, String(email)))
+          .then((m) => m.unlockByCall(scanToken, String(email), appointment.id))
           .catch((err) => console.error("[appointments] scanner unlock", err));
       }
 
@@ -343,6 +343,13 @@ export async function POST(req: Request) {
     });
 
     const appointmentId = appointment.id;
+    // Booked from a scanner report: link the scan so the team can open it
+    // from the booking (the report itself unlocks only with a free call).
+    if (typeof scanToken === "string" && scanToken) {
+      await import("@/lib/scanner/unlock")
+        .then((m) => m.linkScanToAppointment(scanToken, appointmentId))
+        .catch((err) => console.error("[appointments] scanner link", err));
+    }
     await recordAttribution({ kind: "appointment", refId: appointmentId, cookieHeader: req.headers.get("cookie"), amountCents: totalAmount });
 
     const session = await stripe.checkout.sessions.create({

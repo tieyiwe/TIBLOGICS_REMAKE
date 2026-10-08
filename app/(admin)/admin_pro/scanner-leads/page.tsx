@@ -180,13 +180,17 @@ export default async function ScannerLeadsPage() {
                     {lead.unlockedAt && (
                       <p className="mt-1 font-dm text-[11px] text-[var(--a-ink-3)]">
                         {lead.reportStatus === "ready" ? "Report sent" : lead.reportStatus?.startsWith("failed") ? `Failed (${lead.reportStatus})` : "Finishing"}
+                        {lead.report ? " · fix plan written" : ""}
                       </p>
                     )}
                   </td>
                   <td className="px-5 py-4 space-y-1.5">
+                    <Link href={`/admin_pro/scanner-leads/${lead.id}`} className="block text-xs font-dm font-semibold text-[var(--a-blue)] hover:underline whitespace-nowrap" data-testid="scan-open">
+                        Report and fix plan →
+                      </Link>
                     {lead.token ? (
                       <Link href={`/tools/scanner/report/${lead.token}`} target="_blank" className="block text-xs font-dm text-[var(--a-blue)] hover:underline whitespace-nowrap">
-                        Open report ↗
+                        Customer view ↗
                       </Link>
                     ) : (
                       <span className="block text-xs font-dm text-[var(--a-ink-3)] whitespace-nowrap">Saved before reports</span>

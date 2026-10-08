@@ -32,6 +32,8 @@ interface Appointment {
   addOnActionPlan: boolean;
   addOnSlackAccess: boolean;
   createdAt: string;
+  /** The website scan this booking came from, if any (admin scan page has the fix plan). */
+  scan?: { id: string; site: string; score: number } | null;
 }
 
 function fmt(t: string) {
@@ -529,6 +531,14 @@ function DetailPanel({
             <Row label="Amount" value={fmtMoney(appt.totalAmount)} />
             {appt.company && <Row label="Company" value={appt.company} />}
             {appt.goalNotes && <Row label="Goals" value={appt.goalNotes} />}
+            {appt.scan && (
+              <div className="flex justify-between gap-4" data-testid="appt-scan">
+                <span className="font-dm text-xs text-[var(--a-ink-3)] shrink-0">Website scan</span>
+                <a href={`/admin_pro/scanner-leads/${appt.scan.id}`} className="font-dm text-sm font-semibold text-[var(--a-blue)] text-right hover:underline">
+                  {appt.scan.site} ({appt.scan.score}/100): report and fix plan →
+                </a>
+              </div>
+            )}
             {(appt.addOnRecording || appt.addOnActionPlan || appt.addOnSlackAccess) && (
               <Row label="Add-ons" value={[
                 appt.addOnRecording && "Recording",

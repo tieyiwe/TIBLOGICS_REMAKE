@@ -66,12 +66,15 @@ export async function markReportPaid(leadId: string, session: Stripe.Checkout.Se
  * payment; past the cap the booking still goes through and staff can unlock
  * the report from the admin.
  */
-export async function unlockByCall(token: unknown, email: string): Promise<boolean> {
+export async function unlockByCall(token: unknown, email: string, appointmentId?: string): Promise<boolean> {
   if (typeof token !== "string" || !/^[A-Za-z0-9_-]{16,64}$/.test(token)) return false;
   await ensureScannerColumns();
   const lead = await prisma.scannerLead.findUnique({ where: { token }, select: { id: true, unlockedAt: true, bookedCallAt: true } });
   if (!lead) return false;
-  await prisma.scannerLead.update({ where: { id: lead.id }, data: { bookedCallAt: lead.bookedCallAt ?? new Date(), followupAt: null } });
+  await prisma.scannerLead.update({
+    where: { id: lead.id },
+    data: { bookedCallAt: lead.bookedCallAt ?? new Date(), followupAt: null, ...(appointmentId ? { appointmentId } : {}) },
+  });
   if (lead.unlockedAt) return true;
   const today = await prisma.scannerLead.count({ where: { unlockSource: "call", unlockedAt: { gte: new Date(Date.now() - 86_400_000) } } });
   if (today >= callUnlocksPerDay()) return false;
@@ -82,6 +85,13 @@ export async function unlockByCall(token: unknown, email: string): Promise<boole
   const already = await prisma.scannerLead.count({ where: { unlockSource: "call", email: who, unlockedAt: { gte: new Date(Date.now() - 30 * 86_400_000) } } });
   if (already > 0) return false;
   return unlock(lead.id, "call", { email: who });
+}
+
+/** A paid booking made from a report: remember it on the scan (no unlock). */
+export async function linkScanToAppointment(token: unknown, appointmentId: string): Promise<void> {
+  if (typeof token !== "string" || !/^[A-Za-z0-9_-]{16,64}$/.test(token)) return;
+  await ensureScannerColumns();
+  await prisma.scannerLead.updateMany({ where: { token }, data: { appointmentId, followupAt: null } });
 }
 
 export async function unlockByAdmin(id: string): Promise<boolean> {

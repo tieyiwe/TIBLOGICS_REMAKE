@@ -245,7 +245,7 @@ export async function getScannerLeads() {
         id: true, url: true, createdAt: true, overallScore: true, aiScore: true,
         seoScore: true, perfScore: true, uxScore: true, email: true, name: true, bookedCallAt: true,
         domain: true, token: true, unlockedAt: true, unlockSource: true, amountPaid: true, reportStatus: true,
-        followupStage: true, emailedAt: true, growthLeadId: true, parentId: true, extra: true,
+        followupStage: true, emailedAt: true, growthLeadId: true, parentId: true, extra: true, report: true, appointmentId: true,
       },
     }),
     prisma.scannerLead.count(),

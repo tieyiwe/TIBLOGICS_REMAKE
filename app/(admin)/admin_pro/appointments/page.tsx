@@ -27,6 +27,22 @@ export default async function AppointmentsPage() {
       return [];
     });
 
+  // Website scans that led to these bookings (/book?scan=<token>): linked by
+  // ScannerLead.appointmentId, or for older bookings by the same email.
+  const { ensureScannerColumns } = await import("@/lib/scanner/db");
+  await ensureScannerColumns().catch(() => {});
+  const scans = rows.length
+    ? await prisma.scannerLead
+        .findMany({
+          where: { OR: [{ appointmentId: { in: rows.map((a) => a.id) } }, { bookedCallAt: { not: null }, email: { in: rows.map((a) => a.email.toLowerCase()) } }] },
+          select: { id: true, domain: true, url: true, overallScore: true, appointmentId: true, email: true, createdAt: true },
+          orderBy: { createdAt: "desc" },
+        })
+        .catch(() => [])
+    : [];
+  const scanFor = (a: { id: string; email: string }) =>
+    scans.find((s) => s.appointmentId === a.id) ?? scans.find((s) => !s.appointmentId && s.email?.toLowerCase() === a.email.toLowerCase()) ?? null;
+
   // Serialised to the same JSON shape the client component previously received
   // from /api/appointments, so its date/money formatting is unchanged.
   const appointments = rows.map((a) => ({
@@ -54,6 +70,10 @@ export default async function AppointmentsPage() {
     addOnActionPlan: a.addOnActionPlan,
     addOnSlackAccess: a.addOnSlackAccess,
     createdAt: a.createdAt.toISOString(),
+    scan: (() => {
+      const s = scanFor(a);
+      return s ? { id: s.id, site: s.domain ?? s.url, score: s.overallScore } : null;
+    })(),
   }));
 
   return <AppointmentsClient initialAppointments={appointments} />;

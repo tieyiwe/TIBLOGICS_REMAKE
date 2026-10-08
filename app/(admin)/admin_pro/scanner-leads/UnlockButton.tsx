@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-/** Staff: unlock (and write) a scan's full report. */
+/** Staff: unlock a scan's full report for the visitor. */
 export default function UnlockButton({ id }: { id: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   async function go() {
-    if (!confirm("Unlock the full report for this scan? It writes the report (one AI call) and the visitor sees it at their link.")) return;
+    if (!confirm("Unlock the full report for this scan? The visitor sees it at their link (no fix plan is shown to them).")) return;
     setBusy(true);
     setErr(null);
     try {
