@@ -6,11 +6,12 @@ import { fmtDate } from "@/lib/learn/format";
 import { BarList, WeekBars } from "../TeamCharts";
 import { Kpi, call, cls, type DashCtx } from "./ui";
 
-/** Team progress over time, completion by track, skills gaps, CSV exports and the weekly digest setting. */
-export default function ReportsTab({ ctx, digestOn }: { ctx: DashCtx; digestOn: boolean }) {
+/** Team progress over time, completion by track, skills gaps, CSV exports and the email report settings. */
+export default function ReportsTab({ ctx, digestOn, monthlyOn }: { ctx: DashCtx; digestOn: boolean; monthlyOn: boolean | null }) {
   const t = useT();
   const { report, locale, busy, run } = ctx;
   const [digest, setDigest] = useState(digestOn);
+  const [monthly, setMonthly] = useState(monthlyOn ?? false);
   const assignedTracks = new Set(report.assignments.map((a) => a.trackId));
   // Assigned tracks first, then any track someone started.
   const byTrack = [...report.progressByTrack]
@@ -29,6 +30,23 @@ export default function ReportsTab({ ctx, digestOn }: { ctx: DashCtx; digestOn: 
           throw err;
         }
         return t(on ? "team.reports.digestOn" : "team.reports.digestOff");
+      },
+      { refresh: false },
+    );
+  };
+
+  const toggleMonthly = (on: boolean) => {
+    setMonthly(on);
+    return run(
+      "monthly",
+      async () => {
+        try {
+          await call("/api/learn/team/settings", "POST", { monthly: on });
+        } catch (err) {
+          setMonthly(!on);
+          throw err;
+        }
+        return t(on ? "team.reports.monthlyOn" : "team.reports.monthlyOff");
       },
       { refresh: false },
     );
@@ -105,6 +123,15 @@ export default function ReportsTab({ ctx, digestOn }: { ctx: DashCtx; digestOn: 
             <input type="checkbox" checked={digest} disabled={busy !== null} onChange={(e) => void toggleDigest(e.target.checked)} className="h-4 w-4" />
             {t("team.reports.digestLabel")}
           </label>
+          {monthlyOn !== null && (
+            <>
+              <p className="mt-4 text-sm text-[var(--ink2)]">{t("team.reports.monthlyHint")}</p>
+              <label className="mt-2 flex cursor-pointer items-center gap-3 text-sm font-semibold text-[var(--ink)]">
+                <input type="checkbox" checked={monthly} disabled={busy !== null} onChange={(e) => void toggleMonthly(e.target.checked)} className="h-4 w-4" data-testid="team-monthly-toggle" />
+                {t("team.reports.monthlyLabel")}
+              </label>
+            </>
+          )}
         </section>
       </div>
     </div>

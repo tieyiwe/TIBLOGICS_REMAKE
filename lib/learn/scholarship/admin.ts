@@ -248,11 +248,43 @@ export const publicName = (name: string) => {
   return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.` : parts[0];
 };
 
-/** The impact report for one sponsor (aggregates, scholars by first name and initial). */
-export async function sponsorReport(sponsor: string) {
+/**
+ * Lessons completed and certificates earned in [start, end) by a sponsor's
+ * scholars, on the tracks they unlocked with the scholarship only.
+ */
+async function sponsorActivity(rows: ScholarshipRow[], start: Date, end: Date): Promise<{ lessons: number; certificates: number }> {
+  const pairs = new Set<string>();
+  for (const r of rows) if (r.status === "claimed" && r.student) for (const p of r.picks) pairs.add(`${r.student.id}:${p.trackId}`);
+  if (!pairs.size) return { lessons: 0, certificates: 0 };
+  const students = [...new Set([...pairs].map((k) => k.split(":")[0]))];
+  const tracks = [...new Set([...pairs].map((k) => k.slice(k.indexOf(":") + 1)))];
+  const [lessons, certs] = await Promise.all([
+    prisma.$queryRaw<Array<{ studentId: string; trackId: string; n: bigint }>>`
+      SELECT p."studentId", m."trackId", COUNT(*) AS n FROM "LessonProgress" p
+      JOIN "Lesson" l ON l."id" = p."lessonId" JOIN "LearnModule" m ON m."id" = l."moduleId"
+      WHERE p."studentId" = ANY(${students}) AND m."trackId" = ANY(${tracks}) AND p."completedAt" >= ${start} AND p."completedAt" < ${end}
+      GROUP BY p."studentId", m."trackId"`,
+    prisma.learnCertificate.findMany({
+      where: { studentId: { in: students }, trackId: { in: tracks }, revoked: false, issuedAt: { gte: start, lt: end } },
+      select: { studentId: true, trackId: true },
+    }),
+  ]);
+  return {
+    lessons: lessons.filter((r) => pairs.has(`${r.studentId}:${r.trackId}`)).reduce((n, r) => n + Number(r.n), 0),
+    certificates: certs.filter((c) => pairs.has(`${c.studentId}:${c.trackId}`)).length,
+  };
+}
+
+/**
+ * The impact report for one sponsor (aggregates, scholars by first name and
+ * initial). With `month`, also what the scholars did in that month.
+ */
+export async function sponsorReport(sponsor: string, opts: { month?: { start: Date; end: Date } } = {}) {
   const rows = (await listScholarships({ sponsor })).filter((r) => r.status === "approved" || r.status === "claimed");
   const picks = rows.flatMap((r) => r.picks);
+  const month = opts.month ? { start: opts.month.start, ...(await sponsorActivity(rows, opts.month.start, opts.month.end)) } : null;
   return {
+    month,
     sponsor: rows[0]?.sponsorName ?? sponsor,
     email: rows.find((r) => r.sponsorEmail)?.sponsorEmail ?? null,
     awarded: rows.length,

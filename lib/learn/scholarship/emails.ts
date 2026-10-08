@@ -274,13 +274,17 @@ export interface SponsorReport {
   certificates: number;
   examsPassed: number;
   scholars: Array<{ who: string; since: Date | null; tracks: ProgressLine[] }>;
+  /** The automatic monthly report: what the scholars did last month. */
+  month?: { start: Date; lessons: number; certificates: number } | null;
 }
 
 const usd = (c: number) => `$${(c / 100).toLocaleString("en-US", { minimumFractionDigits: c % 100 ? 2 : 0, maximumFractionDigits: 2 })}`;
 
 /** The sponsor's impact report (English): totals and each scholar by first name and initial. */
-export async function sendSponsorReport(to: string, r: SponsorReport) {
+export async function sendSponsorReport(to: string, r: SponsorReport, opts: { monthly?: boolean } = {}) {
   const t = translator("en");
+  const monthName = r.month ? new Intl.DateTimeFormat("en", { month: "long", year: "numeric", timeZone: "UTC" }).format(r.month.start) : "";
+  const plural = (n: number, one: string, other: string) => `${n} ${n === 1 ? one : other}`;
   const stat = (k: string, v: string) =>
     `<td style="padding:10px;text-align:center;border:1px solid #eef1f4;border-radius:8px;"><div style="font-size:20px;font-weight:900;color:#1B2A5E;">${v}</div><div style="font-size:11px;color:#5b6b72;text-transform:uppercase;letter-spacing:.06em;">${k}</div></td>`;
   const pct = r.lessonsTotal ? Math.round((r.lessonsDone / r.lessonsTotal) * 100) : 0;
@@ -289,14 +293,18 @@ export async function sendSponsorReport(to: string, r: SponsorReport) {
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="6" border="0" style="margin:0 0 16px;"><tr>
       ${stat("Scholars", String(r.accepted))}${stat("Tracks", String(r.tracksUnlocked))}${stat("Progress", `${pct}%`)}${stat("Certificates", String(r.certificates))}
     </tr></table>` +
+    (r.month
+      ? p(`${strong(esc(`In ${monthName}:`))} your scholars completed ${plural(r.month.lessons, "lesson", "lessons")} and earned ${plural(r.month.certificates, "certificate", "certificates")}.`)
+      : "") +
     p(`${r.awarded} scholarship${r.awarded === 1 ? "" : "s"} awarded, ${r.accepted} accepted. Tuition covered: ${strong(usd(r.coveredCents))}. Final exams passed: ${r.examsPassed}.`) +
     r.scholars
       .map((s) => `<p style="font-size:14px;font-weight:800;color:#131A1B;margin:16px 0 2px;">${esc(s.who)}</p>${s.tracks.length ? progressTable(t, s.tracks) : `<p style="font-size:13px;color:#8A9BA0;margin:0 0 8px;">Choosing tracks.</p>`}`)
       .join("") +
-    small("Scholars are shown by first name and initial only. Questions: reply to this email.");
+    small("Scholars are shown by first name and initial only. Questions: reply to this email.") +
+    (opts.monthly ? small("You receive this report at the start of each month. To stop it, reply to this email.") : "");
   await scholarshipMailer.emails.send({
     to,
-    subject: `Your Tilo Vision Scholarship impact report: ${r.sponsor}`,
+    subject: opts.monthly && r.month ? `Your Tilo Vision Scholarship impact report for ${monthName}: ${r.sponsor}` : `Your Tilo Vision Scholarship impact report: ${r.sponsor}`,
     html: shell(t, esc(`Impact report: ${r.sponsor}`), body, { href: `${LEARN_SITE}/tilo-vision-scholarship`, label: "About the scholarship →" }),
   });
 }

@@ -50,8 +50,9 @@ const JOBS = {
   // Learn community: cohort live-session reminders (24h before), weekly
   // "falling behind" nudges and discussion reply digests. Idempotent.
   cohorts: { path: "/api/cron/cohorts", suggested: "hourly" },
-  // Team plans: weekly reminder emails for overdue track assignments.
-  // Idempotent (each assignment at most once every 7 days).
+  // Team plans: weekly reminder emails for overdue track assignments, the
+  // weekly manager digest and, from the 1st of each month, last month's
+  // report to each team owner. Idempotent (each email claimed before sending).
   teams: { path: "/api/cron/teams", suggested: "daily" },
   // Study reminders (WhatsApp, or email for learners who chose only email) at
   // each learner's chosen local time. At most one a day, claimed before
@@ -85,7 +86,8 @@ const JOBS = {
   scanner: { path: "/api/cron/scanner", suggested: "daily" },
   // Tilo Vision Scholarship: offer reminders, track-choice and completion
   // reminders, monthly progress and the completion congratulations. Each sent
-  // once per scholarship. Idempotent.
+  // once per scholarship. Also the monthly impact report to each sponsor
+  // (once per sponsor per month, can be paused in admin). Idempotent.
   scholarship: { path: "/api/cron/scholarship", suggested: "daily" },
   // Command Center: recurring expenses for each period that came due, overdue
   // invoices, budget alerts, task due/overdue reminders in the admin bell and

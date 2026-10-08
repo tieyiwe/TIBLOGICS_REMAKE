@@ -225,3 +225,57 @@ export async function sendManagerDigest(to: { email: string; name: string; local
     ),
   });
 }
+
+export interface MonthlyData {
+  teamName: string;
+  /** First day of the reported month (UTC). */
+  month: Date;
+  members: number;
+  activeLearners: number;
+  lessons: number;
+  quizzesPassed: number;
+  certificates: number;
+  top: Array<{ who: string; percent: number }>;
+  inactive: string[];
+  /** Inactive learners not named (the list is capped). */
+  inactiveMore: number;
+}
+
+/** The owner's monthly report (./monthly.ts). Opt-out: the dashboard's Reports tab. */
+export async function sendOwnerMonthly(to: { email: string; name: string; locale: string | null | undefined; d: MonthlyData }) {
+  const t = translator(to.locale);
+  const { d } = to;
+  const month = new Intl.DateTimeFormat(loc(to.locale), { month: "long", year: "numeric", timeZone: "UTC" }).format(d.month);
+  // French typography: a no-break space before the colon.
+  const colon = loc(to.locale) === "fr" ? " : " : ": ";
+  const row = (label: string, value: string) =>
+    `<tr><td style="padding:6px 0;color:#5b6b72;font-size:14px;">${esc(label)}</td><td style="padding:6px 0;text-align:right;font-weight:800;color:#131A1B;font-size:14px;">${esc(value)}</td></tr>`;
+  const table = `<table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 14px;">${[
+    row(t("team.email.monthly.active"), `${d.activeLearners} / ${d.members}`),
+    row(t("team.email.monthly.lessons"), String(d.lessons)),
+    row(t("team.email.monthly.quizzes"), String(d.quizzesPassed)),
+    row(t("team.email.monthly.certs"), String(d.certificates)),
+  ].join("")}</table>`;
+  const top = d.top.length
+    ? p(strong(esc(t("team.email.monthly.top")))) + ul(d.top.map((x) => `${esc(x.who)}${colon}${esc(t("team.email.monthly.percent", { n: x.percent }))}`))
+    : "";
+  const inactive = d.inactive.length
+    ? p(strong(esc(t("team.email.monthly.inactive")))) +
+      ul([...d.inactive.map((x) => esc(x)), ...(d.inactiveMore > 0 ? [esc(t("team.email.monthly.more", { n: d.inactiveMore }))] : [])])
+    : p(esc(t("team.email.monthly.allActive")));
+  await arfaMailer.emails.send({
+    to: to.email,
+    subject: t("team.email.monthly.subject", { team: d.teamName, month }),
+    html: shell(
+      t,
+      esc(t("team.email.monthly.title", { team: d.teamName, month })),
+      p(esc(t("team.email.hello", { name: to.name.trim().split(/\s+/)[0] ?? "" }))) +
+        p(esc(t("team.email.monthly.intro", { month }))) +
+        table +
+        top +
+        inactive +
+        `<p style="font-size:12px;color:#8A9BA0;line-height:1.6;margin:18px 0 0;">${esc(t("team.email.monthly.optOut"))} <a href="${LEARN_SITE}/learn/team?tab=reports" style="color:#2563eb;">${esc(t("team.email.monthly.optOutLink"))}</a></p>`,
+      { href: `${LEARN_SITE}/learn/team`, label: `${t("team.email.digest.cta")} →` },
+    ),
+  });
+}

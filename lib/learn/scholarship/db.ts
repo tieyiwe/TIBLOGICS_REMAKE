@@ -115,6 +115,18 @@ const STATEMENTS = [
   `CREATE UNIQUE INDEX IF NOT EXISTS "ScholarshipDonation_stripeInvoiceId_key" ON "ScholarshipDonation"("stripeInvoiceId")`,
   `CREATE INDEX IF NOT EXISTS "ScholarshipDonation_createdAt_idx" ON "ScholarshipDonation"("createdAt")`,
   `CREATE INDEX IF NOT EXISTS "ScholarshipDonation_stripeSubscriptionId_idx" ON "ScholarshipDonation"("stripeSubscriptionId")`,
+  // Sponsor impact reports sent (./sponsor-reports.ts): the automatic monthly
+  // one is claimed before sending ("auto:<sponsor>:<YYYY-MM>"), a report sent
+  // by hand from admin is logged ("manual:<id>"). Read with raw SQL.
+  `CREATE TABLE IF NOT EXISTS "ScholarshipSponsorReport" (
+    "key" TEXT NOT NULL,
+    "sponsor" TEXT NOT NULL,
+    "month" TEXT,
+    "sentTo" TEXT,
+    "sentAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "ScholarshipSponsorReport_pkey" PRIMARY KEY ("key")
+  )`,
+  `CREATE INDEX IF NOT EXISTS "ScholarshipSponsorReport_sponsor_sentAt_idx" ON "ScholarshipSponsorReport"("sponsor", "sentAt")`,
 ];
 
 let ready: Promise<void> | null = null;

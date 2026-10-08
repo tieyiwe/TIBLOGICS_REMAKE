@@ -8,7 +8,7 @@ import { isManagerRole } from "@/lib/learn/team/config";
 import { teamReport } from "@/lib/learn/team/report";
 import { seatsUsed } from "@/lib/learn/team/service";
 import { getTeamPricing, seatPrice } from "@/lib/learn/team/settings";
-import { getPrefs } from "@/lib/learn/team/prefs";
+import { getPrefs, monthlyOn } from "@/lib/learn/team/prefs";
 import { inviteUrl } from "@/lib/learn/team/emails";
 import { myTeamPlan } from "@/lib/learn/team/next";
 import { localTitles } from "@/lib/learn/team/titles";
@@ -102,6 +102,7 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
       titles={titles.map}
       link={link ? { url: inviteUrl(link.token), domain: link.domain, trackIds: link.trackIds, dueAt: link.dueAt, createdAt: link.createdAt } : null}
       digestOn={!prefs.digestOff.includes(student.id)}
+      monthlyOn={m.role === "owner" ? monthlyOn(prefs, student.id) : null}
       tab={sp.tab}
       welcome={sp.welcome === "1"}
     />

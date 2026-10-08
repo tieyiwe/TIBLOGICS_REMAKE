@@ -10,7 +10,8 @@ import { liveTracks } from "@/lib/learn/scholarship/service";
 import { scholarshipTablesReady } from "@/lib/learn/scholarship/db";
 import ScholarSeal from "@/components/learn/scholarship/ScholarSeal";
 import { LEARN_TABS } from "../tabs";
-import { ApplicationActions, ApplicationsToggle, ApproveAll, ApproveButton, AwardActions, AwardForm, DeleteDraft, EditScholarship, SponsorReportButton } from "./ScholarshipsAdmin";
+import { autoSponsorReportsOn, lastSponsorReports, sponsorKey, type LastSponsorReport } from "@/lib/learn/scholarship/sponsor-reports";
+import { ApplicationActions, ApplicationsToggle, ApproveAll, ApproveButton, AwardActions, AwardForm, DeleteDraft, EditScholarship, SponsorAutoToggle, SponsorReportButton } from "./ScholarshipsAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,9 @@ export default async function ScholarshipsPage({ searchParams }: { searchParams:
   const [apps, appsOpen] = ready ? await Promise.all([listApplications(), applicationsOpen()]) : [[], true];
   const appsShown = apps.filter((a) => (appFilter === "all" ? true : appFilter === "open" ? a.status === "new" || a.status === "shortlisted" : a.status === appFilter));
   const sponsors = sponsorSummaries(all);
+  const [sponsorAuto, sponsorLast] = ready
+    ? await Promise.all([autoSponsorReportsOn(), lastSponsorReports().catch(() => new Map<string, LastSponsorReport>())])
+    : [true, new Map<string, LastSponsorReport>()];
   const donations = ready ? await donationSummary().catch(() => null) : null;
   const editable = (r: ScholarshipRow) => ({
     id: r.id, status: r.status, name: r.name, email: r.email, locale: r.locale, trackCount: r.trackCount, coveragePct: r.coveragePct, trackIds: r.trackIds,
@@ -359,7 +363,21 @@ export default async function ScholarshipsPage({ searchParams }: { searchParams:
         </Card>
       </div>
 
-      <Card title="Sponsors" subtitle="Who funds the awards, and the impact of their support. Reports show scholars by first name and initial only." padded={false}>
+      <Card
+        title="Sponsors"
+        subtitle={
+          <>
+            Who funds the awards, and the impact of their support. Reports show scholars by first name and initial only.{" "}
+            {sponsorAuto ? (
+              <strong data-testid="sponsor-auto-note">Monthly reports go out automatically on the 1st of each month to the sponsor email on their awards.</strong>
+            ) : (
+              <strong data-testid="sponsor-auto-note">Automatic monthly reports are paused.</strong>
+            )}
+          </>
+        }
+        action={award ? <SponsorAutoToggle on={sponsorAuto} /> : null}
+        padded={false}
+      >
         {sponsors.length === 0 ? (
           <p className="p-5 font-dm text-[13.5px] text-[var(--a-ink-3)]">No sponsor named on an award yet. Add one in the award form.</p>
         ) : (
@@ -371,6 +389,15 @@ export default async function ScholarshipsPage({ searchParams }: { searchParams:
                   <p className="font-dm text-[12.5px] text-[var(--a-ink-2)]">
                     {x.awarded} awarded · {x.accepted} scholars · {x.tracksUnlocked} tracks · {usd(x.coveredCents)} covered · progress {x.progress != null ? `${x.progress}%` : "–"} · {x.certificates} certificates
                   </p>
+                  {(() => {
+                    const last = sponsorLast.get(sponsorKey(x.name));
+                    return (
+                      <p className="break-all font-dm text-[12px] text-[var(--a-ink-3)]" data-testid="sponsor-last-sent">
+                        {last ? `Last report: ${day(last.at)} (${last.automatic ? "monthly" : "sent by hand"})${last.to ? ` to ${last.to}` : ""}` : "No report sent yet"}
+                        {!x.email ? " · No sponsor email on their awards: no monthly report" : ""}
+                      </p>
+                    );
+                  })()}
                   <Link href={`/admin_pro/learn/scholarships/impact?sponsor=${encodeURIComponent(x.name)}`} className="font-dm text-[12.5px] font-semibold text-[var(--a-blue)] hover:underline">
                     Open impact report
                   </Link>

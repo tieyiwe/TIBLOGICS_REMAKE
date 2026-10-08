@@ -3336,6 +3336,20 @@ model ScholarshipDonation {
   @@index([stripeSubscriptionId])
 }
 
+/// A sponsor impact report sent (lib/learn/scholarship/sponsor-reports.ts,
+/// created at runtime). key: "auto:<sponsor>:<YYYY-MM>" for the automatic
+/// monthly report (claimed before sending), "manual:<id>" for one sent from
+/// admin. sponsor: the sponsor name, trimmed and lower-cased.
+model ScholarshipSponsorReport {
+  key     String   @id
+  sponsor String
+  month   String?
+  sentTo  String?
+  sentAt  DateTime @default(now())
+
+  @@index([sponsor, sentAt])
+}
+
 /// One row per payment already announced to sales@ (lib/payments/sale-alert.ts,
 /// created at runtime). The id is the Stripe Checkout session or invoice id.
 model SaleAlert {

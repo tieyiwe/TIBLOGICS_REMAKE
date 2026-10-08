@@ -25,6 +25,8 @@ export interface TeamDashboardProps {
   titles: Record<string, string>;
   link: LinkView | null;
   digestOn: boolean;
+  /** The owner's monthly report setting; null for managers (owner only). */
+  monthlyOn: boolean | null;
   tab?: string;
   welcome?: boolean;
 }
@@ -187,7 +189,7 @@ export default function TeamDashboard(p: TeamDashboardProps) {
         {tab === "people" && <PeopleTab ctx={ctx} />}
         {tab === "invite" && <InviteTab ctx={ctx} link={p.link} />}
         {tab === "assignments" && <AssignmentsTab ctx={ctx} />}
-        {tab === "reports" && <ReportsTab ctx={ctx} digestOn={p.digestOn} />}
+        {tab === "reports" && <ReportsTab ctx={ctx} digestOn={p.digestOn} monthlyOn={p.monthlyOn} />}
         {tab === "billing" && isOwner && <BillingTab ctx={ctx} seatPriceCents={p.seatPriceCents} pricing={p.pricing} aiPool={p.aiPool} portal={portal} />}
       </div>
 

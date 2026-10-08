@@ -774,6 +774,30 @@ export function ApplicationActions({ id, name, status, tracks, suggested }: { id
   );
 }
 
+/** Pause or resume the automatic monthly sponsor reports. */
+export function SponsorAutoToggle({ on }: { on: boolean }) {
+  const { busy, msg, run } = useAction();
+  return (
+    <div className="flex flex-col items-end">
+      <button
+        type="button"
+        className={on ? ghost : btn}
+        disabled={busy}
+        data-testid="sponsor-auto-toggle"
+        onClick={() =>
+          void run(async () => {
+            await send("/api/admin/learn/scholarships/sponsors", "PUT", { auto: !on });
+            return on ? "Monthly reports paused." : "Monthly reports turned on.";
+          })
+        }
+      >
+        {on ? "Pause monthly reports" : "Turn on monthly reports"}
+      </button>
+      <Msg msg={msg} />
+    </div>
+  );
+}
+
 /** Email a sponsor their impact report. */
 export function SponsorReportButton({ sponsor, email }: { sponsor: string; email: string | null }) {
   const { busy, msg, run } = useAction();
