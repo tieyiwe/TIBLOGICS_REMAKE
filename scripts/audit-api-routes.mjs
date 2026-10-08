@@ -59,6 +59,7 @@ const PUBLIC_BY_DESIGN = {
   "/api/waitlist": "waitlist signup (rate limited)",
   "/api/portal/login": "Parent & Sponsor Portal sign-in: emails a one-time link only to followed addresses, same answer either way (rate limited per IP and per email)",
   "/api/portal/logout": "clears the portal session cookie (rate limited)",
+  "/api/learn/youth/sponsor": "AI-Empowered Youth: anybody can sponsor a young person (rate limited, zod-validated, server prices; confirm reads the Stripe session back by its unguessable id)",
   "/api/contacts": "contact form (rate limited)",
   "/api/claude": "public sales chat / advisor (rate limited, AI budget guarded)",
   "/api/tools": "public free tools (rate limited)",

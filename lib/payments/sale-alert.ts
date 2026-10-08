@@ -23,6 +23,7 @@ const LABELS: Record<string, string> = {
   learn: "ARFA monthly plan (all tracks)",
   "learn-track": "ARFA track (one time, lifetime)",
   "learn-track-monthly": "ARFA track, monthly plan",
+  "youth-sponsor": "AI-Empowered Youth: sponsored place",
   "learn-team": "ARFA team plan",
   "scholarship-donation": "Tilo Vision Scholarship donation",
   "automation-blueprint": "Automation Blueprint",
@@ -74,7 +75,7 @@ export async function alertCheckoutSale(session: Stripe.Checkout.Session): Promi
     const m = session.metadata ?? {};
     let what = (m.product && LABELS[m.product]) || "";
     const detail: string[] = [];
-    if ((m.product === "learn-track" || m.product === "learn-track-monthly") && m.trackId) {
+    if ((m.product === "learn-track" || m.product === "learn-track-monthly" || m.product === "youth-sponsor") && m.trackId) {
       const t = await prisma.learnTrack.findUnique({ where: { id: m.trackId }, select: { title: true } }).catch(() => null);
       if (t) detail.push(`Track: ${t.title}`);
       if (m.scholarshipCode) detail.push(`Scholarship: ${m.scholarshipCode}`);

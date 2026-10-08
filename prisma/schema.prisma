@@ -3515,3 +3515,35 @@ model YouthEncouragement {
 
   @@index([studentId, createdAt])
 }
+
+/// AI-Empowered Youth: "Sponsor a young person" (lib/learn/youth-sponsor.ts;
+/// created at runtime by lib/learn/youth-account.ts). status:
+/// checkout|fulfilling|awaiting_consent|active|canceled.
+model YouthSponsorship {
+  id                String    @id
+  sponsorName       String
+  sponsorEmail      String
+  sponsorLocale     String    @default("en")
+  relationship      String
+  relationshipOther String?
+  childFirstName    String
+  childEmail        String
+  childAge          Int
+  childLocale       String    @default("en")
+  lane              String
+  note              String?
+  plan              String // lifetime|monthly
+  amountCents       Int
+  siblingPct        Int       @default(0)
+  parentEmail       String?
+  parentAttested    Boolean   @default(false)
+  status            String    @default("checkout")
+  stripeSessionId   String?
+  childStudentId    String?
+  childEmailSentAt  DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @default(now())
+
+  @@index([sponsorEmail])
+  @@index([childStudentId])
+}

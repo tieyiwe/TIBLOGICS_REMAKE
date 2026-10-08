@@ -24,6 +24,7 @@ import { recordReferralPayment } from "@/lib/learn/referrals/service";
 import { recordRedemption } from "@/lib/promotions/service";
 import { upsertLearnSubscription } from "@/lib/learn/subscription-sync";
 import { completePendingEnrollment } from "@/lib/learn/join/pending";
+import { SPONSOR_PRODUCT, fulfillSponsorship, syncSponsoredSubscription } from "@/lib/learn/youth-sponsor";
 
 const SITE_URL = (
   process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
@@ -80,6 +81,13 @@ export async function POST(req: Request) {
       }
       if (sub.metadata?.product === MONITOR_PRODUCT) {
         await syncMonitorSubscription(sub);
+      }
+      // ── AI-Empowered Youth: a sponsor's monthly plan for a young person ──
+      if (sub.metadata?.product === SPONSOR_PRODUCT) {
+        await syncSponsoredSubscription(sub).catch((err) => {
+          console.error("[stripe/webhook] youth sponsor sync FAILED, asking Stripe to retry", err instanceof Error ? err.message : err);
+          retry = true;
+        });
       }
       // ── Tilo Vision Scholarship: a monthly gift stopped ──────────────────
       if (sub.metadata?.product === DONATION_PRODUCT) await markDonationCanceled(sub);
@@ -232,6 +240,14 @@ export async function POST(req: Request) {
       // ── Learning Box: one track, one payment, lifetime access ────────────
       if (session.metadata?.product === "learn-track" && session.mode === "payment") {
         await trackPurchase(session);
+      }
+
+      // ── AI-Empowered Youth: a sponsored place (idempotent with the success URL)
+      if (session.metadata?.product === SPONSOR_PRODUCT) {
+        await fulfillSponsorship(session, (id) => stripe.subscriptions.retrieve(id)).catch((err) => {
+          console.error("[stripe/webhook] youth sponsorship FAILED, asking Stripe to retry", err instanceof Error ? err.message : err);
+          retry = true;
+        });
       }
 
       // ── Automation Blueprint (one-time) ──────────────────────────────────

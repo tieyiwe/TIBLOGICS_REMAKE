@@ -5,6 +5,7 @@ import { getT } from "@/lib/i18n/server";
 import { csrfGuard } from "@/lib/learn/account-status/admin-auth";
 import { markDeleteRequested, parentFromToken, setParentBoards, setParentConsent } from "@/lib/learn/youth-account";
 import { sendDeletionRequestEmails, sendParentEmail } from "@/lib/learn/youth-emails";
+import { releaseSponsorships } from "@/lib/learn/youth-sponsor";
 
 // The parent dashboard's settings (/parent/[token]). No sign-in: the link
 // emailed to the parent is the credential (32 random bytes, looked up by
@@ -46,6 +47,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     switch (a.action) {
       case "consent":
         await setParentConsent(child.studentId, "granted");
+        // A sponsored place waiting for this consent: the child's welcome now.
+        await releaseSponsorships(child.studentId).catch((err) => console.error("[parent] release sponsorships", err instanceof Error ? err.message : err));
         return NextResponse.json({ ok: true, message: t("learn.parent.done.consent") });
       case "revoke":
         await setParentConsent(child.studentId, "revoked");

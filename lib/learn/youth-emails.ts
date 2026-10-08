@@ -17,7 +17,8 @@ const list = (items: string[]) =>
   `<ul style="font-size:14px;color:#5b6b72;line-height:1.7;margin:0 0 14px;padding-left:20px;">${items.map((i) => `<li>${i}</li>`).join("")}</ul>`;
 
 /** The consent request (under 13) or the information email (13 to 17). */
-export async function sendParentEmail(child: YouthProfile): Promise<void> {
+/** `extraHtml`: an extra paragraph (e.g. who sponsored the child). */
+export async function sendParentEmail(child: YouthProfile, extraHtml = ""): Promise<void> {
   if (!child.parentEmail || !child.parentToken) throw new Error("No parent email");
   const t = translator(child.locale);
   const name = esc(firstName(child.name));
@@ -26,6 +27,7 @@ export async function sendParentEmail(child: YouthProfile): Promise<void> {
   const k = consent ? "learn.email.youth.consent" : "learn.email.youth.info";
   const body =
     p(t(`${k}.p1`, { name })) +
+    extraHtml +
     p(`<strong style="color:#131A1B;">${t("learn.email.youth.collect.title")}</strong>`) +
     list([1, 2, 3, 4].map((n) => t(`learn.email.youth.collect.${n}`))) +
     p(`<strong style="color:#131A1B;">${t("learn.email.youth.why.title")}</strong> ${t("learn.email.youth.why.body")}`) +

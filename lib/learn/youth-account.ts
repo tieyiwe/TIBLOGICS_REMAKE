@@ -115,6 +115,36 @@ const STATEMENTS = [
     CONSTRAINT "YouthEncouragement_pkey" PRIMARY KEY ("id")
   )`,
   `CREATE INDEX IF NOT EXISTS "YouthEncouragement_studentId_createdAt_idx" ON "YouthEncouragement"("studentId","createdAt")`,
+  // "Sponsor a young person" (lib/learn/youth-sponsor.ts). No foreign key:
+  // the child's account is created when the payment is fulfilled.
+  `CREATE TABLE IF NOT EXISTS "YouthSponsorship" (
+    "id" TEXT NOT NULL,
+    "sponsorName" TEXT NOT NULL,
+    "sponsorEmail" TEXT NOT NULL,
+    "sponsorLocale" TEXT NOT NULL DEFAULT 'en',
+    "relationship" TEXT NOT NULL,
+    "relationshipOther" TEXT,
+    "childFirstName" TEXT NOT NULL,
+    "childEmail" TEXT NOT NULL,
+    "childAge" INTEGER NOT NULL,
+    "childLocale" TEXT NOT NULL DEFAULT 'en',
+    "lane" TEXT NOT NULL,
+    "note" TEXT,
+    "plan" TEXT NOT NULL,
+    "amountCents" INTEGER NOT NULL,
+    "siblingPct" INTEGER NOT NULL DEFAULT 0,
+    "parentEmail" TEXT,
+    "parentAttested" BOOLEAN NOT NULL DEFAULT false,
+    "status" TEXT NOT NULL DEFAULT 'checkout',
+    "stripeSessionId" TEXT,
+    "childStudentId" TEXT,
+    "childEmailSentAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "YouthSponsorship_pkey" PRIMARY KEY ("id")
+  )`,
+  `CREATE INDEX IF NOT EXISTS "YouthSponsorship_sponsorEmail_idx" ON "YouthSponsorship"("sponsorEmail")`,
+  `CREATE INDEX IF NOT EXISTS "YouthSponsorship_childStudentId_idx" ON "YouthSponsorship"("childStudentId")`,
   ...["YouthParentDigest", "YouthGuardian", "YouthPauseAlert", "YouthEncouragement"].map(
     (t) => `DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = '${t}_studentId_fkey') THEN

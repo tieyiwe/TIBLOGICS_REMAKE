@@ -19,6 +19,7 @@ import { arfaMailer } from "@/lib/resend";
 import { createNotification } from "@/lib/learn/inbox/notifications";
 import { learnEmailEsc as esc, learnEmailP as p, learnEmailShell as shell, LEARN_SITE } from "./emails";
 import { translator } from "./i18n";
+import { cleanFreeText } from "./youth-text";
 import { ensureYouthColumns, minorBirthYearAbove, readYouthProfile, youthGate, type YouthProfile } from "./youth-account";
 
 export type GuardianRole = "parent" | "sponsor";
@@ -233,12 +234,7 @@ export async function adultsOf(child: YouthProfile): Promise<Array<{ email: stri
  * Null when it cannot be sent as written.
  */
 export function cleanEncouragement(raw: string): string | null {
-  const s = raw.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
-  if (s.length < 2 || s.length > ENCOURAGE_MAX) return null;
-  if (/https?:|www\.|\b[a-z0-9-]+\.(com|net|org|io|co|me|ly|app|gg|tv|fr|ke|tz|ug|uk|info|biz|link|xyz)\b/i.test(s)) return null;
-  if (/[^\s@]+@[^\s@]+/.test(s) || /(^|\s)@\w/.test(s)) return null;
-  if (/(\+?\d[\d\s().-]{6,}\d)/.test(s)) return null;
-  return s;
+  return cleanFreeText(raw, ENCOURAGE_MAX, 2);
 }
 
 /** Sends one encouragement: an in-app notice for the child and an email to them. */

@@ -163,6 +163,8 @@ export async function deleteLearner(
   await scrub("YouthGuardian", `DELETE FROM "YouthGuardian" WHERE "studentId" = $1`, id, done);
   await scrub("YouthEncouragement", `DELETE FROM "YouthEncouragement" WHERE "studentId" = $1`, id, done);
   await scrub("YouthPauseAlert", `DELETE FROM "YouthPauseAlert" WHERE "studentId" = $1`, id, done);
+  // A sponsorship stays as a payment record, without the child's details.
+  await scrub("YouthSponsorship", `UPDATE "YouthSponsorship" SET "childFirstName" = 'Removed', "childEmail" = 'removed', "note" = NULL, "parentEmail" = NULL WHERE "childStudentId" = $1`, id, done);
   await scrub("LessonReflection", `DELETE FROM "LessonReflection" WHERE "studentId" = $1`, id, done);
   await scrub("LearnerDraft", `DELETE FROM "LearnerDraft" WHERE "studentId" = $1`, id, done);
   await scrub("PortfolioSettings", `DELETE FROM "PortfolioSettings" WHERE "studentId" = $1`, id, done);

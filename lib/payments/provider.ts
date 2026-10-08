@@ -92,6 +92,22 @@ export interface TeamCheckoutRequest extends CheckoutDiscountFields {
   cancelUrl: string;
 }
 
+/** AI-Empowered Youth: a sponsor pays for a young person's place (lib/learn/youth-sponsor.ts). */
+export interface YouthSponsorCheckoutRequest {
+  sponsorshipId: string;
+  sponsorEmail: string;
+  trackId: string;
+  trackSlug: string;
+  trackTitle: string;
+  plan: "lifetime" | "monthly";
+  /** Cents (per month for "monthly"), computed on the server. */
+  amount: number;
+  siblingDiscountPct?: number;
+  currency: string;
+  successUrl: string;
+  cancelUrl: string;
+}
+
 export interface PaymentProvider {
   readonly name: string;
   /** Plans to display and sell. */
@@ -102,6 +118,8 @@ export interface PaymentProvider {
   createTrackCheckout(req: TrackCheckoutRequest): Promise<{ url: string }>;
   /** One track, monthly subscription (only for tracks sold that way). */
   createTrackMonthlyCheckout(req: TrackMonthlyCheckoutRequest): Promise<{ url: string }>;
+  /** A sponsor pays for a young person's place (one time or monthly). */
+  createYouthSponsorCheckout(req: YouthSponsorCheckoutRequest): Promise<{ url: string; sessionId: string }>;
   /** Hosted billing/self-service portal for an existing customer. */
   createBillingPortal(customerId: string, returnUrl: string): Promise<{ url: string }>;
   /** Hosted subscription checkout for a team's seats. */

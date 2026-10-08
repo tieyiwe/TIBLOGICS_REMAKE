@@ -74,6 +74,9 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
         <p className="text-xs font-bold uppercase tracking-wide text-[var(--orange2)]">{t("learn.youth.program")}</p>
         <h1 className="mt-1 text-2xl font-black text-[var(--ink)] sm:text-3xl">{t("learn.portal.title")}</h1>
         <p className="mt-1 break-all text-sm text-[var(--ink3)]">{t("learn.portal.signedInAs", { email })}</p>
+        <a href="/sponsor-youth" className="mt-3 inline-flex min-h-[44px] items-center rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-bold text-[var(--ink)]" data-testid="portal-sponsor-entry">
+          {t("learn.youth.sponsor.entry")}
+        </a>
       </header>
       {cards.filter(Boolean).length === 0 && (
         <p className="rounded-2xl border border-[var(--border)] bg-white p-6 text-sm text-[var(--ink2)]" data-testid="portal-empty">{t("learn.portal.empty")}</p>

@@ -9,6 +9,7 @@ import {
   type TeamCheckoutRequest,
   type TrackCheckoutRequest,
   type TrackMonthlyCheckoutRequest,
+  type YouthSponsorCheckoutRequest,
 } from "./provider";
 import { TRACK_MONTHLY_PRODUCT } from "@/lib/learn/track-monthly";
 import type { CheckoutDiscountFields } from "./provider";
@@ -109,6 +110,39 @@ export const stripeProvider: PaymentProvider = {
     });
     if (!session.url) throw new Error("Stripe did not return a checkout URL");
     return { url: session.url };
+  },
+
+  async createYouthSponsorCheckout(req: YouthSponsorCheckoutRequest) {
+    // The webhook and the success URL fulfil it from these (idempotent).
+    const metadata: Record<string, string> = { product: "youth-sponsor", sponsorshipId: req.sponsorshipId, trackId: req.trackId, trackSlug: req.trackSlug, plan: req.plan };
+    if (req.siblingDiscountPct) metadata.siblingDiscountPct = String(req.siblingDiscountPct);
+    const monthly = req.plan === "monthly";
+    const sibling = req.siblingDiscountPct ? ` Sibling discount: ${req.siblingDiscountPct}% off.` : "";
+    const session = await stripe.checkout.sessions.create({
+      mode: monthly ? "subscription" : "payment",
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: req.currency.toLowerCase(),
+            unit_amount: req.amount,
+            ...(monthly ? { recurring: { interval: "month" as const } } : {}),
+            product_data: {
+              name: `ARFA by TIBLOGICS: sponsored place in ${req.trackTitle}${monthly ? " (monthly)" : ""}`,
+              description: `${monthly ? "Monthly, cancel anytime." : "One-time payment. Lifetime access for the young person."}${sibling}`,
+            },
+          },
+        },
+      ],
+      customer_email: req.sponsorEmail,
+      success_url: req.successUrl,
+      cancel_url: req.cancelUrl,
+      client_reference_id: req.sponsorshipId,
+      metadata,
+      ...(monthly ? { subscription_data: { metadata } } : { payment_intent_data: { metadata } }),
+    });
+    if (!session.url) throw new Error("Stripe did not return a checkout URL");
+    return { url: session.url, sessionId: session.id };
   },
 
   async createTrackCheckout(req: TrackCheckoutRequest) {
