@@ -329,9 +329,42 @@ export function productNode(p: ProductInput): JsonLdNode {
       itemCondition: "https://schema.org/NewCondition",
       priceValidUntil: p.priceValidUntil,
       seller: ref(ORG_ID),
+      // Digital items: delivered by download, so free and instant shipping,
+      // and the store's terms (digital sales are final). Google Merchant
+      // Center reads these from the page as well as from the feed
+      // (app/google-merchant.xml).
+      ...(p.digital
+        ? {
+            shippingDetails: MERCHANT_COUNTRIES.map((c) => ({
+              "@type": "OfferShippingDetails",
+              shippingRate: { "@type": "MonetaryAmount", value: "0", currency: p.currency || "USD" },
+              shippingDestination: { "@type": "DefinedRegion", addressCountry: c },
+              deliveryTime: {
+                "@type": "ShippingDeliveryTime",
+                handlingTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 0, unitCode: "DAY" },
+                transitTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 0, unitCode: "DAY" },
+              },
+            })),
+            hasMerchantReturnPolicy: {
+              "@type": "MerchantReturnPolicy",
+              applicableCountry: MERCHANT_COUNTRIES,
+              returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
+              merchantReturnLink: absUrl("/terms"),
+            },
+          }
+        : {}),
     },
   };
 }
+
+/**
+ * Countries the store sells to in Google Merchant Center (shipping and
+ * returns are declared for each). MERCHANT_COUNTRIES="US,GB,NG" overrides.
+ */
+export const MERCHANT_COUNTRIES: string[] = (process.env.MERCHANT_COUNTRIES || "US")
+  .split(",")
+  .map((c) => c.trim().toUpperCase())
+  .filter((c) => /^[A-Z]{2}$/.test(c));
 
 export function softwareAppNode(o: {
   name: string;
