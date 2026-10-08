@@ -202,6 +202,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
         prevId={prevId}
         nextId={nextId}
         glossary={termsInText(text.bodyMd ?? "", locale)}
+        textRead={owner || isDone || !!(await readDraft(student.id, `read:${lesson.id}`))}
         glossaryLabels={{
           heading: t("learn.glossary.heading"),
           close: t("learn.glossary.close"),

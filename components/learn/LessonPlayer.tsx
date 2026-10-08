@@ -69,6 +69,7 @@ export default function LessonPlayer({
   footer,
   glossary,
   glossaryLabels,
+  textRead,
 }: {
   lesson: LessonView;
   resources: ResourceView[];
@@ -89,6 +90,8 @@ export default function LessonPlayer({
   /** Glossary terms used in this lesson, and the pop-up's labels (components/learn/glossary). */
   glossary?: GlossEntry[];
   glossaryLabels?: GlossaryLabels;
+  /** The text was already read to the end (or the owner's account). */
+  textRead?: boolean;
   /** Shown at the end of the lesson, after the quick check (the reflection). */
   footer?: React.ReactNode;
 }) {
@@ -102,8 +105,40 @@ export default function LessonPlayer({
   const [outlineOpen, setOutlineOpen] = useState(false);
   // A lesson video must be watched to the end before moving on (the owner's
   // account is exempt: video.noSkip is false). The server enforces it too.
-  const [videoDone, setVideoDone] = useState(!lesson.video || lesson.video.noSkip === false || !!lesson.video.watched);
+  const [videoDone, setVideoDone] = useState(alreadyComplete || !lesson.video || lesson.video.noSkip === false || !!lesson.video.watched);
+  // The text must be read to the end as well: the end marker seen after at
+  // least 20 seconds on the page (recorded on the server, app/api/learn/lesson-read).
+  const [textDone, setTextDone] = useState(alreadyComplete || !!textRead || !lesson.bodyMd?.trim());
   const [videoWarn, setVideoWarn] = useState(false);
+  // A callback ref: unfolding the text under the video renders a new marker.
+  const [textEnd, setTextEnd] = useState<HTMLDivElement | null>(null);
+  const [openedAt] = useState(() => Date.now());
+  useEffect(() => {
+    if (textDone) return;
+    let seen = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const record = () => {
+      setTextDone(true);
+      void fetch("/api/learn/lesson-read", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lessonId: lesson.id }),
+      }).catch(() => {});
+    };
+    const io = new IntersectionObserver((entries) => {
+      if (seen || !entries.some((e) => e.isIntersecting)) return;
+      seen = true;
+      io.disconnect();
+      const wait = Math.max(0, 20_000 - (Date.now() - openedAt));
+      timer = setTimeout(record, wait);
+    });
+    if (textEnd) io.observe(textEnd);
+    return () => {
+      io.disconnect();
+      if (timer) clearTimeout(timer);
+    };
+  }, [textDone, lesson.id, textEnd, openedAt]);
+  const canMove = videoDone && textDone;
   useEffect(() => {
     const on = (e: Event) => {
       if ((e as CustomEvent).detail === lesson.id) {
@@ -116,12 +151,12 @@ export default function LessonPlayer({
   }, [lesson.id]);
   const blockForVideo = () => {
     setVideoWarn(true);
-    document.querySelector("video")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (!videoDone) document.querySelector("video")?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
   async function complete() {
     if (saving) return;
-    if (!videoDone) return blockForVideo();
+    if (!canMove) return blockForVideo();
     setSaving(true);
     try {
       // Offline (a downloaded lesson): keep it on this device and send it
@@ -139,8 +174,9 @@ export default function LessonPlayer({
         return;
       }
       const data = await res.json().catch(() => ({}));
-      if (res.status === 409 && data.code === "video_unwatched") {
-        setVideoDone(false);
+      if (res.status === 409 && (data.code === "video_unwatched" || data.code === "text_unread" || data.code === "both")) {
+        if (data.code !== "text_unread") setVideoDone(false);
+        if (data.code !== "video_unwatched") setTextDone(false);
         return blockForVideo();
       }
       if (res.ok) {
@@ -190,6 +226,7 @@ export default function LessonPlayer({
             {lesson.bodyMd && (
               <div data-narrate className="rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
                 <Markdown source={lesson.bodyMd} glossary={glossary} />
+                <div ref={setTextEnd} data-testid="lesson-text-end" aria-hidden="true" />
               </div>
             )}
           </LessonMedia>
@@ -204,6 +241,7 @@ export default function LessonPlayer({
             {lesson.bodyMd && (
               <div data-narrate className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
                 <Markdown source={lesson.bodyMd} glossary={glossary} />
+                <div ref={setTextEnd} data-testid="lesson-text-end" aria-hidden="true" />
               </div>
             )}
           </>
@@ -263,13 +301,13 @@ export default function LessonPlayer({
             <Link
               href={`/learn/lesson/${nextId}`}
               onClick={(e) => {
-                if (!videoDone) {
+                if (!canMove) {
                   e.preventDefault();
                   blockForVideo();
                 }
               }}
-              aria-disabled={!videoDone || undefined}
-              className={`rounded-full bg-[var(--ink)] px-6 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 ${videoDone ? "" : "opacity-60"}`}
+              aria-disabled={!canMove || undefined}
+              className={`rounded-full bg-[var(--ink)] px-6 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 ${canMove ? "" : "opacity-60"}`}
               data-testid="lesson-next"
             >
               {t("learn.lesson.next")} →
@@ -283,9 +321,9 @@ export default function LessonPlayer({
             </Link>
           )}
 
-          {videoWarn && (
+          {videoWarn && !canMove && (
             <p role="alert" className="w-full rounded-lg bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900" data-testid="video-first">
-              {t("learn.lesson.videoFirst")}
+              {t(!videoDone && !textDone ? "learn.lesson.bothFirst" : !videoDone ? "learn.lesson.videoFirst" : "learn.lesson.readFirst")}
             </p>
           )}
 

@@ -8,6 +8,8 @@ import { computeStreak, getTotalPoints, levelFor } from "@/lib/learn/points";
 import { checkHalfway, checkLevelUp } from "@/lib/learn/milestones";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { lessonVideoFor } from "@/lib/learn/video/store";
+import { readDraft } from "@/lib/learn/drafts/server";
+import { isOwnerStudent } from "@/lib/learn/owner";
 import { gameDelta, gameSnapshot } from "@/lib/learn/badges";
 
 const Body = z.object({ lessonId: z.string().min(1) });
@@ -27,11 +29,20 @@ export async function POST(req: NextRequest) {
 
   // A lesson video must be watched before the lesson counts as done (the
   // owner's account is exempt: noSkip is false for it).
-  const lessonRow = await prisma.lesson.findUnique({ where: { id: parsed.data.lessonId }, select: { id: true, videoUrl: true } });
-  if (lessonRow) {
+  // The text must be read to the end too. A lesson already completed (or the
+  // owner's account) is never re-checked.
+  const lessonRow = await prisma.lesson.findUnique({ where: { id: parsed.data.lessonId }, select: { id: true, videoUrl: true, bodyMd: true } });
+  const alreadyDone = lessonRow
+    ? !!(await prisma.lessonProgress.findFirst({ where: { studentId: student.id, lessonId: lessonRow.id }, select: { lessonId: true } }))
+    : true;
+  if (lessonRow && !alreadyDone && !(await isOwnerStudent(student.id))) {
     const video = await lessonVideoFor(student.id, lessonRow, await getLocale()).catch(() => null);
-    if (video && video.noSkip && !video.watched) {
-      return NextResponse.json({ error: t("learn.lesson.videoFirst"), code: "video_unwatched" }, { status: 409 });
+    const videoMissing = !!video && video.noSkip && !video.watched;
+    const textMissing = !!lessonRow.bodyMd?.trim() && !(await readDraft(student.id, `read:${lessonRow.id}`));
+    if (videoMissing || textMissing) {
+      const code = videoMissing && textMissing ? "both" : videoMissing ? "video_unwatched" : "text_unread";
+      const msg = code === "both" ? "learn.lesson.bothFirst" : code === "video_unwatched" ? "learn.lesson.videoFirst" : "learn.lesson.readFirst";
+      return NextResponse.json({ error: t(msg), code }, { status: 409 });
     }
   }
 
