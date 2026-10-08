@@ -67,9 +67,9 @@ export async function POST(req: NextRequest) {
   }
 
   const lead = result.lead;
-  // A paid report's re-scan is unlocked from the start: write it now.
+  // A paid report's re-scan is unlocked from the start: finish it now.
   if (lead.parentId && lead.unlockedAt) {
-    void import("@/lib/scanner/report").then((m) => m.writeReport(lead.id)).catch((err) => console.error("[scanner] rescan report", err));
+    void import("@/lib/scanner/report").then((m) => m.finishReport(lead.id)).catch((err) => console.error("[scanner] rescan report", err));
   }
   if (purchase && !lead.parentId && !lead.unlockedAt && !staff) {
     const checkout = await startReportCheckout(lead, locale, req.headers.get("cookie"));

@@ -4,7 +4,6 @@ import type { Locale } from "@/lib/i18n/config";
 import { translatorFor } from "@/lib/i18n/server";
 import { findingText } from "./i18n";
 import { allFindings, readExtra, AREAS, type Area, type CompareRow } from "./view";
-import { readReport } from "./report-shape";
 
 // The full report as a branded A4 PDF: scores, the written summary and fix
 // steps, build ideas, every check by area, detected tools, PageSpeed and the
@@ -112,7 +111,6 @@ export async function reportPdf(l: ScannerLead, locale: Locale): Promise<Buffer>
   const date = new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(l.createdAt);
   const w = new Writer(doc, font, bold, `TIBLOGICS · ${t("tools.sr.pdf.title")} · ${l.domain ?? ""} · ${date} · tiblogics.com`);
   const extra = readExtra(l.extra, l.url);
-  const report = readReport(l.report);
 
   // Cover band
   w.page.drawRectangle({ x: 0, y: H - 190, width: W, height: 184, color: NAVY });
@@ -134,28 +132,8 @@ export async function reportPdf(l: ScannerLead, locale: Locale): Promise<Buffer>
   w.heading(t("tools.sr.pdf.scores"));
   for (const a of AREAS) if (scores[a] !== null) w.bar(t(`tools.sr.area.${a}`), scores[a]!);
 
-  if (report) {
-    w.heading(t("tools.sr.summary"));
-    w.text(report.summary, { size: 10.5, gap: 6 });
-    if (report.quickWin) w.text(`${t("tools.sr.quickWin")} ${report.quickWin}`, { bold: true, color: GREEN, gap: 8 });
-    w.heading(t("tools.sr.fixPlan"));
-    report.priorities.forEach((p, i) => {
-      w.need(60);
-      w.text(`${i + 1}. ${p.title}`, { size: 11.5, bold: true, color: NAVY, gap: 2 });
-      w.text(`${t(`tools.sr.effort.${p.effort}`)}${p.diy ? ` · ${t("tools.sr.diy")}` : ""}`, { size: 8.5, color: MUTED, gap: 2 });
-      if (p.why) w.text(p.why, { size: 10, gap: 3 });
-      p.steps.forEach((s, j) => w.text(`${j + 1}) ${s}`, { size: 9.5, indent: 12, gap: 1 }));
-      w.y -= 6;
-    });
-    if (report.ideas.length) {
-      w.heading(t("tools.sr.ideas"));
-      for (const idea of report.ideas) {
-        w.text(idea.title, { size: 11.5, bold: true, color: BLUE, gap: 2 });
-        w.text(idea.what, { size: 10, gap: 2 });
-        if (idea.outcome) w.text(`${t("tools.sr.outcome")} ${idea.outcome}`, { size: 9.5, color: GREEN, gap: 8 });
-      }
-    }
-  } else if (extra?.opportunities.length) {
+  // No written fix plan: what is wrong and why it matters, then what we would build.
+  if (extra?.opportunities.length) {
     w.heading(t("tools.sr.ideas"));
     for (const k of extra.opportunities) {
       w.text(t(`tools.opp.${k}.title`), { size: 11.5, bold: true, color: BLUE, gap: 2 });

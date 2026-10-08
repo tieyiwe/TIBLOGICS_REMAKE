@@ -6,7 +6,6 @@ import type { Finding } from "./audit";
 import type { ExtraFinding, OpportunityKey, PageSpeedResult, Tech } from "./extra";
 import { findingText } from "./i18n";
 import { reportPrice } from "./config";
-import { readReport, type WrittenReport } from "./report-shape";
 import { hideOwnStack, isOwnSite } from "./own";
 
 // What a visitor sees of a scan, by how much they have unlocked:
@@ -77,8 +76,6 @@ export interface ReportView {
     findings: ViewFinding[];
     tech: Tech | null;
     pageSpeed: PageSpeedResult | null;
-    report: WrittenReport | null;
-    reportStatus: string | null;
     ideas: Array<{ key: string; title: string; body: string }>;
     compare: CompareRow[];
     rescan: { credits: number; until: string | null };
@@ -207,8 +204,6 @@ export async function buildView(lead: ScannerLead, t: T, locale: Locale, opts: {
       findings: findings.map((f) => toView(t, locale, f)),
       tech: extra?.tech ?? null,
       pageSpeed: extra?.pageSpeed ?? null,
-      report: readReport(lead.report),
-      reportStatus: lead.reportStatus,
       ideas: (extra?.opportunities ?? []).map((k) => ({ key: k, title: t(`tools.opp.${k}.title`), body: t(`tools.opp.${k}.body`) })),
       compare: Array.isArray(lead.compare) ? (lead.compare as unknown as CompareRow[]) : [],
       rescan: { credits: lead.rescanUntil && lead.rescanUntil > new Date() ? lead.rescanCredits : 0, until: lead.rescanUntil?.toISOString() ?? null },

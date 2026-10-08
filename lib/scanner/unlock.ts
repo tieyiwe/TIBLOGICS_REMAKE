@@ -3,13 +3,13 @@ import prisma from "@/lib/prisma";
 import { normEmail } from "@/lib/growth/outreach/normalize";
 import { callUnlocksPerDay, RESCAN_DAYS } from "./config";
 import { ensureScannerColumns } from "./db";
-import { writeReport } from "./report";
+import { finishReport } from "./report";
 import { sendOwnerScanAlert } from "./email";
 import { upsertScannerGrowthLead } from "./growth";
 
 // Unlocking the full report: paid ($29 checkout), a booked call, or staff.
 // Each moves a locked scan to unlocked in one conditional update, so a
-// retried webhook or a double-submitted booking unlocks (and writes) once.
+// retried webhook or a double-submitted booking unlocks (and finishes) once.
 // Follow-up emails stop: the visitor has acted.
 
 type Source = "paid" | "call" | "admin";
@@ -41,7 +41,7 @@ async function unlock(id: string, source: Source, data: { email?: string | null;
   }
   // Not awaited: Stripe and the booking form need a prompt answer. The
   // scanner cron job retries anything that does not finish.
-  writeReport(id).catch((err) => console.error("[scanner] report", id, err));
+  finishReport(id).catch((err) => console.error("[scanner] report", id, err));
   return true;
 }
 
@@ -62,7 +62,7 @@ export async function markReportPaid(leadId: string, session: Stripe.Checkout.Se
 
 /**
  * A free call booked from a report (/book?scan=<token>). Capped per day
- * across the site, since each unlock costs a model call and booking needs no
+ * across the site, since booking needs no
  * payment; past the cap the booking still goes through and staff can unlock
  * the report from the admin.
  */

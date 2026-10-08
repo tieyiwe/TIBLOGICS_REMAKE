@@ -95,15 +95,21 @@ export default tri({
 
   // ── Unlock ──────────────────────────────────────────────────────────────
   "tools.sr.unlock.tag": ["Full report", "Rapport complet", "Ripoti kamili"],
+  "tools.sr.fullReport": ["Your full report", "Votre rapport complet", "Ripoti yako kamili"],
+  "tools.sr.fullReport.body": [
+    "Every check we ran, the {n} problems we found and why each one matters. Want them fixed? That is what we do: book a call and we'll take it from here.",
+    "Tous les contrôles effectués, les {n} problèmes trouvés et pourquoi chacun compte. Vous voulez les corriger ? C'est notre métier : réservez un appel et nous nous en occupons.",
+    "Kila ukaguzi tuliofanya, matatizo {n} tuliyopata na kwa nini kila moja ni muhimu. Unataka yarekebishwe? Hiyo ndiyo kazi yetu: weka miadi ya simu nasi tutashughulikia.",
+  ],
   "tools.sr.unlock.title": [
-    "Know exactly what to fix, and what to build",
-    "Sachez exactement quoi corriger, et quoi construire",
-    "Jua hasa nini cha kurekebisha, na nini cha kujenga",
+    "Know exactly what is holding your site back",
+    "Sachez exactement ce qui freine votre site",
+    "Jua hasa kinachozuia tovuti yako",
   ],
   "tools.sr.unlock.fixes": [
-    "Why each of the {n} problems matters, with step-by-step fixes in priority order",
-    "Pourquoi chacun des {n} problèmes compte, avec les correctifs pas à pas, par priorité",
-    "Kwa nini kila moja ya matatizo {n} ni muhimu, na hatua za kurekebisha kwa kipaumbele",
+    "Why each of the {n} problems matters and what it costs you, in priority order",
+    "Pourquoi chacun des {n} problèmes compte et ce qu'il vous coûte, par ordre de priorité",
+    "Kwa nini kila moja ya matatizo {n} ni muhimu na linakugharimu nini, kwa mpangilio wa kipaumbele",
   ],
   "tools.sr.unlock.ideas": [
     "{n} things we'd build for this site to bring in more customers",
@@ -118,16 +124,20 @@ export default tri({
   "tools.sr.unlock.pagespeed": ["Google PageSpeed test on mobile", "Test Google PageSpeed sur mobile", "Jaribio la Google PageSpeed kwenye simu"],
   "tools.sr.unlock.compare": ["Side by side with up to 3 competitors", "Comparaison avec jusqu'à 3 concurrents", "Ulinganisho na hadi washindani 3"],
   "tools.sr.unlock.pdf": [
-    "A branded PDF and a link to share with your team or web developer",
-    "Un PDF à nos couleurs et un lien à partager avec votre équipe ou votre développeur",
-    "PDF yenye chapa na kiungo cha kushiriki na timu yako au msanidi wa tovuti",
+    "A branded PDF and a link to share with your team",
+    "Un PDF à nos couleurs et un lien à partager avec votre équipe",
+    "PDF yenye chapa na kiungo cha kushiriki na timu yako",
   ],
   "tools.sr.unlock.rescan": [
     "A fresh scan within 30 days to check your fixes",
     "Une nouvelle analyse sous 30 jours pour vérifier vos corrections",
     "Uchunguzi mpya ndani ya siku 30 kuthibitisha marekebisho yako",
   ],
-  "tools.sr.locked.fixes": ["Step-by-step fixes", "Correctifs pas à pas", "Hatua za kurekebisha"],
+  "tools.sr.locked.fixes": [
+    "Priority ranking",
+    "Classement par priorité",
+    "Mpangilio wa kipaumbele",
+  ],
   "tools.sr.locked.ideas": ["{n} build ideas", "{n} idées de projets", "Mawazo {n} ya kujenga"],
   "tools.sr.unlock.buy": ["Unlock the full report: {price}", "Débloquer le rapport complet : {price}", "Fungua ripoti kamili: {price}"],
   "tools.sr.unlock.call": ["Or get it free with a call", "Ou gratuitement avec un appel", "Au uipate bure kwa simu"],
@@ -149,29 +159,6 @@ export default tri({
   ],
 
   // ── Full report ─────────────────────────────────────────────────────────
-  "tools.sr.fixPlan": ["Your fix plan", "Votre plan de correction", "Mpango wako wa marekebisho"],
-  "tools.sr.summary": ["Summary", "Synthèse", "Muhtasari"],
-  "tools.sr.quickWin": ["Start here:", "Commencez par ceci :", "Anza hapa:"],
-  "tools.sr.effort.low": ["Quick fix", "Correction rapide", "Marekebisho ya haraka"],
-  "tools.sr.effort.medium": ["Half a day", "Une demi-journée", "Nusu siku"],
-  "tools.sr.effort.high": ["A project", "Un projet", "Mradi"],
-  "tools.sr.diy": ["You can do this yourself", "Faisable par vous-même", "Unaweza kufanya mwenyewe"],
-  "tools.sr.writing": [
-    "We're writing your fix steps and build ideas. This takes about a minute; the page updates by itself.",
-    "Nous rédigeons vos correctifs et vos idées. Cela prend environ une minute ; la page se met à jour toute seule.",
-    "Tunaandika hatua zako za marekebisho na mawazo. Inachukua takriban dakika moja; ukurasa utajisasisha wenyewe.",
-  ],
-  "tools.sr.writingFailed": [
-    "Writing the report is taking longer than usual. We'll email it to you as soon as it's ready.",
-    "La rédaction du rapport prend plus de temps que prévu. Nous vous l'enverrons par e-mail dès qu'il sera prêt.",
-    "Kuandika ripoti kunachukua muda zaidi ya kawaida. Tutakutumia kwa barua pepe ikiwa tayari.",
-  ],
-  "tools.sr.staffPreview": [
-    "Staff preview: this report is not unlocked, so no written fix plan yet. Write it now if you need it.",
-    "Aperçu équipe : ce rapport n'est pas débloqué, le plan écrit n'existe pas encore. Rédigez-le maintenant si besoin.",
-    "Muonekano wa wafanyakazi: ripoti hii haijafunguliwa, kwa hiyo mpango ulioandikwa bado haupo. Uandike sasa ukiuhitaji.",
-  ],
-  "tools.sr.staffWrite": ["Write the fix plan", "Rédiger le plan", "Andika mpango"],
   "tools.sr.pdf": ["Download PDF", "Télécharger le PDF", "Pakua PDF"],
   "tools.sr.share": ["Copy share link", "Copier le lien", "Nakili kiungo"],
   "tools.sr.copied": ["Link copied", "Lien copié", "Kiungo kimenakiliwa"],
@@ -192,7 +179,6 @@ export default tri({
   "tools.sr.pagespeed": ["Google PageSpeed", "Google PageSpeed", "Google PageSpeed"],
   "tools.sr.ps.mobile": ["mobile", "mobile", "simu"],
   "tools.sr.ps.performance": ["Performance (mobile)", "Performance (mobile)", "Utendaji (simu)"],
-  "tools.sr.ps.pending": ["Measured when the report is written.", "Mesuré lors de la rédaction du rapport.", "Hupimwa ripoti inapoandikwa."],
   "tools.sr.ps.unavailable": [
     "Google PageSpeed could not test this site this time.",
     "Google PageSpeed n'a pas pu tester ce site cette fois-ci.",
@@ -299,9 +285,9 @@ export default tri({
   ],
   "tools.sr.mail.r.problems": ["What we found:", "Ce que nous avons trouvé :", "Tulichopata:"],
   "tools.sr.mail.r.unlock": [
-    "The full report shows why each problem matters and how to fix it step by step, {n} things we'd build for this site, a competitor comparison and a PDF to share. It's {price} and includes a fresh scan within 30 days, or free when you book a short call with us.",
-    "Le rapport complet explique pourquoi chaque problème compte et comment le corriger pas à pas, avec {n} idées de projets pour ce site, une comparaison avec vos concurrents et un PDF à partager. Il coûte {price} et inclut une nouvelle analyse sous 30 jours, ou il est gratuit si vous réservez un court appel avec nous.",
-    "Ripoti kamili inaonyesha kwa nini kila tatizo ni muhimu na jinsi ya kulirekebisha hatua kwa hatua, mambo {n} tungejenga kwa tovuti hii, ulinganisho na washindani na PDF ya kushiriki. Ni {price} na inajumuisha uchunguzi mpya ndani ya siku 30, au ni bure ukiweka miadi ya simu fupi nasi.",
+    "The full report shows why each problem matters and what it costs you, {n} things we'd build for this site, a competitor comparison and a PDF to share. It's {price} and includes a fresh scan within 30 days, or free when you book a short call with us.",
+    "Le rapport complet explique pourquoi chaque problème compte et ce qu'il vous coûte, avec {n} idées de projets pour ce site, une comparaison avec vos concurrents et un PDF à partager. Il coûte {price} et inclut une nouvelle analyse sous 30 jours, ou il est gratuit si vous réservez un court appel avec nous.",
+    "Ripoti kamili inaonyesha kwa nini kila tatizo ni muhimu na linakugharimu nini, mambo {n} tungejenga kwa tovuti hii, ulinganisho na washindani na PDF ya kushiriki. Ni {price} na inajumuisha uchunguzi mpya ndani ya siku 30, au ni bure ukiweka miadi ya simu fupi nasi.",
   ],
   "tools.sr.mail.f1.subject": ["The #1 thing holding {domain} back", "Le principal frein de {domain}", "Jambo kuu linalozuia {domain}"],
   "tools.sr.mail.f1.title": ["The #1 thing holding {domain} back", "Le principal frein de {domain}", "Jambo kuu linalozuia {domain}"],
@@ -311,11 +297,15 @@ export default tri({
     "Ulipochunguza {domain}, tatizo kubwa zaidi tulilopata lilikuwa:",
   ],
   "tools.sr.mail.f1.more": [
-    "Your full report has the exact steps to fix it, plus {n} more problems in priority order.",
-    "Votre rapport complet donne les étapes exactes pour le corriger, et {n} autres problèmes par ordre de priorité.",
-    "Ripoti yako kamili ina hatua kamili za kulirekebisha, pamoja na matatizo mengine {n} kwa mpangilio wa kipaumbele.",
+    "Your full report shows what this costs you, plus {n} more problems in priority order. We can fix them for you.",
+    "Votre rapport complet montre ce que cela vous coûte, avec {n} autres problèmes par ordre de priorité. Nous pouvons les corriger pour vous.",
+    "Ripoti yako kamili inaonyesha jinsi hili linavyokugharimu, pamoja na matatizo mengine {n} kwa mpangilio wa kipaumbele. Tunaweza kuyarekebisha kwa ajili yako.",
   ],
-  "tools.sr.mail.f1.cta": ["See how to fix it", "Voir comment corriger", "Ona jinsi ya kurekebisha"],
+  "tools.sr.mail.f1.cta": [
+    "See the full report",
+    "Voir le rapport complet",
+    "Ona ripoti kamili",
+  ],
   "tools.sr.mail.f2.subject": ["{n} things we'd build for {domain}", "{n} idées de projets pour {domain}", "Mambo {n} tungejenga kwa {domain}"],
   "tools.sr.mail.f2.title": ["{n} things we'd build for {domain}", "{n} idées de projets pour {domain}", "Mambo {n} tungejenga kwa {domain}"],
   "tools.sr.mail.f2.intro": [

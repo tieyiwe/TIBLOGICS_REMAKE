@@ -179,7 +179,7 @@ export default async function ScannerLeadsPage() {
                     )}
                     {lead.unlockedAt && (
                       <p className="mt-1 font-dm text-[11px] text-[var(--a-ink-3)]">
-                        {lead.reportStatus === "ready" ? "Written" : lead.reportStatus?.startsWith("failed") ? `Failed (${lead.reportStatus})` : "Writing"}
+                        {lead.reportStatus === "ready" ? "Report sent" : lead.reportStatus?.startsWith("failed") ? `Failed (${lead.reportStatus})` : "Finishing"}
                       </p>
                     )}
                   </td>

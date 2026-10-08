@@ -10,7 +10,6 @@ import { isSuppressed, unsubscribeUrl } from "@/lib/growth/outreach/suppression"
 import { findingText } from "./i18n";
 import { reportPrice } from "./config";
 import { allFindings, readExtra, type Area } from "./view";
-import { readReport } from "./report-shape";
 import { servicesNeeded } from "./growth";
 
 // Scanner emails, in the visitor's language:
@@ -165,8 +164,6 @@ export async function sendFollowup(l: ScannerLead, stage: 1 | 2): Promise<boolea
 export async function sendReportReadyEmail(id: string): Promise<void> {
   const l = await prisma.scannerLead.findUnique({ where: { id } });
   if (!l?.email || !l.token) return;
-  const report = readReport(l.report);
-  if (!report) return;
   const locale = localeOf(l);
   const t = translatorFor(locale);
   const domain = l.domain ?? l.url;
@@ -176,7 +173,6 @@ export async function sendReportReadyEmail(id: string): Promise<void> {
   const html = frame(
     esc(t("tools.sr.mail.ready.title")),
     p(esc(t("tools.sr.mail.ready.intro", { domain }))) +
-      (report.quickWin ? `<div style="margin:0 0 16px;padding:12px 16px;border-radius:10px;background:#EAF7EF;font-size:14px;color:#0D1B2A;line-height:1.6;"><strong>${esc(t("tools.sr.quickWin"))}</strong> ${esc(report.quickWin)}</div>` : "") +
       button(reportUrl(l), t("tools.sr.mail.ready.open")) +
       (until ? p(esc(t("tools.sr.mail.ready.rescan", { domain, date: until }))) : "") +
       p(esc(t("tools.sr.mail.ready.help"))) +

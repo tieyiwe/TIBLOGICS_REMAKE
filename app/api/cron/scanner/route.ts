@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { secretEquals } from "@/lib/require-admin";
 import { ensureScannerColumns } from "@/lib/scanner/db";
-import { pendingReports, writeReport } from "@/lib/scanner/report";
+import { finishReport, pendingReports } from "@/lib/scanner/report";
 import { sendFollowup } from "@/lib/scanner/email";
 
 // Website scanner, daily (hourly is fine too):
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
   const reports: Record<string, number> = {};
   for (const id of await pendingReports(5)) {
     if (Date.now() > deadline) break;
-    const o = await writeReport(id).catch(() => "failed" as const);
+    const o = await finishReport(id).catch(() => "failed" as const);
     reports[o] = (reports[o] ?? 0) + 1;
   }
   return NextResponse.json({ followups: { due: due.length, sent, skipped }, reports });

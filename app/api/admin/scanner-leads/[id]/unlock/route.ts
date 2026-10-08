@@ -4,7 +4,7 @@ import { staffAiLimit } from "@/lib/rate-limit";
 import { unlockByAdmin } from "@/lib/scanner/unlock";
 
 // Staff: unlock a scan's full report (e.g. after a call booked outside the
-// report link), which writes it (one model call) and shows it at its link.
+// report link), which finishes it (PageSpeed, ready email) and shows it at its link.
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const denied = await requirePermission("scanner_leads:manage");

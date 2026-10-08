@@ -117,8 +117,8 @@ export default function ReportView({ initial, paidReturn = false, canceled = fal
     if (r?.ok) setV(await r.json());
   }, [v.token]);
 
-  // Poll while a payment is being confirmed or the full report is being written.
-  const waiting = (paidReturn && v.level !== "full") || (v.level === "full" && !v.full?.report && !String(v.full?.reportStatus ?? "").startsWith("failed:3") && !!v.full?.unlockSource);
+  // Poll while a payment is being confirmed.
+  const waiting = paidReturn && v.level !== "full";
   useEffect(() => {
     if (!waiting) return;
     const id = setInterval(() => {
@@ -153,15 +153,6 @@ export default function ReportView({ initial, paidReturn = false, canceled = fal
     if (!consent) return setErr(t("tools.sr.email.needConsent"));
     const r = await post(`/api/scanner/report/${v.token}/email`, { email, consent: true }, "email");
     if (r) setV(await r.json());
-  }
-
-  // Staff preview of a locked report: write the fix plan now.
-  async function writePlan() {
-    const r = await post(`/api/scanner/report/${v.token}/write`, {}, "write");
-    if (r) {
-      polls.current = 0;
-      await refresh();
-    }
   }
 
   async function buy() {
@@ -366,7 +357,7 @@ export default function ReportView({ initial, paidReturn = false, canceled = fal
       )}
 
       {/* ── Full report ──────────────────────────────────────────────────── */}
-      {v.full && <FullReport v={v} busy={busy} err={err} onCompare={compare} competitors={competitors} setCompetitors={setCompetitors} onRescan={rescan} onCopy={copyLink} copied={copied} onWrite={writePlan} />}
+      {v.full && <FullReport v={v} busy={busy} err={err} onCompare={compare} competitors={competitors} setCompetitors={setCompetitors} onRescan={rescan} onCopy={copyLink} copied={copied} />}
     </div>
   );
 }
@@ -400,24 +391,22 @@ function FullReport(props: {
   onRescan: () => void;
   onCopy: () => void;
   copied: boolean;
-  onWrite: () => void;
 }) {
   const { v, busy, err } = props;
   const t = useT();
   const locale = useLocale();
   const f = v.full!;
-  const r = f.report;
-  const failed = String(f.reportStatus ?? "").startsWith("failed:3");
-  const ideas = r?.ideas.length ? r.ideas.map((i) => ({ key: i.key, title: i.title, body: i.what, outcome: i.outcome })) : f.ideas.map((i) => ({ ...i, outcome: "" }));
+  const ideas = f.ideas.map((i) => ({ ...i, outcome: "" }));
   const ms = (n: number | null) => (n == null ? "-" : `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(n / 1000)} s`);
   const tech = f.tech;
 
   return (
     <div className="space-y-6" data-testid="full-report">
-      {/* Written fix plan */}
+      {/* The full report: what is wrong and why it matters. No written fix
+          plan: fixing it is what TIBLOGICS is booked for. */}
       <div className={card}>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className={h2}>{t("tools.sr.fixPlan")}</h2>
+          <h2 className={h2}>{t("tools.sr.fullReport")}</h2>
           <div className="flex flex-wrap gap-2">
             <a href={`/api/scanner/report/${v.token}/pdf`} className="inline-flex items-center gap-1.5 rounded-lg border border-[#D2DCE8] px-3 py-2 font-dm text-sm font-semibold text-[#1B3A6B] hover:border-[#1B3A6B]" data-testid="report-pdf">
               <Download size={15} aria-hidden /> {t("tools.sr.pdf")}
@@ -427,47 +416,7 @@ function FullReport(props: {
             </button>
           </div>
         </div>
-        {!r ? (
-          <div className="mt-4 flex items-center gap-3 rounded-xl bg-[#F4F7FB] p-4 font-dm text-sm text-[#3A4A5C]" data-testid="report-writing">
-            {failed ? (
-              <AlertTriangle size={18} className="shrink-0 text-[#E06D12]" aria-hidden />
-            ) : f.unlockSource ? (
-              <Loader2 size={18} className="shrink-0 animate-spin text-[#F47C20]" aria-hidden />
-            ) : (
-              <FileText size={18} className="shrink-0 text-[#1B3A6B]" aria-hidden />
-            )}
-            <span className="flex-1">{failed ? t("tools.sr.writingFailed") : f.unlockSource ? t("tools.sr.writing") : t("tools.sr.staffPreview")}</span>
-            {!failed && !f.unlockSource && (
-              <button type="button" onClick={props.onWrite} disabled={busy === "write"} className="inline-flex items-center gap-1.5 rounded-lg bg-[#F47C20] px-3 py-2 font-dm text-sm font-semibold text-white hover:bg-[#E06D12] disabled:opacity-60" data-testid="staff-write">
-                {busy === "write" && <Loader2 size={15} className="animate-spin" aria-hidden />} {t("tools.sr.staffWrite")}
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="mt-4 space-y-5">
-            <p className="font-dm text-[15px] leading-relaxed text-[#0D1B2A]">{r.summary}</p>
-            {r.quickWin && (
-              <div className="rounded-xl border border-green-200 bg-green-50 p-4 font-dm text-sm text-[#0D1B2A]">
-                <strong className="text-green-800">{t("tools.sr.quickWin")}</strong> {r.quickWin}
-              </div>
-            )}
-            <ol className="space-y-4">
-              {r.priorities.map((p, i) => (
-                <li key={i} className="rounded-xl border border-[#E3EAF3] p-4">
-                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                    <span className="font-syne text-base font-bold text-[#0D1B2A]">{i + 1}. {p.title}</span>
-                    <span className="rounded-full bg-[#EBF0FA] px-2 py-0.5 font-dm text-[11px] font-semibold text-[#1B3A6B]">{t(`tools.sr.effort.${p.effort}`)}</span>
-                    {p.diy && <span className="rounded-full bg-green-50 px-2 py-0.5 font-dm text-[11px] font-semibold text-green-700">{t("tools.sr.diy")}</span>}
-                  </div>
-                  {p.why && <p className="mt-1.5 font-dm text-sm text-[#3A4A5C]">{p.why}</p>}
-                  <ol className="mt-2 list-decimal space-y-1 pl-5 font-dm text-sm text-[#0D1B2A]">
-                    {p.steps.map((s, j) => <li key={j}>{s}</li>)}
-                  </ol>
-                </li>
-              ))}
-            </ol>
-          </div>
-        )}
+        <p className="mt-3 font-dm text-[15px] leading-relaxed text-[#3A4A5C]">{t("tools.sr.fullReport.body", { n: v.problemsTotal })}</p>
       </div>
 
       {/* Build ideas */}
@@ -545,7 +494,7 @@ function FullReport(props: {
               </dl>
             </div>
           ) : (
-            <p className="mt-3 font-dm text-sm text-[#7A8FA6]">{r ? t("tools.sr.ps.unavailable") : t("tools.sr.ps.pending")}</p>
+            <p className="mt-3 font-dm text-sm text-[#7A8FA6]">{t("tools.sr.ps.unavailable")}</p>
           )}
         </div>
       </div>
