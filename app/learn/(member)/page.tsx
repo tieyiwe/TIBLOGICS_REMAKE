@@ -18,6 +18,7 @@ import BadgeShelf from "@/components/learn/game/BadgeShelf";
 import MethodDashboardCards from "@/components/learn/method/MethodDashboardCards";
 import DashboardCommunityCards from "@/components/learn/community/DashboardCommunityCards";
 import DashboardLiveCard from "@/components/learn/live/DashboardLiveCard";
+import DashboardChallengeCard from "@/components/learn/challenge/DashboardChallengeCard";
 import MasteryDashboard from "@/components/learn/mastery/MasteryDashboard";
 import ResumeCard from "@/components/learn/ResumeCard";
 import { NewLessonsChip } from "@/components/learn/NewLessons";
@@ -186,6 +187,9 @@ export default async function LearnDashboard({ searchParams }: { searchParams: P
           </Link>
         </p>
       </section>
+
+      {/* This week's 10-minute challenge (components/learn/challenge) */}
+      <DashboardChallengeCard studentId={student.id} />
 
       {/* Daily Review + Portfolio (the TIBLOGICS Learn method) */}
       <MethodDashboardCards studentId={student.id} />

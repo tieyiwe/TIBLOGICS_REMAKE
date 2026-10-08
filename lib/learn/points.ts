@@ -34,6 +34,8 @@ export const POINT_VALUES: Record<PointSource, number> = {
   community_answer: 10,
   // Live expert sessions: attending (joining during the window), once each.
   live_session: 15,
+  // Weekly challenge: the graded score (0-30), passed as an override.
+  weekly_challenge: 30,
 };
 
 export const LEVELS = [

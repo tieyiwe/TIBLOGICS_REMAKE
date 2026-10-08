@@ -3413,4 +3413,26 @@ model ParagraphExplain {
   createdAt DateTime @default(now())
 
   @@id([lessonId, paraHash, locale])
+
+/// Weekly 10-minute challenge entry (lib/learn/challenge, created at runtime
+/// by lib/learn/challenge/db.ts; keep the two in step). One per learner per
+/// week ("YYYY-MM-DD" of the Monday, UTC). No Prisma relation: the foreign
+/// key to Student (ON DELETE CASCADE) lives in the runtime SQL.
+model WeeklyChallengeEntry {
+  id          String   @id
+  studentId   String
+  week        String
+  challengeId String
+  answer      String
+  score       Int
+  feedback    String
+  breakdown   Json     @default("[]")
+  locale      String   @default("en")
+  edits       Int      @default(0)
+  submittedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+
+  @@unique([studentId, week])
+  @@index([week, score, submittedAt])
 }

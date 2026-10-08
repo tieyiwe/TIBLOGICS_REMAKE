@@ -58,6 +58,7 @@ export type AiTask =
   | "video-select"
   | "lesson-recap"
   | "explain-simple"
+  | "grade-challenge"
   | "scanner-report"
   // Sonnet
   | "code-assist"
@@ -137,6 +138,8 @@ export const ROUTES: Record<AiTask, Route> = {
   "lesson-recap": { tier: "haiku", maxTokens: 900 },
   // Lessons: "Explain simpler" on one paragraph (cached per paragraph and language).
   "explain-simple": { tier: "haiku", maxTokens: 400 },
+  // Weekly 10-minute challenge: a short answer scored on three criteria, as JSON (at most twice per learner per week).
+  "grade-challenge": { tier: "haiku", maxTokens: 700 },
 
   "code-assist": { tier: "sonnet", maxTokens: 8000, thinking: "adaptive", effort: "medium", cacheSystem: true },
   "grade-code": { tier: "sonnet", maxTokens: 4000, thinking: "adaptive", effort: "medium" },

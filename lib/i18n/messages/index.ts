@@ -42,8 +42,9 @@ import scannerChecks from "./scanner-checks";
 import scannerReport from "./scanner-report";
 import scholarshipMsgs from "./scholarship";
 import casesMsgs from "./cases";
+import challengeMsgs from "./challenge";
 
-const ALL: Messages[] = [common, home, site, tools, learn, labs, toolkit, calculator, pages, game, studio, studioAutomation, studioLoops, studioPrompt, studioSorter, studioRisk, studioWireframe, studioArena, studioCritic, studioBench, studioDoors, method, tutorMsgs, masteryMsgs, communityMsgs, videoMsgs, teamMsgs, resumeMsgs, liveMsgs, badgesMsgs, pwaMsgs, a11yMsgs, acquireMsgs, referralsMsgs, inboxMsgs, promoMsgs, seoMsgs, joinMsgs, scannerChecks, scannerReport, scholarshipMsgs, casesMsgs];
+const ALL: Messages[] = [common, home, site, tools, learn, labs, toolkit, calculator, pages, game, studio, studioAutomation, studioLoops, studioPrompt, studioSorter, studioRisk, studioWireframe, studioArena, studioCritic, studioBench, studioDoors, method, tutorMsgs, masteryMsgs, communityMsgs, videoMsgs, teamMsgs, resumeMsgs, liveMsgs, badgesMsgs, pwaMsgs, a11yMsgs, acquireMsgs, referralsMsgs, inboxMsgs, promoMsgs, seoMsgs, joinMsgs, scannerChecks, scannerReport, scholarshipMsgs, casesMsgs, challengeMsgs];
 
 const cache = new Map<Locale, Record<string, string>>();
 

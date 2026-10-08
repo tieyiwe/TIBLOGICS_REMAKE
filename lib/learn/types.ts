@@ -50,6 +50,10 @@ export const POINT_SOURCES = [
   // Live expert sessions: joining inside the join window (refId: the
   // session id, so once per session).
   "live_session",
+  // Weekly 10-minute challenge (lib/learn/challenge): the graded score, up to
+  // 30, once per week (refId: the week, "YYYY-MM-DD" of its Monday). An edit
+  // that scores higher adds the difference once (refId "<week>:improved").
+  "weekly_challenge",
 ] as const;
 export type PointSource = (typeof POINT_SOURCES)[number];
 
