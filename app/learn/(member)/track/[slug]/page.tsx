@@ -27,6 +27,7 @@ import TrackCommunityCards from "@/components/learn/community/TrackCommunityCard
 import OfflineDownload from "@/components/learn/pwa/OfflineDownload";
 import YoureInBanner from "@/components/learn/join/YoureInBanner";
 import { isOwnerStudent } from "@/lib/learn/owner";
+import TrackCases from "@/components/learn/cases/TrackCases";
 
 export const dynamic = "force-dynamic";
 
@@ -398,8 +399,19 @@ export default async function TrackHome({
                   <h3 className="text-sm font-bold text-[var(--ink)]">
                     {mi + 1}. {text?.modules[m.id]?.title ?? m.title}
                   </h3>
-                  <span className="text-xs font-semibold text-[var(--ink3)]">
-                    {t("learn.dash.lessonsFraction", { done: complete, total })}
+                  <span className="flex items-center gap-3">
+                    <a
+                      href={`/api/learn/cheatsheet/${m.id}`}
+                      download
+                      data-testid="module-cheatsheet"
+                      aria-label={t("learn.cheat.linkLabel", { module: text?.modules[m.id]?.title ?? m.title })}
+                      className="inline-flex items-center gap-1 rounded-full border border-[var(--border)] px-2.5 py-1 text-[11px] font-bold text-[var(--blue2)] hover:bg-[var(--s2)]"
+                    >
+                      <span aria-hidden="true">⬇</span> {t("learn.cheat.link")}
+                    </a>
+                    <span className="text-xs font-semibold text-[var(--ink3)]">
+                      {t("learn.dash.lessonsFraction", { done: complete, total })}
+                    </span>
                   </span>
                 </div>
                 <ModuleMasteryTag t={t} mastery={masteryOf.get(m.id)} quizId={m.quiz?.id ?? null} quizPassed={quizPassed} allDone={allDone} />
@@ -493,6 +505,9 @@ export default async function TrackHome({
           </div>
         </section>
       )}
+
+      {/* Illustrative business cases (lib/learn/cases) */}
+      <TrackCases t={t} locale={locale} slug={track.slug} accent={track.accentColor} />
 
       {/* Final exam + capstone */}
       <section className="grid gap-4 sm:grid-cols-2">

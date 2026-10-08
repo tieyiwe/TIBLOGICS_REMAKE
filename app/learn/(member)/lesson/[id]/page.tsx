@@ -142,6 +142,29 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
   const moduleLessonIds = lesson.module.lessons?.map((l) => l.id) ?? [];
   // The owner can open every module quiz to check it (lib/learn/owner.ts).
   const moduleComplete = (moduleLessonIds.length > 0 && moduleLessonIds.every((lid) => doneIds.has(lid))) || owner;
+  // The module's last lesson offers its one-page cheat sheet (lib/learn/cheatsheet),
+  // to learners who have the track (a free-preview visitor does not get the PDF).
+  const isLastOfModule = modules.find((m) => m.id === lesson.moduleId)?.lessons.at(-1)?.id === lesson.id;
+  const moduleTitle = tt?.modules[lesson.moduleId]?.title ?? lesson.module.title;
+  const cheatSheet =
+    isLastOfModule && canAccessTrack(await getAccess(student.id), trackId) ? (
+      <div data-testid="lesson-cheatsheet" className="flex flex-wrap items-center gap-3 rounded-2xl border border-[var(--border)] bg-white p-4">
+        <span aria-hidden="true" className="text-2xl">📄</span>
+        <span className="min-w-0 flex-1" style={{ flexBasis: 200 }}>
+          <span className="block text-sm font-bold text-[var(--ink)]">{t("learn.cheat.endTitle")}</span>
+          <span className="mt-0.5 block text-xs text-[var(--ink2)]">{t("learn.cheat.endBody")}</span>
+        </span>
+        <a
+          href={`/api/learn/cheatsheet/${lesson.moduleId}`}
+          download
+          aria-label={t("learn.cheat.linkLabel", { module: moduleTitle })}
+          className="shrink-0 rounded-full px-4 py-2 text-xs font-bold text-white hover:opacity-90"
+          style={{ background: lesson.module.track.accentColor }}
+        >
+          ⬇ {t("learn.cheat.link")}
+        </a>
+      </div>
+    ) : null;
 
   return (
     <div>
@@ -224,7 +247,14 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
             />
           )
         }
-        recap={recap ? <KeyTakeaways recap={recap} title={t("learn.recap.title")} accentColor={lesson.module.track.accentColor} /> : undefined}
+        recap={
+          recap || cheatSheet ? (
+            <div className="space-y-4">
+              {recap && <KeyTakeaways recap={recap} title={t("learn.recap.title")} accentColor={lesson.module.track.accentColor} />}
+              {cheatSheet}
+            </div>
+          ) : undefined
+        }
         footer={
           loop && (
             <LessonReflection

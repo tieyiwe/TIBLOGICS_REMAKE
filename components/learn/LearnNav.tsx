@@ -24,6 +24,7 @@ const LINK_KEYS = [
   { href: "/learn/community", key: "community.nav" },
   { href: "/learn/live", key: "live.nav" },
   { href: "/learn/review", key: "method.nav.review" },
+  { href: "/learn/cases", key: "learn.cases.nav" },
   { href: "/learning-box/glossary", key: "learn.glossary.nav" },
   { href: "/learn/certificates", key: "learn.nav.certificates" },
   { href: "/learn/badges", key: "badges.nav" },
