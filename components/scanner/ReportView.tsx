@@ -238,6 +238,9 @@ export default function ReportView({ initial, paidReturn = false, canceled = fal
           )}
           {v.platform && <p className="mt-2 rounded-full bg-[#EBF0FA] px-3 py-1 font-dm text-xs font-semibold text-[#1B3A6B]">{t("tools.sr.builtWith", { platform: v.platform })}</p>}
           <p className="mt-3 font-dm text-xs text-[#7A8FA6]">{t("tools.sr.scannedOn", { date })}</p>
+          {/* Sharing the score spreads the scanner: the link previews as a
+              score card with "Scan your site free" (the report page metadata). */}
+          {v.scores.overall != null && v.token && <ShareScore domain={v.domain} score={overall} token={v.token} copied={copied} onCopy={copyLink} />}
         </div>
 
         <div className={card}>
@@ -377,6 +380,29 @@ function FixOffer({ n, href }: { n: number; href: string }) {
       <Link href={href} className="btn-primary shrink-0 justify-center rounded-xl px-6 py-3" data-testid="fix-offer-cta">
         <Wrench size={16} aria-hidden /> {t("tools.sr.fix.cta")}
       </Link>
+    </div>
+  );
+}
+
+function ShareScore({ domain, score, token, copied, onCopy }: { domain: string; score: number; token: string; copied: boolean; onCopy: () => void }) {
+  const t = useT();
+  const url = typeof window === "undefined" ? `https://tiblogics.com/tools/scanner/report/${token}` : `${window.location.origin}/tools/scanner/report/${token}`;
+  const text = t("tools.sr.shareText", { domain, score });
+  const links: Array<[string, string]> = [
+    ["WhatsApp", `https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`],
+    ["LinkedIn", `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`],
+    ["X", `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`],
+  ];
+  const btn = "rounded-lg border border-[#D2DCE8] px-2.5 py-1.5 font-dm text-xs font-semibold text-[#1B3A6B] hover:border-[#1B3A6B]";
+  return (
+    <div className="mt-4 w-full border-t border-[#EEF2F7] pt-3" data-testid="share-score">
+      <p className="font-dm text-xs font-semibold text-[#3A4A5C]">{t("tools.sr.shareScore")}</p>
+      <div className="mt-2 flex flex-wrap justify-center gap-2">
+        {links.map(([name, href]) => (
+          <a key={name} href={href} target="_blank" rel="noopener noreferrer" className={btn}>{name}</a>
+        ))}
+        <button type="button" onClick={onCopy} className={btn}>{copied ? t("tools.sr.copied") : t("tools.sr.share")}</button>
+      </div>
     </div>
   );
 }

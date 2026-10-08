@@ -12,7 +12,6 @@ export async function generateMetadata(): Promise<Metadata> {
     description: t("pages.aiTimes.meta.description"),
     socialTitle: t("pages.aiTimes.meta.ogTitle"),
     socialDescription: t("pages.aiTimes.meta.ogDescription"),
-    image: { url: "/ai-times/opengraph-image", width: 1200, height: 630 },
     keywords: [
       "AI blog", "AI for business", "AI best practices", "AI readiness",
       "AI news", "AI tools", "AI case studies", "AI TIMES", "AI implementation tips",

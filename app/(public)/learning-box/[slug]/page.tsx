@@ -11,6 +11,7 @@ import { getTrackBySlug, trackTime } from "@/lib/learn/catalog";
 import { fmtBreakdown, fmtMinutes, fmtPacing, fmtPrice, levelLabel, totalHours } from "@/lib/learn/format";
 import { PLANS } from "@/lib/payments/provider";
 import { trackMonthlyCents } from "@/lib/learn/track-monthly";
+import { cardMoney } from "@/lib/seo/promo";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTrack, trackText, type TrackText } from "@/lib/i18n/sources/learn";
 import type { Locale } from "@/lib/i18n/config";
@@ -78,6 +79,21 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     socialDescription: text?.tagline ?? track.tagline ?? undefined,
     // A track's own picture, else its own ARFA card (title and promise).
     image: track.heroImage ? { url: track.heroImage } : undefined,
+    // Share preview built to sell the course: the price, the hours, the
+    // certificate and a "Start learning" button (lib/seo/promo.ts).
+    promo: {
+      title,
+      description: text?.tagline ?? track.tagline ?? t("learn.track.metaTitle", { title }),
+      stat: cardMoney(trackPriceCents(track.level, track.priceCents)),
+      statLabel: locale === "fr" ? "une fois, accès à vie" : "once, lifetime access",
+      chips:
+        locale === "fr"
+          ? [`${hours.toLocaleString("fr")} h`, "Certificat", "Ateliers pratiques"]
+          : [`${hours.toLocaleString("en")} hours`, "Certificate", "Hands-on labs"],
+      cta: locale === "fr" ? "Commencer →" : "Start learning →",
+      kicker: locale === "fr" ? "Cours d'IA" : "AI course",
+      brand: "arfa",
+    },
   });
 }
 

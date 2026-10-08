@@ -161,6 +161,12 @@ export default tri({
   // ── Full report ─────────────────────────────────────────────────────────
   "tools.sr.pdf": ["Download PDF", "Télécharger le PDF", "Pakua PDF"],
   "tools.sr.share": ["Copy share link", "Copier le lien", "Nakili kiungo"],
+  "tools.sr.shareScore": ["Share your score", "Partagez votre note", "Shiriki alama yako"],
+  "tools.sr.shareText": [
+    "{domain} scored {score}/100 on the TIBLOGICS website scan. How does your site score?",
+    "{domain} a obtenu {score}/100 à l'analyse de site TIBLOGICS. Et votre site ?",
+    "{domain} imepata {score}/100 kwenye uchunguzi wa tovuti wa TIBLOGICS. Tovuti yako inapata ngapi?",
+  ],
   "tools.sr.copied": ["Link copied", "Lien copié", "Kiungo kimenakiliwa"],
   "tools.sr.ideas": ["What we'd build for you", "Ce que nous construirions pour vous", "Tungekujengea nini"],
   "tools.sr.ideas.cta": ["Talk through these ideas", "Parlons de ces idées", "Tuzungumzie mawazo haya"],

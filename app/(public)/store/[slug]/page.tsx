@@ -22,6 +22,8 @@ const getProduct = cache(async (slug: string) => {
 import ProductDetail from "@/components/shop/ProductDetail";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { fitTitle, pageMetadata, plain } from "@/lib/seo/meta";
+import { cardMoney } from "@/lib/seo/promo";
+import { cardImage } from "@/lib/seo/og-card";
 import JsonLd from "@/components/seo/JsonLd";
 import { breadcrumbNode, productNode } from "@/lib/seo/jsonld";
 import type { ShopProduct } from "@/components/shop/types";
@@ -63,7 +65,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: fitTitle([p.name]),
     absoluteTitle: true,
     description: (p.tagline ? `${cleanLine(p.tagline)} ${plain(cleanCopy(p.description))}` : plain(cleanCopy(p.description))) || `${p.name}. ${t("seo.meta.store.description")}`,
-    image: p.images?.[0] ? { url: p.images[0], alt: p.name } : undefined,
+    // The share preview: the cover beside a hook, the price and the button
+    // (lib/seo/promo.ts). A cover hosted elsewhere stays the plain preview.
+    ...(p.images?.[0] && !cardImage(p.images[0]) ? { image: { url: p.images[0], alt: p.name } } : {}),
+    promo: {
+      title: cleanLine(p.name),
+      description: p.tagline ? cleanLine(p.tagline) : plain(cleanCopy(p.description)).slice(0, 140),
+      stat: cardMoney(p.price),
+      chips:
+        locale === "fr"
+          ? [p.digital ? "Téléchargement immédiat" : "Livraison", ...(p.fileFormat ? [p.fileFormat.split(/[·,|]/)[0].trim().toUpperCase()] : []), "Prêt à l'emploi"]
+          : [p.digital ? "Instant download" : "Shipped to you", ...(p.fileFormat ? [p.fileFormat.split(/[·,|]/)[0].trim().toUpperCase()] : []), "Ready to use"],
+      cta: locale === "fr" ? "L'obtenir →" : "Get it now →",
+      kicker: locale === "fr" ? "Boutique" : "Store",
+      image: cardImage(p.images?.[0]),
+    },
   });
 }
 
