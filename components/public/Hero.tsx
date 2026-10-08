@@ -16,6 +16,7 @@ const BUILT: { name: string; href?: string }[] = [
   { name: "RoofGuard" },
   { name: "Tibintel", href: "https://tibintel.com" },
   { name: "AI Central" },
+  { name: "Blindwhisper", href: "https://blindwhisper.com" },
 ];
 
 export default async function Hero() {
@@ -99,6 +100,7 @@ export default async function Hero() {
                 )}
               </li>
             ))}
+            <li className="font-syne text-lg font-bold tracking-tight text-[#0D1B2A]/40">{t("home.hero.builtMore")}</li>
           </ul>
         </div>
       </div>

@@ -19,6 +19,7 @@ const messages: Messages = {
     "home.hero.ctaBook": "Book a free consultation",
     "home.hero.ctaServices": "Explore services",
     "home.hero.built": "Built in-house at TIBLOGICS",
+    "home.hero.builtMore": "and many others",
 
     // Hero website scan
     "home.scan.live": "Live website scan",
@@ -185,6 +186,7 @@ const messages: Messages = {
     "home.hero.ctaBook": "Réserver une consultation gratuite",
     "home.hero.ctaServices": "Découvrir nos services",
     "home.hero.built": "Conçus en interne chez TIBLOGICS",
+    "home.hero.builtMore": "et bien d’autres",
 
     "home.scan.live": "Analyse de site en direct",
     "home.scan.title": "Votre site est-il prêt pour l'IA ?",
@@ -341,6 +343,7 @@ const messages: Messages = {
     "home.hero.ctaBook": "Weka miadi ya ushauri bila malipo",
     "home.hero.ctaServices": "Tazama huduma",
     "home.hero.built": "Zimejengwa ndani ya TIBLOGICS",
+    "home.hero.builtMore": "na mengine mengi",
 
     "home.scan.live": "Uchanganuzi wa tovuti papo hapo",
     "home.scan.title": "Tovuti yako iko tayari kwa AI kiasi gani?",
