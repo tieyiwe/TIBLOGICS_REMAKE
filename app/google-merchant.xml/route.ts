@@ -15,12 +15,21 @@ import { trackPriceCents } from "@/lib/learn/pricing";
 export const dynamic = "force-dynamic";
 
 const DIGITAL_CATEGORY = "Software > Digital Goods & Currency";
-const COURSE_CATEGORY = "Software > Computer Software > Educational Software";
 
 const esc = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[c] as string)
     // Characters XML 1.0 does not allow.
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "");
+/**
+ * Free, instant delivery for one country: price 0 and 0 days of handling and
+ * transit, the way Google Merchant Center expects digital items. Store
+ * products and ARFA courses use exactly the same shipping.
+ */
+const shippingTag = (country: string, currency?: string | null) =>
+  `<g:shipping><g:country>${country}</g:country><g:price>0.00 ${(currency || "USD").toUpperCase()}</g:price>` +
+  `<g:min_handling_time>0</g:min_handling_time><g:max_handling_time>0</g:max_handling_time>` +
+  `<g:min_transit_time>0</g:min_transit_time><g:max_transit_time>0</g:max_transit_time></g:shipping>`;
+
 const money = (cents: number, currency: string) => `${(cents / 100).toFixed(2)} ${(currency || "USD").toUpperCase()}`;
 
 export async function GET() {
@@ -52,7 +61,7 @@ export async function GET() {
         ...(p.digital
           ? [
               `<g:google_product_category>${esc(DIGITAL_CATEGORY)}</g:google_product_category>`,
-              ...MERCHANT_COUNTRIES.map((c) => `<g:shipping><g:country>${c}</g:country><g:price>0.00 ${(p.currency || "USD").toUpperCase()}</g:price></g:shipping>`),
+              ...MERCHANT_COUNTRIES.map((c) => shippingTag(c, p.currency)),
             ]
           : []),
       ];
@@ -83,8 +92,9 @@ export async function GET() {
       `<g:brand>ARFA by ${esc(SITE_NAME)}</g:brand>`,
       `<g:identifier_exists>no</g:identifier_exists>`,
       `<g:product_type>ARFA AI Academy &gt; Online courses</g:product_type>`,
-      `<g:google_product_category>${esc(COURSE_CATEGORY)}</g:google_product_category>`,
-      ...MERCHANT_COUNTRIES.map((c) => `<g:shipping><g:country>${c}</g:country><g:price>0.00 USD</g:price></g:shipping>`),
+      // Same category and shipping as the store's digital products.
+      `<g:google_product_category>${esc(DIGITAL_CATEGORY)}</g:google_product_category>`,
+      ...MERCHANT_COUNTRIES.map((c) => shippingTag(c, "USD")),
     ];
     items.push(`<item>\n  ${tags.join("\n  ")}\n</item>`);
   }

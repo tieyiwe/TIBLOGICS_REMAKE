@@ -233,6 +233,8 @@ export function courseNode(c: CourseInput): JsonLdNode {
     priceCurrency: c.currency ?? "USD",
     availability: c.available ? "https://schema.org/InStock" : "https://schema.org/PreOrder",
     url,
+    // Delivered online: free instant delivery, no returns (as for store downloads).
+    ...digitalOfferTerms(c.currency),
   };
   return {
     "@type": "Course",
@@ -333,26 +335,34 @@ export function productNode(p: ProductInput): JsonLdNode {
       // and the store's terms (digital sales are final). Google Merchant
       // Center reads these from the page as well as from the feed
       // (app/google-merchant.xml).
-      ...(p.digital
-        ? {
-            shippingDetails: MERCHANT_COUNTRIES.map((c) => ({
-              "@type": "OfferShippingDetails",
-              shippingRate: { "@type": "MonetaryAmount", value: "0", currency: p.currency || "USD" },
-              shippingDestination: { "@type": "DefinedRegion", addressCountry: c },
-              deliveryTime: {
-                "@type": "ShippingDeliveryTime",
-                handlingTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 0, unitCode: "DAY" },
-                transitTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 0, unitCode: "DAY" },
-              },
-            })),
-            hasMerchantReturnPolicy: {
-              "@type": "MerchantReturnPolicy",
-              applicableCountry: MERCHANT_COUNTRIES,
-              returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
-              merchantReturnLink: absUrl("/terms"),
-            },
-          }
-        : {}),
+      ...(p.digital ? digitalOfferTerms(p.currency) : {}),
+    },
+  };
+}
+
+/**
+ * Digital items (store downloads, ARFA courses): delivered online, so free
+ * and instant shipping, and no returns (digital sales are final, per the
+ * Terms). Google Merchant Center reads these from the page as well as from
+ * the feed (app/google-merchant.xml).
+ */
+export function digitalOfferTerms(currency?: string | null): JsonLdNode {
+  return {
+    shippingDetails: MERCHANT_COUNTRIES.map((c) => ({
+      "@type": "OfferShippingDetails",
+      shippingRate: { "@type": "MonetaryAmount", value: "0", currency: currency || "USD" },
+      shippingDestination: { "@type": "DefinedRegion", addressCountry: c },
+      deliveryTime: {
+        "@type": "ShippingDeliveryTime",
+        handlingTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 0, unitCode: "DAY" },
+        transitTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 0, unitCode: "DAY" },
+      },
+    })),
+    hasMerchantReturnPolicy: {
+      "@type": "MerchantReturnPolicy",
+      applicableCountry: MERCHANT_COUNTRIES,
+      returnPolicyCategory: "https://schema.org/MerchantReturnNotPermitted",
+      merchantReturnLink: absUrl("/terms"),
     },
   };
 }
