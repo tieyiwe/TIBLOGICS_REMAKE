@@ -76,7 +76,11 @@ export async function POST(req: NextRequest) {
     if (!track || track.status !== "live") return fail("lane", "lane", 404);
     // A child who already has the program needs no new place.
     const existing = await prisma.student.findUnique({ where: { email: b.childEmail }, select: { id: true } });
-    if (existing && canAccessTrack(await getAccess(existing.id), track.id)) return fail("alreadyHas", "childEmail", 409);
+    if (existing) {
+      // Held counts too (a lane locked until the parent's OK or the setup).
+      const acc = await getAccess(existing.id);
+      if (canAccessTrack(acc, track.id) || acc.youthHeld.includes(track.id)) return fail("alreadyHas", "childEmail", 409);
+    }
     const base = b.plan === "monthly" ? trackMonthlyCents(track.slug) : trackPriceCents(track.level, track.priceCents);
     if (base == null) return fail("lane", "lane", 404);
     const siblingPct = await sponsorSiblingPct(b.sponsorEmail, b.childEmail);
