@@ -9,7 +9,8 @@ import { isAiBudgetError } from "@/lib/claude";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { LESSON_SOURCE, localizedLesson } from "@/lib/i18n/sources/learn";
 import { MIN_EXPLAIN_CHARS, lessonParagraphs, paraHash } from "@/lib/learn/explain/paragraphs";
-import { cachedExplanation, writeExplanation } from "@/lib/learn/explain";
+import { cachedExplanation, writeExplanation, type ExplainAudience } from "@/lib/learn/explain";
+import { getYouthProfile, isMinor, youngestAge } from "@/lib/learn/youth-account";
 
 // "Explain simpler" on a lesson paragraph (components/learn/ExplainParagraph).
 // The client names the paragraph by index only; the text comes from the
@@ -56,7 +57,9 @@ export async function POST(req: NextRequest) {
   if (paraHash(paragraph) !== hash) return NextResponse.json({ error: t("learn.explain.changed"), code: "changed" }, { status: 409 });
 
   try {
-    const hit = await cachedExplanation(lessonId, hash, locale);
+    const youth = await getYouthProfile(student.id);
+    const audience: ExplainAudience = isMinor(youth) ? ((youngestAge(youth) ?? 0) <= 12 ? "kid" : "teen") : "";
+    const hit = await cachedExplanation(lessonId, hash, locale, audience);
     if (hit) return NextResponse.json({ text: hit, cached: true });
 
     if (!process.env.ANTHROPIC_API_KEY) return NextResponse.json({ error: t("learn.explain.off") }, { status: 503 });
@@ -66,7 +69,7 @@ export async function POST(req: NextRequest) {
     if (!(await withinDailyAiBudget(student.id))) {
       return NextResponse.json({ error: t("common.aiDailyLimit"), code: "daily" }, { status: 429 });
     }
-    const out = await writeExplanation({ id: lesson.id, title: text.title }, paragraph, hash, locale, student.id);
+    const out = await writeExplanation({ id: lesson.id, title: text.title }, paragraph, hash, locale, student.id, audience);
     if (!out) return NextResponse.json({ error: t("learn.explain.error") }, { status: 502 });
     return NextResponse.json({ text: out, cached: false });
   } catch (err) {

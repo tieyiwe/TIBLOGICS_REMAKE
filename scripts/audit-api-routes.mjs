@@ -34,7 +34,7 @@ const MARKERS = {
   learner: /\b(requireStudent|requireEntitledStudent|getStudent|requireTeamMember|requireTeamManager|requireTeamOwner|tutorGuard|getLearnContext|communityGuard|liveGuard)\s*\(|session\??\.user\??\.studentId/,
   cron: /CRON_SECRET/,
   webhook: /constructEvent|x-hub-signature|createHmac\([^)]*\)[\s\S]{0,400}timingSafeEqual|verifyWebhook|verifySignature/,
-  token: /\b(verifyUnsubscribeToken|verifyJwt|verifyCardSig|verifyDocument|secretEquals|tokenHash|hashToken|verifyToken|verifyInvite|unsubscribeToken|shareToken|findMonitorByToken)\b/,
+  token: /\b(verifyUnsubscribeToken|verifyJwt|verifyCardSig|verifyDocument|secretEquals|tokenHash|hashToken|verifyToken|verifyInvite|unsubscribeToken|shareToken|findMonitorByToken|parentFromToken)\b/,
 };
 
 const RATE = /\b(checkRateLimit|limitGrowthAi|teamRateLimit|withinDailyAiBudget|rateLimit[A-Z]\w*)\s*\(/;

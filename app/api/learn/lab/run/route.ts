@@ -9,6 +9,7 @@ import { checkRateLimit } from "@/lib/require-admin";
 import { withinDailyAiBudget } from "@/lib/learn/ai-budget";
 import { getT } from "@/lib/i18n/server";
 import { isAiBudgetError, streamChat } from "@/lib/claude";
+import { withYouth, youthAiFor } from "@/lib/learn/youth-ai";
 import { parseConfig } from "@/lib/learn/labs/types";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { localizeLab } from "@/lib/i18n/sources/labs";
@@ -94,9 +95,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: t("labs.api.runsUsed", { n: maxRuns }), runsLeft: 0 }, { status: 429 });
     }
 
-    const system =
+    const system = withYouth(
       (config.sandboxSystem ??
-        "You are a helpful assistant. Respond to the user's prompt directly and concisely.") + FOLLOW_LANGUAGE;
+        "You are a helpful assistant. Respond to the user's prompt directly and concisely.") + FOLLOW_LANGUAGE,
+      await youthAiFor(student.id),
+    );
 
     const userContent = contextMd ? `${contextMd}\n\n---\n\n${prompt}` : prompt;
 

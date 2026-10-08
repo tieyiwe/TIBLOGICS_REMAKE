@@ -2,6 +2,7 @@ import { checkRateLimit, rateLimitStatus } from "@/lib/rate-limit";
 import { getMembership } from "@/lib/learn/team/access";
 import prisma from "@/lib/prisma";
 import { isOwnerStudent } from "@/lib/learn/owner";
+import { isMinorStudent } from "@/lib/learn/youth-account";
 
 // One daily ceiling on model calls per learner, shared by the practice pad,
 // prompt-lab runs, the Code Studio pair programmer and lab grading. The
@@ -9,6 +10,15 @@ import { isOwnerStudent } from "@/lib/learn/owner";
 // in a day, whatever mix of features it uses. LEARN_AI_DAILY overrides it.
 const DEFAULT_DAILY = 150;
 const DAY_MS = 86_400_000;
+
+// Learners under 18 (AI-Empowered Youth) get a lower daily ceiling of their
+// own, on top of the usual one. LEARN_AI_DAILY_MINOR overrides it.
+const DEFAULT_DAILY_MINOR = 30;
+
+export function dailyAiLimitMinor(): number {
+  const n = Number(process.env.LEARN_AI_DAILY_MINOR);
+  return Number.isInteger(n) && n > 0 ? n : DEFAULT_DAILY_MINOR;
+}
 
 export function dailyAiLimit(): number {
   const n = Number(process.env.LEARN_AI_DAILY);
@@ -29,6 +39,7 @@ export async function withinDailyAiBudget(studentId: string): Promise<boolean> {
   // The owner's own checks are not capped per day (the platform budget in
   // lib/ai-spend-guard.ts still applies).
   if (await isOwnerStudent(studentId)) return true;
+  if ((await isMinorStudent(studentId)) && !(await checkRateLimit(`learn-ai-minor:${studentId}`, dailyAiLimitMinor(), DAY_MS))) return false;
   const limit = dailyAiLimit();
   const m = await getMembership(studentId);
   if (m?.entitled) {

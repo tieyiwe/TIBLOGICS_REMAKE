@@ -6,6 +6,7 @@ import { trackOfLesson } from "@/lib/learn/track-of";
 import { checkRateLimit } from "@/lib/require-admin";
 import { withinDailyAiBudget } from "@/lib/learn/ai-budget";
 import { isAiBudgetError, streamChat } from "@/lib/claude";
+import { withYouth, youthAiFor } from "@/lib/learn/youth-ai";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { replyInLanguage } from "@/lib/i18n/config";
 
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
   }. The learner is practising prompting. Respond to their prompt exactly as a capable general AI assistant would, so they see what their prompt really produces. If the prompt still contains unfilled placeholders in [BRACKETS], make reasonable assumptions, say which ones you assumed in one short line at the end, and suggest they fill them in. Use plain punctuation and Markdown. Never ask for or encourage sharing personal or confidential data.`;
   // The learner reads the lesson in their language; reply in it too.
   const lang = replyInLanguage(locale);
-  const systemPrompt = lang ? `${system}\n\n${lang}` : system;
+  const systemPrompt = withYouth(lang ? `${system}\n\n${lang}` : system, await youthAiFor(student.id));
 
   try {
     const response = await streamChat([{ role: "user", content: parsed.data.prompt }], systemPrompt, 1400, "practice", { studentId: student.id, ref: parsed.data.lessonId ?? null });

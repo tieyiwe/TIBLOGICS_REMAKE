@@ -5,6 +5,7 @@ import { myCohorts } from "@/lib/learn/community/cohorts";
 import { getProfile, isSuspended } from "@/lib/learn/community/discussion";
 import { LIMITS } from "@/lib/learn/community/shared";
 import Discussion from "./Discussion";
+import { canPostInCommunity, getYouthProfile } from "@/lib/learn/youth-account";
 
 // Server wrapper for <Discussion>: works out which cohorts the learner may
 // post to, whether they are suspended, and whether their account is too new
@@ -34,10 +35,11 @@ export default async function DiscussionSection({
   if (!(await hasTrackAccess(studentId, trackId))) return null;
   if (!(await communityTablesReady())) return null;
   try {
-    const [cohorts, profile, student] = await Promise.all([
+    const [cohorts, profile, student, youth] = await Promise.all([
       cohortId ? Promise.resolve([]) : myCohorts(studentId, trackId),
       getProfile(studentId),
       prisma.student.findUnique({ where: { id: studentId }, select: { createdAt: true } }),
+      getYouthProfile(studentId),
     ]);
     const newAccount = !!student && Date.now() - student.createdAt.getTime() < LIMITS.newAccountDays * 86_400_000;
     return (
@@ -50,6 +52,7 @@ export default async function DiscussionSection({
         suspendedUntil={isSuspended(profile) ? profile.suspendedUntil!.toISOString() : null}
         newAccount={newAccount}
         initialOpen={initialOpen}
+        readOnly={!canPostInCommunity(youth)}
       />
     );
   } catch (err) {

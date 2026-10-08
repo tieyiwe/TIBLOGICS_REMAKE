@@ -1,6 +1,8 @@
 import { randomInt } from "crypto";
 import prisma from "@/lib/prisma";
 import { isScholarTrack } from "@/lib/learn/scholarship/status";
+import { minorIds } from "@/lib/learn/youth-account";
+import { publicName } from "@/lib/learn/leaderboard";
 
 // Certificate reference numbers and the learner's name confirmation.
 //
@@ -117,7 +119,10 @@ export async function findCertificate(key: string): Promise<CertView | null> {
   const r = rows[0];
   if (!r) return null;
   const { slug, title, level, levelEnd, accentColor, tagline, estimatedHours, ...c } = r;
-  const scholar = await isScholarTrack(c.studentId, c.trackId);
+  const [scholar, minors] = await Promise.all([isScholarTrack(c.studentId, c.trackId), minorIds([c.studentId])]);
+  // Certificates are public (verification page, image, PDF): a learner
+  // under 18 is shown by first name and last initial only.
+  if (minors.has(c.studentId)) c.recipientName = publicName(c.recipientName);
   return { ...c, scholar, track: { slug, title, level, levelEnd, accentColor, tagline, estimatedHours: Number(estimatedHours) || 0 } };
 }
 

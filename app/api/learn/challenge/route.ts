@@ -11,6 +11,7 @@ import { getLocale, getT } from "@/lib/i18n/server";
 import { ANSWER_MAX, ANSWER_MIN } from "@/lib/learn/challenge/content";
 import { currentWeek } from "@/lib/learn/challenge/week";
 import { gradeChallenge } from "@/lib/learn/challenge/grade";
+import { youthGraderFor } from "@/lib/learn/youth-ai";
 import { MAX_EDITS, awardChallengePoints, createEntry, editEntry, getEntry } from "@/lib/learn/challenge/server";
 
 // Weekly 10-minute challenge: submit (or edit once) this week's answer.
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
 
   let grade;
   try {
-    grade = await gradeChallenge(week.challenge, answer, locale, { studentId: student.id, week: week.key });
+    grade = await gradeChallenge(week.challenge, answer, locale, { studentId: student.id, week: week.key }, await youthGraderFor(student.id));
   } catch (err) {
     if (isAiBudgetError(err)) {
       return NextResponse.json({ error: t("learn.challenge.api.gradingOff"), code: "ai_budget" }, { status: 503 });

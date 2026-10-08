@@ -22,8 +22,11 @@ const SECTION_KEY: Record<Section, string> = {
 
 export default function PortfolioShare({
   initial,
+  minor = false,
 }: {
   initial: { isPublic: boolean; slug: string | null; includeWork: boolean; hidden: string[] };
+  /** Under 18 (AI-Empowered Youth): the portfolio cannot be made public. */
+  minor?: boolean;
 }) {
   const t = useT();
   // One share panel per page: fixed ids (useId drifted between server and client here).
@@ -87,18 +90,20 @@ export default function PortfolioShare({
       </h2>
 
       <div className="mt-4 space-y-4">
-        <label className="flex cursor-pointer items-start gap-3">
+        <label className={`flex items-start gap-3 ${minor ? "opacity-60" : "cursor-pointer"}`}>
           <input
             type="checkbox"
-            checked={isPublic}
+            checked={isPublic && !minor}
+            disabled={minor}
             onChange={(e) => setIsPublic(e.target.checked)}
             className="mt-1 h-5 w-5 shrink-0"
             aria-describedby={`${ids}-pub`}
+            data-testid="portfolio-public-toggle"
           />
           <span>
             <span className="block text-sm font-semibold text-[var(--ink)]">{t("method.share.public")}</span>
             <span id={`${ids}-pub`} className="block text-xs leading-relaxed text-[var(--ink3)]">
-              {t("method.share.publicHint")}
+              {minor ? t("learn.youth.portfolioPrivate") : t("method.share.publicHint")}
             </span>
           </span>
         </label>

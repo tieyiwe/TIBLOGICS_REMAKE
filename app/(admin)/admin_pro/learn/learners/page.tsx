@@ -8,6 +8,7 @@ import {
   filterQuery, listLearners, parseFilters, type LearnerFilters, type SortKey,
 } from "@/lib/learn/admin/learners";
 import { LearnersTable, type Row } from "./LearnersTable";
+import { youthAdminInfo } from "@/lib/learn/youth-account";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +51,8 @@ export default async function LearnersPage({
     xp: sortHead("xp", "XP"),
     certs: sortHead("certs", "Certs"),
   };
+  // AI-Empowered Youth: age band and parent consent, for learners who gave a birth year.
+  const youth = await youthAdminInfo(rows.map((r) => r.id));
   const tableRows: Row[] = rows.map((r) => ({
     id: r.id,
     name: r.name,
@@ -69,6 +72,7 @@ export default async function LearnersPage({
     accountStatus: r.accountStatus,
     suspendedUntil: r.suspendedUntil?.toISOString() ?? null,
     tags: r.tags,
+    youth: youth.has(r.id) ? { band: youth.get(r.id)!.band, consent: youth.get(r.id)!.consent } : null,
   }));
   const input =
     "h-9 rounded-[var(--a-radius-control)] border border-[var(--a-border-strong)] bg-[var(--a-surface)] px-3 font-dm text-[13.5px] text-[var(--a-ink)] focus:border-[var(--a-blue)] focus:outline-none focus:ring-2 focus:ring-[var(--a-blue)]/20";

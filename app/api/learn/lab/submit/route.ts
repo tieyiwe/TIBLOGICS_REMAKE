@@ -12,6 +12,7 @@ import { checkLevelUp } from "@/lib/learn/milestones";
 import type { LabEvaluation } from "@/lib/learn/labs/types";
 import { evaluateBuild, evaluateCritique, evaluatePrompt, evaluateWorkbench } from "@/lib/learn/labs/evaluate";
 import { evaluateCode, MAX_CODE } from "@/lib/learn/labs/code";
+import { youthGraderFor } from "@/lib/learn/youth-ai";
 import { getLocale, getT, translatorFor } from "@/lib/i18n/server";
 import { localizeLab } from "@/lib/i18n/sources/labs";
 import { gameDelta, gameSnapshot } from "@/lib/learn/badges";
@@ -145,6 +146,7 @@ export async function POST(req: NextRequest) {
         objectives,
         passScore: lab.passScore,
         locale,
+        youth: await youthGraderFor(student.id),
       });
     } else if (config.kind === "workbench") {
       // Only the lab's own fields are kept, so a crafted request cannot smuggle
@@ -159,7 +161,7 @@ export async function POST(req: NextRequest) {
         );
       }
       submission = { answers: work, lang: locale };
-      evaluation = (await lastGraded(submission)) ?? await evaluateWorkbench(lab.briefMd, lab.scenarioMd, config, work, objectives, lab.passScore, locale);
+      evaluation = (await lastGraded(submission)) ?? await evaluateWorkbench(lab.briefMd, lab.scenarioMd, config, work, objectives, lab.passScore, locale, await youthGraderFor(student.id));
     } else {
       // Prompt lab — grade the latest prompt against the response it produced
       const text = (prompt ?? (attempt?.submission as { prompt?: string } | null)?.prompt ?? "").trim();
@@ -182,6 +184,7 @@ export async function POST(req: NextRequest) {
         objectives,
         lab.passScore,
         locale,
+        await youthGraderFor(student.id),
       );
     }
 

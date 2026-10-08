@@ -6,6 +6,7 @@ import { checkRateLimit } from "@/lib/require-admin";
 import { ensureMethodTables } from "@/lib/learn/method/db";
 import { PORTFOLIO_SECTIONS, getPortfolioSettings, newSlug } from "@/lib/learn/method/portfolio";
 import { getT } from "@/lib/i18n/server";
+import { isMinorStudent } from "@/lib/learn/youth-account";
 
 // Sharing settings for the signed-in learner's portfolio. Always keyed on the
 // session's student id: nobody can change another learner's settings.
@@ -26,7 +27,13 @@ export async function PUT(req: NextRequest) {
   }
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: t("learn.api.invalidRequest") }, { status: 400 });
-  const { isPublic, includeWork, hidden, newLink } = parsed.data;
+  const { includeWork, hidden, newLink } = parsed.data;
+  // Learners under 18: the portfolio stays private (AI-Empowered Youth).
+  const minor = await isMinorStudent(student.id);
+  if (minor && parsed.data.isPublic) {
+    return NextResponse.json({ error: t("learn.youth.portfolioPrivate"), code: "minor" }, { status: 403 });
+  }
+  const isPublic = parsed.data.isPublic && !minor;
 
   try {
     await ensureMethodTables();

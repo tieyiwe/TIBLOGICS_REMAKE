@@ -21,7 +21,9 @@ export default async function MemberLayout({ children }: { children: React.React
   // Both are cached per request, so the page reuses them.
   const [access, total] = await Promise.all([getAccess(student.id), getTotalPoints(student.id)]);
   const entitlement = access.entitlement;
-  if (!access.any) redirect("/learn/subscribe");
+  // AI-Empowered Youth: a learner whose only tracks are youth lanes waiting
+  // for a birth year, a parent email or the parent's OK.
+  if (!access.any) redirect(access.youthGate ? "/learn/youth" : "/learn/subscribe");
 
   return (
     // data-a11y drives the accessibility styles in globals.css: ~25% larger

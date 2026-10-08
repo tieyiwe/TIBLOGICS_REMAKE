@@ -21,6 +21,11 @@ export default function BuyTrackButton({ slug, label }: { slug: string; label: s
         body: JSON.stringify({ trackSlug: slug, ...(getStoredCode() ? { promoCode: getStoredCode() } : {}) }),
       });
       const data = await res.json().catch(() => ({}));
+      // AI-Empowered Youth: birth year and parent email first (/learn/youth).
+      if (data.code === "youth_profile" && typeof data.setup === "string" && data.setup.startsWith("/learn/youth")) {
+        window.location.href = data.setup;
+        return;
+      }
       if (!res.ok || !data.url) throw new Error(data.error ?? t("learn.plan.checkoutFailed"));
       window.location.href = data.url;
     } catch (err) {

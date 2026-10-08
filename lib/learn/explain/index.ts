@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { runClaude } from "@/lib/claude";
 import { replyInLanguage, type Locale } from "@/lib/i18n/config";
+import { youthAiAddendum } from "@/lib/learn/youth-ai";
 
 // "Explain it simpler": a beginner rewrite of one lesson paragraph, written
 // once per (lesson, paragraph text, language) and shared by every learner.
@@ -26,11 +27,19 @@ export function ensureExplainTable(): Promise<void> {
   return ready;
 }
 
-export async function cachedExplanation(lessonId: string, hash: string, locale: Locale): Promise<string | null> {
+/**
+ * Minors get their own explanations, cached per age group ("en:kid",
+ * "en:teen" in the locale column) and written with the child-safety rules
+ * (lib/learn/youth-ai.ts).
+ */
+export type ExplainAudience = "" | "kid" | "teen";
+const cacheKey = (locale: Locale, audience: ExplainAudience) => (audience ? `${locale}:${audience}` : locale);
+
+export async function cachedExplanation(lessonId: string, hash: string, locale: Locale, audience: ExplainAudience = ""): Promise<string | null> {
   await ensureExplainTable();
   const rows = await prisma.$queryRawUnsafe<Array<{ text: string }>>(
     `SELECT "text" FROM "ParagraphExplain" WHERE "lessonId" = $1 AND "paraHash" = $2 AND "locale" = $3`,
-    lessonId, hash, locale,
+    lessonId, hash, cacheKey(locale, audience),
   );
   return rows[0]?.text ?? null;
 }
@@ -61,10 +70,13 @@ export async function writeExplanation(
   hash: string,
   locale: Locale,
   studentId: string,
+  audience: ExplainAudience = "",
 ): Promise<string | null> {
   const lang = replyInLanguage(locale);
+  const youth = audience ? youthAiAddendum(audience === "kid" ? 11 : 15) : "";
+  const base = lang ? `${SYSTEM}\n\n${lang}` : SYSTEM;
   const { text } = await runClaude("explain-simple", {
-    system: lang ? `${SYSTEM}\n\n${lang}` : SYSTEM,
+    system: youth ? `${base}\n\n${youth}` : base,
     messages: [{ role: "user", content: `Lesson: ${lesson.title}\n\n<paragraph>\n${paragraph.slice(0, 3000)}\n</paragraph>` }],
     meta: { studentId, ref: lesson.id },
   });
@@ -74,7 +86,7 @@ export async function writeExplanation(
   // Two learners asking at once: the first stored answer wins for everyone.
   await prisma.$executeRawUnsafe(
     `INSERT INTO "ParagraphExplain" ("lessonId","paraHash","locale","text") VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING`,
-    lesson.id, hash, locale, out,
+    lesson.id, hash, cacheKey(locale, audience), out,
   );
   return out;
 }

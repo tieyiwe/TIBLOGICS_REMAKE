@@ -9,6 +9,7 @@ import { checkRateLimit } from "@/lib/require-admin";
 import { withinDailyAiBudget } from "@/lib/learn/ai-budget";
 import { getT } from "@/lib/i18n/server";
 import { streamChat } from "@/lib/claude";
+import { withYouth, youthAiFor } from "@/lib/learn/youth-ai";
 import { parseConfig } from "@/lib/learn/labs/types";
 import { assistSystem, parseAssist, MAX_CODE } from "@/lib/learn/labs/code";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
   try {
     const raw = await streamChat(
       [{ role: "user", content: `CURRENT FILE:\n\`\`\`html\n${code}\n\`\`\`\n\nMY REQUEST:\n${request}` }],
-      assistSystem(lab.briefMd, config, locale),
+      withYouth(assistSystem(lab.briefMd, config, locale), await youthAiFor(student.id)),
       8000,
       "code-assist",
       { studentId: student.id, ref: labId },

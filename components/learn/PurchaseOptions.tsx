@@ -23,6 +23,8 @@ export interface PurchaseTrack {
   salePriceCents?: number | null;
   /** Already on this track's own monthly plan (tracks sold that way only). */
   monthlyActive?: boolean;
+  /** AI-Empowered Youth sibling discount (server-computed), display only. */
+  siblingPct?: number;
 }
 
 /**
@@ -80,6 +82,11 @@ export default function PurchaseOptions({
         }),
       });
       const data = await res.json().catch(() => ({}));
+      // AI-Empowered Youth: birth year and parent email first (/learn/youth).
+      if (data.code === "youth_profile" && typeof data.setup === "string" && data.setup.startsWith("/learn/youth")) {
+        window.location.href = data.setup;
+        return;
+      }
       if (!res.ok || !data.url) throw new Error(data.error ?? t("learn.plan.checkoutFailed"));
       window.location.href = data.url;
     } catch (err) {
@@ -95,9 +102,17 @@ export default function PurchaseOptions({
     track && track.salePriceCents != null && track.salePriceCents < track.priceCents
       ? { saleCents: track.salePriceCents, originalCents: track.priceCents }
       : null;
-  const trackPrice = trackSale?.saleCents ?? track?.priceCents ?? 0;
+  const sibling = track?.siblingPct ?? 0;
+  const less = (c: number) => (sibling > 0 ? Math.round((c * (100 - sibling)) / 100) : c);
+  const trackPrice = less(trackSale?.saleCents ?? track?.priceCents ?? 0);
   // This track has its own monthly plan: the second card sells that plan.
-  const ownMonthly = trackMonthlyCents(track?.slug);
+  const ownMonthlyList = trackMonthlyCents(track?.slug);
+  const ownMonthly = ownMonthlyList == null ? null : less(ownMonthlyList);
+  const siblingBadge = sibling > 0 && (
+    <p className="mt-2 inline-flex rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-800" data-testid="sibling-discount">
+      {t("learn.youth.siblingDiscount", { pct: sibling })}
+    </p>
+  );
   const monthlyPrice = ownMonthly ?? monthlySale?.saleCents ?? monthlyCents;
   const promoTargets: TargetT[] = [
     ...(track && !track.owned ? [{ kind: "track" as const, slug: track.slug }] : []),
@@ -115,6 +130,7 @@ export default function PurchaseOptions({
               {track.title}
             </p>
             {trackSale ? <SalePrice sale={trackSale} className="mt-3" /> : null}
+            {siblingBadge}
             <p className={`${trackSale ? "mt-1" : "mt-3"} flex flex-wrap items-baseline gap-x-2`}>
               <span className="text-3xl font-black text-[var(--ink)]">{fmtPrice(trackPrice, locale)}</span>
               <span className="text-sm text-[var(--ink3)]">{t("learn.offer.oneTime")}</span>
@@ -148,6 +164,7 @@ export default function PurchaseOptions({
             <p className="mt-1 truncate text-sm font-semibold text-[var(--ink)]" title={track.title}>
               {track.title}
             </p>
+            {siblingBadge}
             <p className="mt-3 flex flex-wrap items-baseline gap-x-2">
               <span className="text-3xl font-black text-[var(--ink)]">{fmtPrice(ownMonthly, locale)}</span>
               <span className="text-sm text-[var(--ink3)]">{t("learn.plan.per.month")}</span>

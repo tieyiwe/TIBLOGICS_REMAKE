@@ -4,6 +4,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { csrfGuard, hasCapability, learnerStaff } from "@/lib/learn/account-status/admin-auth";
 import * as A from "@/lib/learn/account-status/actions";
 import { deleteLearner } from "@/lib/learn/account-status/privacy";
+import { resendParentEmailAdmin } from "@/lib/learn/youth-admin";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,8 @@ const Action = z.discriminatedUnion("action", [
   z.object({ action: z.literal("setTags"), tags: z.array(z.string().max(32)).max(12) }),
   z.object({ action: z.literal("addNote"), body: z.string().trim().min(1, "Write a note").max(5000) }),
   z.object({ action: z.literal("deleteNote"), noteId: z.string().min(1).max(64) }),
+  // AI-Empowered Youth: the consent (under 13) or information email to the parent again.
+  z.object({ action: z.literal("resendParentEmail") }),
   z.object({
     action: z.literal("delete"),
     confirmEmail: z.string().max(320),
@@ -111,6 +114,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         break;
       case "delete":
         r = await deleteLearner(session, id, { confirmEmail: a.confirmEmail, reason: a.reason, blockEmail: a.blockEmail });
+        break;
+      case "resendParentEmail":
+        r = await resendParentEmailAdmin(session, id);
         break;
     }
     return NextResponse.json(r, { headers: { "Cache-Control": "no-store" } });

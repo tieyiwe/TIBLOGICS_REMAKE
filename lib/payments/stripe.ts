@@ -81,7 +81,8 @@ export const stripeProvider: PaymentProvider = {
   },
 
   async createTrackMonthlyCheckout(req: TrackMonthlyCheckoutRequest) {
-    const metadata = { product: TRACK_MONTHLY_PRODUCT, studentId: req.studentId, trackId: req.trackId, trackSlug: req.trackSlug };
+    const metadata: Record<string, string> = { product: TRACK_MONTHLY_PRODUCT, studentId: req.studentId, trackId: req.trackId, trackSlug: req.trackSlug };
+    if (req.siblingDiscountPct) metadata.siblingDiscountPct = String(req.siblingDiscountPct);
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [
@@ -93,7 +94,7 @@ export const stripeProvider: PaymentProvider = {
             recurring: { interval: "month" },
             product_data: {
               name: `ARFA by TIBLOGICS: ${req.trackTitle} (monthly)`,
-              description: "This track, its assessments and certificate. Cancel anytime.",
+              description: `This track, its assessments and certificate. Cancel anytime.${req.siblingDiscountPct ? ` Sibling discount: ${req.siblingDiscountPct}% off.` : ""}`,
             },
           },
         },
@@ -113,6 +114,7 @@ export const stripeProvider: PaymentProvider = {
   async createTrackCheckout(req: TrackCheckoutRequest) {
     const metadata: Record<string, string> = { product: "learn-track", studentId: req.studentId, trackId: req.trackId };
     // A scholarship price is final: no promotion code on top of it.
+    if (req.siblingDiscountPct) metadata.siblingDiscountPct = String(req.siblingDiscountPct);
     if (req.scholarship) Object.assign(metadata, { scholarshipId: req.scholarship.id, scholarshipCode: req.scholarship.code, listCents: String(req.scholarship.listCents) });
     // Scholarship with its coupon: the full price, and Stripe shows the
     // scholarship as a discount line (the saving) and the total owed.
@@ -127,7 +129,7 @@ export const stripeProvider: PaymentProvider = {
             unit_amount: scholarshipCoupon ? req.scholarship!.listCents : req.amount,
             product_data: {
               name: `ARFA by TIBLOGICS: ${req.trackTitle}`,
-              description: req.scholarship?.description ?? "One-time payment. Lifetime access to this track.",
+              description: req.scholarship?.description ?? `One-time payment. Lifetime access to this track.${req.siblingDiscountPct ? ` Sibling discount: ${req.siblingDiscountPct}% off.` : ""}`,
             },
           },
         },

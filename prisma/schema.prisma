@@ -724,6 +724,16 @@ model Student {
   accessibilityMode Boolean   @default(false)
   locale            String    @default("en")
   leaderboardOptIn  Boolean   @default(false)
+  /// AI-Empowered Youth (lib/learn/youth-account.ts, added at runtime): the
+  /// learner's birth year and their parent or guardian.
+  birthYear               Int?
+  parentEmail             String?
+  parentConsent           String    @default("none") // none|pending|granted|revoked
+  parentConsentAt         DateTime?
+  parentToken             String?   @unique
+  parentBoardsOptIn       Boolean   @default(false)
+  parentEmailSentAt       DateTime?
+  parentDeleteRequestedAt DateTime?
   lastLoginAt       DateTime?
 
   subscription  LearnSubscription?
@@ -742,6 +752,7 @@ model Student {
   drafts        LearnerDraft[]
 
   @@index([email])
+  @@index([parentEmail])
 }
 
 model LearnTrack {
@@ -3436,4 +3447,17 @@ model WeeklyChallengeEntry {
 
   @@unique([studentId, week])
   @@index([week, score, submittedAt])
+}
+
+/// AI-Empowered Youth: one weekly parent email per child and week ("YYYY-MM-DD"
+/// of the Monday, UTC), claimed before sending (lib/learn/youth-digest.ts;
+/// created at runtime by lib/learn/youth-account.ts, keep the two in step).
+/// No Prisma relation: the foreign key to Student (ON DELETE CASCADE) lives in
+/// the runtime SQL.
+model YouthParentDigest {
+  studentId String
+  week      String
+  createdAt DateTime @default(now())
+
+  @@id([studentId, week])
 }

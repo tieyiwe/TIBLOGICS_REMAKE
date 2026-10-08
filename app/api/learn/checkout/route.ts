@@ -14,6 +14,29 @@ import { referralCouponFor } from "@/lib/learn/referrals/service";
 import { resolveCheckoutDiscount } from "@/lib/promotions/service";
 import { promoCheckoutError } from "@/lib/promotions/http";
 import { joinPath } from "@/lib/learn/join/choice";
+import { isYouthSlug, YOUTH_SIBLING_DISCOUNT_PCT } from "@/lib/learn/youth";
+import { getYouthProfile, hasYouthSibling, youthGate } from "@/lib/learn/youth-account";
+import { youthTrackIds } from "@/lib/learn/track-subscriptions";
+import { isOwnerStudent } from "@/lib/learn/owner";
+
+/**
+ * AI-Empowered Youth (lib/learn/youth.ts): a lane is sold only to a learner
+ * who gave a birth year and a parent email (/learn/youth). Returns the 409
+ * that sends them there, or null.
+ */
+async function youthSetupRequired(studentId: string, slug: string, buy: "track" | "monthly", from: string | undefined, t: (k: string) => string) {
+  if (!isYouthSlug(slug)) return null;
+  if (youthGate(await getYouthProfile(studentId)) !== "setup" || (await isOwnerStudent(studentId))) return null;
+  const setup = `/learn/youth?lane=${slug}&buy=${buy}${from === "join" ? "&from=join" : ""}`;
+  return NextResponse.json({ error: t("learn.youth.err.setupFirst"), code: "youth_profile", setup }, { status: 409 });
+}
+
+/** Another child of the same parent already in the program: 25% off, server side only. */
+async function siblingPct(studentId: string, slug: string): Promise<number> {
+  if (!isYouthSlug(slug)) return 0;
+  return (await hasYouthSibling(studentId, await youthTrackIds())) ? YOUTH_SIBLING_DISCOUNT_PCT : 0;
+}
+const applyPct = (cents: number, pct: number) => (pct > 0 ? Math.round((cents * (100 - pct)) / 100) : cents);
 
 // Slugs become part of a redirect URL; an unvalidated value here would be an
 // open-redirect vector, so they are constrained to a slug shape.
@@ -74,11 +97,15 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: t("learn.api.trackNotForSale") }, { status: 404 });
       }
       const access = await getAccess(student.id);
-      if (access.purchased.includes(track.id)) {
-        return NextResponse.json({ error: t("learn.api.alreadyOwned") }, { status: 409 });
+      // A youth lane held but locked (waiting for a parent) is still owned.
+      if (access.purchased.includes(track.id) || access.youthHeld.includes(track.id)) {
+        return NextResponse.json({ error: t("learn.api.alreadyOwned"), code: "already_owned" }, { status: 409 });
       }
-      // Price from the server only.
-      const amount = trackPriceCents(track.level, track.priceCents);
+      const setup = await youthSetupRequired(student.id, track.slug, "track", parsed.data.from, t);
+      if (setup) return setup;
+      // Price from the server only (sibling discount included).
+      const sibling = await siblingPct(student.id, track.slug);
+      const amount = applyPct(trackPriceCents(track.level, track.priceCents), sibling);
       // One discount: a typed code, else an automatic sale, else the
       // referral welcome coupon (claimed only when it is the one used).
       const discount = await resolveCheckoutDiscount({
@@ -97,6 +124,7 @@ export async function POST(req: NextRequest) {
         trackId: track.id,
         trackTitle: track.title,
         amount,
+        siblingDiscountPct: sibling || undefined,
         currency: TRACK_CURRENCY,
         successUrl: `${SITE}${CONFIRM}`,
         cancelUrl:
@@ -119,11 +147,15 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: t("learn.api.trackNotForSale") }, { status: 404 });
       }
       const access = await getAccess(student.id);
-      if (canAccessTrack(access, track.id)) {
-        return NextResponse.json({ error: t("learn.api.alreadyOwned") }, { status: 409 });
+      if (canAccessTrack(access, track.id) || access.youthHeld.includes(track.id)) {
+        return NextResponse.json({ error: t("learn.api.alreadyOwned"), code: "already_owned" }, { status: 409 });
       }
+      const setup = await youthSetupRequired(student.id, track.slug, "monthly", parsed.data.from, t);
+      if (setup) return setup;
+      const sibling = await siblingPct(student.id, track.slug);
+      const monthlyCents = applyPct(ownMonthly, sibling);
       const discount = await resolveCheckoutDiscount({
-        lines: [{ key: "tracks", id: track.id, amountCents: ownMonthly }],
+        lines: [{ key: "tracks", id: track.id, amountCents: monthlyCents }],
         recurring: true,
         code: parsed.data.promoCode,
         buyer: { studentId: student.id, email: student.email },
@@ -138,7 +170,8 @@ export async function POST(req: NextRequest) {
         trackId: track.id,
         trackSlug: track.slug,
         trackTitle: track.title,
-        amount: ownMonthly,
+        amount: monthlyCents,
+        siblingDiscountPct: sibling || undefined,
         currency: TRACK_CURRENCY,
         successUrl: `${SITE}${CONFIRM}`,
         cancelUrl:
@@ -146,7 +179,7 @@ export async function POST(req: NextRequest) {
             ? `${SITE}${joinPath({ kind: "monthly", track: track.slug })}&checkout=cancelled`
             : `${SITE}/learn/subscribe?track=${track.slug}&checkout=cancelled`,
       });
-      await recordAttribution({ kind: "learn_subscription_checkout", refId: student.id, cookieHeader: req.headers.get("cookie"), amountCents: ownMonthly - discount.discountCents });
+      await recordAttribution({ kind: "learn_subscription_checkout", refId: student.id, cookieHeader: req.headers.get("cookie"), amountCents: monthlyCents - discount.discountCents });
       return NextResponse.json({ url });
     }
 

@@ -213,6 +213,12 @@ export default function JoinFlow(props: JoinFlowProps) {
               }),
             });
       const data = await res.json().catch(() => ({}));
+      // AI-Empowered Youth: birth year and parent email first (/learn/youth),
+      // which then continues to payment.
+      if (data.code === "youth_profile" && typeof data.setup === "string" && data.setup.startsWith("/learn/youth")) {
+        window.location.href = data.setup;
+        return true;
+      }
       if (!res.ok || !data.url) throw new Error(data.error ?? t("learn.plan.checkoutFailed"));
       track("join_checkout", { choice: choiceKey(c), promo: !!code });
       window.location.href = data.url;

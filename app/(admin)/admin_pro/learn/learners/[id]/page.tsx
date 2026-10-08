@@ -22,6 +22,8 @@ import { Conversation } from "../../../communications/_components/Conversation";
 import { ActionButton, CertificateRevoke, LearnerHeaderActions, type LearnerSummary } from "./LearnerActions";
 import { NotesPanel, TagsEditor } from "./NotesPanel";
 import Assessments from "./Assessments";
+import { YouthCard } from "./YouthCard";
+import { youthAdminInfo } from "@/lib/learn/youth-account";
 import { scholarshipsOfLearner } from "@/lib/learn/scholarship/admin";
 import { ago, avatarHue, day, dt, human, initials, money } from "../_components/format";
 
@@ -106,7 +108,8 @@ export default async function LearnerDetailPage({
     canManage ? composerContext(session.user.email) : Promise.resolve(null),
     prisma.$queryRaw<Array<{ tag: string }>>`SELECT DISTINCT unnest("tags") AS tag FROM "LearnerAccount" ORDER BY 1 LIMIT 200`.catch(() => []),
   ]);
-  const scholarships = await scholarshipsOfLearner(id, d.student.email);
+  const [scholarships, youthMap] = await Promise.all([scholarshipsOfLearner(id, d.student.email), youthAdminInfo([id])]);
+  const youth = youthMap.get(id) ?? null;
   const statusRow = await prisma.learnerAccount.findUnique({ where: { studentId: id }, select: { statusChangedAt: true, statusChangedBy: true } }).catch(() => null);
 
   const { student: s, plan } = d;
@@ -248,6 +251,17 @@ export default async function LearnerDetailPage({
       {tab === "overview" ? (
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className="min-w-0 space-y-5">
+            {youth && (
+              <YouthCard
+                learnerId={id}
+                canManage={canManage}
+                info={{
+                  ...youth,
+                  parentEmailSentAt: youth.parentEmailSentAt?.toISOString() ?? null,
+                  deleteRequestedAt: youth.deleteRequestedAt?.toISOString() ?? null,
+                }}
+              />
+            )}
             <Card title="Profile and plan" icon={GraduationCap}>
               <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <Field k="Email verified" v={s.emailVerified ? day(s.emailVerified) : "No"} />

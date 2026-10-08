@@ -1,6 +1,7 @@
 // Weekly XP leaderboard. Opt-in only: a learner appears only after turning
 // it on in Account, and then only as first name plus last initial.
 import prisma from "@/lib/prisma";
+import { hiddenMinorIds } from "@/lib/learn/youth-account";
 
 // The Learn tables predate this column and there are no migrations, so it is
 // added once per process (same pattern as lib/learn/admin/columns.ts).
@@ -44,12 +45,15 @@ export interface BoardRow {
 export async function weeklyLeaderboard(studentId: string, limit = 20) {
   await ensureLeaderboardColumn().catch(() => {});
   const since = weekStart();
+  // Learners under 18 appear only when their parent allowed it (parent
+  // dashboard), whatever their own setting says.
+  const hidden = await hiddenMinorIds();
 
   const [me, weekly, myXp] = await Promise.all([
     prisma.student.findUnique({ where: { id: studentId }, select: { leaderboardOptIn: true } }),
     prisma.pointsLedger.groupBy({
       by: ["studentId"],
-      where: { createdAt: { gte: since }, student: { leaderboardOptIn: true } },
+      where: { createdAt: { gte: since }, student: { leaderboardOptIn: true }, ...(hidden.length ? { studentId: { notIn: hidden } } : {}) },
       _sum: { points: true },
       orderBy: { _sum: { points: "desc" } },
     }),

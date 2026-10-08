@@ -13,6 +13,7 @@ import { getT } from "@/lib/i18n/server";
 import { purchasedTrackIds } from "@/lib/learn/purchases";
 import { getMembership } from "@/lib/learn/team/access";
 import { getAccountState, isLockedOut } from "@/lib/learn/account-status";
+import { ensureYouthColumns, getYouthProfile, youthGate, type YouthGate } from "@/lib/learn/youth-account";
 
 export interface StudentSession {
   id: string;
@@ -55,6 +56,9 @@ async function readStudent(): Promise<StudentSession | null> {
   // a 404. Creating them here, once per process, covers every learner page and
   // API before they query. Failure is logged, not fatal.
   await ensureLearnEditColumns().catch((err) => console.error("[learn] editedAt columns", err));
+  // AI-Empowered Youth columns (birth year, parent): every Student read that
+  // selects whole rows needs them once the client is regenerated.
+  await ensureYouthColumns().catch((err) => console.error("[learn] youth columns", err));
   let studentId: string | undefined;
   let sv = 0;
   let ownerStaff = false;
@@ -244,9 +248,17 @@ export interface LearnAccess {
   subscribed: string[];
   /** At least one track is open: may enter the member area. */
   any: boolean;
+  /**
+   * AI-Empowered Youth: why the youth lanes this learner holds are locked
+   * (lib/learn/youth-account.ts youthGate), or null. Set only when the
+   * learner holds a youth lane.
+   */
+  youthGate: YouthGate;
+  /** Youth lane ids held (bought, subscribed or comped) but locked by youthGate. */
+  youthHeld: string[];
 }
 
-const NO_ACCESS: LearnAccess = { entitlement: NONE, all: false, excluded: [], purchased: [], subscribed: [], any: false };
+const NO_ACCESS: LearnAccess = { entitlement: NONE, all: false, excluded: [], purchased: [], subscribed: [], any: false, youthGate: null, youthHeld: [] };
 
 /** Subscription, purchases and track plans. Cached per request in pages. */
 export const getAccess = cache(async (studentId: string | null | undefined): Promise<LearnAccess> => {
@@ -259,14 +271,31 @@ export const getAccess = cache(async (studentId: string | null | undefined): Pro
     youthTrackIds(),
   ]);
   // AI-Empowered Youth: either lane opens both (lib/learn/youth.ts).
-  const purchased = withYouthCompanions(purchasedOwn, youth);
-  const subscribed = withYouthCompanions(subscribedOwn, youth);
-  const excluded = [
+  let purchased = withYouthCompanions(purchasedOwn, youth);
+  let subscribed = withYouthCompanions(subscribedOwn, youth);
+  let excluded = [
     ...(entitlement.entitled && !entitlement.includesSeparate ? await separateMonthlyTrackIds() : []),
     // The youth program is never part of the all-tracks or team plans; only
     // comps (and the owner) open it without buying it.
     ...(entitlement.entitled && entitlement.status !== "comped" ? youth : []),
   ].filter((id, i, a) => a.indexOf(id) === i);
+
+  // Child safety: a youth lane opens only once the learner gave a birth year
+  // and a parent email, and (under 13) the parent confirmed by the emailed
+  // link. A parent's "revoke" closes it again. The owner is exempt.
+  let gate: YouthGate = null;
+  let youthHeld: string[] = [];
+  const held = youth.filter((id) => purchased.includes(id) || subscribed.includes(id) || (entitlement.entitled && !excluded.includes(id)));
+  if (held.length) {
+    gate = youthGate(await getYouthProfile(studentId));
+    if (gate && (await isOwnerAccount(studentId))) gate = null;
+    if (gate) {
+      youthHeld = held;
+      purchased = purchased.filter((id) => !youth.includes(id));
+      subscribed = subscribed.filter((id) => !youth.includes(id));
+      if (entitlement.entitled) excluded = [...new Set([...excluded, ...youth])];
+    }
+  }
   return {
     entitlement,
     all: entitlement.entitled,
@@ -274,8 +303,15 @@ export const getAccess = cache(async (studentId: string | null | undefined): Pro
     purchased,
     subscribed,
     any: entitlement.entitled || purchased.length > 0 || subscribed.length > 0,
+    youthGate: gate,
+    youthHeld,
   };
 });
+
+async function isOwnerAccount(studentId: string): Promise<boolean> {
+  const row = await prisma.student.findUnique({ where: { id: studentId }, select: { email: true } }).catch(() => null);
+  return !!row && row.email.toLowerCase() === OWNER_EMAIL.toLowerCase();
+}
 
 /** Pure check against an access already loaded. */
 export function canAccessTrack(access: LearnAccess, trackId: string | null | undefined): boolean {

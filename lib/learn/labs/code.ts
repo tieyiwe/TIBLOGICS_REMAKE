@@ -86,6 +86,8 @@ export async function evaluateCode(opts: {
   objectives: LabObjective[];
   passScore: number;
   locale?: Locale;
+  /** Child-safety addendum for a minor (lib/learn/youth-ai.ts youthGraderFor). */
+  youth?: string;
 }): Promise<LabEvaluation> {
   const { config, objectives, passScore } = opts;
   const locale = opts.locale ?? "en";
@@ -153,7 +155,7 @@ CODE>>>
 Grade now. JSON only.`;
 
   try {
-    const raw = await streamChat([{ role: "user", content: user }], GRADER + graderLanguage(locale), 4000, "grade-code");
+    const raw = await streamChat([{ role: "user", content: user }], GRADER + graderLanguage(locale) + (opts.youth ? `\n\n${opts.youth}` : ""), 4000, "grade-code");
     const cleaned = raw.replace(/```json\s*/gi, "").replace(/```/g, "");
     const s = cleaned.indexOf("{"), e = cleaned.lastIndexOf("}");
     const parsed = JSON.parse(cleaned.slice(s, e + 1)) as { objectives?: Array<{ objectiveId?: string; score?: number; comment?: string }>; checksCredible?: boolean; feedbackMd?: string };

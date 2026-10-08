@@ -19,6 +19,9 @@ import SalePrice from "@/components/promo/SalePrice";
 import PromoBanner from "@/components/promo/PromoBanner";
 import PendingEnrollmentCard from "@/components/learn/join/PendingEnrollmentCard";
 import ScholarshipCard from "@/components/learn/scholarship/ScholarshipCard";
+import { isYouthSlug, YOUTH_SIBLING_DISCOUNT_PCT } from "@/lib/learn/youth";
+import { hasYouthSibling } from "@/lib/learn/youth-account";
+import { youthTrackIds } from "@/lib/learn/track-subscriptions";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +55,8 @@ export default async function SubscribePage({
   // Live automatic sale prices (admin: /admin_pro/promotions), display only.
   const live = withTrackSales(catalog.filter((c) => c.status === "live").map((c) => withTrackText(c, texts.get(c.slug))), sales);
   const chosen = trackParam ? live.find((c) => c.slug === trackParam) ?? null : null;
+  // A youth lane already held but locked (waiting for a parent): nothing to buy.
+  if (chosen && access.youthHeld.includes(chosen.id)) redirect(`/learn/youth?lane=${chosen.slug}`);
   const owns = (id: string) => access.purchased.includes(id);
   // A track the all-tracks plan leaves out (sold on its own monthly plan),
   // chosen by a subscriber who does not have it yet.
@@ -60,7 +65,11 @@ export default async function SubscribePage({
   // Every track is already open: only buying a chosen track to keep it
   // forever is left to do here.
   if (access.all && !wantsTeam && (!chosen || owns(chosen.id))) redirect("/learn");
-  const teamPricing = await getTeamPricing();
+  const [teamPricing, sibling] = await Promise.all([
+    getTeamPricing(),
+    // AI-Empowered Youth: another child of the same parent already enrolled.
+    chosen && isYouthSlug(chosen.slug) ? youthTrackIds().then((ids) => hasYouthSibling(student.id, ids)) : Promise.resolve(false),
+  ]);
 
   const lapsed = entitlement.status === "canceled" || entitlement.status === "past_due";
   const heading = chosenLeftOut
@@ -173,7 +182,7 @@ export default async function SubscribePage({
             {chosen && !owns(chosen.id) && (
               <div className="mb-6">
                 <PlanPicker
-                  track={{ slug: chosen.slug, title: chosen.title, priceCents: chosen.priceCents, owned: false, salePriceCents: chosen.salePriceCents, monthlyActive: access.subscribed.includes(chosen.id) }}
+                  track={{ slug: chosen.slug, title: chosen.title, priceCents: chosen.priceCents, owned: false, salePriceCents: chosen.salePriceCents, monthlyActive: access.subscribed.includes(chosen.id), siblingPct: sibling ? YOUTH_SIBLING_DISCOUNT_PCT : 0 }}
                   // A track with its own monthly plan offers it beside the one-time price.
                   showSubscribe={trackMonthlyCents(chosen.slug) != null}
                 />

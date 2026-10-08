@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { canAccessTrack, getAccess, getStudent } from "@/lib/learn/session";
+import { enforceYouthGate } from "@/lib/learn/youth-gate";
 import TrackPaywall from "@/components/learn/TrackPaywall";
 import { trackPriceCents } from "@/lib/learn/pricing";
 import { getTrackProgress, getTrackGates } from "@/lib/learn/progress";
@@ -90,6 +91,8 @@ export default async function TrackHome({
   ]);
 
   if (!track) notFound();
+  // AI-Empowered Youth: birth year, parent email and (under 13) the parent's OK first.
+  await enforceYouthGate(student.id, access, track.slug);
 
   const { text, pending } = src
     ? locale === "en"

@@ -52,6 +52,8 @@ export interface TrackMonthlyCheckoutRequest extends CheckoutDiscountFields {
   trackTitle: string;
   /** Cents per month, from lib/learn/track-monthly.ts. Never from the client. */
   amount: number;
+  /** AI-Empowered Youth sibling discount already taken off `amount` (for the record). */
+  siblingDiscountPct?: number;
   currency: string;
   successUrl: string;
   cancelUrl: string;
@@ -65,6 +67,8 @@ export interface TrackCheckoutRequest extends CheckoutDiscountFields {
   trackTitle: string;
   /** Cents, from lib/learn/pricing.ts. Never from the client. */
   amount: number;
+  /** AI-Empowered Youth sibling discount already taken off `amount` (for the record). */
+  siblingDiscountPct?: number;
   currency: string;
   successUrl: string;
   cancelUrl: string;

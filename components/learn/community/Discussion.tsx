@@ -24,6 +24,7 @@ export default function Discussion({
   suspendedUntil,
   newAccount = false,
   initialOpen,
+  readOnly = false,
 }: {
   /** Which threads: one lesson's, one cohort's, or a whole track's. */
   scope: { trackId?: string; lessonId?: string; cohortId?: string };
@@ -38,6 +39,8 @@ export default function Discussion({
   /** Account too new to post links (anti-spam). */
   newAccount?: boolean;
   initialOpen?: string;
+  /** Under 16 (AI-Empowered Youth): reading only, no posting. */
+  readOnly?: boolean;
 }) {
   const t = useT();
   const locale = useLocale();
@@ -74,7 +77,7 @@ export default function Discussion({
     void load();
   }, [load]);
 
-  const suspended = suspendedUntil && new Date(suspendedUntil).getTime() > Date.now();
+  const suspended = readOnly || (suspendedUntil && new Date(suspendedUntil).getTime() > Date.now());
 
   async function create() {
     setBusy(true);
@@ -111,7 +114,13 @@ export default function Discussion({
         )}
       </div>
 
-      {suspended && (
+      {readOnly && (
+        <p role="status" className="mt-3 rounded-lg bg-sky-50 px-3 py-2 text-xs text-sky-900" data-testid="community-youth-readonly">
+          {t("community.youthReadOnlyNotice")}
+        </p>
+      )}
+
+      {suspended && !readOnly && (
         <p role="status" className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
           {t("community.suspendedNotice", { date: new Date(suspendedUntil!).toLocaleDateString(locale, { dateStyle: "medium" }) })}
         </p>

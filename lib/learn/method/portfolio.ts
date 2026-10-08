@@ -17,6 +17,7 @@ import { BADGE_BY_ID } from "@/lib/learn/badge-defs";
 import { getTotalPoints } from "@/lib/learn/points";
 import { STUDIO_BY_ID } from "@/lib/learn/studio/catalog";
 import { ensureMethodTables } from "./db";
+import { isMinorStudent } from "@/lib/learn/youth-account";
 import { TOP_BOX } from "./review";
 
 // "skills": the skills radar (lib/learn/skills), loaded by the pages themselves.
@@ -116,6 +117,8 @@ export async function publicPortfolioOwner(slug: string): Promise<{ studentId: s
   await ensureMethodTables();
   const row = await prisma.portfolioSettings.findUnique({ where: { slug } });
   if (!row || !row.isPublic) return null;
+  // Learners under 18 never have a public portfolio (AI-Empowered Youth).
+  if (await isMinorStudent(row.studentId)) return null;
   return {
     studentId: row.studentId,
     settings: { isPublic: true, slug: row.slug, includeWork: row.includeWork, hidden: cleanHidden(row.hidden) },

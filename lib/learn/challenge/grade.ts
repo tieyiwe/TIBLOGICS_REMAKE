@@ -73,6 +73,8 @@ export async function gradeChallenge(
   answer: string,
   locale: Locale,
   meta: { studentId: string; week: string },
+  /** Child-safety addendum for a minor (lib/learn/youth-ai.ts youthGraderFor). */
+  youth = "",
 ): Promise<ChallengeGrade> {
   // The answer cannot close its own tag and step outside the data block.
   const safeAnswer = answer.replace(/<\/?\s*answer\s*>/gi, "");
@@ -91,8 +93,9 @@ ${safeAnswer}
 Grade it now. JSON only.`;
 
   // Notes and feedback in the learner's language (the JSON keys stay English).
-  const system =
+  const base =
     locale === "en" ? SYSTEM : `${SYSTEM}\n\nWrite "note" and "feedback" in ${LANGUAGE_FOR_AI[locale]}. Keep the JSON keys in English.`;
+  const system = youth ? `${base}\n\n${youth}` : base;
 
   const { text } = await runClaude("grade-challenge", {
     system,

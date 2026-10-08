@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { awardPoints } from "@/lib/learn/points";
 import { ensureCommunityTables } from "./db";
 import { LIMITS, hasLink, publicName } from "./shared";
+import { canPostInCommunity, getYouthProfile } from "@/lib/learn/youth-account";
 
 // Discussion threads and replies on lessons, tracks and cohorts.
 //
@@ -243,6 +244,8 @@ export function isSuspended(p: CommunityProfile, now = new Date()): boolean {
  * Suspended learners cannot post; a brand new account cannot post links.
  */
 export async function postingBlock(studentId: string, text: string): Promise<string | null> {
+  // AI-Empowered Youth: under 16, the community is read-only.
+  if (!canPostInCommunity(await getYouthProfile(studentId))) return "community.err.youthReadOnly";
   const profile = await getProfile(studentId);
   if (isSuspended(profile)) return "community.err.suspended";
   if (hasLink(text)) {

@@ -186,7 +186,8 @@ export const ACTION_INSTRUCTIONS: Record<TutorAction | "explain", string> = {
     "The learner selected the passage in <selected_text> on the page and asked you to explain it. Explain what it means in simple terms, connect it to the lesson, then ask one short question to check understanding.",
 };
 
-export function buildSystem(page: TutorPage, profile: TutorProfileView | null, summary: string, locale: Locale) {
+/** `youth`: the child-safety addendum for a minor (lib/learn/youth-ai.ts), "" for adults. */
+export function buildSystem(page: TutorPage, profile: TutorProfileView | null, summary: string, locale: Locale, youth = "") {
   const profileBits = profile
     ? [
         profile.role ? `Role or field: ${profile.role}` : "",
@@ -198,6 +199,7 @@ export function buildSystem(page: TutorPage, profile: TutorProfileView | null, s
   const dynamic = [
     profileBits.length ? `<learner_profile>\n${profileBits.join("\n")}\n</learner_profile>` : "The learner has not shared a profile.",
     summary ? `<conversation_notes>\n${summary}\n</conversation_notes>` : "",
+    youth,
     lang,
   ]
     .filter(Boolean)

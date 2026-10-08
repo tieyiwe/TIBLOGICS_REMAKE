@@ -32,7 +32,18 @@ export interface Row {
   accountStatus: string;
   suspendedUntil: string | null;
   tags: string[];
+  /** AI-Empowered Youth: age band and parent consent (learners who gave a birth year). */
+  youth?: { band: "explorer" | "builder" | "adult"; consent: string } | null;
 }
+
+const BAND_LABEL: Record<string, string> = { explorer: "Explorer 10-13", builder: "Builder 14-17", adult: "Adult" };
+const CONSENT: Record<string, { label: string; tone: BadgeTone }> = {
+  granted: { label: "Parent confirmed", tone: "success" },
+  pending: { label: "Waiting for parent", tone: "warn" },
+  revoked: { label: "Parent revoked", tone: "danger" },
+  not_needed: { label: "Parent informed", tone: "info" },
+  none: { label: "No parent", tone: "neutral" },
+};
 
 const PLAN_TONE: Record<string, BadgeTone> = { active: "success", trial: "info", lifetime: "success", "past due": "warn", cancelled: "danger", none: "neutral" };
 const LANG: Record<string, string> = { en: "EN", fr: "FR", sw: "SW" };
@@ -125,6 +136,10 @@ export function LearnersTable({ rows, headers, canManage }: { rows: Row[]; heade
           {r.tags.map((t) => (
             <Badge key={t} tone="orange">#{t}</Badge>
           ))}
+          {r.youth && <Badge tone="info" title="Age band (from the birth year)">{BAND_LABEL[r.youth.band] ?? r.youth.band}</Badge>}
+          {r.youth && r.youth.band !== "adult" && (
+            <Badge tone={CONSENT[r.youth.consent]?.tone ?? "neutral"}>{CONSENT[r.youth.consent]?.label ?? r.youth.consent}</Badge>
+          )}
         </span>
       ),
     },

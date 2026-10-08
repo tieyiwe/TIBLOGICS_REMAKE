@@ -6,6 +6,7 @@ import { communityGuard, fail, limited, str } from "@/lib/learn/community/api";
 import { markHelpful, optIn, submitReview, type FeedbackItem } from "@/lib/learn/community/peer";
 import { LIMITS } from "@/lib/learn/community/shared";
 import { ensureCommunityTables } from "@/lib/learn/community/db";
+import { canPostInCommunity, getYouthProfile } from "@/lib/learn/youth-account";
 
 // Capstone peer review (advisory; never changes the official grade).
 // POST { action: "optin", capstoneId }
@@ -27,6 +28,8 @@ export async function POST(req: NextRequest) {
   }
 
   if (body.action === "submit") {
+    // AI-Empowered Youth: under 16, no written reviews of others' work.
+    if (!canPostInCommunity(await getYouthProfile(student.id))) return fail(t, "community.err.youthReadOnly", 403);
     const reviewId = str(body.reviewId, 64);
     await ensureCommunityTables();
     const [row] = await prisma.$queryRaw<Array<{ rubric: unknown; trackId: string }>>`

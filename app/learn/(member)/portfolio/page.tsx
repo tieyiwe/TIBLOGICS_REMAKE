@@ -6,6 +6,7 @@ import { fmtNumber } from "@/lib/learn/format";
 import { getPortfolioSettings, loadPortfolio } from "@/lib/learn/method/portfolio";
 import PortfolioView from "@/components/learn/method/PortfolioView";
 import PortfolioShare from "@/components/learn/method/PortfolioShare";
+import { isMinorStudent } from "@/lib/learn/youth-account";
 import SkillsRadarCard from "@/components/learn/skills/SkillsRadarCard";
 import { loadSkillProfile } from "@/lib/learn/skills/radar";
 
@@ -23,7 +24,7 @@ export default async function PortfolioPage() {
   if (!student) redirect("/learn/login");
   const [t, locale] = await Promise.all([getT(), getLocale()]);
 
-  const [settings, data, skills] = await Promise.all([
+  const [settings, data, skills, minor] = await Promise.all([
     getPortfolioSettings(student.id).catch((err) => {
       console.error("[portfolio] settings", err);
       return null;
@@ -36,11 +37,12 @@ export default async function PortfolioPage() {
       console.error("[portfolio] skills radar", err);
       return null;
     }),
+    isMinorStudent(student.id),
   ]);
   // "Share" copies the public link, offered only while the portfolio is public
   // with the radar shown on it.
   const sharePath =
-    settings?.isPublic && settings.slug && !settings.hidden.includes("skills") ? `/p/${settings.slug}` : null;
+    !minor && settings?.isPublic && settings.slug && !settings.hidden.includes("skills") ? `/p/${settings.slug}` : null;
 
   return (
     <div className="space-y-8">
@@ -56,7 +58,7 @@ export default async function PortfolioPage() {
 
       {skills && <SkillsRadarCard profile={skills} publicView={false} sharePath={sharePath} />}
 
-      {settings && <PortfolioShare initial={settings} />}
+      {settings && <PortfolioShare initial={minor ? { ...settings, isPublic: false } : settings} minor={minor} />}
 
       {data ? (
         <PortfolioView data={data} publicView={false} />

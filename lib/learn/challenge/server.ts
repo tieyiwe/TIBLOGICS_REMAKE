@@ -12,6 +12,10 @@ import { randomBytes } from "crypto";
 import prisma from "@/lib/prisma";
 import { awardPoints } from "@/lib/learn/points";
 import { ensureLeaderboardColumn, publicName } from "@/lib/learn/leaderboard";
+import { boardVisibleSql, ensureYouthColumns } from "@/lib/learn/youth-account";
+
+// Learners under 18 show only when their parent allowed it (parent dashboard).
+const VISIBLE = boardVisibleSql;
 import { ensureChallengeTables } from "./db";
 import type { CriterionResult } from "./grade";
 
@@ -165,11 +169,11 @@ export async function awardChallengePoints(studentId: string, week: string, scor
 
 /** The week's board: top rows (opted-in learners only) and the learner's rank. */
 export async function weekBoard(week: string, studentId: string | null, limit = BOARD_SIZE): Promise<ChallengeBoard> {
-  await Promise.all([ensureChallengeTables(), ensureLeaderboardColumn().catch(() => {})]);
+  await Promise.all([ensureChallengeTables(), ensureLeaderboardColumn().catch(() => {}), ensureYouthColumns().catch(() => {})]);
   const top = await prisma.$queryRawUnsafe<Array<{ studentId: string; name: string; score: number }>>(
     `SELECT e."studentId", s."name", e."score"
        FROM "WeeklyChallengeEntry" e JOIN "Student" s ON s."id" = e."studentId"
-      WHERE e."week" = $1 AND s."leaderboardOptIn" = true
+      WHERE e."week" = $1 AND s."leaderboardOptIn" = true AND ${VISIBLE("s")}
       ORDER BY e."score" DESC, e."submittedAt" ASC, e."id" ASC
       LIMIT $2`,
     week,
@@ -177,7 +181,7 @@ export async function weekBoard(week: string, studentId: string | null, limit = 
   );
   const [{ n: players }] = await prisma.$queryRawUnsafe<Array<{ n: number }>>(
     `SELECT COUNT(*)::int AS n FROM "WeeklyChallengeEntry" e JOIN "Student" s ON s."id" = e."studentId"
-      WHERE e."week" = $1 AND s."leaderboardOptIn" = true`,
+      WHERE e."week" = $1 AND s."leaderboardOptIn" = true AND ${VISIBLE("s")}`,
     week,
   );
   const rows: ChallengeBoardRow[] = top.map((r, i) => ({
@@ -194,11 +198,11 @@ export async function weekBoard(week: string, studentId: string | null, limit = 
     const mine = await prisma.$queryRawUnsafe<Array<{ name: string; score: number; ahead: number }>>(
       `SELECT s."name", e."score",
               (SELECT COUNT(*)::int FROM "WeeklyChallengeEntry" o JOIN "Student" os ON os."id" = o."studentId"
-                WHERE o."week" = e."week" AND os."leaderboardOptIn" = true
+                WHERE o."week" = e."week" AND os."leaderboardOptIn" = true AND ${VISIBLE("os")}
                   AND (o."score" > e."score" OR (o."score" = e."score" AND (o."submittedAt" < e."submittedAt"
                        OR (o."submittedAt" = e."submittedAt" AND o."id" < e."id"))))) AS ahead
          FROM "WeeklyChallengeEntry" e JOIN "Student" s ON s."id" = e."studentId"
-        WHERE e."week" = $1 AND e."studentId" = $2 AND s."leaderboardOptIn" = true`,
+        WHERE e."week" = $1 AND e."studentId" = $2 AND s."leaderboardOptIn" = true AND ${VISIBLE("s")}`,
       week,
       studentId,
     );

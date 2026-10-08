@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { canAccessTrack, getAccess, getStudent } from "@/lib/learn/session";
+import { enforceYouthGate } from "@/lib/learn/youth-gate";
 import TrackPaywall from "@/components/learn/TrackPaywall";
 import LessonPlayer from "@/components/learn/LessonPlayer";
 import type { Metadata } from "next";
@@ -56,6 +57,8 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
   if (!lesson) notFound();
 
   const trackId = lesson.module.track.id;
+  // AI-Empowered Youth: no lesson (not even a free preview) before the parent's OK.
+  await enforceYouthGate(student.id, await getAccess(student.id), lesson.module.track.slug, { lesson: true });
 
   // Per-track access: a lesson opens with its track (bought, or every track
   // with the subscription). Free-preview lessons open for any member.

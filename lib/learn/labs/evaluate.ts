@@ -205,6 +205,8 @@ export async function evaluatePrompt(
   objectives: LabObjective[],
   passScore: number,
   locale: Locale = "en",
+  /** Child-safety addendum for a minor (lib/learn/youth-ai.ts youthGraderFor). */
+  youth = "",
 ): Promise<LabEvaluation> {
   const t = translatorFor(locale);
   // No key, no prompt, or a failed call — fall back rather than block.
@@ -241,7 +243,7 @@ RESPONSE>>>
 Grade the prompt now. JSON only.`;
 
   try {
-    const raw = await streamChat([{ role: "user", content: userMsg }], COACH_SYSTEM + graderLanguage(locale), undefined, "grade-prompt");
+    const raw = await streamChat([{ role: "user", content: userMsg }], COACH_SYSTEM + graderLanguage(locale) + (youth ? `\n\n${youth}` : ""), undefined, "grade-prompt");
     const parsed = extractJson(raw);
     // The model ran but gave no usable grade. The learner's text decides what
     // the grader writes, so this must never fall back to the generous
@@ -346,6 +348,8 @@ export async function evaluateWorkbench(
   objectives: LabObjective[],
   passScore: number,
   locale: Locale = "en",
+  /** Child-safety addendum for a minor (lib/learn/youth-ai.ts youthGraderFor). */
+  youth = "",
 ): Promise<LabEvaluation> {
   const t = translatorFor(locale);
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -379,7 +383,7 @@ ${work}
 Grade the work now. JSON only.`;
 
   try {
-    const raw = await streamChat([{ role: "user", content: userMsg }], WORKBENCH_SYSTEM + graderLanguage(locale), undefined, "grade-work");
+    const raw = await streamChat([{ role: "user", content: userMsg }], WORKBENCH_SYSTEM + graderLanguage(locale) + (youth ? `\n\n${youth}` : ""), undefined, "grade-work");
     const parsed = extractJson(raw);
     if (!parsed) return heuristicWorkbenchEval(config, answers, objectives, passScore, t);
     const results: ObjectiveResult[] = objectives.map((o) => {
