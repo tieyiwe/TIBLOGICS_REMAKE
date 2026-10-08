@@ -181,14 +181,6 @@ const nextConfig = {
         ],
       },
       {
-        // Learning Studio "Teach the Machine" (AI-Empowered Youth) may use the
-        // camera, same origin only and only after the learner allows it: frames
-        // are shrunk to a 16x16 grid in the browser and never uploaded. Listed
-        // after the site-wide header so it overrides it on these paths.
-        source: "/learn/:path*",
-        headers: [{ key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=()" }],
-      },
-      {
         // Pages: always revalidated (never served stale after a deploy) and
         // never stored by shared caches, but not "no-store", which would
         // switch off the browser's instant back/forward cache.

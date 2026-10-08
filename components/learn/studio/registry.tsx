@@ -20,8 +20,4 @@ export const STUDIO_COMPONENTS: Record<string, ComponentType<StudioToolProps>> =
   "critic-mode": load(() => import("./tools/critic-mode")),
   "test-bench": load(() => import("./tools/test-bench")),
   "security-doors": load(() => import("./tools/security-doors")),
-  "teach-the-machine": load(() => import("./tools/youth/teach-the-machine")),
-  "feed-simulator": load(() => import("./tools/youth/feed-simulator")),
-  "fake-or-real": load(() => import("./tools/youth/fake-or-real")),
-  "system-mapper": load(() => import("./tools/youth/system-mapper")),
 };

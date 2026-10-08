@@ -9,10 +9,6 @@ import { promptArena } from "./tools/prompt-arena";
 import { criticMode } from "./tools/critic-mode";
 import { testBench } from "./tools/test-bench";
 import { securityDoors } from "./tools/security-doors";
-import { teachTheMachine } from "./tools/teach-the-machine";
-import { feedSimulator } from "./tools/feed-simulator";
-import { fakeOrReal } from "./tools/fake-or-real";
-import { systemMapper } from "./tools/system-mapper";
 
 // Every Studio tool. Safe to import on the server and in the browser.
 export const STUDIO_TOOLS: StudioToolMeta[] = [
@@ -26,11 +22,6 @@ export const STUDIO_TOOLS: StudioToolMeta[] = [
   criticMode,
   testBench,
   securityDoors,
-  // AI-Empowered Youth (ages 10 to 17).
-  teachTheMachine,
-  feedSimulator,
-  fakeOrReal,
-  systemMapper,
 ];
 
 export const STUDIO_BY_ID = new Map(STUDIO_TOOLS.map((t) => [t.id, t]));

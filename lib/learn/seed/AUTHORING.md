@@ -202,11 +202,6 @@ challenge ids). security-doors (the 30 Doors security audit) also takes
 focused views that earn no points, for other tracks' lessons: view-owner,
 view-commission, view-agents, view-prompt, view-ml, view-governance
 (components/learn/studio/tools/security-doors/doors.ts).
-AI-Empowered Youth tools (ages 10 to 17, listed on the youth tracks):
-teach-the-machine (two-classes, trick-it, fair-data), feed-simulator
-(your-feed, filter-bubble, break-the-bubble), fake-or-real (warm-up,
-deepfake-tells, fact-check) and system-mapper (lunch-queue, game-economy,
-feedback-loops). Each also has a free play mode: `tool-id:sandbox`.
 Put the block where the learner should practise the idea just taught,
 with one sentence before it saying what to do.
 
