@@ -28,9 +28,20 @@ export function GlossaryProvider({ entries, labels, children }: { entries: Gloss
   const [current, setCurrent] = useState<string | null>(null);
   const closeBtn = useRef<HTMLButtonElement>(null);
   const opener = useRef<HTMLElement | null>(null);
+  const recorded = useRef(new Set<string>());
   const open = useCallback((id: string) => {
     opener.current = document.activeElement as HTMLElement | null;
     setCurrent(id);
+    // The term joins the learner's Daily Review as a glossary card
+    // (lib/learn/glossary/review.ts). Once per term per page; never blocks.
+    if (!recorded.current.has(id)) {
+      recorded.current.add(id);
+      void fetch("/api/learn/glossary/seen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ termId: id }),
+      }).catch(() => {});
+    }
   }, []);
   const close = useCallback(() => {
     setCurrent(null);

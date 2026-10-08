@@ -4,6 +4,8 @@ import { accessibleTrackIds, getStudent } from "@/lib/learn/session";
 import { getT } from "@/lib/i18n/server";
 import { MIN_FOR_COMPLETE, reviewStatus, type ReviewStatus } from "@/lib/learn/method/review";
 import DailyReview from "@/components/learn/method/DailyReview";
+import GlossaryReview from "@/components/learn/method/GlossaryReview";
+import { glossaryStatus } from "@/lib/learn/glossary/review";
 import TutorDock from "@/components/learn/tutor/TutorDock";
 import FocusHeader, { focusModuleFor } from "@/components/learn/mastery/FocusHeader";
 
@@ -27,6 +29,14 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
     console.error("[review] status", err);
     return { due: 0, totalCards: 0, available: true, doneToday: false };
   });
+  // Glossary cards: terms opened in lessons (not limited to the open tracks:
+  // the glossary is public). Hidden if it cannot be read.
+  const glossary = focus
+    ? null
+    : await glossaryStatus(student.id).catch((err) => {
+        console.error("[review] glossary status", err);
+        return null;
+      });
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -45,6 +55,11 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
           focusModuleId={focus?.moduleId ?? null}
         />
       </div>
+      {glossary && (
+        <div className="mt-6">
+          <GlossaryReview initialDue={glossary.due} total={glossary.total} nextDueAt={glossary.nextDueAt} />
+        </div>
+      )}
       <TutorDock kind="review" />
     </div>
   );

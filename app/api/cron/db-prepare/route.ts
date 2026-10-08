@@ -50,6 +50,8 @@ const STEPS: Array<[string, () => Promise<unknown>]> = [
   ["lib/learn/support/db", () => import("@/lib/learn/support/db").then((m) => m.ensureSupportTables())],
   ["lib/learn/video/db", () => import("@/lib/learn/video/db").then((m) => m.ensureVideoTables())],
   ["lib/learn/recap", () => import("@/lib/learn/recap").then((m) => m.ensureRecapTable())],
+  ["lib/learn/glossary/review", () => import("@/lib/learn/glossary/review").then((m) => m.ensureGlossarySeenTable())],
+  ["lib/learn/explain", () => import("@/lib/learn/explain").then((m) => m.ensureExplainTable())],
   ["lib/learn/cert/ref", () => import("@/lib/learn/cert/ref").then((m) => m.ensureCertificateColumns())],
   ["lib/learn/mastery/db", () => import("@/lib/learn/mastery/db").then((m) => m.ensureMasteryTables())],
   ["lib/i18n/content", () => import("@/lib/i18n/content").then((m) => m.ensureTable())],

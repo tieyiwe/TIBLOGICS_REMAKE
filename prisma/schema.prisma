@@ -3374,3 +3374,29 @@ model QuizSession {
 
   @@index([studentId])
 }
+
+/// Glossary terms a learner opened in lessons, reviewed as flip cards in the
+/// Daily Review with Leitner boxes (lib/learn/glossary/review.ts, created at runtime).
+model GlossarySeen {
+  studentId      String
+  termId         String
+  firstSeenAt    DateTime  @default(now())
+  lastReviewedAt DateTime?
+  box            Int       @default(1)
+  dueAt          DateTime
+
+  @@id([studentId, termId])
+  @@index([studentId, dueAt])
+}
+
+/// "Explain simpler" on a lesson paragraph, written once per paragraph text
+/// and language and shared by every learner (lib/learn/explain, created at runtime).
+model ParagraphExplain {
+  lessonId  String
+  paraHash  String
+  locale    String
+  text      String
+  createdAt DateTime @default(now())
+
+  @@id([lessonId, paraHash, locale])
+}

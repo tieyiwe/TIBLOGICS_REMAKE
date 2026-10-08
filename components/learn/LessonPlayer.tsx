@@ -225,7 +225,7 @@ export default function LessonPlayer({
           <LessonMedia lessonId={lesson.id} title={lesson.title} video={lesson.video} accentColor={accentColor}>
             {lesson.bodyMd && (
               <div data-narrate className="rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
-                <Markdown source={lesson.bodyMd} glossary={glossary} />
+                <Markdown source={lesson.bodyMd} glossary={glossary} explain={{ lessonId: lesson.id }} />
                 <div ref={setTextEnd} data-testid="lesson-text-end" aria-hidden="true" />
               </div>
             )}
@@ -240,7 +240,7 @@ export default function LessonPlayer({
 
             {lesson.bodyMd && (
               <div data-narrate className="mt-6 rounded-2xl border border-[var(--border)] bg-white p-6 sm:p-8">
-                <Markdown source={lesson.bodyMd} glossary={glossary} />
+                <Markdown source={lesson.bodyMd} glossary={glossary} explain={{ lessonId: lesson.id }} />
                 <div ref={setTextEnd} data-testid="lesson-text-end" aria-hidden="true" />
               </div>
             )}

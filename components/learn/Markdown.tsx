@@ -4,6 +4,8 @@ import Playground from "./Playground";
 import dynamic from "next/dynamic";
 import { GlossTerm } from "./glossary/GlossaryContext";
 import { formsPattern, type GlossEntry } from "@/lib/learn/glossary/pattern";
+import ExplainParagraph from "./ExplainParagraph";
+import { MIN_EXPLAIN_CHARS, paraHash } from "@/lib/learn/explain/paragraphs";
 
 // Loaded only by lessons that embed a Studio tool: StudioHost brings
 // framer-motion and the tool registry, which most lessons never need.
@@ -138,7 +140,16 @@ function codeBlock(block: { lang: string; lines: string[] }, key: string): React
   );
 }
 
-export default function Markdown({ source, glossary }: { source: string; glossary?: GlossEntry[] }) {
+export default function Markdown({
+  source,
+  glossary,
+  explain,
+}: {
+  source: string;
+  glossary?: GlossEntry[];
+  /** Lessons only: "Explain simpler" on each paragraph (lib/learn/explain/paragraphs.ts counts them the same way). */
+  explain?: { lessonId: string };
+}) {
   const gl = makeGloss(glossary);
   const lines = source.replace(/\r\n/g, "\n").split("\n");
   const blocks: React.ReactNode[] = [];
@@ -160,13 +171,26 @@ export default function Markdown({ source, glossary }: { source: string; glossar
   let quote: string[] = [];
   let table: string[] = [];
   let k = 0;
+  // Every <p>, in order: the index the explain route uses to find it again.
+  let pi = 0;
 
   const flushParagraph = () => {
     if (paragraph.length === 0) return;
+    const text = paragraph.join(" ");
+    const key = `p${k++}`;
+    const cls = "mb-4 text-[0.9375rem] leading-[1.75] text-[var(--ink2)]";
+    const inline = renderInline(text, `p${k}`, gl);
+    const index = pi++;
     blocks.push(
-      <p key={`p${k++}`} className="mb-4 text-[0.9375rem] leading-[1.75] text-[var(--ink2)]">
-        {renderInline(paragraph.join(" "), `p${k}`, gl)}
-      </p>,
+      explain && text.length >= MIN_EXPLAIN_CHARS ? (
+        <ExplainParagraph key={key} lessonId={explain.lessonId} index={index} hash={paraHash(text)} className={cls}>
+          {inline}
+        </ExplainParagraph>
+      ) : (
+        <p key={key} className={cls}>
+          {inline}
+        </p>
+      ),
     );
     paragraph = [];
   };
