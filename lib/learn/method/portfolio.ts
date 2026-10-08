@@ -19,7 +19,8 @@ import { STUDIO_BY_ID } from "@/lib/learn/studio/catalog";
 import { ensureMethodTables } from "./db";
 import { TOP_BOX } from "./review";
 
-export const PORTFOLIO_SECTIONS = ["labs", "studio", "capstone", "certificates", "badges", "memory"] as const;
+// "skills": the skills radar (lib/learn/skills), loaded by the pages themselves.
+export const PORTFOLIO_SECTIONS = ["labs", "studio", "capstone", "certificates", "badges", "memory", "skills"] as const;
 export type PortfolioSection = (typeof PORTFOLIO_SECTIONS)[number];
 
 export interface PortfolioSettingsView {

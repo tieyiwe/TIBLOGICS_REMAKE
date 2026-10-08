@@ -7,7 +7,7 @@ import { useT } from "@/lib/i18n/client";
 // samples (lab excerpts and reflections) are included, and which sections
 // are shown. Everything is private until the learner turns it on.
 
-const SECTIONS = ["labs", "studio", "capstone", "certificates", "badges", "memory"] as const;
+const SECTIONS = ["skills", "labs", "studio", "capstone", "certificates", "badges", "memory"] as const;
 type Section = (typeof SECTIONS)[number];
 
 const SECTION_KEY: Record<Section, string> = {
@@ -17,6 +17,7 @@ const SECTION_KEY: Record<Section, string> = {
   certificates: "method.portfolio.certificates",
   badges: "method.portfolio.badges",
   memory: "method.portfolio.memory",
+  skills: "learn.radar.title",
 };
 
 export default function PortfolioShare({

@@ -8,6 +8,8 @@ import { loadPortfolio, publicPortfolioOwner } from "@/lib/learn/method/portfoli
 import PortfolioView from "@/components/learn/method/PortfolioView";
 import { cardUrl } from "@/lib/seo/og-card";
 import { isScholar } from "@/lib/learn/scholarship/status";
+import SkillsRadarCard from "@/components/learn/skills/SkillsRadarCard";
+import { loadSkillProfile } from "@/lib/learn/skills/radar";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +27,13 @@ const load = cache(async (slug: string) => {
     includeWork: owner.settings.includeWork,
     hidden: owner.settings.hidden,
   }).catch(() => null);
-  return data ? { data, settings: owner.settings, scholar: await isScholar(owner.studentId) } : null;
+  if (!data) return null;
+  // The skills radar only when the owner left that section shown.
+  const [scholar, skills] = await Promise.all([
+    isScholar(owner.studentId),
+    owner.settings.hidden.includes("skills") ? Promise.resolve(null) : loadSkillProfile(owner.studentId).catch(() => null),
+  ]);
+  return { data, settings: owner.settings, scholar, skills };
 });
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -62,7 +70,7 @@ export default async function PublicPortfolioPage({ params }: { params: Promise<
 
   if (!hit) notFound();
 
-  const { data, settings, scholar } = hit;
+  const { data, settings, scholar, skills } = hit;
   return (
     <div className="bg-[var(--s2)] px-4 pb-16 pt-32 sm:pt-44">
       <div className="mx-auto max-w-5xl">
@@ -77,6 +85,12 @@ export default async function PublicPortfolioPage({ params }: { params: Promise<
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/70">{t("method.public.intro")}</p>
           <p className="mt-4 text-sm font-bold text-[var(--orange)]">{t("method.portfolio.xp", { n: fmtNumber(data.totalXp, locale) })}</p>
         </header>
+
+        {skills && skills.results > 0 && (
+          <div className="mt-8">
+            <SkillsRadarCard profile={skills} publicView sharePath={`/p/${slug}`} />
+          </div>
+        )}
 
         <div className="mt-8">
           <PortfolioView data={data} publicView hidden={settings.hidden} />
