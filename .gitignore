@@ -60,3 +60,4 @@ next-env.d.ts
 # order and appointment records). Never commit one.
 /db-migration/
 *.dump
+.claude/worktrees/
