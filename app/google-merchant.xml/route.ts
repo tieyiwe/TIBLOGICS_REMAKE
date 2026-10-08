@@ -25,12 +25,14 @@ const esc = (s: string) =>
  * transit, the way Google Merchant Center expects digital items. Store
  * products and ARFA courses use exactly the same shipping.
  */
-const shippingTag = (country: string, currency?: string | null) =>
-  `<g:shipping><g:country>${country}</g:country><g:price>0.00 ${(currency || "USD").toUpperCase()}</g:price>` +
+const shippingTag = (country: string) =>
+  `<g:shipping><g:country>${country}</g:country><g:price>0.00 ${FEED_CURRENCY}</g:price>` +
   `<g:min_handling_time>0</g:min_handling_time><g:max_handling_time>0</g:max_handling_time>` +
   `<g:min_transit_time>0</g:min_transit_time><g:max_transit_time>0</g:max_transit_time></g:shipping>`;
 
-const money = (cents: number, currency: string) => `${(cents / 100).toFixed(2)} ${(currency || "USD").toUpperCase()}`;
+/** Every price and shipping cost in the feed is in US dollars, for every country (the site charges in USD). */
+const FEED_CURRENCY = "USD";
+const money = (cents: number) => `${(cents / 100).toFixed(2)} ${FEED_CURRENCY}`;
 
 export async function GET() {
   await ensureStoreCatalog().catch(() => {});
@@ -51,8 +53,8 @@ export async function GET() {
         ...(p.images[0] ? [`<g:image_link>${esc(absUrl(p.images[0]))}</g:image_link>`] : []),
         ...p.images.slice(1, 10).map((i) => `<g:additional_image_link>${esc(absUrl(i))}</g:additional_image_link>`),
         `<g:availability>${inStock ? "in_stock" : "out_of_stock"}</g:availability>`,
-        `<g:price>${money(onSale ? (p.compareAtPrice as number) : p.price, p.currency)}</g:price>`,
-        ...(onSale ? [`<g:sale_price>${money(p.price, p.currency)}</g:sale_price>`] : []),
+        `<g:price>${money(onSale ? (p.compareAtPrice as number) : p.price)}</g:price>`,
+        ...(onSale ? [`<g:sale_price>${money(p.price)}</g:sale_price>`] : []),
         `<g:condition>new</g:condition>`,
         `<g:brand>${esc(SITE_NAME)}</g:brand>`,
         // Our own products have no GTIN or MPN.
@@ -61,7 +63,7 @@ export async function GET() {
         ...(p.digital
           ? [
               `<g:google_product_category>${esc(DIGITAL_CATEGORY)}</g:google_product_category>`,
-              ...MERCHANT_COUNTRIES.map((c) => shippingTag(c, p.currency)),
+              ...MERCHANT_COUNTRIES.map((c) => shippingTag(c)),
             ]
           : []),
       ];
@@ -90,14 +92,14 @@ export async function GET() {
       `<link>${esc(absUrl(`/learning-box/${tr.slug}`))}</link>`,
       `<g:image_link>${esc(image)}</g:image_link>`,
       `<g:availability>in_stock</g:availability>`,
-      `<g:price>${money(price, "USD")}</g:price>`,
+      `<g:price>${money(price)}</g:price>`,
       `<g:condition>new</g:condition>`,
       `<g:brand>ARFA by ${esc(SITE_NAME)}</g:brand>`,
       `<g:identifier_exists>no</g:identifier_exists>`,
       `<g:product_type>ARFA AI Academy &gt; Online courses</g:product_type>`,
       // Same category and shipping as the store's digital products.
       `<g:google_product_category>${esc(DIGITAL_CATEGORY)}</g:google_product_category>`,
-      ...MERCHANT_COUNTRIES.map((c) => shippingTag(c, "USD")),
+      ...MERCHANT_COUNTRIES.map((c) => shippingTag(c)),
     ];
     items.push(`<item>\n  ${tags.join("\n  ")}\n</item>`);
   }
