@@ -41,6 +41,9 @@ const PRICE_REVISIONS: Array<{ key: string; slug: string; priceCents: number }> 
   { key: "price-rev:2026-10b-ai-for-parents-497", slug: "ai-for-parents", priceCents: 49700 },
   { key: "price-rev:2026-10b-ai-small-business-897", slug: "ai-small-business", priceCents: 89700 },
   { key: "price-rev:2026-10b-ai-governance-899", slug: "ai-governance", priceCents: 89900 },
+  // AI-Empowered Youth: $247 per lane purchase (either lane opens both).
+  { key: "price-rev:2026-10c-youth-explorer-247", slug: "ai-empowered-youth-explorer", priceCents: 24700 },
+  { key: "price-rev:2026-10c-youth-builder-247", slug: "ai-empowered-youth-builder", priceCents: 24700 },
 ];
 
 async function applyPriceRevisions(): Promise<void> {

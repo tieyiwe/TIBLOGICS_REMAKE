@@ -14,6 +14,9 @@ export const TRACK_MONTHLY_PRODUCT = "learn-track-monthly";
 
 export const TRACK_MONTHLY_CENTS: Readonly<Record<string, number>> = {
   "vibe-coding-engineer": 9900,
+  // AI-Empowered Youth (lib/learn/youth.ts): either lane's plan opens both.
+  "ai-empowered-youth-explorer": 5997,
+  "ai-empowered-youth-builder": 5997,
 };
 
 /** The track's own monthly price, or null when it is part of the all-tracks plan. */
@@ -26,5 +29,7 @@ export const SEPARATE_MONTHLY_SLUGS = Object.keys(TRACK_MONTHLY_CENTS);
 /** Short names for "… is sold separately" next to the all-tracks plan. */
 export const SEPARATE_MONTHLY_NAMES: Readonly<Record<string, string>> = {
   "vibe-coding-engineer": "Vibe Coding",
+  "ai-empowered-youth-explorer": "AI-Empowered Youth",
+  "ai-empowered-youth-builder": "AI-Empowered Youth",
 };
-export const separateMonthlyNames = () => SEPARATE_MONTHLY_SLUGS.map((s) => SEPARATE_MONTHLY_NAMES[s] ?? s).join(", ");
+export const separateMonthlyNames = () => [...new Set(SEPARATE_MONTHLY_SLUGS.map((s) => SEPARATE_MONTHLY_NAMES[s] ?? s))].join(", ");

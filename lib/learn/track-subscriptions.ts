@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import prisma from "@/lib/prisma";
 import { SEPARATE_MONTHLY_SLUGS } from "./track-monthly";
+import { YOUTH_SLUGS } from "./youth";
 
 // One track on its own monthly plan (lib/learn/track-monthly.ts): the
 // subscriptions, and which tracks the all-tracks plan leaves out.
@@ -59,6 +60,21 @@ export async function separateMonthlyTrackIds(): Promise<string[]> {
   if (!rows) return idsCache?.ids ?? [];
   idsCache = { at: Date.now(), ids: rows.map((r) => r.id) };
   return idsCache.ids;
+}
+
+// The AI-Empowered Youth lanes (lib/learn/youth.ts), by id.
+let youthCache: { at: number; ids: string[] } | null = null;
+export async function youthTrackIds(): Promise<string[]> {
+  if (youthCache && Date.now() - youthCache.at < 300_000) return youthCache.ids;
+  const rows = await prisma.learnTrack.findMany({ where: { slug: { in: [...YOUTH_SLUGS] } }, select: { id: true } }).catch(() => null);
+  if (!rows) return youthCache?.ids ?? [];
+  youthCache = { at: Date.now(), ids: rows.map((r) => r.id) };
+  return youthCache.ids;
+}
+
+/** One youth lane owned or subscribed opens the other lane too. */
+export function withYouthCompanions(ids: string[], youth: string[]): string[] {
+  return ids.some((id) => youth.includes(id)) ? [...new Set([...ids, ...youth])] : ids;
 }
 
 /** Tracks open through their own monthly plan: active, trialing, or past due inside the 7-day grace. */

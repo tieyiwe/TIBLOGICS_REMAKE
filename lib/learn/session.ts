@@ -7,7 +7,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { authOptions, OWNER_EMAIL } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { ensureTrackSubscriptionTables, separateMonthlyTrackIds, subscribedTrackIds } from "@/lib/learn/track-subscriptions";
+import { ensureTrackSubscriptionTables, separateMonthlyTrackIds, subscribedTrackIds, withYouthCompanions, youthTrackIds } from "@/lib/learn/track-subscriptions";
 import { ensureLearnEditColumns } from "@/lib/learn/admin/columns";
 import { getT } from "@/lib/i18n/server";
 import { purchasedTrackIds } from "@/lib/learn/purchases";
@@ -252,12 +252,21 @@ const NO_ACCESS: LearnAccess = { entitlement: NONE, all: false, excluded: [], pu
 export const getAccess = cache(async (studentId: string | null | undefined): Promise<LearnAccess> => {
   if (!studentId) return NO_ACCESS;
   await ensureTrackSubscriptionTables().catch(() => {});
-  const [entitlement, purchased, subscribed] = await Promise.all([
+  const [entitlement, purchasedOwn, subscribedOwn, youth] = await Promise.all([
     getEntitlement(studentId),
     purchasedTrackIds(studentId),
     subscribedTrackIds(studentId),
+    youthTrackIds(),
   ]);
-  const excluded = entitlement.entitled && !entitlement.includesSeparate ? await separateMonthlyTrackIds() : [];
+  // AI-Empowered Youth: either lane opens both (lib/learn/youth.ts).
+  const purchased = withYouthCompanions(purchasedOwn, youth);
+  const subscribed = withYouthCompanions(subscribedOwn, youth);
+  const excluded = [
+    ...(entitlement.entitled && !entitlement.includesSeparate ? await separateMonthlyTrackIds() : []),
+    // The youth program is never part of the all-tracks or team plans; only
+    // comps (and the owner) open it without buying it.
+    ...(entitlement.entitled && entitlement.status !== "comped" ? youth : []),
+  ].filter((id, i, a) => a.indexOf(id) === i);
   return {
     entitlement,
     all: entitlement.entitled,
