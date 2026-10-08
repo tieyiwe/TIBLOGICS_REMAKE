@@ -3413,6 +3413,7 @@ model ParagraphExplain {
   createdAt DateTime @default(now())
 
   @@id([lessonId, paraHash, locale])
+}
 
 /// Weekly 10-minute challenge entry (lib/learn/challenge, created at runtime
 /// by lib/learn/challenge/db.ts; keep the two in step). One per learner per
