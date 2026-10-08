@@ -70,7 +70,7 @@ export async function GET() {
 
   // ARFA tracks: live ones, at the one-time price (lifetime access).
   const tracks = await prisma.learnTrack
-    .findMany({ where: { status: "live" }, orderBy: { sortOrder: "asc" }, select: { slug: true, title: true, tagline: true, description: true, level: true, priceCents: true, heroImage: true } })
+    .findMany({ where: { status: "live" }, orderBy: { sortOrder: "asc" }, select: { slug: true, title: true, tagline: true, description: true, level: true, priceCents: true } })
     .catch(() => []);
   for (const tr of tracks) {
     const price = trackPriceCents(tr.level, tr.priceCents);
@@ -79,7 +79,10 @@ export async function GET() {
     const desc = cleanCopy([tr.tagline, tr.description, "Online AI course with lessons, videos, hands-on labs, quizzes and a verifiable certificate. One-time payment, lifetime access."].filter(Boolean).join("\n\n"))
       .replace(/\s+/g, " ")
       .slice(0, 4900);
-    const image = tr.heroImage ? absUrl(tr.heroImage) : cardUrl({ title: tr.title, description: tr.tagline ?? undefined, kicker: "ARFA AI Academy", brand: "arfa" });
+    // Always the generated course card (1200x630 PNG): a picture set in the
+    // track editor may be a format or size Google rejects, and every course
+    // then looks the same in Shopping.
+    const image = cardUrl({ title: tr.title, description: tr.tagline ?? undefined, kicker: "ARFA AI Academy", brand: "arfa" });
     const tags = [
       `<g:id>arfa-${esc(tr.slug)}</g:id>`,
       `<title>${esc(title)}</title>`,

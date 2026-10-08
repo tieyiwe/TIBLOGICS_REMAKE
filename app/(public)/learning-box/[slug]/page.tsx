@@ -77,8 +77,9 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
       monthly: fmtPrice(trackMonthlyCents(track.slug) ?? PLANS.monthly.amount, locale),
     }),
     socialDescription: text?.tagline ?? track.tagline ?? undefined,
-    // A track's own picture, else its own ARFA card (title and promise).
-    image: track.heroImage ? { url: track.heroImage } : undefined,
+    // Always the generated course card (price, hours, "Start learning"): a
+    // picture set in the track editor may be a size or format that social
+    // sites and Google reject.
     // Share preview built to sell the course: the price, the hours, the
     // certificate and a "Start learning" button (lib/seo/promo.ts).
     promo: {
