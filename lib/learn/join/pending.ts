@@ -1,3 +1,4 @@
+import { isYouthSlug } from "@/lib/learn/youth";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 import { joinPath, type JoinChoice } from "./choice";
@@ -223,6 +224,13 @@ export async function sweepPendingEnrollments(now = new Date()): Promise<{ check
         const student = await prisma.student.findUnique({ where: { id: row.studentId }, select: { email: true, name: true, locale: true } });
         if (!student) {
           await prisma.pendingEnrollment.delete({ where: { studentId: row.studentId } }).catch(() => {});
+          continue;
+        }
+        // A young person's sign-up: no "finish your enrolment" email. Their age
+        // is asked first, and under 13 nothing goes to the child before the
+        // parent's OK (lib/learn/youth-account.ts sends the parent emails).
+        if (isYouthSlug(row.trackSlug)) {
+          await prisma.pendingEnrollment.updateMany({ where: { studentId: row.studentId }, data: { welcomeSentAt: now, reminderSentAt: now } });
           continue;
         }
         const choice = choiceOf(row);

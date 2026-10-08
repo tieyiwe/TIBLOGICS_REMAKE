@@ -225,7 +225,11 @@ export default function SponsorFlow(props: {
                   </label>
                 ))}
               </div>
-              <p className="mt-2 text-xs text-[var(--ink3)]">{t("learn.youth.sponsor.siblingNote")}</p>
+              {props.siblingPct === 0 && (
+                <a href="/portal/signin" className="mt-2 block text-xs text-[var(--ink3)] underline-offset-2 hover:underline">
+                  {t("learn.youth.sponsor.siblingNote")}
+                </a>
+              )}
             </fieldset>
             <p className="text-xs leading-relaxed text-[var(--ink3)]">{t(needParentEmail ? "learn.youth.sponsor.consentNote" : "learn.youth.sponsor.childNote", { name: childName.trim() })}</p>
           </>

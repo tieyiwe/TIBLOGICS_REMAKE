@@ -8,7 +8,8 @@ import { csrfGuard } from "@/lib/learn/account-status/admin-auth";
 import { ensureLearnEditColumns } from "@/lib/learn/admin/columns";
 import { TRACK_CURRENCY, trackPriceCents } from "@/lib/learn/pricing";
 import { trackMonthlyCents } from "@/lib/learn/track-monthly";
-import { canAccessTrack, getAccess } from "@/lib/learn/session";
+import { canAccessTrack, getAccess, getStudent } from "@/lib/learn/session";
+import { portalAuth } from "@/lib/learn/youth-portal";
 import { isYouthSlug } from "@/lib/learn/youth";
 import { CONSENT_AGE, YOUTH_MAX_AGE, YOUTH_MIN_AGE } from "@/lib/learn/youth-account";
 import { RELATIONSHIPS, SPONSOR_LOCALES, cleanFreeText, createSponsorship, isParentRole, setSponsorshipSession, sponsorSiblingPct } from "@/lib/learn/youth-sponsor";
@@ -83,7 +84,12 @@ export async function POST(req: NextRequest) {
     }
     const base = b.plan === "monthly" ? trackMonthlyCents(track.slug) : trackPriceCents(track.level, track.priceCents);
     if (base == null) return fail("lane", "lane", 404);
-    const siblingPct = await sponsorSiblingPct(b.sponsorEmail, b.childEmail);
+    // Only for a sponsor signed in with that email (learner account or the
+    // portal): otherwise the price would tell anyone who typed an address
+    // whether that person already has a child in the program.
+    const [me, portalEmail] = await Promise.all([getStudent().catch(() => null), portalAuth().catch(() => null)]);
+    const proven = [me?.email, portalEmail].some((e) => e && e.trim().toLowerCase() === b.sponsorEmail);
+    const siblingPct = proven ? await sponsorSiblingPct(b.sponsorEmail, b.childEmail) : 0;
     const amount = siblingPct ? Math.round((base * (100 - siblingPct)) / 100) : base;
     const id = await createSponsorship(
       {

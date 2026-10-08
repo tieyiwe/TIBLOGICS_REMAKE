@@ -12,6 +12,7 @@ import { trackPriceCents } from "@/lib/learn/pricing";
 import { trackMonthlyCents } from "@/lib/learn/track-monthly";
 import { YOUTH_EXPLORER, YOUTH_SLUGS, isYouthSlug } from "@/lib/learn/youth";
 import { sponsorSiblingPct } from "@/lib/learn/youth-sponsor";
+import { portalAuth } from "@/lib/learn/youth-portal";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,9 @@ export default async function SponsorYouthPage({ searchParams }: { searchParams:
     .filter((x): x is NonNullable<typeof x> => !!x && x.status === "live")
     .map((x) => ({ slug: x.slug, title: x.title, lifetimeCents: trackPriceCents(x.level, x.priceCents), monthlyCents: trackMonthlyCents(x.slug) ?? 0 }));
   // A signed-in sponsor already paying for a child sees the sibling discount now.
-  const siblingPct = student ? await sponsorSiblingPct(student.email, "") : 0;
+  // Signed in (learner account or portal) only: see the sponsor API.
+  const signedEmail = student?.email ?? (await portalAuth().catch(() => null));
+  const siblingPct = signedEmail ? await sponsorSiblingPct(signedEmail, "") : 0;
 
   return (
     <ClientMessages area="learn">

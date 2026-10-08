@@ -3,6 +3,7 @@ import { z } from "zod";
 import { checkRateLimit } from "@/lib/require-admin";
 import { getT } from "@/lib/i18n/server";
 import { AccountFields, FIELD_ERROR, createLearnerAccount } from "@/lib/learn/signup";
+import { isYouthSlug } from "@/lib/learn/youth";
 
 // The plain sign-up form (/learn/signup): the account, then the plan step.
 // The one-page join flow (/learning-box/join) uses app/api/learn/join/account,
@@ -34,7 +35,10 @@ export async function POST(req: NextRequest) {
       cookieHeader: req.headers.get("cookie"),
       referer: req.headers.get("referer"),
       source: parsed.data,
-      welcome: true,
+      // A young person's sign-up gets no generic welcome before their age is
+      // known: the youth set-up (/learn/youth) handles the emails, and under
+      // 13 nothing is sent to the child before the parent's OK.
+      welcome: !isYouthSlug(parsed.data.track) && !/youth|ai-empowered/i.test(parsed.data.next ?? ""),
     });
     if (!r.ok) {
       return NextResponse.json({ error: r.error, ...(r.code === "blocked" ? { code: "blocked" } : {}) }, { status: r.status });
