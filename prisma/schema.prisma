@@ -3449,15 +3449,69 @@ model WeeklyChallengeEntry {
   @@index([week, score, submittedAt])
 }
 
-/// AI-Empowered Youth: one weekly parent email per child and week ("YYYY-MM-DD"
-/// of the Monday, UTC), claimed before sending (lib/learn/youth-digest.ts;
-/// created at runtime by lib/learn/youth-account.ts, keep the two in step).
-/// No Prisma relation: the foreign key to Student (ON DELETE CASCADE) lives in
-/// the runtime SQL.
+/// AI-Empowered Youth: one weekly summary email per child, week ("YYYY-MM-DD"
+/// of the Monday, UTC) and adult (parent or sponsor), claimed before sending
+/// (lib/learn/youth-digest.ts). The youth tables below are created at runtime
+/// by lib/learn/youth-account.ts (keep the two in step). No Prisma
+/// relations: the foreign keys to Student (ON DELETE CASCADE) live in the
+/// runtime SQL.
 model YouthParentDigest {
   studentId String
   week      String
+  email     String
   createdAt DateTime @default(now())
 
-  @@id([studentId, week])
+  @@id([studentId, week, email])
+}
+
+/// Parent & Sponsor Portal: an adult who follows a youth learner (the parent
+/// is Student.parentEmail; sponsors are added by the parent).
+model YouthGuardian {
+  id           String    @id
+  studentId    String
+  email        String
+  role         String    @default("sponsor") // parent|sponsor
+  name         String?
+  invitedBy    String?
+  weeklyOptOut Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  revokedAt    DateTime?
+
+  @@unique([studentId, email])
+  @@index([email])
+}
+
+/// Portal sign-in links (sha256 of a one-time token).
+model YouthPortalLogin {
+  tokenHash String    @id
+  email     String
+  next      String?
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+}
+
+/// Pause alerts, once per pause (pauseStart = last learning activity) and stage (nudge|adults).
+model YouthPauseAlert {
+  studentId  String
+  pauseStart DateTime
+  stage      String
+  createdAt  DateTime @default(now())
+
+  @@id([studentId, pauseStart, stage])
+}
+
+/// Encouragements sent to a youth learner by a parent or sponsor.
+model YouthEncouragement {
+  id        String   @id
+  studentId String
+  fromEmail String
+  fromRole  String
+  preset    String?
+  text      String?
+  createdAt DateTime @default(now())
+
+  @@index([studentId, createdAt])
 }

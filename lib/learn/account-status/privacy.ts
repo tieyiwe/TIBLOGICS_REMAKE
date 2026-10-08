@@ -160,6 +160,9 @@ export async function deleteLearner(
   // AI-Empowered Youth: the parent's email and dashboard link go too.
   await scrub("Student", `UPDATE "Student" SET "parentEmail" = NULL, "parentToken" = NULL, "parentBoardsOptIn" = false WHERE "id" = $1 AND ("parentEmail" IS NOT NULL OR "parentToken" IS NOT NULL)`, id, done);
   await scrub("YouthParentDigest", `DELETE FROM "YouthParentDigest" WHERE "studentId" = $1`, id, done);
+  await scrub("YouthGuardian", `DELETE FROM "YouthGuardian" WHERE "studentId" = $1`, id, done);
+  await scrub("YouthEncouragement", `DELETE FROM "YouthEncouragement" WHERE "studentId" = $1`, id, done);
+  await scrub("YouthPauseAlert", `DELETE FROM "YouthPauseAlert" WHERE "studentId" = $1`, id, done);
   await scrub("LessonReflection", `DELETE FROM "LessonReflection" WHERE "studentId" = $1`, id, done);
   await scrub("LearnerDraft", `DELETE FROM "LearnerDraft" WHERE "studentId" = $1`, id, done);
   await scrub("PortfolioSettings", `DELETE FROM "PortfolioSettings" WHERE "studentId" = $1`, id, done);

@@ -60,17 +60,68 @@ const STATEMENTS = [
   `ALTER TABLE "Student" ADD COLUMN IF NOT EXISTS "parentDeleteRequestedAt" TIMESTAMP(3)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "Student_parentToken_key" ON "Student"("parentToken")`,
   `CREATE INDEX IF NOT EXISTS "Student_parentEmail_idx" ON "Student"("parentEmail")`,
+  // One weekly summary per child, week and adult (parent or sponsor).
   `CREATE TABLE IF NOT EXISTS "YouthParentDigest" (
     "studentId" TEXT NOT NULL,
     "week" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "YouthParentDigest_pkey" PRIMARY KEY ("studentId","week")
+    CONSTRAINT "YouthParentDigest_pkey" PRIMARY KEY ("studentId","week","email")
   )`,
-  `DO $$ BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'YouthParentDigest_studentId_fkey') THEN
-      ALTER TABLE "YouthParentDigest" ADD CONSTRAINT "YouthParentDigest_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  // Parent & Sponsor Portal (lib/learn/youth-portal.ts): sponsors of a child
+  // (the parent is Student.parentEmail; role 'parent' rows are allowed too).
+  `CREATE TABLE IF NOT EXISTS "YouthGuardian" (
+    "id" TEXT NOT NULL,
+    "studentId" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "role" TEXT NOT NULL DEFAULT 'sponsor',
+    "name" TEXT,
+    "invitedBy" TEXT,
+    "weeklyOptOut" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "revokedAt" TIMESTAMP(3),
+    CONSTRAINT "YouthGuardian_pkey" PRIMARY KEY ("id")
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS "YouthGuardian_studentId_email_key" ON "YouthGuardian"("studentId","email")`,
+  `CREATE INDEX IF NOT EXISTS "YouthGuardian_email_idx" ON "YouthGuardian"("email")`,
+  // Portal sign-in links (hash of a one-time token).
+  `CREATE TABLE IF NOT EXISTS "YouthPortalLogin" (
+    "tokenHash" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "next" TEXT,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "usedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "YouthPortalLogin_pkey" PRIMARY KEY ("tokenHash")
+  )`,
+  `CREATE INDEX IF NOT EXISTS "YouthPortalLogin_email_idx" ON "YouthPortalLogin"("email")`,
+  // Pause alerts, once per pause (pauseStart = the last learning activity) and stage.
+  `CREATE TABLE IF NOT EXISTS "YouthPauseAlert" (
+    "studentId" TEXT NOT NULL,
+    "pauseStart" TIMESTAMP(3) NOT NULL,
+    "stage" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "YouthPauseAlert_pkey" PRIMARY KEY ("studentId","pauseStart","stage")
+  )`,
+  // Encouragements sent to a child by a parent or sponsor.
+  `CREATE TABLE IF NOT EXISTS "YouthEncouragement" (
+    "id" TEXT NOT NULL,
+    "studentId" TEXT NOT NULL,
+    "fromEmail" TEXT NOT NULL,
+    "fromRole" TEXT NOT NULL,
+    "preset" TEXT,
+    "text" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "YouthEncouragement_pkey" PRIMARY KEY ("id")
+  )`,
+  `CREATE INDEX IF NOT EXISTS "YouthEncouragement_studentId_createdAt_idx" ON "YouthEncouragement"("studentId","createdAt")`,
+  ...["YouthParentDigest", "YouthGuardian", "YouthPauseAlert", "YouthEncouragement"].map(
+    (t) => `DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = '${t}_studentId_fkey') THEN
+      ALTER TABLE "${t}" ADD CONSTRAINT "${t}_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE CASCADE ON UPDATE CASCADE;
     END IF;
   END $$`,
+  ),
 ];
 
 let ready: Promise<void> | null = null;

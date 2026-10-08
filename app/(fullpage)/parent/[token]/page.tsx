@@ -6,6 +6,7 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 import ClientMessages from "@/components/i18n/ClientMessages";
 import SkillsRadarCard from "@/components/learn/skills/SkillsRadarCard";
 import ParentControls from "@/components/learn/youth/ParentControls";
+import { FamilyPortalButton } from "@/components/learn/youth/PortalClient";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { fmtDate } from "@/lib/learn/format";
@@ -82,6 +83,13 @@ export default async function ParentPage({ params }: { params: Promise<{ token: 
           </p>
         )}
       </header>
+
+      {!child.parentDeleteRequestedAt && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[var(--border)] bg-white p-4">
+          <p className="min-w-0 flex-1 text-sm text-[var(--ink2)]">{t("learn.portal.fromParentHint")}</p>
+          <FamilyPortalButton token={token} />
+        </div>
+      )}
 
       {child.parentDeleteRequestedAt && (
         <p role="status" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900" data-testid="parent-deleting">

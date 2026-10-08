@@ -40,9 +40,18 @@ export async function sendParentEmail(child: YouthProfile): Promise<void> {
   await markParentEmailSent(child.studentId);
 }
 
-/** The weekly summary for a parent. */
-export async function sendParentWeeklyEmail(child: YouthProfile, s: ParentSummary): Promise<void> {
-  if (!child.parentEmail || !child.parentToken) throw new Error("No parent email");
+/**
+ * The weekly summary for the parent (link: their dashboard) or a sponsor
+ * (link: the portal, plus an unsubscribe link). Sponsors see the first name
+ * and progress only.
+ */
+export async function sendParentWeeklyEmail(
+  child: YouthProfile,
+  s: ParentSummary,
+  to: { email: string; role: "parent" | "sponsor"; guardianId: string | null } = { email: child.parentEmail ?? "", role: "parent", guardianId: null },
+): Promise<void> {
+  if (!to.email || (to.role === "parent" && !child.parentToken)) throw new Error("No parent email");
+  const { portalLinkFor, unsubscribeUrl } = await import("./youth-portal");
   const t = translator(child.locale);
   const name = esc(firstName(child.name));
   const row = (label: string, value: string | number) =>
@@ -60,11 +69,16 @@ export async function sendParentWeeklyEmail(child: YouthProfile, s: ParentSummar
     p(t(s.lessonsThisWeek > 0 ? "learn.email.youth.weekly.p1" : "learn.email.youth.weekly.quiet", { name })) +
     table +
     (recent.length ? p(`<strong style="color:#131A1B;">${t("learn.parent.recent")}</strong>`) + list(recent) : "") +
-    p(t("learn.email.youth.weekly.p2"));
+    p(t(to.role === "sponsor" ? "learn.email.youth.weekly.p2Sponsor" : "learn.email.youth.weekly.p2"));
+  const sponsor = to.role === "sponsor";
+  const href = sponsor ? await portalLinkFor(to.email) : parentDashboardUrl(child.parentToken!);
+  const footer = sponsor && to.guardianId
+    ? p(`${t("learn.email.youth.weekly.sponsorNote", { name })} <a href="${unsubscribeUrl(to.guardianId)}" style="color:#8A9BA0;">${t("learn.email.youth.weekly.unsubscribe")}</a>`)
+    : "";
   await arfaMailer.emails.send({
-    to: child.parentEmail,
+    to: to.email,
     subject: t("learn.email.youth.weekly.subject", { name: firstName(child.name) }),
-    html: shell(t, t("learn.email.youth.weekly.title", { name }), body, { href: parentDashboardUrl(child.parentToken), label: `${t("learn.email.youth.weekly.cta")} →` }),
+    html: shell(t, t("learn.email.youth.weekly.title", { name }), body, { href, label: `${t(sponsor ? "learn.email.youth.weekly.ctaSponsor" : "learn.email.youth.weekly.cta")} →` }, footer),
   });
 }
 

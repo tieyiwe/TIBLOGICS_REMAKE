@@ -26,6 +26,7 @@ import { newLessonsByTrack } from "@/lib/learn/track-updates";
 import TeamDashboardCard from "@/components/learn/team/TeamDashboardCard";
 import ScholarshipCard from "@/components/learn/scholarship/ScholarshipCard";
 import YoureInBanner from "@/components/learn/join/YoureInBanner";
+import EncouragementBanner from "@/components/learn/youth/EncouragementBanner";
 import PendingEnrollmentCard from "@/components/learn/join/PendingEnrollmentCard";
 import InstallHint from "@/components/learn/pwa/InstallHint";
 
@@ -105,6 +106,8 @@ export default async function LearnDashboard({ searchParams }: { searchParams: P
           lifetime={!access.all}
         />
       )}
+      {/* AI-Empowered Youth: a message from a parent or sponsor (nothing otherwise). */}
+      <EncouragementBanner studentId={student.id} />
       {/* One-page join flow: a plan chosen but not paid yet (nothing otherwise). */}
       <PendingEnrollmentCard studentId={student.id} />
       {/* Greeting + stats */}

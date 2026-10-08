@@ -34,7 +34,7 @@ const MARKERS = {
   learner: /\b(requireStudent|requireEntitledStudent|getStudent|requireTeamMember|requireTeamManager|requireTeamOwner|tutorGuard|getLearnContext|communityGuard|liveGuard)\s*\(|session\??\.user\??\.studentId/,
   cron: /CRON_SECRET/,
   webhook: /constructEvent|x-hub-signature|createHmac\([^)]*\)[\s\S]{0,400}timingSafeEqual|verifyWebhook|verifySignature/,
-  token: /\b(verifyUnsubscribeToken|verifyJwt|verifyCardSig|verifyDocument|secretEquals|tokenHash|hashToken|verifyToken|verifyInvite|unsubscribeToken|shareToken|findMonitorByToken|parentFromToken)\b/,
+  token: /\b(verifyUnsubscribeToken|verifyJwt|verifyCardSig|verifyDocument|secretEquals|tokenHash|hashToken|verifyToken|verifyInvite|unsubscribeToken|shareToken|findMonitorByToken|parentFromToken|portalAuth|consumeLogin|verifyUnsubscribe)\b/,
 };
 
 const RATE = /\b(checkRateLimit|limitGrowthAi|teamRateLimit|withinDailyAiBudget|rateLimit[A-Z]\w*)\s*\(/;
@@ -57,6 +57,8 @@ const PUBLIC_BY_DESIGN = {
   "/api/shop": "public store and checkout (rate limited, Stripe holds payment data)",
   "/api/newsletter": "newsletter signup (rate limited)",
   "/api/waitlist": "waitlist signup (rate limited)",
+  "/api/portal/login": "Parent & Sponsor Portal sign-in: emails a one-time link only to followed addresses, same answer either way (rate limited per IP and per email)",
+  "/api/portal/logout": "clears the portal session cookie (rate limited)",
   "/api/contacts": "contact form (rate limited)",
   "/api/claude": "public sales chat / advisor (rate limited, AI budget guarded)",
   "/api/tools": "public free tools (rate limited)",
