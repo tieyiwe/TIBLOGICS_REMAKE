@@ -206,8 +206,8 @@ AI-Empowered Youth tools (ages 10 to 17, listed on the youth tracks):
 teach-the-machine (two-classes, trick-it, fair-data), feed-simulator
 (your-feed, filter-bubble, break-the-bubble), fake-or-real (warm-up,
 deepfake-tells, fact-check) and system-mapper (lunch-queue, game-economy,
-feedback-loops) and vibe-code-studio (first-app, fix-it, level-up). Each
-also has a free play mode: `tool-id:sandbox`.
+feedback-loops), vibe-code-studio (first-app, fix-it, level-up) and
+game-forge (see below). Each also has a free play mode: `tool-id:sandbox`.
 vibe-code-studio is the one youth tool that calls a model: the learner
 describes an app, the AI builds it as one offline HTML file in a locked
 sandbox, and "Explain this code" explains it. Its AI opens for learners who
@@ -226,6 +226,17 @@ as a note. Every challenge can also be passed with no AI at all: first-app
 by editing in Code and pressing "Run & save" twice, fix-it by fixing the two
 bugs by hand (Number(...) + 1, and the "restart" id should be "reset"),
 level-up by filling the spec, saving a hand edit and writing a test note.
+
+game-forge (the flagship: make a game from a template, change it by talking
+to AI or with the controls, add AI characters, share a playable link with
+family) takes clicker-remix, quiz-maker, platformer-levels and npc-friend, or
+`game-forge:sandbox` for free play. Unlike the others it saves the learner's
+games on the server and can call a model (cheap tier, child-safe prompt,
+daily caps), so it needs a signed-in learner with an open plan:
+
+    ```studio
+    game-forge:platformer-levels
+    ```
 Put the block where the learner should practise the idea just taught,
 with one sentence before it saying what to do.
 

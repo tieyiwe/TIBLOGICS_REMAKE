@@ -3547,3 +3547,55 @@ model YouthSponsorship {
   @@index([sponsorEmail])
   @@index([childStudentId])
 }
+
+/// Game Forge (AI-Empowered Youth Studio tool): a learner's game, created at
+/// runtime by lib/learn/game-forge/db.ts (keep the two in step). template:
+/// clicker|quiz|platformer|adventure; config is the validated game JSON
+/// (lib/learn/game-forge/schema.ts). No Prisma relations: the foreign keys
+/// (to Student, and from versions and shares to the project, ON DELETE
+/// CASCADE) live in the runtime SQL.
+model GameForgeProject {
+  id        String   @id
+  studentId String
+  template  String
+  title     String
+  config    Json
+  version   Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@index([studentId, updatedAt])
+}
+
+/// Game Forge: numbered snapshots of a game. source: start|ai|quick|manual|restore|character.
+model GameForgeVersion {
+  id        String   @id
+  projectId String
+  studentId String
+  n         Int
+  source    String
+  note      String?
+  config    Json
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, n])
+  @@index([studentId])
+}
+
+/// Game Forge "Share with family": /play/[token] plays a frozen copy of the
+/// game (no names). token: 32 random bytes, base64url. revokedBy: kid|parent|staff.
+model GameForgeShare {
+  token     String    @id
+  projectId String
+  studentId String
+  template  String
+  title     String
+  config    Json
+  views     Int       @default(0)
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+  revokedBy String?
+
+  @@index([studentId])
+  @@index([projectId])
+}

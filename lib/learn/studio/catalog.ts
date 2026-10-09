@@ -14,6 +14,7 @@ import { feedSimulator } from "./tools/feed-simulator";
 import { fakeOrReal } from "./tools/fake-or-real";
 import { systemMapper } from "./tools/system-mapper";
 import { vibeCodeStudio } from "./tools/vibe-code-studio";
+import { gameForge } from "./tools/game-forge";
 
 // Every Studio tool. Safe to import on the server and in the browser.
 export const STUDIO_TOOLS: StudioToolMeta[] = [
@@ -28,6 +29,7 @@ export const STUDIO_TOOLS: StudioToolMeta[] = [
   testBench,
   securityDoors,
   // AI-Empowered Youth (ages 10 to 17).
+  gameForge,
   teachTheMachine,
   feedSimulator,
   fakeOrReal,

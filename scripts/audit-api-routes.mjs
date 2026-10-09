@@ -6,8 +6,8 @@
 //
 //   staff     requireAdmin / requirePermission / growth, acquire, learner-staff
 //             and toolkit guards, or a getServerSession check for staff flags
-//   learner   requireStudent / requireEntitledStudent / getStudent / team or
-//             tutor guards
+//   learner   requireStudent / requireEntitledStudent / getStudent / team,
+//             tutor or Game Forge (forgeGuard) guards
 //   cron      Bearer CRON_SECRET
 //   webhook   Stripe constructEvent, WhatsApp HMAC, other signature checks
 //   token     a signed or hashed token in the URL/body (unsubscribe links,
@@ -31,7 +31,7 @@ const API = join(ROOT, "app/api");
 
 const MARKERS = {
   staff: /\b(teamApi|requireAdmin|requirePermission|requireGrowth|requireGrowthAdmin|requireSender|requireAcquireAdmin|learnerStaff|requireToolkit|isGrowthAdmin|requireLearnerAdmin|requireStaff|promoAdmin|scholarshipWriter|canViewAnalytics|canSee)\s*\(|session\??\.user\??\.(isAdmin|isOwner|collaboratorId)/,
-  learner: /\b(requireStudent|requireEntitledStudent|getStudent|requireTeamMember|requireTeamManager|requireTeamOwner|tutorGuard|getLearnContext|communityGuard|liveGuard)\s*\(|session\??\.user\??\.studentId/,
+  learner: /\b(requireStudent|requireEntitledStudent|getStudent|requireTeamMember|requireTeamManager|requireTeamOwner|tutorGuard|getLearnContext|communityGuard|liveGuard|forgeGuard)\s*\(|session\??\.user\??\.studentId/,
   cron: /CRON_SECRET/,
   webhook: /constructEvent|x-hub-signature|createHmac\([^)]*\)[\s\S]{0,400}timingSafeEqual|verifyWebhook|verifySignature/,
   token: /\b(verifyUnsubscribeToken|verifyJwt|verifyCardSig|verifyDocument|secretEquals|tokenHash|hashToken|verifyToken|verifyInvite|unsubscribeToken|shareToken|findMonitorByToken|parentFromToken|portalAuth|consumeLogin|verifyUnsubscribe)\b/,
@@ -42,6 +42,13 @@ const BODY = /\b(req|request)\.(json|formData|text)\(\)|jsonBody\(/;
 const ZOD = /\bfrom "zod"|\.safeParse\(|\.parse\(/;
 
 // Public on purpose. Prefix match on the route path.
+//
+// Outside /api (not scanned here) and public by design: app/play/[token]
+// (Game Forge "Share with family"), GET only. The unguessable token (32
+// random bytes) is the key; it serves a young learner's game with no name or
+// account details, rate limited per IP, noindex, CSP "sandbox" with no
+// network, and stops working once the kid or a parent turns the link off or
+// the child's parental consent is pending or revoked.
 const PUBLIC_BY_DESIGN = {
   "/api/scholarship/donate": "public scholarship donation checkout (rate limited, amount validated, Stripe takes payment); /manage is an HMAC-signed link",
   "/api/learn/scholarship/apply": "public Tilo Vision Scholarship application (rate limited, honeypot, one per address under review)",

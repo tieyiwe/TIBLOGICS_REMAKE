@@ -189,6 +189,24 @@ const nextConfig = {
         headers: [{ key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=()" }],
       },
       {
+        // Game Forge share links (app/play/[token]/route.ts): a young
+        // learner's game, public by unguessable link. Headers listed here win
+        // over the ones a route sets, so THIS is the policy browsers get (it
+        // also replaces the site policy above): an opaque-origin sandbox, no
+        // network, no framing. The game's JSON is escaped so it cannot end
+        // its script block; the route's own nonce policy is a second layer.
+        source: "/play/:path*",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive, nosnippet" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+          {
+            key: "Content-Security-Policy",
+            value: "sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+          },
+        ],
+      },
+      {
         // Pages: always revalidated (never served stale after a deploy) and
         // never stored by shared caches, but not "no-store", which would
         // switch off the browser's instant back/forward cache.

@@ -14,6 +14,8 @@ import { ARFA_EMAIL } from "@/lib/learn/emails";
 import { loadSkillProfile } from "@/lib/learn/skills/radar";
 import { needsParentConsent, parentFromToken } from "@/lib/learn/youth-account";
 import { parentSummary } from "@/lib/learn/youth-dashboard";
+import ParentGames from "@/components/learn/youth/ParentGames";
+import { listShares } from "@/lib/learn/game-forge/db";
 
 export const dynamic = "force-dynamic";
 
@@ -61,9 +63,14 @@ export default async function ParentPage({ params }: { params: Promise<{ token: 
   const consentNeeded = needsParentConsent(child) && child.parentConsent !== "granted";
   const stage: "consent" | "revoked" | "active" = child.parentConsent === "revoked" ? "revoked" : consentNeeded ? "consent" : "active";
   const showData = stage === "active";
-  const [summary, skills] = showData
-    ? await Promise.all([parentSummary(child), loadSkillProfile(child.studentId).catch(() => null)])
-    : [null, null];
+  const [summary, skills, shares] = showData
+    ? await Promise.all([
+        parentSummary(child),
+        loadSkillProfile(child.studentId).catch(() => null),
+        // Game Forge share links the child made (only the live ones).
+        listShares(child.studentId).then((l) => l.filter((s) => !s.revokedAt)).catch(() => []),
+      ])
+    : [null, null, []];
 
   const stat = (label: string, value: string | number, id: string) => (
     <div className="rounded-xl border border-[var(--border)] bg-white p-4" data-testid={`parent-stat-${id}`}>
@@ -154,6 +161,15 @@ export default async function ParentPage({ params }: { params: Promise<{ token: 
           </section>
 
           {skills && skills.results > 0 && <SkillsRadarCard profile={skills} publicView idPrefix="parent-skills" />}
+
+          {!child.parentDeleteRequestedAt && (
+            <ParentGames
+              token={token}
+              firstName={first}
+              games={shares.map((s) => ({ token: s.token, title: s.title, template: s.template, views: s.views, createdAt: s.createdAt }))}
+              dates={Object.fromEntries(shares.map((s) => [s.token, fmtDate(s.createdAt, locale)]))}
+            />
+          )}
 
           <section aria-labelledby="parent-certs" className="rounded-2xl border border-[var(--border)] bg-white p-5">
             <h2 id="parent-certs" className="text-base font-bold text-[var(--ink)]">{t("learn.parent.certificates")}</h2>

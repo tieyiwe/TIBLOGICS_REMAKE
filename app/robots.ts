@@ -24,6 +24,7 @@ const PRIVATE = [
   "/toolkit/",
   "/blueprint/",
   "/monitor/",
+  "/play/",
   "/join-team/",
   "/scholarship",
   "/store/success",

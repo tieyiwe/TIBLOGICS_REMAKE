@@ -61,6 +61,7 @@ export type AiTask =
   | "grade-challenge"
   | "youth-code"
   | "youth-explain"
+  | "game-forge"
   | "scanner-report"
   // Sonnet
   | "code-assist"
@@ -146,6 +147,8 @@ export const ROUTES: Record<AiTask, Route> = {
   // ~24k characters, so the output is too), and "Explain this code" (450 to 800).
   "youth-code": { tier: "haiku", maxTokens: 7000 },
   "youth-explain": { tier: "haiku", maxTokens: 800 },
+  // Game Forge (youth Studio): a few JSON operations on a game config, or one adventure character.
+  "game-forge": { tier: "haiku", maxTokens: 1800 },
 
   "code-assist": { tier: "sonnet", maxTokens: 8000, thinking: "adaptive", effort: "medium", cacheSystem: true },
   "grade-code": { tier: "sonnet", maxTokens: 4000, thinking: "adaptive", effort: "medium" },

@@ -6,6 +6,7 @@ import { csrfGuard } from "@/lib/learn/account-status/admin-auth";
 import { markDeleteRequested, parentFromToken, setParentBoards, setParentConsent } from "@/lib/learn/youth-account";
 import { sendDeletionRequestEmails, sendParentEmail } from "@/lib/learn/youth-emails";
 import { releaseSponsorships } from "@/lib/learn/youth-sponsor";
+import { SHARE_TOKEN_RE, revokeShare } from "@/lib/learn/game-forge/db";
 
 // The parent dashboard's settings (/parent/[token]). No sign-in: the link
 // emailed to the parent is the credential (32 random bytes, looked up by
@@ -21,6 +22,8 @@ const Action = z.discriminatedUnion("action", [
   z.object({ action: z.literal("resend") }),
   // Ask ARFA to delete the child's account (access is locked at once).
   z.object({ action: z.literal("delete"), confirm: z.literal(true) }),
+  // Turn off one of the child's Game Forge share links (/play/[token]).
+  z.object({ action: z.literal("revokeGame"), share: z.string().regex(SHARE_TOKEN_RE) }),
 ]);
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
@@ -62,6 +65,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
         }
         await sendParentEmail(child);
         return NextResponse.json({ ok: true, message: t("learn.parent.done.resend") });
+      case "revokeGame":
+        // Scoped to this child: another child's link answers "not found".
+        if (!(await revokeShare(child.studentId, a.share, "parent"))) {
+          return NextResponse.json({ error: t("learn.parent.games.gone") }, { status: 404 });
+        }
+        return NextResponse.json({ ok: true, message: t("learn.parent.games.done") });
       case "delete":
         await markDeleteRequested(child.studentId);
         await sendDeletionRequestEmails(child).catch((err) => console.error("[parent] deletion emails", err instanceof Error ? err.message : err));

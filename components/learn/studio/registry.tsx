@@ -25,4 +25,5 @@ export const STUDIO_COMPONENTS: Record<string, ComponentType<StudioToolProps>> =
   "fake-or-real": load(() => import("./tools/youth/fake-or-real")),
   "system-mapper": load(() => import("./tools/youth/system-mapper")),
   "vibe-code-studio": load(() => import("./tools/youth/vibe-code-studio")),
+  "game-forge": load(() => import("./tools/youth/game-forge")),
 };
