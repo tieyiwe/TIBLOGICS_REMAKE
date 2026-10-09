@@ -24,6 +24,8 @@ const SERVER_ONLY = [
   "home.booking.", "home.servicesGrid.", "home.banner.", "home.africa.", "home.productsGrid.",
   "home.services.", "home.products.", "home.meta.", "home.hero.", "home.cta.",
   "acquire.email.", "acquire.unsub.", "acquire.lp.", "acquire.asset.",
+  // Reviews (lib/reviews): server components and emails; the /review form gets its labels as props.
+  "reviews.",
 ];
 
 /**

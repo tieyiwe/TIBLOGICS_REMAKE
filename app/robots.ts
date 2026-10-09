@@ -27,6 +27,7 @@ const PRIVATE = [
   "/play/",
   "/join-team/",
   "/scholarship",
+  "/review",
   "/store/success",
   "/book/success",
   "/events/*/confirmed",

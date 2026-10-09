@@ -30,7 +30,7 @@ const ROOT = new URL("..", import.meta.url).pathname;
 const API = join(ROOT, "app/api");
 
 const MARKERS = {
-  staff: /\b(teamApi|requireAdmin|requirePermission|requireGrowth|requireGrowthAdmin|requireSender|requireAcquireAdmin|learnerStaff|requireToolkit|isGrowthAdmin|requireLearnerAdmin|requireStaff|promoAdmin|scholarshipWriter|canViewAnalytics|canSee)\s*\(|session\??\.user\??\.(isAdmin|isOwner|collaboratorId)/,
+  staff: /\b(teamApi|requireAdmin|requirePermission|requireGrowth|requireGrowthAdmin|requireSender|requireAcquireAdmin|learnerStaff|requireToolkit|isGrowthAdmin|requireLearnerAdmin|requireStaff|promoAdmin|scholarshipWriter|canViewAnalytics|canSee|reviewsStaff)\s*\(|session\??\.user\??\.(isAdmin|isOwner|collaboratorId)/,
   learner: /\b(requireStudent|requireEntitledStudent|getStudent|requireTeamMember|requireTeamManager|requireTeamOwner|tutorGuard|getLearnContext|communityGuard|liveGuard|forgeGuard)\s*\(|session\??\.user\??\.studentId/,
   cron: /CRON_SECRET/,
   webhook: /constructEvent|x-hub-signature|createHmac\([^)]*\)[\s\S]{0,400}timingSafeEqual|verifyWebhook|verifySignature/,
@@ -68,6 +68,7 @@ const PUBLIC_BY_DESIGN = {
   "/api/portal/logout": "clears the portal session cookie (rate limited)",
   "/api/learn/youth/sponsor": "AI-Empowered Youth: anybody can sponsor a young person (rate limited, zod-validated, server prices; confirm reads the Stripe session back by its unguessable id)",
   "/api/contacts": "contact form (rate limited)",
+  "/api/reviews": "review form for invited people only: needs a signed, unexpired /review link (HMAC, verifyReviewToken); JSON same-origin, rate limited per network and invitee, honeypot, zod and the free-text filter, one review per (email, source)",
   "/api/claude": "public sales chat / advisor (rate limited, AI budget guarded)",
   "/api/tools": "public free tools (rate limited)",
   "/api/scanner": "public website scanner (rate limited, SSRF-guarded)",

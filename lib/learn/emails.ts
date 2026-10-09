@@ -430,6 +430,8 @@ export async function sendCertificateCongratsEmail(s: {
   pdf: Buffer;
   pdfName: string;
   locale?: string | null;
+  /** "Tell us how it went": a signed review link (lib/reviews), at most once per learner. */
+  reviewUrl?: string | null;
 }) {
   const t = await tFor(s.email, s.locale);
   const viewUrl = `${SITE}/learn/certificates/${encodeURIComponent(s.reference)}?celebrate=1`;
@@ -442,7 +444,13 @@ export async function sendCertificateCongratsEmail(s: {
     `<a href="${viewUrl}" style="display:block;margin:18px 0;border-radius:12px;overflow:hidden;border:1px solid #e6ebf1;"><img src="cid:certificate" alt="${esc(s.certificateName)}" width="496" style="display:block;width:100%;height:auto;"/></a>` +
     p(t("learn.email.congrats.p2")) +
     `<div style="text-align:center;margin:8px 0 18px;">${btn(pdfUrl, t("learn.email.congrats.download"))}${btn(s.linkedInUrl, t("learn.email.congrats.linkedin"))}</div>` +
-    p(`${t("learn.email.congrats.reference")} <strong style="color:#131A1B;font-family:monospace;">${esc(s.reference)}</strong><br/>${t("learn.email.congrats.verify")} <a href="${s.verifyUrl}" style="color:#F47C20;">${s.verifyUrl.replace(/^https?:\/\//, "")}</a>`);
+    p(`${t("learn.email.congrats.reference")} <strong style="color:#131A1B;font-family:monospace;">${esc(s.reference)}</strong><br/>${t("learn.email.congrats.verify")} <a href="${s.verifyUrl}" style="color:#F47C20;">${s.verifyUrl.replace(/^https?:\/\//, "")}</a>`) +
+    (s.reviewUrl
+      ? `<div style="margin:22px 0 0;padding:16px 18px;border-radius:12px;background:#FFF7EF;border:1px solid #F4C9A0;" data-review-invite="1">` +
+        `<p style="font-size:14px;color:#131A1B;font-weight:800;margin:0 0 4px;">${t("reviews.cert.title")}</p>` +
+        `<p style="font-size:13px;color:#5b6b72;line-height:1.6;margin:0 0 8px;">${t("reviews.cert.body")}</p>` +
+        `<a href="${s.reviewUrl}" style="color:#E05F00;font-weight:800;font-size:14px;text-decoration:none;">${t("reviews.cert.link")} &rarr;</a></div>`
+      : "");
   await arfaMailer.emails.send({
     to: s.email,
     subject: `🎉 ${t("learn.email.congrats.subject", { cert: s.certificateName })}`,

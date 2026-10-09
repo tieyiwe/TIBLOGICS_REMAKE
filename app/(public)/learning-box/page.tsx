@@ -22,6 +22,7 @@ import { FaqBlock, KeyTakeaways } from "@/components/seo/AnswerBlocks";
 import { academyFaq, academySummary, academyTakeaways } from "@/lib/seo/academy";
 import { arfaNode, breadcrumbNode, itemListNode } from "@/lib/seo/jsonld";
 import { ARFA_OG_IMAGE } from "@/lib/seo/site";
+import Testimonials from "@/components/reviews/Testimonials";
 import { learnAlternates, learnLangParam, learnLangPath } from "@/lib/seo/learn-lang";
 
 export const dynamic = "force-dynamic";
@@ -292,6 +293,9 @@ export default async function LearningBoxPage({ searchParams }: Props) {
           </div>
         </div>
       </section>
+
+      {/* Real ARFA learner reviews, approved by staff. Nothing renders until one is. */}
+      <Testimonials scope="arfa" locale={locale} />
 
       {/* Team plans: seats for a company */}
       <div className="mx-auto max-w-6xl px-4 py-14">

@@ -54,6 +54,7 @@ import {
   Award,
   ClipboardCheck,
   BadgeCheck,
+  MessageSquareQuote,
 } from "lucide-react";
 
 export interface NavSubItem {
@@ -135,6 +136,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Acquisition", href: "/admin_pro/growth/acquire", icon: Magnet, keywords: "landing pages lead magnets referrals" },
       { label: "Prospects", href: "/admin_pro/prospects", icon: Users },
       { label: "Contacts", href: "/admin_pro/contacts", icon: Contact },
+      { label: "Reviews", href: "/admin_pro/reviews", icon: MessageSquareQuote, keywords: "testimonials reviews ratings social proof invite" },
       {
         label: "Appointments",
         href: "/admin_pro/appointments",
@@ -260,6 +262,8 @@ export const NAV_PERMISSION_MAP: Record<string, string> = {
   "/admin_pro/appointments": "appointments",
   "/admin_pro/appointments/availability": "appointments", // (inherited)
   "/admin_pro/contacts": "contacts",
+  // Reviews and testimonials (lib/reviews): the contacts area.
+  "/admin_pro/reviews": "contacts",
   "/admin_pro/prospects": "prospects",
   "/admin_pro/scanner-leads": "scanner_leads",
   "/admin_pro/tools": "tools",

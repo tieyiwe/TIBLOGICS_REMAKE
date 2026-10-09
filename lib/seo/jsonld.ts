@@ -415,3 +415,54 @@ export function softwareAppNode(o: {
     isAccessibleForFree: o.free ? true : undefined,
   };
 }
+
+// ── Reviews (lib/reviews) ─────────────────────────────────────────────────
+
+export interface ReviewInput {
+  id: string;
+  /** First name only: what the reviewer agreed to publish. */
+  author: string;
+  quote: string;
+  rating: number;
+  approvedAt: string;
+  locale: string;
+}
+
+/**
+ * Real, approved reviews shown on the page, each reviewing `itemId` (the
+ * Organization, or ARFA on the Learning Box). An AggregateRating is added to
+ * that entity only from 3 published reviews; `aggregate` covers every
+ * published review in scope, not only those shown.
+ */
+export function reviewNodes(o: {
+  itemId: string;
+  itemType: string;
+  reviews: ReviewInput[];
+  aggregate?: { count: number; average: number } | null;
+}): JsonLdNode[] {
+  if (o.reviews.length === 0) return [];
+  const nodes: JsonLdNode[] = o.reviews.map((r) => ({
+    "@type": "Review",
+    "@id": `${SITE_URL}/#review-${r.id}`,
+    author: { "@type": "Person", name: r.author },
+    reviewBody: r.quote,
+    reviewRating: { "@type": "Rating", ratingValue: r.rating, bestRating: 5, worstRating: 1 },
+    itemReviewed: ref(o.itemId),
+    datePublished: r.approvedAt.slice(0, 10),
+    inLanguage: r.locale,
+    publisher: ref(ORG_ID),
+  }));
+  // The reviewed entity (merged by @id with the full node elsewhere on the
+  // page), so the reviews always form one @graph with it.
+  const item: JsonLdNode = { "@type": o.itemType, "@id": o.itemId };
+  if (o.aggregate && o.aggregate.count >= 3) {
+    item.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: Math.round(o.aggregate.average * 10) / 10,
+      reviewCount: o.aggregate.count,
+      bestRating: 5,
+      worstRating: 1,
+    };
+  }
+  return [item, ...nodes];
+}

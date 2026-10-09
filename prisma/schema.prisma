@@ -3599,3 +3599,49 @@ model GameForgeShare {
   @@index([studentId])
   @@index([projectId])
 }
+
+/// Reviews and testimonials (lib/reviews/db.ts; created at runtime by
+/// ensureReviewTables and /api/cron/db-prepare). Real reviews only: from a
+/// signed invitation link, or received elsewhere and added by staff with a
+/// staffNote. status: pending|approved|hidden. source:
+/// consultation|project|arfa|store|other. Emails are stored lower case
+/// (CHECK "Testimonial_email_lower_check"), so the unique (email, source) is
+/// the rule on (lower(email), source). Rating CHECK 1..5.
+model Testimonial {
+  id             String    @id
+  name           String
+  role           String
+  company        String?
+  quote          String
+  rating         Int
+  source         String
+  locale         String    @default("en")
+  email          String
+  consentPublish Boolean   @default(false)
+  status         String    @default("pending")
+  featured       Boolean   @default(false)
+  addedByStaff   Boolean   @default(false)
+  staffNote      String?
+  createdAt      DateTime  @default(now())
+  approvedAt     DateTime?
+  approvedBy     String?
+
+  @@unique([email, source], map: "Testimonial_email_source_key")
+  @@index([status, source], map: "Testimonial_status_source_idx")
+}
+
+/// One review invitation per (email, source), ever (lib/reviews/db.ts).
+/// via: admin|link|appointment|certificate. Emails lower case (CHECK).
+model ReviewInvite {
+  id        String   @id
+  email     String
+  source    String
+  name      String
+  locale    String   @default("en")
+  via       String
+  refId     String?
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  @@unique([email, source], map: "ReviewInvite_email_source_key")
+}

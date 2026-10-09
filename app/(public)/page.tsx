@@ -9,6 +9,7 @@ import { FaqBlock } from "@/components/seo/AnswerBlocks";
 import JsonLd from "@/components/seo/JsonLd";
 import { webPageNode } from "@/lib/seo/jsonld";
 import { ORG_ID } from "@/lib/seo/site";
+import Testimonials from "@/components/reviews/Testimonials";
 
 const SERVICE_COUNT = 9;
 
@@ -154,6 +155,9 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
+
+      {/* Real client reviews, approved by staff. Nothing renders until one is. */}
+      <Testimonials scope="site" locale={locale} />
 
       {/* FAQ: visible answers, repeated as FAQPage structured data */}
       <section className="py-16 bg-white">

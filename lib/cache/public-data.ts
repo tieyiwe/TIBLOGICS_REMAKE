@@ -23,7 +23,7 @@
 import prisma from "@/lib/prisma";
 import { onTableWrite } from "@/lib/db/write-events";
 
-export type CacheTag = "learn" | "shop" | "blog" | "i18n";
+export type CacheTag = "learn" | "shop" | "blog" | "i18n" | "reviews";
 
 /** Tables whose writes invalidate a tag. Prisma model name = table name here. */
 const TABLE_TAGS: Record<string, CacheTag[]> = {
@@ -33,6 +33,8 @@ const TABLE_TAGS: Record<string, CacheTag[]> = {
   // Post summaries in other languages join BlogPost (lib/i18n/sources/blog.ts).
   BlogPost: ["blog", "i18n"],
   ContentTranslation: ["i18n"],
+  // Approved testimonials (lib/reviews/db.ts): home page and Learning Box.
+  Testimonial: ["reviews"],
 };
 
 /**
@@ -76,7 +78,7 @@ interface State {
 const g = globalThis as unknown as { __tibPublicCache?: State };
 const S: State = (g.__tibPublicCache ??= {
   entries: new Map(),
-  gen: { learn: 0, shop: 0, blog: 0, i18n: 0 },
+  gen: { learn: 0, shop: 0, blog: 0, i18n: 0, reviews: 0 },
   shared: {},
   checkedAt: 0,
   sharedInit: false,
@@ -85,6 +87,10 @@ const S: State = (g.__tibPublicCache ??= {
   settle: {},
   wired: false,
 });
+
+// A state object made by an older build in the same process (dev reloads)
+// may lack a newer tag.
+for (const t of ["learn", "shop", "blog", "i18n", "reviews"] as CacheTag[]) S.gen[t] ??= 0;
 
 function dropLocal(tag: CacheTag) {
   S.gen[tag]++;

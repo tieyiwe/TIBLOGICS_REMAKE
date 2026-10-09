@@ -72,6 +72,8 @@ export async function exportLearnerData(id: string) {
     optionalRows("CommunityPost", "authorId", id),
   ]);
   const tutor = await optionalRows("TutorThread", "studentId", id);
+  // Reviews they left (lib/reviews), stored by email in lower case.
+  const reviews = await optionalRows("Testimonial", "email", student.email.toLowerCase());
   return {
     exportedAt: new Date().toISOString(),
     format: "ARFA learner data export, version 1",
@@ -94,6 +96,9 @@ export async function exportLearnerData(id: string) {
     })),
     studyReminders: reminders,
     signIns: logins,
+    reviews: (reviews as Array<Record<string, unknown>>).map((r) => ({
+      quote: r.quote, rating: r.rating, role: r.role, company: r.company, source: r.source, consentPublish: r.consentPublish, status: r.status, createdAt: r.createdAt,
+    })),
     tutorThreads: (tutor as Array<Record<string, unknown>>).map((t) => ({ id: t.id, createdAt: t.createdAt, updatedAt: t.updatedAt })),
   };
 }
@@ -165,6 +170,10 @@ export async function deleteLearner(
   await scrub("YouthPauseAlert", `DELETE FROM "YouthPauseAlert" WHERE "studentId" = $1`, id, done);
   // A sponsorship stays as a payment record, without the child's details.
   await scrub("YouthSponsorship", `UPDATE "YouthSponsorship" SET "childFirstName" = 'Removed', "childEmail" = 'removed', "note" = NULL, "parentEmail" = NULL WHERE "childStudentId" = $1`, id, done);
+  // Reviews (lib/reviews), keyed by the original email: the review and the
+  // invitation record go (a published one leaves the site at once).
+  await scrub("Testimonial", `DELETE FROM "Testimonial" WHERE "email" = $1`, s.email.toLowerCase(), done);
+  await scrub("ReviewInvite", `DELETE FROM "ReviewInvite" WHERE "email" = $1`, s.email.toLowerCase(), done);
   await scrub("LessonReflection", `DELETE FROM "LessonReflection" WHERE "studentId" = $1`, id, done);
   await scrub("LearnerDraft", `DELETE FROM "LearnerDraft" WHERE "studentId" = $1`, id, done);
   await scrub("PortfolioSettings", `DELETE FROM "PortfolioSettings" WHERE "studentId" = $1`, id, done);
