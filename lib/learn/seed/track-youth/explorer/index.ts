@@ -3,14 +3,15 @@ import { spreadModule } from "../../balance";
 import { YOUTH_EXPLORER } from "../../../youth";
 import { YOUTH_EXPLORER_S1_LABS, YOUTH_EXPLORER_S1_MODULES } from "./season-1";
 import { YOUTH_EXPLORER_S2_LABS, YOUTH_EXPLORER_S2_MODULES } from "./season-2";
+import { YOUTH_EXPLORER_S3_LABS, YOUTH_EXPLORER_S3_MODULES } from "./season-3";
 
 // AI-Empowered Youth: Think, Build, Lead. Explorer lane, ages 10 to 13.
 // 15 modules in 4 seasons, shared with the Builder lane (../builder) at a
-// younger pitch. Season 1 is modules 1-3, Season 2 modules 4-7; Seasons 3
-// and 4, the final exam and the capstone come later. Labs carry their own
-// 1-based moduleNumber, so seasons must stay in order here.
+// younger pitch. Season 1 is modules 1-3, Season 2 modules 4-7, Season 3
+// modules 8-12; Season 4, the final exam and the capstone come later. Labs
+// carry their own 1-based moduleNumber, so seasons must stay in order here.
 
-const modules: SeedModule[] = [...YOUTH_EXPLORER_S1_MODULES, ...YOUTH_EXPLORER_S2_MODULES].map(spreadModule);
+const modules: SeedModule[] = [...YOUTH_EXPLORER_S1_MODULES, ...YOUTH_EXPLORER_S2_MODULES, ...YOUTH_EXPLORER_S3_MODULES].map(spreadModule);
 
 // Advertised hours always follow the lessons, so adding a season never
 // trips assertDurationConsistency.
@@ -22,7 +23,7 @@ export const AI_YOUTH_EXPLORER: SeedTrack = {
   tagline: "The skills that shape tomorrow. Discover how the AI in your world really works, then learn to think, build and lead with it.",
   description: `AI already shapes your world: the videos in your feed, the characters in your games, the filters on your camera, the voice assistant in the kitchen. Explorer helps you understand it, question it and use it to make things, in short, playful lessons made for ages 10 to 13.
 
-The program runs in four seasons. **Season 1, Understand**, opens the box: how your feed learns what you like, what is really inside an AI "brain", and how the AI in your games and phone works. Later seasons move from understanding to thinking critically with AI, building your own projects with no-code tools, and leading: using AI fairly, safely and to help the people around you.
+The program runs in four seasons. **Season 1, Understand**, opens the box: how your feed learns what you like, what is really inside an AI "brain", and how the AI in your games and phone works. **Season 2, Think**, teaches you to think sharper than the machine: spotting fakes, mapping systems, protecting your data and looking after your mind. **Season 3, Create**, puts you in the maker's seat: clear prompts, stories and art made with AI (and credited honestly), your first apps built by describing them, your own games, and helper bots you test and keep safe. Season 4 is about leading: using AI fairly, safely and to help the people around you.
 
 Every lesson follows the same rhythm: learn one clear idea with an everyday example from school, football, music, gaming or family life; play with it in an interactive tool; build or do something small; and reflect. Along the way you practise the thinking tools that matter far beyond AI: first principles, the 5 Whys, systems maps, claim-evidence-reasoning, the debugging mindset and explaining it back.
 
@@ -41,8 +42,13 @@ Everything happens on the page. The practice AI runs on ARFA's own safe system, 
     "Explain how game characters, camera filters, voice assistants and autocomplete work",
     "Use thinking tools like first principles, the 5 Whys and systems maps on real problems",
     "Use AI safely: keep personal details private and check what AI tells you",
+    "Write clear prompts with a goal, context, limits and examples, and improve them step by step",
+    "Create stories, art and music with AI as a helper, and give honest credit for what AI did",
+    "Build and debug a small app by describing it, testing it and fixing it in small steps",
+    "Design a game with a loop, fair rules and levels, and improve it by playtesting with family",
+    "Set up a helper bot with rules and knowledge, test its weak spots and know when a human must decide",
   ],
   estimatedHours: Math.round((minutes / 60) * 10) / 10,
   modules,
-  labs: [...YOUTH_EXPLORER_S1_LABS, ...YOUTH_EXPLORER_S2_LABS],
+  labs: [...YOUTH_EXPLORER_S1_LABS, ...YOUTH_EXPLORER_S2_LABS, ...YOUTH_EXPLORER_S3_LABS],
 };
