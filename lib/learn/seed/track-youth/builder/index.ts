@@ -3,14 +3,16 @@ import { spreadModule } from "../../balance";
 import { YOUTH_BUILDER } from "../../../youth";
 import { YOUTH_BUILDER_S1_LABS, YOUTH_BUILDER_S1_MODULES } from "./season-1";
 import { YOUTH_BUILDER_S2_LABS, YOUTH_BUILDER_S2_MODULES } from "./season-2";
+import { YOUTH_BUILDER_S3_LABS, YOUTH_BUILDER_S3_MODULES } from "./season-3";
 
 // AI-Empowered Youth: Think, Build, Lead. Builder lane, ages 14 to 17.
 // Same 15 modules in 4 seasons as the Explorer lane (../explorer), taken
 // deeper, with code where it helps. Season 1 is modules 1-3, Season 2
-// modules 4-7; Seasons 3 and 4, the final exam and the capstone come later.
+// modules 4-7, Season 3 modules 8-12; Season 4, the final exam and the
+// capstone come later.
 // Labs carry their own 1-based moduleNumber, so seasons must stay in order.
 
-const modules: SeedModule[] = [...YOUTH_BUILDER_S1_MODULES, ...YOUTH_BUILDER_S2_MODULES].map(spreadModule);
+const modules: SeedModule[] = [...YOUTH_BUILDER_S1_MODULES, ...YOUTH_BUILDER_S2_MODULES, ...YOUTH_BUILDER_S3_MODULES].map(spreadModule);
 
 // Advertised hours always follow the lessons, so adding a season never
 // trips assertDurationConsistency.
@@ -41,8 +43,11 @@ Everything happens on the platform. The practice AI runs on ARFA's own safe syst
     "Explain how game AI, pathfinding, face recognition and voice assistants work, and their trade-offs",
     "Decide where an AI feature should run, on device or in the cloud, with a reasoned argument",
     "Apply systems thinking, the 5 Whys and claim-evidence-reasoning to real problems",
+    "Write prompts as specs, test them against criteria and turn the best into reusable templates",
+    "Create stories, art, music, web apps and games with AI while respecting copyright, consent and disclosure",
+    "Design, red-team and safely automate a helper bot, with a human in the loop where it matters",
   ],
   estimatedHours: Math.round((minutes / 60) * 10) / 10,
   modules,
-  labs: [...YOUTH_BUILDER_S1_LABS, ...YOUTH_BUILDER_S2_LABS],
+  labs: [...YOUTH_BUILDER_S1_LABS, ...YOUTH_BUILDER_S2_LABS, ...YOUTH_BUILDER_S3_LABS],
 };
