@@ -43,14 +43,20 @@ function buildSha() {
   }
 }
 
-// Google Analytics 4 (optional): set the Secret GA_MEASUREMENT_ID (G-XXXXXXX)
-// before building; the public layout then loads the tag and the CSP below
-// allows Google's analytics hosts. Without it, nothing of Google's loads.
-const GA = /^G-[A-Z0-9]{4,20}$/.test(process.env.GA_MEASUREMENT_ID ?? "");
+// Google Analytics 4: TIBLOGICS' property G-WTKHY2037L by default. The Secret
+// GA_MEASUREMENT_ID overrides it (or "off" to load nothing of Google's); read
+// at build time. The public layout loads the tag and the CSP below allows
+// Google's analytics hosts. Keep in step with app/(public)/layout.tsx.
+const GA = /^G-[A-Z0-9]{4,20}$/.test(process.env.GA_MEASUREMENT_ID ?? "G-WTKHY2037L");
 const GA_SCRIPT = GA ? " https://www.googletagmanager.com" : "";
 const GA_CONNECT = GA ? " https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com" : "";
 
 const nextConfig = {
+  // next build's own type check runs out of memory on Replit's build machine
+  // now that the codebase is this size ("Failed to type check" after a heap
+  // crash). Types are checked before every push instead, with the full
+  // compiler: `npm run typecheck` (tsc --noEmit). Run it before publishing.
+  typescript: { ignoreBuildErrors: true },
   htmlLimitedBots: new RegExp(`${DEFAULT_HTML_LIMITED_BOTS}|${AI_CRAWLERS}`, "i"),
   allowedDevOrigins: [process.env.REPLIT_DEV_DOMAIN].filter(Boolean),
   compress: true,

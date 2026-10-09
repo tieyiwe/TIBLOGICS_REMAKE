@@ -5,9 +5,12 @@ import MobileBottomNav from "@/components/public/MobileBottomNav";
 import UtmCapture from "@/components/public/UtmCapture";
 import EchelonFloatClient from "@/components/public/EchelonFloatClient";
 
-// Google Analytics 4, only when GA_MEASUREMENT_ID is set (see next.config.js,
-// which also opens the CSP for it). Advertising storage stays off.
-const GA_ID = /^G-[A-Z0-9]{4,20}$/.test(process.env.GA_MEASUREMENT_ID ?? "") ? process.env.GA_MEASUREMENT_ID! : null;
+// Google Analytics 4 on the public website only (never in ARFA's member area,
+// where young learners are). TIBLOGICS' property by default; the Secret
+// GA_MEASUREMENT_ID overrides it, "off" disables it (see next.config.js, which
+// also opens the CSP for it). Advertising storage stays off.
+const GA_RAW = process.env.GA_MEASUREMENT_ID ?? "G-WTKHY2037L";
+const GA_ID = /^G-[A-Z0-9]{4,20}$/.test(GA_RAW) ? GA_RAW : null;
 
 export default function PublicLayout({
   children,
