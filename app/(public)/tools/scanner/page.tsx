@@ -87,7 +87,7 @@ export default function ScannerPage() {
       const res = await fetch("/api/scanner/audit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: target, ...(purchase ? { purchase: true } : {}) }),
+        body: JSON.stringify({ url: target, from: window.location.pathname, ...(purchase ? { purchase: true } : {}) }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.status === 402 && data?.code === "limit") {
@@ -138,7 +138,7 @@ export default function ScannerPage() {
               disabled={scanning}
             />
           </div>
-          <button type="submit" disabled={scanning || !url.trim()} className="btn-primary justify-center px-6 py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+          <button type="submit" data-track="cta-scan-site" disabled={scanning || !url.trim()} className="btn-primary justify-center px-6 py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
             {scanning ? (<><Loader2 size={16} className="animate-spin" />{t("tools.scanner.scanning")}</>) : t("tools.scanner.scan")}
           </button>
         </form>
@@ -174,7 +174,7 @@ export default function ScannerPage() {
                 <button
                   type="button" disabled={buying}
                   onClick={() => { setBuying(true); void runScan(url || limit.domain, true); }}
-                  className="btn-primary justify-center rounded-xl px-5 py-3" data-testid="limit-buy"
+                  className="btn-primary justify-center rounded-xl px-5 py-3" data-testid="limit-buy" data-track="cta-buy-scan-report"
                 >
                   {buying ? <Loader2 size={16} className="animate-spin" /> : <Lock size={16} aria-hidden />} {t("tools.sr.limit.buy", { price: limit.price })}
                 </button>

@@ -550,6 +550,7 @@ export default function BookPage() {
                     <button
                       disabled={submitting}
                       onClick={handleSubmit}
+                      data-track="cta-book-call-confirm"
                       className="btn-primary flex-1 justify-center text-sm disabled:opacity-60"
                     >
                       {submitting ? t("pages.book.processing") : t("pages.book.confirm")}

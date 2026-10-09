@@ -4,6 +4,7 @@ import { secretEquals } from "@/lib/require-admin";
 import { ensureScannerColumns } from "@/lib/scanner/db";
 import { finishReport, pendingReports } from "@/lib/scanner/report";
 import { sendFollowup } from "@/lib/scanner/email";
+import { pruneAnalytics } from "@/lib/analytics/db";
 
 // Website scanner, daily (hourly is fine too):
 //   npm run cron scanner
@@ -12,6 +13,8 @@ import { sendFollowup } from "@/lib/scanner/email";
 //      ideas and the offer). Each is claimed before it is sent, so a run that
 //      overlaps another sends once. Unsubscribed addresses are skipped.
 //   2. Paid or call-unlocked reports whose writing did not finish (up to 3 tries).
+//   3. Retention: scan-log and click rows older than 400 days are deleted
+//      (lib/analytics/db.ts).
 
 export const maxDuration = 300;
 
@@ -53,5 +56,9 @@ export async function GET(req: NextRequest) {
     const o = await finishReport(id).catch(() => "failed" as const);
     reports[o] = (reports[o] ?? 0) + 1;
   }
-  return NextResponse.json({ followups: { due: due.length, sent, skipped }, reports });
+  const pruned = await pruneAnalytics().catch((err) => {
+    console.error("[cron/scanner] prune analytics", err instanceof Error ? err.message : err);
+    return null;
+  });
+  return NextResponse.json({ followups: { due: due.length, sent, skipped }, reports, pruned });
 }

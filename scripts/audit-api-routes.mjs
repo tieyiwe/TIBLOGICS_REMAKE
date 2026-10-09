@@ -74,6 +74,7 @@ const PUBLIC_BY_DESIGN = {
   "/api/scanner": "public website scanner (rate limited, SSRF-guarded)",
   "/api/public": "public read-only course catalogue for search engines and AI assistants (no private data)",
   "/api/analytics": "first-party page-view beacon (rate limited)",
+  "/api/analytics/clicks": "first-party click beacon: control names and normalised paths only, no typed text (zod-validated, max 50 per batch, rate limited per IP, DNT/GPC respected)",
   "/api/tool-usage": "anonymous tool usage counter (rate limited)",
   "/api/appointments": "public booking (rate limited)",
   "/api/service-requests": "public service request form (rate limited)",

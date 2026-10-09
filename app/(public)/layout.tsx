@@ -2,7 +2,6 @@ import Nav from "@/components/public/Nav";
 import SkipLink from "@/components/a11y/SkipLink";
 import Footer from "@/components/public/Footer";
 import MobileBottomNav from "@/components/public/MobileBottomNav";
-import AnalyticsTracker from "@/components/public/AnalyticsTracker";
 import UtmCapture from "@/components/public/UtmCapture";
 import EchelonFloatClient from "@/components/public/EchelonFloatClient";
 
@@ -17,7 +16,6 @@ export default function PublicLayout({
 }) {
   return (
     <>
-      <AnalyticsTracker />
       <UtmCapture />
       <SkipLink />
       <Nav />

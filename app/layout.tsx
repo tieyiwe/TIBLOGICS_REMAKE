@@ -9,6 +9,7 @@ import { founderNode, organizationNode, websiteNode } from "@/lib/seo/jsonld";
 import { OG_IMAGE, OG_LOCALE, ORG, SHOW_FOUNDER, SITE_NAME, SITE_URL } from "@/lib/seo/site";
 import { brandDm, brandSyne } from "@/lib/fonts/brand";
 import UpdateWatcher from "@/components/UpdateWatcher";
+import AnalyticsTracker from "@/components/public/AnalyticsTracker";
 
 const syne = Lora({
   subsets: ["latin"],
@@ -168,6 +169,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <I18nProvider locale={locale} dict={coreMessages(locale)}>
           {children}
           <UpdateWatcher />
+          {/* First-party analytics on every page except the admin area, APIs and token links (it checks the path itself). */}
+          <AnalyticsTracker />
         </I18nProvider>
       </body>
     </html>

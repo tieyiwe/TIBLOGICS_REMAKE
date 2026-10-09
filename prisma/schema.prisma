@@ -544,10 +544,68 @@ model PageView {
   country   String?
   sessionId String
   createdAt DateTime @default(now())
+  /// Created at runtime by lib/analytics/db.ts (and dbprep): location from lib/geo.ts.
+  region    String?
+  city      String?
 
   @@index([createdAt])
   @@index([sessionId])
   @@index([origin])
+  @@index([page, createdAt])
+}
+
+/// Every website scan attempt (app/api/scanner/audit), whatever the outcome.
+/// Created at runtime by lib/analytics/db.ts (and dbprep). No personal data:
+/// the IP is anonymised (/24, /48), location is approximate.
+model ScanLog {
+  id          String   @id
+  createdAt   DateTime @default(now())
+  url         String
+  domain      String?
+  /// ok | limit | held | error | rescan | invalid
+  outcome     String
+  errorCode   String?
+  /// The ScannerLead it created, when it created one.
+  leadId      String?
+  ip          String?
+  country     String?
+  countryName String?
+  region      String?
+  city        String?
+  device      String?
+  browser     String?
+  os          String?
+  locale      String?
+  /// The page the scan was started from (normalised path).
+  fromPage    String?
+  staff       Boolean  @default(false)
+
+  @@index([createdAt])
+  @@index([domain, createdAt])
+  @@index([leadId])
+}
+
+/// Clicks on links and buttons (components/public/AnalyticsTracker.tsx,
+/// /api/analytics/clicks). Control names and normalised paths only, never
+/// typed text. Created at runtime by lib/analytics/db.ts (and dbprep).
+model ClickEvent {
+  id        String   @id
+  createdAt DateTime @default(now())
+  sessionId String?
+  page      String
+  /// website | arfa | other
+  area      String
+  label     String
+  /// link | button | submit | summary | tab | menu | other
+  kind      String
+  /// Internal path (normalised), "external:host", "mailto" or "tel".
+  href      String?
+  device    String?
+  country   String?
+
+  @@index([createdAt])
+  @@index([page, createdAt])
+  @@index([label, createdAt])
 }
 
 model ActiveSession {

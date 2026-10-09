@@ -234,6 +234,7 @@ export default function CartDrawer() {
             {error && <p role="alert" style={{ color: "#F87171", fontSize: ".82rem", marginBottom: "12px", textAlign: "center" }}>{error}</p>}
             <button
               onClick={checkout}
+              data-track="cta-store-checkout"
               disabled={loading}
               style={{
                 width: "100%",

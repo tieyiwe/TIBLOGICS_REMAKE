@@ -39,6 +39,8 @@ export const PAGE_RULES: AccessRule[] = [
   { path: "/admin_pro/finance", key: "finance" },
   { path: "/admin_pro/analytics", key: "insights" },
   { path: "/admin_pro/analytics/visitors", key: "analytics" },
+  // Feature usage: most-used pages and buttons (lib/analytics/usage.ts).
+  { path: "/admin_pro/analytics/usage", key: "analytics" },
   { path: "/admin_pro/growth", key: "growth" },
   { path: "/admin_pro/growth/leads", key: "growth" },
   { path: "/admin_pro/growth/outreach", key: "growth" },
@@ -101,6 +103,7 @@ export const API_RULES: AccessRule[] = [
   { path: "/api/admin/agents", key: "agents" },
   { path: "/api/admin/agents/aria/post", key: "growth_content", write: "growth.publish" },
   { path: "/api/admin/analytics", key: "insights" },
+  { path: "/api/admin/analytics/usage", key: "analytics" },
   { path: "/api/admin/appointments", key: "appointments" },
   { path: "/api/admin/reviews", key: "contacts" },
   { path: "/api/admin/meeting-settings", key: "appointments" },

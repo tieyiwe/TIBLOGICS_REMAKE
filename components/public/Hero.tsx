@@ -69,7 +69,7 @@ export default async function Hero() {
             </p>
 
             <div className="anim-fade-up flex flex-col gap-3 sm:flex-row sm:flex-wrap" style={{ animationDelay: "0.24s" }}>
-              <Link href="/book" className="btn-primary justify-center">
+              <Link href="/book" className="btn-primary justify-center" data-track="cta-book-call-hero">
                 {t("home.hero.ctaBook")} <ArrowRight size={16} aria-hidden="true" />
               </Link>
               <Link href="/services" className="btn-secondary justify-center">

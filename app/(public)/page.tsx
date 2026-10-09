@@ -182,7 +182,7 @@ export default async function HomePage() {
             {t("home.cta.body")}
           </p>
           <div className="flex flex-col sm:flex-row sm:flex-wrap justify-center gap-3 mt-6">
-            <Link href="/book" className="btn-primary justify-center">
+            <Link href="/book" className="btn-primary justify-center" data-track="cta-book-call-home">
               {t("home.cta.book")}
             </Link>
             <Link href="/services" className="btn-secondary justify-center">

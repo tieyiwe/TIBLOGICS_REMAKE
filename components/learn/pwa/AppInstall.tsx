@@ -48,6 +48,7 @@ export default function AppInstall() {
             onClick={() => void installNow()}
             className="min-h-[44px] rounded-full bg-[#1B3A6B] px-5 py-2.5 text-sm font-bold text-white hover:opacity-90"
             data-testid="app-install-button"
+            data-track="cta-install-arfa-app"
           >
             ⬇ {t("pwa.install.button")}
           </button>

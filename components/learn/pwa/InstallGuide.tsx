@@ -91,6 +91,7 @@ export default function InstallGuide({ qr, shortUrl }: { qr: string; shortUrl: s
                 disabled={state === "busy"}
                 className="mt-3 inline-flex min-h-[48px] items-center gap-2 rounded-full bg-[#1B3A6B] px-6 text-sm font-bold text-white hover:opacity-90 disabled:opacity-60"
                 data-testid="install-oneclick"
+                data-track="cta-install-arfa-app"
               >
                 <Download size={18} aria-hidden /> {state === "busy" ? t("pwa.page.installing") : t("pwa.install.button")}
               </button>

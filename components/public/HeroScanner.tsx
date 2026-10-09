@@ -78,7 +78,7 @@ export default function HeroScanner() {
       const res = await fetch("/api/scanner/audit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: raw }),
+        body: JSON.stringify({ url: raw, from: window.location.pathname }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -164,6 +164,7 @@ export default function HeroScanner() {
               />
               <button
                 type="submit"
+                data-track="cta-scan-site-home"
                 disabled={state === "scanning"}
                 className="inline-flex flex-shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-[#F47C20] px-5 py-3 font-dm text-[15px] font-semibold text-white transition hover:bg-[#e06d12] active:scale-[0.98] disabled:opacity-70"
               >

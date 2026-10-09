@@ -351,7 +351,7 @@ export default async function TrackLandingPage({ params, searchParams }: Props) 
             {isYouthSlug(track.slug) && (
               <div className="mt-4 flex flex-col gap-3 rounded-2xl border-2 border-dashed border-[var(--orange)] bg-white p-5 sm:flex-row sm:items-center sm:justify-between" data-testid="sponsor-entry">
                 <p className="min-w-0 text-sm text-[var(--ink2)]">{t("learn.youth.sponsor.entryBody")}</p>
-                <Link href={`/sponsor-youth?lane=${track.slug}`} className="shrink-0 rounded-full bg-[var(--ink)] px-5 py-2.5 text-center text-sm font-bold text-white hover:opacity-90">
+                <Link href={`/sponsor-youth?lane=${track.slug}`} data-track="cta-sponsor-youth" className="shrink-0 rounded-full bg-[var(--ink)] px-5 py-2.5 text-center text-sm font-bold text-white hover:opacity-90">
                   {t("learn.youth.sponsor.entry")}
                 </Link>
               </div>

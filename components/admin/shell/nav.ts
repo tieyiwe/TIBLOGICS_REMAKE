@@ -55,6 +55,7 @@ import {
   ClipboardCheck,
   BadgeCheck,
   MessageSquareQuote,
+  MousePointerClick,
 } from "lucide-react";
 
 export interface NavSubItem {
@@ -225,6 +226,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "AI Usage", href: "/admin_pro/ai-usage", icon: Gauge, keywords: "tokens cost llm" },
       { label: "Tool analytics", href: "/admin_pro/tools", icon: Activity },
       { label: "Visitor analytics", href: "/admin_pro/analytics/visitors", icon: Eye, keywords: "traffic" },
+      { label: "Feature usage", href: "/admin_pro/analytics/usage", icon: MousePointerClick, keywords: "clicks buttons pages most used features" },
       { label: "Audit log", href: "/admin_pro/audit", icon: ScrollText, keywords: "activity history security" },
       { label: "Test access", href: "/admin_pro/test-access", icon: KeyRound },
       { label: "Service requests", href: "/admin_pro/service-requests", icon: Briefcase },
@@ -292,6 +294,7 @@ export const NAV_PERMISSION_MAP: Record<string, string> = {
   "/admin_pro/learn/tutor": "events", // (inherited, new link)
   "/admin_pro/analytics": "insights",
   "/admin_pro/analytics/visitors": "analytics",
+  "/admin_pro/analytics/usage": "analytics",
   "/admin_pro/agents": "agents",
   "/admin_pro/agents/aria": "agents", // (inherited)
   "/admin_pro/agents/rex": "agents", // (inherited)

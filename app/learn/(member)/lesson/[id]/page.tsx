@@ -160,6 +160,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
         <a
           href={`/api/learn/cheatsheet/${lesson.moduleId}`}
           download
+          data-track="arfa-cheatsheet"
           aria-label={t("learn.cheat.linkLabel", { module: moduleTitle })}
           className="shrink-0 rounded-full px-4 py-2 text-xs font-bold text-white hover:opacity-90"
           style={{ background: lesson.module.track.accentColor }}

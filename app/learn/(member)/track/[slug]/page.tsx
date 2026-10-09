@@ -407,6 +407,7 @@ export default async function TrackHome({
                       href={`/api/learn/cheatsheet/${m.id}`}
                       download
                       data-testid="module-cheatsheet"
+                      data-track="arfa-cheatsheet"
                       aria-label={t("learn.cheat.linkLabel", { module: text?.modules[m.id]?.title ?? m.title })}
                       className="inline-flex items-center gap-1 rounded-full border border-[var(--border)] px-2.5 py-1 text-[11px] font-bold text-[var(--blue2)] hover:bg-[var(--s2)]"
                     >

@@ -324,6 +324,7 @@ function TutorPanel({ kind, refId }: { kind: Exclude<TutorDockKind, "exam">; ref
       onClick={() => setOpen(true)}
       aria-label={t("tutor.open")}
       data-tutor-ignore
+      data-track="arfa-tutor-open"
       className={
         desktop
           ? "fixed right-0 top-1/2 z-50 flex -translate-y-1/2 flex-col items-center gap-1 rounded-l-2xl bg-[var(--ink)] px-2.5 py-4 text-xs font-bold text-white shadow-lg [writing-mode:vertical-rl] hover:opacity-90"

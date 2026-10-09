@@ -789,6 +789,7 @@ export default function JoinFlow(props: JoinFlowProps) {
               <h2 className="sr-only">{t("learn.join.step3")}</h2>
               <button
                 type="submit"
+                data-track="cta-arfa-checkout"
                 disabled={busy}
                 aria-busy={busy}
                 className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[var(--orange)] to-[#F9A738] px-5 py-3 text-sm font-black text-[var(--ink)] transition-opacity hover:opacity-90 disabled:opacity-60"

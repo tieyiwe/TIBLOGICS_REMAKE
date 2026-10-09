@@ -143,7 +143,7 @@ export default function Nav() {
                 it, so it costs the link row no width. */}
             <div className="hidden lg:flex flex-shrink-0 flex-col items-end gap-1.5">
               <LanguageSwitcher />
-              <Link href="/book" className="btn-primary whitespace-nowrap text-sm py-2 px-4">
+              <Link href="/book" className="btn-primary whitespace-nowrap text-sm py-2 px-4" data-track="cta-book-call-nav">
                 {t("site.nav.cta")}
               </Link>
             </div>
@@ -243,6 +243,7 @@ export default function Nav() {
                 dedicated Tibo tab, so repeating it in the drawer was
                 duplicate navigation. */}
             <Link
+              data-track="cta-book-call-nav-mobile"
               href="/book"
               onClick={() => setMobileOpen(false)}
               className="btn-primary justify-center text-sm"

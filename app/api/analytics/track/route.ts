@@ -1,7 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import prisma from "@/lib/prisma";
 import { anonymiseIp } from "@/lib/require-admin";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { isTrackablePath, normalizePath } from "@/lib/analytics/paths";
+import { analyticsReady } from "@/lib/analytics/db";
+import { clientIp, fillGeo } from "@/lib/geo";
 
 function detectDevice(ua: string): string {
   if (/mobile|android|iphone|ipod|blackberry|windows phone/i.test(ua)) return "mobile";
@@ -61,8 +64,18 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { page, referrer, sessionId, beat } = await req.json();
-    if (!page || !sessionId) return NextResponse.json({ ok: true });
+    const body = await req.json();
+    const rawPage = typeof body?.page === "string" ? body.page.slice(0, 500) : "";
+    const sessionId = typeof body?.sessionId === "string" ? body.sessionId.slice(0, 64) : "";
+    const beat = body?.beat;
+    // The referrer is kept as origin and path only: a query string can carry
+    // someone else's tokens or an email address.
+    const referrer = typeof body?.referrer === "string" ? refOnly(body.referrer) : null;
+    if (!rawPage || !sessionId) return NextResponse.json({ ok: true });
+    // Staff, API and secret-token routes are never recorded; everything else
+    // is grouped (ids and tokens become ":id"), with no query string.
+    if (!isTrackablePath(rawPage)) return NextResponse.json({ ok: true });
+    const page = normalizePath(rawPage);
 
     // A heartbeat only proves the visitor is still here — it is not a new
     // page view. Refresh ActiveSession and stop, which is one cheap upsert
@@ -88,9 +101,10 @@ export async function POST(req: NextRequest) {
     const origin = extractOrigin(referrer ?? null);
     const country = detectCountry(req);
 
-    await Promise.all([
+    const [view] = await Promise.all([
       prisma.pageView.create({
         data: { page, referrer: referrer || null, origin, device, browser, os, ip, country, sessionId },
+        select: { id: true },
       }),
       prisma.activeSession.upsert({
         where: { sessionId },
@@ -99,8 +113,26 @@ export async function POST(req: NextRequest) {
       }),
     ]);
 
+    // Region and city (and the country when no edge header gave it), after
+    // the response: lib/geo.ts, cached per address for a day.
+    const headers = new Headers(req.headers);
+    const fullIp = clientIp(req.headers);
+    after(async () => {
+      if (await analyticsReady()) await fillGeo("PageView", [view.id], fullIp, headers);
+    });
+
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ ok: true });
+  }
+}
+
+function refOnly(r: string): string | null {
+  try {
+    const u = new URL(r.slice(0, 1000));
+    if (!/^https?:$/.test(u.protocol)) return null;
+    return `${u.origin}${isTrackablePath(u.pathname) ? normalizePath(u.pathname) : ""}`.slice(0, 300);
+  } catch {
+    return null;
   }
 }

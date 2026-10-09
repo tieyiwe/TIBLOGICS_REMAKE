@@ -241,7 +241,7 @@ export default function SponsorFlow(props: {
           {step < 4 ? (
             <button type="button" className={btn} onClick={next} data-testid="sp-next">{t("learn.youth.sponsor.next")}</button>
           ) : (
-            <button type="button" className={btn} onClick={pay} disabled={busy} data-testid="sp-pay">{busy ? t("learn.plan.opening") : t("learn.youth.sponsor.pay")}</button>
+            <button type="button" className={btn} onClick={pay} disabled={busy} data-testid="sp-pay" data-track="cta-sponsor-pay">{busy ? t("learn.plan.opening") : t("learn.youth.sponsor.pay")}</button>
           )}
         </div>
       </div>

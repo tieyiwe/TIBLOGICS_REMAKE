@@ -172,7 +172,7 @@ export default function ReportView({ initial, paidReturn = false, canceled = fal
   }
 
   async function rescan() {
-    const r = await post("/api/scanner/audit", { url: v.url, rescanToken: v.token }, "rescan");
+    const r = await post("/api/scanner/audit", { url: v.url, rescanToken: v.token, from: "/tools/scanner/report/:token" }, "rescan");
     if (r) {
       const j = await r.json();
       if (j.token) window.location.href = `/tools/scanner/report/${j.token}`;

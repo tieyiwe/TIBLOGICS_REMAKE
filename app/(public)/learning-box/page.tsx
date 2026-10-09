@@ -169,6 +169,7 @@ export default async function LearningBoxPage({ searchParams }: Props) {
                 style={{ "--stagger-index": 3 } as React.CSSProperties}
               >
                 <Link
+                  data-track="cta-start-learning"
                   href="/learning-box/join"
                   className="rounded-full bg-gradient-to-r from-[var(--orange)] to-[#F9A738] px-7 py-3.5 text-sm font-bold text-[var(--ink)] transition-opacity hover:opacity-90"
                 >

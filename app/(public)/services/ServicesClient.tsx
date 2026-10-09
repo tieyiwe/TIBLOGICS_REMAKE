@@ -52,7 +52,7 @@ export default function ServicesClient() {
             {t("pages.services.hero.body")}
           </p>
           <div className="flex flex-wrap justify-center gap-3 mt-6">
-            <Link href="/book" className="btn-primary">{t("pages.services.hero.book")}</Link>
+            <Link href="/book" className="btn-primary" data-track="cta-book-call-services">{t("pages.services.hero.book")}</Link>
             <OpenTiboButton className="bg-white text-[#1B3A6B] hover:bg-[#EBF0FA] font-semibold rounded-lg px-5 py-2.5 transition-colors inline-flex items-center gap-2">
               {t("pages.services.hero.tibo")}
             </OpenTiboButton>

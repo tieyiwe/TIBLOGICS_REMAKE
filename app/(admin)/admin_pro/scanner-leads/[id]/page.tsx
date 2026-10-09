@@ -9,6 +9,8 @@ import { translatorFor } from "@/lib/i18n/server";
 import { readFixPlan } from "@/lib/scanner/fix-plan";
 import FixPlanPanel from "./FixPlanPanel";
 import UnlockButton from "../UnlockButton";
+import { scanLogsForLead } from "@/lib/analytics/scan-log";
+import { countryName, flag } from "@/lib/geo";
 
 // One scan, for the team: the visitor's report in full (whatever they paid
 // for), the booking it led to, and the INTERNAL fix plan (never shown to the
@@ -33,6 +35,8 @@ export default async function ScanDetailPage({ params }: { params: Promise<{ id:
     ? await prisma.appointment.findUnique({ where: { id: lead.appointmentId }, select: { id: true, date: true, timeSlot: true, serviceType: true, firstName: true, lastName: true, status: true } }).catch(() => null)
     : null;
   const plan = readFixPlan(lead.report);
+  // Where and on what device it was scanned (the scan log, lib/analytics/scan-log.ts).
+  const origin = (await scanLogsForLead(lead.id))[0] ?? null;
   const scores: Array<[string, number | null]> = [
     ["Overall", lead.overallScore], ["SEO", lead.seoScore], ["Speed", lead.perfScore], ["Usability", lead.uxScore], ["AI readiness", lead.aiScore],
     ["Lead capture", extra?.growthScore ?? null], ["Security", extra?.securityScore ?? null],
@@ -59,6 +63,26 @@ export default async function ScanDetailPage({ params }: { params: Promise<{ id:
           )}
           {!lead.unlockedAt && <UnlockButton id={lead.id} />}
         </div>
+      </div>
+
+      <div className={card} data-testid="scan-origin">
+        <h2 className="font-syne text-base font-bold text-[var(--a-ink)]">Where it was scanned</h2>
+        {origin ? (
+          <dl className="mt-3 grid gap-x-6 gap-y-1 font-dm text-sm sm:grid-cols-2">
+            {[
+              ["Location", origin.country ? `${flag(origin.country)} ${[origin.city, origin.region, origin.countryName ?? countryName(origin.country) ?? origin.country].filter(Boolean).join(", ")}` : "Unknown"],
+              ["Device", [origin.device, origin.browser, origin.os].filter(Boolean).join(" · ")],
+              ["Started from", origin.fromPage === "/" ? "Home page quick scan" : origin.fromPage === "/tools/scanner" ? "Scanner page" : origin.fromPage ?? "–"],
+              ["Language", origin.locale?.toUpperCase() ?? "–"],
+              ["Outcome", `${origin.outcome}${origin.staff ? " (staff scan)" : ""}`],
+            ].map(([k, v]) => (
+              <div key={k} className="flex gap-2"><dt className="text-[var(--a-ink-3)]">{k}:</dt><dd className="text-[var(--a-ink)]">{v}</dd></div>
+            ))}
+          </dl>
+        ) : (
+          <p className="mt-2 font-dm text-sm text-[var(--a-ink-3)]">Not recorded: this scan is older than the scan log.</p>
+        )}
+        <Link href={`/admin_pro/scanner-leads/scan-log?q=${encodeURIComponent(lead.domain ?? "")}&range=90`} className="mt-3 inline-block font-dm text-xs font-semibold text-[var(--a-blue)] hover:underline">Every scan of this site →</Link>
       </div>
 
       {(appointment || lead.bookedCallAt) && (

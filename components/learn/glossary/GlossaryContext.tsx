@@ -104,6 +104,7 @@ export function GlossTerm({ id, children }: { id: string; children: React.ReactN
       onClick={() => g.open(id)}
       className="cursor-help rounded-sm text-left underline decoration-[var(--orange)] decoration-dotted decoration-2 underline-offset-4 hover:bg-[#FFF3E6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--orange)]"
       data-gloss={id}
+      data-track="arfa-glossary-term"
     >
       {children}
     </button>
