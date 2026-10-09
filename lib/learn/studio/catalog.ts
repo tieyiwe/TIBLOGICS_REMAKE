@@ -13,6 +13,7 @@ import { teachTheMachine } from "./tools/teach-the-machine";
 import { feedSimulator } from "./tools/feed-simulator";
 import { fakeOrReal } from "./tools/fake-or-real";
 import { systemMapper } from "./tools/system-mapper";
+import { vibeCodeStudio } from "./tools/vibe-code-studio";
 
 // Every Studio tool. Safe to import on the server and in the browser.
 export const STUDIO_TOOLS: StudioToolMeta[] = [
@@ -31,6 +32,7 @@ export const STUDIO_TOOLS: StudioToolMeta[] = [
   feedSimulator,
   fakeOrReal,
   systemMapper,
+  vibeCodeStudio,
 ];
 
 export const STUDIO_BY_ID = new Map(STUDIO_TOOLS.map((t) => [t.id, t]));

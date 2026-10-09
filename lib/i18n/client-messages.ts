@@ -32,7 +32,7 @@ const SERVER_ONLY = [
  * (useLazyMessages("studio") → /api/i18n/messages), or sent up front on the
  * Studio tool page.
  */
-const STUDIO_TOOLS = /^studio\.(automation-builder|loop-mapper|prompt-builder|task-sorter|spot-the-risk|wireframe-builder|prompt-arena|critic-mode|test-bench|security-doors|teach-the-machine|feed-simulator|fake-or-real|system-mapper|youth)\.(?!(name|desc)$)/;
+const STUDIO_TOOLS = /^studio\.(automation-builder|loop-mapper|prompt-builder|task-sorter|spot-the-risk|wireframe-builder|prompt-arena|critic-mode|test-bench|security-doors|teach-the-machine|feed-simulator|fake-or-real|system-mapper|vibe-code-studio|youth)\.(?!(name|desc)$)/;
 
 export type MessageArea = "learn" | "member" | "tools" | "calculator" | "toolkit" | "studio" | "donate" | "pagesBook" | "pagesServices" | "pagesBlog" | "pagesEvents" | "pagesContact" | "pagesStore";
 

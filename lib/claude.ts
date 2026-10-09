@@ -59,6 +59,8 @@ export type AiTask =
   | "lesson-recap"
   | "explain-simple"
   | "grade-challenge"
+  | "youth-code"
+  | "youth-explain"
   | "scanner-report"
   // Sonnet
   | "code-assist"
@@ -140,6 +142,10 @@ export const ROUTES: Record<AiTask, Route> = {
   "explain-simple": { tier: "haiku", maxTokens: 400 },
   // Weekly 10-minute challenge: a short answer scored on three criteria, as JSON (at most twice per learner per week).
   "grade-challenge": { tier: "haiku", maxTokens: 700 },
+  // Vibe Code Studio (AI-Empowered Youth): a whole small single-file app (capped at
+  // ~24k characters, so the output is too), and "Explain this code" (450 to 800).
+  "youth-code": { tier: "haiku", maxTokens: 7000 },
+  "youth-explain": { tier: "haiku", maxTokens: 800 },
 
   "code-assist": { tier: "sonnet", maxTokens: 8000, thinking: "adaptive", effort: "medium", cacheSystem: true },
   "grade-code": { tier: "sonnet", maxTokens: 4000, thinking: "adaptive", effort: "medium" },

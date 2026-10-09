@@ -206,7 +206,26 @@ AI-Empowered Youth tools (ages 10 to 17, listed on the youth tracks):
 teach-the-machine (two-classes, trick-it, fair-data), feed-simulator
 (your-feed, filter-bubble, break-the-bubble), fake-or-real (warm-up,
 deepfake-tells, fact-check) and system-mapper (lunch-queue, game-economy,
-feedback-loops). Each also has a free play mode: `tool-id:sandbox`.
+feedback-loops) and vibe-code-studio (first-app, fix-it, level-up). Each
+also has a free play mode: `tool-id:sandbox`.
+vibe-code-studio is the one youth tool that calls a model: the learner
+describes an app, the AI builds it as one offline HTML file in a locked
+sandbox, and "Explain this code" explains it. Its AI opens for learners who
+hold a youth lane (hand editing and the preview work for everyone), within
+the minors' daily AI cap. Embed it where a lesson has just taught
+describing, testing or debugging, e.g.
+
+    ```studio
+    vibe-code-studio:first-app
+    ```
+
+Testing it locally: with ANTHROPIC_BASE_URL pointing at the e2e mock, any
+reply with a ```html block (or a bare HTML snippet in a fence, which is
+wrapped into a page) becomes a proposal to Apply; a reply with no code shows
+as a note. Every challenge can also be passed with no AI at all: first-app
+by editing in Code and pressing "Run & save" twice, fix-it by fixing the two
+bugs by hand (Number(...) + 1, and the "restart" id should be "reset"),
+level-up by filling the spec, saving a hand edit and writing a test note.
 Put the block where the learner should practise the idea just taught,
 with one sentence before it saying what to do.
 
