@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
+import { Prisma } from "@prisma/client";
+import prisma from "@/lib/prisma";
 
 // Creates every table, column and index the app makes at runtime, all at
 // once. Used to bring a fresh or lagging DEVELOPMENT database level with
@@ -88,7 +90,21 @@ async function run(req: NextRequest) {
     }
   }
   const failed = results.filter((r) => !r.ok);
-  return NextResponse.json({ ok: failed.length === 0, steps: results.length, failed }, { status: failed.length ? 500 : 200 });
+  // The proof that matters before publishing: every table in
+  // prisma/schema.prisma exists in this database. One missing here is a table
+  // Replit would offer to DROP from production.
+  let missing: string[] = [];
+  try {
+    const want = Prisma.dmmf.datamodel.models.map((m) => m.dbName ?? m.name);
+    const have = new Set(
+      (await prisma.$queryRawUnsafe<Array<{ t: string }>>(`SELECT table_name AS t FROM information_schema.tables WHERE table_schema = current_schema()`)).map((r) => r.t),
+    );
+    missing = want.filter((t) => !have.has(t)).sort();
+  } catch (err) {
+    failed.push({ step: "verify tables", ok: false, error: err instanceof Error ? err.message.slice(0, 300) : String(err) });
+  }
+  const ok = failed.length === 0 && missing.length === 0;
+  return NextResponse.json({ ok, steps: results.length, failed, missing }, { status: ok ? 200 : 500 });
 }
 
 export const GET = run;

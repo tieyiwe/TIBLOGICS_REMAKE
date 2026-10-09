@@ -150,10 +150,27 @@ for (const name of names) {
     const res = await fetch(url, {
       headers: { authorization: `Bearer ${secret}` },
       // A news run generates several articles; give it room.
-      signal: AbortSignal.timeout(name === "news" || name === "news-now" || name === "videos" ? 900_000 : name === "monitor" || name === "blueprints" || name === "translate" || name === "growth" || name === "outreach" || name === "comms" || name === "scanner" || name === "scholarship" ? 330_000 : 120_000),
+      signal: AbortSignal.timeout(name === "news" || name === "news-now" || name === "videos" || name === "dbprep" ? 900_000 : name === "monitor" || name === "blueprints" || name === "translate" || name === "growth" || name === "outreach" || name === "comms" || name === "scanner" || name === "scholarship" ? 330_000 : 120_000),
     });
     const body = await res.text();
     const secs = ((Date.now() - started) / 1000).toFixed(1);
+    if (name === "dbprep") {
+      // Spelled out: publishing after a failed or partial dbprep lets Replit
+      // offer to drop production tables.
+      let r = null;
+      try { r = JSON.parse(body); } catch { /* not JSON */ }
+      if (res.ok && r?.ok) {
+        console.log(`OK    dbprep  in ${secs}s  ${r.steps} steps, every table present. Safe to Republish.`);
+      } else {
+        failed++;
+        console.error(`FAIL  dbprep  ${res.status} in ${secs}s`);
+        for (const f of r?.failed ?? []) console.error(`      step failed: ${f.step}: ${f.error}`);
+        if (r?.missing?.length) console.error(`      tables missing from this database: ${r.missing.join(", ")}`);
+        if (!r) console.error(`      ${body.slice(0, 300)}`);
+        console.error("      DO NOT PUBLISH. Fix the above (or run dbprep again), until it says OK.");
+      }
+      continue;
+    }
     if (!res.ok) {
       failed++;
       console.error(`FAIL  ${name}  ${res.status} in ${secs}s  ${body.slice(0, 300)}`);
@@ -163,6 +180,7 @@ for (const name of names) {
   } catch (err) {
     failed++;
     console.error(`FAIL  ${name}  ${err instanceof Error ? err.message : String(err)}`);
+    if (name === "dbprep") console.error("      DO NOT PUBLISH. Run dbprep again until it says OK.");
   }
 }
 
