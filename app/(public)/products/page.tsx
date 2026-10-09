@@ -38,6 +38,8 @@ const DOMAINS = [
 // Blindwhisper has no description anywhere in the codebase, so it carries none
 // here — the card renders without one rather than with something invented.
 // note and blurb are dictionary keys; an empty string renders nothing.
+const SHOW_IN_THE_OPEN = false;
+
 const HIGHLIGHTS: { name: string; note: string; blurb: string; href?: string; color: string }[] = [
   {
     name: "Goal Tester",
@@ -185,7 +187,9 @@ export default async function ProductsPage() {
         </div>
       </div>
 
-      {/* Two ventures, named — proof the studio ships, not a catalogue */}
+      {/* Two ventures, named — proof the studio ships, not a catalogue.
+          Hidden for now at the owner's request; set SHOW_IN_THE_OPEN to bring it back. */}
+      {SHOW_IN_THE_OPEN && (
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-16">
         <div className="max-w-2xl mb-8">
           <span className="section-tag">{t("pages.products.open.tag")}</span>
@@ -234,6 +238,7 @@ export default async function ProductsPage() {
           })}
         </div>
       </div>
+      )}
 
       {/* Have a startup idea */}
       <div id="startup-idea" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 scroll-mt-32">
