@@ -197,6 +197,8 @@ export default function AnalyticsTracker() {
   const pathname = usePathname() ?? "/";
   const lastTracked = useRef<string>("");
   const view = useRef<ViewState>({ id: null, visibleMs: 0, since: null, scroll: 0 });
+  // Sends queued clicks; set by the click effect below.
+  const flushClicks = useRef<(() => void) | null>(null);
   const trackable = isTrackablePath(pathname);
 
   // Engagement of the current view: sent on navigation, on hide, and with the heartbeat.
@@ -347,6 +349,7 @@ export default function AnalyticsTracker() {
     const onVisibility = () => {
       if (document.visibilityState === "hidden") flush(true);
     };
+    flushClicks.current = () => flush(true);
     document.addEventListener("click", onClick, { capture: true, passive: true });
     window.addEventListener("pagehide", onHide);
     document.addEventListener("visibilitychange", onVisibility);
@@ -356,9 +359,16 @@ export default function AnalyticsTracker() {
       window.removeEventListener("pagehide", onHide);
       document.removeEventListener("visibilitychange", onVisibility);
       clearInterval(timer);
+      flushClicks.current = null;
       flush(true);
     };
   }, []);
+
+  // A move to another page in the app sends the clicks that led there, so a
+  // quick second navigation or a closed tab cannot lose them.
+  useEffect(() => {
+    flushClicks.current?.();
+  }, [pathname]);
 
   return null;
 }
