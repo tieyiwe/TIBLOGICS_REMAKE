@@ -293,12 +293,17 @@ export default async function ToolkitLivePage({ searchParams }: { searchParams: 
         {/* FAQ */}
         <section className="mt-16">
           <h2 className="font-syne font-bold text-2xl md:text-3xl text-[#0D1B2A]">{t("tools.tk.faq")}</h2>
-          <div className="mt-5 grid md:grid-cols-2 gap-4">
+          <div className="mt-5 grid md:grid-cols-2 gap-4 items-start" data-testid="faq-list">
             {FAQ.map((n) => (
-              <div key={n} className="bg-white border border-[#D2DCE8] rounded-2xl p-5">
-                <h3 className="font-dm font-semibold text-[#0D1B2A]">{t(`tools.tk.faq.${n}.q`)}</h3>
-                <p className="font-dm text-sm text-[#3A4A5C] mt-1.5 leading-relaxed">{t(`tools.tk.faq.${n}.a`)}</p>
-              </div>
+              <details key={n} className="group bg-white border border-[#D2DCE8] rounded-2xl px-5" data-testid="faq-item">
+                <summary className="flex min-h-[56px] cursor-pointer list-none items-center justify-between gap-4 py-3 font-dm font-semibold text-[#0D1B2A] [&::-webkit-details-marker]:hidden">
+                  {t(`tools.tk.faq.${n}.q`)}
+                  <span aria-hidden="true" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EEF3FA] text-lg leading-none text-[#1B3A6B] transition-transform duration-200 group-open:rotate-45">
+                    +
+                  </span>
+                </summary>
+                <p className="font-dm text-sm text-[#3A4A5C] pb-5 leading-relaxed">{t(`tools.tk.faq.${n}.a`)}</p>
+              </details>
             ))}
           </div>
         </section>

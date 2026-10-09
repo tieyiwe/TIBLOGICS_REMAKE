@@ -61,14 +61,24 @@ export function FaqBlock({
       <h2 id="faq-title" className="font-syne text-xl font-bold text-[#0D1B2A]">
         {title}
       </h2>
-      <dl className="mt-5 divide-y divide-[#E8EFF8]">
+      {/* Collapsed: the questions show, a tap opens an answer. The answers
+          stay in the page (search engines and the FAQPage data read them). */}
+      <div className="mt-4 divide-y divide-[#E8EFF8]" data-testid="faq-list">
         {items.map((f) => (
-          <div key={f.q} className="py-4 first:pt-0 last:pb-0">
-            <dt className="font-dm text-[15px] font-semibold text-[#0D1B2A]">{f.q}</dt>
-            <dd className="mt-1.5 font-dm text-sm leading-relaxed text-[#3A4A5C]">{f.a}</dd>
-          </div>
+          <details key={f.q} className="group" data-testid="faq-item">
+            <summary className="flex min-h-[52px] cursor-pointer list-none items-center justify-between gap-4 py-3 font-dm text-[15px] font-semibold text-[#0D1B2A] [&::-webkit-details-marker]:hidden">
+              {f.q}
+              <span
+                aria-hidden="true"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EEF3FA] text-lg leading-none text-[#1B3A6B] transition-transform duration-200 group-open:rotate-45"
+              >
+                +
+              </span>
+            </summary>
+            <p className="pb-4 pr-10 font-dm text-sm leading-relaxed text-[#3A4A5C]">{f.a}</p>
+          </details>
         ))}
-      </dl>
+      </div>
       {withJsonLd && <JsonLd data={faqNode(items, path)} />}
     </section>
   );
