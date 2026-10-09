@@ -234,6 +234,19 @@ export default async function TrackLandingPage({ params, searchParams }: Props) 
           {text.tagline && (
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg">{text.tagline}</p>
           )}
+          {/* AI-Empowered Youth: the sponsor option again at the top, so a
+              parent, grandparent or mentor sees it straight away. */}
+          {isYouthSlug(track.slug) && !comingSoon && (
+            <Link
+              href={`/sponsor-youth?lane=${track.slug}`}
+              data-track="cta-sponsor-youth-top"
+              data-testid="sponsor-entry-top"
+              className="mt-6 inline-flex min-h-[48px] items-center gap-2 rounded-full bg-[var(--orange)] px-6 py-3 text-base font-bold text-white shadow-lg hover:opacity-90"
+            >
+              <span aria-hidden="true">🎁</span>
+              {t("learn.youth.sponsor.entry")}
+            </Link>
+          )}
 
           <dl className="mt-8 flex flex-wrap gap-x-10 gap-y-4">
             {[
