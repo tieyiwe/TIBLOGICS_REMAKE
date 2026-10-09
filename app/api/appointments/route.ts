@@ -273,7 +273,7 @@ export async function POST(req: Request) {
         },
       });
 
-      await recordAttribution({ kind: "appointment", refId: appointment.id, cookieHeader: req.headers.get("cookie"), amountCents: 0 });
+      await recordAttribution({ kind: "appointment", refId: appointment.id, cookieHeader: req.headers.get("cookie"), headers: req.headers, amountCents: 0 });
 
       // Booked from a website scanner report (/book?scan=<token>): the call
       // unlocks that report. Best-effort; never fails the booking.
@@ -350,7 +350,7 @@ export async function POST(req: Request) {
         .then((m) => m.linkScanToAppointment(scanToken, appointmentId))
         .catch((err) => console.error("[appointments] scanner link", err));
     }
-    await recordAttribution({ kind: "appointment", refId: appointmentId, cookieHeader: req.headers.get("cookie"), amountCents: totalAmount });
+    await recordAttribution({ kind: "appointment", refId: appointmentId, cookieHeader: req.headers.get("cookie"), headers: req.headers, amountCents: totalAmount });
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],

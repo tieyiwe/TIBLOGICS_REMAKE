@@ -547,11 +547,25 @@ model PageView {
   /// Created at runtime by lib/analytics/db.ts (and dbprep): location from lib/geo.ts.
   region    String?
   city      String?
+  /// Acquisition of the session (lib/analytics/sources.ts) and engagement of
+  /// the view (visible time, scroll depth bucket). Runtime columns as above.
+  source    String?
+  medium    String?
+  campaign  String?
+  content   String?
+  term      String?
+  linkCode  String?
+  landing   Boolean  @default(false)
+  returning Boolean  @default(false)
+  engagedMs Int?
+  scrollPct Int?
 
   @@index([createdAt])
   @@index([sessionId])
   @@index([origin])
   @@index([page, createdAt])
+  @@index([source, createdAt])
+  @@index([sessionId, createdAt])
 }
 
 /// Every website scan attempt (app/api/scanner/audit), whatever the outcome.
@@ -579,10 +593,57 @@ model ScanLog {
   /// The page the scan was started from (normalised path).
   fromPage    String?
   staff       Boolean  @default(false)
+  /// The visit's source and medium (last-touch cookie).
+  source      String?
+  medium      String?
 
   @@index([createdAt])
   @@index([domain, createdAt])
   @@index([leadId])
+}
+
+/// First and last touch of a conversion (sign-up, booking, lead, purchase),
+/// keyed by the converted record (kind + refId), from the tib_ft / tib_lt
+/// cookies (lib/analytics/touch.ts). Created at runtime by lib/analytics/db.ts.
+model TouchAttribution {
+  id          String    @id
+  createdAt   DateTime  @default(now())
+  kind        String
+  refId       String
+  ftSource    String?
+  ftMedium    String?
+  ftCampaign  String?
+  ftContent   String?
+  ftTerm      String?
+  ftLink      String?
+  ftLanding   String?
+  ftReferrer  String?
+  ftAt        DateTime?
+  ltSource    String?
+  ltMedium    String?
+  ltCampaign  String?
+  ltContent   String?
+  ltTerm      String?
+  ltLink      String?
+  ltLanding   String?
+  ltReferrer  String?
+  device      String?
+  country     String?
+  amountCents Int?
+
+  @@unique([kind, refId])
+  @@index([createdAt])
+}
+
+/// Monthly targets set on the Insights page (revenue in cents, bookings,
+/// signups). Created at runtime by lib/analytics/db.ts.
+model AnalyticsGoal {
+  month     String
+  metric    String
+  target    Int
+  updatedAt DateTime @default(now())
+
+  @@id([month, metric])
 }
 
 /// Clicks on links and buttons (components/public/AnalyticsTracker.tsx,

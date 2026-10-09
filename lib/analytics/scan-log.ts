@@ -6,6 +6,7 @@ import { clientIp, fillGeo, geoFromHeaders } from "@/lib/geo";
 import { ensureAnalyticsTables } from "./db";
 import { BLOCK_MESSAGES } from "@/lib/ssrf";
 import { isTrackablePath, normalizePath } from "./paths";
+import { LAST_TOUCH_COOKIE, cookieValue, touchFromCookie } from "./sources";
 
 // One row per website scan attempt (app/api/scanner/audit), whatever the
 // outcome: what was scanned, when, from where (approximate: country, region,
@@ -88,9 +89,11 @@ export async function writeScanLog(input: ScanLogInput): Promise<string | null> 
     const ip = clientIp(h);
     const edge = geoFromHeaders(h);
     const id = randomUUID();
+    // The visit's source (this session's last-touch cookie), for the scanner funnel by source.
+    const lt = touchFromCookie(cookieValue(h.get("cookie"), LAST_TOUCH_COOKIE));
     await prisma.$executeRawUnsafe(
-      `INSERT INTO "ScanLog" ("id","url","domain","outcome","errorCode","leadId","ip","country","countryName","region","city","device","browser","os","locale","fromPage","staff")
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+      `INSERT INTO "ScanLog" ("id","url","domain","outcome","errorCode","leadId","ip","country","countryName","region","city","device","browser","os","locale","fromPage","staff","source","medium")
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)`,
       id,
       scanUrlForLog(input.url),
       input.domain ? input.domain.slice(0, 253) : null,
@@ -108,6 +111,8 @@ export async function writeScanLog(input: ScanLogInput): Promise<string | null> 
       input.locale ? input.locale.slice(0, 8) : null,
       fromPage(input.from, h),
       !!input.staff,
+      lt?.source ?? null,
+      lt?.medium ?? null,
     );
     await fillGeo("ScanLog", [id], ip, h);
     return id;

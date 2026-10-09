@@ -8,7 +8,7 @@ import { pageMetadata } from "@/lib/seo/meta";
 // The text lives in lib/i18n/messages/pages/privacy.ts. English is the legally
 // binding version; French and Swahili carry a note saying so.
 const EFFECTIVE = new Date(Date.UTC(2026, 3, 20));
-const UPDATED = new Date(Date.UTC(2026, 3, 20));
+const UPDATED = new Date(Date.UTC(2026, 9, 9));
 
 export async function generateMetadata(): Promise<Metadata> {
   const [t, locale] = await Promise.all([getT(), getLocale()]);

@@ -52,6 +52,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
   });
   const fresh = await prisma.scannerLead.findUniqueOrThrow({ where: { id: lead.id } });
   if (taken.count === 1) {
+    // Analytics: where this lead came from (first and last touch). Never throws.
+    await import("@/lib/analytics/touch").then((m) => m.recordTouch({ kind: "scanner_lead", refId: fresh.id, headers: req.headers })).catch(() => {});
     await upsertScannerGrowthLead(fresh, "scanner_email").catch((err) => console.error("[scanner] growth lead", err));
     sendOwnerScanAlert(fresh.id, "email").catch((err) => console.error("[scanner] owner alert", err instanceof Error ? err.message : err));
     if (!(await isSuppressed(email))) {

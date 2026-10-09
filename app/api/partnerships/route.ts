@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getT } from "@/lib/i18n/server";
 import { prisma } from "@/lib/prisma";
 import { isValidEmail, requireAdmin, checkRateLimit } from "@/lib/require-admin";
+import { recordTouch } from "@/lib/analytics/touch";
 
 export async function POST(req: NextRequest) {
   const t = await getT();
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: t("pages.api.descriptionRequired") }, { status: 400 });
   }
 
-  await prisma.partnershipApplication.create({
+  const created = await prisma.partnershipApplication.create({
     data: {
       businessName: businessName.trim().slice(0, 200),
       contactName: contactName.trim().slice(0, 200),
@@ -39,6 +40,8 @@ export async function POST(req: NextRequest) {
       description: description.slice(0, 5000),
     },
   });
+  // Analytics: where this lead came from (first and last touch). Never throws.
+  await recordTouch({ kind: "contact", refId: created.id, headers: req.headers });
 
   return NextResponse.json({ success: true });
 }

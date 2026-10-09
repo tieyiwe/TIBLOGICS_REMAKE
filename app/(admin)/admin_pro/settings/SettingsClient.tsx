@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { PageHeader, useConfirm } from "@/components/admin/ui";
@@ -232,6 +232,8 @@ export default function SettingsClient() {
         <button className="btn-primary flex items-center gap-2">
           <Save size={14} /> Save Notification Settings
         </button>
+
+        <WeeklyGrowthEmailToggle />
       </section>
 
       {/* ── Command Center Sync ── */}
@@ -479,6 +481,49 @@ function ClearDevDataSection() {
 }
 
 // ── Meeting Integrations Component ────────────────────────────────────────────
+
+/** The owner's weekly growth email (lib/analytics/weekly-email.ts): on or off, saved at once. */
+function WeeklyGrowthEmailToggle() {
+  const [state, setState] = useState<{ enabled: boolean; recipient: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    fetch("/api/admin/analytics/weekly-email")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => j && setState({ enabled: !!j.enabled, recipient: String(j.recipient ?? "") }))
+      .catch(() => {});
+  }, []);
+  if (!state) return null;
+  async function flip() {
+    if (!state) return;
+    setBusy(true);
+    setErr(null);
+    const r = await fetch("/api/admin/analytics/weekly-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: !state.enabled }) }).catch(() => null);
+    setBusy(false);
+    if (r?.ok) setState({ ...state, enabled: !state.enabled });
+    else setErr("Could not save.");
+  }
+  return (
+    <div className="flex items-center justify-between gap-4 border-t border-[var(--a-border)] pt-4" data-testid="weekly-email-setting">
+      <div>
+        <p className="font-dm text-sm text-[var(--a-ink)]">Weekly growth email</p>
+        <p className="font-dm text-xs text-[var(--a-ink-3)]">Mondays at 8:00, to {state.recipient}: KPIs, sources, funnel leaks, top pages and revenue.</p>
+        {err && <p className="font-dm text-xs text-red-600">{err}</p>}
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={state.enabled}
+        aria-label="Weekly growth email"
+        disabled={busy}
+        onClick={flip}
+        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${state.enabled ? "bg-[#2251A3]" : "bg-[#D2DCE8]"}`}
+      >
+        <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${state.enabled ? "translate-x-5" : "translate-x-0"}`} />
+      </button>
+    </div>
+  );
+}
 
 function MeetingIntegrations() {
   return (

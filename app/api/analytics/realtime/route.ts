@@ -60,7 +60,18 @@ export async function GET() {
     topEvents.forEach((e) => { eventMap[e.tool] = (eventMap[e.tool] ?? 0) + 1; });
     const topFeatures = Object.entries(eventMap).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([feature, count]) => ({ feature, count }));
 
+    // Visitors now, by page and by country (sessions seen in the last 5 minutes).
+    const tally = (key: (s: (typeof liveSessions)[number]) => string) => {
+      const m = new Map<string, number>();
+      for (const s of liveSessions) m.set(key(s), (m.get(key(s)) ?? 0) + 1);
+      return [...m].sort((a, b) => b[1] - a[1]).slice(0, 15);
+    };
+    const liveByPage = tally((s) => s.page).map(([page, count]) => ({ page, count }));
+    const liveByCountry = tally((s) => s.country ?? "??").map(([country, count]) => ({ country, count }));
+
     return NextResponse.json({
+      liveByPage,
+      liveByCountry,
       liveCount: liveSessions.length,
       liveSessions,
       recentViews: recentViews.slice(0, 40),
@@ -72,6 +83,6 @@ export async function GET() {
       hourly,
     });
   } catch {
-    return NextResponse.json({ liveCount: 0, liveSessions: [], recentViews: [], topPages: [], topOrigins: [], topCountries: [], topFeatures: [], deviceBreakdown: { desktop: 0, mobile: 0, tablet: 0, total: 0 }, hourly: [] });
+    return NextResponse.json({ liveByPage: [], liveByCountry: [], liveCount: 0, liveSessions: [], recentViews: [], topPages: [], topOrigins: [], topCountries: [], topFeatures: [], deviceBreakdown: { desktop: 0, mobile: 0, tablet: 0, total: 0 }, hourly: [] });
   }
 }

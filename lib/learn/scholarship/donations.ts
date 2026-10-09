@@ -22,7 +22,7 @@ const SITE = (process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "ht
 export const DONATE_FROM = { arfa: "/learning-box", scholarship: "/tilo-vision-scholarship", about: "/about", partners: "/contact", products: "/products" } as const;
 export type DonateFrom = keyof typeof DONATE_FROM;
 
-export async function createDonationCheckout(d: { amountCents: number; frequency: Frequency; locale: string; from: DonateFrom }): Promise<string> {
+export async function createDonationCheckout(d: { amountCents: number; frequency: Frequency; locale: string; from: DonateFrom }, headers?: Headers | null): Promise<string> {
   const metadata = { product: DONATION_PRODUCT, frequency: d.frequency, locale: isLocale(d.locale) ? d.locale : "en" };
   const product_data = {
     name: "Tilo Vision Scholarship fund",
@@ -55,6 +55,9 @@ export async function createDonationCheckout(d: { amountCents: number; frequency
           payment_intent_data: { metadata },
         });
   if (!session.url) throw new Error("Stripe did not return a checkout URL");
+  // Analytics: where the donor came from, keyed by the checkout session the
+  // donation row will carry (lib/analytics/touch.ts). Never throws.
+  if (headers) await import("@/lib/analytics/touch").then((m) => m.recordTouch({ kind: "donation", refId: session.id, headers, amountCents: d.amountCents })).catch(() => {});
   return session.url;
 }
 

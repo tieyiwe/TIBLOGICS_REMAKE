@@ -12,6 +12,7 @@ import {
   DEFAULT_AVAIL_SLOTS,
 } from "@/lib/booking/services";
 import { useLocale, useT } from "@/lib/i18n/client";
+import { track } from "@/components/public/AnalyticsTracker";
 
 // Consultations are free. SERVICES is what the visitor wants to TALK ABOUT,
 // not something they buy — price stays 0 so no payment step is ever reached.
@@ -448,7 +449,7 @@ export default function BookPage() {
                   <div className="mt-5">
                     <button
                       disabled={!selectedDate || !selectedSlot}
-                      onClick={() => setStep(2)}
+                      onClick={() => { setStep(2); track("booking_details"); }}
                       className="btn-primary w-full justify-center disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       {t("pages.book.nextDetails")}
@@ -502,7 +503,7 @@ export default function BookPage() {
                     <button onClick={() => setStep(1)} className="btn-secondary flex-1 justify-center text-sm">{t("pages.book.back")}</button>
                     <button
                       disabled={!formData.firstName.trim() || !formData.lastName.trim() || !emailOk}
-                      onClick={() => setStep(3)}
+                      onClick={() => { setStep(3); track("booking_review"); }}
                       className="btn-primary flex-1 justify-center text-sm disabled:opacity-40"
                     >
                       {t("pages.book.nextReview")}

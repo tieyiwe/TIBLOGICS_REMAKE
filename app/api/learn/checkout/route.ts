@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
             : `${SITE}/learn/subscribe?track=${track.slug}&checkout=cancelled`,
       });
       // Growth attribution; paid status is resolved from TrackPurchase at report time.
-      await recordAttribution({ kind: "track_checkout", refId: `${student.id}:${track.id}`, cookieHeader: req.headers.get("cookie"), amountCents: amount - discount.discountCents });
+      await recordAttribution({ kind: "track_checkout", refId: `${student.id}:${track.id}`, cookieHeader: req.headers.get("cookie"), headers: req.headers, amountCents: amount - discount.discountCents });
       return NextResponse.json({ url });
     }
 
@@ -179,7 +179,7 @@ export async function POST(req: NextRequest) {
             ? `${SITE}${joinPath({ kind: "monthly", track: track.slug })}&checkout=cancelled`
             : `${SITE}/learn/subscribe?track=${track.slug}&checkout=cancelled`,
       });
-      await recordAttribution({ kind: "learn_subscription_checkout", refId: student.id, cookieHeader: req.headers.get("cookie"), amountCents: monthlyCents - discount.discountCents });
+      await recordAttribution({ kind: "learn_subscription_checkout", refId: student.id, cookieHeader: req.headers.get("cookie"), headers: req.headers, amountCents: monthlyCents - discount.discountCents });
       return NextResponse.json({ url });
     }
 
@@ -205,7 +205,7 @@ export async function POST(req: NextRequest) {
           ? `${SITE}${joinPath({ kind: "monthly", track: parsed.data.track ?? null })}&checkout=cancelled`
           : `${SITE}/learning-box?checkout=cancelled`,
     });
-    await recordAttribution({ kind: "learn_subscription_checkout", refId: student.id, cookieHeader: req.headers.get("cookie"), amountCents: PLANS.monthly.amount - discount.discountCents });
+    await recordAttribution({ kind: "learn_subscription_checkout", refId: student.id, cookieHeader: req.headers.get("cookie"), headers: req.headers, amountCents: PLANS.monthly.amount - discount.discountCents });
     return NextResponse.json({ url });
   } catch (err) {
     const promoErr = promoCheckoutError(t, err);

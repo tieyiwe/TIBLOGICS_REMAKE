@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
     const r = await createLearnerAccount(parsed.data, {
       t,
       cookieHeader: req.headers.get("cookie"),
+      headers: req.headers,
       referer: req.headers.get("referer"),
       source: {
         track: choice?.kind === "track" ? choice.slug : choice?.kind === "monthly" ? choice.track ?? null : null,

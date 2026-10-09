@@ -7,6 +7,7 @@ import { filterQuery, fmtDay, param, parseFilters } from "@/lib/analytics/filter
 import { arfaFeatures, labelPages, splits, topButtons, topPages } from "@/lib/analytics/usage";
 import { countryName, flag } from "@/lib/geo";
 import { Bar, FilterBar, Panel, Tile, Trend, tdc, theadRow, thc } from "../kit";
+import { AnalyticsTabs } from "../tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +49,7 @@ export default async function UsagePage({ searchParams }: { searchParams: Promis
         subtitle={<>Most-used pages, links and buttons on the website and in ARFA, {fmtDay(f.from)} to {fmtDay(new Date(f.to.getTime() - 1))} (UTC), compared with the {f.days} days before. Paths are grouped (ids become :id) and no typed text is recorded.</>}
         className="mb-0"
       />
+      <AnalyticsTabs active={BASE} viewer={session.user} qs={qs} />
       <FilterBar base={BASE} f={f} show={["custom", "area", "device", "country"]} countries={split.countries.map((c) => c.key).filter((c) => c !== "??")} />
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">

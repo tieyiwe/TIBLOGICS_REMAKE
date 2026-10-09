@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
     const r = await createLearnerAccount(parsed.data, {
       t,
       cookieHeader: req.headers.get("cookie"),
+      headers: req.headers,
       referer: req.headers.get("referer"),
       source: parsed.data,
       // A young person's sign-up gets no generic welcome before their age is

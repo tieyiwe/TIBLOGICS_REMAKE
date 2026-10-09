@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { boundedObject } from "@/lib/validate/json";
 import prisma from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { isTrackablePath, normalizePath } from "@/lib/analytics/paths";
 
 export async function POST(req: NextRequest) {
   // Public beacon; a generous cap so it cannot be used to flood the table.
@@ -18,7 +19,8 @@ export async function POST(req: NextRequest) {
       data: {
         tool: event.slice(0, 100),
         sessionId: sessionId ? String(sessionId).slice(0, 64) : null,
-        metadata: { page: typeof page === "string" ? page.slice(0, 300) : null, ...(boundedObject(meta) ?? {}) },
+        // Paths are grouped and never carry a query or a token (lib/analytics/paths.ts).
+        metadata: { page: typeof page === "string" && isTrackablePath(page) ? normalizePath(page) : null, ...(boundedObject(meta) ?? {}) },
       },
     });
 

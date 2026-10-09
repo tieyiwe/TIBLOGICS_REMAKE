@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
     });
     if (!session.url) throw new Error("Stripe did not return a checkout URL");
     await prisma.blueprint.update({ where: { id: bp.id }, data: { stripeSessionId: session.id } });
-    await recordAttribution({ kind: "blueprint", refId: bp.id, cookieHeader: req.headers.get("cookie"), amountCents: price });
+    await recordAttribution({ kind: "blueprint", refId: bp.id, cookieHeader: req.headers.get("cookie"), headers: req.headers, amountCents: price });
     return NextResponse.json({ url: session.url });
   } catch (err) {
     console.error("[blueprint/start]", err instanceof Error ? err.message : err);

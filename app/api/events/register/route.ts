@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    await recordAttribution({ kind: "event_registration", refId: registration.id, cookieHeader: req.headers.get("cookie"), amountCents: priceInt });
+    await recordAttribution({ kind: "event_registration", refId: registration.id, cookieHeader: req.headers.get("cookie"), headers: req.headers, amountCents: priceInt });
 
     // Create registrations for additional participants (non-blocking, fire-and-forget)
     const rawExtras = Array.isArray(additionalParticipants) ? additionalParticipants : [];

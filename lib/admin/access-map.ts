@@ -41,6 +41,10 @@ export const PAGE_RULES: AccessRule[] = [
   { path: "/admin_pro/analytics/visitors", key: "analytics" },
   // Feature usage: most-used pages and buttons (lib/analytics/usage.ts).
   { path: "/admin_pro/analytics/usage", key: "analytics" },
+  // Traffic sections (no money); Revenue and the Business report stay on "insights".
+  { path: "/admin_pro/analytics/acquisition", key: "analytics" },
+  { path: "/admin_pro/analytics/funnels", key: "analytics" },
+  { path: "/admin_pro/analytics/engagement", key: "analytics" },
   { path: "/admin_pro/growth", key: "growth" },
   { path: "/admin_pro/growth/leads", key: "growth" },
   { path: "/admin_pro/growth/outreach", key: "growth" },
@@ -104,6 +108,10 @@ export const API_RULES: AccessRule[] = [
   { path: "/api/admin/agents/aria/post", key: "growth_content", write: "growth.publish" },
   { path: "/api/admin/analytics", key: "insights" },
   { path: "/api/admin/analytics/usage", key: "analytics" },
+  // CSV of every analytics section: the route asks "insights" for revenue and insights tables.
+  { path: "/api/admin/analytics/data", key: "analytics" },
+  // On/off is also shown in Settings: the route checks settings, insights or admin per action.
+  { path: "/api/admin/analytics/weekly-email", key: "__staff__" },
   { path: "/api/admin/appointments", key: "appointments" },
   { path: "/api/admin/reviews", key: "contacts" },
   { path: "/api/admin/meeting-settings", key: "appointments" },

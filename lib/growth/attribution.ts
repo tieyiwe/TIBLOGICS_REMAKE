@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import prisma from "@/lib/prisma";
 import { ensureGrowthTables } from "./db";
+import { recordTouch } from "@/lib/analytics/touch";
 
 // First-party campaign attribution.
 //
@@ -97,7 +98,12 @@ export async function recordAttribution(opts: {
   refId: string;
   cookieHeader: string | null | undefined;
   amountCents?: number | null;
+  /** The converting request's headers: device and country for analytics (lib/analytics/touch.ts). */
+  headers?: Headers | null;
 }): Promise<void> {
+  // First and last touch for analytics, for every conversion (with or
+  // without a campaign cookie). Never throws.
+  await recordTouch({ kind: opts.kind, refId: opts.refId, cookieHeader: opts.cookieHeader, headers: opts.headers, amountCents: opts.amountCents });
   try {
     const a = attributionFromCookieHeader(opts.cookieHeader);
     if (!a || !opts.refId) return;

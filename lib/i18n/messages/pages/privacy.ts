@@ -98,9 +98,14 @@ export default tri({
     "Aina ya kivinjari, mfumo wa uendeshaji, na aina ya kifaa",
   ],
   "pages.privacy.doc.01.15.li": [
-    "Pages visited, referral source, and session duration",
-    "les pages consultées, la source de référence et la durée de la session ;",
-    "Kurasa zilizotembelewa, chanzo kilichokuleta, na muda wa kipindi",
+    "Pages visited, the links and buttons clicked (their names only, never what you type), how far key pages are scrolled, time spent on a page, referral source and campaign tags, and session duration",
+    "les pages consultées, les liens et boutons cliqués (leur nom uniquement, jamais ce que vous saisissez), jusqu'où les pages principales sont parcourues, le temps passé sur une page, la source de référence et les balises de campagne, ainsi que la durée de la session ;",
+    "Kurasa zilizotembelewa, viungo na vitufe vilivyobofywa (majina yake tu, kamwe si unachoandika), umbali uliosogeza kwenye kurasa kuu, muda uliotumika kwenye ukurasa, chanzo kilichokuleta na lebo za kampeni, na muda wa kipindi",
+  ],
+  "pages.privacy.doc.01.155.li": [
+    "Approximate location (country, region and city) estimated from your IP address at the time of your visit, by our hosting provider or an IP location service (ipinfo.io or ipwho.is); only the truncated address is stored",
+    "la localisation approximative (pays, région et ville), estimée à partir de votre adresse IP au moment de la visite, par notre hébergeur ou un service de géolocalisation IP (ipinfo.io ou ipwho.is) ; seule l'adresse tronquée est conservée ;",
+    "Mahali pa takriban (nchi, mkoa na mji) panapokadiriwa kutoka kwa anwani yako ya IP wakati wa ziara, na mtoa huduma wetu wa uhifadhi au huduma ya kutambua mahali kwa IP (ipinfo.io au ipwho.is); ni anwani iliyokatwa tu inayohifadhiwa",
   ],
   "pages.privacy.doc.01.16.li": [
     "Time and date of your visit",
@@ -108,9 +113,9 @@ export default tri({
     "Saa na tarehe ya ziara yako",
   ],
   "pages.privacy.doc.01.17.p": [
-    "We anonymise IP addresses before storage and do not use fingerprinting or cross-site tracking technologies.",
-    "Nous anonymisons les adresses IP avant leur stockage et n'utilisons aucune technique d'empreinte numérique (fingerprinting) ni de suivi intersites.",
-    "Tunaficha utambulisho wa anwani za IP kabla ya kuzihifadhi na hatutumii teknolojia za kutambua kifaa (fingerprinting) wala za kufuatilia kati ya tovuti mbalimbali.",
+    "We anonymise IP addresses before storage and do not use fingerprinting or cross-site tracking technologies. If your browser sends Do Not Track or Global Privacy Control, we do not record clicks or scroll depth and do not set our attribution cookies; the page view is still counted anonymously.",
+    "Nous anonymisons les adresses IP avant leur stockage et n'utilisons aucune technique d'empreinte numérique (fingerprinting) ni de suivi intersites. Si votre navigateur envoie le signal Do Not Track ou Global Privacy Control, nous n'enregistrons ni les clics ni la profondeur de défilement et ne déposons pas nos cookies d'attribution ; la page vue reste comptée de manière anonyme.",
+    "Tunaficha utambulisho wa anwani za IP kabla ya kuzihifadhi na hatutumii teknolojia za kutambua kifaa (fingerprinting) wala za kufuatilia kati ya tovuti mbalimbali. Kivinjari chako kikituma ishara ya Do Not Track au Global Privacy Control, hatuhifadhi mibofyo wala umbali wa kusogeza na hatuweki vidakuzi vyetu vya chanzo; ukurasa uliotazamwa bado huhesabiwa bila kukutambua.",
   ],
   "pages.privacy.doc.01.18.h3": ["1.3 Payment Information", "1.3 Informations de paiement", "1.3 Taarifa za Malipo"],
   "pages.privacy.doc.01.19.p": [
@@ -275,9 +280,9 @@ export default tri({
     "Kumbukumbu za wanaojiandikisha kwenye jarida: huhifadhiwa hadi utakapojiondoa, pamoja na siku 30",
   ],
   "pages.privacy.doc.05.06.li": [
-    "Anonymised analytics data: retained indefinitely (no personal identifiers)",
-    "données d'analyse anonymisées : conservées sans limitation de durée (aucun identifiant personnel) ;",
-    "Data za takwimu zilizofichwa utambulisho: huhifadhiwa bila kikomo (hazina vitambulisho binafsi)",
+    "Anonymised analytics data: page views retained indefinitely (no personal identifiers); click and website-scan logs deleted after 400 days",
+    "données d'analyse anonymisées : pages vues conservées sans limitation de durée (aucun identifiant personnel) ; journaux de clics et d'analyses de sites supprimés après 400 jours ;",
+    "Data za takwimu zilizofichwa utambulisho: kurasa zilizotazamwa huhifadhiwa bila kikomo (hazina vitambulisho binafsi); kumbukumbu za mibofyo na za ukaguzi wa tovuti hufutwa baada ya siku 400",
   ],
   "pages.privacy.doc.05.07.li": [
     "Payment records: retained for 7 years to comply with tax and accounting regulations",
@@ -310,6 +315,11 @@ export default tri({
     "<strong>Functional cookies:</strong> Used to remember preferences such as language or theme settings.",
     "<strong>Cookies fonctionnels :</strong> utilisés pour mémoriser vos préférences, comme la langue ou le thème.",
     "<strong>Vidakuzi vya utendaji:</strong> Hutumika kukumbuka mapendeleo kama lugha au mandhari.",
+  ],
+  "pages.privacy.doc.06.045.li": [
+    "<strong>First-party attribution cookies:</strong> <code>tib_ft</code> remembers how you first found us (campaign tags, the first page and the referring site, nothing personal) for 90 days, and <code>tib_lt</code> holds the same for the current visit until you close your browser. They are read only when you sign up, book, send a request or buy, so we can tell which channels work. They are not set when your browser sends Do Not Track or Global Privacy Control.",
+    "<strong>Cookies d'attribution internes :</strong> <code>tib_ft</code> retient comment vous nous avez découverts (balises de campagne, première page et site d'origine, rien de personnel) pendant 90 jours, et <code>tib_lt</code> conserve la même chose pour la visite en cours jusqu'à la fermeture du navigateur. Ils ne sont lus que lorsque vous vous inscrivez, réservez, envoyez une demande ou achetez, afin de savoir quels canaux fonctionnent. Ils ne sont pas déposés si votre navigateur envoie Do Not Track ou Global Privacy Control.",
+    "<strong>Vidakuzi vyetu vya chanzo:</strong> <code>tib_ft</code> hukumbuka jinsi ulivyotupata mara ya kwanza (lebo za kampeni, ukurasa wa kwanza na tovuti iliyokuleta, hakuna taarifa binafsi) kwa siku 90, na <code>tib_lt</code> huhifadhi hayo hayo kwa ziara ya sasa hadi ufunge kivinjari. Husomwa tu unapojisajili, kuweka miadi, kutuma ombi au kununua, ili tujue njia zipi zinafanya kazi. Haviwekwi kivinjari chako kikituma Do Not Track au Global Privacy Control.",
   ],
   "pages.privacy.doc.06.05.p": [
     "We do not use third-party advertising cookies, tracking pixels, or behavioural advertising technologies. We do not participate in cross-site tracking networks.",

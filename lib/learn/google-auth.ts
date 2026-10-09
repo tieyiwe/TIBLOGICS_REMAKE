@@ -127,7 +127,7 @@ export async function studentForGoogle(profile: GoogleProfileLike | undefined) {
   }
   void import("@/lib/growth/attribution")
     .then(({ recordAttribution }) =>
-      recordAttribution({ kind: "learn_signup", refId: student.id, cookieHeader: hdrs?.get("cookie") }),
+      recordAttribution({ kind: "learn_signup", refId: student.id, cookieHeader: hdrs?.get("cookie"), headers: hdrs as Headers | null }),
     )
     .catch(() => {});
   void import("@/lib/learn/referrals/service")

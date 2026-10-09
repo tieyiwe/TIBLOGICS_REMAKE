@@ -25,6 +25,8 @@ interface PageView {
 }
 
 interface AnalyticsData {
+  liveByPage?: { page: string; count: number }[];
+  liveByCountry?: { country: string; count: number }[];
   liveCount: number;
   liveSessions: LiveSession[];
   recentViews: PageView[];
@@ -247,6 +249,33 @@ export default function AnalyticsPage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Right now: visitors in the last 5 minutes by page and by country */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" data-testid="live-now">
+        {([
+          ["Right now, by page", (d.liveByPage ?? []).map((p) => ({ k: p.page === "/" ? "Home" : p.page, n: p.count }))],
+          ["Right now, by country", (d.liveByCountry ?? []).map((c) => ({ k: c.country === "??" ? "Unknown" : c.country, n: c.count }))],
+        ] as const).map(([title, rows]) => (
+          <div key={title} className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Radio size={15} className="text-[#16a34a]" />
+              <h2 className="font-syne font-bold text-sm text-[var(--a-ink)]">{title}</h2>
+            </div>
+            {rows.length === 0 ? (
+              <p className="font-dm text-xs text-[var(--a-ink-3)]">Nobody on the site in the last 5 minutes.</p>
+            ) : (
+              <ul className="space-y-2">
+                {rows.map((r) => (
+                  <li key={r.k} className="flex items-center justify-between gap-3">
+                    <span className="font-dm text-sm text-[var(--a-ink-2)] truncate">{r.k}</span>
+                    <span className="font-dm text-xs font-semibold text-[var(--a-ink)] tabular-nums">{r.n}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))}
       </div>
 
       {/* Country + Feature tracking */}

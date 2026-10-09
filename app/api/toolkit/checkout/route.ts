@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
       subscription_data: { metadata },
     });
     if (!session.url) throw new Error("Stripe did not return a checkout URL");
-    await recordAttribution({ kind: "toolkit_checkout", refId: student.id, cookieHeader: req.headers.get("cookie"), amountCents: plan.amount });
+    await recordAttribution({ kind: "toolkit_checkout", refId: student.id, cookieHeader: req.headers.get("cookie"), headers: req.headers, amountCents: plan.amount });
     return NextResponse.json({ url: session.url });
   } catch (err) {
     console.error("[toolkit/checkout]", err instanceof Error ? err.message : err);

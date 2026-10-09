@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useT } from "@/lib/i18n/client";
+import { track } from "@/components/public/AnalyticsTracker";
 import { fmtPrice } from "@/lib/learn/format";
 import { laneForAge } from "@/lib/learn/youth";
 
@@ -68,6 +69,7 @@ export default function SponsorFlow(props: {
       if (needParentEmail && !emailOk(parentEmail)) return setError(t("learn.youth.sponsor.err.parentEmail"));
       if (needAttest && !attested) return setError(t("learn.youth.sponsor.err.attest"));
     }
+    track("sponsor_step", { step: step + 1 });
     setStep((s) => s + 1);
   }
 

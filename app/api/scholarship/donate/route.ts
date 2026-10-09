@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: t("donate.error.amount") }, { status: 400 });
   if (!process.env.STRIPE_SECRET_KEY) return NextResponse.json({ error: t("donate.error.generic") }, { status: 503 });
   try {
-    const url = await createDonationCheckout({ ...parsed.data, locale: await getLocale() });
+    const url = await createDonationCheckout({ ...parsed.data, locale: await getLocale() }, req.headers);
     return NextResponse.json({ url });
   } catch (err) {
     console.error("[POST /api/scholarship/donate]", err);

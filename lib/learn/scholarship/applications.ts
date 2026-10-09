@@ -52,7 +52,7 @@ export interface ApplicationInput {
  * An address with an application still under review in the last 180 days is
  * not stored twice; the visitor sees the same thank-you (no address probing).
  */
-export async function submitApplication(input: ApplicationInput): Promise<{ ok: true; reference: string | null }> {
+export async function submitApplication(input: ApplicationInput, headers?: Headers | null): Promise<{ ok: true; reference: string | null }> {
   await ensureScholarshipTables();
   if (!(await applicationsOpen())) throw new ScholarshipError("closed", 409);
   const email = normEmail(input.email);
@@ -87,6 +87,8 @@ export async function submitApplication(input: ApplicationInput): Promise<{ ok: 
     },
   });
   const reference = applicationRef(id);
+  // Analytics: where the applicant came from (first and last touch). Never throws.
+  if (headers) await import("@/lib/analytics/touch").then((m) => m.recordTouch({ kind: "scholarship_application", refId: id, headers })).catch(() => {});
   await sendApplicationReceived({ email, name, locale, reference }).catch((err) => console.error("[scholarship] application email", err instanceof Error ? err.message : err));
   await sendApplicationAlert({
     id,

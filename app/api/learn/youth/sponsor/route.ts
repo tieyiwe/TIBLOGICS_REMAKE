@@ -114,6 +114,8 @@ export async function POST(req: NextRequest) {
       cancelUrl: `${SITE}/sponsor-youth?lane=${track.slug}&cancelled=1`,
     });
     await setSponsorshipSession(id, sessionId);
+    // Analytics: where the sponsor came from (first and last touch). Never throws.
+    await import("@/lib/analytics/touch").then((m) => m.recordTouch({ kind: "youth_sponsor", refId: id, headers: req.headers, amountCents: amount })).catch(() => {});
     return NextResponse.json({ url });
   } catch (err) {
     // No names or emails in the log.

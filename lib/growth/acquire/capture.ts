@@ -220,6 +220,8 @@ export async function handleCapture(input: CaptureInput): Promise<CaptureOutcome
     }),
   ]);
 
+  // Analytics: first and last touch of the lead (lib/analytics/touch.ts). Never throws.
+  if (!existing) await import("@/lib/analytics/touch").then((m) => m.recordTouch({ kind: "lead_magnet", refId: capture.id, cookieHeader: input.cookieHeader })).catch(() => {});
   const attr = existing
     ? null
     : await recordCaptureAttribution({

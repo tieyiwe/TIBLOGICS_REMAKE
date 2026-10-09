@@ -58,6 +58,7 @@ export type AiTask =
   | "video-select"
   | "lesson-recap"
   | "explain-simple"
+  | "analytics-summary"
   | "grade-challenge"
   | "youth-code"
   | "youth-explain"
@@ -141,6 +142,8 @@ export const ROUTES: Record<AiTask, Route> = {
   "lesson-recap": { tier: "haiku", maxTokens: 900 },
   // Lessons: "Explain simpler" on one paragraph (cached per paragraph and language).
   "explain-simple": { tier: "haiku", maxTokens: 400 },
+  // Admin analytics: "Explain this week" from aggregate numbers only (no personal data).
+  "analytics-summary": { tier: "haiku", maxTokens: 700 },
   // Weekly 10-minute challenge: a short answer scored on three criteria, as JSON (at most twice per learner per week).
   "grade-challenge": { tier: "haiku", maxTokens: 700 },
   // Vibe Code Studio (AI-Empowered Youth): a whole small single-file app (capped at

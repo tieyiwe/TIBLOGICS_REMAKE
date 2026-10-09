@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: t("learn.scholarApply.error.tooMany") }, { status: 429 });
   }
   try {
-    const r = await submitApplication(parsed.data);
+    const r = await submitApplication(parsed.data, req.headers);
     return NextResponse.json(r);
   } catch (err) {
     if (err instanceof ScholarshipError) {

@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import resend from "@/lib/resend";
 import { listLimit } from "@/lib/admin/list-limit";
 import { requireAdmin, isValidEmail, escapeHtml, checkRateLimit } from "@/lib/require-admin";
+import { recordTouch } from "@/lib/analytics/touch";
 
 // GET is admin-only — POST is public (client submits request)
 export async function GET(req: NextRequest) {
@@ -72,6 +73,8 @@ export async function POST(req: NextRequest) {
         status: "NEW",
       },
     });
+    // Analytics: where this lead came from (first and last touch). Never throws.
+    await recordTouch({ kind: "service_request", refId: request.id, headers: req.headers });
 
     // The request is saved; the emails are best-effort. They used to be
     // awaited in sequence, so a mail-provider error returned a 500 for a

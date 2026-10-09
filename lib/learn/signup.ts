@@ -58,7 +58,7 @@ export type CreateAccountResult =
  */
 export async function createLearnerAccount(
   input: { name: string; email: string; password: string; locale?: string },
-  ctx: { t: T; cookieHeader: string | null; referer: string | null; source: { track?: string | null; next?: string | null }; welcome: boolean },
+  ctx: { t: T; cookieHeader: string | null; headers?: Headers | null; referer: string | null; source: { track?: string | null; next?: string | null }; welcome: boolean },
 ): Promise<CreateAccountResult> {
   const { name, email, password } = input;
   const { t } = ctx;
@@ -98,7 +98,7 @@ export async function createLearnerAccount(
   }
 
   // Campaign attribution (Growth): no-op without the UTM cookie, never throws.
-  await recordAttribution({ kind: "learn_signup", refId: student.id, cookieHeader: ctx.cookieHeader });
+  await recordAttribution({ kind: "learn_signup", refId: student.id, cookieHeader: ctx.cookieHeader, headers: ctx.headers });
   // Learning Box referral (60-day cookie from /r/[code]): no-op without it, never throws.
   await recordReferralSignup({ studentId: student.id, email: student.email, cookieHeader: ctx.cookieHeader });
 

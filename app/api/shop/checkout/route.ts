@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
       metadata: { ...discount.metadata, orderId: order.id, orderNumber: order.orderNumber },
     });
 
-    await recordAttribution({ kind: "order", refId: order.id, cookieHeader: req.headers.get("cookie"), amountCents: order.total });
+    await recordAttribution({ kind: "order", refId: order.id, cookieHeader: req.headers.get("cookie"), headers: req.headers, amountCents: order.total });
     return NextResponse.json({ checkoutUrl: session.url });
   } catch (err) {
     const promoErr = promoCheckoutError(t, err);

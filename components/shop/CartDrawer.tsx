@@ -5,6 +5,7 @@ import { ShoppingBag, X, Plus, Minus, Trash2, Loader2, Check } from "lucide-reac
 import { useCart } from "./CartContext";
 import { formatMoney } from "./types";
 import { useLocale, useT } from "@/lib/i18n/client";
+import { track } from "@/components/public/AnalyticsTracker";
 import PromoCodeField from "@/components/promo/PromoCodeField";
 import { getStoredCode } from "@/lib/promotions/client-code";
 
@@ -51,6 +52,7 @@ export default function CartDrawer() {
 
   async function checkout() {
     if (lines.length === 0) return;
+    track("store_checkout", { items: lines.length });
     setLoading(true);
     setError("");
     try {
