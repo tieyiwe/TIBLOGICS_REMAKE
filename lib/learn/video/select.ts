@@ -1,4 +1,5 @@
 import { createHash } from "crypto";
+import { isYouthSlug } from "@/lib/learn/youth";
 import prisma from "@/lib/prisma";
 import { runClaude } from "@/lib/claude";
 import { ensureVideoTables } from "./db";
@@ -119,7 +120,7 @@ export async function planLessons(opts: { trackId?: string; lessonIds?: string[]
       ...(opts.lessonIds ? { id: { in: opts.lessonIds } } : {}),
       ...(opts.trackId ? { module: { trackId: opts.trackId } } : {}),
     },
-    select: { id: true, title: true, objective: true, bodyMd: true, sortOrder: true, module: { select: { _count: { select: { lessons: true } } } } },
+    select: { id: true, title: true, objective: true, bodyMd: true, sortOrder: true, module: { select: { _count: { select: { lessons: true } }, track: { select: { slug: true } } } } },
   });
   const plans = new Map((await prisma.lessonVideoPlan.findMany({ where: { lessonId: { in: lessons.map((l) => l.id) } } })).map((p) => [p.lessonId, p]));
   let planned = 0, yes = 0, no = 0, pending = 0, ai = 0;
@@ -143,9 +144,12 @@ export async function planLessons(opts: { trackId?: string; lessonIds?: string[]
     // Provisional plans ("default") get another AI check, but not on every
     // cron run: at most every 6 hours (each check is a paid call). The Plan
     // button forces one.
-    if (prev && prev.contentHash === hash && (prev.source !== "default" || (!opts.force && Date.now() - prev.updatedAt.getTime() < 6 * 3_600_000))) continue;
+    // A youth lesson planned "no" before the youth rule existed is planned again.
+    const youthRedo = isYouthSlug(row.module.track.slug) && prev?.decision === false;
+    if (!youthRedo && prev && prev.contentHash === hash && (prev.source !== "default" || (!opts.force && Date.now() - prev.updatedAt.getTime() < 6 * 3_600_000))) continue;
     const l: PlanLesson = { id: row.id, title: row.title, objective: row.objective, bodyMd: row.bodyMd, sortOrder: row.sortOrder, moduleSize: row.module._count.lessons };
-    const r = ruleDecision(l);
+    // AI-Empowered Youth: every lesson gets its video (young learners watch, then read).
+    const r = isYouthSlug(row.module.track.slug) ? { decision: true, reason: "AI-Empowered Youth: every lesson has a video." } : ruleDecision(l);
     if (r.decision !== null) await save(row.id, hash, r.decision, r.reason, "rule", estimateChars(row.bodyMd));
     else undecided.push({ l, hash });
   }

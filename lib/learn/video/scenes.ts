@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { YOUTH_BUILDER, YOUTH_EXPLORER } from "@/lib/learn/youth";
 import { runClaude } from "@/lib/claude";
 import { translated } from "@/lib/i18n/content";
 import { extractJson } from "./script";
@@ -188,6 +189,8 @@ export interface LessonForVideo {
   bodyMd: string;
   durationMinutes: number;
   trackTitle: string;
+  /** For the AI-Empowered Youth lanes, whose videos speak to 10 to 17 year olds. */
+  trackSlug?: string;
   moduleTitle: string;
 }
 
@@ -210,11 +213,34 @@ export function scenesBrief(l: LessonForVideo): string {
     .join("\n");
 }
 
+const ADULT_INTRO = "an online school that teaches working adults to use AI in their jobs";
+const ADULT_VOICE = "- Narration sounds like a respected university professor talking to a room of adults: calm, warm, unhurried and conversational, never salesy.";
+
+/**
+ * The AI-Empowered Youth lanes: the same rules, written for young people.
+ * Explorer (10 to 13) and Builder (14 to 17) differ in pace and depth.
+ */
+export function scenesSystemFor(trackSlug?: string): string {
+  if (trackSlug === YOUTH_EXPLORER) {
+    return SCENES_SYSTEM.replace(ADULT_INTRO, "an online school; this video is for its AI-Empowered Youth program, for young people aged 10 to 13 (the Explorer lane)").replace(
+      ADULT_VOICE,
+      "- Narration sounds like a favourite teacher or a friendly older cousin who loves this stuff: warm, upbeat and encouraging, never babyish, never sarcastic, never scary. Short, clear sentences and everyday words; explain any new word the first time you use it. Use examples from their world (games, school, friends, family, phones, videos, sport, pets), and speak to them as smart people who can figure things out. Keep safety notes calm and practical (ask a trusted adult, keep personal details private).",
+    );
+  }
+  if (trackSlug === YOUTH_BUILDER) {
+    return SCENES_SYSTEM.replace(ADULT_INTRO, "an online school; this video is for its AI-Empowered Youth program, for teenagers aged 14 to 17 (the Builder lane)").replace(
+      ADULT_VOICE,
+      "- Narration sounds like a sharp, friendly mentor who builds things: confident, energetic and respectful, never condescending, never cringe or full of slang. Treat them as capable builders; give the real reasons and the real words, explained plainly. Use examples from their world (gaming, creators and social media, school projects, sport, coding side projects, first jobs and ideas they could launch). Keep safety and ethics notes direct and practical.",
+    );
+  }
+  return SCENES_SYSTEM;
+}
+
 export async function generateScenes(l: LessonForVideo): Promise<SceneScript> {
   let lastErr = "The scene script did not come back in the expected shape.";
   for (let attempt = 0; attempt < 2; attempt++) {
     const { text } = await runClaude("video-scenes", {
-      system: SCENES_SYSTEM,
+      system: scenesSystemFor(l.trackSlug),
       messages: [{ role: "user", content: scenesBrief(l) }],
       meta: { ref: `lesson:${l.id}` },
     });

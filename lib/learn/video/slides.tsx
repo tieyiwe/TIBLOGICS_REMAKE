@@ -7,7 +7,8 @@ import { ICONS } from "./icons";
 
 // Slides for the narrated lesson videos, 1920x1080 PNG, rendered on the
 // server by next/og (Satori), with the fonts read from lib/og/fonts (no
-// network). One ARFA template: navy background, orange accents, the
+// network). The ARFA template (navy background, orange accents; a light
+// "youth" palette for AI-Empowered Youth, see Palette), the
 // "ARFA · AI Academy" wordmark, the track and lesson chips, progress dots;
 // and the layouts: title, bullets, steps (a flow), compare, code/prompt card,
 // recap, and the illustrated ones: cycle (a loop), hub (a system and its
@@ -22,10 +23,55 @@ export const SLIDE = { width: 1920, height: 1080 };
 const NAVY = "#0D1B2A";
 const NAVY2 = "#1B3A6B";
 const ORANGE = "#F47C20";
-const MUTED = "rgba(255,255,255,0.74)";
-const LINE = "rgba(255,255,255,0.16)";
+
+/**
+ * Two looks. "arfa": the navy template. "youth" (AI-Empowered Youth): a light,
+ * warm background (peach, pink, lavender) with deep indigo text, for 10 to 17
+ * year olds. Translucent white surfaces on navy become translucent indigo on
+ * the light background, so every layout works in both.
+ */
+interface Palette {
+  bg: string;
+  blobA: string;
+  blobAOpacity: number;
+  ink: string;
+  /** Translucent "white" on navy; translucent indigo on the light theme. */
+  w: (a: number) => string;
+  accentText: string;
+  node: string;
+  nodeActive: string;
+  chipStrongText: string;
+}
+const ARFA: Palette = {
+  bg: `linear-gradient(135deg, ${NAVY} 0%, #132C52 58%, ${NAVY2} 100%)`,
+  blobA: "#2251A3",
+  blobAOpacity: 0.22,
+  ink: "white",
+  w: (a) => `rgba(255,255,255,${a})`,
+  accentText: ORANGE,
+  node: "#16325A",
+  nodeActive: "#3A3E51",
+  chipStrongText: "white",
+};
+const YOUTH: Palette = {
+  bg: "linear-gradient(135deg, #FFF7ED 0%, #FDF2F8 48%, #EEF2FF 100%)",
+  blobA: "#A5B4FC",
+  blobAOpacity: 0.32,
+  ink: "#1E1B4B",
+  w: (a) => `rgba(30,27,75,${Math.min(1, a * 1.05)})`,
+  accentText: "#C2410C",
+  node: "#FFFFFF",
+  nodeActive: "#FFF1E6",
+  chipStrongText: "#9A3412",
+};
+/** The palette of the slide being rendered (renders are serialised, see renderSlide). */
+let P: Palette = ARFA;
+const MUTED_A = 0.74;
+const LINE_A = 0.16;
 
 export interface SlideContext {
+  /** "youth": the light AI-Empowered Youth look; the navy ARFA look otherwise. */
+  theme?: "youth";
   index: number;
   total: number;
   trackTitle: string;
@@ -64,11 +110,11 @@ export function revealCount(scene: Scene): number {
  */
 const vis = (i: number, ctx: SlideContext) => (ctx.reveal === undefined || i < ctx.reveal ? 1 : 0.01);
 
-function Icon({ name, size, color = "white", stroke = 1.8 }: { name: string; size: number; color?: string; stroke?: number }) {
+function Icon({ name, size, color, stroke = 1.8 }: { name: string; size: number; color?: string; stroke?: number }) {
   const node = ICONS[name];
   if (!node) return null;
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color ?? P.ink} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
       {node.map(([tag, attrs], i) => createElement(tag, { key: i, ...attrs }))}
     </svg>
   );
@@ -85,8 +131,8 @@ function IconTile({ name, size, strong = false }: { name: string; size: number; 
         width: size,
         height: size,
         borderRadius: size * 0.28,
-        background: strong ? ORANGE : "rgba(255,255,255,0.08)",
-        border: `2px solid ${strong ? ORANGE : LINE}`,
+        background: strong ? ORANGE : P.w(0.08),
+        border: `2px solid ${strong ? ORANGE : P.w(LINE_A)}`,
         flexShrink: 0,
       }}
     >
@@ -157,7 +203,7 @@ function Arrow() {
 function Heading({ text, size }: { text: string; size?: number }) {
   const t = clean(text);
   return (
-    <div style={{ display: "flex", fontSize: size ?? sizeFor(t, [[30, 72], [50, 64], [70, 56]], 50), fontWeight: 700, lineHeight: 1.12, letterSpacing: -1, color: "white", maxWidth: 1600 }}>
+    <div style={{ display: "flex", fontSize: size ?? sizeFor(t, [[30, 72], [50, 64], [70, 56]], 50), fontWeight: 700, lineHeight: 1.12, letterSpacing: -1, color: P.ink, maxWidth: 1600 }}>
       {t}
     </div>
   );
@@ -176,7 +222,7 @@ function Bullets({ items, icons = [], ctx }: { items: string[]; icons?: string[]
           ) : (
             <div style={{ display: "flex", width: 18, height: 18, borderRadius: 4, background: ORANGE, marginTop: size * 0.45, flexShrink: 0 }} />
           )}
-          <div style={{ display: "flex", fontSize: size, lineHeight: 1.3, color: "rgba(255,255,255,0.92)", maxWidth: 1460 }}>{clean(b)}</div>
+          <div style={{ display: "flex", fontSize: size, lineHeight: 1.3, color: P.w(0.92), maxWidth: 1460 }}>{clean(b)}</div>
         </div>
       ))}
     </div>
@@ -210,8 +256,8 @@ function NodeCard({ label, icon, x, y, w, active, opacity, num }: { label: strin
         padding: "0 24px",
         borderRadius: 26,
         // Solid colours: the lines and the loop behind must not show through.
-        background: active ? "#3A3E51" : "#16325A",
-        border: `3px solid ${active ? ORANGE : "rgba(255,255,255,0.22)"}`,
+        background: active ? P.nodeActive : P.node,
+        border: `3px solid ${active ? ORANGE : P.w(0.22)}`,
         opacity,
       }}
     >
@@ -220,7 +266,7 @@ function NodeCard({ label, icon, x, y, w, active, opacity, num }: { label: strin
       ) : num !== undefined ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 52, height: 52, borderRadius: 52, background: ORANGE, fontSize: 28, fontWeight: 700, color: "white", flexShrink: 0 }}>{String(num)}</div>
       ) : null}
-      <div style={{ display: "flex", fontSize: t.length > 22 ? 30 : 34, fontWeight: 700, lineHeight: 1.15, color: "white" }}>{t}</div>
+      <div style={{ display: "flex", fontSize: t.length > 22 ? 30 : 34, fontWeight: 700, lineHeight: 1.15, color: P.ink }}>{t}</div>
     </div>
   );
 }
@@ -243,9 +289,9 @@ function Cycle({ scene, ctx }: { scene: Scene; ctx: SlideContext }) {
   return (
     <div style={{ display: "flex", position: "relative", width: AREA.w, height: AREA.h, marginTop: 30 }}>
       <svg width={AREA.w} height={AREA.h} viewBox={`0 0 ${AREA.w} ${AREA.h}`} style={{ position: "absolute", left: 0, top: 0 }}>
-        <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="4" strokeDasharray="14 12" />
+        <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill="none" stroke={P.w(0.18)} strokeWidth="4" strokeDasharray="14 12" />
         {heads.map((h) => (
-          <polygon key={h.i} points={arrowHead(h.x, h.y, h.tangent, 26)} fill={h.i < shown - 1 || shown === n ? ORANGE : "rgba(255,255,255,0.25)"} />
+          <polygon key={h.i} points={arrowHead(h.x, h.y, h.tangent, 26)} fill={h.i < shown - 1 || shown === n ? ORANGE : P.w(0.25)} />
         ))}
       </svg>
       {pts.map((p, i) => (
@@ -268,7 +314,7 @@ function Hub({ scene, ctx }: { scene: Scene; ctx: SlideContext }) {
     <div style={{ display: "flex", position: "relative", width: AREA.w, height: AREA.h, marginTop: 30 }}>
       <svg width={AREA.w} height={AREA.h} viewBox={`0 0 ${AREA.w} ${AREA.h}`} style={{ position: "absolute", left: 0, top: 0 }}>
         {pts.map((p, i) => (
-          <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke={i < shown ? "rgba(244,124,32,0.7)" : "rgba(255,255,255,0.08)"} strokeWidth="4" />
+          <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke={i < shown ? "rgba(244,124,32,0.7)" : P.w(0.08)} strokeWidth="4" />
         ))}
       </svg>
       <div
@@ -308,11 +354,11 @@ function Timeline({ scene, ctx }: { scene: Scene; ctx: SlideContext }) {
   return (
     <div style={{ display: "flex", position: "relative", width: AREA.w, height: AREA.h, marginTop: 30 }}>
       <svg width={AREA.w} height={AREA.h} viewBox={`0 0 ${AREA.w} ${AREA.h}`} style={{ position: "absolute", left: 0, top: 0 }}>
-        <line x1={step / 2 - 40} y1={y} x2={AREA.w - step / 2 + 60} y2={y} stroke="rgba(255,255,255,0.2)" strokeWidth="6" strokeLinecap="round" />
+        <line x1={step / 2 - 40} y1={y} x2={AREA.w - step / 2 + 60} y2={y} stroke={P.w(0.2)} strokeWidth="6" strokeLinecap="round" />
         <line x1={step / 2 - 40} y1={y} x2={step / 2 + step * Math.max(0, shown - 1)} y2={y} stroke={ORANGE} strokeWidth="6" strokeLinecap="round" />
-        <polygon points={arrowHead(AREA.w - step / 2 + 70, y, 0, 30)} fill="rgba(255,255,255,0.3)" />
+        <polygon points={arrowHead(AREA.w - step / 2 + 70, y, 0, 30)} fill={P.w(0.3)} />
         {Array.from({ length: n }, (_, i) => (
-          <circle key={i} cx={step / 2 + step * i} cy={y} r={i < shown ? 20 : 14} fill={i < shown ? ORANGE : "rgba(255,255,255,0.25)"} />
+          <circle key={i} cx={step / 2 + step * i} cy={y} r={i < shown ? 20 : 14} fill={i < shown ? ORANGE : P.w(0.25)} />
         ))}
       </svg>
       {Array.from({ length: n }, (_, i) => {
@@ -336,7 +382,7 @@ function Timeline({ scene, ctx }: { scene: Scene; ctx: SlideContext }) {
             }}
           >
             {scene.icons[i] && up ? <Icon name={scene.icons[i]} size={56} color={ORANGE} /> : null}
-            <div style={{ display: "flex", fontSize: n > 4 ? 30 : 36, fontWeight: 700, lineHeight: 1.15, color: "white", textAlign: "center", justifyContent: "center" }}>{label}</div>
+            <div style={{ display: "flex", fontSize: n > 4 ? 30 : 36, fontWeight: 700, lineHeight: 1.15, color: P.ink, textAlign: "center", justifyContent: "center" }}>{label}</div>
             {scene.icons[i] && !up ? <Icon name={scene.icons[i]} size={56} color={ORANGE} /> : null}
           </div>
         );
@@ -354,7 +400,7 @@ function Illustration({ scene, ctx }: { scene: Scene; ctx: SlideContext }) {
         {icons.flatMap((k, i) => [
           i > 0 ? (
             <svg key={`a${i}`} width="120" height="40" viewBox="0 0 120 40" style={{ opacity: vis(i, ctx) }}>
-              <line x1="6" y1="20" x2="96" y2="20" stroke="rgba(255,255,255,0.35)" strokeWidth="5" strokeDasharray="10 10" strokeLinecap="round" />
+              <line x1="6" y1="20" x2="96" y2="20" stroke={P.w(0.35)} strokeWidth="5" strokeDasharray="10 10" strokeLinecap="round" />
               <polygon points={arrowHead(104, 20, 0, 24)} fill={ORANGE} />
             </svg>
           ) : null,
@@ -367,17 +413,17 @@ function Illustration({ scene, ctx }: { scene: Scene; ctx: SlideContext }) {
               width: size,
               height: size,
               borderRadius: size,
-              background: i === icons.length - 1 ? "rgba(244,124,32,0.16)" : "rgba(255,255,255,0.07)",
-              border: `4px solid ${i === icons.length - 1 ? ORANGE : "rgba(255,255,255,0.2)"}`,
+              background: i === icons.length - 1 ? "rgba(244,124,32,0.16)" : P.w(0.07),
+              border: `4px solid ${i === icons.length - 1 ? ORANGE : P.w(0.2)}`,
               opacity: vis(i, ctx),
             }}
           >
-            <Icon name={k} size={Math.round(size * 0.5)} color={i === icons.length - 1 ? ORANGE : "white"} stroke={1.6} />
+            <Icon name={k} size={Math.round(size * 0.5)} color={i === icons.length - 1 ? ORANGE : P.ink} stroke={1.6} />
           </div>,
         ])}
       </div>
       {scene.bullets[0] ? (
-        <div style={{ display: "flex", marginTop: 56, fontSize: 40, lineHeight: 1.35, color: MUTED, maxWidth: 1400, textAlign: "center", justifyContent: "center" }}>{clean(scene.bullets[0])}</div>
+        <div style={{ display: "flex", marginTop: 56, fontSize: 40, lineHeight: 1.35, color: P.w(MUTED_A), maxWidth: 1400, textAlign: "center", justifyContent: "center" }}>{clean(scene.bullets[0])}</div>
       ) : null}
     </div>
   );
@@ -388,9 +434,9 @@ function BigNumber({ scene }: { scene: Scene }) {
   const v = clean(f.value);
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: AREA.w, marginTop: 30 }}>
-      <div style={{ display: "flex", fontSize: v.length > 8 ? 180 : 240, fontWeight: 700, letterSpacing: -6, lineHeight: 1, color: ORANGE }}>{v}</div>
-      <div style={{ display: "flex", marginTop: 36, width: 160, height: 8, borderRadius: 8, background: "rgba(255,255,255,0.25)" }} />
-      <div style={{ display: "flex", marginTop: 36, fontSize: 46, lineHeight: 1.3, color: "white", maxWidth: 1300, textAlign: "center", justifyContent: "center" }}>{clean(f.label)}</div>
+      <div style={{ display: "flex", fontSize: v.length > 8 ? 180 : 240, fontWeight: 700, letterSpacing: -6, lineHeight: 1, color: P.accentText }}>{v}</div>
+      <div style={{ display: "flex", marginTop: 36, width: 160, height: 8, borderRadius: 8, background: P.w(0.25) }} />
+      <div style={{ display: "flex", marginTop: 36, fontSize: 46, lineHeight: 1.3, color: P.ink, maxWidth: 1300, textAlign: "center", justifyContent: "center" }}>{clean(f.label)}</div>
     </div>
   );
 }
@@ -402,10 +448,10 @@ function Body({ scene, ctx }: { scene: Scene; ctx: SlideContext }) {
       const t = clean(scene.title);
       return (
         <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", flex: 1 }}>
-          <div style={{ display: "flex", fontSize: 30, fontWeight: 700, letterSpacing: 5, color: ORANGE, textTransform: "uppercase" }}>{clean(ctx.moduleTitle).slice(0, 70)}</div>
-          <div style={{ display: "flex", marginTop: 28, fontSize: sizeFor(t, [[28, 104], [45, 88], [70, 74]], 64), fontWeight: 700, lineHeight: 1.05, letterSpacing: -2, color: "white", maxWidth: 1560 }}>{t}</div>
+          <div style={{ display: "flex", fontSize: 30, fontWeight: 700, letterSpacing: 5, color: P.accentText, textTransform: "uppercase" }}>{clean(ctx.moduleTitle).slice(0, 70)}</div>
+          <div style={{ display: "flex", marginTop: 28, fontSize: sizeFor(t, [[28, 104], [45, 88], [70, 74]], 64), fontWeight: 700, lineHeight: 1.05, letterSpacing: -2, color: P.ink, maxWidth: 1560 }}>{t}</div>
           {scene.bullets[0] ? (
-            <div style={{ display: "flex", marginTop: 36, fontSize: 42, lineHeight: 1.35, color: MUTED, maxWidth: 1400 }}>{clean(scene.bullets[0])}</div>
+            <div style={{ display: "flex", marginTop: 36, fontSize: 42, lineHeight: 1.35, color: P.w(MUTED_A), maxWidth: 1400 }}>{clean(scene.bullets[0])}</div>
           ) : null}
           <div style={{ display: "flex", marginTop: 56, width: 160, height: 8, borderRadius: 8, background: ORANGE }} />
         </div>
@@ -428,8 +474,8 @@ function Body({ scene, ctx }: { scene: Scene; ctx: SlideContext }) {
                   minHeight: 300,
                   padding: "34px 30px",
                   borderRadius: 28,
-                  background: "rgba(255,255,255,0.07)",
-                  border: `2px solid ${(ctx.reveal === undefined ? i === 0 : i === ctx.reveal - 1) ? ORANGE : LINE}`,
+                  background: P.w(0.07),
+                  border: `2px solid ${(ctx.reveal === undefined ? i === 0 : i === ctx.reveal - 1) ? ORANGE : P.w(LINE_A)}`,
                   opacity: vis(i, ctx),
                 }}
               >
@@ -439,7 +485,7 @@ function Body({ scene, ctx }: { scene: Scene; ctx: SlideContext }) {
                   </div>
                   {scene.icons[i] ? <Icon name={scene.icons[i]} size={60} color={ORANGE} /> : null}
                 </div>
-                <div style={{ display: "flex", marginTop: 30, fontSize: steps.length > 4 ? 34 : 40, fontWeight: 700, lineHeight: 1.2, color: "white" }}>{clean(s)}</div>
+                <div style={{ display: "flex", marginTop: 30, fontSize: steps.length > 4 ? 34 : 40, fontWeight: 700, lineHeight: 1.2, color: P.ink }}>{clean(s)}</div>
               </div>,
               i < steps.length - 1 ? (
                 <div key={`a${i}`} style={{ display: "flex", opacity: vis(i + 1, ctx) }}>
@@ -448,7 +494,7 @@ function Body({ scene, ctx }: { scene: Scene; ctx: SlideContext }) {
               ) : null,
             ])}
           </div>
-          {scene.bullets[0] ? <div style={{ display: "flex", marginTop: 56, fontSize: 36, color: MUTED, maxWidth: 1500 }}>{clean(scene.bullets[0])}</div> : null}
+          {scene.bullets[0] ? <div style={{ display: "flex", marginTop: 56, fontSize: 36, color: P.w(MUTED_A), maxWidth: 1500 }}>{clean(scene.bullets[0])}</div> : null}
         </div>
       );
     }
@@ -463,20 +509,20 @@ function Body({ scene, ctx }: { scene: Scene; ctx: SlideContext }) {
             opacity: vis(strong ? 1 : 0, ctx),
             padding: "40px 46px",
             borderRadius: 30,
-            background: strong ? "rgba(244,124,32,0.10)" : "rgba(255,255,255,0.06)",
-            border: `2px solid ${strong ? ORANGE : LINE}`,
+            background: strong ? "rgba(244,124,32,0.10)" : P.w(0.06),
+            border: `2px solid ${strong ? ORANGE : P.w(LINE_A)}`,
           }}
         >
-          <div style={{ display: "flex", fontSize: 40, fontWeight: 700, color: strong ? ORANGE : MUTED }}>{clean(title)}</div>
+          <div style={{ display: "flex", fontSize: 40, fontWeight: 700, color: strong ? ORANGE : P.w(MUTED_A) }}>{clean(title)}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 26, marginTop: 34 }}>
             {items.map((x, i) => (
               <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 22 }}>
                 {strong ? (
                   <Check size={38} />
                 ) : (
-                  <div style={{ display: "flex", width: 38, height: 38, borderRadius: 38, border: `3px solid ${MUTED}`, flexShrink: 0 }} />
+                  <div style={{ display: "flex", width: 38, height: 38, borderRadius: 38, border: `3px solid ${P.w(MUTED_A)}`, flexShrink: 0 }} />
                 )}
-                <div style={{ display: "flex", fontSize: 36, lineHeight: 1.3, color: "rgba(255,255,255,0.9)", maxWidth: 680 }}>{clean(x)}</div>
+                <div style={{ display: "flex", fontSize: 36, lineHeight: 1.3, color: P.w(0.9), maxWidth: 680 }}>{clean(x)}</div>
               </div>
             ))}
           </div>
@@ -500,12 +546,12 @@ function Body({ scene, ctx }: { scene: Scene; ctx: SlideContext }) {
       return (
         <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
           <Heading text={scene.title} size={56} />
-          <div style={{ display: "flex", flexDirection: "column", marginTop: 44, borderRadius: 28, background: "#08111C", border: `2px solid ${LINE}`, overflow: "hidden", maxWidth: 1680 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "22px 34px", borderBottom: `2px solid ${LINE}`, background: "rgba(255,255,255,0.04)" }}>
+          <div style={{ display: "flex", flexDirection: "column", marginTop: 44, borderRadius: 28, background: "#08111C", border: `2px solid ${P.w(LINE_A)}`, overflow: "hidden", maxWidth: 1680 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "22px 34px", borderBottom: `2px solid ${P.w(LINE_A)}`, background: P.w(0.04) }}>
               <div style={{ display: "flex", width: 18, height: 18, borderRadius: 18, background: ORANGE }} />
-              <div style={{ display: "flex", width: 18, height: 18, borderRadius: 18, background: "rgba(255,255,255,0.3)" }} />
-              <div style={{ display: "flex", width: 18, height: 18, borderRadius: 18, background: "rgba(255,255,255,0.3)" }} />
-              <div style={{ display: "flex", marginLeft: 18, fontSize: 28, fontWeight: 700, color: MUTED }}>
+              <div style={{ display: "flex", width: 18, height: 18, borderRadius: 18, background: P.w(0.3) }} />
+              <div style={{ display: "flex", width: 18, height: 18, borderRadius: 18, background: P.w(0.3) }} />
+              <div style={{ display: "flex", marginLeft: 18, fontSize: 28, fontWeight: 700, color: P.w(MUTED_A) }}>
                 {clean(code.label || (code.kind === "prompt" ? L.prompt : L.code))}
               </div>
             </div>
@@ -524,7 +570,7 @@ function Body({ scene, ctx }: { scene: Scene; ctx: SlideContext }) {
       const items = scene.bullets.slice(0, 4);
       return (
         <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-          <div style={{ display: "flex", fontSize: 30, fontWeight: 700, letterSpacing: 5, color: ORANGE, textTransform: "uppercase" }}>{L.takeaways}</div>
+          <div style={{ display: "flex", fontSize: 30, fontWeight: 700, letterSpacing: 5, color: P.accentText, textTransform: "uppercase" }}>{L.takeaways}</div>
           <div style={{ display: "flex", marginTop: 18 }}>
             <Heading text={scene.title} size={60} />
           </div>
@@ -532,7 +578,7 @@ function Body({ scene, ctx }: { scene: Scene; ctx: SlideContext }) {
             {items.map((b, i) => (
               <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 28, opacity: vis(i, ctx) }}>
                 <Check size={46} />
-                <div style={{ display: "flex", fontSize: 42, lineHeight: 1.3, color: "rgba(255,255,255,0.92)", maxWidth: 1480 }}>{clean(b)}</div>
+                <div style={{ display: "flex", fontSize: 42, lineHeight: 1.3, color: P.w(0.92), maxWidth: 1480 }}>{clean(b)}</div>
               </div>
             ))}
           </div>
@@ -583,9 +629,9 @@ function Slide({ scene, ctx, logoUrl }: { scene: Scene; ctx: SlideContext; logoU
         borderRadius: 999,
         fontSize: 24,
         fontWeight: 700,
-        color: strong ? "white" : MUTED,
-        background: strong ? "rgba(244,124,32,0.18)" : "rgba(255,255,255,0.06)",
-        border: `2px solid ${strong ? "rgba(244,124,32,0.6)" : LINE}`,
+        color: strong ? P.chipStrongText : P.w(MUTED_A),
+        background: strong ? "rgba(244,124,32,0.18)" : P.w(0.06),
+        border: `2px solid ${strong ? "rgba(244,124,32,0.6)" : P.w(LINE_A)}`,
         overflow: "hidden",
         whiteSpace: "nowrap",
         textOverflow: "ellipsis",
@@ -603,26 +649,26 @@ function Slide({ scene, ctx, logoUrl }: { scene: Scene; ctx: SlideContext; logoU
         flexDirection: "column",
         position: "relative",
         overflow: "hidden",
-        background: `linear-gradient(135deg, ${NAVY} 0%, #132C52 58%, ${NAVY2} 100%)`,
+        background: P.bg,
         fontFamily: "Instrument Sans",
-        color: "white",
+        color: P.ink,
       }}
     >
-      <div style={{ position: "absolute", right: -220, top: -260, width: 820, height: 820, borderRadius: 9999, background: "#2251A3", opacity: 0.22, display: "flex" }} />
+      <div style={{ position: "absolute", right: -220, top: -260, width: 820, height: 820, borderRadius: 9999, background: P.blobA, opacity: P.blobAOpacity, display: "flex" }} />
       <div style={{ position: "absolute", left: -160, bottom: -260, width: 560, height: 560, borderRadius: 9999, background: ORANGE, opacity: 0.08, display: "flex" }} />
       <div style={{ position: "absolute", left: 0, top: 0, width: 14, height: SLIDE.height, background: `linear-gradient(180deg, ${ORANGE}, #B8500A)`, display: "flex" }} />
 
       {/* Header: wordmark, track and lesson */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 136, padding: "0 96px 0 110px", borderBottom: `2px solid ${LINE}` }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 136, padding: "0 96px 0 110px", borderBottom: `2px solid ${P.w(LINE_A)}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
           {logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={logoUrl} width={100} height={60} alt="" style={{ objectFit: "contain" }} />
           ) : null}
           <div style={{ display: "flex", alignItems: "baseline", fontSize: 36, fontWeight: 700, letterSpacing: -0.5 }}>
-            <span style={{ color: ORANGE }}>ARFA</span>
-            <span style={{ color: "rgba(255,255,255,0.5)", margin: "0 12px" }}>·</span>
-            <span style={{ color: "white" }}>AI Academy</span>
+            <span style={{ color: P.accentText }}>ARFA</span>
+            <span style={{ color: P.w(0.5), margin: "0 12px" }}>·</span>
+            <span style={{ color: P.ink }}>AI Academy</span>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -647,12 +693,12 @@ function Slide({ scene, ctx, logoUrl }: { scene: Scene; ctx: SlideContext; logoU
                 height: 14,
                 width: i === ctx.index ? 56 : 14,
                 borderRadius: 14,
-                background: i === ctx.index ? ORANGE : i < ctx.index ? "rgba(244,124,32,0.45)" : "rgba(255,255,255,0.22)",
+                background: i === ctx.index ? ORANGE : i < ctx.index ? "rgba(244,124,32,0.45)" : P.w(0.22),
               }}
             />
           ))}
         </div>
-        <div style={{ display: "flex", fontSize: 24, fontWeight: 700, color: "rgba(255,255,255,0.45)", letterSpacing: 2 }}>
+        <div style={{ display: "flex", fontSize: 24, fontWeight: 700, color: P.w(0.45), letterSpacing: 2 }}>
           {`${ctx.index + 1} / ${ctx.total}`}
         </div>
       </div>
@@ -661,8 +707,21 @@ function Slide({ scene, ctx, logoUrl }: { scene: Scene; ctx: SlideContext; logoU
 }
 
 /** One slide as a PNG. */
+// Satori calls the components while it renders, so the palette must stay put
+// for the whole render: one slide at a time.
+let renderLock: Promise<unknown> = Promise.resolve();
+
 export async function renderSlide(scene: Scene, ctx: SlideContext): Promise<Buffer> {
   const [f, l] = await Promise.all([fonts(), logo()]);
-  const res = new ImageResponse(<Slide scene={scene} ctx={ctx} logoUrl={l} />, { ...SLIDE, fonts: f });
-  return Buffer.from(await res.arrayBuffer());
+  const job = renderLock.then(async () => {
+    P = ctx.theme === "youth" ? YOUTH : ARFA;
+    try {
+      const res = new ImageResponse(<Slide scene={scene} ctx={ctx} logoUrl={l} />, { ...SLIDE, fonts: f });
+      return Buffer.from(await res.arrayBuffer());
+    } finally {
+      P = ARFA;
+    }
+  });
+  renderLock = job.catch(() => undefined);
+  return job;
 }

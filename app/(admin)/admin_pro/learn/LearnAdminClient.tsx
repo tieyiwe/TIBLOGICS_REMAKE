@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Database, Sprout } from "lucide-react";
 import { Button, Notice, PageHeader, StatCard } from "@/components/admin/ui";
 import { LEARN_TABS } from "./tabs";
+import TrackStatusSelect from "./TrackStatusSelect";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -221,17 +222,7 @@ export default function LearnAdminClient({
                     </td>
                     <td className="py-2.5 pr-4 capitalize text-[var(--ink2)]">{t.level}</td>
                     <td className="py-2.5 pr-4">
-                      <span
-                        className={`rounded px-2 py-0.5 text-xs font-bold ${
-                          t.status === "live"
-                            ? "bg-green-50 text-green-700"
-                            : t.status === "coming_soon"
-                            ? "bg-amber-50 text-amber-800"
-                            : "bg-[var(--s2)] text-[var(--ink3)]"
-                        }`}
-                      >
-                        {t.status.replace("_", " ")}
-                      </span>
+                      <TrackStatusSelect id={t.id} title={t.title} status={t.status} />
                     </td>
                     <td className="py-2.5 text-right text-[var(--ink2)]">{t.moduleCount}</td>
                     <td className="py-2.5 text-right text-[var(--ink2)]">{t.lessonCount}</td>

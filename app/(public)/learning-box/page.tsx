@@ -111,12 +111,16 @@ export default async function LearningBoxPage({ searchParams }: Props) {
               brand
             )}
           </h1>
-          <p
-            className="mt-2 text-sm font-bold uppercase tracking-[0.2em] text-[var(--orange)]"
-            style={{ "--stagger-index": 1 } as React.CSSProperties}
-          >
-            AI Readiness For All
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2" style={{ "--stagger-index": 1 } as React.CSSProperties}>
+            <p className="text-sm font-bold uppercase tracking-[0.2em] text-[var(--orange)]">AI Readiness For All</p>
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-sm font-black text-[var(--ink)]"
+              data-testid="arfa-online-badge"
+            >
+              <span aria-hidden="true">🌐</span>
+              {t("learn.box.online")}
+            </span>
+          </div>
           {/* A crawlable link to the French page (and a shortcut for people). */}
           {locale !== "fr" && (
             <p className="mt-2 text-sm">

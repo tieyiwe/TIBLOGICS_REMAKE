@@ -1,4 +1,5 @@
 import { mkdtemp, rm, writeFile } from "fs/promises";
+import { isYouthSlug } from "@/lib/learn/youth";
 import os from "os";
 import path from "path";
 import { Prisma } from "@prisma/client";
@@ -33,11 +34,11 @@ async function loadLesson(lessonId: string): Promise<(LessonForVideo & { videoUr
     where: { id: lessonId },
     select: {
       id: true, title: true, objective: true, bodyMd: true, durationMinutes: true, videoUrl: true,
-      module: { select: { title: true, track: { select: { title: true } } } },
+      module: { select: { title: true, track: { select: { title: true, slug: true } } } },
     },
   });
   if (!l) return null;
-  return { ...l, trackTitle: l.module.track.title, moduleTitle: l.module.title };
+  return { ...l, trackTitle: l.module.track.title, trackSlug: l.module.track.slug, moduleTitle: l.module.title };
 }
 
 interface StoredScript {
@@ -231,6 +232,7 @@ export async function generateLessonVideo(
         moduleTitle: locale === "fr" ? script.module || lesson.moduleTitle : lesson.moduleTitle,
         lessonTitle: locale === "fr" ? script.title || lesson.title : lesson.title,
         locale,
+        ...(isYouthSlug(lesson.trackSlug) ? { theme: "youth" as const } : {}),
       };
       // One frame per point that appears (or the whole slide), rendered while the voice is made.
       const k = revealCount(scene);

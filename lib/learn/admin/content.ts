@@ -181,6 +181,8 @@ export const Op = z.discriminatedUnion("op", [
   z.object({ op: z.literal("track.create"), title: s(160).min(3), slug: z.string().trim().regex(/^[a-z0-9-]{3,80}$/, "Slug: lowercase letters, numbers and dashes") }),
   z.object({ op: z.literal("track.update"), id, data: TrackFields }),
   z.object({ op: z.literal("track.delete"), id, confirm: z.boolean().optional() }),
+  // The status switch in the admin track list: only the status changes.
+  z.object({ op: z.literal("track.status"), id, status: z.enum(["draft", "coming_soon", "live"]) }),
 
   z.object({ op: z.literal("module.create"), trackId: id, title: s(200).min(2), summary: s(1000).nullable().optional() }),
   z.object({ op: z.literal("module.update"), id, title: s(200).min(2), summary: s(1000).nullable().optional() }),
@@ -253,6 +255,16 @@ export async function runOp(op: ContentOp): Promise<Record<string, unknown>> {
         where: { id: op.id },
         data: { ...d, tagline: d.tagline || null, audience: d.audience || null, heroImage: d.heroImage || null, levelEnd: d.levelEnd || null, outcomes: d.outcomes, editedAt: t },
       });
+      if (saved.status === "live" || saved.status === "coming_soon") indexNowSoon(INDEXNOW_SECTIONS.track(saved.slug));
+      return {};
+    }
+    case "track.status": {
+      if (op.status === "live") {
+        const lessons = await prisma.lesson.count({ where: { module: { trackId: op.id } } });
+        if (lessons === 0) throw new ContentError("Add at least one lesson before making a track live");
+      }
+      // editedAt, as in the track editor: re-seeding then keeps this status.
+      const saved = await prisma.learnTrack.update({ where: { id: op.id }, data: { status: op.status, editedAt: t } });
       if (saved.status === "live" || saved.status === "coming_soon") indexNowSoon(INDEXNOW_SECTIONS.track(saved.slug));
       return {};
     }
