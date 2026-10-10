@@ -1,0 +1,103 @@
+import { NextRequest, NextResponse } from "next/server";
+import { cleanCopy, cleanLine } from "@/lib/text/clean-copy";
+import { prisma } from "@/lib/prisma";
+import { requireAdmin, requirePermission } from "@/lib/require-admin";
+import { auditFromRequest } from "@/lib/admin/audit";
+import { revalidateShop } from "@/lib/shop/revalidate";
+import { parseDeliveryFields } from "@/lib/shop/delivery-fields";
+import { INDEXNOW_SECTIONS, indexNowSoon } from "@/lib/seo/indexnow";
+
+function slugify(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .slice(0, 80);
+}
+
+// GET — list all products (admin)
+export async function GET() {
+  const authErr = await requireAdmin();
+  if (authErr) return authErr;
+
+  const products = await prisma.product
+    .findMany({ orderBy: { createdAt: "desc" } })
+    .catch((err) => {
+      console.error("[admin/products GET]", err);
+      return null;
+    });
+
+  if (products === null) {
+    return NextResponse.json({ error: "Database error — run Sync Database", products: [] }, { status: 500 });
+  }
+  return NextResponse.json({ products });
+}
+
+// POST — create a product
+export async function POST(req: NextRequest) {
+  const authErr = await requireAdmin();
+  if (authErr) return authErr;
+
+  try {
+    const body = await req.json();
+    // Saved clean: no markdown or stray characters from pasted copy.
+    const name = cleanLine(String(body.name ?? ""));
+    if (!name) return NextResponse.json({ error: "Name is required" }, { status: 400 });
+    if (body.published) {
+      const denied = await requirePermission("store.publish");
+      if (denied) return denied;
+    }
+
+    const price = Math.max(0, Math.round(Number(body.price) || 0));
+    const compareAtPrice = body.compareAtPrice ? Math.max(0, Math.round(Number(body.compareAtPrice))) : null;
+
+    const delivery = parseDeliveryFields(body);
+    if (!delivery.ok) return NextResponse.json({ error: delivery.error }, { status: 400 });
+
+    // Ensure a unique slug
+    let base = slugify(body.slug || name) || `product-${Date.now()}`;
+    // Every candidate (`base`, `base-1`, `base-2`, …) shares the `base` prefix,
+    // so one query covers them all instead of a findUnique per attempt.
+    const taken = new Set(
+      (await prisma.product.findMany({ where: { slug: { startsWith: base } }, select: { slug: true } }))
+        .map((p) => p.slug),
+    );
+    let slug = base;
+    let n = 1;
+    while (taken.has(slug)) {
+      slug = `${base}-${n++}`;
+    }
+
+    const product = await prisma.product.create({
+      data: {
+        slug,
+        name,
+        tagline: body.tagline ? cleanLine(String(body.tagline)).slice(0, 160) || null : null,
+        description: cleanCopy(String(body.description ?? "")),
+        price,
+        compareAtPrice,
+        currency: body.currency || "USD",
+        images: Array.isArray(body.images) ? body.images.filter(Boolean).slice(0, 8) : [],
+        category: body.category || "General",
+        collections: Array.isArray(body.collections) ? body.collections.filter(Boolean).slice(0, 20) : [],
+        tags: Array.isArray(body.tags) ? body.tags.filter(Boolean).slice(0, 12) : [],
+        stock: body.stock === "" || body.stock == null ? null : Math.max(0, Math.round(Number(body.stock))),
+        digital: body.digital !== false,
+        featured: !!body.featured,
+        published: !!body.published,
+        onSale: !!body.onSale,
+        sku: body.sku ? String(body.sku).slice(0, 60) : null,
+        ...delivery.data,
+      },
+    });
+
+    revalidateShop();
+    if (product.published) indexNowSoon(INDEXNOW_SECTIONS.product(product.slug));
+    if (product.published) await auditFromRequest("product.publish", { type: "product", id: product.id, label: product.name }, { created: true });
+    return NextResponse.json({ product });
+  } catch (err) {
+    console.error("[admin/products POST]", err);
+    return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
+  }
+}

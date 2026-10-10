@@ -1,9 +1,13 @@
-modules = ["nodejs-20"]
+modules = ["nodejs-20", "python-3.11"]
 [agent]
 expertMode = true
 
 [nix]
 channel = "stable-25_05"
+# postgresql_17 (pg_dump for the one-off Supabase migration) was removed: it
+# is no longer needed and failed to install, which put the workspace in
+# recovery mode. Add it back only for another dump from a 17.x server.
+packages = ["psmisc"]
 
 [workflows]
 runButton = "Project"
@@ -26,7 +30,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "fuser -k 5000/tcp 2>/dev/null || true; npm run build && npm run start"
+args = "fuser -k 5000/tcp 2>/dev/null; sleep 1; npm run start"
 waitForPort = 5000
 
 [[ports]]
@@ -38,9 +42,12 @@ localPort = 5000
 externalPort = 80
 
 [deployment]
-deploymentTarget = "autoscale"
+deploymentTarget = "gce"
 run = ["sh", "-c", "npm run start"]
-build = ["sh", "-c", "npm run build"]
+# The build caches (.next/cache, several GB, and the dev server's .next/dev)
+# are not used by the running site; left in, they push the published image
+# over Replit's 8 GiB limit ("image size is over the limit").
+build = ["sh", "-c", "npm run build && rm -rf .next/cache .next/dev"]
 
 [postMerge]
 path = "scripts/post-merge.sh"

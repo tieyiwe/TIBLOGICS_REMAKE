@@ -4,18 +4,66 @@
 // NextAuth requires this to match the actual hostname for cookie domain and
 // CSRF validation to work correctly in production.
 if (!process.env.NEXTAUTH_URL) {
-  if (process.env.REPLIT_DEV_DOMAIN) {
+  if (process.env.NODE_ENV !== "production" && process.env.REPLIT_DEV_DOMAIN) {
+    // Dev workspace: auth must point at the dev URL, not the production domain
     process.env.NEXTAUTH_URL = `https://${process.env.REPLIT_DEV_DOMAIN}`;
   } else if (process.env.NEXT_PUBLIC_APP_URL) {
+    // Production with explicitly configured custom domain (set in Replit Secrets)
     process.env.NEXTAUTH_URL = process.env.NEXT_PUBLIC_APP_URL;
+  } else if (process.env.REPLIT_DEV_DOMAIN) {
+    // Production on Replit without a custom domain configured
+    process.env.NEXTAUTH_URL = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+  } else if (process.env.VERCEL_URL) {
+    process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`;
+  } else {
+    process.env.NEXTAUTH_URL = "https://tiblogics.com";
   }
 }
 
+// Crawlers that must get the page's <title>, meta tags and canonical in the
+// <head> of the first response (blocking metadata) rather than streamed in
+// later. Next's default list covers the classic search engines; the AI
+// crawlers that read pages for ChatGPT, Claude, Perplexity, Meta AI, Copilot
+// and others are added here. Keep the default list first: setting this
+// option replaces it (next/dist/shared/lib/router/utils/html-bots.js).
+const DEFAULT_HTML_LIMITED_BOTS =
+  "[\\w-]+-Google|Google-[\\w-]+|Chrome-Lighthouse|Slurp|DuckDuckBot|baiduspider|yandex|sogou|bitlybot|tumblr|vkShare|quora link preview|redditbot|ia_archiver|Bingbot|BingPreview|applebot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|Slackbot|Discordbot|WhatsApp|SkypeUriPreview|Yeti|googleweblight";
+const AI_CRAWLERS =
+  "GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|Claude-User|Claude-SearchBot|anthropic-ai|PerplexityBot|Perplexity-User|CCBot|Meta-ExternalAgent|Meta-ExternalFetcher|Amazonbot|DuckAssistBot|MistralAI-User|Bytespider|cohere-ai|YouBot|Diffbot|PetalBot|Applebot-Extended";
+
+// The commit this build was made from, shown in the admin so the owner can
+// see which version is live (empty when git is not available). Worked out
+// only while building (it is baked into the client code), not on every start.
+function buildSha() {
+  if (process.env.BUILD_SHA) return process.env.BUILD_SHA;
+  try {
+    return require("child_process").execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+  } catch {
+    return ""; // not a git checkout
+  }
+}
+
+// Google Analytics 4: TIBLOGICS' property G-WTKHY2037L by default. The Secret
+// GA_MEASUREMENT_ID overrides it (or "off" to load nothing of Google's); read
+// at build time. The public layout loads the tag and the CSP below allows
+// Google's analytics hosts. Keep in step with app/(public)/layout.tsx.
+const GA = /^G-[A-Z0-9]{4,20}$/.test(process.env.GA_MEASUREMENT_ID ?? "G-WTKHY2037L");
+const GA_SCRIPT = GA ? " https://www.googletagmanager.com" : "";
+const GA_CONNECT = GA ? " https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com" : "";
+
 const nextConfig = {
+  // next build's own type check runs out of memory on Replit's build machine
+  // now that the codebase is this size ("Failed to type check" after a heap
+  // crash). Types are checked before every push instead, with the full
+  // compiler: `npm run typecheck` (tsc --noEmit). Run it before publishing.
+  typescript: { ignoreBuildErrors: true },
+  htmlLimitedBots: new RegExp(`${DEFAULT_HTML_LIMITED_BOTS}|${AI_CRAWLERS}`, "i"),
   allowedDevOrigins: [process.env.REPLIT_DEV_DOMAIN].filter(Boolean),
   compress: true,
   poweredByHeader: false,
-  serverExternalPackages: ["@prisma/client", "prisma"],
+  // ffmpeg-static resolves its binary from its own folder, and Replit Object
+  // Storage pulls in the Google Cloud SDK: both stay plain Node requires.
+  serverExternalPackages: ["@prisma/client", "prisma", "ffmpeg-static", "@replit/object-storage"],
   images: {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 86400,
@@ -27,16 +75,72 @@ const nextConfig = {
     ],
   },
   experimental: {
-    optimizePackageImports: ["lucide-react", "@radix-ui/react-icons"],
+    // @radix-ui/react-icons was listed here but was never a dependency.
+    optimizePackageImports: ["lucide-react"],
   },
   async redirects() {
     return [
+      // The AI for Parents live training became the AI for Parents track.
+      { source: "/events/ai-training-for-parents", destination: "/learning-box/ai-for-parents", permanent: true },
+      { source: "/events/ai-training-for-parents/:path*", destination: "/learning-box/ai-for-parents", permanent: true },
+      // One canonical host: www.tiblogics.com → tiblogics.com (301-equivalent
+      // 308, path and query kept), so search engines never split signals
+      // between two hosts.
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.tiblogics.com" }],
+        destination: "https://tiblogics.com/:path*",
+        permanent: true,
+      },
       { source: "/blog", destination: "/ai-times", permanent: true },
       { source: "/blog/:slug", destination: "/ai-times/:slug", permanent: true },
+      // "Courses" became "Learning Box". Certificates issued before the rename
+      // link to /courses, so these have to keep working indefinitely.
+      { source: "/courses", destination: "/learning-box", permanent: true },
+      { source: "/courses/:slug", destination: "/learning-box/:slug", permanent: true },
+      // The catalog is presented as the AI Academy (ARFA); its URL stays /learning-box.
+      { source: "/ai-academy", destination: "/learning-box", permanent: true },
+      { source: "/academy", destination: "/learning-box", permanent: true },
+      // "Shop" became "Store". Order matters: the more specific paths first,
+      // so /shop/:slug does not swallow them. /shop/covers/* is a public asset
+      // directory, two segments deep, so /shop/:slug never matches it.
+      { source: "/shop", destination: "/store", permanent: true },
+      { source: "/shop/success", destination: "/store/success", permanent: true },
+      { source: "/shop/collections/:slug", destination: "/store/collections/:slug", permanent: true },
+      { source: "/shop/:slug", destination: "/store/:slug", permanent: true },
     ];
+  },
+  async rewrites() {
+    return {
+      // A track as Markdown for AI agents: /learning-box/<slug>.md
+      // (lib/seo/markdown.ts). beforeFiles, so it wins over the
+      // /learning-box/[slug] page, which would otherwise read "x.md" as a slug.
+      // proxy.ts still sees the original path; lib/seo/exists.ts strips the
+      // ".md" so a real track is not 404ed there.
+      beforeFiles: [
+        { source: "/learning-box/:slug([A-Za-z0-9-]+)\\.md", destination: "/api/public/courses/:slug/markdown" },
+      ],
+      // IndexNow key file: /<INDEXNOW_KEY>.txt (lib/seo/indexnow.ts). An
+      // afterFiles rewrite, so real files and routes (robots.txt, llms.txt)
+      // always win; the route 404s for any other key.
+      afterFiles: [
+        { source: "/:key([A-Za-z0-9-]{8,128}).txt", destination: "/api/indexnow-key/:key" },
+      ],
+    };
   },
   async headers() {
     return [
+      // Private and machine-only paths never belong in search results,
+      // whatever their content type (JSON, redirects, PDFs). Article cover
+      // images under /api/blog/cover stay indexable for image search.
+      {
+        source: "/api/:path((?!blog/cover/).*)",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
+      ...["/admin_pro", "/admin_pro/:path*", "/learn", "/learn/:path*", "/go/:path*", "/r/:path*", "/toolkit", "/blueprint/:path*", "/monitor/:path*", "/tools/scanner/report/:path*"].map((source) => ({
+        source,
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      })),
       {
         source: "/fonts/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
@@ -58,28 +162,98 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              `script-src 'self' 'unsafe-inline'${GA_SCRIPT}`,
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' https: data: blob:",
-              "connect-src 'self' https://api.anthropic.com https://api.resend.com https://api.stripe.com",
-              "frame-src https://js.stripe.com https://hooks.stripe.com",
+              `connect-src 'self' https://api.anthropic.com https://api.resend.com https://api.stripe.com${GA_CONNECT}`,
+              // Lesson videos embed YouTube/Vimeo (see components/learn/LessonVideo.tsx).
+              // Without these the iframes are silently blocked in production.
+              "frame-src https://js.stripe.com https://hooks.stripe.com https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com",
+              // Self-hosted lesson videos served as <video> files
+              "media-src 'self' https: blob:",
               "object-src 'none'",
               "base-uri 'self'",
+              // Defence-in-depth against forms being repointed off-site
+              "form-action 'self'",
+              // Stronger than X-Frame-Options, and honoured by modern browsers
+              "frame-ancestors 'self'",
+              // TIBLOGICS Learn app: the service worker (public/sw.js) and the
+              // web app manifest (app/arfa.webmanifest) are both same-origin.
+              "worker-src 'self'",
+              "manifest-src 'self'",
             ].join("; "),
           },
         ],
       },
       {
+        // Learning Studio "Teach the Machine" (AI-Empowered Youth) may use the
+        // camera, same origin only and only after the learner allows it: frames
+        // are shrunk to a 16x16 grid in the browser and never uploaded. Listed
+        // after the site-wide header so it overrides it on these paths.
+        source: "/learn/:path*",
+        headers: [{ key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=()" }],
+      },
+      {
+        // Game Forge share links (app/play/[token]/route.ts): a young
+        // learner's game, public by unguessable link. Headers listed here win
+        // over the ones a route sets, so THIS is the policy browsers get (it
+        // also replaces the site policy above): an opaque-origin sandbox, no
+        // network, no framing. The game's JSON is escaped so it cannot end
+        // its script block; the route's own nonce policy is a second layer.
+        source: "/play/:path*",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive, nosnippet" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+          {
+            key: "Content-Security-Policy",
+            value: "sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+          },
+        ],
+      },
+      {
+        // Pages: always revalidated (never served stale after a deploy) and
+        // never stored by shared caches, but not "no-store", which would
+        // switch off the browser's instant back/forward cache.
         source: "/((?!_next/static|_next/image|fonts|favicon)(?:[^.]*|.*\\.html))",
+        headers: [{ key: "Cache-Control", value: "private, no-cache, max-age=0, must-revalidate" }],
+      },
+      {
+        // Signed-in areas keep no-store: account and admin pages must not be
+        // kept in the browser's history cache.
+        source: "/:area(learn|admin_pro|scholarship|join-team)/:path*",
         headers: [{ key: "Cache-Control", value: "no-store, no-cache, must-revalidate" }],
       },
       {
-        source: "/api/:path*",
+        source: "/:area(learn|admin_pro|scholarship)",
         headers: [{ key: "Cache-Control", value: "no-store, no-cache, must-revalidate" }],
+      },
+      {
+        // Generated lesson video files set their own (private, long) caching:
+        // their ids change with every regeneration.
+        source: "/api/:path((?!learn/video/asset/).*)",
+        headers: [{ key: "Cache-Control", value: "no-store, no-cache, must-revalidate" }],
+      },
+      {
+        // The Learn service worker. Listed after "/:path*" so its CSP replaces
+        // the page one: the worker only fetches, and saves lesson images that
+        // may live on other https hosts (img-src https: on the pages).
+        // Never cached by the browser, so an update reaches learners at once.
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Content-Security-Policy", value: "default-src 'self'; script-src 'self'; connect-src 'self' https:; img-src 'self' https: data:" },
+        ],
       },
     ];
   },
 };
 
-module.exports = nextConfig;
+module.exports = (phase) => ({
+  ...nextConfig,
+  env:
+    phase === "phase-production-build"
+      ? { NEXT_PUBLIC_BUILD_SHA: buildSha(), NEXT_PUBLIC_BUILD_TIME: new Date().toISOString() }
+      : { NEXT_PUBLIC_BUILD_SHA: process.env.NEXT_PUBLIC_BUILD_SHA || "", NEXT_PUBLIC_BUILD_TIME: process.env.NEXT_PUBLIC_BUILD_TIME || "" },
+});

@@ -1,234 +1,391 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Mail, Globe, Zap, Users, Shield, Target, Lightbulb, TrendingUp } from "lucide-react";
+import Image from "next/image";
+import {
+  ArrowRight, ArrowUpRight, Mail, Zap, Users, Shield, Target, Lightbulb, TrendingUp,
+  Cpu, GraduationCap, Wrench, Newspaper, Check, Globe2, HeartPulse, BookOpen, Truck,
+  UtensilsCrossed, Landmark, Rocket, HandHeart, Building2,
+} from "lucide-react";
+import { getLocale, getT } from "@/lib/i18n/server";
+import { pageMetadata } from "@/lib/seo/meta";
+import JsonLd from "@/components/seo/JsonLd";
+import { breadcrumbNode, webPageNode } from "@/lib/seo/jsonld";
+import { absUrl, ARFA_ID, FOUNDER_ID, ORG, ORG_ID, SHOW_FOUNDER } from "@/lib/seo/site";
+import { accent } from "@/components/public/accent";
+import Html from "../_i18n/Html";
+import { DonateSection } from "@/components/donate/Donate";
 
-export const metadata: Metadata = {
-  title: "About TIBLOGICS — AI Implementation Agency",
-  description:
-    "Learn about TIBLOGICS — an AI implementation and digital solutions agency serving businesses across North America and Africa. First-principles thinking. Measurable outcomes.",
-  keywords: [
-    "about TIBLOGICS", "AI agency mission", "AI implementation company", "Tieyiwe Bassole",
-    "AI consulting firm", "digital solutions agency", "AI for African businesses",
-    "bilingual AI agency", "AI first principles",
-  ],
-  alternates: { canonical: "https://tiblogics.com/about" },
-  openGraph: {
-    title: "About TIBLOGICS — AI Implementation & Digital Solutions",
-    description: "We don't just talk about AI. We implement it. Learn about our mission, our team, and how we deliver measurable outcomes.",
-    url: "https://tiblogics.com/about",
-    type: "website",
-    images: [{ url: "https://tiblogics.com/og-image.png", width: 1200, height: 630, alt: "About TIBLOGICS" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "About TIBLOGICS",
-    description: "AI implementation agency built for businesses ready to stop watching the future arrive and start leading it.",
-    creator: "@tiblogics",
-    images: ["https://tiblogics.com/og-image.png"],
-  },
-};
+// The About page. Every statement comes from copy already published on the
+// site (lib/i18n/messages/pages/about.ts says where); nothing here invents
+// numbers, clients, dates or testimonials.
+
+const FOUNDER_PHOTO = "/tb_cover.png";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  return pageMetadata({
+    path: "/about",
+    locale,
+    // Already names the brand, so no " | TIBLOGICS" suffix.
+    title: t("pages.about.meta.title"),
+    absoluteTitle: true,
+    description: t("pages.about.meta.description"),
+    socialTitle: t("pages.about.meta.ogTitle"),
+    socialDescription: t("pages.about.meta.ogDescription"),
+    keywords: [
+      "about TIBLOGICS", "AI agency mission", "AI implementation company", ...(SHOW_FOUNDER ? [ORG.founder.name] : []),
+      "AI consulting firm", "digital solutions agency", "AI for African businesses",
+      "bilingual AI agency", "AI first principles", "ARFA AI Academy", "TILO GROUP LLC",
+    ],
+  });
+}
+
+const pillars = [
+  { id: "services", href: "/services", icon: Cpu },
+  { id: "academy", href: "/learning-box", icon: GraduationCap },
+  { id: "tools", href: "/tools", icon: Wrench },
+  { id: "aitimes", href: "/ai-times", icon: Newspaper },
+] as const;
 
 const principles = [
-  { icon: Shield, title: "Integrity, Always", desc: "We tell the truth about what AI can and cannot do. Our clients make better decisions because we give them honest advice, not what sounds impressive." },
-  { icon: Zap, title: "Move with Urgency", desc: "Speed matters. We don't let process slow down progress. We move decisively and deliver without unnecessary delay." },
-  { icon: Lightbulb, title: "First Principles Thinking", desc: "We don't copy templates. We strip every problem to its core and engineer the right solution from the ground up." },
-  { icon: Target, title: "The Right Logic for Every Challenge", desc: "Not every problem needs AI. We apply the right tool — automation, development, analytics, or AI — to get the best outcome." },
-  { icon: TrendingUp, title: "Results You Can Measure", desc: "We define success in numbers before we start. Hours saved, revenue generated, errors eliminated — if we can't measure it, we don't count it." },
-  { icon: Users, title: "Your Growth Is Our Mission", desc: "We measure our performance by what changes in your business, not by the deliverables we hand over." },
-];
+  { icon: Shield, id: "integrity" },
+  { icon: Zap, id: "urgency" },
+  { icon: Lightbulb, id: "first" },
+  { icon: Target, id: "logic" },
+  { icon: TrendingUp, id: "results" },
+  { icon: Users, id: "growth" },
+] as const;
 
 const industries = [
-  { label: "Healthcare & Social Work", emoji: "🏥" },
-  { label: "Education & EdTech", emoji: "📚" },
-  { label: "Logistics & Shipping", emoji: "📦" },
-  { label: "Hospitality & Food Service", emoji: "🍽️" },
-  { label: "Government & Public Sector", emoji: "🏛️" },
-  { label: "Startups & SaaS", emoji: "🚀" },
-  { label: "Nonprofits", emoji: "🤝" },
-  { label: "Enterprise", emoji: "🏢" },
-];
+  { id: "healthcare", icon: HeartPulse },
+  { id: "education", icon: BookOpen },
+  { id: "logistics", icon: Truck },
+  { id: "hospitality", icon: UtensilsCrossed },
+  { id: "government", icon: Landmark },
+  { id: "startups", icon: Rocket },
+  { id: "nonprofits", icon: HandHeart },
+  { id: "enterprise", icon: Building2 },
+] as const;
 
-const services = [
-  "AI Implementation", "AI Consulting", "Workflow Automation",
-  "Web & Mobile Development", "Cybersecurity", "Data Analytics",
-  "AI Agent Development", "SaaS Product Development", "Digital Transformation",
-];
+// The founder row (name) only while SHOW_FOUNDER is on.
+const glance = (SHOW_FOUNDER ? ["company", "founder", "markets", "lang", "start"] : ["company", "markets", "lang", "start"]) as Array<"company" | "founder" | "markets" | "lang" | "start">;
 
-export default function AboutPage() {
+const orangeAccent = (words: string, i: number) => (
+  <span key={i} className="font-display italic font-semibold text-[#F47C20]">{words}</span>
+);
+
+export default async function AboutPage() {
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  const founder = ORG.founder.name;
+
   return (
-    <div className="pt-32 sm:pt-44 pb-20 min-h-screen">
+    <div className="overflow-x-clip">
+      <JsonLd
+        data={[
+          {
+            ...webPageNode({
+              path: "/about",
+              type: "AboutPage",
+              name: t("pages.about.meta.ogTitle"),
+              description: t("pages.about.meta.description"),
+              about: ORG_ID,
+              inLanguage: locale,
+            }),
+            mainEntity: { "@id": ORG_ID },
+            mentions: SHOW_FOUNDER ? [{ "@id": FOUNDER_ID }, { "@id": ARFA_ID }] : [{ "@id": ARFA_ID }],
+            ...(SHOW_FOUNDER ? { primaryImageOfPage: { "@type": "ImageObject", url: absUrl(FOUNDER_PHOTO), width: 1200, height: 500 } } : {}),
+          },
+          // Adds the photo to the founder entity the root layout already declares.
+          ...(SHOW_FOUNDER ? [{ "@type": "Person", "@id": FOUNDER_ID, name: founder, jobTitle: ORG.founder.jobTitle, image: absUrl(FOUNDER_PHOTO) }] : []),
+          breadcrumbNode([{ name: t("seo.home"), path: "/" }, { name: t("seo.about"), path: "/about" }]),
+        ]}
+      />
 
-      {/* Hero */}
-      <div className="bg-[#1B3A6B] py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <span className="section-tag">About TIBLOGICS</span>
-          <h1 className="font-syne font-extrabold text-4xl md:text-5xl text-white mt-4 leading-tight">
-            We don&apos;t just talk about AI.{" "}
-            <span className="text-[#F47C20]">We implement it.</span>
-          </h1>
-          <p className="font-dm text-white/75 text-lg mt-5 max-w-3xl leading-relaxed">
-            TIBLOGICS is an AI implementation and digital solutions agency built for businesses that are ready to stop watching the future arrive and start leading it.
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden bg-white pt-28 pb-16 sm:pt-36 sm:pb-20 lg:pt-40">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage: "radial-gradient(rgba(27,58,107,0.10) 1px, transparent 1px)",
+            backgroundSize: "22px 22px",
+            maskImage: "radial-gradient(70% 60% at 85% 20%, black, transparent 75%)",
+            WebkitMaskImage: "radial-gradient(70% 60% at 85% 20%, black, transparent 75%)",
+          }}
+        />
+        <div className="relative mx-auto grid max-w-7xl grid-cols-1 gap-12 px-4 sm:px-6 lg:grid-cols-[1.15fr_1fr] lg:items-center lg:gap-16 lg:px-8">
+          <div className="flex min-w-0 flex-col gap-6">
+            <p className="anim-fade-in inline-flex items-center gap-2 self-start rounded-full border border-[#D2DCE8] bg-white/80 px-3 py-1.5 font-dm text-xs font-semibold tracking-wide text-[#3A4A5C] backdrop-blur">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#F47C20]" aria-hidden />
+              {t("pages.about.hero.tag")}
+            </p>
+            <h1
+              className="anim-fade-up font-syne text-[2.3rem] font-extrabold leading-[1.08] tracking-tight text-[#0D1B2A] [text-wrap:balance] sm:text-5xl lg:text-[3.5rem]"
+              style={{ animationDelay: "0.08s" }}
+            >
+              {accent(t("pages.about.hero.title"), orangeAccent)}
+            </h1>
+            <p className="anim-fade-up max-w-xl font-dm text-lg leading-relaxed text-[#3A4A5C]" style={{ animationDelay: "0.16s" }}>
+              {t("pages.about.hero.body")}
+            </p>
+            <div className="anim-fade-up flex flex-col gap-3 sm:flex-row sm:flex-wrap" style={{ animationDelay: "0.24s" }}>
+              <Link href="/book" className="btn-primary justify-center">
+                {t("pages.about.hero.ctaBook")} <ArrowRight size={16} aria-hidden />
+              </Link>
+              <Link href="/learning-box" className="btn-secondary justify-center">
+                {t("pages.about.hero.ctaLearn")}
+              </Link>
+            </div>
+          </div>
+
+          {/* At a glance */}
+          <aside
+            aria-labelledby="about-glance"
+            className="anim-fade-up relative min-w-0 overflow-hidden rounded-3xl bg-[#0D1B2A] p-6 text-white shadow-[0_24px_60px_-20px_rgba(13,27,42,0.45)] sm:p-8"
+            style={{ animationDelay: "0.2s" }}
+          >
+            <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[#F47C20]/20 blur-3xl" />
+            <div aria-hidden className="pointer-events-none absolute -bottom-28 -left-20 h-64 w-64 rounded-full bg-[#2251A3]/40 blur-3xl" />
+            <h2 id="about-glance" className="relative font-dm text-xs font-bold uppercase tracking-[0.18em] text-[#F9A738]">
+              {t("pages.about.glance.title")}
+            </h2>
+            <dl className="relative mt-5 divide-y divide-white/10">
+              {glance.map((k) => (
+                <div key={k} className="grid gap-1 py-3.5 first:pt-0 last:pb-0 sm:grid-cols-[120px_1fr] sm:gap-4">
+                  <dt className="font-dm text-xs font-semibold uppercase tracking-wide text-white/50 sm:pt-0.5">
+                    {t(`pages.about.glance.${k}.k`)}
+                  </dt>
+                  <dd className="font-dm text-[15px] leading-snug text-white/90">
+                    {t(`pages.about.glance.${k}.v`, { name: founder })}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <Link
+              href="/about/facts"
+              className="relative mt-6 inline-flex items-center gap-1.5 font-dm text-sm font-semibold text-[#F9A738] underline-offset-4 hover:underline"
+            >
+              {t("seo.facts.link")} <ArrowRight size={14} aria-hidden />
+            </Link>
+          </aside>
+        </div>
+      </section>
+
+      {/* ── Mission ──────────────────────────────────────────────────────── */}
+      <section aria-labelledby="about-mission" className="border-y border-[#E8EFF8] bg-[#F4F7FB]">
+        <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+          <h2 id="about-mission" className="section-tag">{t("pages.about.mission.tag")}</h2>
+          <Html
+            as="p"
+            className="mt-5 font-syne text-2xl font-medium leading-snug text-[#1B3A6B] [text-wrap:pretty] sm:text-3xl sm:leading-snug"
+            html={t("pages.about.mission.p1")}
+          />
+          <div className="mt-8 h-px w-16 bg-[#F47C20]" aria-hidden />
+          <p className="mt-8 max-w-3xl font-dm text-base leading-relaxed text-[#3A4A5C] sm:text-lg">
+            {t("pages.about.mission.p2")}
           </p>
         </div>
-      </div>
+      </section>
 
-      {/* Mission */}
-      <div className="bg-white border-b border-[#E8EFF8]">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
-            <div className="lg:col-span-2">
-              <span className="section-tag">Our Mission</span>
-              <p className="font-dm text-[#3A4A5C] text-lg leading-relaxed mt-4">
-                To make intelligent technology <strong className="text-[#0D1B2A]">accessible, practical, and transformative</strong> — empowering businesses of every size to operate smarter, move faster, and compete in a world where AI is no longer optional.
-              </p>
-              <p className="font-dm text-[#3A4A5C] leading-relaxed mt-4">
-                Our work spans the full digital stack: AI integration, workflow automation, web and mobile app development, data analytics, and cybersecurity. Whether you&apos;re a growing local business or a large enterprise operating across borders, we bring the same standard — precision engineering, measurable outcomes, and technology your team can actually use.
-              </p>
-            </div>
-            <div className="bg-[#F4F7FB] rounded-2xl p-6 border border-[#E8EFF8]">
-              <Globe size={20} className="text-[#2251A3] mb-3" />
-              <p className="font-syne font-bold text-sm text-[#0D1B2A] mb-2">Serving Markets Worldwide</p>
-              <p className="font-dm text-sm text-[#3A4A5C] leading-relaxed">
-                While our primary focus is the <strong>United States and African markets</strong>, we are equipped to serve clients across the globe — with bilingual English and French delivery.
-              </p>
-            </div>
+      {/* ── What we do ───────────────────────────────────────────────────── */}
+      <section aria-labelledby="about-do" className="bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+          <div className="max-w-2xl">
+            <p className="section-tag">{t("pages.about.do.tag")}</p>
+            <h2 id="about-do" className="mt-3 font-syne text-3xl font-extrabold leading-tight text-[#0D1B2A] sm:text-4xl">
+              {t("pages.about.do.title")}
+            </h2>
+            <p className="mt-4 font-dm text-lg leading-relaxed text-[#3A4A5C]">{t("pages.about.do.body")}</p>
           </div>
-        </div>
-      </div>
-
-      {/* What Sets Us Apart */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="mb-10">
-          <span className="section-tag">What Sets Us Apart</span>
-          <h2 className="font-syne font-extrabold text-2xl md:text-3xl text-[#0D1B2A] mt-2 leading-snug">
-            Scope. Experience. Cultural intelligence.
-          </h2>
-        </div>
-
-        <div className="space-y-6">
-          <div className="bg-white border border-[#D2DCE8] rounded-2xl p-7">
-            <p className="font-dm text-[#3A4A5C] leading-relaxed">
-              We&apos;ve built AI solutions for the <strong className="text-[#0D1B2A]">patient care space, airports, schools, restaurants, and diaspora shipping operators</strong>. We design and deploy AI agents that function as actual employees — completing real tasks, handling real interactions, and delivering real results around the clock. From custom AI chatbots and voice agents to full SaaS product development, we&apos;ve taken ideas from zero to launch-ready.
-            </p>
-          </div>
-
-          <div className="bg-white border border-[#D2DCE8] rounded-2xl p-7">
-            <p className="font-dm text-[#3A4A5C] leading-relaxed">
-              We serve international markets with <strong className="text-[#0D1B2A]">bilingual English and French delivery</strong> and a cultural intelligence that most digital agencies simply don&apos;t have. We walk with our clients through the entire journey — from idea discovery and strategy, through design and development, all the way to deployment and scaling. No idea is too early and no project is too complex.
-            </p>
-          </div>
-
-          <div className="bg-gradient-to-br from-[#EBF0FA] to-[#F4F7FB] border border-[#D2DCE8] rounded-2xl p-7">
-            <h3 className="font-syne font-bold text-base text-[#1B3A6B] mb-3">Our commitment to small businesses</h3>
-            <p className="font-dm text-[#3A4A5C] leading-relaxed">
-              One of our deepest commitments is making sure that individuals and small businesses are <strong className="text-[#0D1B2A]">not left behind</strong> as the world rapidly shifts toward AI. We believe AI readiness is not a luxury reserved for large enterprises — it is a necessity for anyone who wants to remain competitive. We are here to make that transition accessible, practical, and transformative for every client we serve.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Founder */}
-      <div className="bg-[#F4F7FB] border-y border-[#E8EFF8]">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <span className="section-tag">Founder</span>
-          <div className="mt-6 flex flex-col sm:flex-row gap-8 items-start">
-            <div className="w-20 h-20 bg-gradient-to-br from-[#1B3A6B] to-[#2251A3] rounded-2xl flex items-center justify-center shrink-0">
-              <span className="font-syne font-extrabold text-3xl text-white">T</span>
-            </div>
-            <div>
-              <blockquote className="border-l-4 border-[#F47C20] pl-5 mb-6">
-                <p className="font-dm text-[#3A4A5C] leading-relaxed italic">
-                  &ldquo;At my core, I believe in first-principles thinking. By stripping every challenge down to its fundamental truths, I ensure we never lose sight of what is essential; this approach effectively eliminates the noise of unnecessary costs and complexity. I invest heavily in studying the core of a problem so that the eventual implementation is not just fast, but precise. There is nothing more rewarding than delivering a solution that buys a company its time back while fueling its growth and service quality.&rdquo;
-                </p>
-              </blockquote>
-              <div className="flex flex-wrap gap-3">
-                <a href="mailto:ai@tiblogics.com" className="btn-primary text-sm py-2 inline-flex items-center gap-2">
-                  <Mail size={14} /> ai@tiblogics.com
-                </a>
-                <Link href="/book" className="btn-secondary text-sm py-2">Book a Meeting</Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Track Record */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-10">
-          <span className="section-tag">Track Record</span>
-          <h2 className="font-syne font-extrabold text-2xl text-[#0D1B2A] mt-2">Real results. Real deployments.</h2>
-          <p className="font-dm text-[#7A8FA6] mt-3 max-w-2xl mx-auto leading-relaxed">
-            Our work is backed by years of hands-on experience, a team of excellent technology professionals, and a portfolio of deployed AI solutions serving clients from local businesses to international airports.
-          </p>
-        </div>
-
-        {/* Who we work with */}
-        <div className="mb-12">
-          <h3 className="font-syne font-bold text-base text-[#0D1B2A] mb-4 text-center">Who we work with</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {industries.map((ind) => (
-              <div key={ind.label} className="bg-white border border-[#D2DCE8] rounded-xl px-4 py-3 flex items-center gap-2.5">
-                <span className="text-lg">{ind.emoji}</span>
-                <span className="font-dm text-xs text-[#3A4A5C] font-medium leading-tight">{ind.label}</span>
-              </div>
+          <ul className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {pillars.map(({ id, href, icon: Icon }) => (
+              <li key={id} className="min-w-0">
+                <Link
+                  href={href}
+                  className="group flex h-full flex-col rounded-2xl border border-[#D2DCE8] bg-white p-6 transition-all duration-200 hover:border-[#2251A3]/40 hover:shadow-[0_8px_30px_rgba(27,58,107,0.12)] motion-safe:hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2251A3]"
+                >
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EBF0FA] text-[#1B3A6B] transition-colors group-hover:bg-[#1B3A6B] group-hover:text-white">
+                    <Icon size={20} aria-hidden />
+                  </span>
+                  <h3 className="mt-5 font-syne text-lg font-bold leading-snug text-[#0D1B2A]">{t(`pages.about.pillar.${id}.title`)}</h3>
+                  <p className="mt-2 flex-1 font-dm text-sm leading-relaxed text-[#3A4A5C]">{t(`pages.about.pillar.${id}.desc`)}</p>
+                  <span className="mt-5 inline-flex items-center gap-1.5 font-dm text-sm font-semibold text-[#B8500A]">
+                    {t(`pages.about.pillar.${id}.cta`)}
+                    <ArrowUpRight size={15} aria-hidden className="transition-transform motion-safe:group-hover:-translate-y-0.5 motion-safe:group-hover:translate-x-0.5" />
+                  </span>
+                </Link>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
+      </section>
 
-        {/* Principles */}
-        <div className="text-center mb-8">
-          <span className="section-tag">How We Work</span>
-          <h2 className="font-syne font-extrabold text-2xl text-[#0D1B2A] mt-2">Our operating principles.</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {principles.map((p) => (
-            <div key={p.title} className="bg-[#F4F7FB] rounded-2xl p-6 border border-[#E8EFF8]">
-              <div className="w-10 h-10 bg-[#EBF0FA] rounded-xl flex items-center justify-center mb-3">
-                <p.icon size={18} className="text-[#2251A3]" />
+      {/* ── What sets us apart ───────────────────────────────────────────── */}
+      <section aria-labelledby="about-apart" className="border-t border-[#E8EFF8] bg-white">
+        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[1fr_1.4fr] lg:gap-16 lg:px-8">
+          <div className="min-w-0">
+            <p className="section-tag">{t("pages.about.apart.tag")}</p>
+            <h2 id="about-apart" className="mt-3 font-syne text-3xl font-extrabold leading-tight text-[#0D1B2A] sm:text-4xl">
+              {t("pages.about.apart.title")}
+            </h2>
+            <h3 className="mt-10 font-dm text-xs font-bold uppercase tracking-[0.16em] text-[#7A8FA6]">{t("pages.about.track.who")}</h3>
+            <ul className="mt-4 grid grid-cols-1 gap-2 min-[400px]:grid-cols-2">
+              {industries.map(({ id, icon: Icon }) => (
+                <li key={id} className="flex min-w-0 items-center gap-2.5 rounded-xl border border-[#E3E9F1] bg-[#F9FBFD] px-3 py-2.5">
+                  <Icon size={16} className="shrink-0 text-[#2251A3]" aria-hidden />
+                  <span className="font-dm text-[13px] font-medium leading-tight text-[#3A4A5C]">{t(`pages.about.industry.${id}`)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="min-w-0 space-y-5">
+            <Html as="p" className="font-dm text-base leading-relaxed text-[#3A4A5C] sm:text-lg" html={t("pages.about.apart.p1")} />
+            <Html as="p" className="font-dm text-base leading-relaxed text-[#3A4A5C] sm:text-lg" html={t("pages.about.apart.p2")} />
+            <div className="grid grid-cols-1 gap-4 pt-3 md:grid-cols-2">
+              <div className="rounded-2xl border border-[#D2DCE8] bg-gradient-to-br from-[#EBF0FA] to-white p-6">
+                <h3 className="font-syne text-base font-bold text-[#1B3A6B]">{t("pages.about.apart.smallTitle")}</h3>
+                <Html as="p" className="mt-2 font-dm text-sm leading-relaxed text-[#3A4A5C]" html={t("pages.about.apart.smallBody")} />
               </div>
-              <h3 className="font-syne font-bold text-base text-[#0D1B2A] mb-2">{p.title}</h3>
-              <p className="font-dm text-sm text-[#7A8FA6] leading-relaxed">{p.desc}</p>
+              <div className="rounded-2xl border border-[#D2DCE8] bg-gradient-to-br from-[#FFF4EB] to-white p-6">
+                <h3 className="flex items-center gap-2 font-syne text-base font-bold text-[#1B3A6B]">
+                  <Globe2 size={18} className="text-[#B8500A]" aria-hidden />
+                  {t("pages.about.markets.title")}
+                </h3>
+                <Html as="p" className="mt-2 font-dm text-sm leading-relaxed text-[#3A4A5C]" html={t("pages.about.markets.body")} />
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Key Services */}
-      <div className="bg-[#F4F7FB] border-t border-[#E8EFF8]">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center mb-7">
-            <span className="section-tag">Key Services</span>
           </div>
-          <div className="flex flex-wrap gap-2 justify-center">
-            {services.map((s) => (
-              <span key={s} className="bg-white border border-[#D2DCE8] text-[#3A4A5C] font-dm text-sm px-4 py-2 rounded-full">
-                {s}
-              </span>
+        </div>
+      </section>
+
+      {/* ── How we work ──────────────────────────────────────────────────── */}
+      <section aria-labelledby="about-how" className="bg-[#F4F7FB]">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+          <div className="max-w-2xl">
+            <p className="section-tag">{t("pages.about.principles.tag")}</p>
+            <h2 id="about-how" className="mt-3 font-syne text-3xl font-extrabold leading-tight text-[#0D1B2A] sm:text-4xl">
+              {t("pages.about.principles.title")}
+            </h2>
+          </div>
+          <ul className="mt-10 grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-[#D2DCE8] bg-[#D2DCE8] sm:grid-cols-2 lg:grid-cols-3">
+            {principles.map(({ id, icon: Icon }) => (
+              <li key={id} className="bg-white p-6 sm:p-7">
+                <Icon size={20} className="text-[#F47C20]" aria-hidden />
+                <h3 className="mt-4 font-syne text-lg font-bold text-[#0D1B2A]">{t(`pages.about.principle.${id}.title`)}</h3>
+                <p className="mt-2 font-dm text-sm leading-relaxed text-[#3A4A5C]">{t(`pages.about.principle.${id}.desc`)}</p>
+              </li>
             ))}
+          </ul>
+
+          <h3 className="mt-16 font-dm text-xs font-bold uppercase tracking-[0.16em] text-[#7A8FA6]">{t("pages.about.steps.tag")}</h3>
+          <ol className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((n) => (
+              <li key={n} className="relative rounded-2xl border border-[#D2DCE8] bg-white p-6">
+                <span className="font-display text-4xl font-semibold italic leading-none text-[#F47C20]" aria-hidden>
+                  0{n}
+                </span>
+                <p className="mt-3 font-syne text-base font-bold text-[#0D1B2A]">{t(`pages.services.step${n}.title`)}</p>
+                <p className="mt-1.5 font-dm text-sm leading-relaxed text-[#3A4A5C]">{t(`pages.services.step${n}.body`)}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* ── Founder ──────────────────────────────────────────────────────── */}
+      <section aria-labelledby="about-founder" className="bg-white">
+        <div className={SHOW_FOUNDER
+          ? "mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-4 py-16 sm:px-6 sm:py-24 md:grid-cols-[minmax(0,320px)_1fr] lg:gap-16 lg:px-8"
+          : "mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8"}>
+          {SHOW_FOUNDER && <figure className="mx-auto w-full max-w-[320px]">
+            <div className="relative aspect-[4/5] overflow-hidden rounded-3xl bg-[#F47C20] shadow-[0_24px_60px_-24px_rgba(184,80,10,0.55)]">
+              <Image
+                src={FOUNDER_PHOTO}
+                alt={t("pages.about.founder.photoAlt", { name: founder })}
+                fill
+                sizes="(min-width: 768px) 320px, 90vw"
+                className="object-cover object-[53%_50%]"
+              />
+            </div>
+            <figcaption className="mt-4 text-center md:text-left">
+              <span className="block font-syne text-lg font-bold text-[#0D1B2A]">{founder}</span>
+              <span className="block font-dm text-sm text-[#5A6E84]">{t("pages.about.founder.role")}</span>
+            </figcaption>
+          </figure>}
+          <div className="min-w-0">
+            <h2 id="about-founder" className="section-tag">{t("pages.about.founder.tag")}</h2>
+            <blockquote className="mt-5">
+              <p className="font-syne text-lg italic leading-relaxed text-[#1B3A6B] [text-wrap:pretty] sm:text-xl sm:leading-relaxed">
+                <span className="font-display text-5xl not-italic leading-[0] text-[#F47C20] align-[-0.35em] mr-1" aria-hidden>&ldquo;</span>
+                {t("pages.about.founder.quote")}
+              </p>
+            </blockquote>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Link href="/book" className="btn-primary justify-center text-sm">
+                {t("pages.about.founder.book")} <ArrowRight size={15} aria-hidden />
+              </Link>
+              <a href={`mailto:${ORG.founderEmail}`} className="btn-secondary justify-center text-sm">
+                <Mail size={15} aria-hidden /> {ORG.founderEmail}
+              </a>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* CTA */}
-      <div className="bg-[#F4F7FB] py-16 px-4">
-        <div className="max-w-xl mx-auto bg-[#1B3A6B] rounded-2xl px-8 py-12 text-center">
-          <p className="font-dm text-[#7A9BBF] text-sm uppercase tracking-widest mb-4">Ready to build?</p>
-          <h2 className="font-syne font-extrabold text-3xl md:text-4xl text-white leading-tight mb-4">
-            We are not a vendor.<br />
-            <span className="text-[#F47C20]">We are your implementation partner.</span>
+      {/* ── ARFA ─────────────────────────────────────────────────────────── */}
+      <section aria-labelledby="about-arfa" className="relative overflow-hidden bg-[#0D1B2A] text-white">
+        <div aria-hidden className="pointer-events-none absolute -right-40 top-0 h-[28rem] w-[28rem] rounded-full bg-[#F47C20]/15 blur-3xl" />
+        <div aria-hidden className="pointer-events-none absolute -left-40 bottom-0 h-[24rem] w-[24rem] rounded-full bg-[#2251A3]/35 blur-3xl" />
+        <div className="relative mx-auto grid max-w-7xl grid-cols-1 gap-10 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:gap-16 lg:px-8">
+          <div className="min-w-0">
+            <p className="font-dm text-[0.8125rem] font-bold uppercase tracking-[0.13em] text-[#F9A738]">{t("pages.about.arfa.tag")}</p>
+            <h2 id="about-arfa" className="mt-3 font-syne text-3xl font-extrabold leading-tight sm:text-4xl lg:text-5xl">
+              {accent(t("pages.about.arfa.title"), orangeAccent)}
+            </h2>
+            <p className="mt-5 max-w-xl font-dm text-lg leading-relaxed text-white/75">{t("pages.about.arfa.body")}</p>
+            <Link
+              href="/learning-box"
+              className="mt-8 inline-flex items-center justify-center gap-2 rounded-lg bg-[#F47C20] px-5 py-3 font-dm font-semibold text-[#0D1B2A] transition-colors hover:bg-[#F9A738] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            >
+              {t("pages.about.arfa.cta")} <ArrowRight size={16} aria-hidden />
+            </Link>
+          </div>
+          <ul className="grid min-w-0 grid-cols-1 gap-3">
+            {[1, 2, 3, 4].map((n) => (
+              <li key={n} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-sm sm:p-5">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#F47C20]/20 text-[#F9A738]">
+                  <Check size={14} aria-hidden />
+                </span>
+                <span className="font-dm text-[15px] leading-snug text-white/90">{t(`pages.about.arfa.f${n}`)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        {/* Fund a Tilo Vision Scholarship (components/donate) */}
+        <div className="relative mx-auto max-w-7xl px-4 pb-16 sm:px-6 sm:pb-24 lg:px-8">
+          <DonateSection from="about" tone="dark" />
+        </div>
+      </section>
+
+      {/* ── CTA ──────────────────────────────────────────────────────────── */}
+      <section aria-labelledby="about-cta" className="bg-white px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+        <div className="relative mx-auto max-w-4xl overflow-hidden rounded-3xl border border-[#D2DCE8] bg-gradient-to-br from-[#F4F7FB] via-white to-[#FFF4EB] px-6 py-12 text-center sm:px-12 sm:py-16">
+          <p className="section-tag">{t("pages.about.cta.kicker")}</p>
+          <h2 id="about-cta" className="mt-4 font-syne text-3xl font-extrabold leading-tight text-[#0D1B2A] [text-wrap:balance] sm:text-4xl">
+            {t("pages.about.cta.title")}{" "}
+            <span className="font-display italic font-semibold text-[#F47C20]">{t("pages.about.cta.titleAccent")}</span>
           </h2>
-          <p className="font-dm text-white/70 text-base max-w-xl mx-auto mb-8 leading-relaxed">
-            If you are ready to build something meaningful, automate what is slowing you down, or find the right AI solutions for your business — your next step starts here.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/book" className="btn-primary">Book a Free Discovery Call</Link>
-            <Link href="/services" className="bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg px-5 py-2.5 transition-colors inline-flex items-center gap-2 border border-white/20">
-              Explore Our Services →
+          <p className="mx-auto mt-5 max-w-2xl font-dm text-base leading-relaxed text-[#3A4A5C] sm:text-lg">{t("pages.about.cta.body")}</p>
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            <Link href="/book" className="btn-primary justify-center">
+              {t("pages.about.cta.book")} <ArrowRight size={16} aria-hidden />
+            </Link>
+            <Link href="/learning-box" className="btn-secondary justify-center">
+              {t("pages.about.cta.learn")}
             </Link>
           </div>
         </div>
-      </div>
-
+      </section>
     </div>
   );
 }

@@ -1,114 +1,310 @@
-"use client";
-
+import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowRight, Lightbulb, Compass, Hammer, Rocket } from "lucide-react";
+import { getLocale, getT } from "@/lib/i18n/server";
+import { pageMetadata } from "@/lib/seo/meta";
+import { DonateSection } from "@/components/donate/Donate";
 
-const products = [
-  { name: "Goal Tester",            emoji: "🎯", industry: "Business AI Tool",       color: "#1B3A6B" },
-  { name: "InStory School",         emoji: "📚", industry: "EdTech SaaS",             color: "#2251A3" },
-  { name: "CareFlow AI",            emoji: "❤️", industry: "HealthTech SaaS",         color: "#0F6E56" },
-  { name: "ShipFrica",              emoji: "📦", industry: "Logistics SaaS",           color: "#F47C20" },
-{ name: "RoofGuard",              emoji: "🏠", industry: "PropTech SaaS",            color: "#D85A30" },
-  { name: "Tibintel",               emoji: "🧠", industry: "Business Intelligence",    color: "#1B3A6B" },
-  { name: "Ember",                   emoji: "🫂", industry: "Mental Health Tech",        color: "#D97706" },
-  { name: "GeoStrat",               emoji: "🌍", industry: "Geospatial Intelligence",  color: "#0F6E56" },
-  { name: "AI Readiness Platform",  emoji: "📊", industry: "AI Assessment SaaS",       color: "#2251A3" },
-  { name: "AI Central",             emoji: "⚡", industry: "AI Operations",            color: "#0F6E56" },
-  { name: "AutoIQ",                 emoji: "🚗", industry: "AutoTech SaaS",            color: "#F47C20" },
-  { name: "Appreciate Songs",       emoji: "🎵", industry: "Music Tech",               color: "#7c3aed" },
+export async function generateMetadata(): Promise<Metadata> {
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  return pageMetadata({
+    path: "/products",
+    locale,
+    title: t("pages.products.meta.title"),
+    description: t("pages.products.meta.description"),
+    socialTitle: t("pages.products.meta.ogTitle"),
+    socialDescription: t("pages.products.meta.ogDescription"),
+  });
+}
+
+// The page leads with problem spaces, not a product catalogue. A wall of
+// twelve names tells a visitor nothing about whether the studio can help them;
+// the domain says where we work and why.
+const DOMAINS = [
+  { id: "education", color: "#2251A3" },
+  { id: "health", color: "#0F6E56" },
+  { id: "logistics", color: "#F47C20" },
+  { id: "bi", color: "#1B3A6B" },
+  { id: "finance", color: "#0E7490" },
+  { id: "security", color: "#9F1239" },
+  { id: "adoption", color: "#7c3aed" },
+  { id: "property", color: "#D85A30" },
+  { id: "creative", color: "#D97706" },
 ];
 
-export default function ProductsPage() {
+// Only two ventures are surfaced by name. The page is about the domains; these
+// are the evidence that the studio ships, not a catalogue.
+//
+// Blindwhisper has no description anywhere in the codebase, so it carries none
+// here — the card renders without one rather than with something invented.
+// note and blurb are dictionary keys; an empty string renders nothing.
+const SHOW_IN_THE_OPEN = false;
+
+const HIGHLIGHTS: { name: string; note: string; blurb: string; href?: string; color: string }[] = [
+  {
+    name: "Goal Tester",
+    note: "pages.products.live",
+    blurb: "pages.products.goalTester.blurb",
+    href: "https://goaltester.com",
+    color: "#2251A3",
+  },
+  {
+    name: "Blindwhisper",
+    // No status claimed — the site could not be reached from here, so whether
+    // it is live, in beta or a waitlist is unknown. Goal Tester's "Live" comes
+    // from prisma/seed.ts, which says so.
+    note: "",
+    // Intentionally empty: no description of this product exists in the
+    // codebase and the site could not be read from here. The card renders
+    // without a blurb rather than with an invented one — fill it in when the
+    // real wording is to hand.
+    blurb: "",
+    href: "https://blindwhisper.com",
+    color: "#F47C20",
+  },
+];
+
+const HOW = [
+  { icon: Compass, id: "find" },
+  { icon: Hammer, id: "build" },
+  { icon: Rocket, id: "launch" },
+];
+
+export default async function ProductsPage() {
+  const t = await getT();
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-white">
       {/* Hero */}
-      <div className="bg-[#1B3A6B] pt-32 sm:pt-44 pb-16">
+      <div className="bg-[#1B3A6B] pt-32 sm:pt-44 pb-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <span className="section-tag">Our Startups &amp; Products</span>
+          <span className="section-tag">{t("pages.products.hero.tag")}</span>
           <h1 className="font-syne font-extrabold text-4xl md:text-5xl text-white mt-3 leading-tight">
-            Built in-house.{" "}
-            <span className="text-[#F47C20]">Deployed globally.</span>
+            {t("pages.products.hero.title")}{" "}
+            <span className="text-[#F47C20]">{t("pages.products.hero.titleAccent")}</span>
           </h1>
-          <p className="font-dm text-white/70 text-lg mt-4 max-w-2xl mx-auto">
-            Every TIBLOGICS product is AI-first, built to solve a real problem, and
-            designed to scale. From education to logistics to business intelligence.
+          <p className="font-dm text-white/70 text-lg mt-5 max-w-2xl mx-auto leading-relaxed">
+            {t("pages.products.hero.body", { n: DOMAINS.length })}
           </p>
-          <div className="flex justify-center gap-3 mt-6 flex-wrap">
-            <Link href="/book" className="btn-primary">Book a Demo</Link>
+          <div className="flex justify-center gap-3 mt-8 flex-wrap">
+            <Link href="#startup-idea" className="btn-primary">
+              {t("pages.products.hero.idea")}
+            </Link>
             <Link
-              href="/contact"
-              className="bg-white text-[#1B3A6B] hover:bg-[#EBF0FA] font-semibold rounded-lg px-5 py-2.5 transition-colors inline-flex items-center gap-2"
+              href="#domains"
+              className="bg-white/10 text-white hover:bg-white/15 font-semibold rounded-lg px-5 py-2.5 transition-colors inline-flex items-center gap-2 backdrop-blur"
             >
-              Partner With Us
+              {t("pages.products.hero.where")}
             </Link>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-16">
-          {products.map((p) => (
-            <div
-              key={p.name}
-              className="group relative bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden flex flex-col
-                         transition-all duration-300 ease-out
-                         hover:-translate-y-2 hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)] hover:border-transparent"
+      {/* Compact founder CTA, directly under the hero.
+          The full section lives at the bottom of the page, which a visitor only
+          reaches after the domains — this catches the ones who already know why
+          they came. Deliberately lighter than the one below so the two do not
+          compete for the same attention. */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-10">
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#F47C20]/25 bg-[#FEF0E3] px-6 py-5 shadow-[0_8px_30px_rgba(27,58,107,0.08)]">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F47C20]/15">
+              <Lightbulb size={17} className="text-[#F47C20]" />
+            </div>
+            <div>
+              <p className="font-syne font-bold text-[#0D1B2A]">{t("pages.products.hero.idea")}</p>
+              <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">
+                {t("pages.products.strip.body")}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/book"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#F47C20] px-4 py-2.5 font-dm text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
             >
-              {/* Color accent bar */}
-              <div
-                className="h-1.5 w-full transition-all duration-300 group-hover:h-2"
-                style={{ backgroundColor: p.color }}
-              />
+              {t("pages.products.talk")} <ArrowRight size={14} />
+            </Link>
+            <Link
+              href="/services"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#D2DCE8] bg-white px-4 py-2.5 font-dm text-sm font-semibold text-[#1B3A6B] transition-colors hover:bg-[#F4F7FB]"
+            >
+              {t("pages.products.howWeBuild")}
+            </Link>
+          </div>
+        </div>
+      </div>
 
-              {/* Subtle color wash on hover */}
-              <div
-                className="absolute inset-0 opacity-0 group-hover:opacity-[0.04] transition-opacity duration-300 pointer-events-none"
-                style={{ backgroundColor: p.color }}
-              />
-
-              <div className="p-6 flex flex-col gap-3 flex-1">
-                {/* Emoji */}
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-transform duration-300 group-hover:scale-110"
-                  style={{ backgroundColor: p.color + "18" }}
-                >
-                  {p.emoji}
+      {/* How we build */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {HOW.map((h, i) => (
+            <div key={h.id} className="relative">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-xl bg-[#F4F7FB] border border-[#D2DCE8] flex items-center justify-center">
+                  <h.icon size={18} className="text-[#1B3A6B]" />
                 </div>
-
-                {/* Industry */}
-                <span className="font-dm text-xs font-semibold uppercase tracking-wider" style={{ color: p.color }}>
-                  {p.industry}
-                </span>
-
-                {/* Name */}
-                <h3 className="font-syne font-bold text-lg text-[#0D1B2A] leading-snug">
-                  {p.name}
-                </h3>
-
-                {/* CTA */}
-                <div className="mt-auto pt-2">
-                  <Link
-                    href="/book"
-                    className="inline-flex items-center gap-1.5 text-sm font-dm font-semibold px-4 py-2.5 rounded-xl text-white transition-all duration-200 group-hover:gap-2.5"
-                    style={{ backgroundColor: p.color }}
-                  >
-                    Build yours now →
-                  </Link>
-                </div>
+                <span className="font-dm text-xs font-bold text-[#B9C7D8]">0{i + 1}</span>
               </div>
+              <h3 className="font-syne font-bold text-lg text-[#0D1B2A]">{t(`pages.products.how.${h.id}.title`)}</h3>
+              <p className="font-dm text-sm text-[#7A8FA6] leading-relaxed mt-1.5">{t(`pages.products.how.${h.id}.body`)}</p>
             </div>
           ))}
         </div>
+      </div>
 
-        {/* CTA */}
-        <div className="text-center bg-[#1B3A6B] rounded-2xl p-10">
-          <span className="section-tag text-[#F47C20]">Partnership Opportunities</span>
-          <h2 className="font-syne font-extrabold text-2xl text-white mt-2">
-            Want to partner or white-label?
+      {/* Domains */}
+      <div id="domains" className="bg-[#F4F7FB] border-y border-[#D2DCE8] scroll-mt-32">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="max-w-2xl mb-10">
+            <span className="section-tag">{t("pages.products.domains.tag")}</span>
+            <h2 className="font-syne font-extrabold text-3xl text-[#0D1B2A] mt-2">
+              {t("pages.products.domains.title", { n: DOMAINS.length })}
+            </h2>
+            <p className="font-dm text-[#3A4A5C] mt-3 leading-relaxed">
+              {t("pages.products.domains.body")}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {DOMAINS.map((d) => (
+              <div
+                key={d.id}
+                className="group relative bg-white border border-[#D2DCE8] rounded-2xl p-6 overflow-hidden
+                           transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(0,0,0,0.08)]"
+              >
+                <div
+                  className="absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5"
+                  style={{ backgroundColor: d.color }}
+                />
+                <div className="pl-3">
+                  <h3 className="font-syne font-bold text-xl text-[#0D1B2A]">{t(`pages.products.domain.${d.id}.name`)}</h3>
+                  <p className="font-dm text-sm text-[#7A8FA6] leading-relaxed mt-2">{t(`pages.products.domain.${d.id}.premise`)}</p>
+
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Two ventures, named — proof the studio ships, not a catalogue.
+          Hidden for now at the owner's request; set SHOW_IN_THE_OPEN to bring it back. */}
+      {SHOW_IN_THE_OPEN && (
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-16">
+        <div className="max-w-2xl mb-8">
+          <span className="section-tag">{t("pages.products.open.tag")}</span>
+          <h2 className="font-syne font-extrabold text-3xl text-[#0D1B2A] mt-2">
+            {t("pages.products.open.title")}
           </h2>
-          <p className="font-dm text-white/70 mt-2 max-w-md mx-auto">
-            Several of our products are available for white-labeling or strategic partnerships. Let&apos;s talk.
-          </p>
-          <Link href="/contact" className="btn-primary mt-5 inline-flex">Get in Touch →</Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {HIGHLIGHTS.map((h) => {
+            const inner = (
+              <>
+                {h.note && (
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: h.color }} />
+                    <span
+                      className="font-dm text-xs font-bold uppercase tracking-wider"
+                      style={{ color: h.color }}
+                    >
+                      {t(h.note)}
+                    </span>
+                  </div>
+                )}
+                <h3 className="font-syne font-extrabold text-2xl text-[#0D1B2A]">{h.name}</h3>
+                {h.blurb && (
+                  <p className="font-dm text-sm text-[#7A8FA6] leading-relaxed mt-2">{t(h.blurb)}</p>
+                )}
+                {h.href && (
+                  <span className="mt-4 inline-flex items-center gap-1.5 font-dm text-sm font-semibold text-[#1B3A6B]">
+                    {t("pages.products.visit")} <ArrowRight size={14} />
+                  </span>
+                )}
+              </>
+            );
+            const shell =
+              "group block bg-white border border-[#D2DCE8] rounded-2xl p-7 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(0,0,0,0.08)]";
+            return h.href ? (
+              <a key={h.name} href={h.href} target="_blank" rel="noopener noreferrer" className={shell}>
+                {inner}
+              </a>
+            ) : (
+              <div key={h.name} className={shell}>
+                {inner}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      )}
+
+      {/* Have a startup idea */}
+      <div id="startup-idea" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 scroll-mt-32">
+        <div className="relative overflow-hidden rounded-3xl bg-[#0D1B2A] p-8 sm:p-12">
+          <div
+            aria-hidden="true"
+            className="absolute -top-24 -right-16 w-80 h-80 rounded-full blur-3xl opacity-40"
+            style={{ background: "radial-gradient(circle,#F47C20,transparent 70%)" }}
+          />
+          <div className="relative grid grid-cols-1 lg:grid-cols-5 gap-8 items-center">
+            <div className="lg:col-span-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-4 bg-[#F47C20]/15 border border-[#F47C20]/30">
+                <Lightbulb size={13} className="text-[#F9A738]" />
+                <span className="font-dm text-xs font-semibold text-[#F9A738]">{t("pages.products.founders.tag")}</span>
+              </div>
+              <h2 className="font-syne font-extrabold text-3xl sm:text-4xl text-white leading-tight">
+                {t("pages.products.founders.title")}
+              </h2>
+              <p className="font-dm text-white/70 mt-3 leading-relaxed max-w-xl">
+                {t("pages.products.founders.body")}
+              </p>
+            </div>
+
+            <div className="lg:col-span-2 flex flex-col gap-3">
+              <Link
+                href="/book"
+                className="flex items-center justify-between gap-3 rounded-xl bg-gradient-to-r from-[#F47C4C] to-[#F9A738] px-5 py-4 text-[#131A1B] transition-transform hover:-translate-y-0.5"
+              >
+                <span>
+                  <span className="block font-syne font-extrabold text-base">{t("pages.products.talk")}</span>
+                  <span className="block font-dm text-sm opacity-80">{t("pages.products.founders.talkNote")}</span>
+                </span>
+                <ArrowRight size={18} className="shrink-0" />
+              </Link>
+
+              <Link
+                href="/services"
+                className="flex items-center justify-between gap-3 rounded-xl bg-white/10 border border-white/15 px-5 py-4 text-white backdrop-blur transition-colors hover:bg-white/15"
+              >
+                <span>
+                  <span className="block font-syne font-bold text-base">{t("pages.products.founders.see")}</span>
+                  <span className="block font-dm text-sm text-white/60">{t("pages.products.founders.seeNote")}</span>
+                </span>
+                <ArrowRight size={18} className="shrink-0" />
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Partnership — kept, but secondary to the founder path above */}
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#D2DCE8] bg-[#F4F7FB] px-6 py-5">
+          <div>
+            <p className="font-syne font-bold text-[#0D1B2A]">{t("pages.products.partner.title")}</p>
+            <p className="font-dm text-sm text-[#7A8FA6] mt-0.5">
+              {t("pages.products.partner.body")}
+            </p>
+          </div>
+          <Link
+            href="/contact"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#1B3A6B] px-4 py-2.5 text-sm font-dm font-semibold text-white transition-colors hover:bg-[#2251A3]"
+          >
+            {t("pages.products.partner.cta")} <ArrowRight size={14} />
+          </Link>
+        </div>
+        <div className="mt-6">
+          <DonateSection from="products" />
         </div>
       </div>
     </div>

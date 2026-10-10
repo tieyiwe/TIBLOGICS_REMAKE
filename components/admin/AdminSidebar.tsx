@@ -1,304 +1,340 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { useState } from "react";
-import {
-  LayoutDashboard,
-  Rocket,
-  BarChart2,
-  Columns,
-  GanttChartSquare,
-  List,
-  RefreshCw,
-  Calendar,
-  Users,
-  Search,
-  DollarSign,
-  Settings,
-  FileEdit,
-  LogOut,
-  Menu,
-  X,
-  BookOpen,
-  Bot,
-  Mail,
-  Briefcase,
-  Sparkles,
-} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronDown, ExternalLink, LogOut, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Drawer } from "@/components/admin/ui";
+import { activeHref, flattenNav, visibleSections, type NavItem, type NavSection } from "@/components/admin/shell/nav";
+import { useAdminShell } from "@/components/admin/shell/AdminShellContext";
 
-interface NavSubItem {
-  label: string;
-  href: string;
-  icon: React.ElementType;
+const GROUPS_KEY = "tib.admin.navGroups";
+
+function readGroups(): Record<string, boolean> {
+  try {
+    const raw = window.localStorage.getItem(GROUPS_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
+  } catch {
+    return {};
+  }
 }
 
-interface NavItem {
-  label: string;
-  href: string;
-  icon: React.ElementType;
-  subItems?: NavSubItem[];
-}
-
-const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  {
-    label: "Command Center",
-    href: "/admin/command-center",
-    icon: Rocket,
-    subItems: [
-      { label: "Overview", href: "/admin/command-center", icon: BarChart2 },
-      { label: "Kanban", href: "/admin/command-center/kanban", icon: Columns },
-      {
-        label: "Timeline",
-        href: "/admin/command-center/timeline",
-        icon: GanttChartSquare,
-      },
-      {
-        label: "All Projects",
-        href: "/admin/command-center/list",
-        icon: List,
-      },
-      { label: "Sync", href: "/admin/command-center/sync", icon: RefreshCw },
-    ],
-  },
-  {
-    label: "Appointments",
-    href: "/admin/appointments",
-    icon: Calendar,
-    subItems: [
-      { label: "All Appointments", href: "/admin/appointments", icon: Calendar },
-      { label: "Availability", href: "/admin/appointments/availability", icon: Settings },
-    ],
-  },
-  { label: "Contacts", href: "/admin/contacts", icon: Users },
-  { label: "Prospects", href: "/admin/prospects", icon: Users },
-  { label: "Scanner Leads", href: "/admin/scanner-leads", icon: Search },
-  { label: "Tool Analytics", href: "/admin/tools", icon: BarChart2 },
-  { label: "Revenue", href: "/admin/revenue", icon: DollarSign },
-  {
-    label: "Blog",
-    href: "/admin/blog",
-    icon: BookOpen,
-    subItems: [
-      { label: "All Posts", href: "/admin/blog", icon: FileEdit },
-      { label: "News Agent", href: "/admin/blog/news-agent", icon: Bot },
-      { label: "Newsletter", href: "/admin/newsletter", icon: Mail },
-    ],
-  },
-  { label: "Events & Training", href: "/admin/events", icon: Calendar },
-  { label: "Service Requests", href: "/admin/service-requests", icon: Briefcase },
-  { label: "Partnerships", href: "/admin/partnerships", icon: Briefcase },
-  { label: "Waitlist", href: "/admin/waitlist", icon: Users },
-  { label: "Visitor Analytics", href: "/admin/analytics", icon: BarChart2 },
-  {
-    label: "AI Agents",
-    href: "/admin/agents",
-    icon: Sparkles,
-    subItems: [
-      { label: "All Agents", href: "/admin/agents", icon: Sparkles },
-      { label: "Aria — Marketing", href: "/admin/agents/aria", icon: Bot },
-      { label: "Rex — Sales", href: "/admin/agents/rex", icon: Bot },
-      { label: "Nova — Operations", href: "/admin/agents/nova", icon: Bot },
-    ],
-  },
-  { label: "Settings", href: "/admin/settings", icon: Settings },
-];
-
-function NavLink({
+function NavRow({
   item,
-  pathname,
-  onClick,
+  current,
+  collapsed,
+  badge,
+  expanded,
+  onToggleExpand,
+  onNavigate,
 }: {
   item: NavItem;
-  pathname: string;
-  onClick?: () => void;
+  current: string | null;
+  collapsed: boolean;
+  badge?: number;
+  expanded: boolean;
+  onToggleExpand: () => void;
+  onNavigate?: () => void;
 }) {
-  const isActive =
-    item.href === "/admin"
-      ? pathname === "/admin"
-      : pathname === item.href || pathname.startsWith(item.href + "/");
-
-  const hasSubItems = !!item.subItems;
-  const subActive = hasSubItems && pathname.startsWith(item.href + "/");
-
+  const subs = item.subItems ?? [];
+  const hasSubs = subs.length > 1;
+  const isSelf = current === item.href;
+  const inBranch = isSelf || subs.some((s) => s.href === current);
   const Icon = item.icon;
 
   return (
-    <div>
-      <Link
-        href={item.href}
-        onClick={onClick}
-        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-dm font-medium transition-colors cursor-pointer ${
-          isActive
-            ? "bg-[#2251A3]/40 text-white border-l-2 border-[#F47C20]"
-            : "text-white/60 hover:bg-white/10 hover:text-white"
-        }`}
-      >
-        <Icon size={16} />
-        {item.label}
-      </Link>
-
-      {/* Sub-items when section is active */}
-      {hasSubItems && (isActive || subActive) && item.subItems && (
-        <div className="ml-4 mt-0.5 flex flex-col gap-0.5">
-          {item.subItems.map((sub) => {
-            const subIsActive =
-              sub.href === "/admin/command-center"
-                ? pathname === "/admin/command-center"
-                : pathname === sub.href;
-            const SubIcon = sub.icon;
+    <li>
+      <div className="group relative flex items-center">
+        <Link
+          href={item.href}
+          onClick={onNavigate}
+          aria-current={isSelf ? "page" : undefined}
+          aria-label={collapsed ? item.label : undefined}
+          title={collapsed ? item.label : undefined}
+          className={cn(
+            "relative flex min-h-[44px] flex-1 items-center gap-3 rounded-[8px] lg:min-h-[36px] font-dm text-[13.5px] font-medium transition-colors duration-150",
+            collapsed ? "justify-center px-0" : "px-2.5",
+            inBranch ? "bg-white/[.09] text-white" : "text-white/70 hover:bg-white/[.06] hover:text-white",
+          )}
+        >
+          {inBranch ? (
+            <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r bg-[var(--a-orange)]" aria-hidden />
+          ) : null}
+          <Icon size={17} className={cn("shrink-0", inBranch ? "text-white" : "text-white/60 group-hover:text-white")} aria-hidden />
+          {!collapsed ? <span className="min-w-0 flex-1 truncate">{item.label}</span> : null}
+          {badge && badge > 0 ? (
+            collapsed ? (
+              <span className="absolute right-2 top-1.5 h-2 w-2 rounded-full bg-[var(--a-orange)]" aria-label={`${badge} new`} />
+            ) : (
+              <span className={cn("rounded-full bg-[var(--a-orange)] px-1.5 text-[11px] font-bold leading-[18px] text-[#0D1B2A] tabular-nums", hasSubs && "mr-10 lg:mr-7")}>
+                {badge > 99 ? "99+" : badge}
+              </span>
+            )
+          ) : null}
+        </Link>
+        {hasSubs && !collapsed ? (
+          <button
+            type="button"
+            onClick={onToggleExpand}
+            aria-expanded={expanded}
+            aria-label={`${expanded ? "Collapse" : "Expand"} ${item.label}`}
+            className="absolute right-1 flex h-10 w-10 items-center justify-center rounded-md text-white/50 lg:h-7 lg:w-7 hover:bg-white/10 hover:text-white"
+          >
+            <ChevronDown size={14} className={cn("transition-transform duration-150", !expanded && "-rotate-90")} aria-hidden />
+          </button>
+        ) : null}
+      </div>
+      {hasSubs && !collapsed && expanded ? (
+        <ul className="mb-1 ml-[22px] mt-0.5 flex flex-col gap-0.5 border-l border-white/10 pl-2">
+          {subs.map((sub) => {
+            const on = current === sub.href;
             return (
-              <Link
-                key={sub.href}
-                href={sub.href}
-                onClick={onClick}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-dm font-medium transition-colors cursor-pointer ${
-                  subIsActive
-                    ? "bg-[#2251A3]/40 text-white border-l-2 border-[#F47C20]"
-                    : "text-white/50 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                <SubIcon size={14} />
-                {sub.label}
-              </Link>
+              <li key={sub.href}>
+                <Link
+                  href={sub.href}
+                  onClick={onNavigate}
+                  aria-current={on ? "page" : undefined}
+                  className={cn(
+                    "flex min-h-[40px] items-center rounded-[7px] px-2.5 font-dm text-[13px] lg:min-h-[32px] transition-colors duration-150",
+                    on ? "bg-white/[.09] font-semibold text-white" : "text-white/60 hover:bg-white/[.06] hover:text-white",
+                  )}
+                >
+                  <span className="truncate">{sub.label}</span>
+                </Link>
+              </li>
             );
           })}
-        </div>
-      )}
-    </div>
+        </ul>
+      ) : null}
+    </li>
   );
 }
 
-// Maps nav hrefs to the permission key required to see them
-const NAV_PERMISSION_MAP: Record<string, string> = {
-  "/admin/command-center": "command_center",
-  "/admin/appointments":   "appointments",
-  "/admin/contacts":       "contacts",
-  "/admin/prospects":      "prospects",
-  "/admin/scanner-leads":  "scanner_leads",
-  "/admin/tools":          "tools",
-  "/admin/revenue":        "revenue",
-  "/admin/blog":           "blog",
-  "/admin/newsletter":     "blog",
-  "/admin/service-requests": "service_requests",
-  "/admin/partnerships":     "service_requests",
-  "/admin/waitlist":         "service_requests",
-  "/admin/analytics":      "analytics",
-  "/admin/agents":         "agents",
-  "/admin/settings":       "__admin_only__",
-};
-
-export default function AdminSidebar() {
+function SidebarBody({
+  sections,
+  collapsed,
+  onToggleCollapsed,
+  onNavigate,
+  mobile,
+}: {
+  sections: NavSection[];
+  collapsed: boolean;
+  onToggleCollapsed?: () => void;
+  onNavigate?: () => void;
+  mobile?: boolean;
+}) {
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
   const { data: session } = useSession();
-
+  const { counts } = useAdminShell();
   const isAdmin = session?.user?.isAdmin ?? false;
-  const permissions: string[] = session?.user?.permissions ?? [];
 
-  function canSee(href: string): boolean {
-    if (isAdmin || permissions.includes("*")) return true;
-    const required = NAV_PERMISSION_MAP[href];
-    if (!required) return true; // dashboard and unlisted items always visible
-    if (required === "__admin_only__") return false;
-    return permissions.includes(required);
-  }
+  const allHrefs = useMemo(() => flattenNav(sections).map((x) => x.href), [sections]);
+  const current = activeHref(pathname, allHrefs);
 
-  const visibleItems = navItems
-    .map(item => ({
-      ...item,
-      subItems: item.subItems?.filter(s => canSee(s.href)),
-    }))
-    .filter(item => canSee(item.href));
+  // Section collapse state (remembered) and per-item manual expansion.
+  const [closedGroups, setClosedGroups] = useState<Record<string, boolean>>({});
+  const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
+  useEffect(() => setClosedGroups(readGroups()), []);
+  const toggleGroup = (id: string) =>
+    setClosedGroups((g) => {
+      const next = { ...g, [id]: !g[id] };
+      try {
+        window.localStorage.setItem(GROUPS_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
 
-  const sidebarContent = (
-    <div className="flex flex-col h-full">
-      {/* Logo */}
-      <div className="px-5 py-5 border-b border-white/10">
-        <div className="flex items-center">
-          <img src="/footer-logo-transparent.png" alt="TIBLOGICS" className="h-28 w-auto max-w-[220px]" />
-        </div>
-        {!isAdmin && session?.user && (
-          <div className="mt-2 px-1">
-            <p className="text-white/60 text-xs font-dm truncate">{session.user.name}</p>
-            <span className="text-xs font-dm font-semibold bg-white/10 text-white/70 px-2 py-0.5 rounded-full mt-0.5 inline-block">
-              {(session.user as any).role ?? "Collaborator"}
-            </span>
-          </div>
-        )}
+  const badgeFor = (href: string) =>
+    href === "/admin_pro/appointments"
+      ? counts.appointments
+      : href === "/admin_pro/service-requests"
+        ? counts.serviceRequests
+        : href === "/admin_pro/communications/support" || href === "/admin_pro/communications"
+          ? counts.support || undefined
+          : undefined;
+
+  return (
+    <div className="a-sidebar flex h-full flex-col bg-[var(--a-navy-deep)] text-white">
+      {/* Brand */}
+      <div className={cn("flex h-16 shrink-0 items-center border-b border-white/[.08]", collapsed ? "justify-center px-2" : "justify-between px-4")}>
+        <Link
+          href="/admin_pro"
+          onClick={onNavigate}
+          className="flex items-center gap-2 rounded-md transition-opacity hover:opacity-90"
+          aria-label="TIBLOGICS admin home"
+        >
+          {collapsed ? (
+            <Image src="/tiblogics-icon.svg" alt="" width={34} height={34} className="h-[34px] w-[34px]" priority />
+          ) : (
+            <>
+              <Image
+                src="/footer-logo-light.png"
+                alt="TIBLOGICS"
+                width={600}
+                height={173}
+                className="h-9 w-auto"
+                priority
+              />
+              <span className="rounded-md bg-white/10 px-1.5 py-0.5 font-dm text-[10px] font-bold uppercase tracking-[.1em] text-white/70">
+                Admin
+              </span>
+            </>
+          )}
+        </Link>
+        {mobile && onNavigate ? (
+          <button
+            type="button"
+            onClick={onNavigate}
+            aria-label="Close navigation"
+            className="flex h-11 w-11 items-center justify-center rounded-md text-white/70 hover:bg-white/10 hover:text-white"
+          >
+            <X size={20} aria-hidden />
+          </button>
+        ) : null}
+        {!collapsed && onToggleCollapsed ? (
+          <button
+            type="button"
+            onClick={onToggleCollapsed}
+            aria-label="Collapse sidebar"
+            title="Collapse sidebar"
+            className="flex h-8 w-8 items-center justify-center rounded-md text-white/50 hover:bg-white/10 hover:text-white"
+          >
+            <PanelLeftClose size={17} aria-hidden />
+          </button>
+        ) : null}
       </div>
 
-      {/* Navigation */}
-      <nav className="px-3 py-4 flex flex-col gap-1 flex-1 overflow-y-auto">
-        {visibleItems.map((item, idx) => {
-          const nextItem = visibleItems[idx + 1];
-          const showDivider =
-            item.href === "/admin/command-center" && nextItem !== undefined;
+      {!isAdmin && session?.user && !collapsed ? (
+        <div className="border-b border-white/[.08] px-4 py-3">
+          <p className="truncate font-dm text-xs text-white/70">{session.user.name}</p>
+          <span className="mt-1 inline-block rounded-full bg-white/10 px-2 py-0.5 font-dm text-xs font-semibold text-white/80">
+            {(session.user as { role?: string }).role ?? "Collaborator"}
+          </span>
+        </div>
+      ) : null}
 
+      {/* Navigation */}
+      <nav aria-label="Admin" className={cn("a-scroll-thin flex-1 overflow-y-auto py-3", collapsed ? "px-2" : "px-3")}>
+        {sections.map((s, idx) => {
+          const closed = !collapsed && !mobile && !!closedGroups[s.id] && !s.items.some((i) => i.href === current || i.subItems?.some((x) => x.href === current));
+          const single = s.items.length === 1 && s.items[0].label === s.label;
           return (
-            <div key={item.href}>
-              <NavLink
-                item={item}
-                pathname={pathname}
-                onClick={() => setMobileOpen(false)}
-              />
-              {showDivider && (
-                <hr className="border-white/10 my-2" />
-              )}
+            <div key={s.id} className={cn(idx > 0 && (collapsed ? "mt-2 border-t border-white/[.08] pt-2" : "mt-4"))}>
+              {!collapsed && !single ? (
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(s.id)}
+                  aria-expanded={!closed}
+                  className="mb-1 flex min-h-[40px] w-full items-center justify-between rounded-md px-2.5 py-1 text-left lg:min-h-0 font-dm text-[11px] font-semibold uppercase tracking-[.08em] text-white/50 hover:text-white/80"
+                >
+                  {s.label}
+                  <ChevronDown size={12} className={cn("transition-transform duration-150", closed && "-rotate-90")} aria-hidden />
+                </button>
+              ) : null}
+              {!closed ? (
+                <ul className="flex flex-col gap-0.5">
+                  {s.items.map((item) => {
+                    const inBranch = item.href === current || !!item.subItems?.some((x) => x.href === current);
+                    const expanded = openItems[item.href] ?? inBranch;
+                    return (
+                      <NavRow
+                        key={item.href}
+                        item={item}
+                        current={current}
+                        collapsed={collapsed}
+                        badge={badgeFor(item.href)}
+                        expanded={expanded}
+                        onToggleExpand={() => setOpenItems((o) => ({ ...o, [item.href]: !expanded }))}
+                        onNavigate={onNavigate}
+                      />
+                    );
+                  })}
+                </ul>
+              ) : null}
             </div>
           );
         })}
       </nav>
 
       {/* Bottom */}
-      <div className="border-t border-white/10 p-3 space-y-1">
+      <div className={cn("shrink-0 space-y-1 border-t border-white/[.08]", collapsed ? "p-2" : "p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]")}>
+        {collapsed && onToggleCollapsed ? (
+          <button
+            type="button"
+            onClick={onToggleCollapsed}
+            aria-label="Expand sidebar"
+            title="Expand sidebar"
+            className="flex h-9 w-full items-center justify-center rounded-[8px] text-white/60 hover:bg-white/10 hover:text-white"
+          >
+            <PanelLeftOpen size={17} aria-hidden />
+          </button>
+        ) : null}
         <Link
           href="/"
-          target="_blank"
-          className="flex items-center gap-2 px-3 py-2 text-sm text-white/50 hover:text-white transition-colors rounded-lg hover:bg-white/10"
+          onClick={onNavigate}
+          aria-label={collapsed ? "View website" : undefined}
+          title={collapsed ? "View website" : undefined}
+          className={cn(
+            "flex h-11 items-center gap-2.5 rounded-[8px] font-dm text-[13px] font-medium text-white/70 hover:bg-white/[.06] hover:text-white lg:h-9",
+            collapsed ? "justify-center" : "px-2.5",
+          )}
         >
-          ← Back to Site
+          <ExternalLink size={16} aria-hidden />
+          {!collapsed ? "View website" : null}
         </Link>
         <button
-          onClick={() => signOut({ callbackUrl: "/admin/login" })}
-          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white/50 hover:text-red-300 transition-colors rounded-lg hover:bg-white/5 cursor-pointer"
+          type="button"
+          onClick={() => signOut({ callbackUrl: "/admin_pro/login" })}
+          aria-label={collapsed ? "Sign out" : undefined}
+          title={collapsed ? "Sign out" : undefined}
+          className={cn(
+            "flex h-11 w-full items-center gap-2.5 rounded-[8px] font-dm text-[13px] font-medium text-white/70 hover:bg-white/[.06] hover:text-[#fca5a5] lg:h-9",
+            collapsed ? "justify-center" : "px-2.5",
+          )}
         >
-          <LogOut size={16} />
-          Sign Out
+          <LogOut size={16} aria-hidden />
+          {!collapsed ? "Sign out" : null}
         </button>
       </div>
     </div>
   );
+}
+
+export default function AdminSidebar() {
+  const { data: session } = useSession();
+  const { collapsed, toggleCollapsed, mobileNavOpen, setMobileNavOpen } = useAdminShell();
+  const viewer = {
+    isAdmin: session?.user?.isAdmin ?? false,
+    permissions: (session?.user?.permissions as string[] | undefined) ?? [],
+  };
+  const sections = useMemo(() => visibleSections(viewer), [viewer.isAdmin, viewer.permissions.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pathname = usePathname();
+
+  // Close the mobile drawer on navigation.
+  useEffect(() => setMobileNavOpen(false), [pathname, setMobileNavOpen]);
 
   return (
     <>
-      {/* Mobile toggle button */}
-      <button
-        className="lg:hidden fixed top-4 left-4 z-50 bg-[#1B3A6B] text-white p-2 rounded-lg shadow-lg"
-        onClick={() => setMobileOpen((v) => !v)}
-        aria-label="Toggle sidebar"
-      >
-        {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-      </button>
-
-      {/* Mobile overlay */}
-      {mobileOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/40 z-30"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-
-      {/* Sidebar — hidden on mobile unless open, always visible on lg+ */}
       <aside
-        className={`fixed left-0 top-0 bottom-0 w-64 bg-[#1B3A6B] z-40 transition-transform duration-300 ${
-          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        }`}
+        className="hidden shrink-0 transition-[width] duration-150 lg:block"
+        style={{ width: collapsed ? "var(--a-sidebar-w-collapsed)" : "var(--a-sidebar-w)" }}
       >
-        {sidebarContent}
+        <SidebarBody sections={sections} collapsed={collapsed} onToggleCollapsed={toggleCollapsed} />
       </aside>
+      <Drawer
+        open={mobileNavOpen}
+        onClose={() => setMobileNavOpen(false)}
+        side="left"
+        width="min(300px, 86vw)"
+        hideHeader
+        ariaLabel="Admin navigation"
+        className="bg-[var(--a-navy-deep)] lg:hidden"
+      >
+        <SidebarBody sections={sections} collapsed={false} mobile onNavigate={() => setMobileNavOpen(false)} />
+      </Drawer>
     </>
   );
 }

@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getT } from "@/lib/i18n/server";
 import prisma from "@/lib/prisma";
 import resend from "@/lib/resend";
-import { requireAdmin, isValidEmail, escapeHtml } from "@/lib/require-admin";
+import { listLimit } from "@/lib/admin/list-limit";
+import { requireAdmin, isValidEmail, escapeHtml, checkRateLimit } from "@/lib/require-admin";
+import { recordTouch } from "@/lib/analytics/touch";
 
 // GET is admin-only — POST is public (client submits request)
 export async function GET(req: NextRequest) {
@@ -10,7 +13,9 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
-  const limit = Math.min(parseInt(searchParams.get("limit") ?? "50"), 200);
+  // parseInt("abc") is NaN, and a NaN take made Prisma throw, which the catch
+  // below turned into an empty list. listLimit falls back instead.
+  const limit = listLimit(req.url, { def: 50, max: 200 });
   try {
     const where: Record<string, unknown> = {};
     if (status && status !== "ALL") where.status = status;
@@ -22,25 +27,34 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const t = await getT();
+  // Public, and every accepted request emails a confirmation to an address
+  // the caller chooses. Without a cap that is a way to send mail from this
+  // domain to anyone. Same shape as the booking form's limits.
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? req.headers.get("x-real-ip") ?? "unknown";
+  if (!(await checkRateLimit(`service-request:${ip}`, ip === "unknown" ? 50 : 5, 60 * 60_000))) {
+    return NextResponse.json({ error: t("pages.api.tooManyLater") }, { status: 429 });
+  }
+
   try {
     const body = await req.json();
     const { firstName, lastName, email, phone, company, service, description, budget, timeline, tiboAssisted, aiSummary } = body;
 
     // Validate required fields
     if (!firstName || typeof firstName !== "string" || firstName.length > 100) {
-      return NextResponse.json({ error: "Invalid first name" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.invalidFirstName") }, { status: 400 });
     }
     if (!lastName || typeof lastName !== "string" || lastName.length > 100) {
-      return NextResponse.json({ error: "Invalid last name" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.invalidLastName") }, { status: 400 });
     }
     if (!isValidEmail(email)) {
-      return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.invalidEmail") }, { status: 400 });
     }
     if (!service || typeof service !== "string" || service.length > 200) {
-      return NextResponse.json({ error: "Invalid service" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.invalidService") }, { status: 400 });
     }
     if (!description || typeof description !== "string" || description.length > 5000) {
-      return NextResponse.json({ error: "Description required (max 5000 chars)" }, { status: 400 });
+      return NextResponse.json({ error: t("pages.api.descriptionRequired") }, { status: 400 });
     }
 
     const request = await prisma.serviceRequest.create({
@@ -59,14 +73,29 @@ export async function POST(req: NextRequest) {
         status: "NEW",
       },
     });
+    // Analytics: where this lead came from (first and last touch). Never throws.
+    await recordTouch({ kind: "service_request", refId: request.id, headers: req.headers });
 
-    await sendClientConfirmation({ firstName: request.firstName, lastName: request.lastName, email: request.email, service: request.service, description: request.description });
-    await sendTeamNotification({ firstName: request.firstName, lastName: request.lastName, email: request.email, phone: request.phone ?? undefined, company: request.company ?? undefined, service: request.service, description: request.description, budget: request.budget ?? undefined, timeline: request.timeline ?? undefined, tiboAssisted: request.tiboAssisted });
+    // The request is saved; the emails are best-effort. They used to be
+    // awaited in sequence, so a mail-provider error returned a 500 for a
+    // request that had in fact been saved, and the visitor would submit it
+    // again. Settled together, never allowed to fail the response, and
+    // capped at 5 seconds so a slow mail provider cannot leave the visitor on
+    // a spinner (the booking form has the same cap). Sending carries on in
+    // the background; this is a long-lived server, not a frozen function.
+    await Promise.race([
+      new Promise((resolve) => setTimeout(resolve, 5000)),
+      Promise.allSettled([
+      sendClientConfirmation({ firstName: request.firstName, lastName: request.lastName, email: request.email, service: request.service, description: request.description }),
+      sendTeamNotification({ firstName: request.firstName, lastName: request.lastName, email: request.email, phone: request.phone ?? undefined, company: request.company ?? undefined, service: request.service, description: request.description, budget: request.budget ?? undefined, timeline: request.timeline ?? undefined, tiboAssisted: request.tiboAssisted }),
+      ]),
+    ]);
 
-    return NextResponse.json({ request }, { status: 201 });
+    // Only what the form needs; the full row was echoed back before.
+    return NextResponse.json({ id: request.id, ok: true }, { status: 201 });
   } catch (err) {
     console.error("Service request error:", err);
-    return NextResponse.json({ error: "Failed to submit request" }, { status: 500 });
+    return NextResponse.json({ error: t("pages.api.failedRequest") }, { status: 500 });
   }
 }
 

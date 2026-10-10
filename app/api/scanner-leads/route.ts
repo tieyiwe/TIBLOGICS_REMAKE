@@ -1,48 +1,24 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAdmin } from "@/lib/require-admin";
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-
-    const {
-      url,
-      overallScore,
-      seoScore,
-      perfScore,
-      uxScore,
-      aiScore,
-      findings,
-      aiDescription,
-    } = body;
-
-    const lead = await prisma.scannerLead.create({
-      data: {
-        url,
-        overallScore,
-        seoScore,
-        perfScore,
-        uxScore,
-        aiScore,
-        findings,
-        aiDescription,
-      },
-    });
-
-    return NextResponse.json(lead, { status: 201 });
-  } catch (error) {
-    console.error("[POST /api/scanner-leads]", error);
-    return NextResponse.json(
-      { error: "Failed to create scanner lead" },
-      { status: 500 }
-    );
-  }
+// POST is gone: the scanner saves its own result on the server
+// (app/api/scanner/audit, lib/scanner/lead.ts). It used to accept any scores
+// an anonymous caller sent.
+export function POST() {
+  return NextResponse.json({ error: "Gone" }, { status: 410 });
 }
 
+// Staff only. This returns every captured lead's name, email and scanned URL —
+// the whole scanner mailing list was readable by anyone who guessed the path.
 export async function GET() {
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   try {
     const leads = await prisma.scannerLead.findMany({
       orderBy: { createdAt: "desc" },
+      take: 500,
     });
 
     return NextResponse.json(leads);

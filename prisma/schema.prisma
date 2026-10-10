@@ -3,39 +3,43 @@ generator client {
   binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x", "linux-musl", "linux-musl-openssl-3.0.x"]
 }
 
+// Host-neutral. Supabase was only ever a Postgres host for this project —
+// no Supabase Auth, Storage, Realtime or RLS is used — so moving providers
+// is a connection-string change. lib/prisma.ts still accepts the old
+// SUPABASE_URL as an alias so the app keeps running mid-migration.
 datasource db {
   provider  = "postgresql"
-  url       = env("SUPABASE_URL")
-  directUrl = env("SUPABASE_URL")
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL")
 }
 
 model Appointment {
-  id              String    @id @default(cuid())
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  serviceType     String
-  serviceDuration String
-  servicePrice    Int
-  date            DateTime
-  timeSlot        String
-  timezone        String    @default("America/New_York")
-  firstName       String
-  lastName        String
-  email           String
-  company         String?
-  phone           String?
-  goalNotes       String?
-  addOnRecording      Boolean @default(false)
-  addOnActionPlan     Boolean @default(false)
-  addOnSlackAccess    Boolean @default(false)
-  totalAmount     Int
-  status          AppointmentStatus @default(PENDING)
+  id               String            @id @default(cuid())
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  serviceType      String
+  serviceDuration  String
+  servicePrice     Int
+  date             DateTime
+  timeSlot         String
+  timezone         String            @default("America/New_York")
+  firstName        String
+  lastName         String
+  email            String
+  company          String?
+  phone            String?
+  goalNotes        String?
+  addOnRecording   Boolean           @default(false)
+  addOnActionPlan  Boolean           @default(false)
+  addOnSlackAccess Boolean           @default(false)
+  totalAmount      Int
+  status           AppointmentStatus @default(PENDING)
   stripeSessionId  String?
   stripePaymentId  String?
   paymentStatus    String?
   zoomLink         String?
   notes            String?
-  reminderSent     Boolean   @default(false)
+  reminderSent     Boolean           @default(false)
   confirmedAt      DateTime?
   cancelledAt      DateTime?
   cancelReason     String?
@@ -113,9 +117,181 @@ model ScannerLead {
   email         String?
   name          String?
   bookedCallAt  DateTime?
+  /// Columns below are created at runtime by lib/scanner/db.ts (and dbprep).
+  /// The site's key for the free-scan limit: lower-case host without "www.".
+  domain          String?
+  /// Secret report link: /tools/scanner/report/<token>.
+  token           String?   @unique
+  locale          String?
+  /// Growth and security scores, extra findings, detected tools, ideas, PageSpeed.
+  extra           Json?
+  unlockedAt      DateTime?
+  /// "paid" | "call" | "admin"
+  unlockSource    String?
+  stripeSessionId String?
+  amountPaid      Int?
+  /// The written full report (fix steps, build ideas), made once when unlocked.
+  report          Json?
+  reportStatus    String?
+  /// Competitor sites compared in the full report.
+  compare         Json?
+  /// A paid report includes one re-scan of the same site within 30 days.
+  rescanCredits   Int       @default(0)
+  rescanUntil     DateTime?
+  /// The scan this one re-measured, when it used a re-scan credit.
+  parentId        String?
+  emailedAt       DateTime?
+  followupStage   Int       @default(0)
+  followupAt      DateTime?
+  consentAt       DateTime?
+  growthLeadId    String?
+  /// The booking made from this report (/book?scan=<token>).
+  appointmentId   String?
 
   @@index([createdAt])
   @@index([aiScore])
+  @@index([domain, createdAt])
+  @@index([followupAt])
+  @@index([appointmentId])
+}
+
+/// A paid Readiness Monitor: one customer site plus up to three competitors,
+/// rescanned on a schedule. Tables are created by lib/monitor/db.ts on first
+/// use, since this project has no migrations.
+model MonitorSubscription {
+  id                   String    @id @default(cuid())
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  email                String
+  name                 String?
+  siteUrl              String
+  competitors          String[]
+  /// pending (checkout not finished) | active | past_due | canceled
+  status               String    @default("pending")
+  stripeCustomerId     String?
+  stripeSubscriptionId String?   @unique
+  currentPeriodEnd     DateTime?
+  /// The dashboard link is derived from this salt (see lib/monitor/token.ts);
+  /// only the link's hash is stored.
+  tokenSalt            String
+  tokenHash            String    @unique
+  lastRunAt            DateTime?
+  nextRunAt            DateTime?
+  /// Set while a run is in progress, so two cron calls cannot scan twice.
+  runStartedAt         DateTime?
+  lastManualRunAt      DateTime?
+
+  scans MonitorScan[]
+
+  @@index([status, nextRunAt])
+  @@index([email])
+}
+
+model MonitorScan {
+  id             String              @id @default(cuid())
+  createdAt      DateTime            @default(now())
+  subscriptionId String
+  subscription   MonitorSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  /// Every site scanned in one pass shares a runId.
+  runId          String
+  url            String
+  isOwn          Boolean
+  ok             Boolean
+  error          String?
+  overallScore   Int?
+  seoScore       Int?
+  perfScore      Int?
+  uxScore        Int?
+  aiScore        Int?
+  findings       Json?
+
+  @@index([subscriptionId, createdAt])
+  @@index([runId])
+}
+
+/// Toolkit Live / Compliance Guard subscription, one per TIBLOGICS account.
+/// Tables are created by lib/toolkit/db.ts on first use (no migrations).
+model ToolkitSubscription {
+  id                   String    @id @default(cuid())
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  studentId            String    @unique
+  /// toolkit (prompts + guard) | guard (Compliance Guard only)
+  plan                 String
+  /// active | trialing | past_due | canceled
+  status               String
+  stripeCustomerId     String?
+  stripeSubscriptionId String?   @unique
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+}
+
+/// What the tool knows about the customer's business, sent with every run.
+model ToolkitProfile {
+  studentId       String   @id
+  updatedAt       DateTime @updatedAt
+  businessName    String   @default("")
+  vertical        String   @default("general")
+  location        String   @default("")
+  audience        String   @default("")
+  offer           String   @default("")
+  voice           String   @default("")
+  differentiators String   @default("")
+  /// Licence numbers, brokerage, required disclosures: things that must appear.
+  compliance      String   @default("")
+}
+
+/// Every generation and check. Doubles as the usage meter.
+model ToolkitRun {
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  studentId    String
+  /// generate | check | deep-check
+  kind         String
+  promptId     String?
+  title        String
+  input        String   @db.Text
+  output       String   @db.Text
+  findings     Json?
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+
+  @@index([studentId, createdAt])
+  @@index([studentId, kind, createdAt])
+}
+
+/// A paid Automation Blueprint: intake answers in, a written plan out.
+/// Created by lib/blueprint/db.ts on first use (no migrations).
+model Blueprint {
+  id                  String    @id @default(cuid())
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  email               String
+  name                String
+  company             String
+  /// draft (checkout not finished) | paid | generating | ready | failed
+  status              String    @default("draft")
+  intake              Json
+  result              Json?
+  error               String?
+  attempts            Int       @default(0)
+  generationStartedAt DateTime?
+  stripeSessionId     String?   @unique
+  amountPaid          Int       @default(0)
+  paidAt              DateTime?
+  readyAt             DateTime?
+  /// Quoted when booking a build; the amount paid comes off the engagement.
+  creditCode          String    @unique
+  creditExpiresAt     DateTime?
+  creditUsedAt        DateTime?
+  tokenSalt           String
+  tokenHash           String    @unique
+  inputTokens         Int       @default(0)
+  outputTokens        Int       @default(0)
+
+  @@index([status])
+  @@index([email])
+  @@index([createdAt])
 }
 
 model ToolUsage {
@@ -131,6 +307,17 @@ model AdminSettings {
   key       String   @unique
   value     String
   updatedAt DateTime @updatedAt
+}
+
+/// Rate-limit counters. Shared so a limit survives a restart and holds across
+/// instances — the in-memory version reset on every deploy and counted per
+/// instance. Rows are disposable; pruneRateLimits() clears expired ones.
+model RateLimit {
+  key     String   @id
+  count   Int      @default(0)
+  resetAt DateTime
+
+  @@index([resetAt])
 }
 
 model BlockedDate {
@@ -161,6 +348,20 @@ model Project {
   archived         Boolean         @default(false)
   notes            String?
   tasks            ProjectTask[]
+  // Command Center additions (lib/admin/command-center/db.ts adds the columns
+  // at runtime; all nullable or defaulted so existing rows are unchanged).
+  ownerId          String?
+  health           String          @default("on_track")
+  healthNote       String?
+  goals            String?
+  links            Json            @default("[]")
+  progressMode     String          @default("manual")
+  hourlyRateCents  Int?
+  clientName       String?
+  clientEmail      String?
+  prospectId       String?
+  templateKey      String?
+  lastUpdateAt     DateTime?
 
   @@index([category])
   @@index([status])
@@ -189,22 +390,42 @@ enum ProjectPriority {
 }
 
 model ProjectTask {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   text      String
-  done      Boolean  @default(false)
-  createdAt DateTime @default(now())
+  done      Boolean   @default(false)
+  createdAt DateTime  @default(now())
   dueDate   DateTime?
-  order     Int      @default(0)
+  order     Int       @default(0)
+  // Command Center additions (runtime columns, see lib/admin/command-center/db.ts)
+  status          String    @default("todo") // todo | in_progress | review | done
+  priority        String    @default("none") // none | low | medium | high | urgent
+  assigneeId      String? // "owner" or a Collaborator id
+  description     String?
+  labels          String[]  @default([])
+  parentId        String? // subtask of another ProjectTask
+  startDate       DateTime?
+  estimateMinutes Int?
+  blockedBy       String[]  @default([])
+  recurrence      String? // weekly | monthly
+  completedAt     DateTime?
+  updatedAt       DateTime  @default(now()) @updatedAt
+  createdById     String?
+  milestoneId     String?
+  links           Json      @default("[]")
 
   @@index([projectId])
+  @@index([assigneeId])
+  @@index([parentId])
+  @@index([dueDate])
 }
 
 model NewsletterSubscriber {
   id             String    @id @default(cuid())
   email          String    @unique
   firstName      String?
+  whatsapp       String?
   source         String    @default("blog")
   active         Boolean   @default(true)
   subscribedAt   DateTime  @default(now())
@@ -277,6 +498,7 @@ model BlogPost {
   @@index([published])
   @@index([featured])
   @@index([createdAt])
+  @@index([published, createdAt])
 }
 
 model BreakingNews {
@@ -322,10 +544,129 @@ model PageView {
   country   String?
   sessionId String
   createdAt DateTime @default(now())
+  /// Created at runtime by lib/analytics/db.ts (and dbprep): location from lib/geo.ts.
+  region    String?
+  city      String?
+  /// Acquisition of the session (lib/analytics/sources.ts) and engagement of
+  /// the view (visible time, scroll depth bucket). Runtime columns as above.
+  source    String?
+  medium    String?
+  campaign  String?
+  content   String?
+  term      String?
+  linkCode  String?
+  landing   Boolean  @default(false)
+  returning Boolean  @default(false)
+  engagedMs Int?
+  scrollPct Int?
 
   @@index([createdAt])
   @@index([sessionId])
   @@index([origin])
+  @@index([page, createdAt])
+  @@index([source, createdAt])
+  @@index([sessionId, createdAt])
+}
+
+/// Every website scan attempt (app/api/scanner/audit), whatever the outcome.
+/// Created at runtime by lib/analytics/db.ts (and dbprep). No personal data:
+/// the IP is anonymised (/24, /48), location is approximate.
+model ScanLog {
+  id          String   @id
+  createdAt   DateTime @default(now())
+  url         String
+  domain      String?
+  /// ok | limit | held | error | rescan | invalid
+  outcome     String
+  errorCode   String?
+  /// The ScannerLead it created, when it created one.
+  leadId      String?
+  ip          String?
+  country     String?
+  countryName String?
+  region      String?
+  city        String?
+  device      String?
+  browser     String?
+  os          String?
+  locale      String?
+  /// The page the scan was started from (normalised path).
+  fromPage    String?
+  staff       Boolean  @default(false)
+  /// The visit's source and medium (last-touch cookie).
+  source      String?
+  medium      String?
+
+  @@index([createdAt])
+  @@index([domain, createdAt])
+  @@index([leadId])
+}
+
+/// First and last touch of a conversion (sign-up, booking, lead, purchase),
+/// keyed by the converted record (kind + refId), from the tib_ft / tib_lt
+/// cookies (lib/analytics/touch.ts). Created at runtime by lib/analytics/db.ts.
+model TouchAttribution {
+  id          String    @id
+  createdAt   DateTime  @default(now())
+  kind        String
+  refId       String
+  ftSource    String?
+  ftMedium    String?
+  ftCampaign  String?
+  ftContent   String?
+  ftTerm      String?
+  ftLink      String?
+  ftLanding   String?
+  ftReferrer  String?
+  ftAt        DateTime?
+  ltSource    String?
+  ltMedium    String?
+  ltCampaign  String?
+  ltContent   String?
+  ltTerm      String?
+  ltLink      String?
+  ltLanding   String?
+  ltReferrer  String?
+  device      String?
+  country     String?
+  amountCents Int?
+
+  @@unique([kind, refId])
+  @@index([createdAt])
+}
+
+/// Monthly targets set on the Insights page (revenue in cents, bookings,
+/// signups). Created at runtime by lib/analytics/db.ts.
+model AnalyticsGoal {
+  month     String
+  metric    String
+  target    Int
+  updatedAt DateTime @default(now())
+
+  @@id([month, metric])
+}
+
+/// Clicks on links and buttons (components/public/AnalyticsTracker.tsx,
+/// /api/analytics/clicks). Control names and normalised paths only, never
+/// typed text. Created at runtime by lib/analytics/db.ts (and dbprep).
+model ClickEvent {
+  id        String   @id
+  createdAt DateTime @default(now())
+  sessionId String?
+  page      String
+  /// website | arfa | other
+  area      String
+  label     String
+  /// link | button | submit | summary | tab | menu | other
+  kind      String
+  /// Internal path (normalised), "external:host", "mailto" or "tel".
+  href      String?
+  device    String?
+  country   String?
+
+  @@index([createdAt])
+  @@index([page, createdAt])
+  @@index([label, createdAt])
 }
 
 model ActiveSession {
@@ -345,21 +686,22 @@ model ActiveSession {
 }
 
 model Collaborator {
-  id            String    @id @default(cuid())
+  id            String                    @id @default(cuid())
   name          String
-  email         String    @unique
+  email         String                    @unique
   passwordHash  String?
-  role          String    @default("CUSTOM")
+  role          String                    @default("CUSTOM")
   permissions   String[]
-  isAdmin       Boolean   @default(false)
-  active        Boolean   @default(true)
-  inviteToken   String?   @unique
+  isAdmin       Boolean                   @default(false)
+  active        Boolean                   @default(true)
+  inviteToken   String?                   @unique
   inviteExpires DateTime?
   invitedBy     String
   lastLoginAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
   activityLogs  CollaboratorActivityLog[]
+  access        StaffAccess?
 
   @@index([email])
   @@index([inviteToken])
@@ -382,35 +724,34 @@ model CollaboratorActivityLog {
 }
 
 model AgentLead {
-  id            String          @id @default(cuid())
-  source        String          @default("ai_generated")
-  companyName   String
-  contactName   String?
-  email         String?
-  phone         String?
-  website       String?
-  location      String?
-  industry      String?
-  description   String?         @db.Text
-  notes         String?         @db.Text
-  status        AgentLeadStatus @default(NEW)
-  fromAgent     String          @default("aria")
-  assignedTo    String?
-  callSid           String?
-  callStatus        String?
-  callNotes         String?   @db.Text
-  callTranscript    String?   @db.Text
-  callSummary       String?   @db.Text
-  blandCallId       String?
-  interestedIn      String[]
-  hasWebsite        Boolean?
-  businessInfo      Json?
-  scrapedAt         DateTime?
-  area              String?
-  transferredAt     DateTime?
-  contactedAt       DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id             String          @id @default(cuid())
+  source         String          @default("ai_generated")
+  companyName    String
+  contactName    String?
+  email          String?
+  phone          String?
+  website        String?
+  location       String?
+  industry       String?
+  description    String?         @db.Text
+  notes          String?         @db.Text
+  status         AgentLeadStatus @default(NEW)
+  fromAgent      String          @default("aria")
+  assignedTo     String?
+  callSid        String?
+  callStatus     String?
+  callNotes      String?         @db.Text
+  callTranscript String?         @db.Text
+  callSummary    String?         @db.Text
+  interestedIn   String[]
+  hasWebsite     Boolean?
+  businessInfo   Json?
+  scrapedAt      DateTime?
+  area           String?
+  transferredAt  DateTime?
+  contactedAt    DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@index([status])
   @@index([fromAgent])
@@ -482,31 +823,2944 @@ model WaitlistEntry {
   @@index([createdAt])
 }
 
-model Event {
-  id               String   @id @default(cuid())
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+// ═══════════════════════════════════════════════════════════════════════════
+// TIBLOGICS LEARN — course platform
+// Status-like columns are String (validated in lib/learn/types.ts) rather than
+// Postgres enums, so the raw-SQL sync-db path stays idempotent and simple.
+// ═══════════════════════════════════════════════════════════════════════════
+
+model Student {
+  id                String    @id @default(cuid())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  email             String    @unique
+  passwordHash      String
+  name              String
+  emailVerified     DateTime?
+  verifyToken       String?   @unique
+  resetToken        String?   @unique
+  resetTokenExpires DateTime?
+  accessibilityMode Boolean   @default(false)
+  locale            String    @default("en")
+  leaderboardOptIn  Boolean   @default(false)
+  /// AI-Empowered Youth (lib/learn/youth-account.ts, added at runtime): the
+  /// learner's birth year and their parent or guardian.
+  birthYear               Int?
+  parentEmail             String?
+  parentConsent           String    @default("none") // none|pending|granted|revoked
+  parentConsentAt         DateTime?
+  parentToken             String?   @unique
+  parentBoardsOptIn       Boolean   @default(false)
+  parentEmailSentAt       DateTime?
+  parentDeleteRequestedAt DateTime?
+  lastLoginAt       DateTime?
+
+  subscription  LearnSubscription?
+  progress      LessonProgress[]
+  microAttempts MicroCheckAttempt[]
+  quizAttempts  QuizAttempt[]
+  examSessions  FinalExamSession[]
+  capstones     CapstoneSubmission[]
+  points        PointsLedger[]
+  certificates  LearnCertificate[]
+  labAttempts   LabAttempt[]
+  reviewCards   ReviewCard[]
+  reflections   LessonReflection[]
+  portfolio     PortfolioSettings?
+  trackPurchases TrackPurchase[]
+  drafts        LearnerDraft[]
+
+  @@index([email])
+  @@index([parentEmail])
+}
+
+model LearnTrack {
+  id                   String    @id @default(cuid())
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  slug                 String    @unique
+  title                String
+  titleFr              String?
+  tagline              String?
+  description          String    @db.Text
+  descriptionFr        String?   @db.Text
+  level                String    @default("beginner") // starter|beginner|intermediate|advanced
+  levelEnd             String? // set when the track spans levels
+  status               String    @default("draft") // draft|coming_soon|live
+  sortOrder            Int       @default(0)
+  accentColor          String    @default("#F47C4C")
+  heroImage            String?
+  outcomes             Json      @default("[]")
+  audience             String?
+  certificateName      String
+  estimatedHours       Float     @default(0)
+  estimatedWeeksAt3Hrs Int?
+  /// Set when staff edit this in the admin; the seed then leaves it alone.
+  editedAt             DateTime?
+  /// One-time price in cents. Null = from the level (lib/learn/pricing.ts).
+  /// Added at runtime (lib/learn/admin/columns.ts).
+  priceCents           Int?
+
+  modules      LearnModule[]
+  finalExam    FinalExam?
+  capstone     Capstone?
+  certificates LearnCertificate[]
+  labs         Lab[]
+
+  @@index([status])
+  @@index([sortOrder])
+}
+
+model LearnModule {
+  id               String     @id @default(cuid())
+  trackId          String
+  track            LearnTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
   title            String
-  slug             String   @unique
-  description      String   @db.Text
-  content          String?  @db.Text
-  type             String   @default("TRAINING")
-  price            Int      @default(0)
-  currency         String   @default("USD")
-  capacity         Int?
-  location         String   @default("Online")
-  date             DateTime?
-  endDate          DateTime?
-  timeSlot         String?
-  timezone         String   @default("America/New_York")
-  coverImage       String?
-  tags             String[]
-  featured         Boolean  @default(false)
-  published        Boolean  @default(false)
-  registrationOpen Boolean  @default(true)
+  summary          String?
+  sortOrder        Int
+  estimatedMinutes Int        @default(0)
+  /// Set when staff edit this in the admin; the seed then leaves it alone.
+  editedAt         DateTime?
+
+  lessons Lesson[]
+  quiz    Quiz?
+  examQs  FinalExamQuestion[]
+  labs    Lab[]
+
+  @@index([trackId])
+}
+
+model Lesson {
+  id              String      @id @default(cuid())
+  moduleId        String
+  module          LearnModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title           String
+  sortOrder       Int
+  contentType     String      @default("mixed") // video|article|mixed
+  videoUrl        String?
+  bodyMd          String      @db.Text
+  durationMinutes Int         @default(0)
+  objective       String?
+  isPreview       Boolean     @default(false)
+  hasPractice     Boolean     @default(false)
+  /// Set when staff edit this in the admin; the seed then leaves it alone.
+  editedAt        DateTime?
+  /// When the lesson was added. Null for lessons that predate the column
+  /// (lib/learn/admin/columns.ts adds it without back-filling), so only
+  /// lessons added later can show as "New in this track".
+  createdAt       DateTime?   @default(now())
+
+  resources   LessonResource[]
+  microCheck  MicroCheck?
+  progress    LessonProgress[]
+  labs        Lab[]
+  reflections LessonReflection[]
+
+  @@index([moduleId])
+  recap         LessonRecap?
+}
+
+model LessonResource {
+  id                String  @id @default(cuid())
+  lessonId          String
+  lesson            Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  title             String
+  url               String
+  resourceType      String  @default("tool") // tool|article|video|dataset|template|account_signup
+  isFree            Boolean @default(true)
+  isRequired        Boolean @default(false)
+  notes             String?
+  sortOrder         Int     @default(0)
+  lastCheckedStatus Int? // admin link checker result
+
+  @@index([lessonId])
+}
+
+// ── Tier 1: micro-checks (after every lesson) ──────────────────────────────
+model MicroCheck {
+  id              String    @id @default(cuid())
+  lessonId        String    @unique
+  lesson          Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  passScore       Int       @default(67)
+  questionsServed Int       @default(3)
+  /// Set when staff edit this in the admin; the seed then leaves it alone.
+  editedAt        DateTime?
+
+  questions MicroCheckQuestion[]
+  attempts  MicroCheckAttempt[]
+}
+
+model MicroCheckQuestion {
+  id           String     @id @default(cuid())
+  microCheckId String
+  microCheck   MicroCheck @relation(fields: [microCheckId], references: [id], onDelete: Cascade)
+  question     String     @db.Text
+  options      Json
+  correctIndex Int
+  explanation  String     @db.Text
+
+  @@index([microCheckId])
+}
+
+model MicroCheckAttempt {
+  id           String     @id @default(cuid())
+  studentId    String
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  microCheckId String
+  microCheck   MicroCheck @relation(fields: [microCheckId], references: [id], onDelete: Cascade)
+  score        Int
+  passed       Boolean
+  answers      Json
+  createdAt    DateTime   @default(now())
+
+  @@index([studentId])
+  @@index([microCheckId])
+}
+
+// ── Tier 2: module quizzes ─────────────────────────────────────────────────
+model Quiz {
+  id              String      @id @default(cuid())
+  moduleId        String      @unique
+  module          LearnModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  passScore       Int         @default(80)
+  questionsServed Int         @default(8)
+  /// Set when staff edit this in the admin; the seed then leaves it alone.
+  editedAt        DateTime?
+
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+}
+
+model QuizQuestion {
+  id           String @id @default(cuid())
+  quizId       String
+  quiz         Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  question     String @db.Text
+  options      Json
+  correctIndex Int
+  explanation  String @db.Text
+
+  @@index([quizId])
+}
+
+model QuizAttempt {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  quizId    String
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  score     Int
+  passed    Boolean
+  answers   Json
+  createdAt DateTime @default(now())
+
+  @@index([studentId])
+  @@index([quizId])
+}
+
+// ── Tier 3: timed final exam ───────────────────────────────────────────────
+model FinalExam {
+  id               String     @id @default(cuid())
+  trackId          String     @unique
+  track            LearnTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  title            String
+  timeLimitMinutes Int
+  questionsServed  Int
+  passScore        Int        @default(75)
+  distinctionScore Int        @default(90)
+  maxAttempts      Int        @default(3)
+  cooldownHours    Int        @default(24)
+  instructionsMd   String     @db.Text
+  /// Set when staff edit this in the admin; the seed then leaves it alone.
+  editedAt         DateTime?
+
+  questions FinalExamQuestion[]
+  sessions  FinalExamSession[]
+}
+
+model FinalExamQuestion {
+  id           String       @id @default(cuid())
+  finalExamId  String
+  finalExam    FinalExam    @relation(fields: [finalExamId], references: [id], onDelete: Cascade)
+  moduleId     String?
+  module       LearnModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  question     String       @db.Text
+  options      Json
+  correctIndex Int
+  explanation  String       @db.Text
+  difficulty   Int          @default(2) // 1=recall 2=application 3=analysis
+
+  @@index([finalExamId])
+  @@index([moduleId])
+}
+
+model FinalExamSession {
+  id              String    @id @default(cuid())
+  studentId       String
+  student         Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  finalExamId     String
+  finalExam       FinalExam @relation(fields: [finalExamId], references: [id], onDelete: Cascade)
+  status          String    @default("in_progress") // in_progress|submitted|expired
+  questionIds     Json
+  startedAt       DateTime  @default(now())
+  expiresAt       DateTime
+  submittedAt     DateTime?
+  score           Int?
+  passed          Boolean?
+  answers         Json      @default("{}")
+  perModuleScores Json?
+  attemptNumber   Int       @default(1)
+
+  @@index([studentId])
+  @@index([finalExamId])
+  @@index([status])
+}
+
+// ── Labs ───────────────────────────────────────────────────────────────────
+// Hands-on practice. Three kinds, all sharing one attempt model:
+//   prompt   — write a prompt, run it against a real model in a sandbox,
+//              get coached on the PROMPT rather than the output
+//   critique — spot the planted flaws in a supplied AI answer
+//   build    — do a real task, tick the steps, submit an artefact
+model Lab {
+  id        String       @id @default(cuid())
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  trackId   String
+  track     LearnTrack   @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  moduleId  String?
+  module    LearnModule? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  lessonId  String?
+  lesson    Lesson?      @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+
+  slug             String    @unique
+  title            String
+  labType          String    @default("prompt") // prompt|critique|build
+  briefMd          String    @db.Text
+  scenarioMd       String?   @db.Text
+  /**
+   * Criteria the attempt is scored against. Shown to the learner up front.
+   */
+  objectives       Json      @default("[]")
+  /**
+   * Type-specific settings (planted flaws, checklist steps, sandbox system prompt).
+   */
+  config           Json      @default("{}")
+  passScore        Int       @default(70)
+  points           Int       @default(40)
+  estimatedMinutes Int       @default(20)
+  sortOrder        Int       @default(0)
+  isPublished      Boolean   @default(true)
+  /// Set when staff edit this in the admin; the seed then leaves it alone.
+  editedAt         DateTime?
+
+  attempts LabAttempt[]
+
+  @@index([trackId])
+  @@index([lessonId])
+}
+
+model LabAttempt {
+  id         String   @id @default(cuid())
+  studentId  String
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  labId      String
+  lab        Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
+  status     String   @default("in_progress") // in_progress|submitted
+  /**
+   * Learner's work: prompt text, selections, checklist state, artefact URL.
+   */
+  submission Json     @default("{}")
+  /**
+   * Sandbox conversation, for prompt labs.
+   */
+  transcript Json     @default("[]")
+  score      Int?
+  passed     Boolean  @default(false)
+  feedbackMd String?  @db.Text
+  /**
+   * Per-objective outcome, so feedback can be shown against each criterion.
+   */
+  breakdown  Json?
+  runCount   Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([studentId])
+  @@index([labId])
+  @@index([status])
+}
+
+// ── Capstone ───────────────────────────────────────────────────────────────
+model Capstone {
+  id            String     @id @default(cuid())
+  trackId       String     @unique
+  track         LearnTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  briefMd       String     @db.Text
+  rubric        Json
+  passThreshold Int        @default(70)
+  /// Set when staff edit this in the admin; the seed then leaves it alone.
+  editedAt      DateTime?
+
+  submissions CapstoneSubmission[]
+}
+
+model CapstoneSubmission {
+  id            String    @id @default(cuid())
+  studentId     String
+  student       Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  capstoneId    String
+  capstone      Capstone  @relation(fields: [capstoneId], references: [id], onDelete: Cascade)
+  status        String    @default("submitted") // submitted|in_review|revisions_requested|passed|failed
+  submissionUrl String?
+  submissionMd  String?   @db.Text
+  reviewerNotes String?   @db.Text
+  aiPrereviewMd String?   @db.Text
+  score         Int?
+  reviewedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([studentId])
+  @@index([capstoneId])
+  @@index([status])
+}
+
+// ── Learner state ──────────────────────────────────────────────────────────
+model LearnSubscription {
+  id                   String    @id @default(cuid())
+  studentId            String    @unique
+  student              Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?   @unique
+  status               String    @default("trialing") // trialing|active|past_due|canceled
+  plan                 String    @default("monthly") // monthly|annual
+  currentPeriodEnd     DateTime?
+  graceUntil           DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  /// Created at runtime (lib/learn/track-subscriptions.ts): this all-tracks
+  /// plan still includes the tracks now sold on their own monthly plan.
+  allTracksLegacy      Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([status])
+}
+
+model LessonProgress {
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lessonId    String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completedAt DateTime @default(now())
+
+  @@id([studentId, lessonId])
+  @@index([studentId])
+  @@index([completedAt])
+}
+
+model PointsLedger {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  source    String // lesson_complete|micro_check_pass|quiz_pass|quiz_perfect|final_exam_pass|final_exam_distinction|capstone_pass|streak_bonus|track_complete
+  refId     String?
+  points    Int
+  createdAt DateTime @default(now())
+
+  @@unique([studentId, source, refId])
+  @@index([studentId])
+  @@index([studentId, createdAt])
+}
+
+model LearnCertificate {
+  id              String     @id @default(cuid())
+  studentId       String
+  student         Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  trackId         String
+  track           LearnTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  verificationId  String     @unique @default(uuid())
+  recipientName   String
+  certificateName String
+  distinction     Boolean    @default(false)
+  examScore       Int?
+  issuedAt        DateTime   @default(now())
+  pdfUrl          String?
+  revoked         Boolean    @default(false)
+  /// ARFA-<track>-<year>-<8 chars>: printed, LinkedIn credential ID, verify link (lib/learn/cert/ref.ts).
+  reference       String?    @unique
+  /// Set when the learner confirms the name to print; then it is emailed and downloadable.
+  nameConfirmedAt DateTime?
+  emailedAt       DateTime?
+
+  @@unique([studentId, trackId])
+  @@index([verificationId])
+}
+
+model LearnWaitlist {
+  id        String   @id @default(cuid())
+  email     String
+  trackSlug String
+  createdAt DateTime @default(now())
+
+  @@unique([email, trackSlug])
+  @@index([trackSlug])
+}
+
+model Product {
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  slug           String   @unique
+  name           String
+  tagline        String?
+  description    String   @db.Text
+  price          Int      @default(0) // current price in cents
+  compareAtPrice Int? // original price (strike-through when on sale)
+  currency       String   @default("USD")
+  images         String[] // image URLs (first = primary)
+  category       String   @default("General")
+  collections    String[] // slugs of collections this product belongs to
+  tags           String[]
+  stock          Int? // null = not tracked / unlimited
+  digital        Boolean  @default(true) // digital => no shipping address collected
+  featured       Boolean  @default(false)
+  published      Boolean  @default(false)
+  onSale         Boolean  @default(false)
+  sku            String?
+  soldCount      Int      @default(0)
+
+  // ── Digital delivery ───────────────────────────────────────────────────
+  // deliveryType decides what a buyer receives:
+  //   download — a file served through /api/shop/download/[token]
+  //   external — a hosted resource (Notion, Sheets) opened via the same
+  //              token check, so the link is never exposed before purchase
+  //   none     — nothing to deliver (physical or service items)
+  deliveryType  String  @default("none")
+  /**
+   * Path under private/downloads/. Deliberately NOT in /public: anything
+   * there is fetchable without paying.
+   */
+  fileKey       String?
+  /**
+   * Filename the buyer sees when saving.
+   */
+  fileName      String?
+  fileFormat    String?
+  fileSizeBytes Int?
+  /**
+   * Destination for deliveryType = external.
+   */
+  externalUrl   String?
+  /**
+   * How long a purchase stays downloadable, and how many times.
+   */
+  downloadDays  Int     @default(365)
+  maxDownloads  Int     @default(10)
+
+  grants DownloadGrant[]
+
+  @@index([published])
+  @@index([category])
+  @@index([featured])
+  @@index([createdAt])
+}
+
+model Collection {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  slug        String   @unique
+  name        String
+  description String   @default("")
+  image       String?
+  featured    Boolean  @default(false)
+  published   Boolean  @default(true)
+  sortOrder   Int      @default(0)
+
+  @@index([published])
+  @@index([featured])
+}
+
+model AbandonedCart {
+  id             String    @id @default(cuid())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  email          String    @unique
+  items          Json // [{ id, slug, name, price, image, quantity }]
+  subtotal       Int       @default(0)
+  currency       String    @default("USD")
+  reminderCount  Int       @default(0)
+  lastReminderAt DateTime?
+  recoveredAt    DateTime?
+
+  @@index([recoveredAt])
+  @@index([updatedAt])
+}
+
+/// One buyer's right to download one product from one paid order.
+/// Created only by the Stripe webhook after payment, so a grant existing is
+/// itself proof of purchase.
+model DownloadGrant {
+  id             String    @id @default(cuid())
+  createdAt      DateTime  @default(now())
+  /**
+   * Random, unguessable; this is the credential in the download URL.
+   */
+  token          String    @unique
+  orderId        String
+  order          Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  /**
+   * Denormalised so a grant still works if the buyer's order email changes.
+   */
+  email          String
+  downloadCount  Int       @default(0)
+  maxDownloads   Int       @default(10)
+  expiresAt      DateTime
+  lastDownloadAt DateTime?
+
+  @@index([orderId])
+  @@index([email])
+  @@index([token])
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  orderNumber     String   @unique
+  email           String
+  customerName    String?
+  phone           String?
+  items           Json // [{ productId, slug, name, price, quantity, image }]
+  subtotal        Int      @default(0)
+  total           Int      @default(0)
+  currency        String   @default("USD")
+  status          String   @default("pending") // pending | paid | fulfilled | cancelled | refunded
+  stripeSessionId String?
+  shippingAddress Json?
+  notes           String?
+
+  grants DownloadGrant[]
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Event {
+  id                String    @id @default(cuid())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  title             String
+  slug              String    @unique
+  description       String    @db.Text
+  content           String?   @db.Text
+  type              String    @default("TRAINING")
+  price             Int       @default(0)
+  currency          String    @default("USD")
+  capacity          Int?
+  location          String    @default("Online")
+  date              DateTime?
+  endDate           DateTime?
+  timeSlot          String?
+  timezone          String    @default("America/New_York")
+  coverImage        String?
+  tags              String[]
+  featured          Boolean   @default(false)
+  published         Boolean   @default(false)
+  registrationOpen  Boolean   @default(true)
   stripePaymentLink String?
-  spots            Int?
+  spots             Int?
+  zoomLink          String?
 
   @@index([published])
   @@index([date])
+}
+
+model EventRegistration {
+  id                 String   @id @default(cuid())
+  createdAt          DateTime @default(now())
+  eventSlug          String
+  eventName          String
+  firstName          String
+  lastName           String
+  email              String
+  whatsapp           String?
+  role               String?
+  goal               String?
+  referral           String?
+  paymentMethod      String
+  price              Int      @default(0)
+  currency           String   @default("USD")
+  status             String   @default("pending")
+  notes              String?
+  confirmationNumber String?  @unique
+  stripeSessionId    String?
+
+  @@index([eventSlug])
+  @@index([email])
+  @@index([createdAt])
+}
+
+// ── The TIBLOGICS Learn method (lib/learn/method) ───────────────────────────
+// Created at runtime with CREATE TABLE IF NOT EXISTS (lib/learn/method/db.ts);
+// keep the two in step.
+
+/// Daily Review: one Leitner card per (learner, question). questionId is a
+/// MicroCheckQuestion or QuizQuestion id (kind says which; sourceId is the
+/// micro-check or quiz it belongs to).
+model ReviewCard {
+  id         String    @id @default(cuid())
+  studentId  String
+  student    Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  questionId String
+  kind       String // micro|quiz
+  sourceId   String
+  trackId    String
+  box        Int       @default(1)
+  dueAt      DateTime  @default(now())
+  lastSeenAt DateTime?
+  streak     Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  @@unique([studentId, questionId])
+  @@index([studentId, dueAt])
+}
+
+/// The Learning Loop's Reflect step: private to the learner.
+model LessonReflection {
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lessonId  String
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  text      String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([studentId, lessonId])
+  @@index([studentId])
+}
+
+/// Proof-of-Skill Portfolio sharing settings.
+model PortfolioSettings {
+  studentId   String   @id
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  isPublic    Boolean  @default(false)
+  slug        String   @unique
+  includeWork Boolean  @default(false)
+  /// Sections the learner chose not to share: labs|studio|capstone|certificates|badges
+  hidden      String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// A one-time purchase of one Learning Box track: lifetime access to that
+/// track. Created at runtime (lib/learn/purchases.ts) by the Stripe webhook;
+/// keep the two in step. trackId is not a foreign key so a purchase record
+/// (revenue) survives a track being deleted.
+model TrackPurchase {
+  id                  String   @id @default(cuid())
+  studentId           String
+  student             Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  trackId             String
+  amountCents         Int
+  currency            String   @default("usd")
+  stripeSessionId     String?  @unique
+  stripePaymentIntent String?
+  createdAt           DateTime @default(now())
+
+  @@unique([studentId, trackId])
+  @@index([trackId])
+  @@index([createdAt])
+}
+
+/// Work in progress that has not been submitted yet: workbench and prompt lab
+/// answers, Code Studio code and versions, Learning Studio designs, capstone
+/// notes, and the last reading position in a lesson ("pos:<lessonId>").
+/// Created at runtime (lib/learn/drafts/db.ts); keep the two in step.
+model LearnerDraft {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  /// lab:<labId> | code:<labId> | studio:<toolId>:<challengeId> | capstone:<capstoneId> | pos:<lessonId>
+  key       String
+  value     Json
+  /// Bytes of the JSON value, for the per-draft limit.
+  size      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, key])
+  @@index([studentId, updatedAt])
+}
+
+/// Tutor, the AI tutor side panel: one open conversation per learner per
+/// page (lesson, lab, Studio tool, Daily Review). "New conversation" closes
+/// the open one. Older messages are folded into `summary` so the context sent
+/// to the model stays bounded. Created at runtime (lib/learn/tutor/db.ts),
+/// with foreign keys to Student and TutorThread there; keep the two in step.
+model TutorThread {
+  id              String    @id @default(cuid())
+  studentId       String
+  /// lesson:<lessonId> | lab:<labId> | studio:<toolId> | review
+  contextKey      String
+  kind            String
+  lessonId        String?
+  trackId         String?
+  summary         String    @default("") @db.Text
+  /// How many of the oldest messages `summary` already covers.
+  summarizedCount Int       @default(0)
+  closedAt        DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
+
+  @@index([studentId, contextKey, closedAt])
+  @@index([lessonId])
+}
+
+model TutorMessage {
+  id        String   @id @default(cuid())
+  threadId  String
+  /// user | assistant
+  role      String
+  content   String   @db.Text
+  /// Quick action or "explain" (selected text), for usage stats.
+  action    String?
+  createdAt DateTime @default(now())
+
+  @@index([threadId, createdAt])
+  @@index([createdAt])
+}
+
+/// "Tell Tutor about you": optional, so examples fit the learner's field.
+model TutorProfile {
+  studentId String   @id
+  role      String   @default("")
+  goal      String   @default("")
+  level     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+// ── Mastery-based learning paths ────────────────────────────────────────────
+// Created at runtime (lib/learn/mastery/db.ts); keep the two in step. Plain id
+// columns, no Prisma relations, so these models never edit Student, Lesson or
+// LearnModule; the runtime SQL adds cascading foreign keys.
+
+/// Per learner, per module: how much of the module the learner already knows
+/// (level: mastered | partial | new), from the placement diagnostic.
+model MasteryEstimate {
+  id        String   @id @default(cuid())
+  studentId String
+  trackId   String
+  moduleId  String
+  level     String
+  /// 0..100: share of the module's diagnostic questions answered correctly.
+  score     Int
+  correct   Int      @default(0)
+  asked     Int      @default(0)
+  /// diagnostic
+  source    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, moduleId])
+  @@index([studentId, trackId])
+}
+
+/// One run of a track's placement diagnostic. plan: the questions picked per
+/// module (ids only); answers: what was answered and whether it was right.
+model DiagnosticSession {
+  id          String    @id @default(cuid())
+  studentId   String
+  trackId     String
+  /// in_progress | completed | abandoned
+  status      String    @default("in_progress")
+  plan        Json
+  answers     Json
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([studentId, trackId, createdAt])
+}
+
+/// A lesson counted as known without being studied: the learner tested out of
+/// its module (passed the module quiz from a Mastered estimate). Distinct from
+/// LessonProgress (completed), so analytics can tell the two apart.
+model LessonMastery {
+  studentId  String
+  lessonId   String
+  moduleId   String
+  trackId    String
+  /// test_out
+  source     String   @default("test_out")
+  masteredAt DateTime @default(now())
+
+  @@id([studentId, lessonId])
+  @@index([studentId, moduleId])
+  @@index([trackId])
+}
+
+// ── Community: cohorts, discussion, peer review ─────────────────────────────
+// Created at runtime (lib/learn/community/db.ts); keep the two in step. Plain
+// id columns, no Prisma relations, so these models never edit Student,
+// LearnTrack, Lesson or CapstoneSubmission; the runtime SQL adds the foreign
+// keys (cascading on Student, LearnTrack and CapstoneSubmission).
+
+/// A cohort: a group taking one track together over set dates, with a weekly
+/// live session (sessionWeekday 0 = Sunday, sessionTime "HH:MM" in timezone).
+model Cohort {
+  id             String    @id @default(cuid())
+  trackId        String
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  sessionWeekday Int
+  sessionTime    String
+  timezone       String
+  sessionMinutes Int       @default(60)
+  meetingUrl     String?
+  capacity       Int       @default(30)
+  enrolmentOpen  Boolean   @default(true)
+  priceNote      String?
+  /// [{ title, url, addedAt }]
+  recordings     Json      @default("[]")
+  /// Start of the live session the 24h reminder was last sent for.
+  remindedFor    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+
+  @@index([trackId])
+}
+
+model CohortMember {
+  cohortId    String
+  studentId   String
+  joinedAt    DateTime  @default(now())
+  lastNudgeAt DateTime?
+
+  @@id([cohortId, studentId])
+  @@index([studentId])
+}
+
+model CohortAnnouncement {
+  id        String   @id @default(cuid())
+  cohortId  String
+  bodyMd    String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([cohortId, createdAt])
+}
+
+/// A discussion thread: on a lesson (lessonId), on a track (neither), or
+/// visible to one cohort only (cohortId).
+model CommunityThread {
+  id           String    @id @default(cuid())
+  trackId      String
+  lessonId     String?
+  cohortId     String?
+  authorId     String
+  title        String
+  bodyMd       String    @db.Text
+  answerPostId String?
+  answeredAt   DateTime?
+  score        Int       @default(0)
+  replyCount   Int       @default(0)
+  hidden       Boolean   @default(false)
+  deletedAt    DateTime?
+  editedAt     DateTime?
+  lastPostAt   DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+
+  @@index([trackId, lastPostAt])
+  @@index([lessonId])
+  @@index([cohortId])
+  @@index([authorId])
+}
+
+model CommunityPost {
+  id        String    @id @default(cuid())
+  threadId  String
+  authorId  String
+  bodyMd    String    @db.Text
+  score     Int       @default(0)
+  hidden    Boolean   @default(false)
+  deletedAt DateTime?
+  editedAt  DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([threadId, createdAt])
+  @@index([authorId])
+}
+
+/// One upvote per learner per thread or post (targetType: thread | post).
+model CommunityVote {
+  studentId  String
+  targetId   String
+  targetType String
+  createdAt  DateTime @default(now())
+
+  @@id([studentId, targetId])
+}
+
+/// status: open | resolved | dismissed
+model CommunityReport {
+  id         String    @id @default(cuid())
+  reporterId String
+  targetType String
+  targetId   String
+  reason     String
+  status     String    @default("open")
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  @@unique([reporterId, targetId])
+  @@index([status, createdAt])
+}
+
+/// Community settings and moderation state per learner.
+model CommunityProfile {
+  studentId      String    @id
+  replyDigest    Boolean   @default(true)
+  lastDigestAt   DateTime?
+  suspendedUntil DateTime?
+  suspendReason  String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+}
+
+/// A capstone submission entered into peer review by its author.
+model PeerReviewOptIn {
+  submissionId String   @id
+  studentId    String
+  trackId      String
+  createdAt    DateTime @default(now())
+
+  @@index([trackId])
+  @@index([studentId])
+}
+
+/// One peer's advisory review of a submission. feedback:
+/// [{ criterion, rating (1-5 or null), text }]. status: assigned | submitted.
+model PeerReview {
+  id           String    @id @default(cuid())
+  submissionId String
+  reviewerId   String
+  trackId      String
+  status       String    @default("assigned")
+  feedback     Json      @default("[]")
+  hidden       Boolean   @default(false)
+  helpful      Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  submittedAt  DateTime?
+
+  @@unique([submissionId, reviewerId])
+  @@index([reviewerId])
+  @@index([trackId])
+}
+
+/// Lesson video extras (lib/learn/video/db.ts creates the table). The link
+/// itself is Lesson.videoUrl. chapters: [{ time (seconds), title }];
+/// captions: { en?, fr?, sw? } WebVTT text per language.
+model LessonVideoMeta {
+  lessonId  String   @id
+  chapters  Json     @default("[]")
+  captions  Json     @default("{}")
+  /// Generated narrated videos per language: { en?, fr? } each
+  /// { url, webm?, chapters, captions, durationSec, voice, generatedAt }.
+  variants  Json     @default("{}")
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+/// Whether a lesson gets a generated narrated video (lib/learn/video/select.ts)
+/// and its scene script once drafted (lib/learn/video/scenes.ts).
+/// source: rule | ai | default; override: include | exclude | null.
+model LessonVideoPlan {
+  lessonId    String   @id
+  contentHash String
+  decision    Boolean  @default(false)
+  reason      String   @default("")
+  source      String   @default("rule")
+  override    String?
+  estChars    Int      @default(0)
+  script      Json?
+  scriptHash  String?
+  updatedAt   DateTime @default(now())
+}
+
+/// One narrated-video generation job per lesson and language (en | fr).
+/// status: queued | running | done | failed | needs_tts | skipped.
+model LessonVideoJob {
+  id          String    @id
+  lessonId    String
+  locale      String
+  status      String    @default("queued")
+  contentHash String    @default("")
+  priority    Int       @default(0)
+  attempts    Int       @default(0)
+  error       String?
+  chars       Int       @default(0)
+  durationSec Float     @default(0)
+  provider    String?
+  assetId     String?
+  queuedAt    DateTime  @default(now())
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  leaseUntil  DateTime?
+  updatedAt   DateTime  @default(now())
+
+  @@unique([lessonId, locale])
+  @@index([status])
+}
+
+/// A stored generated video file. storage: object (Replit Object Storage,
+/// objectKey) | db (LessonVideoChunk rows of chunkSize bytes).
+model LessonVideoAsset {
+  id          String   @id
+  lessonId    String
+  locale      String
+  contentType String
+  size        Int
+  etag        String
+  storage     String
+  objectKey   String?
+  chunkSize   Int      @default(0)
+  durationSec Float    @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([lessonId])
+}
+
+/// Bytes of a LessonVideoAsset stored in the database, in order.
+model LessonVideoChunk {
+  assetId String
+  idx     Int
+  data    Bytes
+
+  @@id([assetId, idx])
+}
+
+/// A learner's place in a lesson video. coverage: 100 "0"/"1" buckets of the
+/// video seen; watchedAt is set once 80% has been seen.
+model VideoProgress {
+  studentId   String
+  lessonId    String
+  positionSec Float     @default(0)
+  durationSec Float     @default(0)
+  coverage    String    @default("")
+  watchedAt   DateTime?
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  @@id([studentId, lessonId])
+  @@index([lessonId])
+}
+
+/// Versions of the AI-drafted (then edited) video script for a lesson.
+/// content: { title, targetMinutes, notes, sections[] } (lib/learn/video/shared.ts).
+model VideoScript {
+  id        String   @id @default(cuid())
+  lessonId  String
+  version   Int
+  content   Json
+  /// ai | edit
+  source    String   @default("ai")
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  @@unique([lessonId, version])
+}
+
+// ── Team plans (lib/learn/team) ─────────────────────────────────────────────
+// Created at runtime (lib/learn/team/db.ts); keep the two in step. Plain id
+// columns, no Prisma relations; the runtime SQL adds the foreign keys.
+
+/// A company's seats. status: pending | active | trialing | past_due |
+/// canceled | comped. seatPriceCents null = the default (lib/learn/team/settings.ts).
+model Team {
+  id                      String    @id @default(cuid())
+  name                    String
+  ownerStudentId          String
+  seats                   Int       @default(5)
+  status                  String    @default("pending")
+  seatPriceCents          Int?
+  comped                  Boolean   @default(false)
+  stripeCustomerId        String?
+  stripeSubscriptionId    String?   @unique
+  stripeCheckoutSessionId String?
+  currentPeriodEnd        DateTime?
+  graceUntil              DateTime?
+  cancelAtPeriodEnd       Boolean   @default(false)
+  settings                Json      @default("{}")
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @default(now()) @updatedAt
+
+  @@index([ownerStudentId])
+  @@index([status])
+}
+
+/// A seat. studentId is null until the invitation is accepted.
+/// role: owner | manager | member. status: invited | active | removed.
+model TeamMember {
+  id              String    @id @default(cuid())
+  teamId          String
+  studentId       String?
+  email           String
+  role            String    @default("member")
+  status          String    @default("invited")
+  inviteTokenHash String?   @unique
+  inviteExpiresAt DateTime?
+  invitedById     String?
+  invitedAt       DateTime  @default(now())
+  joinedAt        DateTime?
+  removedAt       DateTime?
+
+  @@unique([teamId, email])
+  @@index([studentId])
+}
+
+/// A track a manager assigned to a member, with an optional due date.
+model TeamAssignment {
+  id             String    @id @default(cuid())
+  teamId         String
+  studentId      String
+  trackId        String
+  dueAt          DateTime?
+  assignedById   String?
+  lastRemindedAt DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@unique([teamId, studentId, trackId])
+  @@index([studentId])
+}
+
+// ── Learner sign-in history (lib/learn/logins.ts) ───────────────────────────
+// Created at runtime there; keep the two in step. Plain id column, no Prisma
+// relation (Student is not edited); the runtime SQL adds a cascading foreign
+// key. No passwords, no full IPs: ipPrefix is IPv4 /24 or IPv6 /48.
+
+/// One successful TIBLOGICS Learn sign-in. method: password |
+/// owner-admin-password | invite. Rows older than 400 days are pruned.
+model LoginEvent {
+  id         String   @id @default(cuid())
+  studentId  String
+  at         DateTime @default(now())
+  ipPrefix   String?
+  /// Trimmed to 300 characters.
+  userAgent  String?
+  /// desktop | mobile | tablet | bot | unknown
+  deviceType String?
+  browser    String?
+  os         String?
+  /// ISO country code from the edge geo header, when the host sets one.
+  country    String?
+  method     String   @default("password")
+
+  @@index([studentId, at])
+  @@index([at])
+}
+
+// ── Verified skill badges (lib/learn/skill-badges) ──────────────────────────
+// Open Badges 3.0 credentials, finer grained than certificates. Created at
+// runtime by lib/learn/skill-badges/db.ts; keep the two in step. Plain id
+// columns, no Prisma relations (Student is not edited); the runtime SQL adds
+// a cascading foreign key to Student.
+
+/// One awarded skill badge. badgeKey is the catalog key ("module:<track>:<n>",
+/// "studio:<tool>", "capstone:<track>", "skill:<slug>"). credential is the
+/// signed OpenBadgeCredential exactly as served; facts are frozen at award.
+model SkillBadgeAward {
+  id           String    @id
+  studentId    String
+  badgeKey     String
+  family       String
+  name         String
+  /// Track slugs whose certificate revocation also revokes this badge.
+  trackSlugs   Json      @default("[]")
+  /// [{ name, description }]: what was passed, never the learner's work.
+  evidence     Json      @default("[]")
+  issuedAt     DateTime  @default(now())
+  /// Per-award salt for the hashed email identity.
+  salt         String
+  credential   Json
+  /// sha256 fingerprint of the signing public key ("" when unsigned).
+  keyFp        String    @default("")
+  /// false when signed with an ephemeral development key (or not at all).
+  signed       Boolean   @default(false)
+  isPublic     Boolean   @default(true)
+  /// Set when the badge was awarded by a lazy backfill: no toast.
+  notifiedAt   DateTime?
+  revokedAt    DateTime?
+  revokedReason String?
+
+  @@unique([studentId, badgeKey])
+  @@index([studentId])
+}
+
+// ── Study reminders: WhatsApp and email (lib/learn/reminders) ───────────────
+// Created at runtime by lib/learn/reminders/db.ts; keep the two in step. Plain
+// id columns, no Prisma relation (Student is not edited); the runtime SQL adds
+// cascading foreign keys.
+
+/// A learner's reminder settings. WhatsApp needs a phone number and an
+/// explicit consent (consentAt + the wording they agreed to). An inbound STOP
+/// sets optedOutAt and turns WhatsApp off. days: weekdays, 0 = Sunday.
+model StudyReminderPref {
+  studentId     String    @id
+  whatsappOn    Boolean   @default(false)
+  phoneE164     String?
+  emailOn       Boolean   @default(false)
+  /// "HH:MM", wall clock in `timezone`.
+  timeLocal     String    @default("18:00")
+  timezone      String    @default("UTC")
+  days          String    @default("1,2,3,4,5")
+  /// en | fr
+  language      String    @default("en")
+  consentAt     DateTime?
+  consentText   String?
+  optedOutAt    DateTime?
+  /// settings | whatsapp_stop
+  optOutSource  String?
+  /// Set after 3 reminders in a row were ignored: nothing is sent until then.
+  pausedUntil   DateTime?
+  ignoredCount  Int       @default(0)
+  lastSentAt    DateTime?
+  /// WhatsApp delivery status of the last message: sent | delivered | read | failed
+  lastStatus    String?
+  lastStatusAt  DateTime?
+  lastInboundAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([phoneE164])
+}
+
+/// One reminder per learner per local day. The row is inserted (claimed)
+/// before the message is sent, so overlapping runs never send twice.
+/// status: claimed | sent | failed | skipped
+model StudyReminderLog {
+  id         String   @id @default(cuid())
+  studentId  String
+  /// "YYYY-MM-DD" in the learner's time zone.
+  day        String
+  channel    String
+  status     String   @default("claimed")
+  providerId String?
+  error      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([studentId, day])
+  @@index([providerId])
+}
+
+// ── Claude API usage log (lib/ai-usage.ts) ──────────────────────────────────
+// Created at runtime there; keep the two in step. No relations: studentId is
+// a plain column. One row per model call (or per Message Batches result).
+
+/// One Claude call: task (lib/claude.ts AiTask), model, tokens and the
+/// estimated cost in US cents (list prices; batch results at half price).
+model AiUsage {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  task             String
+  model            String
+  batch            Boolean  @default(false)
+  inputTokens      Int      @default(0)
+  outputTokens     Int      @default(0)
+  cacheReadTokens  Int      @default(0)
+  cacheWriteTokens Int      @default(0)
+  costCents        Float    @default(0)
+  stopReason       String?
+  studentId        String?
+  ref              String?
+
+  @@index([createdAt])
+  @@index([task, createdAt])
+}
+
+// ── Live expert sessions (lib/learn/live) ───────────────────────────────────
+// Created at runtime (lib/learn/live/db.ts); keep the two in step. Plain id
+// columns, no Prisma relations; the runtime SQL adds cascading foreign keys
+// (RSVPs, questions and votes go with their session or learner).
+
+/// A monthly live session with a guest expert. status: scheduled | live |
+/// ended | cancelled. trackIds: JSON array of related track ids ([] = all).
+model ExpertSession {
+  id              String   @id @default(cuid())
+  title           String
+  expertName      String
+  expertBio       String?  @db.Text
+  expertPhotoUrl  String?
+  topic           String?
+  trackIds        Json     @default("[]")
+  startsAt        DateTime
+  durationMinutes Int      @default(60)
+  /// IANA zone the session was planned in (display and emails).
+  timezone        String   @default("UTC")
+  /// Handed out only on "Join", inside the window, to learners with a seat.
+  meetingUrl      String?
+  capacity        Int      @default(100)
+  status          String   @default("scheduled")
+  recordingUrl    String?
+  /// [{ title, url }]
+  resources       Json     @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
+
+  @@index([startsAt])
+}
+
+/// An RSVP. status: going (a seat) | waitlist (ordered by createdAt). The
+/// reminded*For columns hold the start time each reminder was sent for, so a
+/// moved session is reminded again; joinedAt is attendance (first "Join").
+model ExpertSessionRsvp {
+  sessionId        String
+  studentId        String
+  status           String    @default("going")
+  createdAt        DateTime  @default(now())
+  promotedAt       DateTime?
+  reminded24For    DateTime?
+  reminded1For     DateTime?
+  recordingSentFor String?
+  joinedAt         DateTime?
+
+  @@id([sessionId, studentId])
+  @@index([studentId])
+  @@index([sessionId, status, createdAt])
+}
+
+/// A question for the expert, asked before the session.
+model ExpertSessionQuestion {
+  id         String    @id @default(cuid())
+  sessionId  String
+  authorId   String
+  body       String    @db.Text
+  score      Int       @default(0)
+  hidden     Boolean   @default(false)
+  answeredAt DateTime?
+  deletedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([sessionId])
+  @@index([authorId])
+}
+
+model ExpertSessionVote {
+  questionId String
+  studentId  String
+  createdAt  DateTime @default(now())
+
+  @@id([questionId, studentId])
+  @@index([studentId])
+}
+
+// ── Growth: leads + outreach (lib/growth/outreach) ─────────────────────────
+// Created idempotently at runtime by lib/growth/outreach/db.ts (no
+// migrations in this project). No Prisma relations, so the shared models
+// stay untouched; keep the SQL there in step with these.
+
+/// One row per business in the unified lead workspace (Aria, Prospects, CSV, manual).
+model GrowthLead {
+  id              String    @id @default(cuid())
+  source          String    @default("manual")
+  sourceId        String?
+  companyName     String
+  contactName     String?
+  role            String?
+  email           String?
+  phone           String?
+  phoneNorm       String?
+  website         String?
+  domain          String?
+  industry        String?
+  area            String?
+  linkedinUrl     String?
+  stage           String    @default("new")
+  score           Int?
+  scoreReasons    Json      @default("[]")
+  bestOffer       String?
+  offerReason     String?
+  opener          String?
+  signals         Json      @default("{}")
+  socials         Json      @default("{}")
+  publicEmails    Json      @default("[]")
+  emailStatus     String    @default("unknown")
+  enrichStatus    String    @default("idle")
+  enrichError     String?
+  enrichedAt      DateTime?
+  consentBasis    String    @default("unset")
+  consentNote     String?
+  doNotContact    Boolean   @default(false)
+  notes           String?   @db.Text
+  tags            Json      @default("[]")
+  lastContactedAt DateTime?
+  repliedAt       DateTime?
+  handedOverAt    DateTime?
+  handoverRef     String?
+  convertedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
+
+  @@unique([source, sourceId])
+  @@index([stage])
+  @@index([domain])
+  @@index([email])
+  @@index([phoneNorm])
+  @@index([enrichStatus])
+}
+
+/// Lead timeline: enriched, emailed, replied, handed over...
+model GrowthLeadEvent {
+  id        String   @id @default(cuid())
+  leadId    String
+  type      String
+  detail    String?  @db.Text
+  meta      Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  @@index([leadId, createdAt])
+  @@index([type, createdAt])
+}
+
+/// A multi-step email sequence. steps: [{dayOffset, subject, body, personalise}]
+model OutreachSequence {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  status      String   @default("active")
+  offerKey    String?
+  steps       Json     @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+}
+
+model OutreachEnrollment {
+  id         String    @id @default(cuid())
+  sequenceId String
+  leadId     String
+  status     String    @default("pending_approval")
+  stopReason String?
+  approvedAt DateTime?
+  /// Tracked /go short link for this lead's booking CTA (lib/growth/links), if created.
+  linkCode   String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now()) @updatedAt
+
+  @@unique([sequenceId, leadId])
+  @@index([leadId])
+  @@index([status])
+}
+
+/// One email of one enrollment. Nothing sends until status is "approved".
+model OutreachMessage {
+  id            String    @id @default(cuid())
+  enrollmentId  String
+  sequenceId    String
+  leadId        String
+  stepIndex     Int
+  dayOffset     Int       @default(0)
+  toEmail       String?
+  subject       String
+  bodyText      String    @db.Text
+  personalised  Boolean   @default(false)
+  status        String    @default("draft")
+  approvedAt    DateTime?
+  approvedBy    String?
+  scheduledFor  DateTime?
+  claimId       String?
+  claimedAt     DateTime?
+  sentAt        DateTime?
+  error         String?
+  smtpMessageId String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+
+  @@unique([enrollmentId, stepIndex])
+  @@index([status, scheduledFor])
+  @@index([leadId])
+  @@index([sentAt])
+}
+
+/// Global do-not-email list: an address, or "@domain" for a whole domain.
+model OutreachSuppression {
+  value     String   @id
+  reason    String
+  source    String?
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+/// Sender run lock (one row, id "sender").
+model OutreachState {
+  id          String    @id
+  lockedUntil DateTime?
+  lastRunAt   DateTime?
+  lastResult  Json      @default("{}")
+}
+
+// ── Growth: content, scheduling + attribution (lib/growth/content, links) ──
+// Created idempotently at runtime by lib/growth/db.ts (no migrations in this
+// project). No Prisma relations; keep the SQL there in step with these.
+
+/// Brand voice, audiences, offers, proof points, banned claims (one row, id "default").
+model GrowthSettings {
+  id        String   @id
+  data      Json     @default("{}")
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+/// A product marketing kit: positioning, posts, emails, ads, video script, calendar.
+model GrowthKit {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  productKey   String
+  productType  String
+  productTitle String
+  productUrl   String?
+  language     String   @default("en")
+  audienceId   String?
+  content      Json     @default("{}")
+  warnings     Json     @default("[]")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+
+  @@index([productKey])
+  @@index([createdAt])
+}
+
+/// One social post in the queue. status: draft | scheduled | publishing |
+/// published | ready (manual post due) | failed | rejected.
+model GrowthPost {
+  id          String    @id @default(cuid())
+  kitId       String?
+  source      String    @default("manual")
+  sourceKey   String?   @unique
+  platform    String
+  language    String    @default("en")
+  body        String    @db.Text
+  hashtags    Json      @default("[]")
+  linkCode    String?
+  status      String    @default("draft")
+  scheduledAt DateTime?
+  claimedAt   DateTime?
+  publishedAt DateTime?
+  externalUrl String?
+  error       String?
+  attempts    Int       @default(0)
+  /// Optional social image card spec (lib/growth/cards/spec.ts), rendered on demand.
+  image       Json?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  @@index([status, scheduledAt])
+  @@index([kitId])
+}
+
+/// A tracked short link (/go/[code]); UTM parameters are appended on redirect.
+model GrowthLink {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  targetUrl   String
+  utmSource   String
+  utmMedium   String
+  utmCampaign String
+  utmContent  String?
+  label       String?
+  kitId       String?
+  createdAt   DateTime @default(now())
+
+  @@index([utmCampaign])
+}
+
+/// One counted click: unique per link, visitor hash (IP+UA, salted) and day.
+model GrowthClick {
+  id          String   @id @default(cuid())
+  linkCode    String
+  visitorHash String
+  day         String
+  referrer    String?
+  country     String?
+  createdAt   DateTime @default(now())
+
+  @@unique([linkCode, visitorHash, day])
+  @@index([linkCode, createdAt])
+  @@index([createdAt])
+}
+
+/// Where a conversion came from (the 30-day first-party UTM cookie).
+/// kind: learn_signup | track_checkout | learn_subscription_checkout |
+/// toolkit_checkout | blueprint | order | event_registration | appointment
+model ConversionAttribution {
+  id          String   @id @default(cuid())
+  kind        String
+  refId       String
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmContent  String?
+  linkCode    String?
+  amountCents Int?
+  createdAt   DateTime @default(now())
+
+  @@unique([kind, refId])
+  @@index([utmCampaign])
+  @@index([linkCode])
+  @@index([createdAt])
+}
+
+/// Small key/value state for the growth cron (repurpose cursor).
+model GrowthContentState {
+  key       String   @id
+  value     Json     @default("{}")
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+/// A goal-driven campaign (Campaign Copilot): the plan, and what it created
+/// (kit, sequence, links). slug is the utm_campaign every asset uses.
+model GrowthCampaign {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  name        String
+  status      String    @default("draft")
+  goalType    String
+  goalTarget  Int
+  goalLabel   String
+  productKeys Json      @default("[]")
+  audienceId  String?
+  language    String    @default("en")
+  budget      Json      @default("{}")
+  startDate   DateTime
+  endDate     DateTime
+  plan        Json      @default("{}")
+  leadFilter  Json      @default("{}")
+  kitId       String?
+  sequenceId  String?
+  assets      Json      @default("{}")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  @@index([createdAt])
+}
+
+// ── Growth: acquisition (lib/growth/acquire, lib/learn/referrals) ─────────
+// Created idempotently at runtime by lib/growth/acquire/db.ts and
+// lib/learn/referrals/db.ts (no migrations). No Prisma relations; keep the
+// SQL there in step with these.
+
+/// A lead magnet (/free/[slug]): checklist, guide, quiz or template pack.
+/// status: draft | published.
+model AcquireMagnet {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  type        String
+  language    String    @default("en")
+  title       String
+  status      String    @default("draft")
+  productKey  String?
+  content     Json      @default("{}")
+  linkCode    String?
+  noindex     Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  @@index([status])
+}
+
+/// A campaign landing page (/lp/[slug]): ordered sections, CTA, lead form.
+model AcquirePage {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  language    String    @default("en")
+  status      String    @default("draft")
+  noindex     Boolean   @default(false)
+  kitId       String?
+  productKey  String?
+  content     Json      @default("{}")
+  linkCode    String?
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  @@index([status])
+}
+
+/// One opt-in from a magnet or landing page form, with the consent given.
+model AcquireCapture {
+  id           String    @id @default(cuid())
+  refType      String
+  refId        String
+  slug         String
+  email        String
+  name         String?
+  business     String?
+  whatsapp     String?
+  locale       String    @default("en")
+  consentText  String
+  consentAt    DateTime
+  result       Json?
+  subscriberId String?
+  leadId       String?
+  utmSource    String?
+  utmMedium    String?
+  utmCampaign  String?
+  linkCode     String?
+  emailSentAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@unique([refType, refId, email])
+  @@index([createdAt])
+  @@index([email])
+}
+
+/// A counted view or CTA click: unique per page, kind, visitor hash and day.
+model AcquireEvent {
+  id          String   @id @default(cuid())
+  refType     String
+  refId       String
+  kind        String
+  visitorHash String
+  day         String
+  createdAt   DateTime @default(now())
+
+  @@unique([refType, refId, kind, visitorHash, day])
+  @@index([refType, refId, kind])
+  @@index([createdAt])
+}
+
+/// A learner's personal referral code (/r/[code]).
+model LearnReferralCode {
+  studentId String   @id
+  code      String   @unique
+  createdAt DateTime @default(now())
+}
+
+/// A referred sign-up. status: signed_up | paid | rejected.
+model LearnReferral {
+  id                String    @id @default(cuid())
+  code              String
+  referrerStudentId String
+  referredStudentId String    @unique
+  status            String    @default("signed_up")
+  reason            String?
+  paidAt            DateTime?
+  payKind           String?
+  amountCents       Int?
+  /// When the welcome coupon was last put on a checkout (one open checkout per 24 h).
+  couponClaimedAt   DateTime?
+  createdAt         DateTime  @default(now())
+
+  @@index([referrerStudentId])
+}
+
+/// The reward a referrer earns when the referred learner pays.
+/// status: pending | capped | approved | credit_due | applied | rejected.
+model LearnReferralReward {
+  id                String    @id @default(cuid())
+  referralId        String    @unique
+  referrerStudentId String
+  referredStudentId String
+  kind              String    @default("free_month")
+  status            String    @default("pending")
+  grant             String?
+  note              String?
+  decidedAt         DateTime?
+  decidedBy         String?
+  createdAt         DateTime  @default(now())
+
+  @@index([status])
+  @@index([referrerStudentId, createdAt])
+}
+
+/// Referral link visits and share-button clicks (per code, visitor and day).
+model LearnReferralEvent {
+  id          String   @id @default(cuid())
+  code        String
+  kind        String
+  channel     String?
+  visitorHash String
+  day         String
+  createdAt   DateTime @default(now())
+
+  @@unique([code, kind, visitorHash, day])
+  @@index([code, kind])
+}
+
+// ── Learner account controls, admin audit log, communications and Inbox ──
+// Tables created at runtime (lib/learn/account-status/db.ts,
+// lib/admin/audit.ts, lib/learn/inbox/db.ts); keep these models in step.
+// Plain id columns, no Prisma relations (Student is not edited); the
+// runtime SQL adds cascading foreign keys to Student.
+
+/// Account status of an ARFA learner. No row = active.
+/// status: active | suspended | blocked | deleted (anonymised).
+model LearnerAccount {
+  studentId          String    @id
+  status             String    @default("active")
+  suspendedUntil     DateTime?
+  statusReason       String?
+  statusChangedAt    DateTime?
+  statusChangedBy    String?
+  mustChangePassword Boolean   @default(false)
+  /// Bumped by "sign out everywhere": sessions stamped with an older one end.
+  sessionVersion     Int       @default(0)
+  tags               String[]  @default([])
+  marketingOptOut    Boolean   @default(false)
+  deletedAt          DateTime?
+  updatedAt          DateTime  @default(now())
+
+  @@index([status])
+}
+
+/// SHA-256 of a blocked learner's lower-cased email: sign-up and sign-in refused.
+model LearnerBlockedEmail {
+  emailHash String   @id
+  studentId String?
+  reason    String?
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  @@index([studentId])
+}
+
+/// Private admin note on a learner.
+model LearnerNote {
+  id          String   @id
+  studentId   String
+  authorEmail String
+  authorName  String?
+  body        String
+  createdAt   DateTime @default(now())
+
+  @@index([studentId, createdAt])
+}
+
+/// Every admin action on learners, sends, access grants and publishes.
+model AdminAuditLog {
+  id          String   @id
+  at          DateTime @default(now())
+  actorEmail  String
+  actorName   String?
+  actorRole   String?
+  action      String
+  targetType  String?
+  targetId    String?
+  targetLabel String?
+  meta        Json?
+
+  @@index([at])
+  @@index([actorEmail, at])
+  @@index([action, at])
+  @@index([targetType, targetId])
+}
+
+/// Saved message for the communications center. kind: marketing | service.
+model CommsTemplate {
+  id        String   @id
+  name      String
+  kind      String   @default("service")
+  subject   String
+  body      String
+  subjectFr String?
+  bodyFr    String?
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+}
+
+/// One send to learners. status: scheduled | starting | sending | sent | cancelled.
+model CommsCampaign {
+  id             String    @id
+  kind           String    @default("service")
+  subject        String
+  body           String
+  subjectFr      String?
+  bodyFr         String?
+  viaEmail       Boolean   @default(true)
+  viaInbox       Boolean   @default(true)
+  audience       Json
+  audienceLabel  String?
+  status         String    @default("scheduled")
+  scheduledAt    DateTime  @default(now())
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  recipientCount Int       @default(0)
+  sentCount      Int       @default(0)
+  failedCount    Int       @default(0)
+  skippedCount   Int       @default(0)
+  templateId     String?
+  createdBy      String
+  createdAt      DateTime  @default(now())
+  // Notification campaigns (lib/learn/inbox/notifications.ts adds the columns
+  // at runtime). format: message | notification.
+  format         String    @default("message")
+  linkUrl        String?
+  linkLabel      String?
+  linkLabelFr    String?
+
+  @@index([status, scheduledAt])
+  @@index([createdAt])
+}
+
+/// One learner of one campaign. status: pending | sending | sent | failed | skipped.
+model CommsRecipient {
+  id         String    @id
+  campaignId String
+  studentId  String
+  email      String
+  locale     String    @default("en")
+  status     String    @default("pending")
+  error      String?
+  claimedAt  DateTime?
+  sentAt     DateTime?
+  emailed    Boolean   @default(false)
+  threadId   String?
+
+  @@unique([campaignId, studentId])
+  @@index([campaignId, status])
+  @@index([studentId])
+  @@index([sentAt])
+}
+
+/// A conversation in a learner's Inbox. status: open | closed.
+model InboxThread {
+  id              String   @id
+  studentId       String
+  subject         String
+  campaignId      String?
+  status          String   @default("open")
+  learnerUnread   Int      @default(0)
+  adminUnread     Int      @default(0)
+  hasLearnerReply Boolean  @default(false)
+  lastMessageAt   DateTime @default(now())
+  lastSender      String   @default("admin")
+  createdAt       DateTime @default(now())
+
+  @@index([studentId, lastMessageAt])
+  @@index([hasLearnerReply, status, lastMessageAt])
+}
+
+/// One message of an Inbox thread. sender: admin | learner.
+model InboxMessage {
+  id          String   @id
+  threadId    String
+  studentId   String
+  sender      String
+  authorName  String?
+  authorEmail String?
+  body        String
+  createdAt   DateTime @default(now())
+
+  @@index([threadId, createdAt])
+}
+
+// ── Promotions (admin: /admin_pro/promotions; lib/promotions) ──────────────
+// Tables are created at runtime by lib/promotions/db.ts (no migrations).
+// No relations, so they never touch the shared models.
+
+/// A discount the owner runs from admin. state: draft | published | paused | ended
+/// ("live" and "scheduled" are computed from the dates). kind: percent | amount.
+/// mode: code (customers type `code`) | auto (applied at checkout, no code).
+/// scope: [{ key, ids? }] (lib/promotions/shared.ts ScopeEntry).
+model Promotion {
+  id                    String    @id
+  name                  String
+  state                 String    @default("draft")
+  kind                  String
+  percentOff            Float?
+  amountOffCents        Int?
+  duration              String    @default("once")
+  durationMonths        Int?
+  scope                 Json      @default("[]")
+  mode                  String
+  code                  String?
+  startsAt              DateTime?
+  endsAt                DateTime?
+  maxRedemptions        Int?
+  firstTimeOnly         Boolean   @default(false)
+  minimumCents          Int?
+  bannerEn              String?
+  bannerFr              String?
+  bannerSw              String?
+  stripeCouponId        String?
+  stripePromotionCodeId String?
+  stripeCodeActive      Boolean   @default(false)
+  publishedAt           DateTime?
+  endedAt               DateTime?
+  createdBy             String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @default(now())
+
+  @@index([state])
+  @@index([code])
+}
+
+/// One paid checkout that used a promotion (Stripe webhook, checkout.session.completed).
+model PromotionRedemption {
+  id              String   @id
+  promotionId     String
+  stripeSessionId String   @unique
+  source          String   @default("auto")
+  product         String?
+  email           String?
+  studentId       String?
+  subtotalCents   Int      @default(0)
+  discountCents   Int      @default(0)
+  totalCents      Int      @default(0)
+  currency        String   @default("usd")
+  createdAt       DateTime @default(now())
+
+  @@index([promotionId, createdAt])
+}
+
+/// Promotion settings, e.g. key "referral": the referral welcome discount.
+model PromotionSetting {
+  key       String   @id
+  value     Json
+  updatedBy String?
+  updatedAt DateTime @default(now())
+}
+
+/// Shared invalidation counter for the in-process public data cache
+/// (lib/cache/public-data.ts). A write to cached content bumps its tag; every
+/// instance compares versions every few seconds. Created at runtime too.
+model CacheVersion {
+  tag       String   @id
+  version   Int      @default(0)
+  updatedAt DateTime @default(now())
+}
+
+/// Machine-translation cache for course, lab, toolkit and article content
+/// (lib/i18n/content.ts). Table created at runtime; keep in step.
+model ContentTranslation {
+  key       String
+  locale    String
+  hash      String
+  value     Json
+  updatedAt DateTime @default(now())
+
+  @@id([key, locale])
+}
+
+/// One-page "Join ARFA" flow (/learning-box/join): the plan a learner chose
+/// before paying, one row per learner. Drives the "Finish your enrolment"
+/// card, the deferred purchase-aware welcome email and the one reminder the
+/// cart-reminders cron sends (lib/learn/join/pending.ts). No relation, so the
+/// row never blocks a learner deletion. Table created at runtime; keep in step.
+model PendingEnrollment {
+  studentId       String    @id
+  kind            String
+  trackSlug       String?
+  seats           Int?
+  company         String?
+  promoCode       String?
+  welcomeDeferred Boolean   @default(false)
+  welcomeSentAt   DateTime?
+  reminderSentAt  DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now())
+
+  @@index([completedAt, updatedAt])
+}
+
+// ── Command Center: project management (lib/admin/command-center/db.ts) ─────
+// Created at runtime; keep the two in step. No Prisma relations (the foreign
+// keys live in db.ts): a project's PM rows cascade with it.
+
+model PmMilestone {
+  id          String    @id @default(cuid())
+  projectId   String
+  title       String
+  description String?
+  dueDate     DateTime
+  done        Boolean   @default(false)
+  completedAt DateTime?
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@index([projectId])
+}
+
+model PmComment {
+  id         String    @id @default(cuid())
+  projectId  String
+  taskId     String
+  authorId   String
+  authorName String
+  body       String
+  mentions   String[]  @default([])
+  createdAt  DateTime  @default(now())
+  editedAt   DateTime?
+
+  @@index([taskId])
+}
+
+model PmActivity {
+  id        String   @id @default(cuid())
+  projectId String
+  taskId    String?
+  actorId   String
+  actorName String
+  kind      String
+  summary   String
+  createdAt DateTime @default(now())
+
+  @@index([projectId, createdAt])
+}
+
+model PmNotification {
+  id          String    @id @default(cuid())
+  recipientId String // "owner" or a Collaborator id
+  kind        String
+  title       String
+  body        String?
+  href        String
+  dedupeKey   String?   @unique
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([recipientId, createdAt])
+}
+
+model PmNote {
+  id            String   @id @default(cuid())
+  projectId     String
+  title         String
+  bodyMd        String   @default("")
+  kind          String   @default("note") // note | meeting | spec | decision
+  pinned        Boolean  @default(false)
+  createdById   String
+  createdByName String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now())
+
+  @@index([projectId])
+}
+
+model PmUpdate {
+  id         String   @id @default(cuid())
+  projectId  String
+  authorId   String
+  authorName String
+  health     String
+  progress   Int      @default(0)
+  doneMd     String   @default("")
+  nextMd     String   @default("")
+  blockersMd String   @default("")
+  createdAt  DateTime @default(now())
+
+  @@index([projectId, createdAt])
+}
+
+model PmTimeEntry {
+  id        String    @id @default(cuid())
+  projectId String
+  taskId    String?
+  staffId   String
+  staffName String
+  startedAt DateTime
+  endedAt   DateTime?
+  minutes   Int       @default(0)
+  note      String?
+  createdAt DateTime  @default(now())
+
+  @@index([projectId])
+  @@index([staffId, endedAt])
+}
+
+model PmSavedView {
+  id        String   @id @default(cuid())
+  ownerId   String
+  name      String
+  filters   Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  @@index([ownerId])
+}
+
+model PmPrefs {
+  staffId      String    @id
+  emailDigest  Boolean   @default(true)
+  lastDigestAt DateTime?
+  updatedAt    DateTime  @default(now())
+}
+
+// ── Finance (lib/admin/command-center/db.ts) ────────────────────────────────
+// Amounts are integer minor units in the entry's currency, plus the USD
+// equivalent at the entry's own exchange rate (fxRate = USD per 1 unit).
+
+model FinReceipt {
+  id           String   @id @default(cuid())
+  filename     String
+  mime         String
+  size         Int
+  data         Bytes
+  uploadedById String
+  createdAt    DateTime @default(now())
+}
+
+model FinIncome {
+  id             String    @id @default(cuid())
+  date           DateTime
+  client         String
+  description    String?
+  projectId      String?
+  amountCents    Int
+  currency       String    @default("USD")
+  fxRate         Float     @default(1)
+  amountUsdCents Int
+  taxCents       Int       @default(0)
+  taxUsdCents    Int       @default(0)
+  taxLabel       String?
+  status         String    @default("invoiced") // invoiced | paid | overdue
+  invoiceNumber  String?
+  dueDate        DateTime?
+  paidAt         DateTime?
+  notes          String?
+  createdById    String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now())
+
+  @@index([date])
+  @@index([projectId])
+}
+
+model FinRecurring {
+  id             String   @id @default(cuid())
+  vendor         String
+  category       String
+  description    String?
+  projectId      String?
+  amountCents    Int
+  currency       String   @default("USD")
+  fxRate         Float    @default(1)
+  amountUsdCents Int
+  taxCents       Int      @default(0)
+  taxUsdCents    Int      @default(0)
+  taxLabel       String?
+  paymentMethod  String?
+  interval       String   @default("monthly") // monthly | annual
+  startDate      DateTime
+  nextDate       DateTime
+  active         Boolean  @default(true)
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now())
+}
+
+model FinExpense {
+  id             String   @id @default(cuid())
+  date           DateTime
+  vendor         String
+  category       String
+  description    String?
+  projectId      String?
+  amountCents    Int
+  currency       String   @default("USD")
+  fxRate         Float    @default(1)
+  amountUsdCents Int
+  taxCents       Int      @default(0)
+  taxUsdCents    Int      @default(0)
+  taxLabel       String?
+  paymentMethod  String?
+  receiptId      String?
+  receiptUrl     String?
+  recurringId    String?
+  periodKey      String?
+  notes          String?
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now())
+
+  @@unique([recurringId, periodKey])
+  @@index([date])
+  @@index([projectId])
+  @@index([category, date])
+}
+
+model FinBudget {
+  category        String   @id
+  monthlyUsdCents Int
+  updatedAt       DateTime @default(now())
+}
+
+// ── Learner notifications and support (lib/learn/inbox/notifications.ts,
+// lib/learn/support/db.ts). Tables created at runtime (no migrations).
+
+/// A notice for one learner (Inbox, Notifications tab). readAt null = unread.
+/// kind: service | marketing | support.
+model LearnerNotification {
+  id         String    @id
+  studentId  String
+  campaignId String?
+  kind       String    @default("service")
+  title      String
+  body       String    @default("")
+  linkUrl    String?
+  linkLabel  String?
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([studentId, createdAt])
+  @@index([studentId, readAt])
+}
+
+/// A "Need help?" request. kind: learner (threadId = its InboxThread) |
+/// visitor (signed out, messages in SupportEntry). status: open | answered | closed.
+model SupportTicket {
+  id            String    @id
+  kind          String    @default("learner")
+  threadId      String?   @unique
+  studentId     String?
+  name          String
+  email         String
+  locale        String    @default("en")
+  topic         String    @default("other")
+  subject       String
+  priority      String    @default("normal")
+  assignee      String?
+  context       Json?
+  status        String    @default("open")
+  lastSender    String    @default("learner")
+  lastMessageAt DateTime  @default(now())
+  adminUnread   Int       @default(1)
+  notifiedAt    DateTime?
+  notifyPending Boolean   @default(false)
+  pendingSince  DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([status, lastMessageAt])
+  @@index([studentId])
+  @@index([notifyPending])
+}
+
+/// Internal staff note (kind "note") or a visitor ticket message (visitor | staff).
+model SupportEntry {
+  id          String   @id
+  ticketId    String
+  kind        String
+  authorName  String?
+  authorEmail String?
+  body        String
+  createdAt   DateTime @default(now())
+
+  @@index([ticketId, createdAt])
+}
+
+/// Saved support reply.
+model SupportCanned {
+  id        String   @id
+  title     String
+  body      String
+  bodyFr    String?
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+}
+
+/// Team & Roles: custom staff roles (presets live in lib/admin/permissions.ts).
+/// Created at runtime by lib/admin/team/db.ts; keep the two in step.
+model StaffRole {
+  id          String   @id
+  name        String   @unique
+  description String?
+  levels      Json     @default("{}")
+  caps        Json     @default("[]")
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+}
+
+/// Team & Roles: one row per collaborator (role, per-person overrides,
+/// session version for "sign out everywhere", invite note).
+model StaffAccess {
+  collaboratorId String       @id
+  collaborator   Collaborator @relation(fields: [collaboratorId], references: [id], onDelete: Cascade)
+  roleId         String       @default("custom")
+  grants         Json         @default("[]")
+  revokes        Json         @default("[]")
+  sessionVersion Int          @default(0)
+  inviteNote     String?
+  migratedFrom   Json?
+  updatedBy      String?
+  updatedAt      DateTime     @default(now())
+
+  @@index([roleId])
+}
+
+/// Team & Roles: staff footprint (sign-ins, page views, API writes, exports).
+/// Append-only for staff; the retention clean-up is the only delete.
+model StaffEvent {
+  id         String   @id
+  at         DateTime @default(now())
+  staffId    String?
+  email      String
+  kind       String
+  area       String?
+  path       String?
+  method     String?
+  success    Boolean  @default(true)
+  ipPrefix   String?
+  country    String?
+  deviceType String?
+  browser    String?
+  os         String?
+  meta       Json?
+
+  @@index([at])
+  @@index([email, at])
+  @@index([kind, at])
+}
+
+/// A lesson's recap: key takeaways and quick recall cards (lib/learn/recap),
+/// written by AI from the lesson (per content hash) or edited by staff.
+model LessonRecap {
+  lessonId    String   @id
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  contentHash String
+  data        Json
+  source      String   @default("ai")
+  updatedAt   DateTime @default(now())
+}
+
+// ── Tilo Vision Scholarship (admin: /admin_pro/learn/scholarships) ─────────
+// Tables are created at runtime by lib/learn/scholarship/db.ts (no
+// migrations); keep the two in step. No relations, so they never touch the
+// shared models. Individual tracks only: never team plans or the monthly plan.
+
+/// One award to one person. status: draft (being reviewed) | approved
+/// (congratulations email sent, waiting to be accepted) | claimed (accepted by
+/// the learner `studentId`) | revoked. The offer link expires at
+/// offerExpiresAt while approved. trackIds: the tracks it may be used on
+/// (empty = any live track). coveragePct: 1-100 (100 = free).
+model Scholarship {
+  id             String    @id
+  code           String    @unique
+  name           String
+  email          String
+  locale         String    @default("en")
+  trackCount     Int
+  coveragePct    Int
+  trackIds       String[]  @default([])
+  message        String?
+  note           String?
+  status         String    @default("draft")
+  tokenHash      String?   @unique
+  offerDays      Int       @default(30)
+  offerExpiresAt DateTime?
+  approvedAt     DateTime?
+  approvedBy     String?
+  emailedAt      DateTime?
+  studentId      String?
+  claimedAt      DateTime?
+  revokedAt      DateTime?
+  revokedBy      String?
+  /// Stripe coupon (percent_off = coveragePct) shown as the scholarship discount at checkout.
+  stripeCouponId String?
+  /// Who funds it (impact reports go to sponsorEmail).
+  sponsorName    String?
+  sponsorEmail   String?
+  /// Days after accepting to choose the tracks (unused ones then expire).
+  pickDays       Int?
+  /// Target days after accepting to complete the tracks (reminders only).
+  completeDays   Int?
+  welcomedAt     DateTime?
+  /// The public application it came from, if any.
+  applicationId  String?
+  /// The partner organisation it is given through, and how the mention
+  /// reads: partnership ("In partnership with") | nominated ("Nominated by")
+  /// | through ("Awarded through"). Printed on the email and award letter.
+  partnerName    String?
+  partnerRole    String?
+  createdBy      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now())
+
+  @@index([email])
+  @@index([studentId])
+  @@index([status, createdAt])
+  @@index([sponsorName])
+}
+
+/// A track unlocked with a scholarship: free (paidCents 0) or paid at the
+/// scholarship price through Stripe (stripeSessionId).
+model ScholarshipTrack {
+  id              String   @id
+  scholarshipId   String
+  studentId       String
+  trackId         String
+  listCents       Int
+  paidCents       Int
+  coveredCents    Int
+  stripeSessionId String?  @unique
+  createdAt       DateTime @default(now())
+
+  @@unique([scholarshipId, trackId])
+  @@index([studentId])
+}
+
+/// A reminder or update already sent for a scholarship (kind: offer-reminder,
+/// pick-7, pick-1, complete-half, complete-14, progress-<n>, completed), so
+/// the daily job sends each once.
+model ScholarshipNotice {
+  id            String   @id
+  scholarshipId String
+  kind          String
+  sentAt        DateTime @default(now())
+
+  @@unique([scholarshipId, kind])
+}
+
+/// An application from the public page /tilo-vision-scholarship.
+/// status: new | shortlisted | declined | awarded (scholarshipId).
+model ScholarshipApplication {
+  id            String    @id
+  name          String
+  email         String
+  phone         String?
+  country       String?
+  locale        String    @default("en")
+  background    String?
+  motivation    String
+  goals         String?
+  trackIds      String[]  @default([])
+  links         String?
+  status        String    @default("new")
+  reviewNote    String?
+  reviewedAt    DateTime?
+  reviewedBy    String?
+  scholarshipId String?
+  createdAt     DateTime  @default(now())
+
+  @@index([email])
+  @@index([status, createdAt])
+}
+
+/// A gift to the Tilo Vision Scholarship fund (public donate box). One row per
+/// payment: stage first (the checkout; thanked by email) or renewal (each
+/// monthly invoice). frequency: once | monthly. canceledAt: a monthly gift
+/// stopped (on its first row).
+model ScholarshipDonation {
+  id                   String    @id
+  frequency            String
+  stage                String    @default("first")
+  amountCents          Int
+  currency             String    @default("usd")
+  email                String?
+  name                 String?
+  locale               String    @default("en")
+  stripeSessionId      String?   @unique
+  stripeInvoiceId      String?   @unique
+  stripeSubscriptionId String?
+  stripeCustomerId     String?
+  thankedAt            DateTime?
+  canceledAt           DateTime?
+  createdAt            DateTime  @default(now())
+
+  @@index([createdAt])
+  @@index([stripeSubscriptionId])
+}
+
+/// A sponsor impact report sent (lib/learn/scholarship/sponsor-reports.ts,
+/// created at runtime). key: "auto:<sponsor>:<YYYY-MM>" for the automatic
+/// monthly report (claimed before sending), "manual:<id>" for one sent from
+/// admin. sponsor: the sponsor name, trimmed and lower-cased.
+model ScholarshipSponsorReport {
+  key     String   @id
+  sponsor String
+  month   String?
+  sentTo  String?
+  sentAt  DateTime @default(now())
+
+  @@index([sponsor, sentAt])
+}
+
+/// One row per payment already announced to sales@ (lib/payments/sale-alert.ts,
+/// created at runtime). The id is the Stripe Checkout session or invoice id.
+model SaleAlert {
+  id        String   @id
+  createdAt DateTime @default(now())
+}
+
+/// One track on its own monthly plan (lib/learn/track-subscriptions.ts,
+/// created at runtime). One row per Stripe subscription.
+model TrackSubscription {
+  id                   String    @id
+  studentId            String
+  trackId              String
+  stripeSubscriptionId String    @unique
+  stripeCustomerId     String?
+  status               String
+  currentPeriodEnd     DateTime?
+  graceUntil           DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @default(now())
+
+  @@index([studentId])
+}
+
+/// Instant-feedback quiz session (lib/learn/quiz-session.ts, created at
+/// runtime): the questions served and the answers locked as they were shown.
+model QuizSession {
+  id          String   @id
+  studentId   String
+  mode        String
+  refId       String
+  questionIds String[]
+  locks       Json     @default("{}")
+  createdAt   DateTime @default(now())
+
+  @@index([studentId])
+}
+
+/// Glossary terms a learner opened in lessons, reviewed as flip cards in the
+/// Daily Review with Leitner boxes (lib/learn/glossary/review.ts, created at runtime).
+model GlossarySeen {
+  studentId      String
+  termId         String
+  firstSeenAt    DateTime  @default(now())
+  lastReviewedAt DateTime?
+  box            Int       @default(1)
+  dueAt          DateTime
+
+  @@id([studentId, termId])
+  @@index([studentId, dueAt])
+}
+
+/// "Explain simpler" on a lesson paragraph, written once per paragraph text
+/// and language and shared by every learner (lib/learn/explain, created at runtime).
+model ParagraphExplain {
+  lessonId  String
+  paraHash  String
+  locale    String
+  text      String
+  createdAt DateTime @default(now())
+
+  @@id([lessonId, paraHash, locale])
+}
+
+/// Weekly 10-minute challenge entry (lib/learn/challenge, created at runtime
+/// by lib/learn/challenge/db.ts; keep the two in step). One per learner per
+/// week ("YYYY-MM-DD" of the Monday, UTC). No Prisma relation: the foreign
+/// key to Student (ON DELETE CASCADE) lives in the runtime SQL.
+model WeeklyChallengeEntry {
+  id          String   @id
+  studentId   String
+  week        String
+  challengeId String
+  answer      String
+  score       Int
+  feedback    String
+  breakdown   Json     @default("[]")
+  locale      String   @default("en")
+  edits       Int      @default(0)
+  submittedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now())
+
+  @@unique([studentId, week])
+  @@index([week, score, submittedAt])
+}
+
+/// AI-Empowered Youth: one weekly summary email per child, week ("YYYY-MM-DD"
+/// of the Monday, UTC) and adult (parent or sponsor), claimed before sending
+/// (lib/learn/youth-digest.ts). The youth tables below are created at runtime
+/// by lib/learn/youth-account.ts (keep the two in step). No Prisma
+/// relations: the foreign keys to Student (ON DELETE CASCADE) live in the
+/// runtime SQL.
+model YouthParentDigest {
+  studentId String
+  week      String
+  email     String
+  createdAt DateTime @default(now())
+
+  @@id([studentId, week, email])
+}
+
+/// Parent & Sponsor Portal: an adult who follows a youth learner (the parent
+/// is Student.parentEmail; sponsors are added by the parent).
+model YouthGuardian {
+  id           String    @id
+  studentId    String
+  email        String
+  role         String    @default("sponsor") // parent|sponsor
+  name         String?
+  invitedBy    String?
+  weeklyOptOut Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  revokedAt    DateTime?
+
+  @@unique([studentId, email])
+  @@index([email])
+}
+
+/// Portal sign-in links (sha256 of a one-time token).
+model YouthPortalLogin {
+  tokenHash String    @id
+  email     String
+  next      String?
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+}
+
+/// Pause alerts, once per pause (pauseStart = last learning activity) and stage (nudge|adults).
+model YouthPauseAlert {
+  studentId  String
+  pauseStart DateTime
+  stage      String
+  createdAt  DateTime @default(now())
+
+  @@id([studentId, pauseStart, stage])
+}
+
+/// Encouragements sent to a youth learner by a parent or sponsor.
+model YouthEncouragement {
+  id        String   @id
+  studentId String
+  fromEmail String
+  fromRole  String
+  preset    String?
+  text      String?
+  createdAt DateTime @default(now())
+
+  @@index([studentId, createdAt])
+}
+
+/// AI-Empowered Youth: "Sponsor a young person" (lib/learn/youth-sponsor.ts;
+/// created at runtime by lib/learn/youth-account.ts). status:
+/// checkout|fulfilling|awaiting_consent|active|canceled.
+model YouthSponsorship {
+  id                String    @id
+  sponsorName       String
+  sponsorEmail      String
+  sponsorLocale     String    @default("en")
+  relationship      String
+  relationshipOther String?
+  childFirstName    String
+  childEmail        String
+  childAge          Int
+  childLocale       String    @default("en")
+  lane              String
+  note              String?
+  plan              String // lifetime|monthly
+  amountCents       Int
+  siblingPct        Int       @default(0)
+  parentEmail       String?
+  parentAttested    Boolean   @default(false)
+  status            String    @default("checkout")
+  stripeSessionId   String?
+  childStudentId    String?
+  childEmailSentAt  DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @default(now())
+
+  @@index([sponsorEmail])
+  @@index([childStudentId])
+}
+
+/// Game Forge (AI-Empowered Youth Studio tool): a learner's game, created at
+/// runtime by lib/learn/game-forge/db.ts (keep the two in step). template:
+/// clicker|quiz|platformer|adventure; config is the validated game JSON
+/// (lib/learn/game-forge/schema.ts). No Prisma relations: the foreign keys
+/// (to Student, and from versions and shares to the project, ON DELETE
+/// CASCADE) live in the runtime SQL.
+model GameForgeProject {
+  id        String   @id
+  studentId String
+  template  String
+  title     String
+  config    Json
+  version   Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@index([studentId, updatedAt])
+}
+
+/// Game Forge: numbered snapshots of a game. source: start|ai|quick|manual|restore|character.
+model GameForgeVersion {
+  id        String   @id
+  projectId String
+  studentId String
+  n         Int
+  source    String
+  note      String?
+  config    Json
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, n])
+  @@index([studentId])
+}
+
+/// Game Forge "Share with family": /play/[token] plays a frozen copy of the
+/// game (no names). token: 32 random bytes, base64url. revokedBy: kid|parent|staff.
+model GameForgeShare {
+  token     String    @id
+  projectId String
+  studentId String
+  template  String
+  title     String
+  config    Json
+  views     Int       @default(0)
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+  revokedBy String?
+
+  @@index([studentId])
+  @@index([projectId])
+}
+
+/// Reviews and testimonials (lib/reviews/db.ts; created at runtime by
+/// ensureReviewTables and /api/cron/db-prepare). Real reviews only: from a
+/// signed invitation link, or received elsewhere and added by staff with a
+/// staffNote. status: pending|approved|hidden. source:
+/// consultation|project|arfa|store|other. Emails are stored lower case
+/// (CHECK "Testimonial_email_lower_check"), so the unique (email, source) is
+/// the rule on (lower(email), source). Rating CHECK 1..5.
+model Testimonial {
+  id             String    @id
+  name           String
+  role           String
+  company        String?
+  quote          String
+  rating         Int
+  source         String
+  locale         String    @default("en")
+  email          String
+  consentPublish Boolean   @default(false)
+  status         String    @default("pending")
+  featured       Boolean   @default(false)
+  addedByStaff   Boolean   @default(false)
+  staffNote      String?
+  createdAt      DateTime  @default(now())
+  approvedAt     DateTime?
+  approvedBy     String?
+
+  @@unique([email, source], map: "Testimonial_email_source_key")
+  @@index([status, source], map: "Testimonial_status_source_idx")
+}
+
+/// One review invitation per (email, source), ever (lib/reviews/db.ts).
+/// via: admin|link|appointment|certificate. Emails lower case (CHECK).
+model ReviewInvite {
+  id        String   @id
+  email     String
+  source    String
+  name      String
+  locale    String   @default("en")
+  via       String
+  refId     String?
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  @@unique([email, source], map: "ReviewInvite_email_source_key")
 }
