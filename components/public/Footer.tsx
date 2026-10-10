@@ -15,6 +15,7 @@ const products = [
   { label: "ShipFrica", href: "#" },
   { label: "AI Academy", href: "/learning-box" },
   { label: "Tilo Vision Scholarship", href: "/tilo-vision-scholarship" },
+  { label: "AGR Score", href: "/agr" },
   { label: "RoofGuard", href: "#" },
   { label: "Tibintel", href: "https://tibintel.com" },
   { label: "Goal Tester", href: "#" },
@@ -147,6 +148,14 @@ export default async function Footer() {
                           title="ARFA: AI Readiness For All"
                         >
                           AR<span className="text-[#F47C20]">FA</span>
+                        </span>
+                      </>
+                    ) : p.href === "/agr" ? (
+                      // The AI Graveyard Report skill download (tiblogics.com/agr).
+                      <>
+                        AGR Score
+                        <span className="ml-1.5 inline-block rounded-full bg-[#F47C20] px-1.5 py-px align-middle text-[10px] font-black leading-tight tracking-tight text-white">
+                          {t("site.footer.free")}
                         </span>
                       </>
                     ) : (

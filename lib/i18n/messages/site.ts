@@ -62,6 +62,7 @@ const messages: Messages = {
     "site.footer.privacy": "Privacy Policy",
     "site.footer.terms": "Terms of Service",
     "site.footer.agrPrivacy": "AGR Privacy",
+    "site.footer.free": "Free",
     "site.footer.legal": "Legal",
 
     // Tibo chat widget
@@ -165,6 +166,7 @@ const messages: Messages = {
     "site.footer.privacy": "Politique de confidentialité",
     "site.footer.terms": "Conditions d'utilisation",
     "site.footer.agrPrivacy": "Confidentialité AGR",
+    "site.footer.free": "Gratuit",
     "site.footer.legal": "Mentions légales",
 
     "site.chat.dialog": "Assistant de discussion IA Echelon",
@@ -266,6 +268,7 @@ const messages: Messages = {
     "site.footer.privacy": "Sera ya faragha",
     "site.footer.terms": "Masharti ya huduma",
     "site.footer.agrPrivacy": "Faragha ya AGR",
+    "site.footer.free": "Bure",
     "site.footer.legal": "Kisheria",
 
     "site.chat.dialog": "Msaidizi wa gumzo wa AI wa Echelon",
