@@ -18,6 +18,7 @@ export default async function LearnAdminPage() {
   await ensureLearnEditColumns().catch(() => {});
   // Every query is guarded — before Sync Database runs, none of these tables
   // exist and the page must still render with its setup instructions.
+  let tracksError: unknown = null;
   const [tracks, students, subs, submissions, certificates, waitlist, recentCerts] = await Promise.all([
     prisma.learnTrack
       .findMany({
@@ -28,7 +29,10 @@ export default async function LearnAdminPage() {
           modules: { select: { _count: { select: { lessons: true } } } },
         },
       })
-      .catch(() => null),
+      .catch((err) => {
+        tracksError = err;
+        return null;
+      }),
     prisma.student.count().catch(() => null),
     prisma.learnSubscription
       .groupBy({ by: ["status"], _count: { _all: true } })
@@ -80,6 +84,9 @@ export default async function LearnAdminPage() {
   const trackTitle = new Map((tracks ?? []).map((t) => [t.id, t.title]));
 
   const tablesReady = tracks !== null;
+  // No connection at all (database asleep, over its plan or down) is not the
+  // same as "the tables do not exist": Sync and Seed would only fail too.
+  const dbUnreachable = !tablesReady && isConnectionError(tracksError);
   // Sign-ups, active learners and conversion (null when unavailable).
   const stats = tablesReady ? await learnerStats() : null;
 
@@ -98,6 +105,7 @@ export default async function LearnAdminPage() {
         </div>
       }
       tablesReady={tablesReady}
+      dbUnreachable={dbUnreachable}
       tracks={(tracks ?? []).map((t) => ({
         id: t.id,
         slug: t.slug,
@@ -148,5 +156,20 @@ export default async function LearnAdminPage() {
         issuedAt: c.issuedAt.toISOString(),
       }))}
     />
+  );
+}
+
+/**
+ * Prisma could not talk to the database: unreachable (P1001), timed out
+ * (P1002/P1008), connection closed (P1017), pool exhausted (P2024).
+ */
+const CONNECTION_CODES = new Set(["P1000", "P1001", "P1002", "P1008", "P1017", "P2024"]);
+function isConnectionError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as { name?: string; errorCode?: string; code?: string; message?: string };
+  return (
+    e.name === "PrismaClientInitializationError" ||
+    CONNECTION_CODES.has(e.code ?? "") || CONNECTION_CODES.has(e.errorCode ?? "") ||
+    /Can't reach database server|Server has closed the connection|ECONNREFUSED|ETIMEDOUT|Connection terminated|timed out fetching a new connection/i.test(e.message ?? "")
   );
 }

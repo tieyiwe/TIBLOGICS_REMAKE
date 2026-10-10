@@ -35,6 +35,7 @@ interface CertRow {
 export default function LearnAdminClient({
   learnersWidget,
   tablesReady,
+  dbUnreachable = false,
   tracks,
   studentCount,
   subCounts,
@@ -49,6 +50,8 @@ export default function LearnAdminClient({
   /** Sign-ups / activity / conversion panel (server-rendered LearnersWidget). */
   learnersWidget?: React.ReactNode;
   tablesReady: boolean;
+  /** The database could not be reached at all (not the same as missing tables). */
+  dbUnreachable?: boolean;
   tracks: TrackRow[];
   studentCount: number;
   subCounts: Record<string, number>;
@@ -111,7 +114,7 @@ export default function LearnAdminClient({
         activeTab="/admin_pro/learn"
         actions={
           <>
-            <Button onClick={() => run("sync")} disabled={busy !== null} loading={busy === "sync"} variant="secondary" icon={Database}>
+            <Button onClick={() => run("sync")} disabled={busy !== null || dbUnreachable} loading={busy === "sync"} variant="secondary" icon={Database}>
               {busy === "sync" ? "Syncing" : "1. Sync database"}
             </Button>
             <Button onClick={() => run("seed")} disabled={busy !== null || !tablesReady} loading={busy === "seed"} variant="primary" icon={Sprout}>
@@ -121,7 +124,15 @@ export default function LearnAdminClient({
         }
       />
 
-      {!tablesReady && (
+      {dbUnreachable && (
+        <Notice tone="warn" title="Can't reach the database">
+          The site could not connect to its database just now, so nothing on this page can load. The tables are not missing:
+          do not run Sync or Seed. Reload in a minute. If it keeps happening, open the Database tool in Replit and check that
+          the database is running and within its plan limits.
+        </Notice>
+      )}
+
+      {!tablesReady && !dbUnreachable && (
         <Notice tone="warn" title="Setup required">
           The ARFA tables do not exist yet. Click <strong>Sync database</strong>, then <strong>Seed content</strong>. Both are
           safe to re-run: seeding updates content in place and never touches learner progress.
