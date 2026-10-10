@@ -44,6 +44,7 @@ const STATIC: Array<[path: string, priority: number, freq: Entry["changeFrequenc
   ["/products", 0.6, "monthly"],
   ["/accessibility", 0.3, "yearly"],
   ["/privacy", 0.3, "yearly"],
+  ["/agr", 0.6, "monthly"],
   ["/privacy/agr", 0.3, "yearly"],
   ["/tilo-vision-scholarship", 0.6, "monthly"],
   ["/terms", 0.3, "yearly"],

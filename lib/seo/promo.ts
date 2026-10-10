@@ -91,6 +91,10 @@ const PROMOS: Record<string, Pair> = {
     en: { title: "Tell us what you want to build", description: "A real person replies within one business day.", chips: ["Free first call", "Clear quote", "English · French"], cta: "Start the conversation →", kicker: "Contact" },
     fr: { title: "Dites-nous ce que vous voulez construire", description: "Une vraie personne vous répond sous un jour ouvré.", chips: ["Premier appel gratuit", "Devis clair", "Français · anglais"], cta: "Démarrer la conversation →", kicker: "Contact" },
   },
+  "/agr": {
+    en: { title: "What's your AGR Score?", description: "Find out how many of your AI projects you actually finished. Free Claude skill, score from 0 to 100.", stat: "0-100", statLabel: "your score", chips: ["Free", "Claude skill", "Private"], cta: "Download the skill →", kicker: "AI Graveyard Report" },
+    fr: { title: "Quel est votre AGR Score ?", description: "Découvrez combien de vos projets IA vous avez vraiment terminés. Skill Claude gratuit, score de 0 à 100.", stat: "0-100", statLabel: "votre score", chips: ["Gratuit", "Skill Claude", "Privé"], cta: "Télécharger le skill →", kicker: "AI Graveyard Report" },
+  },
   "/products": {
     en: { title: "AI products built for real businesses", description: "Learning, care, shipping and security products from TIBLOGICS.", chips: ["Live products", "Built in-house", "Ready to deploy"], cta: "See the products →", kicker: "Products" },
     fr: { title: "Des produits IA pour de vraies entreprises", description: "Éducation, santé, logistique et sécurité : les produits TIBLOGICS.", chips: ["Produits en ligne", "Conçus en interne", "Prêts à déployer"], cta: "Voir les produits →", kicker: "Produits" },
