@@ -448,6 +448,17 @@ export const CURATED_OCTOBER: CuratedArticle[] = [
 
 <p>What I am saying is this: for the first time, the barrier to a global carrier will not be technical or operational. The network will physically cover the whole planet, the same phones will work everywhere, and one company will operate it. Whether a given country allows it becomes a policy choice, not an engineering impossibility. That is a profound shift. Until now, nobody could offer worldwide phone service even if every government on Earth said yes. Soon, someone will be able to.</p>
 
+<p><strong>The fair objection: one global network, one global point of failure?</strong> It is reasonable to ask what happens if the whole world, or a large part of it, depends on one carrier. A software fault, a cyberattack, a severe solar storm or a single political decision could, in theory, leave hundreds of millions of people in the dark at the same moment. This is not hypothetical. On July 24, 2025, a failure in the internal software that runs Starlink's core network took the service down worldwide for about two and a half hours. When a network carries ordinary broadband, that is an inconvenience. When it carries emergency calls, hospitals and payments across continents, it is a serious risk, and regulators will be right to demand answers.</p>
+
+<p>My view is that this is a design problem, not a reason to stop, and that we already have the technology to solve it. A network that covers the globe does not have to behave as one single network. It can be architected as many independent sub-networks: regional cores with their own ground stations, their own control software and their own capacity to keep running when another region goes down. In practice, that means:</p>
+<ul>
+<li><strong>Regions that fail alone.</strong> An outage in one region's core or ground stations stays in that region, instead of spreading across the planet.</li>
+<li><strong>Staged changes.</strong> Software updates roll out region by region, never everywhere at once, so a bad update is caught before it reaches the whole network.</li>
+<li><strong>Routing around damage.</strong> Satellites linked by lasers can pass traffic around a failed satellite or ground station, and gateways can take over for one another.</li>
+<li><strong>Local fallbacks.</strong> Countries and local carriers can keep their own networks as a backup layer, especially for emergency services.</li>
+</ul>
+<p>The internet itself was built on this idea: no single break should take everything down. A global carrier should be held to the same standard. Global coverage with local independence is the architecture I expect, and it is the architecture I believe regulators should require before any one company carries a country's phone service.</p>
+
 <h2>What it could mean for the legacy carriers</h2>
 
 <p>If Starlink deploys fully, I expect pressure on legacy carriers to build slowly and then show up all at once in their valuations. Not because they will disappear: cities will still need dense ground networks, and fibre and towers will carry most of the world's traffic for a long time. But several of the things investors pay for will be worth less:</p>
@@ -485,6 +496,7 @@ export const CURATED_OCTOBER: CuratedArticle[] = [
       { label: "Fierce Network: Starlink Mobile unveils plans for V2 satellites (MWC 2026)", url: "https://www.fierce-network.com/wireless/mwc-starlink-mobile-unveils-plans-v2-satellites-and-more" },
       { label: "Wikipedia: Initial public offering of SpaceX", url: "https://en.wikipedia.org/wiki/Initial_public_offering_of_SpaceX" },
       { label: "Ecofin Agency: Airtel Africa partners with SpaceX to roll out Starlink Direct to Cell", url: "https://www.ecofinagency.com/news-digital/1712-51483-airtel-africa-partners-with-spacex-to-roll-out-starlink-direct-to-cell" },
+      { label: "Daily Maverick (Reuters): Elon Musk's Starlink network suffers rare global outage (July 2025)", url: "https://www.dailymaverick.co.za/article/2025-07-25-elon-musks-starlink-network-suffers-rare-global-outage/" },
     ],
   },
 ];
