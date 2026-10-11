@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { customCoverDataUrl, customCoverName } from "@/lib/og/covers";
 import { readFile } from "fs/promises";
 import path from "path";
 import { ogFonts, OG_SIZE } from "@/lib/og/brand-card";
@@ -27,6 +28,8 @@ const ALLOWED_HOSTS = new Set(["images.unsplash.com", "source.unsplash.com", "ti
 
 async function coverDataUrl(cover: string | null): Promise<string | null> {
   if (!cover) return null;
+  // A cover drawn in code (lib/og/covers), not a file.
+  if (customCoverName(cover)) return customCoverDataUrl(cover);
   try {
     if (cover.startsWith("/") && !cover.startsWith("//")) {
       const file = path.join(process.cwd(), "public", path.normalize(cover).replace(/^(\.\.[/\\])+/, ""));
@@ -87,6 +90,22 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
         .catch(() => null)
     : null;
   if (!post) return new Response("Not found", { status: 404 });
+
+  // A cover drawn for the article already has its headline: it is the card.
+  if (customCoverName(post.coverImage)) {
+    const own = await customCoverDataUrl(post.coverImage!);
+    if (own) {
+      return new ImageResponse(
+        (
+          <div style={{ width: 1200, height: 630, display: "flex", background: "#03060F" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={own} width={1200} height={630} alt="" style={{ width: 1200, height: 630, objectFit: "cover" }} />
+          </div>
+        ),
+        { width: 1200, height: 630, headers: { "Cache-Control": "public, max-age=3600, s-maxage=86400" } },
+      );
+    }
+  }
 
   const [cover, mark, fonts] = await Promise.all([coverDataUrl(post.coverImage), markDataUrl(), ogFonts()]);
   const cat = CATEGORY[post.category ?? ""] ?? { label: "AI Times", color: "#F47C20" };

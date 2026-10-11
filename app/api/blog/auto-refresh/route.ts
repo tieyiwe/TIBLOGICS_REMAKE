@@ -767,8 +767,8 @@ async function publishCurated(): Promise<string[]> {
   const published: string[] = [];
   for (const a of missing) {
     try {
-      const cover = pickCoverImage(a.slug, usedPhotoIds);
-      usedPhotoIds.add(cover.photoId);
+      const cover = a.coverImage ? { url: a.coverImage, photoId: "" } : pickCoverImage(a.slug, usedPhotoIds);
+      if (cover.photoId) usedPhotoIds.add(cover.photoId);
       const meta = CATEGORY_META[a.category] ?? CATEGORY_META["industry"];
       const content = a.content + renderSources(a.sources);
       await prisma.blogPost.create({
@@ -782,12 +782,13 @@ async function publishCurated(): Promise<string[]> {
           coverEmoji: meta.emoji,
           coverGradient: meta.gradient,
           coverImage: cover.url,
-          // Written by an AI from checked sources, and labelled as such.
-          author: "Echelon by TIBLOGICS",
+          // Written by an AI from checked sources, and labelled as such,
+          // unless it is a signed column (the founder's take).
+          author: a.author ?? "Echelon by TIBLOGICS",
           readingTime: Math.max(1, Math.ceil(content.replace(/<[^>]*>/g, " ").split(/\s+/).length / 200)),
           featured: a.featured ?? false,
           published: true,
-          aiGenerated: true,
+          aiGenerated: a.aiGenerated ?? true,
           sourceUrl: a.sources[0]?.url,
           sourceTitle: a.sources[0]?.label,
         },

@@ -368,11 +368,13 @@ export default function BlogPostPage({
 
           {/* Cover image — constrained to card width */}
           {post.coverImage && !heroCoverFailed ? (
-            <div className="w-full h-72 relative overflow-hidden">
+            // A cover drawn for the article (/og/covers/...) carries its own
+            // headline: shown whole (16:9), never cropped.
+            <div className={`w-full relative overflow-hidden ${post.coverImage.startsWith("/og/covers/") ? "aspect-video" : "h-72"}`}>
               <img
                 src={heroImgFailed ? post.coverImage : post.coverImage.replace('-cover.', '-hero.')}
                 alt={display?.title ?? post.title}
-                className="w-full h-full object-cover object-top"
+                className={`w-full h-full ${post.coverImage.startsWith("/og/covers/") ? "object-contain" : "object-cover object-top"}`}
                 loading="eager"
                 fetchPriority="high"
                 decoding="sync"

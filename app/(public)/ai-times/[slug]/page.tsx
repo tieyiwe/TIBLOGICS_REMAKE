@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { customCoverName } from "@/lib/og/covers";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import fs from "fs";
@@ -68,6 +69,8 @@ function toOgImage(coverImage: string | null, category?: string | null): string 
   const fallback = CATEGORY_OG_FALLBACK[category ?? ""] ?? FALLBACK_IMAGE;
 
   if (!coverImage) return fallback;
+  // A cover drawn in code (lib/og/covers) is served from this site.
+  if (customCoverName(coverImage)) return `${SITE_URL}${coverImage}`;
   try {
     const url = new URL(coverImage);
     if (url.hostname === "images.unsplash.com") {

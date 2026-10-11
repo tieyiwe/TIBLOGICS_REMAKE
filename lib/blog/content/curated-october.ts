@@ -361,4 +361,130 @@ export const CURATED_OCTOBER: CuratedArticle[] = [
       { label: "Amazon: 7 ways Amazon is thinking big about nuclear energy", url: "https://www.aboutamazon.com/news/sustainability/amazon-nuclear-energy-smr-plans" },
     ],
   },
+  // ───────────────────────────────────────────────────────────────────────────
+  // Telecom, week of October 5 to 11. Owner's column: news, then Tieyiwe
+  // Bassole's own take in the first person. Custom cover:
+  // app/og/covers/starlink-global-carrier/route.tsx.
+  {
+    slug: "spacex-starlink-mobile-first-global-carrier",
+    title: "SpaceX Just Moved to Become a Phone Carrier. I Think It Could Become the First Global One.",
+    excerpt:
+      "In one week SpaceX bought 800 MHz spectrum, won approval for 15,000 phone satellites, and knocked billions off AT&T, Verizon and T-Mobile. Tieyiwe Bassole explains why it may become the world's first truly global carrier.",
+    category: "advanced-tech",
+    featured: true,
+    author: "Tieyiwe Bassole",
+    aiGenerated: false,
+    coverImage: "/og/covers/starlink-global-carrier",
+    newsDate: "2026-10-08",
+    tags: ["spacex", "starlink", "starlink mobile", "elon musk", "telecom", "direct to cell", "satellite", "5g", "spectrum", "verizon", "at&t", "t-mobile"],
+    content: `<p>For two decades, satellite phones were a niche: expensive handsets, slow connections, and customers who were mostly sailors, soldiers and mountaineers. This week, that era ended. In the space of a few days, SpaceX secured the last major piece it was missing to sell ordinary people an ordinary phone plan, and the stock market reacted as if a new carrier had just walked into the room.</p>
+
+<p>This article covers what happened, what it means, and, at the end, my own view as the founder of TIBLOGICS: I believe Starlink is now the only company in the world positioned to become a truly global phone and internet carrier.</p>
+
+<h2>What happened this week</h2>
+
+<p><strong>October 6: approval for 15,000 phone satellites.</strong> The US Federal Communications Commission conditionally authorised SpaceX's next-generation direct-to-cell system, a constellation of up to 15,000 satellites designed to talk directly to normal smartphones using mobile satellite spectrum. Today's direct-to-cell fleet is reported at around 650 satellites, so this is a step change in scale.</p>
+
+<p><strong>October 8: the 800 MHz deal.</strong> Two days later, SpaceX announced an agreement to buy a nationwide portfolio of up to 14 MHz of paired spectrum in the 800 MHz band from the investment firm Grain Management. The terms were not disclosed by the companies; The Wall Street Journal reported a price of about $8 billion in cash. The deal still needs FCC approval. SpaceX said it will "pave the way for Starlink Mobile to become a major mobile carrier in the U.S."</p>
+
+<p>Why does 800 MHz matter so much? Low-band spectrum travels far and passes through walls. Satellites are excellent at covering open ground, but signals from orbit struggle to reach a phone inside an office, a basement or a car park. The 800 MHz band is the kind of spectrum carriers use to give you signal indoors, and reports note that most phones already support it. In short, it fills the biggest practical gap in a satellite-only network.</p>
+
+<p><strong>October 8 and 9: the market's verdict.</strong> Investors did the maths quickly. CNBC reported that Verizon closed down 8.75%, its worst day since July 2002, while AT&amp;T fell 9.81% and T-Mobile 13.27%. Other outlets reported slightly different closing figures, but the direction was the same everywhere: tens of billions of dollars of market value erased from the three largest US carriers in a day.</p>
+
+<h2>How SpaceX got here</h2>
+
+<p>None of this came out of nowhere. Read in order, the last fourteen months look like a plan:</p>
+<ul>
+<li><strong>Direct to Cell with partners.</strong> Starlink's first phone service runs through existing carriers. In the US, T-Mobile customers can text, and increasingly use some apps, from places with no towers. Partners announced over the past two years include Rogers in Canada, One NZ, Optus and Telstra in Australia, KDDI in Japan, Salt in Switzerland, Entel in Chile and Peru, Kyivstar in Ukraine, Virgin Media O2 in the UK, and Airtel Africa, which plans a rollout across its African markets subject to each country's approval.</li>
+<li><strong>September 2025: EchoStar's spectrum.</strong> SpaceX agreed to buy EchoStar's AWS-4 and H-block spectrum, together with global mobile satellite service rights, in a deal valued at about $17 billion. SpaceX said its next-generation phone satellites would bring around 20 times the throughput of the first generation, and more than 100 times the overall capacity. In November 2025 it added more EchoStar spectrum for about $2.6 billion.</li>
+<li><strong>June 2026: the money.</strong> SpaceX listed on Nasdaq in June at $135 a share, raising about $75 billion at a valuation reported around $1.75 trillion, the largest stock market listing in history. Starlink is the business that pays the bills: reports around the listing put it at roughly 12 million subscribers.</li>
+<li><strong>June 2026: the intent.</strong> The Financial Times reported that President Gwynne Shotwell had told investors SpaceX was considering selling Starlink mobile plans directly to consumers, and might even build its own ground network in the US. Reuters relayed the report; SpaceX did not comment at the time. This week's 800 MHz deal is exactly the kind of asset that plan needs.</li>
+</ul>
+
+<p>Put together: satellites for coverage everywhere outdoors, mid-band spectrum for capacity, low-band spectrum for indoor reach, a customer base of millions, and the cash from the largest IPO ever. That is the shopping list of a carrier.</p>
+
+<h2>Why the carriers' share prices fell</h2>
+
+<p>The fear is not that Starlink Mobile will replace your city's 5G network next year. Analysts were quick to point out that building a competitive network takes time, money and a lot of ground equipment, and some argued the sell-off was overdone. The fear is about the long term, and it has three parts:</p>
+<ul>
+<li><strong>Pricing pressure.</strong> A new national carrier with a different cost structure can force prices down for everyone, the way T-Mobile once did in the US.</li>
+<li><strong>The rural moat disappears.</strong> Carriers have spent billions building towers in places with few customers. If satellites cover those places by default, coverage stops being a reason to pick one carrier over another.</li>
+<li><strong>Spectrum is the scarce asset, and SpaceX is now buying it.</strong> For years spectrum auctions were a contest between a handful of incumbents. A buyer with SpaceX's balance sheet changes those auctions.</li>
+</ul>
+
+<p>What is still uncertain: the FCC must approve the 800 MHz deal; the next-generation satellites are reported to start launching in 2027, so most of this capacity is not in orbit yet; and indoor service at scale still needs equipment on the ground. Reports also differ on how much of the 14 MHz is available in each county. These are real hurdles. None of them is a reason to assume it will not happen.</p>
+
+<h2>A world of national carriers</h2>
+
+<p>To see why this week matters beyond the US, look at how the global phone industry is built today. It is a patchwork of national networks.</p>
+
+<p>Even the biggest groups are regional. Orange runs networks in roughly two dozen countries across Europe, Africa and the Middle East. América Móvil dominates much of Latin America. Vodafone, MTN and Airtel each cover their own regions. Deutsche Telekom owns T-Mobile in the US and networks across Europe. They are large, but none of them is everywhere, and each of their country networks is a separate business with separate spectrum, separate towers and a separate licence.</p>
+
+<p>When you travel, you are not using your carrier abroad. You are borrowing someone else's network through a roaming agreement, and paying for the privilege. When you sail, fly or drive across an empty region, you usually have nothing at all. No company has ever been able to say: one network, one plan, every country, including the ocean in between. The reason is simple. Building towers and buying spectrum one country at a time never scales to the whole planet.</p>
+
+<h2>Tieyiwe Bassole's take: the moonshot is the first global carrier</h2>
+
+<p><em>The rest of this article is my own view, as the founder of TIBLOGICS.</em></p>
+
+<p>I believe what we are watching is not SpaceX becoming a fourth US carrier. I believe it is the first serious attempt at something the telecom industry has never had: a global carrier. One network that can give a person phone and internet service anywhere on Earth, from New York to a village in northern Cameroon, from a cargo ship to a farm in the Andes. That is the moonshot, and I think Starlink is the only company positioned to reach it.</p>
+
+<p>Here is why I say "only".</p>
+
+<p><strong>First, it owns the whole chain.</strong> To run a network from space you need to build satellites cheaply, launch them often, operate them reliably and replace them constantly. SpaceX builds its own satellites, flies them on its own rockets, and launches more mass to orbit than the rest of the world combined. Every other player rents rockets from someone else, often from SpaceX. I don't see how anyone catches up on cost per satellite in orbit within this decade.</p>
+
+<p><strong>Second, it already has the network up there.</strong> With more than ten thousand Starlink satellites in orbit and about 650 of them already talking to phones, SpaceX is not starting from a slide deck. Its competitors in direct-to-phone service are measured in dozens of satellites, not thousands.</p>
+
+<p><strong>Third, it is collecting the spectrum, globally.</strong> The EchoStar deal came with global mobile satellite service rights, not just US ones. Add the 800 MHz band for indoor coverage in the US, and SpaceX now holds the kind of spectrum portfolio that national carriers spent decades assembling, and on a wider footprint than any of them.</p>
+
+<p><strong>Fourth, the phones are ready.</strong> Earlier satellite services needed special handsets. Starlink's direct-to-cell service works with ordinary phones. There is no device barrier between Starlink and billions of customers.</p>
+
+<p><strong>Fifth, it already sells in most of the world.</strong> Starlink broadband is sold in well over a hundred countries and territories, with billing, support and distribution in place. It already has a relationship with regulators in most of them. A carrier needs exactly that.</p>
+
+<p><strong>Sixth, it has the money.</strong> The largest IPO in history means SpaceX can fund launches, spectrum and ground equipment without waiting for permission from anyone's budget cycle.</p>
+
+<p>No telecom group has all six. No other space company has all six either. Amazon is building a broadband constellation, but it does not own the rockets at SpaceX's scale and does not yet sell phone service to ordinary handsets. Companies built only for direct-to-phone service have the idea but not the fleet. China's constellations may become large, but most countries outside China's sphere are unlikely to license them as their national phone network.</p>
+
+<p>Now, the honest part. A satellite network still needs permission to serve people on the ground. Every country decides who can use its spectrum and sell telecom services to its citizens. Some countries will say no, or will make Starlink partner with a local carrier, or will impose ownership and data rules. South Africa's ownership rules, for example, have kept Starlink out so far, despite a government push to change them, while India granted it a licence in 2025. So I am not saying every country will hand Starlink a licence.</p>
+
+<p>What I am saying is this: for the first time, the barrier to a global carrier will not be technical or operational. The network will physically cover the whole planet, the same phones will work everywhere, and one company will operate it. Whether a given country allows it becomes a policy choice, not an engineering impossibility. That is a profound shift. Until now, nobody could offer worldwide phone service even if every government on Earth said yes. Soon, someone will be able to.</p>
+
+<h2>What it could mean for the legacy carriers</h2>
+
+<p>If Starlink deploys fully, I expect pressure on legacy carriers to build slowly and then show up all at once in their valuations. Not because they will disappear: cities will still need dense ground networks, and fibre and towers will carry most of the world's traffic for a long time. But several of the things investors pay for will be worth less:</p>
+<ul>
+<li><strong>Coverage stops being a selling point.</strong> If a satellite carrier covers every road, field and coastline, "the best coverage" no longer justifies a premium price.</li>
+<li><strong>Roaming revenue shrinks.</strong> A global network does not need roaming agreements, and a global plan does not charge you extra in the next country.</li>
+<li><strong>Rural and emerging markets change hands.</strong> In much of Africa, Latin America and Asia, the next hundred million customers live where towers are expensive to build. A network from space reaches them first.</li>
+<li><strong>Spectrum gets more expensive.</strong> A buyer with SpaceX's resources makes every future auction more competitive.</li>
+</ul>
+
+<p>The likely response from carriers is partnership: many already resell Starlink's direct-to-cell service, and more will. That can work well for a while. But a partner who owns the network, the spectrum and the customer relationship in a hundred countries eventually has more leverage than the carrier who rents it. If that happens, I would expect a long, gradual downward re-rating of legacy carrier valuations, especially for groups whose growth story depends on rural expansion and roaming. That is my reading of the trend, not investment advice, and it depends on SpaceX actually delivering the next-generation constellation it has promised.</p>
+
+<h2>What this means for businesses, especially in Africa</h2>
+
+<p>For the businesses we work with at TIBLOGICS in North America and Africa, I see three practical points:</p>
+<ul>
+<li><strong>Plan for connectivity everywhere.</strong> Field teams, logistics, agriculture and health services that today stop at the edge of the mobile network will soon have data in places that were dark. The apps and AI tools you build should assume that.</li>
+<li><strong>Don't lock yourself to one carrier's footprint.</strong> Multi-country businesses that pay for roaming and several local contracts should watch global plans closely. Your costs may change sooner than you think.</li>
+<li><strong>Watch your regulators.</strong> In many African countries, the decision on direct-to-phone satellite service will be made in the next two years. Businesses and users have a voice in that conversation.</li>
+</ul>
+
+<p>The global carrier has been an impossible idea for the whole history of telecoms. This week, for the first time, it became a business plan. I believe SpaceX is the company most likely to make it real.</p>
+
+<p><em>Tieyiwe Bassole is the founder of TIBLOGICS, an AI and digital solutions company working across North America and Africa.</em></p>`,
+    sources: [
+      { label: "CNBC: SpaceX deal to acquire spectrum license hammers shares of AT&T, Verizon and T-Mobile (Oct 8, 2026)", url: "https://www.cnbc.com/2026/10/08/spacex-spectrum-license-att-verizon-tmobile.html" },
+      { label: "CNBC: Verizon, AT&T and T-Mobile sell off on SpaceX U.S. network plans (Oct 9, 2026)", url: "https://www.cnbc.com/2026/10/09/verizon-att-tmobile-stocks-spacex-network.html" },
+      { label: "Forbes: AT&T, Verizon and T-Mobile stocks slump as SpaceX announces key Starlink Mobile deal", url: "https://www.forbes.com/sites/siladityaray/2026/10/09/att-verizon-and-t-mobile-stocks-slump-as-spacex-announces-key-starlink-mobile-deal/" },
+      { label: "Axios: SpaceX spectrum acquisition ripples through telecom stocks", url: "https://www.axios.com/2026/10/09/spacex-elon-musk-spectrum" },
+      { label: "The Register: SpaceX to buy key spectrum that could help Starlink Mobile become a major US cell carrier", url: "https://www.theregister.com/networks/2026/10/09/spacex-to-buy-key-spectrum-that-could-help-starlink-mobile-become-major-us-cell-carrier/5302393" },
+      { label: "Via Satellite: FCC grants SpaceX approval for 15,000 direct-to-device satellites in MSS spectrum", url: "https://www.satellitetoday.com/connectivity/2026/10/07/fcc-grants-spacex-approval-for-15000-direct-to-device-satellites-in-mss-spectrum/" },
+      { label: "EchoStar: spectrum sale and commercial agreement with SpaceX (Sept 2025)", url: "https://ir.echostar.com/news-releases/news-release-details/echostar-announces-spectrum-sale-and-commercial-agreement-spacex" },
+      { label: "TechCrunch: SpaceX strikes $17B deal to buy EchoStar's spectrum for Starlink's direct-to-phone service", url: "https://techcrunch.com/2025/09/08/spacex-strikes-17b-deal-to-buy-echostars-spectrum-for-starlinks-direct-to-phone-service/" },
+      { label: "The Star (Reuters): Musk's SpaceX targets US consumers with Starlink mobile service push, FT reports (June 2026)", url: "https://www.thestar.com.my/tech/tech-news/2026/06/26/musk039s-spacex-targets-us-consumers-with-starlink-mobile-service-push-ft-reports" },
+      { label: "Fierce Network: Starlink Mobile unveils plans for V2 satellites (MWC 2026)", url: "https://www.fierce-network.com/wireless/mwc-starlink-mobile-unveils-plans-v2-satellites-and-more" },
+      { label: "Wikipedia: Initial public offering of SpaceX", url: "https://en.wikipedia.org/wiki/Initial_public_offering_of_SpaceX" },
+      { label: "Ecofin Agency: Airtel Africa partners with SpaceX to roll out Starlink Direct to Cell", url: "https://www.ecofinagency.com/news-digital/1712-51483-airtel-africa-partners-with-spacex-to-roll-out-starlink-direct-to-cell" },
+    ],
+  },
 ];

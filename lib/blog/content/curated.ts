@@ -30,6 +30,12 @@ export interface CuratedArticle {
    * 21 days old is not published (it would appear today as fresh news).
    */
   newsDate?: string;
+  /** A signed column (for example the founder's take): shown as its author. */
+  author?: string;
+  /** false for a signed column written in its author's voice. */
+  aiGenerated?: boolean;
+  /** A custom cover (a path on this site) instead of a picked stock photo. */
+  coverImage?: string;
 }
 
 export const CURATED_ARTICLES: CuratedArticle[] = [
