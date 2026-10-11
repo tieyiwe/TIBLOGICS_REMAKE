@@ -366,10 +366,10 @@ export const CURATED_OCTOBER: CuratedArticle[] = [
   // Bassole's own take in the first person. Custom cover:
   // app/og/covers/starlink-global-carrier/route.tsx.
   {
-    slug: "spacex-starlink-mobile-first-global-carrier",
-    title: "SpaceX Just Moved to Become a Phone Carrier. I Think It Could Become the First Global One.",
+    slug: "tieyiwe-bassole-starlink-first-global-phone-carrier",
+    title: "Tieyiwe Bassole: The World's First Global Phone Carrier Is Coming From Space, and Your Carrier Should Be Worried",
     excerpt:
-      "In one week SpaceX bought 800 MHz spectrum, won approval for 15,000 phone satellites, and knocked billions off AT&T, Verizon and T-Mobile. Tieyiwe Bassole explains why it may become the world's first truly global carrier.",
+      "In one week SpaceX bought 800 MHz spectrum, won approval for 15,000 phone satellites and wiped billions off AT&T, Verizon and T-Mobile. Tieyiwe Bassole explains why Starlink could become the first carrier with no borders.",
     category: "advanced-tech",
     featured: true,
     author: "Tieyiwe Bassole",
