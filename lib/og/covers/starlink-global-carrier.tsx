@@ -123,12 +123,18 @@ export async function starlinkGlobalCarrierCover(): Promise<ImageResponse> {
         {/* Words */}
         <div style={{ position: "absolute", left: 90, top: 80, display: "flex", flexDirection: "column", width: 800 }}>
           <div style={{ display: "flex", fontSize: 24, fontWeight: 700, letterSpacing: 4, color: ORANGE }}>AI TIMES · TELECOM</div>
-          <div style={{ display: "flex", flexDirection: "column", marginTop: 22, fontWeight: 700, letterSpacing: -2, color: "#FFFFFF" }}>
-            <div style={{ display: "flex", fontSize: 64, lineHeight: 1.05, color: ORANGE }}>Tieyiwe Bassole:</div>
-            <div style={{ display: "flex", marginTop: 8, fontSize: 74, lineHeight: 1.04 }}>The first global phone carrier is coming from space</div>
+          <div style={{ display: "flex", marginTop: 24, fontSize: 92, fontWeight: 700, lineHeight: 1.02, letterSpacing: -2, color: "#FFFFFF" }}>
+            Your phone carrier should be worried
           </div>
-          <div style={{ display: "flex", marginTop: 22, fontSize: 30, lineHeight: 1.3, color: "rgba(255,255,255,0.78)" }}>
-            SpaceX and Starlink, and why your carrier should be worried
+          {/* Words as separate spans so the name can be in orange (Satori lays out flex rows). */}
+          <div style={{ display: "flex", flexWrap: "wrap", marginTop: 26, fontSize: 34, lineHeight: 1.3, color: "rgba(255,255,255,0.85)" }}>
+            {"Why |Tieyiwe Bassole| believes Starlink will become the world's first global carrier".split("|").map((part, i) =>
+              part.split(" ").filter(Boolean).map((w, j) => (
+                <span key={`${i}-${j}`} style={{ marginRight: 9, fontWeight: i === 1 ? 700 : 400, color: i === 1 ? ORANGE : "rgba(255,255,255,0.85)" }}>
+                  {w}
+                </span>
+              )),
+            )}
           </div>
           <div style={{ display: "flex", gap: 14, marginTop: 40 }}>
             {["SpaceX", "Starlink", "Elon Musk"].map((t) => (
