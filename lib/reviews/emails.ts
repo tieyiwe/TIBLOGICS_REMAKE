@@ -20,7 +20,7 @@ export function reviewLink(i: { email: string; name: string; source: ReviewSourc
 
 const p = (html: string) => `<p style="font-size:15px;color:#3A4A5C;line-height:1.7;margin:0 0 14px;">${html}</p>`;
 
-function tiblogicsShell(title: string, body: string, cta: { href: string; label: string }, foot: string) {
+export function tiblogicsShell(title: string, body: string, cta: { href: string; label: string }, foot: string) {
   return `<div style="background:#F4F7FB;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
   <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e6ebf1;">
     <div style="background:linear-gradient(135deg,#1B3A6B,#2251A3);padding:24px 32px;">

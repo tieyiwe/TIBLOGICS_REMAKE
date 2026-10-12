@@ -3,6 +3,7 @@
 import InArticlePromo, { splitForPromo } from "@/components/public/InArticlePromo";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import ArticleDiscussion from "@/components/blog/ArticleDiscussion";
 import { useParams, useRouter } from "next/navigation";
 import { Clock, ArrowLeft, Share2, BookOpen, ExternalLink, Calendar, MessageCircle, X, TrendingUp, Flame, Languages, Loader2 } from "lucide-react";
 import OpenTiboButton from "@/components/public/OpenTiboButton";
@@ -202,6 +203,17 @@ export default function BlogPostPage({
   const articleRef = useRef<HTMLElement>(null);
   const [heroImgFailed, setHeroImgFailed] = useState(false);
   const [heroCoverFailed, setHeroCoverFailed] = useState(false);
+  const [commentTotal, setCommentTotal] = useState<number | null>(null);
+  // The "Up next" card steps aside while the reader is in the discussion, so
+  // it never covers the comment box (on a phone it would).
+  const [inDiscussion, setInDiscussion] = useState(false);
+  useEffect(() => {
+    const el = document.getElementById("discussion");
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => setInDiscussion(e.isIntersecting), { rootMargin: "0px 0px -20% 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [post?.id]);
   // Scroll to top on every article open — client-side navigation retains previous scroll position
   useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: "instant" }); }, []);
 
@@ -434,6 +446,10 @@ export default function BlogPostPage({
               <span className="flex items-center gap-1">
                 <BookOpen size={13} /> {post.viewCount === 1 ? t("pages.article.readsOne") : t("pages.article.reads", { n: post.viewCount.toLocaleString(locale) })}
               </span>
+              <a href="#discussion" className="flex items-center gap-1 hover:text-[#2251A3]" data-testid="comment-jump">
+                <MessageCircle size={13} />
+                {commentTotal ? (commentTotal === 1 ? t("pages.article.talk.countOne") : t("pages.article.talk.countOther", { n: commentTotal.toLocaleString(locale) })) : t("pages.article.talk.jump")}
+              </a>
               <span>
                 {new Date(post.createdAt).toLocaleDateString(locale, {
                   month: "long",
@@ -518,6 +534,9 @@ export default function BlogPostPage({
           </div>
         </article>
 
+        {/* Reactions, share row and comments (lib/blog/engage) */}
+        <ArticleDiscussion slug={slug} title={display?.title ?? post.title} onTotal={setCommentTotal} />
+
         {/* Newsletter signup */}
         <ArticleNewsletterSignup slug={slug} />
 
@@ -535,7 +554,7 @@ export default function BlogPostPage({
       </div>
 
       {/* ── Next Up card — slides in when reader is 65 % through the article ── */}
-      {nextUpVisible && !nextUpDismissed && nextPost && (
+      {nextUpVisible && !nextUpDismissed && !inDiscussion && nextPost && (
         <div className="fixed bottom-24 sm:bottom-6 right-4 sm:right-6 z-40 w-72 animate-fade-in">
           <div className="bg-white border border-[#D2DCE8] rounded-2xl shadow-2xl overflow-hidden">
             {/* Header row */}

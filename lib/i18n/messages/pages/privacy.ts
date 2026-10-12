@@ -57,6 +57,11 @@ export default tri({
     "vous abonnez à notre newsletter ou à nos communications par e-mail ;",
     "Jiandikisha kupokea jarida letu au mawasiliano yetu kwa email",
   ],
+  "pages.privacy.doc.01.06c.li": [
+    "Comment on or react to an AI Times article (your name and comment are public; your email address is used only to confirm your comment and, if you ask, to tell you about replies, and is never shown)",
+    "commentez ou réagissez à un article d'AI Times (votre nom et votre commentaire sont publics ; votre adresse e-mail sert uniquement à confirmer votre commentaire et, si vous le demandez, à vous prévenir des réponses, et n'est jamais affichée) ;",
+    "Toa maoni au mwitikio kwenye makala ya AI Times (jina lako na maoni yako ni ya umma; barua pepe yako inatumika tu kuthibitisha maoni yako na, ukiomba, kukujulisha kuhusu majibu, na haionyeshwi kamwe)",
+  ],
   "pages.privacy.doc.01.07.li": [
     "Communicate with us via email, phone, or chat",
     "communiquez avec nous par e-mail, par téléphone ou par chat ;",

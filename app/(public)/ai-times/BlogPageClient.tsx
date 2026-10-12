@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import { Search, Clock, Zap, RefreshCw, Send } from "lucide-react";
+import { Search, Clock, Zap, RefreshCw, Send, MessageCircle } from "lucide-react";
 import { trackPageVisit } from "@/lib/recommendations";
 import SmartRecommendations from "@/components/public/SmartRecommendations";
 import { useLocale, useT } from "@/lib/i18n/client";
@@ -22,6 +22,8 @@ export interface BlogPost {
   featured: boolean;
   aiGenerated: boolean;
   createdAt: string;
+  /** Published reader comments (lib/blog/engage). */
+  comments?: number;
 }
 
 interface BreakingNews {
@@ -70,10 +72,13 @@ function timeAgo(dateStr: string, locale: string, t: T): string {
 export default function BlogPageClient({
   initialPosts,
   translations = {},
+  commentCounts = {},
 }: {
   initialPosts: BlogPost[];
   /** Cached titles/excerpts in the visitor's language, by slug. */
   translations?: Summaries;
+  /** Published comments per article, by slug. */
+  commentCounts?: Record<string, number>;
 }) {
   const t = useT();
   const locale = useLocale();
@@ -81,8 +86,8 @@ export default function BlogPageClient({
   // Applies to posts fetched later (category, search) too, since they come
   // from the same set.
   const tr = useCallback(
-    (p: BlogPost): BlogPost => (translations[p.slug] ? { ...p, ...translations[p.slug] } : p),
-    [translations],
+    (p: BlogPost): BlogPost => ({ ...p, ...(translations[p.slug] ?? {}), comments: commentCounts[p.slug] ?? 0 }),
+    [translations, commentCounts],
   );
   const [rawPosts, setPosts] = useState<BlogPost[]>(initialPosts);
   const posts = rawPosts.map(tr);
@@ -284,6 +289,7 @@ export default function BlogPageClient({
                             <span className="flex items-center gap-1"><Clock size={12} /> {t("pages.aiTimes.minRead", { n: fp.readingTime })}</span>
                             <span>·</span>
                             <span>{timeAgo(fp.createdAt, locale, t)}</span>
+                            {!!fp.comments && <><span>·</span><span className="flex items-center gap-1"><MessageCircle size={12} aria-hidden="true" /> {fp.comments === 1 ? t("pages.article.talk.countOne") : t("pages.article.talk.countOther", { n: fp.comments })}</span></>}
                             {fp.aiGenerated && <><span>·</span><span className="text-[#2251A3]">{t("pages.aiTimes.aiCurated")}</span></>}
                           </div>
                         </div>
@@ -385,6 +391,14 @@ function PostCard({ post }: { post: BlogPost }) {
             <span>{t("pages.aiTimes.min", { n: post.readingTime })}</span>
             <span>·</span>
             <span>{timeAgo(post.createdAt, locale, t)}</span>
+            {!!post.comments && (
+              <>
+                <span>·</span>
+                <span className="flex items-center gap-1" data-testid="card-comments" aria-label={post.comments === 1 ? t("pages.article.talk.countOne") : t("pages.article.talk.countOther", { n: post.comments })}>
+                  <MessageCircle size={11} aria-hidden="true" /> {post.comments}
+                </span>
+              </>
+            )}
           </div>
         </div>
       </article>

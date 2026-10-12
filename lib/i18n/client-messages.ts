@@ -26,6 +26,8 @@ const SERVER_ONLY = [
   "acquire.email.", "acquire.unsub.", "acquire.lp.", "acquire.asset.",
   // Reviews (lib/reviews): server components and emails; the /review form gets its labels as props.
   "reviews.",
+  // Article comment emails and the unsubscribe page (lib/blog/engage).
+  "engageMail.",
 ];
 
 /**

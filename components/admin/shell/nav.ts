@@ -201,6 +201,7 @@ export const NAV_SECTIONS: NavSection[] = [
         subItems: [
           { label: "All Posts", href: "/admin_pro/blog", icon: FileEdit },
           { label: "News Agent", href: "/admin_pro/blog/news-agent", icon: Bot },
+          { label: "Comments", href: "/admin_pro/blog/comments", icon: MessagesSquare },
         ],
       },
       { label: "Newsletter", href: "/admin_pro/newsletter", icon: Mail },
@@ -276,6 +277,7 @@ export const NAV_PERMISSION_MAP: Record<string, string> = {
   "/admin_pro/revenue": "revenue",
   "/admin_pro/blog": "blog",
   "/admin_pro/blog/news-agent": "blog", // (inherited)
+  "/admin_pro/blog/comments": "blog", // (inherited)
   "/admin_pro/newsletter": "blog",
   "/admin_pro/service-requests": "service_requests",
   "/admin_pro/partnerships": "service_requests",

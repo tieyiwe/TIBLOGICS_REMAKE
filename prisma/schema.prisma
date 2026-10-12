@@ -3764,3 +3764,78 @@ model ReviewInvite {
 
   @@unique([email, source], map: "ReviewInvite_email_source_key")
 }
+
+/// Reader comments under AI Times articles (lib/blog/engage/db.ts, runtime DDL).
+/// One level of replies (parentId is always a top-level comment). Status:
+/// unconfirmed|pending|published|hidden|deleted. authorKind: guest|learner|staff.
+/// Emails lower case and never shown on the site.
+model ArticleComment {
+  id            String    @id
+  postSlug      String
+  parentId      String?
+  authorKind    String
+  authorName    String
+  authorEmail   String?
+  studentId     String?
+  staffId       String?
+  body          String
+  locale        String    @default("en")
+  status        String    @default("pending")
+  heldReason    String?
+  pinned        Boolean   @default(false)
+  helpfulCount  Int       @default(0)
+  reportCount   Int       @default(0)
+  notifyReplies Boolean   @default(false)
+  ipHash        String?
+  createdAt     DateTime  @default(now())
+  publishedAt   DateTime?
+  moderatedAt   DateTime?
+  moderatedBy   String?
+
+  @@index([postSlug, status], map: "ArticleComment_postSlug_status_idx")
+  @@index([status, createdAt], map: "ArticleComment_status_createdAt_idx")
+  @@index([parentId], map: "ArticleComment_parentId_idx")
+  @@index([authorEmail], map: "ArticleComment_authorEmail_idx")
+}
+
+/// "Helpful" votes on comments, one per reader (keyed hash of an anonymous browser id).
+model ArticleCommentVote {
+  commentId String
+  voterHash String
+  createdAt DateTime @default(now())
+
+  @@id([commentId, voterHash])
+}
+
+/// Reports on comments, one per reader. REPORTS_TO_HOLD of them hold the comment for staff.
+model ArticleCommentReport {
+  commentId    String
+  reporterHash String
+  reason       String
+  createdAt    DateTime @default(now())
+
+  @@id([commentId, reporterHash])
+}
+
+/// One reaction per reader per article: insightful|surprising|skeptical|inspiring.
+model ArticleReaction {
+  postSlug  String
+  voterHash String
+  kind      String
+  createdAt DateTime @default(now())
+
+  @@id([postSlug, voterHash])
+  @@index([postSlug], map: "ArticleReaction_postSlug_idx")
+}
+
+/// Guests who confirmed their email by commenting (lower case, CHECK).
+/// blocked: staff stopped their comments. unsubscribed: no reply emails.
+model ArticleCommenter {
+  email         String    @id
+  name          String
+  verifiedAt    DateTime  @default(now())
+  blocked       Boolean   @default(false)
+  unsubscribed  Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  lastCommentAt DateTime?
+}

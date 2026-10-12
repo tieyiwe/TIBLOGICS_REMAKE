@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import BlogPageClient, { type BlogPost } from "./BlogPageClient";
 import { SEED_POSTS } from "@/lib/blog/content/seed-posts";
 import { getLocale } from "@/lib/i18n/server";
+import { commentCounts } from "@/lib/blog/engage/db";
 import { cachedPostSummaries } from "@/lib/i18n/sources/blog";
 import { cachedPublicData } from "@/lib/cache/public-data";
 
@@ -118,13 +119,15 @@ export default async function BlogPage() {
   // here asks the model for a translation.
   const locale = await getLocale();
   const translations = await cachedPostSummaries(locale, initialPosts.map((p) => p.slug));
+  // Reader comment counts on the cards (cached until a comment changes).
+  const comments = await commentCounts().catch(() => ({}) as Record<string, number>);
 
   // BlogPageClient reads useSearchParams(), which needs a Suspense boundary
   // (the section's loading.tsx used to be it). The data is loaded above, so
   // nothing inside suspends: no fallback, no delay.
   return (
     <Suspense fallback={null}>
-      <BlogPageClient initialPosts={initialPosts} translations={translations} />
+      <BlogPageClient initialPosts={initialPosts} translations={translations} commentCounts={comments} />
     </Suspense>
   );
 }

@@ -8,6 +8,7 @@ import BlogPostClient from "./BlogPostClient";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { cachedPostSummaries, localizedPost, postFields, postKey, postMetaFor } from "@/lib/i18n/sources/blog";
 import { translated } from "@/lib/i18n/content";
+import { commentCount } from "@/lib/blog/engage/db";
 import { isLocale, type Locale } from "@/lib/i18n/config";
 import { fitTitle, pageMetadata, plain } from "@/lib/seo/meta";
 import JsonLd from "@/components/seo/JsonLd";
@@ -227,6 +228,7 @@ export default async function BlogPostPage(
       const shown = translation && !pending ? translation : post;
       const url = articleUrl(slug, locale === "en" || !lang ? "en" : locale);
       const text = plain(shown.content);
+      const comments = await commentCount(slug);
       jsonLd = [
         {
           "@type": "BlogPosting",
@@ -246,6 +248,7 @@ export default async function BlogPostPage(
           wordCount: text ? text.split(/\s+/).length : undefined,
           isPartOf: { "@type": "Blog", "@id": `${SITE_URL}/ai-times#blog`, name: "AI Times by TIBLOGICS", url: `${SITE_URL}/ai-times`, publisher: { "@id": ORG_ID }, isPartOf: { "@id": WEBSITE_ID } },
           ...(post.sourceUrl ? { citation: post.sourceUrl } : {}),
+          ...(comments > 0 ? { commentCount: comments, discussionUrl: `${url}#discussion` } : {}),
         },
         breadcrumbNode([
           { name: "Home", path: "/" },
