@@ -1,5 +1,5 @@
 export const maxDuration = 300;
-import { translateArticlesSoon } from "@/lib/i18n/sources/blog";
+import { translateArticleSoon, translateArticlesSoon } from "@/lib/i18n/sources/blog";
 import { escapeAiText, sanitizeAiHtml } from "@/lib/ai-html";
 import { NextRequest, NextResponse } from "next/server";
 import { REFRESH_INTERVAL_MS } from "@/lib/blog/schedule";
@@ -939,6 +939,23 @@ export async function GET(req: NextRequest) {
     }
   } catch (err) {
     console.error("[auto-refresh] corrections skipped", err instanceof Error ? err.message : err);
+  }
+
+  // Hand-researched articles that just went out or were corrected are
+  // translated now, not in the next translate batch: their French and Swahili
+  // titles show on the listing within minutes instead of hours. A handful of
+  // articles at most, so a direct call each is fine.
+  const freshSlugs = [...new Set([...curatedPublished, ...corrected])];
+  if (freshSlugs.length > 0) {
+    try {
+      const fresh = await prisma.blogPost.findMany({
+        where: { slug: { in: freshSlugs }, published: true },
+        select: { slug: true, title: true, excerpt: true, content: true, published: true },
+      });
+      for (const p of fresh) translateArticleSoon(p);
+    } catch (err) {
+      console.error("[auto-refresh] immediate translation skipped", err instanceof Error ? err.message : err);
+    }
   }
 
   // The listing is cached for 60s and only rebuilds on the request after that,
