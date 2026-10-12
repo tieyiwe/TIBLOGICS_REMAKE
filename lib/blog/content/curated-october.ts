@@ -376,7 +376,7 @@ export const CURATED_OCTOBER: CuratedArticle[] = [
     featured: true,
     author: "Tieyiwe Bassole",
     aiGenerated: false,
-    coverImage: "/covers/starlink-global-carrier.png",
+    coverImage: "/covers/starlink-global-carrier-v2.png",
     newsDate: "2026-10-08",
     tags: ["spacex", "starlink", "starlink mobile", "elon musk", "telecom", "direct to cell", "satellite", "5g", "spectrum", "verizon", "at&t", "t-mobile"],
     content: `<p>For two decades, satellite phones were a niche: expensive handsets, slow connections, and customers who were mostly sailors, soldiers and mountaineers. This week, that era ended. In the space of a few days, SpaceX secured the last major piece it was missing to sell ordinary people an ordinary phone plan, and the stock market reacted as if a new carrier had just walked into the room.</p>

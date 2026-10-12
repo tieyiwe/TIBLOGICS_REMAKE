@@ -121,13 +121,13 @@ export async function starlinkGlobalCarrierCover(): Promise<ImageResponse> {
         )}
 
         {/* Words */}
-        <div style={{ position: "absolute", left: 90, top: 80, display: "flex", flexDirection: "column", width: 800 }}>
+        <div style={{ position: "absolute", left: 90, top: 215, display: "flex", flexDirection: "column", width: 800 }}>
           <div style={{ display: "flex", fontSize: 24, fontWeight: 700, letterSpacing: 4, color: ORANGE }}>AI TIMES · TELECOM</div>
-          <div style={{ display: "flex", marginTop: 24, fontSize: 92, fontWeight: 700, lineHeight: 1.02, letterSpacing: -2, color: "#FFFFFF" }}>
+          <div style={{ display: "flex", marginTop: 20, fontSize: 84, fontWeight: 700, lineHeight: 1.02, letterSpacing: -2, color: "#FFFFFF" }}>
             Your phone carrier should be worried
           </div>
           {/* Words as separate spans so the name can be in orange (Satori lays out flex rows). */}
-          <div style={{ display: "flex", flexWrap: "wrap", marginTop: 26, fontSize: 34, lineHeight: 1.3, color: "rgba(255,255,255,0.85)" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", marginTop: 22, fontSize: 32, lineHeight: 1.3, color: "rgba(255,255,255,0.85)" }}>
             {"Why |Tieyiwe Bassole| believes Starlink will become the world's first global carrier".split("|").map((part, i) =>
               part.split(" ").filter(Boolean).map((w, j) => (
                 <span key={`${i}-${j}`} style={{ marginRight: 9, fontWeight: i === 1 ? 700 : 400, color: i === 1 ? ORANGE : "rgba(255,255,255,0.85)" }}>
@@ -136,7 +136,7 @@ export async function starlinkGlobalCarrierCover(): Promise<ImageResponse> {
               )),
             )}
           </div>
-          <div style={{ display: "flex", gap: 14, marginTop: 40 }}>
+          <div style={{ display: "flex", gap: 14, marginTop: 30 }}>
             {["SpaceX", "Starlink", "Elon Musk"].map((t) => (
               <div key={t} style={{ display: "flex", padding: "10px 22px", borderRadius: 999, border: "2px solid rgba(255,255,255,0.35)", background: "rgba(255,255,255,0.06)", fontSize: 24, fontWeight: 700, color: "#FFFFFF" }}>
                 {t}
