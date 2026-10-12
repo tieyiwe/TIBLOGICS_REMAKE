@@ -91,9 +91,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
     : null;
   if (!post) return new Response("Not found", { status: 404 });
 
-  // A cover drawn for the article already has its headline: it is the card.
-  if (customCoverName(post.coverImage)) {
-    const own = await customCoverDataUrl(post.coverImage!);
+  // A cover designed for the article (drawn in code, or a file in
+  // public/covers/) already has its headline: it is the card.
+  const designed = customCoverName(post.coverImage) || /^\/covers\/[\w-]+\.(png|jpe?g|webp)$/.test(post.coverImage ?? "");
+  if (designed) {
+    const own = customCoverName(post.coverImage) ? await customCoverDataUrl(post.coverImage!) : await coverDataUrl(post.coverImage);
     if (own) {
       return new ImageResponse(
         (

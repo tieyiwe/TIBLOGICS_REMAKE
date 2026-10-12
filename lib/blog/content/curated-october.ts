@@ -363,10 +363,12 @@ export const CURATED_OCTOBER: CuratedArticle[] = [
   },
   // ───────────────────────────────────────────────────────────────────────────
   // Telecom, week of October 5 to 11. Owner's column: news, then Tieyiwe
-  // Bassole's own take in the first person. Custom cover:
-  // app/og/covers/starlink-global-carrier/route.tsx.
+  // Bassole's own take in the first person. Cover: public/covers/ (drawn by
+  // lib/og/covers/starlink-global-carrier.tsx and saved as a file). It first
+  // went out as "SpaceX Just Moved to Become a Phone Carrier...": corrected.ts
+  // updates that published copy in place, under this same slug.
   {
-    slug: "tieyiwe-bassole-starlink-first-global-phone-carrier",
+    slug: "spacex-starlink-mobile-first-global-carrier",
     title: "Your Phone Carrier Should Be Worried: Why Tieyiwe Bassole Believes Starlink Will Become the World's First Global Carrier",
     excerpt:
       "In one week SpaceX bought 800 MHz spectrum, won approval for 15,000 phone satellites and wiped billions off AT&T, Verizon and T-Mobile. Tieyiwe Bassole explains why Starlink could become the first carrier with no borders.",
@@ -374,7 +376,7 @@ export const CURATED_OCTOBER: CuratedArticle[] = [
     featured: true,
     author: "Tieyiwe Bassole",
     aiGenerated: false,
-    coverImage: "/og/covers/starlink-global-carrier",
+    coverImage: "/covers/starlink-global-carrier.png",
     newsDate: "2026-10-08",
     tags: ["spacex", "starlink", "starlink mobile", "elon musk", "telecom", "direct to cell", "satellite", "5g", "spectrum", "verizon", "at&t", "t-mobile"],
     content: `<p>For two decades, satellite phones were a niche: expensive handsets, slow connections, and customers who were mostly sailors, soldiers and mountaineers. This week, that era ended. In the space of a few days, SpaceX secured the last major piece it was missing to sell ordinary people an ordinary phone plan, and the stock market reacted as if a new carrier had just walked into the room.</p>

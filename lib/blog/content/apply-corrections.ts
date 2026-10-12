@@ -16,7 +16,7 @@ export async function applyCorrections(): Promise<string[]> {
 
   const posts = await prisma.blogPost.findMany({
     where: { title: { in: titles } },
-    select: { id: true, slug: true, title: true, excerpt: true, content: true },
+    select: { id: true, slug: true, title: true, excerpt: true, content: true, coverImage: true },
   });
 
   const changed: string[] = [];
@@ -24,7 +24,10 @@ export async function applyCorrections(): Promise<string[]> {
     const key = post.title.toLowerCase().trim();
     const target: CorrectedArticle | undefined = CORRECTION_BY_OLD_TITLE.get(key) ?? byNewTitle.get(key);
     if (!target) continue;
-    if (post.title === target.title && post.excerpt === target.excerpt && post.content === target.content) continue;
+    if (
+      post.title === target.title && post.excerpt === target.excerpt && post.content === target.content &&
+      (!target.coverImage || post.coverImage === target.coverImage)
+    ) continue;
 
     await prisma.blogPost.update({
       where: { id: post.id },
@@ -35,6 +38,7 @@ export async function applyCorrections(): Promise<string[]> {
         category: target.category,
         tags: target.tags,
         ...(target.author ? { author: target.author } : {}),
+        ...(target.coverImage ? { coverImage: target.coverImage } : {}),
         readingTime: Math.max(1, Math.ceil(target.content.replace(/<[^>]*>/g, " ").split(/\s+/).length / 200)),
       },
     });

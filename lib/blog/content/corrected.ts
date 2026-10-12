@@ -1,3 +1,5 @@
+import { CURATED_OCTOBER } from "./curated-october";
+import { renderSources } from "./curated";
 // Corrected versions of pre-written AI Times articles.
 //
 // An audit on 2026-09-28 found pre-written articles that presented invented
@@ -26,6 +28,8 @@ export interface CorrectedArticle {
   tags: string[];
   author?: string;
   content: string;
+  /** A new cover for the published post (a path on this site). */
+  coverImage?: string;
 }
 
 const PLAYBOOK_NOTE =
@@ -333,6 +337,29 @@ export const CORRECTED_ARTICLES: CorrectedArticle[] = [
 <p><strong>Practical takeaway:</strong> Pick the document or drafting task your professionals repeat most, time it this month, and pilot AI on that task alone.</p>`,
   },
 ];
+
+// Researched articles revised after they went out: the published copy is
+// brought up to date (title, text, sources, cover), slug unchanged.
+const REVISED_CURATED: Array<{ slug: string; replaces: string[] }> = [
+  {
+    slug: "spacex-starlink-mobile-first-global-carrier",
+    replaces: ["SpaceX Just Moved to Become a Phone Carrier. I Think It Could Become the First Global One."],
+  },
+];
+for (const r of REVISED_CURATED) {
+  const a = CURATED_OCTOBER.find((x) => x.slug === r.slug);
+  if (!a) continue;
+  CORRECTED_ARTICLES.push({
+    replaces: r.replaces,
+    title: a.title,
+    excerpt: a.excerpt,
+    category: a.category,
+    tags: a.tags,
+    author: a.author,
+    content: a.content + renderSources(a.sources),
+    coverImage: a.coverImage,
+  });
+}
 
 /** Every title a corrected article has been published under, mapped to it. */
 export const CORRECTION_BY_OLD_TITLE = new Map(
