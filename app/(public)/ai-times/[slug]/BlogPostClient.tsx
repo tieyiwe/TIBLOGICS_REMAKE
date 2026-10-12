@@ -4,6 +4,8 @@ import InArticlePromo, { splitForPromo } from "@/components/public/InArticleProm
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import ArticleDiscussion from "@/components/blog/ArticleDiscussion";
+import { EngageProvider } from "@/components/blog/engage-store";
+import { CommentCountLink, MidArticlePrompt, StickyEngageButtons } from "@/components/blog/ArticleEngageBar";
 import { useParams, useRouter } from "next/navigation";
 import { Clock, ArrowLeft, Share2, BookOpen, ExternalLink, Calendar, MessageCircle, X, TrendingUp, Flame, Languages, Loader2 } from "lucide-react";
 import OpenTiboButton from "@/components/public/OpenTiboButton";
@@ -124,6 +126,14 @@ function gradientClass(g: string): string {
   return GRADIENT_MAP[g] ?? "bg-gradient-to-br from-[#1B3A6B] to-[#2251A3]";
 }
 
+/** Splits the first half of an article about two thirds in, at the end of a block. */
+function splitEarly(html: string): [string, string] {
+  const ends = [...html.matchAll(/<\/(?:p|ul|ol|blockquote)>/gi)].map((m) => (m.index ?? 0) + m[0].length);
+  if (ends.length < 3) return [html, ""];
+  const at = ends[Math.floor(ends.length * 0.6)];
+  return at >= html.length ? [html, ""] : [html.slice(0, at), html.slice(at)];
+}
+
 function RelatedCard({ post: r, lang }: { post: RelatedPost; lang?: string | null }) {
   const t = useT();
   const [imgFailed, setImgFailed] = useState(false);
@@ -203,7 +213,6 @@ export default function BlogPostPage({
   const articleRef = useRef<HTMLElement>(null);
   const [heroImgFailed, setHeroImgFailed] = useState(false);
   const [heroCoverFailed, setHeroCoverFailed] = useState(false);
-  const [commentTotal, setCommentTotal] = useState<number | null>(null);
   // The "Up next" card steps aside while the reader is in the discussion, so
   // it never covers the comment box (on a phone it would).
   const [inDiscussion, setInDiscussion] = useState(false);
@@ -338,6 +347,7 @@ export default function BlogPostPage({
   }
 
   return (
+    <EngageProvider slug={slug}>
     <div className="pt-32 sm:pt-44 pb-36 sm:pb-20 min-h-screen bg-[#F4F7FB]">
       {/* Sticky back bar — always visible while reading */}
       <div className="sticky top-20 sm:top-44 z-30 bg-white/95 backdrop-blur-sm border-b border-[#D2DCE8] shadow-sm">
@@ -365,12 +375,17 @@ export default function BlogPostPage({
               {t("pages.aiTimes.tagline")}
             </span>
           )}
-          <button
-            onClick={handleShare}
-            className="inline-flex shrink-0 items-center gap-1.5 text-xs font-dm text-[#7A8FA6] hover:text-[#1B3A6B] transition-colors"
-          >
-            <Share2 size={13} /> {copied ? t("pages.article.copied") : t("pages.article.share")}
-          </button>
+          <div className="flex shrink-0 items-center gap-1">
+            {/* Reactions and comments stay one tap away while reading. */}
+            <StickyEngageButtons />
+            <button
+              onClick={handleShare}
+              aria-label={t("pages.article.share")}
+              className="inline-flex min-h-[36px] shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-dm font-semibold text-[#7A8FA6] hover:text-[#1B3A6B] hover:bg-[#F4F7FB] transition-colors"
+            >
+              <Share2 size={15} /> <span className={copied ? "" : "hidden sm:inline"}>{copied ? t("pages.article.copied") : t("pages.article.share")}</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -446,10 +461,7 @@ export default function BlogPostPage({
               <span className="flex items-center gap-1">
                 <BookOpen size={13} /> {post.viewCount === 1 ? t("pages.article.readsOne") : t("pages.article.reads", { n: post.viewCount.toLocaleString(locale) })}
               </span>
-              <a href="#discussion" className="flex items-center gap-1 hover:text-[#2251A3]" data-testid="comment-jump">
-                <MessageCircle size={13} />
-                {commentTotal ? (commentTotal === 1 ? t("pages.article.talk.countOne") : t("pages.article.talk.countOther", { n: commentTotal.toLocaleString(locale) })) : t("pages.article.talk.jump")}
-              </a>
+              <CommentCountLink />
               <span>
                 {new Date(post.createdAt).toLocaleDateString(locale, {
                   month: "long",
@@ -464,12 +476,23 @@ export default function BlogPostPage({
                 // Promo sits mid-article, where readers still are. The
                 // end-of-article CTA below only reaches the ones who finish.
                 const [head, tail] = splitForPromo(display?.content ?? post.content);
+                // A reaction prompt about a third of the way in, before the promo.
+                const [early, late] = tail ? splitEarly(head) : [head, ""];
                 return (
                   <>
                     <div
                       className="prose-blog font-dm text-[#0D1B2A] leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: head }}
+                      dangerouslySetInnerHTML={{ __html: early }}
                     />
+                    {late && (
+                      <>
+                        <MidArticlePrompt />
+                        <div
+                          className="prose-blog font-dm text-[#0D1B2A] leading-relaxed"
+                          dangerouslySetInnerHTML={{ __html: late }}
+                        />
+                      </>
+                    )}
                     {tail && (
                       <>
                         <InArticlePromo category={post.category} tags={post.tags} />
@@ -535,7 +558,7 @@ export default function BlogPostPage({
         </article>
 
         {/* Reactions, share row and comments (lib/blog/engage) */}
-        <ArticleDiscussion slug={slug} title={display?.title ?? post.title} onTotal={setCommentTotal} />
+        <ArticleDiscussion title={display?.title ?? post.title} />
 
         {/* Newsletter signup */}
         <ArticleNewsletterSignup slug={slug} />
@@ -771,6 +794,7 @@ export default function BlogPostPage({
         }
       `}</style>
     </div>
+    </EngageProvider>
   );
 }
 

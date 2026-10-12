@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Check, EyeOff, Flag, Link2, Loader2, MessageCircle, Pin, Send, ThumbsUp, Trash2, X } from "lucide-react";
@@ -11,8 +11,8 @@ import {
   REACTION_EMOJI,
   type EngageData,
   type PublicComment,
-  type ReactionKind,
 } from "@/lib/blog/engage/types";
+import { postJson, useEngage } from "./engage-store";
 
 // The discussion under an AI Times article (lib/blog/engage): one-tap
 // reactions, a share row, and comments with one level of replies, "helpful"
@@ -25,12 +25,6 @@ const REPLIES_SHOWN = 3;
 
 type Sort = "top" | "new";
 
-async function postJson(url: string, body: unknown): Promise<{ ok: boolean; status: number; data: Record<string, unknown> }> {
-  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-  return { ok: res.ok, status: res.status, data };
-}
-
 function timeAgo(iso: string, locale: string): string {
   const s = Math.round((new Date(iso).getTime() - Date.now()) / 1000);
   const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
@@ -42,46 +36,32 @@ function timeAgo(iso: string, locale: string): string {
   return new Date(iso).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" });
 }
 
-export default function ArticleDiscussion({ slug, title, onTotal }: { slug: string; title: string; onTotal?: (n: number) => void }) {
+export default function ArticleDiscussion({ title }: { title: string }) {
   const t = useT();
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const [data, setData] = useState<EngageData | null>(null);
-  const [failed, setFailed] = useState(false);
+  const { slug, data, failed, load } = useEngage();
   const [sort, setSort] = useState<Sort>("top");
   const [allRoots, setAllRoots] = useState(false);
   const [flash, setFlash] = useState<{ tone: "ok" | "info" | "err"; text: string } | null>(null);
   const [highlight, setHighlight] = useState<string | null>(null);
   const confirmTok = params?.get("confirm") ?? null;
 
-  const load = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/blog/engage/post/${slug}`, { cache: "no-store" });
-      if (!res.ok) throw new Error(String(res.status));
-      const d = (await res.json()) as EngageData;
-      setData(d);
-      setFailed(false);
-      onTotal?.(d.total);
-      return d;
-    } catch {
-      setFailed(true);
-      return null;
-    }
-  }, [slug, onTotal]);
-
+  // A link to one comment (#comment-ID, from a reply email): bring it into
+  // view once the comments have arrived.
+  const hashDone = useRef(false);
   useEffect(() => {
-    void load().then((d) => {
-      // A link to one comment (#comment-ID, from a reply email): bring it into view.
-      const m = /^#comment-([0-9a-f-]{36})$/.exec(window.location.hash);
-      if (d && m) {
-        setAllRoots(true);
-        setHighlight(m[1]);
-        window.setTimeout(() => document.getElementById(`comment-${m[1]}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
-      }
-    });
-  }, [load]);
+    if (!data || hashDone.current) return;
+    hashDone.current = true;
+    const m = /^#comment-([0-9a-f-]{36})$/.exec(window.location.hash);
+    if (m) {
+      setAllRoots(true);
+      setHighlight(m[1]);
+      window.setTimeout(() => document.getElementById(`comment-${m[1]}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
+    }
+  }, [data]);
 
   const dropConfirmParam = () => {
     const q = new URLSearchParams(params?.toString() ?? "");
@@ -153,7 +133,7 @@ export default function ArticleDiscussion({ slug, title, onTotal }: { slug: stri
       )}
 
       <div className="rounded-3xl border border-[#D2DCE8] bg-white p-5 shadow-sm sm:p-7">
-        <Reactions slug={slug} data={data} onChange={(counts, mine) => setData((d) => (d ? { ...d, reactions: { counts, mine } } : d))} />
+        <Reactions />
         <ShareRow title={title} />
       </div>
 
@@ -237,28 +217,14 @@ export default function ArticleDiscussion({ slug, title, onTotal }: { slug: stri
   );
 }
 
-function Reactions({ slug, data, onChange }: { slug: string; data: EngageData | null; onChange: (c: Record<ReactionKind, number>, mine: ReactionKind | null) => void }) {
+function Reactions() {
   const t = useT();
   const locale = useLocale();
-  const [busy, setBusy] = useState(false);
+  const { data, react } = useEngage();
   const counts = data?.reactions.counts;
   const mine = data?.reactions.mine ?? null;
   const total = counts ? Object.values(counts).reduce((a, b) => a + b, 0) : 0;
-
-  async function pick(k: ReactionKind) {
-    if (!data || busy) return;
-    const next = mine === k ? null : k;
-    // Shown at once; the server's counts replace the guess.
-    const guess = { ...data.reactions.counts };
-    if (mine) guess[mine] = Math.max(0, guess[mine] - 1);
-    if (next) guess[next] += 1;
-    onChange(guess, next);
-    setBusy(true);
-    const r = await postJson(`/api/blog/engage/post/${slug}/react`, { kind: next });
-    setBusy(false);
-    if (r.ok) onChange(r.data.counts as Record<ReactionKind, number>, (r.data.mine as ReactionKind | null) ?? null);
-    else onChange(data.reactions.counts, mine);
-  }
+  const pick = (k: (typeof REACTIONS)[number]) => void react(k);
 
   return (
     <div>
