@@ -123,12 +123,12 @@ function gradientClass(g: string): string {
   return GRADIENT_MAP[g] ?? "bg-gradient-to-br from-[#1B3A6B] to-[#2251A3]";
 }
 
-function RelatedCard({ post: r }: { post: RelatedPost }) {
+function RelatedCard({ post: r, lang }: { post: RelatedPost; lang?: string | null }) {
   const t = useT();
   const [imgFailed, setImgFailed] = useState(false);
   return (
     <Link
-      href={`/ai-times/${r.slug}`}
+      href={`/ai-times/${r.slug}${lang ? `?lang=${lang}` : ""}`}
       className="group bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
     >
       <div className="h-28 overflow-hidden relative">
@@ -165,6 +165,7 @@ export default function BlogPostPage({
   translation = null,
   pending = false,
   relatedTitles = {},
+  articleLang = null,
   articleLocale,
 }: {
   articleLocale: Locale;
@@ -180,6 +181,8 @@ export default function BlogPostPage({
   pending?: boolean;
   /** Cached translated titles for related articles, by slug. */
   relatedTitles?: Record<string, string>;
+  /** The language the reader picked with the article's own buttons (?lang=), kept on links to other articles. */
+  articleLang?: string | null;
 }) {
   const t = useT();
   const locale = useLocale();
@@ -524,7 +527,7 @@ export default function BlogPostPage({
             <h2 className="font-syne font-bold text-lg text-[#0D1B2A] mb-5">{t("pages.article.related")}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {related.map((r) => (
-                <RelatedCard key={r.id} post={{ ...r, title: relatedTitle(r) }} />
+                <RelatedCard key={r.id} post={{ ...r, title: relatedTitle(r) }} lang={articleLang} />
               ))}
             </div>
           </div>
@@ -563,7 +566,7 @@ export default function BlogPostPage({
 
             {/* Article preview */}
             <Link
-              href={`/ai-times/${nextPost.slug}`}
+              href={`/ai-times/${nextPost.slug}${articleLang ? `?lang=${articleLang}` : ""}`}
               className="block px-4 pt-3 pb-4 group"
               onClick={() => { setNextUpVisible(false); setNextUpDismissed(true); }}
             >

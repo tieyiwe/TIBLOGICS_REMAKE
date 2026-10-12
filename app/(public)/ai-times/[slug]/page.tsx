@@ -6,7 +6,8 @@ import fs from "fs";
 import path from "path";
 import BlogPostClient from "./BlogPostClient";
 import { getLocale, getT } from "@/lib/i18n/server";
-import { cachedPostSummaries, localizedPost, postMetaFor } from "@/lib/i18n/sources/blog";
+import { cachedPostSummaries, localizedPost, postFields, postKey, postMetaFor } from "@/lib/i18n/sources/blog";
+import { translated } from "@/lib/i18n/content";
 import { isLocale, type Locale } from "@/lib/i18n/config";
 import { fitTitle, pageMetadata, plain } from "@/lib/seo/meta";
 import JsonLd from "@/components/seo/JsonLd";
@@ -195,11 +196,23 @@ export default async function BlogPostPage(
       const related = await prisma.blogPost.findMany({
         where: { published: true, category: post.category, NOT: { slug } },
         orderBy: { createdAt: "desc" },
-        take: 4,
+        take: 6,
         select: { slug: true },
       });
       const summaries = await cachedPostSummaries(locale, related.map((r) => r.slug));
       relatedTitles = Object.fromEntries(Object.entries(summaries).map(([k, v]) => [k, v.title]));
+      // Related articles not translated yet into this language are queued now
+      // (a few at a time, see lib/i18n/content.ts), so their titles follow the
+      // reader's choice on the next visit instead of waiting for the batch.
+      const missing = related.map((r) => r.slug).filter((s) => !summaries[s]);
+      if (missing.length > 0) {
+        void prisma.blogPost
+          .findMany({ where: { slug: { in: missing } }, select: { slug: true, title: true, excerpt: true, content: true } })
+          .then((rows) => {
+            for (const r of rows) void translated(postKey(r.slug), locale, postFields(r), "queue").catch(() => {});
+          })
+          .catch(() => {});
+      }
     }
     if (post) {
       heroCoverUrl = post.coverImage ?? null;
@@ -264,7 +277,7 @@ export default async function BlogPostPage(
       )}
       {jsonLd && <JsonLd data={jsonLd} />}
       <Suspense fallback={null}>
-        <BlogPostClient initialPost={initialPost} translation={pending ? null : translation} pending={pending} relatedTitles={relatedTitles} articleLocale={locale} />
+        <BlogPostClient initialPost={initialPost} translation={pending ? null : translation} pending={pending} relatedTitles={relatedTitles} articleLocale={locale} articleLang={isLocale(lang) ? lang : null} />
       </Suspense>
     </>
   );
