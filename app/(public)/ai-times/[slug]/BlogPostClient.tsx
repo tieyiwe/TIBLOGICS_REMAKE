@@ -729,6 +729,35 @@ export default function BlogPostPage({
           margin: 1.5rem 0;
         }
         .prose-blog img { max-width: 100%; height: auto; }
+        /* Pictures and video links in researched articles (lib/blog/content). */
+        .prose-blog figure { margin: 1.75rem 0; }
+        .prose-blog figure img { display: block; width: 100%; border-radius: 1rem; border: 1px solid #D2DCE8; }
+        .prose-blog figcaption { margin-top: 0.5rem; font-size: 0.8125rem; line-height: 1.5; color: #7A8FA6; }
+        .prose-blog figure > a[href^="https://"] {
+          display: flex; align-items: center; gap: 0.875rem;
+          padding: 1rem 1.125rem; border-radius: 1rem;
+          background: linear-gradient(135deg, #0B1B3A, #1B3A6B); color: #fff;
+          font-weight: 700; text-decoration: none; line-height: 1.35;
+        }
+        .prose-blog figure > a[href^="https://"]::before {
+          content: "▶"; flex: none; display: flex; align-items: center; justify-content: center;
+          width: 2.75rem; height: 2.75rem; border-radius: 999px; background: #F47C20; color: #fff; font-size: 1rem;
+        }
+        .prose-blog figure > a[href^="https://"]:hover { filter: brightness(1.15); }
+        /* The ARFA Academy ad (lib/blog/content/arfa-ad.ts), labelled as ours. */
+        .prose-blog aside {
+          margin: 2rem 0; padding: 1.25rem 1.25rem 0.5rem; border-radius: 1rem;
+          border: 1px solid #F47C20; background: #FEF6EE;
+        }
+        .prose-blog aside .arfa-ad-label, .prose-blog aside > p:first-child {
+          font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #B8500A; margin-bottom: 0.25rem;
+        }
+        .prose-blog aside h3 { margin-top: 0.25rem; }
+        .prose-blog aside a { font-weight: 700; }
+        .prose-blog aside .arfa-ad-cta a:first-child {
+          display: inline-block; margin: 0.25rem 0.75rem 0.5rem 0; padding: 0.55rem 1.1rem; border-radius: 999px;
+          background: #F47C20; color: #fff; text-decoration: none;
+        }
         .prose-blog .tips-section {
           background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 50%, #f8fafc 100%);
           border-radius: 1rem;

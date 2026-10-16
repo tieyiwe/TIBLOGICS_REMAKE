@@ -1,11 +1,13 @@
 import type { ImageResponse } from "next/og";
 import { starlinkGlobalCarrierCover } from "./starlink-global-carrier";
+import { OCTOBER_FEATURE_COVERS } from "./october-feature";
 
 // Custom article covers drawn in code, served at /og/covers/<name>
 // (app/og/covers/[name]/route.ts). A post's coverImage can point at one, and
 // the article's share card and structured data use it like a picture file.
 export const CUSTOM_COVERS: Record<string, () => Promise<ImageResponse>> = {
   "starlink-global-carrier": starlinkGlobalCarrierCover,
+  ...OCTOBER_FEATURE_COVERS,
 };
 
 const PREFIX = "/og/covers/";
