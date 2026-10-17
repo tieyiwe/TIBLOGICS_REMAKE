@@ -50,6 +50,8 @@ const COPY = {
     privacyTitle: "Private by design",
     privacy: "The skill runs inside your own Claude account. TIBLOGICS never receives your chats or your report.",
     privacyLink: "AGR Score privacy policy",
+    termsLink: "Terms of use",
+    supportLink: "Help and support",
     by: "Created by Tieyiwe Bassole, Founder of TIBLOGICS.",
     arfa: "Want to finish more of what you start with AI? Learn with ARFA, the TIBLOGICS AI Academy.",
     arfaCta: "Explore ARFA",
@@ -89,6 +91,8 @@ const COPY = {
     privacyTitle: "Privé par conception",
     privacy: "Le skill fonctionne dans votre propre compte Claude. TIBLOGICS ne reçoit jamais vos conversations ni votre rapport.",
     privacyLink: "Politique de confidentialité de l'AGR Score",
+    termsLink: "Conditions d'utilisation",
+    supportLink: "Aide et assistance",
     by: "Créé par Tieyiwe Bassole, fondateur de TIBLOGICS.",
     arfa: "Envie de terminer davantage de projets avec l'IA ? Formez-vous avec ARFA, l'académie IA de TIBLOGICS.",
     arfaCta: "Découvrir ARFA",
@@ -128,6 +132,8 @@ const COPY = {
     privacyTitle: "Faragha tangu mwanzo",
     privacy: "Skill inaendeshwa ndani ya akaunti yako ya Claude. TIBLOGICS haipokei kamwe mazungumzo yako wala ripoti yako.",
     privacyLink: "Sera ya faragha ya AGR Score",
+    termsLink: "Masharti ya matumizi",
+    supportLink: "Msaada",
     by: "Imeundwa na Tieyiwe Bassole, mwanzilishi wa TIBLOGICS.",
     arfa: "Unataka kumaliza zaidi ya unachoanza ukitumia AI? Jifunze na ARFA, akademia ya AI ya TIBLOGICS.",
     arfaCta: "Gundua ARFA",
@@ -230,9 +236,17 @@ export default async function AgrPage() {
         <section className="rounded-2xl border border-[#D2DCE8] bg-white p-6 sm:p-8" aria-labelledby="agr-privacy">
           <h2 id="agr-privacy" className="font-syne text-xl font-bold text-[#0D1B2A]">{c.privacyTitle}</h2>
           <p className="mt-2 font-dm text-sm leading-relaxed text-[#3A4A5C]">{c.privacy}</p>
-          <Link href="/privacy/agr" className="mt-3 inline-block font-dm text-sm font-bold text-[#2251A3] underline-offset-2 hover:underline">
-            {c.privacyLink}
-          </Link>
+          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+            <Link href="/privacy/agr" className="font-dm text-sm font-bold text-[#2251A3] underline-offset-2 hover:underline">
+              {c.privacyLink}
+            </Link>
+            <Link href="/terms/agr" className="font-dm text-sm font-bold text-[#2251A3] underline-offset-2 hover:underline">
+              {c.termsLink}
+            </Link>
+            <Link href="/support/agr" className="font-dm text-sm font-bold text-[#2251A3] underline-offset-2 hover:underline">
+              {c.supportLink}
+            </Link>
+          </div>
         </section>
 
         {/* Second download, after reading */}

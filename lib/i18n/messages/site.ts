@@ -62,6 +62,8 @@ const messages: Messages = {
     "site.footer.privacy": "Privacy Policy",
     "site.footer.terms": "Terms of Service",
     "site.footer.agrPrivacy": "AGR Privacy",
+    "site.footer.agrTerms": "AGR Terms",
+    "site.footer.agrSupport": "AGR Support",
     "site.footer.free": "Free",
     "site.footer.legal": "Legal",
 
@@ -166,6 +168,8 @@ const messages: Messages = {
     "site.footer.privacy": "Politique de confidentialité",
     "site.footer.terms": "Conditions d'utilisation",
     "site.footer.agrPrivacy": "Confidentialité AGR",
+    "site.footer.agrTerms": "Conditions AGR",
+    "site.footer.agrSupport": "Assistance AGR",
     "site.footer.free": "Gratuit",
     "site.footer.legal": "Mentions légales",
 
@@ -268,6 +272,8 @@ const messages: Messages = {
     "site.footer.privacy": "Sera ya faragha",
     "site.footer.terms": "Masharti ya huduma",
     "site.footer.agrPrivacy": "Faragha ya AGR",
+    "site.footer.agrTerms": "Masharti ya AGR",
+    "site.footer.agrSupport": "Msaada wa AGR",
     "site.footer.free": "Bure",
     "site.footer.legal": "Kisheria",
 

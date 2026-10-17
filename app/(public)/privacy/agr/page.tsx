@@ -81,7 +81,8 @@ export default function AgrPrivacyPage() {
           </div>
 
           <p className="mt-10 border-t border-[#E8EFF8] pt-6 text-sm text-[#7A8FA6]">
-            For the TIBLOGICS website and services, see the{" "}
+            See also the <Link href="/terms/agr" className="text-[#2251A3] hover:underline">AGR Terms of Use</Link> and{" "}
+            <Link href="/support/agr" className="text-[#2251A3] hover:underline">AGR Support</Link>. For the TIBLOGICS website and services, see the{" "}
             <Link href="/privacy" className="text-[#2251A3] hover:underline">TIBLOGICS Privacy Policy</Link>.
           </p>
         </div>

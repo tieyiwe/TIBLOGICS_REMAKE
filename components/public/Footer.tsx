@@ -202,6 +202,12 @@ export default async function Footer() {
             <Link href="/privacy/agr" className="text-[#9DB9D6] hover:text-white text-xs font-dm transition-colors">
               {t("site.footer.agrPrivacy")}
             </Link>
+            <Link href="/terms/agr" className="text-[#9DB9D6] hover:text-white text-xs font-dm transition-colors">
+              {t("site.footer.agrTerms")}
+            </Link>
+            <Link href="/support/agr" className="text-[#9DB9D6] hover:text-white text-xs font-dm transition-colors">
+              {t("site.footer.agrSupport")}
+            </Link>
             <Link href="/accessibility" className="text-[#9DB9D6] hover:text-white text-xs font-dm transition-colors">
               {t("a11y.page.footerLink")}
             </Link>
