@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
 import { Lora, Plus_Jakarta_Sans, Cormorant_Garamond, Cinzel } from "next/font/google";
 import "./globals.css";
+import { getLocale, translatorFor } from "@/lib/i18n/server";
+import { coreMessages } from "@/lib/i18n/client-messages";
+import { I18nProvider } from "@/lib/i18n/client";
+import JsonLd from "@/components/seo/JsonLd";
+import { founderNode, organizationNode, websiteNode } from "@/lib/seo/jsonld";
+import { OG_IMAGE, OG_LOCALE, ORG, SHOW_FOUNDER, SITE_NAME, SITE_URL } from "@/lib/seo/site";
+import { brandDm, brandSyne } from "@/lib/fonts/brand";
+import UpdateWatcher from "@/components/UpdateWatcher";
+import AnalyticsTracker from "@/components/public/AnalyticsTracker";
 
 const syne = Lora({
   subsets: ["latin"],
@@ -35,207 +44,105 @@ const display = Cormorant_Garamond({
   preload: true,
 });
 
-const SITE_URL = "https://tiblogics.com";
-const SITE_NAME = "TIBLOGICS";
-const DEFAULT_TITLE = "TIBLOGICS — AI Implementation & Digital Solutions";
-const DEFAULT_DESC =
-  "TIBLOGICS builds AI agents, workflow automation, and full-stack digital products for businesses in North America, Africa, and beyond. AI-first. Tech-complete.";
+// Search engine ownership checks, from the environment so no placeholder is
+// ever published: GOOGLE_SITE_VERIFICATION (Search Console, "HTML tag"
+// method: the content value only) and BING_SITE_VERIFICATION (Bing Webmaster
+// Tools, the msvalidate.01 value).
+function verification(): Metadata["verification"] {
+  const google = process.env.GOOGLE_SITE_VERIFICATION?.trim();
+  const bing = process.env.BING_SITE_VERIFICATION?.trim();
+  if (!google && !bing) return undefined;
+  return {
+    ...(google ? { google } : {}),
+    ...(bing ? { other: { "msvalidate.01": bing } } : {}),
+  };
+}
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: { default: DEFAULT_TITLE, template: `%s | ${SITE_NAME}` },
-  description: DEFAULT_DESC,
-  keywords: [
-    "AI implementation", "AI agency", "AI agents", "workflow automation",
-    "machine learning", "AI consulting", "AI chatbot development",
-    "digital transformation", "AI for small business", "LLM integration",
-    "RAG systems", "n8n automation", "Next.js development", "AI readiness",
-    "AI implementation North America", "AI implementation Africa",
-    "Francophone Africa tech", "TIBLOGICS", "AI strategy consulting",
-    "custom AI solutions", "business automation", "AI productivity tools",
-  ],
-  authors: [{ name: "Tieyiwe Bassole", url: SITE_URL }],
-  creator: "TIBLOGICS",
-  publisher: "TIBLOGICS",
-  category: "Technology",
-  classification: "AI Implementation & Digital Solutions Agency",
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+// Title and description follow the visitor's language; the JSON-LD below
+// stays in English (lib/seo/jsonld.ts).
+//
+// No canonical here, deliberately: a canonical set in the root layout is
+// inherited by every page that does not set its own, which pointed all of
+// them at the home page. Each public page sets its own (lib/seo/meta.ts).
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = translatorFor(locale);
+  const title = t("site.meta.title");
+  const description = t("site.meta.description");
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: { default: title, template: `%s | ${SITE_NAME}` },
+    description,
+    keywords: [
+      "AI implementation", "AI agency", "AI agents", "workflow automation",
+      "machine learning", "AI consulting", "AI chatbot development",
+      "digital transformation", "AI for small business", "LLM integration",
+      "RAG systems", "n8n automation", "Next.js development", "AI readiness",
+      "AI implementation North America", "AI implementation Africa",
+      "Africa tech", "TIBLOGICS", "AI strategy consulting",
+      "custom AI solutions", "business automation", "AI productivity tools",
+    ],
+    authors: [{ name: SHOW_FOUNDER ? ORG.founder.name : SITE_NAME, url: SITE_URL }],
+    creator: "TIBLOGICS",
+    publisher: "TIBLOGICS",
+    category: "Technology",
+    classification: "AI Implementation & Digital Solutions Agency",
+    robots: {
       index: true,
       follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
-  },
-  alternates: { canonical: SITE_URL },
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: SITE_URL,
-    siteName: SITE_NAME,
-    title: DEFAULT_TITLE,
-    description: DEFAULT_DESC,
-    images: [{ url: `${SITE_URL}/og-image.png`, width: 1200, height: 630, alt: "TIBLOGICS — AI Implementation Agency" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: DEFAULT_TITLE,
-    description: DEFAULT_DESC,
-    creator: "@tiblogics",
-    site: "@tiblogics",
-    images: [`${SITE_URL}/og-image.png`],
-  },
-  icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    shortcut: "/icon.svg",
-    apple: "/icon.svg",
-  },
-  verification: {
-    google: "tiblogics-google-verify",
-  },
-};
+    openGraph: {
+      type: "website",
+      locale: OG_LOCALE[locale],
+      alternateLocale: Object.values(OG_LOCALE).filter((l) => l !== OG_LOCALE[locale]),
+      siteName: SITE_NAME,
+      title,
+      description,
+      images: [{ url: OG_IMAGE, width: 1200, height: 630, alt: t("site.meta.ogImageAlt") }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      creator: "@tiblogics",
+      site: "@tiblogics",
+      images: [OG_IMAGE],
+    },
+    icons: {
+      icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+      shortcut: "/icon.svg",
+      apple: "/pwa/apple-touch-icon.png",
+    },
+    verification: verification(),
+  };
+}
 
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": ["Organization", "ProfessionalService"],
-      "@id": `${SITE_URL}/#organization`,
-      name: SITE_NAME,
-      legalName: "TIBLOGICS",
-      url: SITE_URL,
-      logo: {
-        "@type": "ImageObject",
-        "@id": `${SITE_URL}/#logo`,
-        url: `${SITE_URL}/icon.svg`,
-        contentUrl: `${SITE_URL}/icon.svg`,
-        width: 512, height: 512,
-        caption: "TIBLOGICS",
-      },
-      image: `${SITE_URL}/og-image.png`,
-      description: DEFAULT_DESC,
-      email: "ai@tiblogics.com",
-      contactPoint: [
-        {
-          "@type": "ContactPoint",
-          email: "ai@tiblogics.com",
-          contactType: "customer service",
-          availableLanguage: ["English", "French"],
-          areaServed: ["US", "CA", "FR", "SN", "CI", "CM"],
-        },
-        {
-          "@type": "ContactPoint",
-          contactType: "sales",
-          url: `${SITE_URL}/book`,
-          availableLanguage: ["English", "French"],
-        },
-      ],
-      sameAs: [
-        "https://linkedin.com/company/tiblogics",
-        "https://twitter.com/tiblogics",
-      ],
-      founder: {
-        "@type": "Person",
-        name: "Tieyiwe Bassole",
-        jobTitle: "Founder & CEO",
-        worksFor: { "@id": `${SITE_URL}/#organization` },
-      },
-      knowsAbout: [
-        "Artificial Intelligence", "Machine Learning", "Workflow Automation",
-        "Web Development", "Mobile App Development", "Cybersecurity",
-        "Data Analytics", "AI Agents", "Natural Language Processing",
-        "RAG Systems", "LLM Integration",
-      ],
-      priceRange: "$$",
-      areaServed: [
-        { "@type": "Country", name: "United States" },
-        { "@type": "Country", name: "Canada" },
-        { "@type": "Continent", name: "Africa" },
-      ],
-      hasOfferCatalog: {
-        "@type": "OfferCatalog",
-        name: "AI & Digital Solutions",
-        itemListElement: [
-          { "@type": "Offer", itemOffered: { "@type": "Service", name: "AI Implementation", description: "Custom AI agents, LLM integration, and intelligent automation." } },
-          { "@type": "Offer", itemOffered: { "@type": "Service", name: "Workflow Automation", description: "End-to-end automation using n8n, Make, and custom pipelines." } },
-          { "@type": "Offer", itemOffered: { "@type": "Service", name: "AI Strategy Consulting", description: "AI readiness audits and implementation roadmaps." } },
-          { "@type": "Offer", itemOffered: { "@type": "Service", name: "Web & Mobile Development", description: "Full-stack web and mobile applications." } },
-          { "@type": "Offer", itemOffered: { "@type": "Service", name: "Cybersecurity", description: "Security audits and implementation for AI-driven businesses." } },
-          { "@type": "Offer", itemOffered: { "@type": "Service", name: "Data Analytics", description: "Business intelligence and AI-powered analytics dashboards." } },
-          { "@type": "Offer", itemOffered: { "@type": "Service", name: "AI Agent Development", description: "Autonomous AI agents that complete real tasks around the clock." } },
-          { "@type": "Offer", itemOffered: { "@type": "Service", name: "SaaS Product Development", description: "From idea to launch-ready SaaS products." } },
-        ],
-      },
-    },
-    {
-      "@type": "WebSite",
-      "@id": `${SITE_URL}/#website`,
-      url: SITE_URL,
-      name: SITE_NAME,
-      description: DEFAULT_DESC,
-      publisher: { "@id": `${SITE_URL}/#organization` },
-      inLanguage: ["en-US", "fr"],
-      potentialAction: {
-        "@type": "SearchAction",
-        target: { "@type": "EntryPoint", urlTemplate: `${SITE_URL}/ai-times?search={search_term_string}` },
-        "query-input": "required name=search_term_string",
-      },
-    },
-    {
-      "@type": "WebPage",
-      "@id": `${SITE_URL}/#webpage`,
-      url: SITE_URL,
-      name: DEFAULT_TITLE,
-      description: DEFAULT_DESC,
-      isPartOf: { "@id": `${SITE_URL}/#website` },
-      about: { "@id": `${SITE_URL}/#organization` },
-      primaryImageOfPage: { "@type": "ImageObject", url: `${SITE_URL}/og-image.png` },
-      breadcrumb: {
-        "@type": "BreadcrumbList",
-        itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: SITE_URL }],
-      },
-    },
-    {
-      "@type": "FAQPage",
-      "@id": `${SITE_URL}/#faq`,
-      mainEntity: [
-        {
-          "@type": "Question",
-          name: "What does TIBLOGICS do?",
-          acceptedAnswer: { "@type": "Answer", text: "TIBLOGICS is an AI implementation and digital solutions agency that builds custom AI agents, workflow automation, web and mobile applications, and data analytics solutions for businesses in North America, Africa, and beyond." },
-        },
-        {
-          "@type": "Question",
-          name: "How do I get started with TIBLOGICS?",
-          acceptedAnswer: { "@type": "Answer", text: "Book a free 30-minute discovery meeting at tiblogics.com/book. We'll assess your business needs and recommend the right AI and automation solutions for your specific situation." },
-        },
-        {
-          "@type": "Question",
-          name: "Does TIBLOGICS work with small businesses?",
-          acceptedAnswer: { "@type": "Answer", text: "Yes. One of our core commitments is making AI accessible to businesses of every size. We work with solo operators, small businesses, and large enterprises alike." },
-        },
-        {
-          "@type": "Question",
-          name: "What markets does TIBLOGICS serve?",
-          acceptedAnswer: { "@type": "Answer", text: "TIBLOGICS primarily serves the United States and African markets, with bilingual English and French delivery, and is equipped to serve clients across the globe." },
-        },
-      ],
-    },
-  ],
-};
+// Site-wide entities only: the organisation, its founder and the website.
+// Page-specific data (FAQ, courses, products, articles, breadcrumbs) lives on
+// the page it describes; an FAQPage here used to be repeated on every URL.
+const siteJsonLd = [organizationNode(), ...(SHOW_FOUNDER ? [founderNode()] : []), websiteNode()];
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
   return (
-    <html lang="en" className={`${syne.variable} ${dmSans.variable} ${display.variable} ${masthead.variable}`} suppressHydrationWarning>
+    <html lang={locale} className={`${syne.variable} ${dmSans.variable} ${display.variable} ${masthead.variable} ${brandSyne.variable} ${brandDm.variable}`} suppressHydrationWarning>
       <head>
         {/* Resource hints */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://api.anthropic.com" />
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
+
+        {/* Machine-readable summaries for AI engines (llms.txt convention)
+            and the AI Times feed. Here rather than in metadata.alternates,
+            which a page's own canonical would replace. */}
+        <link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt" />
+        <link rel="alternate" type="application/rss+xml" href="/ai-times/feed.xml" title="AI Times by TIBLOGICS" />
 
         {/* PWA / mobile */}
         <meta name="theme-color" content="#1B3A6B" />
@@ -253,16 +160,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Geo targeting */}
         <meta name="geo.region" content="US" />
         <meta name="geo.placename" content="United States" />
-        <meta name="language" content="en, fr" />
+        <meta name="language" content="en, fr, sw" />
 
         {/* Structured data */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-          suppressHydrationWarning
-        />
+        <JsonLd data={siteJsonLd} />
       </head>
-      <body className="font-dm antialiased">{children}</body>
+      <body className="font-dm antialiased">
+        <I18nProvider locale={locale} dict={coreMessages(locale)}>
+          {children}
+          <UpdateWatcher />
+          {/* First-party analytics on every page except the admin area, APIs and token links (it checks the path itself). */}
+          <AnalyticsTracker />
+        </I18nProvider>
+      </body>
     </html>
   );
 }

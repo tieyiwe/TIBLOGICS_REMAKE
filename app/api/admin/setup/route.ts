@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { secretEquals } from "@/lib/require-admin";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { anonymiseIp } from "@/lib/require-admin";
+import { audit } from "@/lib/admin/audit";
 
 export async function GET() {
   try {
@@ -24,12 +28,30 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  if (!(await checkRateLimit(`admin-setup:${ip}`, 5, 3_600_000))) {
+    return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
+  }
+  // This endpoint needs no session: it sets the OWNER password when none is
+  // stored. When ADMIN_PASSWORD is configured the owner already has a
+  // credential, so first-come setup would only let a stranger who reaches a
+  // fresh (or restored) database before the owner sign in as the owner. In
+  // production the owner must set ADMIN_PASSWORD in Replit Secrets instead.
+  if (process.env.ADMIN_PASSWORD) {
+    return NextResponse.json({ error: "Admin password already configured" }, { status: 409 });
+  }
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      { error: "Set the ADMIN_PASSWORD secret on the server, then sign in with it." },
+      { status: 403 },
+    );
+  }
   try {
     const { password } = await req.json();
 
-    if (!password || password.length < 8) {
+    if (typeof password !== "string" || password.length < 8 || password.length > 200) {
       return NextResponse.json(
-        { error: "Password must be at least 8 characters" },
+        { error: "Password must be between 8 and 200 characters" },
         { status: 400 }
       );
     }
@@ -49,10 +71,55 @@ export async function POST(req: NextRequest) {
     await prisma.adminSettings.create({
       data: { key: "admin_password_hash", value: hash },
     });
+    await audit({ email: "anonymous", name: "Password recovery", role: "anonymous" }, "owner.password.setup", { type: "owner" }, { ip: anonymiseIp(ip) });
 
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("[admin/setup]", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+
+// DELETE — clears the stored password hash so the one-time setup flow is
+// triggered again on the next visit to /admin_pro/login.
+// Requires either the current password or the RESET_TOKEN env var.
+export async function DELETE(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  if (!(await checkRateLimit(`admin-setup-delete:${ip}`, 5, 3_600_000))) {
+    return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
+  }
+
+  try {
+    const { password, resetToken } = await req.json().catch(() => ({}));
+
+    // Check reset token first (for production recovery). Constant-time: a
+    // correct token here wipes the admin password with no session at all.
+    if (secretEquals(resetToken, process.env.RESET_TOKEN)) {
+      await prisma.adminSettings.deleteMany({ where: { key: "admin_password_hash" } });
+      await audit({ email: "anonymous", name: "Password recovery", role: "anonymous" }, "owner.password.clear", { type: "owner" }, { via: "RESET_TOKEN", ip: anonymiseIp(ip) });
+      return NextResponse.json({ success: true, message: "Password reset. Visit /admin_pro/login to set a new one." });
+    }
+
+    // Otherwise require the current password
+    if (!password) {
+      return NextResponse.json({ error: "Provide current password or RESET_TOKEN" }, { status: 400 });
+    }
+
+    const stored = await prisma.adminSettings.findUnique({ where: { key: "admin_password_hash" } });
+    if (!stored) {
+      return NextResponse.json({ error: "No password configured" }, { status: 404 });
+    }
+
+    const valid = await bcrypt.compare(password, stored.value);
+    if (!valid) {
+      return NextResponse.json({ error: "Incorrect password" }, { status: 403 });
+    }
+
+    await prisma.adminSettings.delete({ where: { key: "admin_password_hash" } });
+    await audit({ email: "anonymous", name: "Password recovery", role: "anonymous" }, "owner.password.clear", { type: "owner" }, { via: "current password", ip: anonymiseIp(ip) });
+    return NextResponse.json({ success: true, message: "Password reset. Visit /admin_pro/login to set a new one." });
+  } catch (err) {
+    console.error("[admin/setup DELETE]", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

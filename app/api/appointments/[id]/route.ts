@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
+import { inviteAfterAppointment } from "@/lib/reviews/invites";
+import { csrfGuard } from "@/lib/learn/account-status/admin-auth";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const unauth = await requireAdmin();
@@ -17,6 +19,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  // Completing an appointment emails the client, so cross-site posts are refused.
+  const csrf = csrfGuard(req);
+  if (csrf) return csrf;
   const unauth = await requireAdmin();
   if (unauth) return unauth;
 
@@ -31,7 +36,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (data.status === "CANCELLED" && !("cancelledAt" in data)) {
       data.cancelledAt = new Date();
     }
+    const before = data.status === "COMPLETED" ? await prisma.appointment.findUnique({ where: { id }, select: { status: true } }) : null;
     const appointment = await prisma.appointment.update({ where: { id }, data });
+    // Just completed: invite the client to leave a review (once per address, ever).
+    if (before && before.status !== "COMPLETED" && appointment.status === "COMPLETED") {
+      void inviteAfterAppointment(appointment);
+    }
     return NextResponse.json(appointment);
   } catch {
     return NextResponse.json({ error: "Failed to update appointment" }, { status: 500 });

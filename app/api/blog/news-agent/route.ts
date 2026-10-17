@@ -1,10 +1,23 @@
+import { staffAiLimit } from "@/lib/rate-limit";
 export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/claude";
+import { requireAdmin } from "@/lib/require-admin";
 
 const NEWS_AGENT_SYSTEM = `You are Echelon — the TIBLOGICS internal AI agent for managing the blog and newsletter.
 
-You can perform these actions. When you need to perform an action, include it as a JSON block at the END of your response in this format:
+CRITICAL RULE: You are a task-executing agent, NOT a conversational assistant. Your text responses alone do nothing — only action blocks cause real work to happen. When the user asks you to create, generate, fetch, or set anything, you MUST include the action block or nothing will happen in production. Never say "I'll create..." without also including the action block in the same response.
+
+WRONG (just talking, nothing happens):
+"I'll generate a post about AI trends for you!"
+
+RIGHT (actually executing):
+"Generating a post about AI trends now!"
+\`\`\`action
+{"type": "GENERATE_POST_FROM_TITLE", "data": {"title": "Top AI Trends Reshaping Small Business in 2025"}}
+\`\`\`
+
+When you need to perform an action, include it as a JSON block at the END of your response in this exact format:
 
 \`\`\`action
 { "type": "ACTION_TYPE", "data": {...} }
@@ -19,10 +32,10 @@ Available actions:
 - DRAFT_NEWSLETTER: Draft a newsletter campaign. data: { title, subject, previewText?, contentHtml, category }
 - SEND_NEWSLETTER: Send an existing draft newsletter. data: { campaignId }
 
-Categories (blog): "breaking" | "ai-business" | "tips" | "tools" | "case-studies" | "industry"
+Categories (blog): "breaking" | "ai-business" | "tips" | "tools" | "case-studies" | "industry" | "advanced-tech" (frontier tech beyond AI software: chips, quantum, robotics, autonomous vehicles, space, biotech, energy, AR/VR, networks, brain-computer interfaces)
 Newsletter categories: "ai-practices" | "ai-readiness" | "ai-mistakes" | "general"
-Cover emojis: ⚡ (breaking), 💼 (business), 💡 (tips), 🔧 (tools), 📊 (case-studies), 🌐 (industry)
-Cover gradients: "from-red-600 to-orange-500" | "from-[#1B3A6B] to-[#2251A3]" | "from-purple-600 to-violet-500" | "from-teal-600 to-emerald-500" | "from-[#F47C20] to-yellow-500" | "from-slate-600 to-gray-500"
+Cover emojis: ⚡ (breaking), 💼 (business), 💡 (tips), 🔧 (tools), 📊 (case-studies), 🌐 (industry), 🚀 (advanced-tech)
+Cover gradients: "from-red-600 to-orange-500" | "from-[#1B3A6B] to-[#2251A3]" | "from-purple-600 to-violet-500" | "from-teal-600 to-emerald-500" | "from-[#F47C20] to-yellow-500" | "from-slate-600 to-gray-500" | "from-indigo-700 to-cyan-500"
 
 For DRAFT_NEWSLETTER, write a full HTML newsletter email body (will be wrapped in an email template). Focus on:
 - AI best practices for small businesses
@@ -38,34 +51,28 @@ You are an expert AI journalist who knows the latest in:
 - AI policy and regulation
 - Startup and enterprise AI adoption
 
-Be concise, proactive, and professional. When drafting newsletters, make them engaging and value-packed. Always suggest actionable next steps.`;
-
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + 3600000 });
-    return true;
-  }
-  if (entry.count >= 40) return false;
-  entry.count++;
-  return true;
-}
+Be concise, proactive, and professional. When drafting newsletters, make them engaging and value-packed. Always suggest actionable next steps. Always include the action block — every time, no exceptions.`;
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for") ?? "unknown";
-  if (!checkRateLimit(ip)) {
-    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
-  }
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+  const slow = await staffAiLimit("news-agent");
+  if (slow) return slow;
 
   try {
     const { messages } = await req.json();
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: "Invalid messages" }, { status: 400 });
     }
-    const text = await streamChat(messages, NEWS_AGENT_SYSTEM, 1200);
+    // Bounded history: the last 20 plain-text turns, starting with the admin's.
+    const turns = (messages as Array<{ role?: unknown; content?: unknown }>)
+      .filter((m) => (m?.role === "user" || m?.role === "assistant") && typeof m.content === "string")
+      .map((m) => ({ role: m.role as "user" | "assistant", content: (m.content as string).slice(0, 30_000) }))
+      .slice(-20);
+    while (turns.length && turns[0].role !== "user") turns.shift();
+    if (!turns.length) return NextResponse.json({ error: "Invalid messages" }, { status: 400 });
+    // 2500: a drafted newsletter's HTML lives inside the action JSON.
+    const text = await streamChat(turns, NEWS_AGENT_SYSTEM, 2500, "admin-chat", { ref: "news-agent" });
 
     // Parse any action block
     const actionMatch = text.match(/```action\s*([\s\S]*?)```/);

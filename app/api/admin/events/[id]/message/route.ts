@@ -1,0 +1,70 @@
+import { NextRequest, NextResponse } from "next/server";
+import { maskEmail } from "@/lib/log/redact";
+import prisma from "@/lib/prisma";
+import { arfaMailer as mailer } from "@/lib/resend";
+import { requireAdmin, escapeHtml } from "@/lib/require-admin";
+
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  // Staff only. A bare session check passed here for TIBLOGICS Learn students
+  // too, since learners share this NextAuth instance — requireAdmin rejects them.
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
+  const { id } = await params;
+  const { subject, body, recipients } = await req.json();
+
+  if (typeof subject !== "string" || !subject.trim() || subject.length > 300) {
+    return NextResponse.json({ error: "subject required (max 300 chars)" }, { status: 400 });
+  }
+  if (typeof body !== "string" || !body.trim() || body.length > 20000) {
+    return NextResponse.json({ error: "body required (max 20000 chars)" }, { status: 400 });
+  }
+
+  const event = await prisma.event.findUnique({ where: { id }, select: { slug: true, title: true } });
+  if (!event) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  let where: Record<string, unknown> = { eventSlug: event.slug };
+  if (recipients === "confirmed") where = { ...where, status: "confirmed" };
+  if (recipients === "pending") where = { ...where, status: "pending" };
+
+  const regs = await prisma.eventRegistration.findMany({ where, select: { email: true, firstName: true } });
+  if (regs.length === 0) return NextResponse.json({ sent: 0, error: "No matching participants" });
+
+  // `body` is staff-composed rich text and stays as HTML on purpose. The
+  // surrounding values do not: firstName arrives from the public registration
+  // form, so it is escaped before it lands in an email template.
+  const safeTitle = escapeHtml(event.title);
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+      <div style="background:linear-gradient(135deg,#1B3A6B,#2251A3);padding:24px;text-align:center;">
+        <h1 style="color:white;margin:0;font-size:22px;">TIB<span style="color:#F47C20;">LOGICS</span></h1>
+        <p style="color:rgba(255,255,255,0.7);margin:8px 0 0;font-size:13px;">${safeTitle}</p>
+      </div>
+      <div style="padding:32px;background:white;">
+        ${body.replace(/\n/g, "<br/>")}
+        <p style="color:#7A8FA6;font-size:13px;margin-top:32px;border-top:1px solid #eee;padding-top:16px;">
+          This message was sent to ${safeTitle} participants by TIBLOGICS.<br/>
+          Questions? Reply to this email or write to arfa_edu@tiblogics.com
+        </p>
+      </div>
+    </div>`;
+
+  let sent = 0;
+  const errors: string[] = [];
+
+  for (const reg of regs) {
+    try {
+      await mailer.emails.send({
+        to: reg.email,
+        subject,
+        html: html.replace(/\{\{firstName\}\}/g, escapeHtml(reg.firstName)),
+      });
+      sent++;
+    } catch (e) {
+      errors.push(reg.email);
+      console.error("[event/message]", maskEmail(reg.email), e instanceof Error ? e.message : e);
+    }
+  }
+
+  return NextResponse.json({ sent, total: regs.length, errors });
+}

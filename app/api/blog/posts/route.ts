@@ -1,5 +1,10 @@
+import { setFeaturedPin } from "@/lib/blog/featured";
+import { translateArticleSoon } from "@/lib/i18n/sources/blog";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAdmin } from "@/lib/require-admin";
+import { isBlogCategory } from "@/lib/blog/categories";
+import { INDEXNOW_SECTIONS, indexNowSoon } from "@/lib/seo/indexnow";
 
 function slugify(title: string): string {
   return title
@@ -16,6 +21,7 @@ const CATEGORY_COVER_POOL: Record<string, string[]> = {
   "tips":         ["https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1484557052118-f32bd25b45b5?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1434030216411-0b793f4b6f6d?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1513258496099-48168024aec0?auto=format&fit=crop&w=800&q=80"],
   "tools":        ["https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1555949963-aa79dcee981c?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1587620962725-abab7fe55159?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=800&q=80"],
   "case-studies": ["https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1560472354-b33ff0c44a43?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80"],
+  "advanced-tech": ["https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80"],
   "industry":     ["https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1531297484001-80022131f5a1?auto=format&fit=crop&w=800&q=80","https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80"],
 };
 
@@ -35,20 +41,26 @@ export async function GET(req: NextRequest) {
 
   try {
     const where: Record<string, unknown> = { published: true };
-    if (category && category !== "all") where.category = category;
+    if (category && category !== "all") where.category = category.slice(0, 40);
     if (featured === "true") where.featured = true;
     if (search) {
-      where.OR = [
-        { title: { contains: search, mode: "insensitive" } },
-        { excerpt: { contains: search, mode: "insensitive" } },
-        { tags: { has: search.toLowerCase() } },
-      ];
+      const terms = search.trim().split(/\s+/).filter(Boolean);
+      // Every term must appear somewhere in the post (AND across terms, OR across fields)
+      where.AND = terms.map(term => ({
+        OR: [
+          { title:   { contains: term, mode: "insensitive" } },
+          { excerpt: { contains: term, mode: "insensitive" } },
+          { content: { contains: term, mode: "insensitive" } },
+          { author:  { contains: term, mode: "insensitive" } },
+          { tags:    { has: term.toLowerCase() } },
+        ],
+      }));
     }
 
     const [posts, total] = await Promise.all([
       prisma.blogPost.findMany({
         where,
-        orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
+        orderBy: { createdAt: "desc" },
         take: limit,
         skip: (page - 1) * limit,
       }),
@@ -62,16 +74,25 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   try {
     const body = await req.json();
     const baseSlug = slugify(body.title);
+    // Every candidate (`baseSlug`, `baseSlug-1`, …) shares the prefix, so one
+    // query covers them all instead of a findUnique per attempt.
+    const taken = new Set(
+      (await prisma.blogPost.findMany({ where: { slug: { startsWith: baseSlug } }, select: { slug: true } }))
+        .map((p) => p.slug),
+    );
     let slug = baseSlug;
     let i = 1;
-    while (await prisma.blogPost.findUnique({ where: { slug } })) {
+    while (taken.has(slug)) {
       slug = `${baseSlug}-${i++}`;
     }
 
-    const category = body.category ?? "industry";
+    const category = isBlogCategory(body.category) ? body.category : "industry";
     const post = await prisma.blogPost.create({
       data: {
         slug,
@@ -85,7 +106,7 @@ export async function POST(req: NextRequest) {
         coverImage: body.coverImage ?? pickCover(category, body.title),
         author: body.author ?? "Echelon AI",
         readingTime: body.readingTime ?? Math.ceil(body.content.split(" ").length / 200),
-        featured: body.featured ?? false,
+        featured: false,
         published: body.published ?? true,
         aiGenerated: body.aiGenerated ?? false,
         sourceUrl: body.sourceUrl,
@@ -93,6 +114,12 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Featured on creation = pinned by staff (lib/blog/featured.ts).
+    if (body.featured === true) await setFeaturedPin(post.id, true).catch(() => {});
+    // Stored in French and Swahili straight away, not on first view.
+    translateArticleSoon(post);
+    // Tell Bing/ChatGPT search and other IndexNow engines (no-op without INDEXNOW_KEY).
+    indexNowSoon(INDEXNOW_SECTIONS.article(post.slug));
     return NextResponse.json({ post }, { status: 201 });
   } catch (err) {
     console.error("Blog POST error:", err);

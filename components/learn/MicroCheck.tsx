@@ -1,0 +1,257 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { useT } from "@/lib/i18n/client";
+import InstantOptions, { type InstantFeedback } from "./InstantOptions";
+import { bumpPractice, celebrate } from "@/lib/learn/game-client";
+import ResultFlair from "./game/ResultFlair";
+import { readableOn } from "@/lib/a11y/contrast";
+
+interface Question {
+  id: string;
+  question: string;
+  options: string[];
+}
+
+interface Graded {
+  id: string;
+  question: string;
+  options: string[];
+  yourAnswer: number | null;
+  correctIndex: number;
+  isCorrect: boolean;
+  explanation: string;
+}
+
+// Tier 1 (Part E3). Low stakes on purpose — the value is the explanation,
+// not the score, so a wrong answer is treated as a teaching moment.
+export default function MicroCheck({
+  microCheckId,
+  passScore,
+  accentColor,
+}: {
+  microCheckId: string;
+  passScore: number;
+  accentColor: string;
+}) {
+  const t = useT();
+  // Track accents sit under white button text: darken just enough for AA.
+  accentColor = readableOn(accentColor);
+  const [questions, setQuestions] = useState<Question[] | null>(null);
+  const [pending, setPending] = useState(false);
+  const [answers, setAnswers] = useState<Record<string, number>>({});
+  // Instant feedback (components/learn/InstantOptions.tsx): each answer is
+  // checked and locked on the server as soon as it is picked.
+  const [session, setSession] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<Record<string, InstantFeedback>>({});
+  const [checking, setChecking] = useState<string | null>(null);
+  async function pick(questionId: string, choice: number) {
+    if (feedback[questionId] || checking) return;
+    setAnswers((a) => ({ ...a, [questionId]: choice }));
+    if (!session) return;
+    setChecking(questionId);
+    try {
+      const res = await fetch("/api/learn/quiz/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "micro", id: microCheckId, session, questionId, choice }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data && typeof data.correctIndex === "number") {
+        setFeedback((f) => ({ ...f, [questionId]: data as InstantFeedback }));
+        setAnswers((a) => ({ ...a, [questionId]: data.choice }));
+      }
+    } catch {
+      /* no feedback: the answer still counts at submit */
+    } finally {
+      setChecking(null);
+    }
+  }
+  const [result, setResult] = useState<{ score: number; passed: boolean; graded: Graded[]; pointsAwarded: number } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  // The result replaces the questions (and the button just pressed): move
+  // focus to its heading so keyboard and screen reader users land on it.
+  const resultHeading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (result) resultHeading.current?.focus({ preventScroll: false });
+  }, [result]);
+
+  async function load() {
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/learn/quiz/serve?mode=micro&id=${microCheckId}`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? t("labs.micro.loadError"));
+      setQuestions(data.questions);
+      setPending(!!data.pending);
+      setAnswers({});
+      setSession(typeof data.session === "string" ? data.session : null);
+      setFeedback({});
+      setResult(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("labs.error.generic"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submit() {
+    if (!questions) return;
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch("/api/learn/quiz/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "micro", id: microCheckId, answers, ...(session ? { session } : {}) }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? t("labs.micro.scoreError"));
+      setResult(data);
+      bumpPractice();
+      celebrate({ points: data.pointsAwarded, reason: "micro", newBadges: data.newBadges, levelUp: data.levelUp });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("labs.error.generic"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const allAnswered = questions?.every((q) => answers[q.id] !== undefined) ?? false;
+
+  // ── Idle ────────────────────────────────────────────────────────────────
+  if (!questions) {
+    return (
+      <section className="rounded-2xl border border-[var(--border)] bg-white p-6 text-center">
+        <h2 className="text-base font-bold text-[var(--ink)]">{t("labs.micro.title")}</h2>
+        <p className="mx-auto mt-1 max-w-md text-sm text-[var(--ink2)]">{t("labs.micro.intro")}</p>
+        <button
+          onClick={load}
+          disabled={busy}
+          className="mt-4 rounded-full px-6 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          style={{ background: accentColor }}
+        >
+          {busy ? t("labs.loading") : t("labs.micro.start")}
+        </button>
+        {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
+      </section>
+    );
+  }
+
+  // ── Results ─────────────────────────────────────────────────────────────
+  if (result) {
+    return (
+      <section className="rounded-2xl border border-[var(--border)] bg-white p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 ref={resultHeading} tabIndex={-1} className="text-base font-bold text-[var(--ink)] focus:outline-none">
+            {result.passed ? t("labs.micro.niceWork") : t("labs.micro.anotherLook")}
+          </h2>
+          <p className="text-sm font-bold" style={{ color: result.passed ? "#1A7F69" : "#B8500A" }}>
+            {result.passed
+              ? t("labs.micro.passedTag", { score: result.score })
+              : t("labs.micro.toPassTag", { score: result.score, pass: passScore })}
+            {result.pointsAwarded > 0 && (
+              <span className="ml-2 text-[var(--orange2)]">{t("labs.pts", { n: result.pointsAwarded })}</span>
+            )}
+          </p>
+        </div>
+        <ResultFlair score={result.score} passScore={passScore} graded={result.graded} compact />
+
+        <ol className="mt-5 space-y-5">
+          {result.graded.map((g, i) => (
+            <li key={g.id}>
+              <p className="text-sm font-semibold text-[var(--ink)]">
+                {i + 1}. {g.question}
+              </p>
+              <ul className="mt-2 space-y-1.5">
+                {g.options.map((o, oi) => {
+                  const chosen = g.yourAnswer === oi;
+                  const correct = g.correctIndex === oi;
+                  return (
+                    <li
+                      key={oi}
+                      className={`flex items-start gap-2 rounded-lg px-3 py-2 text-sm ${
+                        correct
+                          ? "bg-green-50 font-medium text-green-900"
+                          : chosen
+                          ? "bg-red-50 text-red-900"
+                          : "text-[var(--ink2)]"
+                      }`}
+                    >
+                      <span aria-hidden="true" className="shrink-0">
+                        {correct ? "✓" : chosen ? "✗" : "·"}
+                      </span>
+                      <span>
+                        {(correct || chosen) && (
+                          <span className="sr-only">
+                            {correct
+                              ? chosen
+                                ? `${t("a11y.quiz.correctAnswer")}, ${t("a11y.quiz.yourAnswer")}: `
+                                : `${t("a11y.quiz.correctAnswer")}: `
+                              : `${t("a11y.quiz.yourWrongAnswer")}: `}
+                          </span>
+                        )}
+                        {o}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="mt-2 rounded-lg bg-[var(--s2)] px-3 py-2 text-sm leading-relaxed text-[var(--ink2)]">
+                {g.explanation}
+              </p>
+            </li>
+          ))}
+        </ol>
+
+        <button
+          onClick={load}
+          disabled={busy}
+          className="mt-5 rounded-full border border-[var(--border)] px-5 py-2.5 text-sm font-semibold text-[var(--ink2)] hover:border-[var(--ink3)]"
+        >
+          {t("labs.micro.tryDifferent")}
+        </button>
+      </section>
+    );
+  }
+
+  // ── Answering ───────────────────────────────────────────────────────────
+  return (
+    <section className="rounded-2xl border border-[var(--border)] bg-white p-6">
+      <h2 className="text-base font-bold text-[var(--ink)]">{t("labs.micro.title")}</h2>
+      {pending && <p className="mt-2 text-xs text-[var(--ink3)]">{t("common.translationPending")}</p>}
+      <ol className="mt-4 space-y-6">
+        {questions.map((q, i) => (
+          <li key={q.id}>
+            <fieldset>
+              <legend className="text-sm font-semibold text-[var(--ink)]">
+                {i + 1}. {q.question}
+              </legend>
+              <InstantOptions
+                name={q.id}
+                options={q.options}
+                picked={answers[q.id]}
+                feedback={feedback[q.id]}
+                checking={checking === q.id}
+                onPick={(oi) => void pick(q.id, oi)}
+              />
+            </fieldset>
+          </li>
+        ))}
+      </ol>
+
+      {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
+
+      <button
+        onClick={submit}
+        disabled={!allAnswered || busy}
+        className="mt-5 rounded-full px-6 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+        style={{ background: accentColor }}
+      >
+        {busy ? t("labs.checking") : allAnswered ? t("labs.micro.check") : t("labs.micro.answerAll")}
+      </button>
+    </section>
+  );
+}

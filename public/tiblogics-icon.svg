@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200" fill="none" role="img" aria-label="TIBLOGICS icon">
+  <defs>
+    <radialGradient id="gOrange" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#F9A738"/>
+      <stop offset="100%" stop-color="#F47C4C"/>
+    </radialGradient>
+    <radialGradient id="gAmber" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FBBC5E"/>
+      <stop offset="100%" stop-color="#F9A738"/>
+    </radialGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Connector lines from outer circles toward center -->
+  <line x1="60"  y1="100" x2="76"  y2="100" stroke="rgba(244,124,76,0.45)" stroke-width="5" stroke-linecap="round"/>
+  <line x1="140" y1="100" x2="124" y2="100" stroke="rgba(244,124,76,0.45)" stroke-width="5" stroke-linecap="round"/>
+  <line x1="100" y1="60"  x2="100" y2="76"  stroke="rgba(244,124,76,0.45)" stroke-width="5" stroke-linecap="round"/>
+  <line x1="100" y1="140" x2="100" y2="124" stroke="rgba(244,124,76,0.45)" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Left circle (orange) -->
+  <circle cx="42"  cy="100" r="18" fill="url(#gOrange)" filter="url(#glow)" opacity="0.95"/>
+
+  <!-- Top circle (amber) -->
+  <circle cx="100" cy="42"  r="14" fill="url(#gAmber)"  filter="url(#glow)" opacity="0.95"/>
+
+  <!-- Right circle (orange) -->
+  <circle cx="158" cy="100" r="18" fill="url(#gOrange)" filter="url(#glow)" opacity="0.95"/>
+
+  <!-- Bottom circle (amber) -->
+  <circle cx="100" cy="158" r="14" fill="url(#gAmber)"  filter="url(#glow)" opacity="0.95"/>
+
+  <!-- Center circle (white) -->
+  <circle cx="100" cy="100" r="24" fill="#ffffff" filter="url(#glow)"/>
+</svg>

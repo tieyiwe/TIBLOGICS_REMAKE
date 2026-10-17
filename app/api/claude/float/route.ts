@@ -1,11 +1,15 @@
+import { checkRateLimit } from "@/lib/rate-limit";
 export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
-import { streamChat } from "@/lib/claude";
+import { aiBudgetBlock, streamClaude } from "@/lib/claude";
+import { getLocale } from "@/lib/i18n/server";
+import { replyInLanguage } from "@/lib/i18n/config";
+import { boundChatMessages } from "@/lib/chat-bounds";
 
-const FLOAT_SYSTEM_PROMPT = `You are Tibo, the AI assistant for TIBLOGICS — an AI implementation and digital solutions agency serving businesses and individual builders across North America and Francophone Africa.
+const FLOAT_SYSTEM_PROMPT = `You are Tibo, the AI assistant for TIBLOGICS — an AI implementation and digital solutions agency serving businesses and individual builders across North America and Africa.
 
 == YOUR PERSONALITY ==
-Be warm, natural, and genuinely curious — like a knowledgeable friend who actually listens, not a chatbot running through a script. Keep responses to 2–4 sentences. Never be generic or salesy. Respond in English or French based on what the user writes.
+Be warm, natural, and genuinely curious — like a knowledgeable friend who actually listens, not a chatbot running through a script. Keep responses to 2–4 sentences. Never be generic or salesy. Respond in the language the user writes in (English, French or Swahili).
 
 == HOW TO HANDLE CONVERSATIONS ==
 1. Listen first. When someone describes a project or problem, acknowledge what they said and ask ONE good follow-up question to understand their situation better. Do not immediately pitch services or suggest a meeting.
@@ -65,7 +69,7 @@ We build BI dashboards, data pipelines, and AI-powered analytics that turn raw d
 Cross-platform mobile apps (iOS & Android) with native-quality performance. Great for client-facing apps, field service tools, healthcare apps, and logistics platforms.
 
 **8. AI Training & Academy**
-We train teams how to actually use AI — not just theory. Workshops, on-site training, and access to 90+ lessons on the TIBLOGICS AI Academy on Skool, spanning 3 courses on AI implementation, workflow automation, and business transformation.
+We train teams how to actually use AI — not just theory. Workshops, on-site training, and self-paced certificate tracks on ARFA (AI Readiness For All), the TIBLOGICS AI Academy at tiblogics.com/learning-box: one track for life from $297, or every track for $89/month, with team plans for companies.
 
 UPCOMING TIBLOGICS TRAINING EVENTS:
 - Practical AI Training (Coming Soon) — Hands-on live sessions for business owners and teams. Learn to build AI workflows, automate tasks, and integrate AI into daily operations. Online. Users can sign up to get notified at /events.
@@ -87,45 +91,37 @@ Architecture for complex, multi-service systems. We design distributed backends,
 - InStory: AI-personalized learning for K-8 schools
 - CareFlow AI: Automated wellness check-ins for social work agencies
 - ShipFrica: Shipping SaaS for African diaspora logistics businesses
-- AI Academy on Skool: 90+ lessons across 3 AI courses
+- ARFA, the TIBLOGICS AI Academy: certificate tracks for professionals, business owners, parents and builders (tiblogics.com/learning-box)
 
 Contact: info@tiblogics.com`;
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + 3600000 });
-    return true;
-  }
-  if (entry.count >= 20) return false;
-  entry.count++;
-  return true;
-}
-
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for") ?? "unknown";
-  if (!checkRateLimit(ip)) {
+  if (!(await checkRateLimit(`claude-float:${ip}`, 20, 3_600_000))) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }
 
   try {
-    const { messages } = await req.json();
-    if (!messages || !Array.isArray(messages)) {
+    const messages = boundChatMessages((await req.json())?.messages);
+    if (!messages) {
       return NextResponse.json({ error: "Invalid messages" }, { status: 400 });
     }
 
-    const anthropic = (await import("@/lib/claude")).default;
-    const { CLAUDE_MODEL } = await import("@/lib/claude");
 
-    const stream = anthropic.messages.stream({
-      model: CLAUDE_MODEL,
-      max_tokens: 512,
-      system: FLOAT_SYSTEM_PROMPT,
-      messages,
-    });
+    // The site is in English, French or Swahili; answer in the visitor's
+    // language. The booking marker is parsed by the widget, so it must stay
+    // exactly as written whatever the language.
+    const locale = await getLocale();
+    const language = replyInLanguage(locale);
+    const system = language
+      ? `${FLOAT_SYSTEM_PROMPT}\n\n== LANGUAGE ==\n${language} Keep the marker [BOOK_APPOINTMENT] and the page paths exactly as written.`
+      : FLOAT_SYSTEM_PROMPT;
+
+    // Paused while the platform is over its AI budget (lib/ai-spend-guard.ts).
+    const paused = await aiBudgetBlock("chat-sales", "Tibo is taking a short break. Please email info@tiblogics.com or book a call.");
+    if (paused) return paused;
+
+    const stream = streamClaude("chat-sales", { system, messages, maxTokens: 512, meta: { ref: "float" } });
 
     const encoder = new TextEncoder();
     const readable = new ReadableStream({

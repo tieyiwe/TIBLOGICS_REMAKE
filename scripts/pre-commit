@@ -1,0 +1,26 @@
+#!/bin/sh
+# Optional pre-commit hook (security checklist, door 2): refuses a commit
+# whose staged changes contain something that looks like a secret.
+#
+# Install once per clone:
+#   1. Install gitleaks: https://github.com/gitleaks/gitleaks#installing
+#      (macOS: brew install gitleaks; Linux: download the release binary)
+#   2. cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+#
+# If it blocks a commit by mistake (a fake key in course content), add the
+# exact value to the allowlist in .gitleaks.toml. Never bypass it for a real
+# key: remove the key, and rotate it if it was ever pushed.
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks is not installed, so staged changes were not scanned for secrets." >&2
+  echo "            Install it: https://github.com/gitleaks/gitleaks#installing" >&2
+  exit 0
+fi
+
+# Never commit an env file, whatever .gitignore says.
+if git diff --cached --name-only | grep -E '(^|/)\.env($|\.)' | grep -v '\.env\.example$' >/dev/null; then
+  echo "pre-commit: refusing to commit an .env file. Unstage it: git restore --staged <file>" >&2
+  exit 1
+fi
+
+exec gitleaks git --pre-commit --staged --config .gitleaks.toml --redact --no-banner

@@ -3,10 +3,12 @@
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Suspense, useEffect, useState, useCallback } from "react";
+import { useT } from "@/lib/i18n/client";
 
 type Status = "polling" | "confirmed" | "timeout";
 
 function CopyLinkBox({ link }: { link: string }) {
+  const t = useT();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(() => {
@@ -18,14 +20,13 @@ function CopyLinkBox({ link }: { link: string }) {
 
   return (
     <div className="mt-4 bg-white border border-[#D2DCE8] rounded-xl p-4">
-      <p className="font-dm text-xs text-[#7A8FA6] mb-2">
-        📋 <strong>Save your meeting link</strong> — copy it now so you always have it handy, even if the email goes to spam.
-      </p>
+      <p className="font-dm text-xs text-[#7A8FA6] mb-2" dangerouslySetInnerHTML={{ __html: t("pages.bookSuccess.save") }} />
       <div className="flex items-center gap-2">
         <input
           readOnly
+          aria-label={t("pages.bookSuccess.linkLabel")}
           value={link}
-          className="flex-1 px-3 py-2 text-xs font-mono bg-[#F4F7FB] border border-[#D2DCE8] rounded-lg text-[#2251A3] truncate focus:outline-none"
+          className="flex-1 min-w-0 px-3 py-2 text-xs font-mono bg-[#F4F7FB] border border-[#D2DCE8] rounded-lg text-[#2251A3] truncate focus:outline-none"
         />
         <button
           onClick={handleCopy}
@@ -35,7 +36,7 @@ function CopyLinkBox({ link }: { link: string }) {
               : "bg-[#1B3A6B] text-white hover:bg-[#2251A3]"
           }`}
         >
-          {copied ? "✓ Copied!" : "Copy Link"}
+          {copied ? t("pages.bookSuccess.copied") : t("pages.bookSuccess.copy")}
         </button>
       </div>
     </div>
@@ -43,6 +44,7 @@ function CopyLinkBox({ link }: { link: string }) {
 }
 
 function SuccessContent() {
+  const t = useT();
   const searchParams = useSearchParams();
   const appointmentId = searchParams.get("appointmentId");
   const isFree = searchParams.get("free") === "true";
@@ -97,8 +99,8 @@ function SuccessContent() {
               <div className="w-10 h-10 rounded-full border-4 border-[#2251A3] border-t-transparent animate-spin" />
             </div>
           </div>
-          <h1 className="font-syne font-extrabold text-3xl text-[#0D1B2A] mb-3">{isFree ? "Confirming your booking…" : "Confirming your payment…"}</h1>
-          <p className="font-dm text-[#7A8FA6] text-base">This only takes a moment. Please don&apos;t close this page.</p>
+          <h1 className="font-syne font-extrabold text-3xl text-[#0D1B2A] mb-3">{isFree ? t("pages.bookSuccess.confirmingBooking") : t("pages.bookSuccess.confirmingPayment")}</h1>
+          <p className="font-dm text-[#7A8FA6] text-base">{t("pages.bookSuccess.wait")}</p>
         </div>
       </div>
     );
@@ -116,13 +118,13 @@ function SuccessContent() {
           </div>
         </div>
 
-        <h1 className="font-syne font-extrabold text-4xl text-[#0D1B2A] mb-3">You&rsquo;re booked!</h1>
+        <h1 className="font-syne font-extrabold text-3xl sm:text-4xl text-[#0D1B2A] mb-3">{t("pages.bookSuccess.title")}</h1>
         <p className="font-dm text-[#3A4A5C] text-lg mb-8">
           {isFree
-            ? "Your session is confirmed. Check your inbox for the details."
+            ? t("pages.bookSuccess.free")
             : status === "confirmed"
-              ? "Your session is confirmed and payment received."
-              : "Your payment was received — confirmation is on its way."}
+              ? t("pages.bookSuccess.paid")
+              : t("pages.bookSuccess.paidPending")}
         </p>
 
         <div className="bg-[#EBF0FA] border border-[#D2DCE8] rounded-2xl p-6 mb-10 text-left">
@@ -133,11 +135,11 @@ function SuccessContent() {
               </svg>
             </div>
             <div className="w-full">
-              <p className="font-dm text-[#1B3A6B] font-semibold text-sm mb-1">What happens next</p>
+              <p className="font-dm text-[#1B3A6B] font-semibold text-sm mb-1">{t("pages.bookSuccess.next")}</p>
               {zoomLink ? (
                 <>
                   <p className="font-dm text-[#3A4A5C] text-sm leading-relaxed mb-3">
-                    A confirmation email has been sent to your inbox with your meeting details.
+                    {t("pages.bookSuccess.emailSent")}
                   </p>
                   <a
                     href={zoomLink}
@@ -145,18 +147,18 @@ function SuccessContent() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 bg-[#1D76BA] text-white text-sm font-dm font-semibold px-4 py-2.5 rounded-xl hover:bg-[#155e99] transition-colors"
                   >
-                    🎥 Join on Jitsi Meet
+                    {t("pages.bookSuccess.join")}
                   </a>
                   <CopyLinkBox link={zoomLink} />
                 </>
               ) : (
                 <p className="font-dm text-[#3A4A5C] text-sm leading-relaxed">
-                  A confirmation email has been sent to your inbox. Your meeting link will be shared at least 24 hours before your session.
+                  {t("pages.bookSuccess.emailSentLater")}
                 </p>
               )}
               {appointmentId && (
                 <p className="font-dm text-[#7A8FA6] text-xs mt-3">
-                  Booking reference: <span className="font-mono text-[#2251A3]">{appointmentId}</span>
+                  {t("pages.bookSuccess.reference")} <span className="font-mono text-[#2251A3] break-all">{appointmentId}</span>
                 </p>
               )}
             </div>
@@ -164,8 +166,8 @@ function SuccessContent() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link href="/" className="btn-secondary justify-center">← Back to Home</Link>
-          <Link href="/tools" className="btn-primary justify-center">Try Smart Tools →</Link>
+          <Link href="/" className="btn-secondary justify-center">{t("pages.bookSuccess.home")}</Link>
+          <Link href="/tools" className="btn-primary justify-center">{t("pages.bookSuccess.tools")}</Link>
         </div>
       </div>
     </div>
