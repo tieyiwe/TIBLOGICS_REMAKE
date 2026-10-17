@@ -92,6 +92,17 @@ const nextConfig = {
         destination: "https://tiblogics.com/:path*",
         permanent: true,
       },
+      // mcp.tiblogics.com is the AGR plugin's MCP host (app/mcp/route.ts):
+      // it serves only the MCP endpoint and OpenAI's domain-verification
+      // file. Anything else there goes to the main site (temporary, so a
+      // later change of plan is never cached by browsers).
+      { source: "/", has: [{ type: "host", value: "mcp.tiblogics.com" }], destination: "https://tiblogics.com/support/agr", permanent: false },
+      {
+        source: "/:path((?!mcp$|\\.well-known/openai-apps-challenge$).+)",
+        has: [{ type: "host", value: "mcp.tiblogics.com" }],
+        destination: "https://tiblogics.com/:path",
+        permanent: false,
+      },
       { source: "/blog", destination: "/ai-times", permanent: true },
       { source: "/blog/:slug", destination: "/ai-times/:slug", permanent: true },
       // "Courses" became "Learning Box". Certificates issued before the rename
@@ -119,6 +130,8 @@ const nextConfig = {
       // ".md" so a real track is not 404ed there.
       beforeFiles: [
         { source: "/learning-box/:slug([A-Za-z0-9-]+)\\.md", destination: "/api/public/courses/:slug/markdown" },
+        // OpenAI plugin domain verification (app/api/openai-apps-challenge).
+        { source: "/.well-known/openai-apps-challenge", destination: "/api/openai-apps-challenge" },
       ],
       // IndexNow key file: /<INDEXNOW_KEY>.txt (lib/seo/indexnow.ts). An
       // afterFiles rewrite, so real files and routes (robots.txt, llms.txt)

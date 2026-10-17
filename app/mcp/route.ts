@@ -2,9 +2,11 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { agrInputSchema, dateMs, evaluateAgr } from "@/lib/agr/engine";
 
-// The AI Graveyard Report (AGR Score™) MCP server: https://tiblogics.com/mcp
-// (and https://mcp.tiblogics.com/mcp when that domain is attached to this
-// deployment). Streamable HTTP, stateless, JSON responses, one read-only tool,
+// The AI Graveyard Report (AGR Score™) MCP server, published as
+// https://mcp.tiblogics.com/mcp (a dedicated host, as OpenAI's plugin
+// guidance suggests; next.config.js limits that host to this endpoint and
+// the domain-verification file). It also answers at tiblogics.com/mcp.
+// Streamable HTTP, stateless, JSON responses, one read-only tool,
 // calculate_agr_report (lib/agr/engine.ts). Ported from the owner's
 // AGR-MCP-Service v1.0.0 to run inside the site instead of a second server.
 //
