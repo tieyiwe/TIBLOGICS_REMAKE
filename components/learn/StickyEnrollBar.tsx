@@ -41,10 +41,12 @@ export default function StickyEnrollBar({
 
   return (
     <div
-      className={`fixed inset-x-0 bottom-0 z-40 border-t border-[var(--border)] bg-white/95 backdrop-blur transition-transform duration-300 sm:bottom-0 ${
-        show ? "translate-y-0" : "translate-y-full"
+      // On phones the site's bottom tab bar (components/public/MobileBottomNav,
+      // 60px plus the safe area) sits at the very bottom: this bar rides just
+      // above it, and slides fully out of view when hidden.
+      className={`fixed inset-x-0 bottom-[calc(60px+env(safe-area-inset-bottom))] z-40 border-t border-[var(--border)] bg-white/95 backdrop-blur transition-transform duration-300 sm:bottom-0 sm:pb-[env(safe-area-inset-bottom)] ${
+        show ? "translate-y-0" : "translate-y-[calc(100%+80px)] sm:translate-y-full"
       }`}
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-3">
         <div className="min-w-0">

@@ -18,6 +18,7 @@ import { isYouthSlug, YOUTH_SIBLING_DISCOUNT_PCT } from "@/lib/learn/youth";
 import { getYouthProfile, hasYouthSibling, youthGate } from "@/lib/learn/youth-account";
 import { youthTrackIds } from "@/lib/learn/track-subscriptions";
 import { isOwnerStudent } from "@/lib/learn/owner";
+import { learnerStripeCustomer } from "@/lib/learn/billing-customer";
 
 /**
  * AI-Empowered Youth (lib/learn/youth.ts): a lane is sold only to a learner
@@ -118,6 +119,7 @@ export async function POST(req: NextRequest) {
       const { url } = await payments.createTrackCheckout({
         studentId: student.id,
         email: student.email,
+        customerId: await learnerStripeCustomer(student.id),
         couponId: discount.couponId,
         allowPromotionCodes: discount.allowPromotionCodes,
         promoMetadata: discount.metadata,
@@ -164,6 +166,7 @@ export async function POST(req: NextRequest) {
       const { url } = await payments.createTrackMonthlyCheckout({
         studentId: student.id,
         email: student.email,
+        customerId: await learnerStripeCustomer(student.id),
         couponId: discount.couponId,
         allowPromotionCodes: discount.allowPromotionCodes,
         promoMetadata: discount.metadata,
@@ -184,6 +187,18 @@ export async function POST(req: NextRequest) {
     }
 
     // ── All tracks, monthly ─────────────────────────────────────────────
+    // One all-tracks subscription per learner: a second one would be billed
+    // on top (and the two would overwrite each other's status). A learner
+    // whose card is failing updates it in the billing portal instead.
+    const current = await prisma.learnSubscription
+      .findUnique({ where: { studentId: student.id }, select: { status: true, stripeSubscriptionId: true } })
+      .catch(() => null);
+    if (current?.stripeSubscriptionId && (current.status === "active" || current.status === "trialing")) {
+      return NextResponse.json({ error: t("learn.api.alreadySubscribed"), code: "already_subscribed" }, { status: 409 });
+    }
+    if (current?.stripeSubscriptionId && current.status === "past_due") {
+      return NextResponse.json({ error: t("learn.api.subscriptionPastDue"), code: "past_due" }, { status: 409 });
+    }
     const discount = await resolveCheckoutDiscount({
       lines: [{ key: "arfa_monthly", id: "monthly", amountCents: PLANS.monthly.amount }],
       recurring: true,
@@ -195,6 +210,7 @@ export async function POST(req: NextRequest) {
       plan: "monthly",
       studentId: student.id,
       email: student.email,
+      customerId: await learnerStripeCustomer(student.id),
       couponId: discount.couponId,
       allowPromotionCodes: discount.allowPromotionCodes,
       promoMetadata: discount.metadata,

@@ -154,6 +154,10 @@ export default function TrackTile({
         <div className="mt-5">
           <WaitlistForm trackSlug={track.slug} />
         </div>
+        {/* The full page: outline, outcomes, FAQ and the sponsor option. */}
+        <Link href={`/learning-box/${track.slug}`} className="mt-4 inline-block text-sm font-semibold underline-offset-2 hover:underline" style={{ color: accent }} data-testid={`sheet-details-${track.slug}`}>
+          {t("learn.tile.details")} ›
+        </Link>
       </BottomSheet>
     </>
   );

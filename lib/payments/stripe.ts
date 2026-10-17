@@ -1,5 +1,6 @@
 // Stripe implementation of PaymentProvider. The only file in the Learn
 // module that talks to Stripe directly.
+import type Stripe from "stripe";
 import stripe from "@/lib/stripe";
 import {
   PLANS,
@@ -28,6 +29,21 @@ const PRICE_IDS: Record<string, string | undefined> = {
   monthly: process.env.STRIPE_LEARN_MONTHLY_PRICE_ID,
 };
 
+/**
+ * Creates a Checkout Session on the learner's existing customer when there is
+ * one (CheckoutDiscountFields.customerId), else from their email. A customer
+ * deleted in Stripe falls back to the email instead of failing the checkout.
+ */
+async function createSessionFor(params: Stripe.Checkout.SessionCreateParams, who: { customerId?: string | null; email: string }) {
+  if (!who.customerId) return stripe.checkout.sessions.create({ ...params, customer_email: who.email });
+  try {
+    return await stripe.checkout.sessions.create({ ...params, customer: who.customerId });
+  } catch (err) {
+    if ((err as { code?: string }).code === "resource_missing") return stripe.checkout.sessions.create({ ...params, customer_email: who.email });
+    throw err;
+  }
+}
+
 export const stripeProvider: PaymentProvider = {
   name: "stripe",
 
@@ -55,10 +71,9 @@ export const stripeProvider: PaymentProvider = {
           },
         };
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await createSessionFor({
       mode: "subscription",
       line_items: [lineItem as never],
-      customer_email: req.email,
       // A promotion or referral coupon replaces the promotion-code box.
       ...discountParams(req),
       success_url: req.successUrl,
@@ -75,7 +90,7 @@ export const stripeProvider: PaymentProvider = {
       subscription_data: {
         metadata: { studentId: req.studentId, plan: req.plan, product: "learn" },
       },
-    });
+    }, req);
 
     if (!session.url) throw new Error("Stripe did not return a checkout URL");
     return { url: session.url };
@@ -84,7 +99,7 @@ export const stripeProvider: PaymentProvider = {
   async createTrackMonthlyCheckout(req: TrackMonthlyCheckoutRequest) {
     const metadata: Record<string, string> = { product: TRACK_MONTHLY_PRODUCT, studentId: req.studentId, trackId: req.trackId, trackSlug: req.trackSlug };
     if (req.siblingDiscountPct) metadata.siblingDiscountPct = String(req.siblingDiscountPct);
-    const session = await stripe.checkout.sessions.create({
+    const session = await createSessionFor({
       mode: "subscription",
       line_items: [
         {
@@ -100,14 +115,13 @@ export const stripeProvider: PaymentProvider = {
           },
         },
       ],
-      customer_email: req.email,
       ...discountParams(req),
       success_url: req.successUrl,
       cancel_url: req.cancelUrl,
       client_reference_id: req.studentId,
       metadata: { ...req.promoMetadata, ...metadata },
       subscription_data: { metadata },
-    });
+    }, req);
     if (!session.url) throw new Error("Stripe did not return a checkout URL");
     return { url: session.url };
   },
@@ -153,7 +167,7 @@ export const stripeProvider: PaymentProvider = {
     // Scholarship with its coupon: the full price, and Stripe shows the
     // scholarship as a discount line (the saving) and the total owed.
     const scholarshipCoupon = req.scholarship?.couponId ?? null;
-    const session = await stripe.checkout.sessions.create({
+    const session = await createSessionFor({
       mode: "payment",
       line_items: [
         {
@@ -168,7 +182,6 @@ export const stripeProvider: PaymentProvider = {
           },
         },
       ],
-      customer_email: req.email,
       ...(req.scholarship ? (scholarshipCoupon ? { discounts: [{ coupon: scholarshipCoupon }] } : {}) : discountParams(req)),
       success_url: req.successUrl,
       cancel_url: req.cancelUrl,
@@ -176,7 +189,7 @@ export const stripeProvider: PaymentProvider = {
       // The webhook creates the TrackPurchase from these.
       metadata: { ...req.promoMetadata, ...metadata },
       payment_intent_data: { metadata },
-    });
+    }, req);
     if (!session.url) throw new Error("Stripe did not return a checkout URL");
     return { url: session.url };
   },

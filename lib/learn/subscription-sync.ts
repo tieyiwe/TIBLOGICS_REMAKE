@@ -30,6 +30,18 @@ export async function upsertLearnSubscription(sub: Stripe.Subscription, studentI
   const plan = sub.metadata?.plan === "annual" ? "annual" : "monthly";
   const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer?.id ?? null;
 
+  // One row per learner, so two subscriptions (a second checkout, a
+  // resubscribe while Stripe still retries the old card) must not fight over
+  // it: a different subscription only replaces the row when it is at least as
+  // healthy as the one recorded. An old subscription's cancellation can then
+  // never cut off a learner whose newer subscription is paying.
+  const RANK: Record<string, number> = { active: 2, trialing: 2, past_due: 1, canceled: 0 };
+  const current = await prisma.learnSubscription.findUnique({ where: { studentId }, select: { status: true, stripeSubscriptionId: true } });
+  if (current?.stripeSubscriptionId && current.stripeSubscriptionId !== sub.id && (RANK[status] ?? 0) < (RANK[current.status] ?? 0)) {
+    console.log(`[stripe/webhook] Learn sub ${sub.id} (${status}) ignored: student keeps ${current.stripeSubscriptionId} (${current.status})`);
+    return;
+  }
+
   // Entering past_due starts a 7-day grace; returning to healthy clears it.
   // Staying past_due keeps the original deadline: any change to the
   // subscription (the learner toggling cancel-at-period-end in the billing
@@ -62,11 +74,10 @@ export async function upsertLearnSubscription(sub: Stripe.Subscription, studentI
     cancelAtPeriodEnd: !!sub.cancel_at_period_end,
   };
 
-  await prisma.learnSubscription
-    .upsert({
-      where: { studentId },
-      create: { studentId, ...data },
-      update: data,
-    })
-    .catch((err) => console.error("[stripe/webhook] learn sub upsert", err));
+  // Throws on a database error: the webhook answers 500 so Stripe retries.
+  await prisma.learnSubscription.upsert({
+    where: { studentId },
+    create: { studentId, ...data },
+    update: data,
+  });
 }

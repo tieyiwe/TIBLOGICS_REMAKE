@@ -11,6 +11,7 @@
 import { fmtPrice } from "@/lib/learn/format";
 import { publicCatalog, type PublicCatalog, type PublicCourse } from "./courses";
 import { ORG, absUrl } from "./site";
+import { separateMonthlyNames } from "@/lib/learn/track-monthly";
 
 const money = (dollars: number) => fmtPrice(Math.round(dollars * 100), "en-US");
 
@@ -40,7 +41,7 @@ function howItWorks(cat: PublicCatalog): string[] {
   ];
   const r = priceRange(cat.courses);
   if (r) out.push(`- One track: ${money(r.min)} to ${money(r.max)} one time, depending on the track's level, with lifetime access to that track.`);
-  out.push(`- Every track: ${money(cat.subscription.amount)} a month, cancel anytime.`);
+  out.push(`- Every track except ${separateMonthlyNames()} (sold separately): ${money(cat.subscription.amount)} a month, cancel anytime.`);
   if (cat.teams) {
     const low = Math.min(cat.teams.seatPrice, ...cat.teams.volumeTiers.map((x) => x.seatPrice));
     out.push(

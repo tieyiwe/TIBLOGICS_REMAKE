@@ -3,6 +3,7 @@ import Link from "next/link";
 import JoinFlow, { type JoinTrack } from "@/components/learn/join/JoinFlow";
 import HelpWidget from "@/components/learn/support/HelpWidget";
 import { getCatalog } from "@/lib/learn/catalog";
+import { fmtHours, totalHours } from "@/lib/learn/format";
 import { canAccessTrack, getAccess, getStudent } from "@/lib/learn/session";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTracks, withTrackText } from "@/lib/i18n/sources/learn";
@@ -56,7 +57,8 @@ export default async function JoinPage({
     slug: c.slug,
     title: c.title,
     tagline: c.tagline,
-    meta: `${levelLabel(c)} · ${t(c.estimatedHours === 1 ? "learn.time.hours.one" : "learn.time.hours.other", { n: c.estimatedHours })}`,
+    // Same total as the track pages and tiles: lessons plus hands-on work.
+    meta: `${levelLabel(c)} · ${fmtHours(t, locale, totalHours(c.lessonMinutes, c.handsOnMinutes, c.estimatedHours))}`,
     accentColor: c.accentColor,
     priceCents: c.priceCents,
     saleCents: c.salePriceCents,

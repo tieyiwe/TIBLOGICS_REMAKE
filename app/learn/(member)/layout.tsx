@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import LearnNav from "@/components/learn/LearnNav";
 import SkipLink from "@/components/a11y/SkipLink";
@@ -23,7 +24,18 @@ export default async function MemberLayout({ children }: { children: React.React
   const entitlement = access.entitlement;
   // AI-Empowered Youth: a learner whose only tracks are youth lanes waiting
   // for a birth year, a parent email or the parent's OK.
-  if (!access.any) redirect(access.youthGate ? "/learn/youth" : "/learn/subscribe");
+  // A learner without a plan still reaches the pages that make sense before
+  // buying: free-preview lessons (the lesson page shows the paywall for any
+  // other lesson), track pages and the track list (per-track paywalls), and
+  // account settings (password, language, deleting the account). Every page
+  // and API checks track access itself (lib/learn/session.ts), as for a
+  // learner who bought one track.
+  if (!access.any) {
+    const path = (await headers()).get("x-tib-path") ?? "";
+    const account = /^\/learn\/account(\/|$)/.test(path);
+    const browse = /^\/learn\/(lesson\/[^/]+|track\/[^/]+|tracks)\/?$/.test(path);
+    if (access.youthGate ? !account : !(account || browse)) redirect(access.youthGate ? "/learn/youth" : "/learn/subscribe");
+  }
 
   return (
     // data-a11y drives the accessibility styles in globals.css: ~25% larger

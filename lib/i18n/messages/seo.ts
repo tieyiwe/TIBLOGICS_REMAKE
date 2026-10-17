@@ -112,9 +112,9 @@ export default tri({
     "Kozi {n} ziko wazi sasa, kuanzia kiwango cha mwanzo hadi cha juu, kila moja ikichukua takriban saa {min} hadi {max}.",
   ],
   "seo.arfa.tldr.3": [
-    "Own one track for a one-time payment from {from}, or get every track for {monthly} a month; cancel anytime.",
-    "Achetez un parcours en une fois dès {from}, ou accédez à tous les parcours pour {monthly} par mois, résiliable à tout moment.",
-    "Miliki kozi moja kwa malipo ya mara moja kuanzia {from}, au pata kozi zote kwa {monthly} kwa mwezi; sitisha wakati wowote.",
+    "Own one track for a one-time payment from {from}, or get every track except Vibe Coding and AI-Empowered Youth for {monthly} a month; cancel anytime.",
+    "Achetez un parcours en une fois dès {from}, ou accédez à tous les parcours sauf Vibe Coding et AI-Empowered Youth pour {monthly} par mois, résiliable à tout moment.",
+    "Miliki kozi moja kwa malipo ya mara moja kuanzia {from}, au pata kozi zote isipokuwa Vibe Coding na AI-Empowered Youth kwa {monthly} kwa mwezi; sitisha wakati wowote.",
   ],
   "seo.arfa.tldr.4": [
     "Courses are available in English and French.",
@@ -134,9 +134,9 @@ export default tri({
   ],
   "seo.arfa.faq.cost.q": ["How much does ARFA cost?", "Combien coûte ARFA ?", "ARFA inagharimu kiasi gani?"],
   "seo.arfa.faq.cost.a": [
-    "Each track can be bought once, with lifetime access to that track, for {from} to {to} depending on its level. A subscription at {monthly} a month includes every track and can be cancelled anytime. Companies can also buy seats for their teams.",
-    "Chaque parcours s'achète en une fois, avec un accès à vie à ce parcours, de {from} à {to} selon son niveau. L'abonnement à {monthly} par mois donne accès à tous les parcours et se résilie à tout moment. Les entreprises peuvent aussi acheter des places pour leurs équipes.",
-    "Kila kozi inaweza kununuliwa mara moja, ukipata ufikiaji wa kudumu wa kozi hiyo, kwa {from} hadi {to} kulingana na kiwango chake. Usajili wa {monthly} kwa mwezi unajumuisha kozi zote na unaweza kusitishwa wakati wowote. Makampuni yanaweza pia kununua nafasi kwa timu zao.",
+    "Each track can be bought once, with lifetime access to that track, for {from} to {to} depending on its level. A subscription at {monthly} a month includes every track except Vibe Coding and AI-Empowered Youth, which are sold separately, and can be cancelled anytime. Companies can also buy seats for their teams.",
+    "Chaque parcours s'achète en une fois, avec un accès à vie à ce parcours, de {from} à {to} selon son niveau. L'abonnement à {monthly} par mois donne accès à tous les parcours sauf Vibe Coding et AI-Empowered Youth, vendus séparément, et se résilie à tout moment. Les entreprises peuvent aussi acheter des places pour leurs équipes.",
+    "Kila kozi inaweza kununuliwa mara moja, ukipata ufikiaji wa kudumu wa kozi hiyo, kwa {from} hadi {to} kulingana na kiwango chake. Usajili wa {monthly} kwa mwezi unajumuisha kozi zote isipokuwa Vibe Coding na AI-Empowered Youth, zinazouzwa kando, na unaweza kusitishwa wakati wowote. Makampuni yanaweza pia kununua nafasi kwa timu zao.",
   ],
   "seo.arfa.faq.french.q": ["Are the courses available in French?", "Les cours sont-ils disponibles en français ?", "Je, kozi zinapatikana kwa Kifaransa?"],
   "seo.arfa.faq.french.a": [

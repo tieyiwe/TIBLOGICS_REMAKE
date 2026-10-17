@@ -70,7 +70,14 @@ export async function POST(req: Request) {
     ) {
       const sub = event.data.object as Stripe.Subscription;
       if (sub.metadata?.product === "learn" && sub.metadata?.studentId) {
-        await upsertLearnSubscription(sub);
+        // Events can arrive out of order (an old "active" after "deleted"):
+        // the subscription's state is read back from Stripe, not trusted
+        // from the event.
+        const fresh = await stripe.subscriptions.retrieve(sub.id).catch(() => sub);
+        await upsertLearnSubscription(fresh).catch((err) => {
+          console.error("[stripe/webhook] learn subscription sync FAILED, asking Stripe to retry", err instanceof Error ? err.message : err);
+          retry = true;
+        });
       }
       // ── One track on its own monthly plan ────────────────────────────────
       if (sub.metadata?.product === TRACK_MONTHLY_PRODUCT) {
@@ -147,15 +154,21 @@ export async function POST(req: Request) {
       const session = event.data.object as Stripe.Checkout.Session;
       if (session.metadata?.product === "learn-track") await trackPurchase(session);
       if (session.metadata?.product === DONATION_PRODUCT) await recordDonation(session).catch((err) => console.error("[stripe/webhook] donation (async)", err));
+      // A sponsored youth place paid by a delayed method (idempotent).
+      if (session.metadata?.product === SPONSOR_PRODUCT) {
+        await fulfillSponsorship(session, (id) => stripe.subscriptions.retrieve(id)).catch((err) => {
+          console.error("[stripe/webhook] youth sponsorship (async) FAILED, asking Stripe to retry", err instanceof Error ? err.message : err);
+          retry = true;
+        });
+      }
+      // Store orders, event seats and appointments paid later.
+      await fulfillOneTimePurchases(session);
       await recordRedemption(session);
       await alertCheckoutSale(session);
     }
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
-      const appointmentId = session.metadata?.appointmentId;
-      const registrationId = session.metadata?.registrationId;
-      const orderId = session.metadata?.orderId;
 
       // ── Promotions: a discounted checkout counts as a redemption once paid
       // (delayed methods are recorded on async_payment_succeeded above).
@@ -170,7 +183,10 @@ export async function POST(req: Request) {
         const subId = typeof session.subscription === "string" ? session.subscription : null;
         if (studentId && subId) {
           const full = await stripe.subscriptions.retrieve(subId);
-          await upsertLearnSubscription(full, studentId);
+          await upsertLearnSubscription(full, studentId).catch((err) => {
+            console.error("[stripe/webhook] learn subscription activation FAILED, asking Stripe to retry", err instanceof Error ? err.message : err);
+            retry = true;
+          });
           // Learning Box referral: a referred learner paid, the referrer earns a
           // pending reward (lib/learn/referrals). Never throws; idempotent.
           if (full.status === "active" || full.status === "trialing") {
@@ -279,192 +295,8 @@ export async function POST(req: Request) {
         }
       }
 
-      // ── Shop order payment ──────────────────────────────────────────────
-      if (orderId) {
-        const email = session.customer_details?.email ?? session.customer_email ?? "";
-        const name = session.customer_details?.name ?? null;
-        const phone = session.customer_details?.phone ?? null;
-        const shipping = (session as unknown as { shipping_details?: unknown }).shipping_details ?? null;
-
-        const order = await prisma.order.update({
-          where: { id: orderId },
-          data: {
-            status: "paid",
-            stripeSessionId: session.id,
-            // What was actually charged (after any promotion).
-            ...(typeof session.amount_total === "number" ? { total: session.amount_total } : {}),
-            email,
-            customerName: name,
-            phone,
-            ...(shipping ? { shippingAddress: JSON.parse(JSON.stringify(shipping)) } : {}),
-          },
-        });
-
-        // Update inventory / sold counts (best-effort)
-        const items = Array.isArray(order.items) ? (order.items as unknown as Array<{ productId: string; quantity: number }>) : [];
-        // One read for every line item's stock, then the per-item updates go out
-        // together. A missing row (or a failed read) leaves stock untracked for
-        // that item, exactly as the old per-item `.catch(() => null)` did.
-        const stockById = new Map<string, number | null>(
-          (
-            await prisma.product
-              .findMany({
-                where: { id: { in: items.map((it) => it.productId) } },
-                select: { id: true, stock: true },
-              })
-              .catch(() => [])
-          ).map((p) => [p.id, p.stock]),
-        );
-        await Promise.all(
-          items.map((it) => {
-            const stock = stockById.get(it.productId) ?? null;
-            return prisma.product.update({
-              where: { id: it.productId },
-              data: {
-                soldCount: { increment: it.quantity },
-                ...(stock != null ? { stock: { decrement: Math.min(stock, it.quantity) } } : {}),
-              },
-            }).catch((err) => console.error("[stripe/webhook] product update", err));
-          }),
-        );
-
-        if (email) {
-          // Mark any saved cart for this shopper as recovered (stops reminders)
-          prisma.abandonedCart
-            .updateMany({ where: { email: email.toLowerCase(), recoveredAt: null }, data: { recoveredAt: new Date() } })
-            .catch((err) => console.error("[stripe/webhook] cart recover", err));
-
-          // Digital delivery. Grants are minted here — after payment settles —
-          // so a grant existing is itself proof of purchase. Idempotent, so a
-          // Stripe retry does not issue a second set of tokens.
-          const grants = await grantDownloadsForOrder(order.id, email).catch((err) => {
-            console.error("[stripe/webhook] download grants FAILED:", err);
-            return [];
-          });
-
-          sendOrderConfirmationEmail({
-            email,
-            customerName: name,
-            orderNumber: order.orderNumber,
-            items,
-            total: order.total,
-            currency: order.currency,
-            downloads: grants.map((g) => ({
-              name: g.productName,
-              url: `${SITE_URL}/api/shop/download/${g.token}`,
-              format: g.fileFormat,
-              expiresAt: g.expiresAt,
-            })),
-          }).catch((err) => console.error("[stripe/webhook] order email FAILED:", err instanceof Error ? err.message : err));
-        }
-        sendAdminOrderAlert({
-          orderNumber: order.orderNumber,
-          email,
-          customerName: name,
-          total: order.total,
-          currency: order.currency,
-          itemCount: items.reduce((n, i) => n + (i.quantity || 0), 0),
-        }).catch((err) => console.error("[stripe/webhook] admin order alert FAILED:", err instanceof Error ? err.message : err));
-      }
-
-      // ── Event registration payment ──────────────────────────────────────
-      if (registrationId) {
-        const reg = await prisma.eventRegistration.update({
-          where: { id: registrationId },
-          data: {
-            status: "paid",
-            stripeSessionId: session.id,
-          },
-        });
-
-        // Notify admin of confirmed sale
-        sendAdminNewRegistrationAlert({
-          firstName: reg.firstName,
-          lastName: reg.lastName,
-          email: reg.email,
-          eventName: reg.eventName,
-          confirmationNumber: reg.confirmationNumber ?? undefined,
-          whatsapp: reg.whatsapp,
-        }).then(() => {
-          console.log(`[stripe/webhook] ✓ Admin alert sent for ${reg.confirmationNumber}`);
-        }).catch((err) => {
-          console.error(`[stripe/webhook] ✗ Admin alert FAILED:`, err instanceof Error ? err.message : err);
-        });
-
-        // Send the "You're in — let's build" welcome email now that payment
-        // succeeded. firstName is captured from the registration record.
-        console.log(`[stripe/webhook] Sending welcome email to ${maskEmail(reg.email)} (reg: ${registrationId})`);
-        await sendEventWelcomeEmail({
-          firstName: reg.firstName,
-          email: reg.email,
-          eventName: reg.eventName,
-          confirmationNumber: reg.confirmationNumber,
-        }).then(() => {
-          console.log(`[stripe/webhook] ✓ Welcome email sent to ${maskEmail(reg.email)}`);
-        }).catch((err) => {
-          console.error(`[stripe/webhook] ✗ Welcome email FAILED for ${maskEmail(reg.email)}:`, err instanceof Error ? err.message : err);
-        });
-      }
-
-      if (appointmentId) {
-        // Auto-create meeting link on payment confirmation
-        const appt = await prisma.appointment.findUnique({ where: { id: appointmentId } });
-        let meetingLink: string | null = null;
-        if (appt) {
-          meetingLink = await createMeeting({
-            serviceType: appt.serviceType,
-            date: appt.date,
-            timeSlot: appt.timeSlot,
-            timezone: appt.timezone,
-            serviceDuration: appt.serviceDuration,
-            firstName: appt.firstName,
-            lastName: appt.lastName,
-          });
-        }
-
-        const updated = await prisma.appointment.update({
-          where: { id: appointmentId },
-          data: {
-            status: "CONFIRMED",
-            stripePaymentId: session.payment_intent as string,
-            stripeSessionId: session.id,
-            paymentStatus: "paid",
-            confirmedAt: new Date(),
-            zoomLink: meetingLink,
-          },
-        });
-
-        await Promise.allSettled([
-          sendConfirmationEmail({
-            firstName: updated.firstName,
-            lastName: updated.lastName,
-            email: updated.email,
-            serviceType: updated.serviceType,
-            date: updated.date,
-            timeSlot: updated.timeSlot,
-            serviceDuration: updated.serviceDuration,
-            zoomLink: updated.zoomLink,
-            totalAmount: updated.totalAmount,
-          }).catch((err) => console.error("[sendConfirmationEmail]", err)),
-
-          sendTiweNotification({
-            firstName: updated.firstName,
-            lastName: updated.lastName,
-            email: updated.email,
-            company: updated.company,
-            serviceType: updated.serviceType,
-            date: updated.date,
-            timeSlot: updated.timeSlot,
-            totalAmount: updated.totalAmount,
-            goalNotes: updated.goalNotes,
-            paymentStatus: updated.paymentStatus,
-            addOnRecording: updated.addOnRecording,
-            addOnActionPlan: updated.addOnActionPlan,
-            addOnSlackAccess: updated.addOnSlackAccess,
-            meetingLink: updated.zoomLink,
-          }).catch((err) => console.error("[sendTiweNotification]", err)),
-        ]);
-      }
+      // ── Store orders, event seats and appointments ──────────────────────
+      await fulfillOneTimePurchases(session);
     }
   } catch (error) {
     console.error("[stripe/webhook] Event handling error", error);
@@ -479,7 +311,8 @@ export async function POST(req: Request) {
 // the Stripe session id and on (student, track), so a retried event inserts
 // nothing. A failure throws so the outer handler logs it.
 async function handleTrackPurchase(session: Stripe.Checkout.Session) {
-  if (session.payment_status !== "paid") {
+  // no_payment_required: a code that covers the whole price (still a purchase).
+  if (session.payment_status !== "paid" && session.payment_status !== "no_payment_required") {
     console.log(`[stripe/webhook] Learn track session ${session.id} not paid yet (${session.payment_status})`);
     return;
   }
@@ -509,4 +342,221 @@ async function handleTrackPurchase(session: Stripe.Checkout.Session) {
     payerEmail: session.customer_details?.email ?? session.customer_email,
     customerId: typeof session.customer === "string" ? session.customer : session.customer?.id ?? null,
   });
+}
+
+// ── Store orders, event seats and appointments ─────────────────────────────
+// Fulfilled only once the money is in (a delayed method arrives later as
+// checkout.session.async_payment_succeeded, which calls this too), and only
+// once per order, registration or appointment: each is claimed with a
+// conditional update before any stock, email or meeting is touched.
+async function fulfillOneTimePurchases(session: Stripe.Checkout.Session) {
+  if (session.payment_status !== "paid" && session.payment_status !== "no_payment_required") return;
+  const appointmentId = session.metadata?.appointmentId;
+  const registrationId = session.metadata?.registrationId;
+  const orderId = session.metadata?.orderId;
+  // ── Shop order payment ──────────────────────────────────────────────
+  if (orderId) {
+    const email = session.customer_details?.email ?? session.customer_email ?? "";
+    const name = session.customer_details?.name ?? null;
+    const phone = session.customer_details?.phone ?? null;
+    const shipping = (session as unknown as { shipping_details?: unknown }).shipping_details ?? null;
+
+    // Claim the order once: a repeated event (Stripe retries, or both
+    // the completed and async events) changes nothing the second time.
+    const claimed = await prisma.order.updateMany({
+      where: { id: orderId, status: { not: "paid" } },
+      data: {
+        status: "paid",
+        stripeSessionId: session.id,
+        // What was actually charged (after any promotion).
+        ...(typeof session.amount_total === "number" ? { total: session.amount_total } : {}),
+        email,
+        customerName: name,
+        phone,
+        ...(shipping ? { shippingAddress: JSON.parse(JSON.stringify(shipping)) } : {}),
+      },
+    });
+    if (claimed.count === 0) {
+      console.log(`[stripe/webhook] order ${orderId} already paid: nothing to do`);
+      return;
+    }
+    const order = await prisma.order.findUniqueOrThrow({ where: { id: orderId } });
+
+    // Update inventory / sold counts (best-effort)
+    const items = Array.isArray(order.items) ? (order.items as unknown as Array<{ productId: string; quantity: number }>) : [];
+    // One read for every line item's stock, then the per-item updates go out
+    // together. A missing row (or a failed read) leaves stock untracked for
+    // that item, exactly as the old per-item `.catch(() => null)` did.
+    const stockById = new Map<string, number | null>(
+      (
+        await prisma.product
+          .findMany({
+            where: { id: { in: items.map((it) => it.productId) } },
+            select: { id: true, stock: true },
+          })
+          .catch(() => [])
+      ).map((p) => [p.id, p.stock]),
+    );
+    await Promise.all(
+      items.map((it) => {
+        const stock = stockById.get(it.productId) ?? null;
+        return prisma.product.update({
+          where: { id: it.productId },
+          data: {
+            soldCount: { increment: it.quantity },
+            ...(stock != null ? { stock: { decrement: Math.min(stock, it.quantity) } } : {}),
+          },
+        }).catch((err) => console.error("[stripe/webhook] product update", err));
+      }),
+    );
+
+    if (email) {
+      // Mark any saved cart for this shopper as recovered (stops reminders)
+      prisma.abandonedCart
+        .updateMany({ where: { email: email.toLowerCase(), recoveredAt: null }, data: { recoveredAt: new Date() } })
+        .catch((err) => console.error("[stripe/webhook] cart recover", err));
+
+      // Digital delivery. Grants are minted here — after payment settles —
+      // so a grant existing is itself proof of purchase. Idempotent, so a
+      // Stripe retry does not issue a second set of tokens.
+      const grants = await grantDownloadsForOrder(order.id, email).catch((err) => {
+        console.error("[stripe/webhook] download grants FAILED:", err);
+        return [];
+      });
+
+      sendOrderConfirmationEmail({
+        email,
+        customerName: name,
+        orderNumber: order.orderNumber,
+        items,
+        total: order.total,
+        currency: order.currency,
+        downloads: grants.map((g) => ({
+          name: g.productName,
+          url: `${SITE_URL}/api/shop/download/${g.token}`,
+          format: g.fileFormat,
+          expiresAt: g.expiresAt,
+        })),
+      }).catch((err) => console.error("[stripe/webhook] order email FAILED:", err instanceof Error ? err.message : err));
+    }
+    sendAdminOrderAlert({
+      orderNumber: order.orderNumber,
+      email,
+      customerName: name,
+      total: order.total,
+      currency: order.currency,
+      itemCount: items.reduce((n, i) => n + (i.quantity || 0), 0),
+    }).catch((err) => console.error("[stripe/webhook] admin order alert FAILED:", err instanceof Error ? err.message : err));
+  }
+
+  // ── Event registration payment ──────────────────────────────────────
+  if (registrationId) {
+    const claimedReg = await prisma.eventRegistration.updateMany({
+      where: { id: registrationId, status: { not: "paid" } },
+      data: { status: "paid", stripeSessionId: session.id },
+    });
+    if (claimedReg.count === 0) {
+      console.log(`[stripe/webhook] registration ${registrationId} already paid: nothing to do`);
+      return;
+    }
+    const reg = await prisma.eventRegistration.findUniqueOrThrow({ where: { id: registrationId } });
+
+    // Notify admin of confirmed sale
+    sendAdminNewRegistrationAlert({
+      firstName: reg.firstName,
+      lastName: reg.lastName,
+      email: reg.email,
+      eventName: reg.eventName,
+      confirmationNumber: reg.confirmationNumber ?? undefined,
+      whatsapp: reg.whatsapp,
+    }).then(() => {
+      console.log(`[stripe/webhook] ✓ Admin alert sent for ${reg.confirmationNumber}`);
+    }).catch((err) => {
+      console.error(`[stripe/webhook] ✗ Admin alert FAILED:`, err instanceof Error ? err.message : err);
+    });
+
+    // Send the "You're in — let's build" welcome email now that payment
+    // succeeded. firstName is captured from the registration record.
+    console.log(`[stripe/webhook] Sending welcome email to ${maskEmail(reg.email)} (reg: ${registrationId})`);
+    await sendEventWelcomeEmail({
+      firstName: reg.firstName,
+      email: reg.email,
+      eventName: reg.eventName,
+      confirmationNumber: reg.confirmationNumber,
+    }).then(() => {
+      console.log(`[stripe/webhook] ✓ Welcome email sent to ${maskEmail(reg.email)}`);
+    }).catch((err) => {
+      console.error(`[stripe/webhook] ✗ Welcome email FAILED for ${maskEmail(reg.email)}:`, err instanceof Error ? err.message : err);
+    });
+  }
+
+  if (appointmentId) {
+    // Claim the appointment first, so a repeated event never books a
+    // second meeting or sends the emails twice.
+    const claimedAppt = await prisma.appointment.updateMany({
+      where: { id: appointmentId, NOT: { paymentStatus: "paid" } },
+      data: { paymentStatus: "paid", stripeSessionId: session.id },
+    });
+    if (claimedAppt.count === 0) {
+      console.log(`[stripe/webhook] appointment ${appointmentId} already paid: nothing to do`);
+      return;
+    }
+    // Auto-create meeting link on payment confirmation
+    const appt = await prisma.appointment.findUnique({ where: { id: appointmentId } });
+    let meetingLink: string | null = null;
+    if (appt) {
+      meetingLink = await createMeeting({
+        serviceType: appt.serviceType,
+        date: appt.date,
+        timeSlot: appt.timeSlot,
+        timezone: appt.timezone,
+        serviceDuration: appt.serviceDuration,
+        firstName: appt.firstName,
+        lastName: appt.lastName,
+      });
+    }
+
+    const updated = await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        status: "CONFIRMED",
+        stripePaymentId: session.payment_intent as string,
+        stripeSessionId: session.id,
+        paymentStatus: "paid",
+        confirmedAt: new Date(),
+        zoomLink: meetingLink,
+      },
+    });
+
+    await Promise.allSettled([
+      sendConfirmationEmail({
+        firstName: updated.firstName,
+        lastName: updated.lastName,
+        email: updated.email,
+        serviceType: updated.serviceType,
+        date: updated.date,
+        timeSlot: updated.timeSlot,
+        serviceDuration: updated.serviceDuration,
+        zoomLink: updated.zoomLink,
+        totalAmount: updated.totalAmount,
+      }).catch((err) => console.error("[sendConfirmationEmail]", err)),
+
+      sendTiweNotification({
+        firstName: updated.firstName,
+        lastName: updated.lastName,
+        email: updated.email,
+        company: updated.company,
+        serviceType: updated.serviceType,
+        date: updated.date,
+        timeSlot: updated.timeSlot,
+        totalAmount: updated.totalAmount,
+        goalNotes: updated.goalNotes,
+        paymentStatus: updated.paymentStatus,
+        addOnRecording: updated.addOnRecording,
+        addOnActionPlan: updated.addOnActionPlan,
+        addOnSlackAccess: updated.addOnSlackAccess,
+        meetingLink: updated.zoomLink,
+      }).catch((err) => console.error("[sendTiweNotification]", err)),
+    ]);
+  }
 }

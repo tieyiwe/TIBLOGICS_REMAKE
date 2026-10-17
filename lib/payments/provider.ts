@@ -31,6 +31,12 @@ export interface CheckoutDiscountFields {
   allowPromotionCodes?: boolean;
   /** Added to the Checkout Session metadata (promotionId, promoSource, promoCode). */
   promoMetadata?: Record<string, string>;
+  /**
+   * The learner's existing Stripe customer, so every subscription and
+   * purchase sits on one customer (one billing portal). Without it Stripe
+   * creates a customer from the email.
+   */
+  customerId?: string | null;
 }
 
 export interface CheckoutRequest extends CheckoutDiscountFields {

@@ -16,16 +16,20 @@ export async function GET(req: NextRequest) {
   const id = req.nextUrl.searchParams.get("session_id") ?? "";
   const go = (q: string) => NextResponse.redirect(`${SITE}/sponsor-youth/thanks${q}`);
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-  if (!(await checkRateLimit(`youth-sponsor-confirm:${ip}`, 30, 60_000))) return go("");
-  if (!/^cs_[A-Za-z0-9_]{6,200}$/.test(id)) return go("");
+  // Only a confirmed payment shows the thank-you; anything else says so.
+  if (!(await checkRateLimit(`youth-sponsor-confirm:${ip}`, 30, 60_000))) return go("?unknown=1");
+  if (!/^cs_[A-Za-z0-9_]{6,200}$/.test(id)) return go("?unknown=1");
   try {
     const session = await stripe.checkout.sessions.retrieve(id);
-    if (session.metadata?.product !== SPONSOR_PRODUCT) return go("");
+    if (session.metadata?.product !== SPONSOR_PRODUCT) return go("?unknown=1");
+    const paid = session.payment_status === "paid" || session.payment_status === "no_payment_required";
+    if (!paid) return go(session.status === "complete" ? "?pending=1" : "?unknown=1");
     const row = await fulfillSponsorship(session, (subId) => stripe.subscriptions.retrieve(subId));
     await alertCheckoutSale(session);
-    return go(row?.status === "awaiting_consent" ? "?waiting=1" : "");
+    if (!row) return go("?unknown=1");
+    return go(row.status === "awaiting_consent" ? "?waiting=1" : "");
   } catch (err) {
     console.error("[GET /api/learn/youth/sponsor/confirm]", err instanceof Error ? err.message : "error");
-    return go("");
+    return go("?unknown=1");
   }
 }

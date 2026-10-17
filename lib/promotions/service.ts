@@ -471,6 +471,12 @@ export async function checkCode(rawCode: string, lines: CheckoutLine[], buyer: B
     throw new CodeRejected(promo.maxRedemptions != null && promo.redemptionCount >= promo.maxRedemptions ? "usedUp" : "expired");
   }
   if (status !== "live") throw new CodeRejected("invalid");
+  // The list above is cached for a short while; a limited code is counted
+  // afresh so its last use cannot be handed out twice.
+  if (promo.maxRedemptions != null) {
+    const used = (await redemptionCounts([promo.id])).get(promo.id) ?? 0;
+    if (used >= promo.maxRedemptions) throw new CodeRejected("usedUp");
+  }
   const quote = quoteDiscount(promo, lines);
   if (quote.eligibleCents <= 0) throw new CodeRejected("scope");
   if (promo.minimumCents && quote.subtotalCents < promo.minimumCents) throw new CodeRejected("minimum", promo.minimumCents);

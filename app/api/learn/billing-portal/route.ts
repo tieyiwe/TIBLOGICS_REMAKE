@@ -15,11 +15,16 @@ export async function POST() {
   const t = await getT();
 
   const sub = await prisma.learnSubscription
-    .findUnique({ where: { studentId: student.id }, select: { stripeCustomerId: true } })
+    .findUnique({ where: { studentId: student.id }, select: { stripeCustomerId: true, status: true } })
     .catch(() => null);
 
-  // A learner on a track's own monthly plan only: that subscription's customer.
-  const customerId = sub?.stripeCustomerId ?? (await trackSubscriptionCustomer(student.id));
+  // The customer of a live subscription: the all-tracks plan while it runs,
+  // else a track's own monthly plan (so a learner who cancelled all tracks
+  // but still pays for Vibe Coding reaches that subscription), else whatever
+  // customer they have. New checkouts reuse one customer, so for anyone who
+  // subscribes from now on these are the same.
+  const allTracksLive = sub?.stripeCustomerId && sub.status !== "canceled" ? sub.stripeCustomerId : null;
+  const customerId = allTracksLive ?? (await trackSubscriptionCustomer(student.id)) ?? sub?.stripeCustomerId ?? null;
   if (!customerId) {
     return NextResponse.json({ error: t("learn.api.noBilling") }, { status: 404 });
   }

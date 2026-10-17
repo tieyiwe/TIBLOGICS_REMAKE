@@ -8,7 +8,7 @@ import { getCatalog } from "@/lib/learn/catalog";
 import { PLANS } from "@/lib/payments/provider";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import type { Metadata } from "next";
-import { fmtPrice } from "@/lib/learn/format";
+import { fmtHours, fmtPrice, totalHours } from "@/lib/learn/format";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { loadTrackSources, localizedTracks, withTrackText } from "@/lib/i18n/sources/learn";
 import BuyTrackButton from "@/components/learn/BuyTrackButton";
@@ -96,7 +96,7 @@ export default async function SubscribePage({
     c.levelEnd && c.levelEnd !== c.level
       ? `${t(`learn.level.${c.level}`)} → ${t(`learn.level.${c.levelEnd}`)}`
       : t(`learn.level.${c.level}`);
-  const hoursLabel = (h: number) => t(h === 1 ? "learn.time.hours.one" : "learn.time.hours.other", { n: h });
+  const hoursLabel = (h: number) => fmtHours(t, locale, h);
 
   // Layout: a short header, then two columns on wide screens. The tracks
   // (the thing people compare) fill the left as a compact grid that fits
@@ -203,7 +203,7 @@ export default async function SubscribePage({
                   style={{ borderTopColor: c.accentColor }}
                 >
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink3)]">
-                    {levelLabel(c)} · {hoursLabel(c.estimatedHours)}
+                    {levelLabel(c)} · {hoursLabel(totalHours(c.lessonMinutes, c.handsOnMinutes, c.estimatedHours))}
                   </p>
                   <Link
                     href={`/learning-box/${c.slug}`}

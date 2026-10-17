@@ -139,6 +139,9 @@ export async function proxy(req: NextRequest) {
   // Swahili there. The rest of the site keeps all three languages.
   const headers = new Headers(req.headers);
   headers.set("x-tib-area", "learn");
+  // The page asked for: the member layout lets a learner without a plan into
+  // a few pages (free previews, track pages, account settings).
+  headers.set("x-tib-path", req.nextUrl.pathname);
   return NextResponse.next({ request: { headers } });
 }
 

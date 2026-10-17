@@ -44,13 +44,11 @@ export default function TrackCard({ track }: { track: CatalogTrack }) {
         </div>
 
         <h3 className="text-lg font-bold leading-snug text-[var(--ink)]">
-          {comingSoon ? (
-            track.title
-          ) : (
-            <Link href={`/learning-box/${track.slug}`} className="after:absolute after:inset-0">
-              {track.title}
-            </Link>
-          )}
+          {/* Coming soon too: the page has the outline and the waitlist
+              (the card's own waitlist form sits above the stretched link). */}
+          <Link href={`/learning-box/${track.slug}`} className="after:absolute after:inset-0">
+            {track.title}
+          </Link>
         </h3>
 
         {track.tagline && <p className="mt-2 text-sm leading-relaxed text-[var(--ink2)]">{track.tagline}</p>}

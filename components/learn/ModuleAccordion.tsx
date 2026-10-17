@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { fmtMinutes } from "@/lib/learn/format";
 import { useT } from "@/lib/i18n/client";
 
@@ -98,9 +99,15 @@ export default function ModuleAccordion({
                       <span className="min-w-0 flex-1">
                         <span className="font-medium text-[var(--ink)]">{l.title}</span>
                         {l.isPreview && (
-                          <span className="ml-2 rounded bg-[var(--orange-light)] px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--orange2)]">
-                            {t("learn.catalog.freePreview")}
-                          </span>
+                          // Opens the lesson: free for any signed-in learner
+                          // (a visitor is asked to sign in or sign up first).
+                          <Link
+                            href={`/learn/lesson/${l.id}`}
+                            data-track="free-preview-lesson"
+                            className="ml-2 inline-block rounded bg-[var(--orange-light)] px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--orange2)] underline-offset-2 hover:underline"
+                          >
+                            {t("learn.catalog.freePreview")} ›
+                          </Link>
                         )}
                         {l.objective && (
                           <span className="mt-0.5 block text-xs leading-relaxed text-[var(--ink3)]">

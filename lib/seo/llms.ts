@@ -20,6 +20,7 @@ import { LIBRARY_SIZE, LIBRARY_VERTICALS } from "@/lib/toolkit/library";
 import { academyFaq, academySummary, type AcademySummary } from "./academy";
 import { publicCatalog, type PublicCourse } from "./courses";
 import { plain } from "./meta";
+import { separateMonthlyNames } from "@/lib/learn/track-monthly";
 import { ORG, SHOW_FOUNDER, SITE_URL, absUrl } from "./site";
 
 const t = translatorFor("en");
@@ -232,7 +233,7 @@ async function buildLlmsFullTxtNow(): Promise<string> {
     "",
     `- Tracks open now: ${a.live.length}. Self-paced and online, in English and French.`,
     a.live.length ? `- One track: a one-time payment for lifetime access to that track, ${money(a.minPriceCents)} to ${money(a.maxPriceCents)} depending on its level.` : "",
-    `- Every track: a subscription at ${money(a.monthlyCents)} a month, cancel anytime.`,
+    `- Every track except ${separateMonthlyNames()} (sold separately): a subscription at ${money(a.monthlyCents)} a month, cancel anytime.`,
     d.team ? `- Teams: seats for companies, ${money(d.team.seatPriceCents)} per seat per month, ${d.team.minSeats} seats minimum.` : "",
     "- Assessment: three-question checks after lessons, a quiz per module (80% to pass, retakes allowed), a timed final exam, and a capstone project scored by a human reviewer against a published rubric.",
     `- Certificates: each track has its own certificate. ${CERTIFICATES}`,
