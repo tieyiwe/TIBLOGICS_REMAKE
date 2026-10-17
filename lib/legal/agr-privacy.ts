@@ -1,11 +1,14 @@
 // AI Graveyard Report (AGR Score™) privacy policy, published at
 // /privacy/agr for the AGR ChatGPT plugin. Source: the owner's document
 // "AGR-Privacy-Policy.docx" (effective October 5, 2026), word for word,
-// except Section 15: the placeholder contact sentence is replaced by the
+// except: Section 15's placeholder contact sentence is replaced by the
 // privacy contact (app/(public)/privacy/agr/page.tsx) and the publishing
-// note is removed. English only: it is the binding text for the plugin.
+// note is removed; and on October 17, 2026 one paragraph each was added to
+// Sections 2 and 6 disclosing the AGR calculation service (the MCP tool at
+// /mcp, app/mcp/route.ts), with the effective date moved to that day.
+// English only: it is the binding text for the plugin.
 
-export const AGR_EFFECTIVE = "October 5, 2026";
+export const AGR_EFFECTIVE = "October 17, 2026";
 
 export const AGR_INTRO = "This Privacy Policy explains how AI Graveyard Report (AGR Score™) (\"AGR\", \"we\", \"us\", or \"our\"), a TIBLOGICS product operated by TILO GROUP, LLC, handles information when you use AGR. AGR is designed to help users evaluate follow-through on substantive projects started or developed with AI.";
 
@@ -20,7 +23,8 @@ export const AGR_SECTIONS: Array<{ title: string; paras: string[] }> = [
     "title": "2. Information AGR May Process",
     "paras": [
       "When you intentionally run AGR, the AI platform may make information available to the AGR skill that is relevant to producing your report. Depending on the platform, your permissions, and what is available in the current session, this may include project-related conversation content, project or deliverable names, dates of activity, counts or indicators of exchanges and active days, project status or outcome evidence, whether a project appears connected to a real-world purpose, and information you voluntarily provide when updating a project's status.",
-      "AGR is designed to use only information that is available to the skill through the platform or that you intentionally provide. AGR must not claim to have scanned a source, such as Codex history, when that source was not actually available."
+      "AGR is designed to use only information that is available to the skill through the platform or that you intentionally provide. AGR must not claim to have scanned a source, such as Codex history, when that source was not actually available.",
+      "When AGR is used as a plugin in ChatGPT or Codex, the skill sends the project facts it has established (project names, start and last-activity dates, counts of exchanges, active days and chats, outcome levels, project types, whether a project has real-world stakes, and any status you confirmed) to the AGR calculation service operated by TILO GROUP, LLC at https://tiblogics.com/mcp, so that your scores are calculated with the official AGR methodology. The calculation service does not receive your conversation content, does not access your chat history or any other system, and returns the calculated results to the platform."
     ]
   },
   {
@@ -48,6 +52,7 @@ export const AGR_SECTIONS: Array<{ title: string; paras: string[] }> = [
     "title": "6. Storage and Retention",
     "paras": [
       "The free AGR skill is designed primarily to analyze information made available within the user's AI-platform session and generate the requested report. TILO GROUP, LLC does not intend to independently create a separate permanent copy of a user's complete ChatGPT or Codex history merely because the user runs AGR.",
+      "The AGR calculation service processes each request in memory to calculate the results and then discards it. It does not store, log or retain the project facts it receives, and it does not use them for any other purpose.",
       "Information may still be stored or retained by the AI platform on which AGR is used according to that platform's own policies and user settings. If future AGR Pro, Teams, Enterprise, or other hosted services store information on TIBLOGICS-controlled systems, the applicable product disclosures and this policy will be updated before or when those practices are introduced.",
       "Where TILO GROUP, LLC directly receives personal information for support, security, account administration, or another disclosed purpose, it will be retained only as reasonably necessary for that purpose, to comply with legal obligations, resolve disputes, or protect the service."
     ]

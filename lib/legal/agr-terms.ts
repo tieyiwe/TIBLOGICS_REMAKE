@@ -52,7 +52,7 @@ export const AGR_TERMS_SECTIONS: Array<{ title: string; paras: string[] }> = [
     paras: [
       "You keep all rights you have in your conversations, project information and anything you provide to AGR. You are responsible for having the right to provide that information.",
       "Your reports are yours to use. Before you share a report or a Share Card publicly, review it to make sure it does not contain information you consider confidential or identifying. AGR's redaction and Share Card features are designed to hide project names, but you remain responsible for what you publish.",
-      "Our handling of information is described in the AGR Privacy Policy, which forms part of these Terms.",
+      "In ChatGPT and Codex, AGR sends the project facts it has established, not your conversations, to our calculation service so your scores are calculated with the official AGR methodology. Our handling of information, including that service, is described in the AGR Privacy Policy, which forms part of these Terms.",
     ],
   },
   {

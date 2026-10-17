@@ -60,7 +60,7 @@ const FAQ = [
   },
   {
     q: "Does TIBLOGICS see my chats or my report?",
-    a: "No. The free AGR plugin and skill run inside your own AI-platform session. TIBLOGICS does not receive your chats or your report, and does not keep a copy of your history. Your AI platform stores conversations according to its own settings. Details are in the AGR Privacy Policy.",
+    a: "No. TIBLOGICS never receives your conversations. In ChatGPT and Codex, AGR sends only the project facts it has established (project names, dates, counts and statuses) to the TIBLOGICS calculator, which works out your scores with the official formula and keeps nothing: it does not store or log what it receives. In Claude, the skill runs entirely inside your own account. Your AI platform stores conversations according to its own settings. Details are in the AGR Privacy Policy.",
   },
   {
     q: "How do I remove AGR or delete my information?",
