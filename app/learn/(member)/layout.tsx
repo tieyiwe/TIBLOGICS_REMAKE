@@ -33,7 +33,10 @@ export default async function MemberLayout({ children }: { children: React.React
   if (!access.any) {
     const path = (await headers()).get("x-tib-path") ?? "";
     const account = /^\/learn\/account(\/|$)/.test(path);
-    const browse = /^\/learn\/(lesson\/[^/]+|track\/[^/]+|tracks)\/?$/.test(path);
+    // The team pages too: the owner of a lapsed team must reach Billing to
+    // fix the payment, and a member must be able to leave (the team pages
+    // check the team themselves).
+    const browse = /^\/learn\/(lesson\/[^/]+|track\/[^/]+|tracks|team(\/.*)?)\/?$/.test(path);
     if (access.youthGate ? !account : !(account || browse)) redirect(access.youthGate ? "/learn/youth" : "/learn/subscribe");
   }
 

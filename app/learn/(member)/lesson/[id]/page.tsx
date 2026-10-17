@@ -45,7 +45,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
         microCheck: { select: { id: true, passScore: true, questionsServed: true } },
         module: {
           include: {
-            track: { select: { id: true, slug: true, title: true, accentColor: true } },
+            track: { select: { id: true, slug: true, title: true, accentColor: true, status: true } },
             quiz: { select: { id: true } },
             lessons: { select: { id: true } },
           },
@@ -55,6 +55,8 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
     .catch(() => null);
 
   if (!lesson) notFound();
+  // Lessons of a draft or coming-soon track stay closed (owner preview only).
+  if (lesson.module.track.status !== "live" && !(await isOwnerStudent(student.id))) notFound();
 
   const trackId = lesson.module.track.id;
   // AI-Empowered Youth: no lesson (not even a free preview) before the parent's OK.

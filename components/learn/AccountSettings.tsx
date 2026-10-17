@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { LOCALES, LOCALE_NAMES, isLocale, type Locale } from "@/lib/i18n/config";
+import { LEARN_LOCALES, LOCALE_NAMES, isLocale, type Locale } from "@/lib/i18n/config";
 import { useLocale, useSetLocale, useT } from "@/lib/i18n/client";
 
 // Accessibility mode (Part B rule 7) is a stored preference, not a cosmetic
@@ -140,7 +140,8 @@ export default function AccountSettings({
             }}
             className="mt-2 rounded-lg border border-[var(--border)] px-3 py-2 text-sm"
           >
-            {LOCALES.map((l) => (
+            {/* The academy is in English and French (LEARN_LOCALES). */}
+            {LEARN_LOCALES.map((l) => (
               <option key={l} value={l}>
                 {LOCALE_NAMES[l]}
               </option>

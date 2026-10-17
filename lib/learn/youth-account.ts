@@ -297,7 +297,8 @@ export class YouthProfileError extends Error {
 /**
  * Sets the birth year and parent email, chosen by the learner during
  * onboarding. The birth year cannot be changed once set (staff can), and the
- * parent email cannot be changed after the parent confirmed. A new parent
+ * parent email cannot be changed after the parent confirmed, turned access
+ * off or asked for the account to be deleted (staff can). A new parent
  * email gets a new dashboard link (the old one stops working) and, under 13,
  * a new consent request.
  *
@@ -314,7 +315,14 @@ export async function setYouthProfile(
   if (!inProgramRange(input.birthYear)) throw new YouthProfileError("range");
   if (parentEmail === cur.email.toLowerCase() || parentEmail === OWNER_EMAIL.toLowerCase()) throw new YouthProfileError("parent_same");
   const parentChanged = parentEmail !== (cur.parentEmail ?? "");
-  if (parentChanged && cur.parentConsent === "granted") throw new YouthProfileError("parent_locked");
+  // The parent email is fixed once a parent has acted on it: confirmed,
+  // turned access off, or asked us to delete the account. Otherwise a child
+  // could swap in a second inbox of their own, confirm again and undo the
+  // parent's decision (and cut the real parent off their dashboard). Staff
+  // can still change it after checking with the family.
+  if (parentChanged && (cur.parentConsent === "granted" || cur.parentConsent === "revoked" || cur.parentDeleteRequestedAt)) {
+    throw new YouthProfileError("parent_locked");
+  }
 
   const next = { birthYear: input.birthYear };
   const consent: ParentConsent = needsParentConsent(next)

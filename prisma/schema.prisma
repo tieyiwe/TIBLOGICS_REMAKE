@@ -3839,3 +3839,30 @@ model ArticleCommenter {
   createdAt     DateTime  @default(now())
   lastCommentAt DateTime?
 }
+
+/// What a team invitation carries until it is accepted (lib/learn/team/db.ts,
+/// runtime DDL): the invitee's name, role, tracks to assign with a due date,
+/// and the email's language. One row per TeamMember (memberId).
+model TeamInvitePlan {
+  memberId  String   @id
+  teamId    String
+  name      String?
+  role      String   @default("member")
+  trackIds  Json     @default("[]")
+  dueAt     DateTime?
+  locale    String?
+  source    String   @default("invite")
+  createdAt DateTime @default(now())
+
+  @@index([teamId], map: "TeamInvitePlan_teamId_idx")
+}
+
+/// Claim-before-send keys for team emails (weekly digest), so a retried or
+/// overlapping cron run never sends twice (lib/learn/team/db.ts).
+model TeamEmailClaim {
+  key       String   @id
+  teamId    String
+  createdAt DateTime @default(now())
+
+  @@index([teamId], map: "TeamEmailClaim_teamId_idx")
+}

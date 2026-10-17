@@ -7,6 +7,7 @@ import { requireTeamManager, teamRateLimit } from "@/lib/learn/team/guard";
 import { inviteMembers, seatsUsed } from "@/lib/learn/team/service";
 import { deliverInvite } from "@/lib/learn/team/emails";
 import { parseEmailList, parseInviteRows } from "@/lib/learn/team/config";
+import { TEAM_TRACKS } from "@/lib/learn/team/tracks";
 
 // Invite by email: one address, a list, or a pasted CSV (names optional, any
 // column order). Optional: role (owner only may invite managers), tracks to
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
   if (d.role === "manager" && g.m.role !== "owner") return NextResponse.json({ error: t("team.api.ownerOnly") }, { status: 403 });
   let trackIds: string[] = [];
   if (d.trackIds?.length) {
-    const live = await prisma.learnTrack.findMany({ where: { id: { in: d.trackIds }, status: "live" }, select: { id: true } });
+    const live = await prisma.learnTrack.findMany({ where: { id: { in: d.trackIds }, ...TEAM_TRACKS }, select: { id: true } });
     if (live.length !== new Set(d.trackIds).size) return NextResponse.json({ error: t("team.api.unknownTrack") }, { status: 400 });
     trackIds = live.map((x) => x.id);
   }

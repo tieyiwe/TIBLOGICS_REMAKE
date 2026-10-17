@@ -261,6 +261,14 @@ export async function removeMember(teamId: string, memberId: string): Promise<"o
   const m = await prisma.teamMember.findFirst({ where: { id: memberId, teamId, status: { not: "removed" } } });
   if (!m) return "notFound";
   if (m.role === "owner") return "owner";
+  // An invitation that was never accepted is simply withdrawn: no "removed"
+  // record, so the person is not refused later by the team's shared join
+  // link (lib/learn/team/link.ts), which only bars people who were members.
+  if (m.status === "invited" && !m.joinedAt && !m.studentId) {
+    await deletePlan(teamId, m.id).catch(() => undefined);
+    await prisma.teamMember.delete({ where: { id: m.id } });
+    return "ok";
+  }
   await prisma.teamMember.update({
     where: { id: m.id },
     data: { status: "removed", removedAt: new Date(), inviteTokenHash: null, inviteExpiresAt: null, role: "member" },
@@ -362,7 +370,7 @@ export async function assignTracks(teamId: string, assignerId: string, studentId
   return reached;
 }
 
-/** Assigns a track to active members of this team (others are ignored). Re-assigning updates the due date. */
+/** Assigns a track to active members of this team (others are ignored). Re-assigning with a date updates the due date; without one, keeps it. */
 export async function assignTrack(
   teamId: string,
   assignerId: string,
@@ -381,7 +389,9 @@ export async function assignTrack(
     await prisma.teamAssignment.upsert({
       where: { teamId_studentId_trackId: { teamId, studentId: m.studentId, trackId } },
       create: { teamId, studentId: m.studentId, trackId, dueAt, assignedById: assignerId },
-      update: { dueAt, assignedById: assignerId, lastRemindedAt: null },
+      // Re-assigning without a date keeps the member's existing due date
+      // ("Assign to everyone" must not wipe dates set one by one).
+      update: { ...(dueAt ? { dueAt } : {}), assignedById: assignerId, lastRemindedAt: null },
     });
     n++;
   }

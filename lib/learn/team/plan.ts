@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { ensureTeamTables } from "./db";
+import { TEAM_TRACKS } from "@/lib/learn/team/tracks";
 
 // What an invitation carries until it is accepted (TeamInvitePlan, raw SQL:
 // see ./db.ts): the invitee's name as the manager typed it, their role, the
@@ -83,7 +84,7 @@ export async function applyPlan(teamId: string, memberId: string, studentId: str
   }
   let n = 0;
   if (plan.trackIds.length) {
-    const live = await prisma.learnTrack.findMany({ where: { id: { in: plan.trackIds }, status: "live" }, select: { id: true } });
+    const live = await prisma.learnTrack.findMany({ where: { id: { in: plan.trackIds }, ...TEAM_TRACKS }, select: { id: true } });
     const inviter = await prisma.teamMember.findUnique({ where: { id: memberId }, select: { invitedById: true } });
     for (const t of live) {
       await prisma.teamAssignment.upsert({

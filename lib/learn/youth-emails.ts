@@ -37,7 +37,7 @@ export async function sendParentEmail(child: YouthProfile, extraHtml = ""): Prom
   await arfaMailer.emails.send({
     to: child.parentEmail,
     subject: t(`${k}.subject`, { name: firstName(child.name) }),
-    html: shell(t, t(`${k}.title`, { name }), body, { href: url, label: `${t(`${k}.cta`)} →` }, p(t("learn.email.youth.notYou"))),
+    html: shell(t, t(`${k}.title`, { name }), body, { href: url, label: `${t(`${k}.cta`)} →` }, p(t(consent ? "learn.email.youth.notYou" : "learn.email.youth.notYouInfo", { name }))),
   });
   await markParentEmailSent(child.studentId);
 }

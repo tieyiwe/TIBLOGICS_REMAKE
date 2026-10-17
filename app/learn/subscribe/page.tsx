@@ -22,6 +22,7 @@ import ScholarshipCard from "@/components/learn/scholarship/ScholarshipCard";
 import { isYouthSlug, YOUTH_SIBLING_DISCOUNT_PCT } from "@/lib/learn/youth";
 import { hasYouthSibling } from "@/lib/learn/youth-account";
 import { youthTrackIds } from "@/lib/learn/track-subscriptions";
+import AccountLinks from "@/components/learn/AccountLinks";
 
 export const dynamic = "force-dynamic";
 
@@ -115,7 +116,10 @@ export default async function SubscribePage({
               {t("learn.brand.by")} <span className="font-black tracking-tight text-[var(--ink)]">TIB<span className="text-[var(--orange)]">LOGICS</span></span>
             </Link>
           </div>
-          <LanguageSwitcher />
+          <div className="flex items-center gap-4">
+            <AccountLinks />
+            <LanguageSwitcher />
+          </div>
         </div>
       </header>
 

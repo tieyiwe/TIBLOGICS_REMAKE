@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { Ban, LogOut, PauseCircle } from "lucide-react";
 import { authOptions } from "@/lib/auth";
@@ -28,10 +29,12 @@ export default async function AccountStatusPage({ searchParams }: { searchParams
 
   let studentId = readStatusToken(one("t"));
   let hasSession = false;
+  let sessionVersion: number | null = null;
   try {
     const session = await getServerSession(authOptions);
     if (session?.user?.studentId) {
       hasSession = true;
+      sessionVersion = Number(session.user.sv ?? 0);
       studentId ??= session.user.studentId;
     }
   } catch {
@@ -39,6 +42,10 @@ export default async function AccountStatusPage({ searchParams }: { searchParams
   }
 
   let state: AccountState | null = studentId ? await readAccountState(studentId) : null;
+  // A learner whose account is fine and whose session is still current got
+  // here by a bookmark or the back button: back to the dashboard, signed in.
+  // Only a locked account or a revoked session is shown this page and signed out.
+  if (hasSession && !one("t") && one("blocked") !== "1" && state?.status === "active" && sessionVersion === state.sessionVersion) redirect("/learn");
   if (state && state.status === "active") state = null;
   const blockedOnly = !state && one("blocked") === "1";
 

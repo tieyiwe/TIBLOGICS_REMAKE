@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { getT } from "@/lib/i18n/server";
 import { requireTeamManager, teamRateLimit } from "@/lib/learn/team/guard";
 import { assignTracks, unassignTrack } from "@/lib/learn/team/service";
+import { TEAM_TRACKS } from "@/lib/learn/team/tracks";
 
 const Id = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
 const Body = z
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return NextResponse.json({ error: t("team.api.invalid") }, { status: 400 });
   const trackIds = [...new Set([...(parsed.data.trackIds ?? []), ...(parsed.data.trackId ? [parsed.data.trackId] : [])])];
-  const live = await prisma.learnTrack.count({ where: { id: { in: trackIds }, status: "live" } });
+  const live = await prisma.learnTrack.count({ where: { id: { in: trackIds }, ...TEAM_TRACKS } });
   if (live !== trackIds.length) return NextResponse.json({ error: t("team.api.unknownTrack") }, { status: 400 });
   let dueAt: Date | null = null;
   if (parsed.data.dueAt) {

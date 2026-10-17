@@ -6,6 +6,7 @@ import { requireTeamManager, requireTeamOwner, teamRateLimit } from "@/lib/learn
 import { createTeamLink, disableTeamLink, getTeamLink } from "@/lib/learn/team/link";
 import { cleanDomain } from "@/lib/learn/team/config";
 import { inviteUrl } from "@/lib/learn/team/emails";
+import { TEAM_TRACKS } from "@/lib/learn/team/tracks";
 
 // The team's shareable join link, restricted to one company email domain
 // (rules in lib/learn/team/link.ts). Managers can see it; only the owner
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
   if (!domain) return NextResponse.json({ error: t("team.api.badDomain") }, { status: 400 });
   const trackIds = [...new Set(parsed.data.trackIds ?? [])];
   if (trackIds.length) {
-    const live = await prisma.learnTrack.count({ where: { id: { in: trackIds }, status: "live" } });
+    const live = await prisma.learnTrack.count({ where: { id: { in: trackIds }, ...TEAM_TRACKS } });
     if (live !== trackIds.length) return NextResponse.json({ error: t("team.api.unknownTrack") }, { status: 400 });
   }
   const dueAt = parsed.data.dueAt ? new Date(`${parsed.data.dueAt}T23:59:59.000Z`) : null;

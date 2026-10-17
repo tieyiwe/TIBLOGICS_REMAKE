@@ -91,6 +91,9 @@ export default async function TrackHome({
   ]);
 
   if (!track) notFound();
+  // Draft and coming-soon tracks are not open yet, whatever the plan (the
+  // public page 404s too); the owner can still preview them here.
+  if (track.status !== "live" && !owner) notFound();
   // AI-Empowered Youth: birth year, parent email and (under 13) the parent's OK first.
   await enforceYouthGate(student.id, access, track.slug);
 

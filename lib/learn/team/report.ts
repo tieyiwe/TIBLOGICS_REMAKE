@@ -2,6 +2,7 @@ import prisma from "@/lib/prisma";
 import { ensureMasteryTables } from "@/lib/learn/mastery/db";
 import { ensureTeamTables } from "./db";
 import { plansForTeam } from "./plan";
+import { TEAM_TRACKS } from "@/lib/learn/team/tracks";
 
 // What a team manager sees about members. PRIVACY: this file is the only
 // reader for manager views, and it reads ONLY these sources:
@@ -23,7 +24,7 @@ export interface TrackRef {
 }
 
 async function liveTracks(): Promise<TrackRef[]> {
-  return prisma.learnTrack.findMany({ where: { status: "live" }, orderBy: { sortOrder: "asc" }, select: { id: true, slug: true, title: true } });
+  return prisma.learnTrack.findMany({ where: TEAM_TRACKS, orderBy: { sortOrder: "asc" }, select: { id: true, slug: true, title: true } });
 }
 
 /** Lesson ids per live track. */

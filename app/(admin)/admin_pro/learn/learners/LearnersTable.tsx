@@ -195,7 +195,7 @@ export function LearnersTable({ rows, headers, canManage }: { rows: Row[]; heade
           </span>
         ),
     },
-    { key: "lastLogin", header: headers.lastLogin, render: (r) => <span className="whitespace-nowrap" title={r.lastLoginAt ?? ""}>{ago(r.lastLoginAt)}</span> },
+    { key: "lastLogin", header: headers.lastLogin, render: (r) => <span className="whitespace-nowrap" title={r.lastLoginAt ?? ""} suppressHydrationWarning>{ago(r.lastLoginAt)}</span> },
     { key: "logins", header: headers.logins, align: "right", render: (r) => <span className="tabular-nums">{r.logins30}</span> },
     { key: "xp", header: headers.xp, align: "right", render: (r) => <span className="tabular-nums">{r.xp.toLocaleString("en")}</span> },
     { key: "certs", header: headers.certs, align: "right", render: (r) => <span className="tabular-nums">{r.certificates}</span> },
