@@ -1,6 +1,7 @@
 import type { ImageResponse } from "next/og";
 import { starlinkGlobalCarrierCover } from "./starlink-global-carrier";
 import { OCTOBER_FEATURE_COVERS } from "./october-feature";
+import { LATE_OCTOBER_COVERS } from "./late-october";
 
 // Custom article covers drawn in code, served at /og/covers/<name>
 // (app/og/covers/[name]/route.ts). A post's coverImage can point at one, and
@@ -8,6 +9,7 @@ import { OCTOBER_FEATURE_COVERS } from "./october-feature";
 export const CUSTOM_COVERS: Record<string, () => Promise<ImageResponse>> = {
   "starlink-global-carrier": starlinkGlobalCarrierCover,
   ...OCTOBER_FEATURE_COVERS,
+  ...LATE_OCTOBER_COVERS,
 };
 
 const PREFIX = "/og/covers/";

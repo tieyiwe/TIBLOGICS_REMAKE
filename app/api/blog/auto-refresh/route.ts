@@ -21,9 +21,10 @@ import { requireAdmin, secretEquals } from "@/lib/require-admin";
 import { CURATED_ARTICLES as CURATED_BASE, renderSources } from "@/lib/blog/content/curated";
 import { CURATED_OCTOBER } from "@/lib/blog/content/curated-october";
 import { CURATED_MID_OCTOBER } from "@/lib/blog/content/curated-mid-october";
+import { CURATED_LATE_OCTOBER } from "@/lib/blog/content/curated-late-october";
 
 // Every researched article the agent publishes (idempotent by slug).
-const CURATED_ARTICLES = [...CURATED_BASE, ...CURATED_OCTOBER, ...CURATED_MID_OCTOBER];
+const CURATED_ARTICLES = [...CURATED_BASE, ...CURATED_OCTOBER, ...CURATED_MID_OCTOBER, ...CURATED_LATE_OCTOBER];
 import { RETRACTIONS } from "@/lib/blog/content/retractions";
 import { applyCorrections } from "@/lib/blog/content/apply-corrections";
 import { INDEXNOW_SECTIONS, indexNowSoon } from "@/lib/seo/indexnow";

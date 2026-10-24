@@ -8,18 +8,18 @@ import { ogFonts } from "@/lib/og/brand-card";
 // the files), kept here so they can be redrawn. No logos or photos: the
 // vehicles are our own illustrations.
 
-const W = 1600;
-const H = 900;
-const ORANGE = "#F47C20";
-const BLUE = "#60A5FA";
-const CYAN = "#67E8F9";
+export const W = 1600;
+export const H = 900;
+export const ORANGE = "#F47C20";
+export const BLUE = "#60A5FA";
+export const CYAN = "#67E8F9";
 
-function seeded(seed: number) {
+export function seeded(seed: number) {
   let s = seed;
   return () => ((s = (s * 16807) % 2147483647) / 2147483647);
 }
 
-function stars(seed: number, n = 120, maxY = 0.75) {
+export function stars(seed: number, n = 120, maxY = 0.75) {
   const r = seeded(seed);
   return Array.from({ length: n }, (_, i) => (
     <circle key={`st${i}`} cx={r() * W} cy={r() * H * maxY} r={r() < 0.85 ? 1.2 : 2.2} fill="#FFFFFF" opacity={0.2 + r() * 0.6} />
@@ -27,7 +27,7 @@ function stars(seed: number, n = 120, maxY = 0.75) {
 }
 
 /** The low, wide supercar we draw for the Roadster (side view, nose right). */
-function roadster(fill = "#E2E8F0") {
+export function roadster(fill = "#E2E8F0") {
   return (
     <g>
       {/* body: short rear deck, low fastback roof, long sloping nose */}
@@ -48,7 +48,7 @@ function roadster(fill = "#E2E8F0") {
 }
 
 /** A cold-gas plume: a soft cone of white-cyan gas. */
-function plume(x: number, y: number, angle: number, len = 120, k = "p") {
+export function plume(x: number, y: number, angle: number, len = 120, k = "p") {
   return (
     <g key={k} transform={`translate(${x} ${y}) rotate(${angle})`}>
       <polygon points={`0,-8 0,8 ${len},${len * 0.32} ${len},${-len * 0.32}`} fill="url(#gas)" />
@@ -64,7 +64,7 @@ const GAS_DEF = (
   </linearGradient>
 );
 
-function words(kicker: string, headline: string, sub: ReactNode, tags: string[], opts: { width?: number; size?: number } = {}) {
+export function words(kicker: string, headline: string, sub: ReactNode, tags: string[], opts: { width?: number; size?: number } = {}) {
   return (
     <div style={{ position: "absolute", left: 90, top: 205, display: "flex", flexDirection: "column", width: opts.width ?? 820 }}>
       <div style={{ display: "flex", fontSize: 24, fontWeight: 700, letterSpacing: 4, color: ORANGE }}>{kicker}</div>
@@ -82,7 +82,7 @@ function words(kicker: string, headline: string, sub: ReactNode, tags: string[],
 }
 
 /** Words with some in orange: "plain |orange| plain". */
-function accent(text: string) {
+export function accent(text: string) {
   return text.split("|").map((part, i) =>
     part
       .split(" ")
@@ -95,7 +95,7 @@ function accent(text: string) {
   );
 }
 
-const byline = (name = "AI Times", sub = "by TIBLOGICS") => (
+export const byline = (name = "AI Times", sub = "by TIBLOGICS") => (
   <div style={{ position: "absolute", left: 90, bottom: 60, display: "flex", alignItems: "center", gap: 16 }}>
     <div style={{ display: "flex", width: 10, height: 44, borderRadius: 10, background: ORANGE }} />
     <div style={{ display: "flex", flexDirection: "column" }}>
@@ -105,7 +105,7 @@ const byline = (name = "AI Times", sub = "by TIBLOGICS") => (
   </div>
 );
 
-async function frame(bg: string, art: ReactNode, text: ReactNode) {
+export async function frame(bg: string, art: ReactNode, text: ReactNode) {
   const fonts = await ogFonts();
   return new ImageResponse(
     (
