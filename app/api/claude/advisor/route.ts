@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { replyInLanguage } from "@/lib/i18n/config";
 import { boundChatMessages } from "@/lib/chat-bounds";
+import { clientIp } from "@/lib/geo";
 
 const ADVISOR_SYSTEM_PROMPT = `You are Tibo, the AI Project Advisor for TIBLOGICS, an AI implementation and digital solutions agency.
 
@@ -25,7 +26,7 @@ Keep all responses to 2-4 sentences maximum. Ask ONE question at a time. Be warm
 export async function POST(req: NextRequest) {
   const locale = await getLocale();
   const t = translatorFor(locale);
-  const ip = req.headers.get("x-forwarded-for") ?? "unknown";
+  const ip = clientIp(req.headers) ?? "unknown";
   if (!(await checkRateLimit(`claude-advisor:${ip}`, 20, 3_600_000))) {
     return NextResponse.json({ error: t("tools.api.rateLimit") }, { status: 429 });
   }

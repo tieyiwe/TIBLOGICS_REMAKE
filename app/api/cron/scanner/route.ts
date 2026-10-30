@@ -5,6 +5,7 @@ import { ensureScannerColumns } from "@/lib/scanner/db";
 import { finishReport, pendingReports } from "@/lib/scanner/report";
 import { sendFollowup } from "@/lib/scanner/email";
 import { pruneAnalytics } from "@/lib/analytics/db";
+import { pruneRateLimits } from "@/lib/rate-limit";
 
 // Website scanner, daily (hourly is fine too):
 //   npm run cron scanner
@@ -60,5 +61,8 @@ export async function GET(req: NextRequest) {
     console.error("[cron/scanner] prune analytics", err instanceof Error ? err.message : err);
     return null;
   });
-  return NextResponse.json({ followups: { due: due.length, sent, skipped }, reports, pruned });
+  // Expired rate-limit counters (about three rows per visitor address, which
+  // nothing else removes).
+  const rateLimits = await pruneRateLimits();
+  return NextResponse.json({ followups: { due: due.length, sent, skipped }, reports, pruned, rateLimits });
 }

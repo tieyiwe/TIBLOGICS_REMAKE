@@ -300,6 +300,11 @@ model ToolUsage {
   tool      String
   sessionId String?
   metadata  Json?
+
+  // Created by lib/db/warm.ts (CONCURRENTLY) under the same names.
+  @@index([createdAt])
+  @@index([tool, createdAt])
+  @@index([sessionId])
 }
 
 model AdminSettings {

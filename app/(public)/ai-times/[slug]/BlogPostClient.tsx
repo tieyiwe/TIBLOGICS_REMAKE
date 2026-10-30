@@ -2,6 +2,7 @@
 
 import InArticlePromo, { splitForPromo } from "@/components/public/InArticlePromo";
 import { useState, useEffect, useRef } from "react";
+import CoverImg from "@/components/blog/CoverImg";
 import Link from "next/link";
 import ArticleDiscussion from "@/components/blog/ArticleDiscussion";
 import { EngageProvider } from "@/components/blog/engage-store";
@@ -25,7 +26,7 @@ function ArticleLanguageBar({ pending, articleLocale }: { pending: boolean; arti
 
   useEffect(() => setSwitching(null), [articleLocale]);
 
-  // Only if an article was never translated (rare): refresh until it is.
+  // Only while a translation is being made for this view (rare): refresh until it is.
   useEffect(() => {
     if (!pending) return;
     let n = 0;
@@ -144,8 +145,9 @@ function RelatedCard({ post: r, lang }: { post: RelatedPost; lang?: string | nul
     >
       <div className="h-28 overflow-hidden relative">
         {r.coverImage && !imgFailed ? (
-          <img
+          <CoverImg
             src={r.coverImage}
+            sizes="(max-width:640px) 100vw, 260px"
             alt=""
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
@@ -175,7 +177,9 @@ export default function BlogPostPage({
   initialPost = null,
   translation = null,
   pending = false,
+  pendingSoon = false,
   relatedTitles = {},
+  initialRelated = [],
   articleLang = null,
   articleLocale,
 }: {
@@ -190,8 +194,12 @@ export default function BlogPostPage({
   translation?: Translation | null;
   /** True while the translation is being made: English is shown with a notice. */
   pending?: boolean;
+  /** The translation was started by this view (TRANSLATE_BATCH_API=0): worth refreshing for. */
+  pendingSoon?: boolean;
   /** Cached translated titles for related articles, by slug. */
   relatedTitles?: Record<string, string>;
+  /** "More from this category" cards, from the server. */
+  initialRelated?: RelatedPost[];
   /** The language the reader picked with the article's own buttons (?lang=), kept on links to other articles. */
   articleLang?: string | null;
 }) {
@@ -200,7 +208,7 @@ export default function BlogPostPage({
   const params = useParams();
   const slug = params?.slug as string;
   const [post, setPost] = useState<BlogPost | null>(initialPost);
-  const [related, setRelated] = useState<RelatedPost[]>([]);
+  const [related, setRelated] = useState<RelatedPost[]>(initialRelated);
   const [loading, setLoading] = useState(!initialPost);
   const [copied, setCopied] = useState(false);
   const [widgetVisible, setWidgetVisible] = useState(false);
@@ -287,20 +295,21 @@ export default function BlogPostPage({
     if (widgetVisible) window.dispatchEvent(new CustomEvent("booking-cta:shown"));
   }, [widgetVisible]);
 
+  // One view per article load (POST ./view only bumps the counter). The page
+  // already has the article and its related cards from the server; they are
+  // fetched here only if the server could not load them.
   useEffect(() => {
     if (!slug) return;
-    fetch(`/api/blog/posts/${slug}`)
+    void fetch(`/api/blog/posts/${encodeURIComponent(slug)}/view`, { method: "POST", keepalive: true }).catch(() => {});
+    if (initialPost) return;
+    fetch(`/api/blog/posts/${encodeURIComponent(slug)}`)
       .then((r) => r.json())
       .then((d) => {
-        // Keep the server's copy if the refresh fails.
         setPost((prev) => d.post ?? prev);
-        // Fetch related posts
-        if (d.post) {
-          return fetch(`/api/blog/posts?category=${d.post.category}&limit=4`);
-        }
+        if (d.post) return fetch(`/api/blog/posts?category=${encodeURIComponent(d.post.category)}&limit=4`);
       })
       .then((r) => r?.json())
-      .then((d) => setRelated((d?.posts ?? []).filter((p: RelatedPost) => p.id !== post?.id).slice(0, 3)))
+      .then((d) => setRelated((d?.posts ?? []).filter((p: RelatedPost) => p.slug !== slug).slice(0, 3)))
       .catch(() => {})
       .finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -401,7 +410,7 @@ export default function BlogPostPage({
             // A cover designed for the article (/covers/... or /og/covers/...) carries its own
             // headline: shown whole (16:9), never cropped.
             <div className={`w-full relative overflow-hidden ${/^\/(og\/)?covers\//.test(post.coverImage) ? "aspect-video" : "h-72"}`}>
-              <img
+              <CoverImg
                 src={heroImgFailed ? post.coverImage : post.coverImage.replace('-cover.', '-hero.')}
                 alt={display?.title ?? post.title}
                 className={`w-full h-full ${/^\/(og\/)?covers\//.test(post.coverImage) ? "object-contain" : "object-cover object-top"}`}
@@ -431,11 +440,11 @@ export default function BlogPostPage({
               )}
             </div>
 
-            <ArticleLanguageBar pending={pending} articleLocale={articleLocale} />
+            <ArticleLanguageBar pending={pending && pendingSoon} articleLocale={articleLocale} />
 
             {pending && (
               <p role="status" className="mb-5 rounded-xl border border-[#F47C20]/30 bg-[#FEF0E3] px-4 py-3 font-dm text-sm text-[#7A3E0E]">
-                {t("common.translationPending")}
+                {t(pendingSoon ? "common.translationPending" : "pages.article.translationLater")}
               </p>
             )}
 
@@ -616,8 +625,9 @@ export default function BlogPostPage({
                 {/* Thumbnail */}
                 <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
                   {nextPost.coverImage && !nextImgFailed ? (
-                    <img
+                    <CoverImg
                       src={nextPost.coverImage}
+                      sizes="64px"
                       alt=""
                       className="w-full h-full object-cover"
                       loading="lazy"

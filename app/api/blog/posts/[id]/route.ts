@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       where: { OR: [{ id }, { slug: id }], published: true },
     });
     if (!post) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    await prisma.blogPost.update({ where: { id: post.id }, data: { viewCount: { increment: 1 } } });
+    // Views are counted by POST ./view (it leaves updatedAt and the caches alone).
     return NextResponse.json({ post });
   } catch {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

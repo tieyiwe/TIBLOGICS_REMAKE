@@ -55,6 +55,7 @@ const PRICES: Array<[RegExp, number, number]> = [
   [/opus/, 5, 25],
   [/sonnet-5/, 2, 10],
   [/sonnet/, 3, 15],
+  [/haiku-5/, 0.1, 0.5], // prompts up to 100K tokens; every Haiku task stays under that
   [/haiku-4/, 1, 5],
   [/haiku/, 0.8, 4],
 ];

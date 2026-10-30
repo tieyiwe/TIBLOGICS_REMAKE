@@ -140,14 +140,25 @@ export async function postMetaFor(post: PostSource, locale: Locale): Promise<{ t
  * The article in the visitor's language for the article page. Returns English
  * with `pending: true` (and queues a translation) when none is ready yet.
  */
-export async function localizedPost(post: PostSource, locale: Locale): Promise<{ value: PostFields; pending: boolean }> {
+export async function localizedPost(
+  post: PostSource,
+  locale: Locale,
+): Promise<{ value: PostFields; pending: boolean; soon?: boolean }> {
   if (locale === "en") return { value: postFields(post), pending: false };
   // Older "tx:<slug>:<lang>" translations are not used: they carry no link to
   // the English they came from, so they could still show text from before an
   // article was corrected. The translate job replaces them.
   const cached = await cachedPost(post, locale);
-  const out = cached ? { value: cached, pending: false } : await localized(postKey(post.slug), locale, postFields(post));
-  if (out.pending) return out;
+  // A missing article translation is left to the translate job (hourly,
+  // Message Batches at half price), not made on a page view at full price:
+  // anyone, crawlers included, can open any article with ?lang=. New and
+  // edited articles are translated straight away (translateArticleSoon), so
+  // this only waits on older ones. With TRANSLATE_BATCH_API=0 there is no
+  // batch, and a page view starts the translation as before.
+  const mode = process.env.TRANSLATE_BATCH_API === "0" ? "queue" : "cached";
+  const out = cached ? { value: cached, pending: false } : await localized(postKey(post.slug), locale, postFields(post), mode);
+  // soon: started on this view, so it is worth refreshing for (a minute or so).
+  if (out.pending) return { ...out, soon: mode === "queue" };
   // Model-written HTML is cleaned before it is rendered (see sanitize-html.ts).
   return { value: { ...out.value, content: sanitizeTranslatedHtml(out.value.content) }, pending: false };
 }

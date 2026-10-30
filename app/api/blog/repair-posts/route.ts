@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
 import { requireAdmin } from "@/lib/require-admin";
 import { sanitizeAiHtml } from "@/lib/ai-html";
+import { translateArticlesSoon } from "@/lib/i18n/sources/blog";
 
 const VALID_CATEGORIES = new Set([
   "breaking", "ai-business", "tips", "tools", "case-studies", "industry", "advanced-tech",
@@ -101,6 +102,9 @@ export async function POST() {
         errors.push(`"${post.title.slice(0, 50)}": ${String(e).slice(0, 100)}`);
       }
     }
+
+    // Repaired articles have new English: their translations are redone now.
+    if (fixed > 0) void translateArticlesSoon(2 * fixed);
 
     return NextResponse.json({
       message: `Repaired ${fixed} of ${thinPosts.length} thin posts`,

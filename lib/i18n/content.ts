@@ -166,14 +166,16 @@ const MAX_QUEUED = 4;
 /**
  * Translated fields for `key` in `locale`, or null if not available yet.
  *
- * mode "queue" (pages): return the cached translation, or null and start one.
- * mode "wait"  (cron):  translate now if needed and return it.
+ * mode "queue"  (pages): return the cached translation, or null and start one.
+ * mode "cached" (pages): the cached translation or null; never calls the model
+ *                        (the translate job fills it in at half price).
+ * mode "wait"   (cron):  translate now if needed and return it.
  */
 export async function translated(
   key: string,
   locale: Locale,
   fields: Fields,
-  mode: "queue" | "wait" = "queue",
+  mode: "queue" | "cached" | "wait" = "queue",
 ): Promise<Fields | null> {
   if (locale === "en") return fields;
   const hash = hashOf(fields);
@@ -193,9 +195,9 @@ export async function translated(
     if (row?.hash === hash) return { ...fields, ...row.value };
   } catch (err) {
     console.error("[i18n] cache read failed", err instanceof Error ? err.message : err);
-    return mode === "queue" ? null : fields;
+    return mode === "wait" ? fields : null;
   }
-  if (!process.env.ANTHROPIC_API_KEY) return null;
+  if (mode === "cached" || !process.env.ANTHROPIC_API_KEY) return null;
 
   // Inside collectPendingTranslations() (the batch translate cron), "wait"
   // records the unit for a Message Batch instead of calling the model now.
@@ -239,9 +241,14 @@ export async function translated(
  * Convenience for pages: fields in the visitor's language when ready, else
  * English plus `pending: true` so the page can show a short notice.
  */
-export async function localized<F extends Fields>(key: string, locale: Locale, fields: F): Promise<{ value: F; pending: boolean }> {
+export async function localized<F extends Fields>(
+  key: string,
+  locale: Locale,
+  fields: F,
+  mode: "queue" | "cached" = "queue",
+): Promise<{ value: F; pending: boolean }> {
   if (locale === "en") return { value: fields, pending: false };
-  const t = await translated(key, locale, fields, "queue");
+  const t = await translated(key, locale, fields, mode);
   return t ? { value: t as F, pending: false } : { value: fields, pending: true };
 }
 

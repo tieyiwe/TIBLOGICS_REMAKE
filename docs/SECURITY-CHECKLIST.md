@@ -363,6 +363,13 @@ Settings (Replit Secrets): `AI_DAILY_BUDGET_USD` (default 25),
 (1.5) and `AI_ALERT_AT` (0.8). Spend is estimated from list prices and shown
 per feature at /admin_pro/ai-usage.
 
+The features anyone can use without signing in (sales chat, Advisor, cost
+estimate) also share their own daily budget, `AI_PUBLIC_DAILY_BUDGET_USD`
+(default 5). Their rate limits are per IP address, which a bot can fake, so
+when this budget is spent only those three pause until midnight UTC; the rest
+of the platform keeps its budget. Public chats also send only their latest
+turns (about ten exchanges, 12,000 characters: lib/chat-bounds.ts).
+
 **Owner action: set the provider limits too** (they hold even if the app has
 a bug):
 1. **Anthropic**: console.anthropic.com → **Settings → Limits**: set a monthly

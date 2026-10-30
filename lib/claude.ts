@@ -16,8 +16,10 @@ const anthropic = new Anthropic({
 // Every Claude call names a task. The task picks the cheapest model that does
 // the job well, whether the model thinks first, and the output budget. See
 // the cost plan for the reasoning behind each row:
-//   - Haiku 4.5: short, high-volume or mechanical work (sales chat, practice
-//     pad, sandbox, extraction, short translations, tips, summaries).
+//   - Haiku 5.5: short, high-volume or mechanical work (sales chat, practice
+//     pad, sandbox, extraction, short translations, tips, summaries). It
+//     thinks by default, so Haiku tasks turn thinking off unless a row says
+//     otherwise (Haiku 4.5, the old default, never thought).
 //   - Sonnet: grading, Tutor, Code Studio, long translations, writing.
 //   - Opus: only the paid Automation Blueprint.
 //
@@ -29,7 +31,7 @@ const anthropic = new Anthropic({
 //   CLAUDE_MAX_TOKENS_<TASK>  e.g. CLAUDE_MAX_TOKENS_TUTOR=900
 // (<TASK> is the task name in capitals with "-" as "_".)
 //
-// The helper only sends parameters the chosen model accepts: Haiku gets no
+// The helper only sends parameters the chosen model accepts: Haiku 4.5 gets no
 // thinking or effort fields; Claude Sonnet 5.5 turns thinking off with
 // {type:"between_tools"}; Claude Opus 5.5 cannot turn thinking off, so "off"
 // becomes low effort there; older adaptive models take {type:"disabled"}.
@@ -105,7 +107,7 @@ interface Route {
 }
 
 const TIER_MODEL: Record<Tier, string> = {
-  haiku: process.env.CLAUDE_HAIKU_MODEL || process.env.CLAUDE_FAST_MODEL || "claude-haiku-4-5-20251001",
+  haiku: process.env.CLAUDE_HAIKU_MODEL || process.env.CLAUDE_FAST_MODEL || "claude-haiku-5-5",
   sonnet: process.env.CLAUDE_SONNET_MODEL || "claude-sonnet-5-5",
   opus: process.env.CLAUDE_OPUS_MODEL || process.env.CLAUDE_MODEL || "claude-opus-5-5",
 };
@@ -196,7 +198,7 @@ export function routeFor(task: AiTask): Route & { model: string } {
   return {
     ...base,
     model: process.env[`CLAUDE_MODEL_${k}`] || TIER_MODEL[base.tier],
-    thinking: thinking === "off" || thinking === "adaptive" ? thinking : base.thinking,
+    thinking: thinking === "off" || thinking === "adaptive" ? thinking : (base.thinking ?? (base.tier === "haiku" ? "off" : undefined)),
     effort: effort === "low" || effort === "medium" || effort === "high" ? effort : base.effort,
     maxTokens: Number.isInteger(max) && max > 0 ? max : base.maxTokens,
   };
@@ -209,7 +211,7 @@ function thinkingFamily(model: string): ThinkingFamily {
   const m = model.toLowerCase();
   if (/fable|mythos|opus-5-5/.test(m)) return "always"; // thinking cannot be disabled
   if (/sonnet-5-5/.test(m)) return "between-tools"; // {type:"disabled"} is a 400
-  if (/opus-5|opus-4-[6-9]|sonnet-5|sonnet-4-6/.test(m)) return "adaptive";
+  if (/opus-5|opus-4-[6-9]|sonnet-5|sonnet-4-6|haiku-5/.test(m)) return "adaptive";
   return "none"; // Haiku 4.5 and older: no adaptive thinking, no effort
 }
 

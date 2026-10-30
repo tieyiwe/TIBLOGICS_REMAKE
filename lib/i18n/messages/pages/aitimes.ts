@@ -154,6 +154,11 @@ export default tri({
   "pages.article.cta.book": ["Book Free Meeting →", "Réserver un rendez-vous gratuit →", "Weka Miadi Bila Malipo →"],
   "pages.article.cta.tibo": ["Talk to Tibo", "Parler à Tibo", "Ongea na Tibo"],
   "pages.article.related": ["More from this category", "Dans la même catégorie", "Zaidi kutoka kundi hili"],
+  "pages.article.translationLater": [
+    "The translation of this article is on its way. You are reading the English version for now; please check back later today.",
+    "La traduction de cet article est en préparation. Vous lisez la version anglaise pour le moment ; revenez un peu plus tard dans la journée.",
+    "Tafsiri ya makala hii inaandaliwa. Kwa sasa unasoma toleo la Kiingereza; tafadhali rudi baadaye leo.",
+  ],
   "pages.article.upNext": ["Up Next", "À suivre", "Inayofuata"],
   "pages.article.dismiss": ["Dismiss", "Fermer", "Funga"],
   "pages.article.trending": ["🔥 Trending right now", "🔥 Tendance du moment", "🔥 Inavuma sasa hivi"],

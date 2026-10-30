@@ -14,6 +14,11 @@ const INDEXES = [
   `CREATE INDEX CONCURRENTLY IF NOT EXISTS "PointsLedger_studentId_createdAt_idx" ON "PointsLedger" ("studentId", "createdAt")`,
   // AI Times list and sitemaps: published posts, newest first.
   `CREATE INDEX CONCURRENTLY IF NOT EXISTS "BlogPost_published_createdAt_idx" ON "BlogPost" ("published", "createdAt")`,
+  // Admin analytics on tool and event beacons: by date, by tool, by visit,
+  // and the retention delete (lib/analytics/db.ts).
+  `CREATE INDEX CONCURRENTLY IF NOT EXISTS "ToolUsage_createdAt_idx" ON "ToolUsage" ("createdAt")`,
+  `CREATE INDEX CONCURRENTLY IF NOT EXISTS "ToolUsage_tool_createdAt_idx" ON "ToolUsage" ("tool", "createdAt")`,
+  `CREATE INDEX CONCURRENTLY IF NOT EXISTS "ToolUsage_sessionId_idx" ON "ToolUsage" ("sessionId")`,
 ];
 
 export async function warmDatabase(): Promise<void> {

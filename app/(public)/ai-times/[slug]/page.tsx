@@ -6,8 +6,7 @@ import fs from "fs";
 import path from "path";
 import BlogPostClient from "./BlogPostClient";
 import { getLocale, getT } from "@/lib/i18n/server";
-import { cachedPostSummaries, localizedPost, postFields, postKey, postMetaFor } from "@/lib/i18n/sources/blog";
-import { translated } from "@/lib/i18n/content";
+import { cachedPostSummaries, localizedPost, postMetaFor } from "@/lib/i18n/sources/blog";
 import { commentCount } from "@/lib/blog/engage/db";
 import { isLocale, type Locale } from "@/lib/i18n/config";
 import { fitTitle, pageMetadata, plain } from "@/lib/seo/meta";
@@ -16,6 +15,7 @@ import { breadcrumbNode, type JsonLdNode } from "@/lib/seo/jsonld";
 import { LOGO_URL, ORG_ID, SITE_NAME, WEBSITE_ID } from "@/lib/seo/site";
 import { articleAlternates, articleLanguages, articleUrl, authorNode } from "@/lib/seo/articles";
 import { cachedPublicData } from "@/lib/cache/public-data";
+import { coverWebpSrcSet } from "@/lib/blog/cover-webp";
 
 export const revalidate = 3600;
 
@@ -43,6 +43,21 @@ function articlePost(prisma: typeof import("@/lib/prisma").prisma, slug: string)
         id: true, slug: true, title: true, excerpt: true, content: true, coverImage: true, coverEmoji: true,
         coverGradient: true, category: true, author: true, readingTime: true, aiGenerated: true, sourceUrl: true,
         sourceTitle: true, viewCount: true, createdAt: true, updatedAt: true, tags: true,
+      },
+    }),
+  );
+}
+
+/** The newest published articles in a category, as cards (cached like the article). */
+function categoryCards(prisma: typeof import("@/lib/prisma").prisma, category: string) {
+  return cachedPublicData("blog", `category-cards:${category}`, () =>
+    prisma.blogPost.findMany({
+      where: { published: true, category },
+      orderBy: { createdAt: "desc" },
+      take: 7,
+      select: {
+        id: true, slug: true, title: true, excerpt: true, coverEmoji: true, coverGradient: true, coverImage: true,
+        readingTime: true, viewCount: true, category: true, createdAt: true,
       },
     }),
   );
@@ -181,39 +196,33 @@ export default async function BlogPostPage(
   // The article in the visitor's language, when it is not English.
   let translation: { title: string; excerpt: string; content: string } | null = null;
   let pending = false;
+  let pendingSoon = false;
   let relatedTitles: Record<string, string> = {};
+  let initialRelated: Parameters<typeof BlogPostClient>[0]["initialRelated"] = [];
   let postLookupRan = false;
   try {
     const { prisma } = await import("@/lib/prisma");
     const post = await articlePost(prisma, slug);
     postLookupRan = true;
+    // "More from this category": the next six, of which three are shown as cards.
+    const related = post ? (await categoryCards(prisma, post.category).catch(() => [])).filter((r) => r.slug !== slug).slice(0, 6) : [];
+    initialRelated = related.slice(0, 3).map((r) => ({
+      ...r,
+      coverImage: r.coverImage ?? undefined,
+      createdAt: r.createdAt.toISOString(),
+    }));
     if (post && locale !== "en") {
       // Cached translation, or English plus a notice while one is made.
       const localizedResult = await localizedPost(post, locale);
       translation = localizedResult.value;
       pending = localizedResult.pending;
+      pendingSoon = !!localizedResult.soon;
 
       // Titles for the "more from this category" cards, from the cache only.
-      const related = await prisma.blogPost.findMany({
-        where: { published: true, category: post.category, NOT: { slug } },
-        orderBy: { createdAt: "desc" },
-        take: 6,
-        select: { slug: true },
-      });
       const summaries = await cachedPostSummaries(locale, related.map((r) => r.slug));
       relatedTitles = Object.fromEntries(Object.entries(summaries).map(([k, v]) => [k, v.title]));
-      // Related articles not translated yet into this language are queued now
-      // (a few at a time, see lib/i18n/content.ts), so their titles follow the
-      // reader's choice on the next visit instead of waiting for the batch.
-      const missing = related.map((r) => r.slug).filter((s) => !summaries[s]);
-      if (missing.length > 0) {
-        void prisma.blogPost
-          .findMany({ where: { slug: { in: missing } }, select: { slug: true, title: true, excerpt: true, content: true } })
-          .then((rows) => {
-            for (const r of rows) void translated(postKey(r.slug), locale, postFields(r), "queue").catch(() => {});
-          })
-          .catch(() => {});
-      }
+      // Related articles not translated yet keep their English title until
+      // the translate job reaches them (no model call on a page view).
     }
     if (post) {
       heroCoverUrl = post.coverImage ?? null;
@@ -275,12 +284,17 @@ export default async function BlogPostPage(
           rel="preload"
           as="image"
           href={heroCoverUrl}
+          // Our drawn covers load as WebP (components/blog/CoverImg.tsx):
+          // preload that file, not the PNG.
+          {...(coverWebpSrcSet(heroCoverUrl)
+            ? { imageSrcSet: coverWebpSrcSet(heroCoverUrl)!, imageSizes: "(max-width:768px) 100vw, 768px", type: "image/webp" }
+            : {})}
           fetchPriority="high"
         />
       )}
       {jsonLd && <JsonLd data={jsonLd} />}
       <Suspense fallback={null}>
-        <BlogPostClient initialPost={initialPost} translation={pending ? null : translation} pending={pending} relatedTitles={relatedTitles} articleLocale={locale} articleLang={isLocale(lang) ? lang : null} />
+        <BlogPostClient initialPost={initialPost} translation={pending ? null : translation} pending={pending} pendingSoon={pendingSoon} relatedTitles={relatedTitles} initialRelated={initialRelated} articleLocale={locale} articleLang={isLocale(lang) ? lang : null} />
       </Suspense>
     </>
   );

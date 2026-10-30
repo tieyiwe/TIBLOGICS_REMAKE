@@ -28,20 +28,26 @@ const dmSans = Plus_Jakarta_Sans({
   preload: true,
 });
 
+// The two decorative faces are not preloaded: the browser downloads a face
+// only on a page that uses it, instead of every page fetching them all.
+// Cinzel is the AI Times masthead (bold only).
 const masthead = Cinzel({
   subsets: ["latin"],
-  weight: ["400", "700", "900"],
+  weight: ["700"],
   variable: "--font-masthead",
   display: "swap",
+  preload: false,
 });
 
+// Cormorant: the orange accent words on the home hero and the About page
+// (semibold italic) and the About page's quotation mark (regular). One
+// variable file per style covers every weight.
 const display = Cormorant_Garamond({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
   style: ["normal", "italic"],
   variable: "--font-display",
   display: "swap",
-  preload: true,
+  preload: false,
 });
 
 // Search engine ownership checks, from the environment so no placeholder is

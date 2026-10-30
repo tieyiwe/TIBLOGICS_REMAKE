@@ -3,7 +3,8 @@ export const maxDuration = 120;
 import { NextRequest, NextResponse } from "next/server";
 import { streamChat } from "@/lib/claude";
 import { requireAdmin } from "@/lib/require-admin";
-import { boundChatMessages } from "@/lib/chat-bounds";
+import { boundChatMessages, STAFF_CHAT_LIMITS } from "@/lib/chat-bounds";
+import { clientIp } from "@/lib/geo";
 
 const AGENTS: Record<string, { name: string; systemPrompt: string }> = {
   aria: {
@@ -146,7 +147,7 @@ export async function POST(req: NextRequest) {
   // this check anyone could run the model on the site's bill.
   const unauth = await requireAdmin();
   if (unauth) return unauth;
-  const ip = req.headers.get("x-forwarded-for") ?? "unknown";
+  const ip = clientIp(req.headers) ?? "unknown";
   if (!(await checkRateLimit(`claude-agents:${ip}`, 50, 3_600_000))) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }
@@ -154,7 +155,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const agent = body?.agent;
-    const messages = boundChatMessages(body?.messages);
+    const messages = boundChatMessages(body?.messages, STAFF_CHAT_LIMITS);
     if (!messages || !agent) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }

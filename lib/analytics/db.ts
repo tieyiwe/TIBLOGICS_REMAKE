@@ -137,10 +137,12 @@ export async function analyticsReady(): Promise<boolean> {
 }
 
 /** Deletes click and scan-log rows past retention. Run daily (cron scanner). */
-export async function pruneAnalytics(): Promise<{ clicks: number; scans: number }> {
+export async function pruneAnalytics(): Promise<{ clicks: number; scans: number; toolUsage: number }> {
   await ensureAnalyticsTables();
   const cutoff = new Date(Date.now() - ANALYTICS_RETENTION_DAYS * 86_400_000);
   const clicks = await prisma.$executeRawUnsafe(`DELETE FROM "ClickEvent" WHERE "createdAt" < $1`, cutoff);
   const scans = await prisma.$executeRawUnsafe(`DELETE FROM "ScanLog" WHERE "createdAt" < $1`, cutoff);
-  return { clicks, scans };
+  // Tool and event beacons (track()): one row per use, kept as long as clicks.
+  const toolUsage = await prisma.$executeRawUnsafe(`DELETE FROM "ToolUsage" WHERE "createdAt" < $1`, cutoff);
+  return { clicks, scans, toolUsage };
 }

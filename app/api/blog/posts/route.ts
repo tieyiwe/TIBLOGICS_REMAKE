@@ -31,20 +31,33 @@ function pickCover(category: string, title: string): string {
   return pool[hash % pool.length];
 }
 
+/** What a listing card shows: never the article body (the article page loads that). */
+const CARD_FIELDS = {
+  id: true, slug: true, title: true, excerpt: true, category: true, tags: true, coverImage: true, coverEmoji: true,
+  coverGradient: true, author: true, readingTime: true, featured: true, aiGenerated: true, viewCount: true, createdAt: true,
+} as const;
+
+const MAX_LIMIT = 100;
+
+function intParam(v: string | null, fallback: number, max: number): number {
+  const n = Number.parseInt(v ?? "", 10);
+  return Number.isFinite(n) && n >= 1 ? Math.min(n, max) : fallback;
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const category = searchParams.get("category");
   const featured = searchParams.get("featured");
-  const limit = parseInt(searchParams.get("limit") ?? "20");
-  const page = parseInt(searchParams.get("page") ?? "1");
-  const search = searchParams.get("search");
+  const limit = intParam(searchParams.get("limit"), 20, MAX_LIMIT);
+  const page = intParam(searchParams.get("page"), 1, 1000);
+  const search = searchParams.get("search")?.slice(0, 100);
 
   try {
     const where: Record<string, unknown> = { published: true };
     if (category && category !== "all") where.category = category.slice(0, 40);
     if (featured === "true") where.featured = true;
     if (search) {
-      const terms = search.trim().split(/\s+/).filter(Boolean);
+      const terms = search.trim().split(/\s+/).filter(Boolean).slice(0, 8);
       // Every term must appear somewhere in the post (AND across terms, OR across fields)
       where.AND = terms.map(term => ({
         OR: [
@@ -60,6 +73,7 @@ export async function GET(req: NextRequest) {
     const [posts, total] = await Promise.all([
       prisma.blogPost.findMany({
         where,
+        select: CARD_FIELDS,
         orderBy: { createdAt: "desc" },
         take: limit,
         skip: (page - 1) * limit,

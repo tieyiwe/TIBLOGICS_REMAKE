@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import CoverImg from "@/components/blog/CoverImg";
 import Link from "next/link";
 import { Search, Clock, Zap, RefreshCw, Send, MessageCircle } from "lucide-react";
 import { trackPageVisit } from "@/lib/recommendations";
@@ -111,23 +112,27 @@ export default function BlogPageClient({
     if (q) setSearch(q.slice(0, 100));
   }, []);
 
+  // The request in flight: a newer one (the next keystroke) cancels it.
+  const inFlight = useRef<AbortController | null>(null);
+
   const fetchPosts = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
+    inFlight.current?.abort();
     const controller = new AbortController();
+    inFlight.current = controller;
+    if (!silent) setLoading(true);
     const timer = setTimeout(() => controller.abort(), 10000);
     try {
       const params = new URLSearchParams({ limit: "100" });
       if (category !== "all") params.set("category", category);
-      if (search) params.set("search", search);
+      if (search.trim()) params.set("search", search.trim());
       const res = await fetch(`/api/blog/posts?${params}`, { signal: controller.signal });
-      clearTimeout(timer);
       const data = await res.json();
-      setPosts(data.posts ?? []);
+      if (inFlight.current === controller) setPosts(data.posts ?? []);
     } catch {
-      // timeout or network error — leave posts as-is
+      // timeout, network error or replaced by a newer request: leave posts as-is
     } finally {
       clearTimeout(timer);
-      if (!silent) setLoading(false);
+      if (!silent && inFlight.current === controller) setLoading(false);
     }
   }, [category, search]);
 
@@ -136,8 +141,10 @@ export default function BlogPageClient({
       skipInitialFetch.current = false;
       return;
     }
-    fetchPosts();
-  }, [fetchPosts]);
+    // Typing waits for a short pause; a category change loads at once.
+    const id = setTimeout(() => void fetchPosts(), search ? 300 : 0);
+    return () => clearTimeout(id);
+  }, [fetchPosts, search]);
 
   useEffect(() => {
     fetch("/api/blog/breaking-news")
@@ -263,7 +270,7 @@ export default function BlogPageClient({
                       <div className="bg-white border border-[#D2DCE8] rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 h-full flex flex-col">
                         <div className="h-52 flex-shrink-0 overflow-hidden relative">
                           {fp.coverImage && !imgFailed ? (
-                            <img src={fp.coverImage} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="eager" fetchPriority="high" decoding="sync" onError={() => setImgFailed(true)} />
+                            <CoverImg src={fp.coverImage} sizes="(max-width:768px) 100vw, 600px" alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="eager" fetchPriority="high" decoding="sync" onError={() => setImgFailed(true)} />
                           ) : (
                             <div className={`${gradientClass(fp.coverGradient)} w-full h-full flex items-center justify-center`}>
                               <span className="text-7xl">{fp.coverEmoji}</span>
@@ -363,8 +370,9 @@ function PostCard({ post }: { post: BlogPost }) {
       <article className="bg-white border border-[#D2DCE8] rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 h-full flex flex-col">
         <div className="h-44 overflow-hidden relative">
           {post.coverImage && !imgFailed ? (
-            <img
+            <CoverImg
               src={post.coverImage}
+              sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 400px"
               alt=""
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               loading="lazy"

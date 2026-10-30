@@ -21,6 +21,15 @@ import type { AiTask } from "@/lib/claude";
 //   - At 80% (AI_ALERT_AT, a fraction): one email a day to
 //     ADMIN_NOTIFY_EMAIL.
 //
+// The features anyone can use without signing in (the sales chat, the
+// Advisor and the cost calculator) also share a daily budget of their own:
+//
+//   AI_PUBLIC_DAILY_BUDGET_USD  default 5
+//
+// Their rate limits are per IP address, and an address can be faked, so a bot
+// could otherwise spend the whole platform budget and pause everything else.
+// When this one runs out, only those three pause until midnight UTC.
+//
 // The spend is read at most once a minute per process. The figures are
 // estimates from list prices (lib/ai-usage.ts); the hard limit that cannot be
 // exceeded is the spend limit set in the Anthropic console (see
@@ -47,6 +56,13 @@ export function isEssentialTask(task: AiTask): boolean {
   return ESSENTIAL.has(task);
 }
 
+/** Work anyone can start without signing in. */
+const PUBLIC: readonly AiTask[] = ["chat-sales", "chat-advisor", "estimate"];
+
+export function isPublicTask(task: AiTask): boolean {
+  return PUBLIC.includes(task);
+}
+
 function envNumber(name: string, fallback: number): number {
   const n = Number(process.env[name]);
   return Number.isFinite(n) && n > 0 ? n : fallback;
@@ -56,6 +72,7 @@ export function budgets() {
   return {
     dailyUsd: envNumber("AI_DAILY_BUDGET_USD", 25),
     monthlyUsd: envNumber("AI_MONTHLY_BUDGET_USD", 400),
+    publicDailyUsd: envNumber("AI_PUBLIC_DAILY_BUDGET_USD", 5),
     hardCap: envNumber("AI_HARD_CAP_MULTIPLIER", 1.5),
     alertAt: Math.min(envNumber("AI_ALERT_AT", 0.8), 1),
   };
@@ -66,6 +83,8 @@ export interface SpendState {
   monthUsd: number;
   /** Highest share of either budget used (1 = 100%). */
   ratio: number;
+  /** Today's spend on the public tasks, as a share of their own budget. */
+  publicRatio: number;
   at: number;
 }
 
@@ -79,14 +98,17 @@ async function readSpend(): Promise<SpendState> {
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   let dayCents = 0;
   let monthCents = 0;
+  let publicCents = 0;
   try {
-    const rows = await prisma.$queryRaw<Array<{ day: number | null; month: number | null }>>`
+    const rows = await prisma.$queryRaw<Array<{ day: number | null; month: number | null; pub: number | null }>>`
       SELECT
         COALESCE(SUM("costCents") FILTER (WHERE "createdAt" >= ${dayStart}), 0)::float8 AS day,
-        COALESCE(SUM("costCents"), 0)::float8 AS month
+        COALESCE(SUM("costCents"), 0)::float8 AS month,
+        COALESCE(SUM("costCents") FILTER (WHERE "createdAt" >= ${dayStart} AND "task" = ANY(${PUBLIC as string[]})), 0)::float8 AS pub
       FROM "AiUsage" WHERE "createdAt" >= ${monthStart}`;
     dayCents = Number(rows[0]?.day ?? 0);
     monthCents = Number(rows[0]?.month ?? 0);
+    publicCents = Number(rows[0]?.pub ?? 0);
   } catch {
     // No AiUsage table yet (nothing spent) or the database is unreachable:
     // the model call itself will fail in the second case anyway.
@@ -94,7 +116,13 @@ async function readSpend(): Promise<SpendState> {
   const b = budgets();
   const dayUsd = dayCents / 100;
   const monthUsd = monthCents / 100;
-  return { dayUsd, monthUsd, ratio: Math.max(dayUsd / b.dailyUsd, monthUsd / b.monthlyUsd), at: Date.now() };
+  return {
+    dayUsd,
+    monthUsd,
+    ratio: Math.max(dayUsd / b.dailyUsd, monthUsd / b.monthlyUsd),
+    publicRatio: publicCents / 100 / b.publicDailyUsd,
+    at: Date.now(),
+  };
 }
 
 /** Today's and this month's estimated spend, cached for a minute. */
@@ -120,12 +148,13 @@ export class AiBudgetExceeded extends Error {
   }
 }
 
-export type BudgetDecision = { ok: true } | { ok: false; reason: "budget" | "hard_cap" };
+export type BudgetDecision = { ok: true } | { ok: false; reason: "budget" | "hard_cap" | "public_budget" };
 
-/** Pure decision from a spend ratio (exported for tests). */
-export function decide(task: AiTask, ratio: number, hardCap = budgets().hardCap): BudgetDecision {
+/** Pure decision from the spend ratios (exported for tests). */
+export function decide(task: AiTask, ratio: number, hardCap = budgets().hardCap, publicRatio = 0): BudgetDecision {
   if (ratio >= hardCap) return { ok: false, reason: "hard_cap" };
   if (ratio >= 1 && !isEssentialTask(task)) return { ok: false, reason: "budget" };
+  if (publicRatio >= 1 && isPublicTask(task)) return { ok: false, reason: "public_budget" };
   return { ok: true };
 }
 
@@ -137,7 +166,7 @@ export function decide(task: AiTask, ratio: number, hardCap = budgets().hardCap)
 export async function assertAiBudget(task: AiTask): Promise<void> {
   const s = await currentSpend();
   if (s.ratio >= budgets().alertAt) void maybeAlert(s);
-  const d = decide(task, s.ratio);
+  const d = decide(task, s.ratio, undefined, s.publicRatio);
   if (!d.ok) {
     console.warn(`[ai-budget] refused ${task}: ${d.reason} (day $${s.dayUsd.toFixed(2)}, month $${s.monthUsd.toFixed(2)})`);
     throw new AiBudgetExceeded(task);
@@ -151,7 +180,7 @@ export function assertAiBudgetCached(task: AiTask): void {
     return;
   }
   if (Date.now() - cached.at >= CACHE_MS) void currentSpend().catch(() => {});
-  const d = decide(task, cached.ratio);
+  const d = decide(task, cached.ratio, undefined, cached.publicRatio);
   if (!d.ok) throw new AiBudgetExceeded(task);
 }
 

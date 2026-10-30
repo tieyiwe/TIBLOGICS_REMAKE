@@ -5,6 +5,7 @@ import { aiBudgetBlock, streamClaude } from "@/lib/claude";
 import { getLocale } from "@/lib/i18n/server";
 import { replyInLanguage } from "@/lib/i18n/config";
 import { boundChatMessages } from "@/lib/chat-bounds";
+import { clientIp } from "@/lib/geo";
 
 const FLOAT_SYSTEM_PROMPT = `You are Tibo, the AI assistant for TIBLOGICS — an AI implementation and digital solutions agency serving businesses and individual builders across North America and Africa.
 
@@ -96,7 +97,7 @@ Architecture for complex, multi-service systems. We design distributed backends,
 Contact: info@tiblogics.com`;
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for") ?? "unknown";
+  const ip = clientIp(req.headers) ?? "unknown";
   if (!(await checkRateLimit(`claude-float:${ip}`, 20, 3_600_000))) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }

@@ -487,8 +487,9 @@ const translateNow = process.env.TRANSLATE_BATCH_API === "0";
 async function patchMissingTips(limit = 3): Promise<number> {
   let patched = 0;
   try {
+    // Published articles only (a draft gets its tips when it goes out).
     const posts = await prisma.blogPost.findMany({
-      where: { content: { not: { contains: "tips-section" } } },
+      where: { published: true, content: { not: { contains: "tips-section" } } },
       select: { id: true, title: true, content: true },
       take: limit,
     });
@@ -772,7 +773,11 @@ async function publishCurated(): Promise<string[]> {
       const cover = a.coverImage ? { url: a.coverImage, photoId: "" } : pickCoverImage(a.slug, usedPhotoIds);
       if (cover.photoId) usedPhotoIds.add(cover.photoId);
       const meta = CATEGORY_META[a.category] ?? CATEGORY_META["industry"];
-      const content = a.content + renderSources(a.sources);
+      // The tips section goes in now, not on a later run: added afterwards it
+      // changes the article, and the French and Swahili copies made at
+      // publish time would be thrown away and paid for again.
+      const tips = await generateTips(a.title, a.content).catch(() => "");
+      const content = a.content + renderSources(a.sources) + tips;
       await prisma.blogPost.create({
         data: {
           slug: a.slug,
@@ -1369,8 +1374,10 @@ export async function GET(req: NextRequest) {
   // New articles: the automatic featured slots move to the freshest news.
   if (postsAdded > 0 || curatedPublished.length > 0) await patchFeaturedRotation();
   if (postsAdded > 0) revalidateAiTimes();
-  // New, corrected or updated articles: the translate job picks them up (see
-  // translateNow); until then readers see the English text with a note.
-  if (translateNow) void translateArticlesSoon();
+  // New, corrected or updated articles are translated now, in the
+  // background, so a reader who picks French or Swahili gets the article at
+  // once. Newest first, two calls an article; anything older that is still
+  // missing is left to the translate job (half price).
+  void translateArticlesSoon(translateNow ? 80 : 2 * (postsAdded + corrected.length + 3));
   return NextResponse.json({ message: `Added ${postsAdded + curatedPublished.length} new posts`, postsAdded: postsAdded + curatedPublished.length, curatedPublished, retracted, corrected: corrected.length, imagesPatched, tipsPatched, translationsPatched });
 }
