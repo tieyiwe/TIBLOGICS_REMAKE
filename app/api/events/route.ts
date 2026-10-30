@@ -24,14 +24,24 @@ export async function GET(req: NextRequest) {
     if (type && type !== "all") where.type = type.toUpperCase();
     if (featured === "true") where.featured = true;
 
-    const events = await prisma.event.findMany({
-      where,
-      orderBy: [{ featured: "desc" }, { date: "asc" }],
-    });
+    const [events, paidCounts] = await Promise.all([
+      prisma.event.findMany({
+        where,
+        orderBy: [{ featured: "desc" }, { date: "asc" }],
+      }),
+      prisma.eventRegistration.groupBy({
+        by: ["eventSlug"],
+        where: { status: "paid" },
+        _count: { id: true },
+      }).catch(() => [] as { eventSlug: string; _count: { id: number } }[]),
+    ]);
+
+    const paidBySlug = Object.fromEntries(paidCounts.map(r => [r.eventSlug, r._count.id]));
 
     const withCovers = events.map((e) => ({
       ...e,
       coverImage: e.coverImage || TYPE_COVER[e.type] || TYPE_COVER.EVENT,
+      spotsLeft: e.spots != null ? Math.max(0, e.spots - (paidBySlug[e.slug] ?? 0)) : null,
     }));
 
     return NextResponse.json({ events: withCovers });

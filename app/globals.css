@@ -13,7 +13,9 @@
     --orange-light:#FEF0E3;
     --ink:         #0D1B2A;
     --ink2:        #3A4A5C;
-    --ink3:        #7A8FA6;
+    /* Muted text. Was #7A8FA6 (3.3:1 on white); this shade keeps the hue
+       and passes WCAG AA 4.5:1 on white, --s2 and --s3. */
+    --ink3:        #5A6E84;
     --surface:     #FFFFFF;
     --s2:          #F4F7FB;
     --s3:          #E8EFF8;
@@ -36,7 +38,6 @@
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
     --chart-1: 12 76% 61%;
@@ -61,11 +62,11 @@
 
 @layer components {
   .section-tag {
-    @apply text-[0.67rem] font-bold tracking-[0.13em] uppercase text-[#F47C20];
+    @apply text-[0.8125rem] font-bold tracking-[0.13em] uppercase text-[#B8500A];
   }
 
   .btn-primary {
-    @apply bg-[#F47C20] hover:bg-[#E05F00] text-white font-semibold rounded-lg px-5 py-2.5 transition-colors duration-200 inline-flex items-center gap-2;
+    @apply bg-[#B8500A] hover:bg-[#E05F00] text-white font-semibold rounded-lg px-5 py-2.5 transition-colors duration-200 inline-flex items-center gap-2;
   }
 
   .btn-secondary {
@@ -141,6 +142,19 @@
   }
 }
 
+/* "Live" dot (home page scanner): a soft green glow that breathes. It does not
+   move, so it stays on for visitors who reduce motion, just slower. */
+@keyframes live-glow {
+  /* The first shadow is the dot's orange ring (Tailwind ring-2), kept here
+     because the animated box-shadow replaces it. */
+  0% { box-shadow: 0 0 0 2px #F47C20, 0 0 0 2px rgba(34, 197, 94, 0.8); }
+  70% { box-shadow: 0 0 0 2px #F47C20, 0 0 0 9px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 2px #F47C20, 0 0 0 2px rgba(34, 197, 94, 0); }
+}
+.live-pulse {
+  animation: live-glow 1.6s ease-in-out infinite;
+}
+
 /* Chat bubbles */
 .chat-bubble-user {
   @apply bg-[#1B3A6B] text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%] text-sm font-dm;
@@ -159,6 +173,29 @@
 }
 .typing-dot:nth-child(2) { animation-delay: 0.2s; }
 .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* ── Browser translation resilience ─────────────────────────────────────────
+   Google Translate and other browser translators inject <font> elements around
+   translated text. <font> is display:inline by default, which breaks flex/grid
+   layouts when it becomes a direct child of a flex/grid container.
+   display:contents makes <font> transparent to the layout engine so its text
+   children act as if they were direct children — layouts stay intact. */
+font {
+  display: contents;
+}
+
+/* Prevent long translated words (German, Finnish, etc.) from overflowing */
+p, h1, h2, h3, h4, h5, h6, li, td, th, blockquote, label, span {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Flex children must be able to shrink below their content size so longer
+   translated text doesn't push siblings out of the container */
+.flex > *,
+.inline-flex > * {
+  min-width: 0;
+}
 
 /* ── Native mobile feel ─────────────────────────────────────────────────────── */
 
@@ -193,4 +230,422 @@ html {
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TIBLOGICS Learn — accessibility mode
+   Opt-in per student (Account → Preferences). The server stores the
+   preference; the member layout stamps data-a11y="true" on its wrapper.
+   Scoped to that wrapper so it never affects the marketing site or admin.
+   The matching +50% exam time is applied server-side at session creation.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+[data-a11y="true"] {
+  /* ~25% larger text throughout, via a root-scoped scale */
+  font-size: 1.25em;
+  line-height: 1.75;
+}
+
+/* Higher contrast: darken body text and borders against white surfaces */
+[data-a11y="true"] {
+  --ink2: #1F2D3D;
+  --ink3: #43566B;
+  --border: #9AAABC;
+}
+
+/* Minimum 48px touch targets on anything interactive */
+[data-a11y="true"] button,
+[data-a11y="true"] a[role="button"],
+[data-a11y="true"] select,
+[data-a11y="true"] summary,
+[data-a11y="true"] input[type="radio"],
+[data-a11y="true"] input[type="checkbox"] {
+  min-height: 48px;
+}
+
+[data-a11y="true"] button,
+[data-a11y="true"] a[role="button"],
+[data-a11y="true"] select {
+  min-width: 48px;
+}
+
+/* Radio and checkbox controls themselves, not just their rows */
+[data-a11y="true"] input[type="radio"],
+[data-a11y="true"] input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+}
+
+/* Answer options are the most-clicked targets in the product */
+[data-a11y="true"] label:has(input[type="radio"]),
+[data-a11y="true"] label:has(input[type="checkbox"]) {
+  min-height: 48px;
+  align-items: center;
+}
+
+/* Visible focus ring — never rely on colour alone */
+[data-a11y="true"] :focus-visible {
+  outline: 3px solid #1B3A6B;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Underline links in body copy so they are not distinguished by colour only */
+[data-a11y="true"] p a,
+[data-a11y="true"] li a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Reduced motion, unconditionally — this is a stated promise of the mode,
+   not a request the OS setting should have to make on the learner's behalf */
+[data-a11y="true"] *,
+[data-a11y="true"] *::before,
+[data-a11y="true"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TIBLOGICS Learn — course page motion
+   Extends the existing .anim-* conventions. Everything here is decorative:
+   content is fully visible and interactive without it, and every rule is
+   switched off for reduced-motion and accessibility mode at the bottom.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Scroll reveal. Starts hidden, .is-visible is added by the Reveal component
+   when the element enters the viewport. */
+.learn-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+.learn-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+/* Once revealed, drop the hint so long pages don't hold dozens of layers */
+.learn-reveal.is-visible {
+  will-change: auto;
+}
+
+/* Entrance stagger for grids — set --stagger-index on each child */
+.learn-stagger > * {
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--stagger-index, 0) * 70ms);
+}
+
+/* Card hover lift */
+.learn-lift {
+  transition:
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.learn-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px -8px rgba(13, 27, 42, 0.18);
+}
+/* Keep keyboard users in parity with mouse users */
+.learn-lift:focus-within {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px -8px rgba(13, 27, 42, 0.18);
+}
+
+/* Phone tiles and sheets: a press feedback like a native app, and a sheet
+   that slides up from the bottom. */
+.learn-press {
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.learn-press:active {
+  transform: scale(0.97);
+}
+@keyframes learnSheetUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes learnSheetFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.learn-sheet-up { animation: learnSheetUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.learn-sheet-fade { animation: learnSheetFade 0.2s ease both; }
+@media (prefers-reduced-motion: reduce) {
+  .learn-press:active { transform: none; }
+  .learn-sheet-up, .learn-sheet-fade { animation: none; }
+}
+
+/* Accordion panel expand */
+@keyframes learnAccordionOpen {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.learn-accordion-panel {
+  animation: learnAccordionOpen 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Chevron / plus rotation is handled inline via transition-transform */
+.learn-rotate {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Progress ring draw-in. The dash offset is set inline per-instance, so the
+   animation runs from "empty" to whatever that value is. */
+@keyframes learnRingDraw {
+  from { stroke-dashoffset: var(--ring-circumference); }
+}
+.learn-ring-progress {
+  animation: learnRingDraw 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Hero content rise */
+.learn-hero > * {
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--stagger-index, 0) * 90ms);
+}
+
+/* Gentle pulse for the exam clock in its final minutes. Opacity only —
+   no layout movement, so it draws the eye without being disorienting. */
+@keyframes learnUrgentPulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+.learn-urgent {
+  animation: learnUrgentPulse 1.4s ease-in-out infinite;
+}
+
+/* ── Motion off ────────────────────────────────────────────────────────────
+   Both triggers collapse every rule above to its final state. Content must
+   never depend on an animation having run to become visible. */
+@media (prefers-reduced-motion: reduce) {
+  .learn-reveal,
+  .learn-reveal.is-visible {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .learn-stagger > *,
+  .learn-hero > *,
+  .learn-accordion-panel,
+  .learn-ring-progress,
+  .learn-urgent {
+    animation: none;
+  }
+  .learn-lift,
+  .learn-lift:hover,
+  .learn-lift:focus-within,
+  .learn-rotate {
+    transition: none;
+    transform: none;
+  }
+  .learn-lift:hover,
+  .learn-lift:focus-within {
+    box-shadow: 0 12px 28px -8px rgba(13, 27, 42, 0.18);
+  }
+}
+
+[data-a11y="true"] .learn-reveal,
+[data-a11y="true"] .learn-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+[data-a11y="true"] .learn-stagger > *,
+[data-a11y="true"] .learn-hero > *,
+[data-a11y="true"] .learn-accordion-panel,
+[data-a11y="true"] .learn-ring-progress,
+[data-a11y="true"] .learn-urgent {
+  animation: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TIBLOGICS Learn — gamification (toasts, level-up, quest map, stars)
+   Decorative only: every element is fully visible without its animation, and
+   all of it is switched off for reduced motion and accessibility mode.
+   ═══════════════════════════════════════════════════════════════════════ */
+@keyframes gameToastIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  to   { opacity: 1; transform: none; }
+}
+.game-toast {
+  animation: gameToastIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes gamePop {
+  0%   { transform: scale(0.4); }
+  60%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+.game-xp-pop,
+.game-badge-pop,
+.game-star-pop {
+  display: inline-flex;
+  animation: gamePop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: var(--pop-delay, 0ms);
+}
+@keyframes gameModalIn {
+  from { opacity: 0; transform: translateY(24px) scale(0.94); }
+  to   { opacity: 1; transform: none; }
+}
+.game-modal {
+  animation: gameModalIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes gameHerePulse {
+  0%   { box-shadow: 0 0 0 0 var(--here, rgba(244, 124, 76, 0.55)); }
+  70%  { box-shadow: 0 0 0 12px rgba(244, 124, 76, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(244, 124, 76, 0); }
+}
+.game-here {
+  animation: gameHerePulse 1.8s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-toast,
+  .game-xp-pop,
+  .game-badge-pop,
+  .game-star-pop,
+  .game-modal,
+  .game-here {
+    animation: none;
+  }
+}
+[data-a11y="true"] .game-toast,
+[data-a11y="true"] .game-xp-pop,
+[data-a11y="true"] .game-badge-pop,
+[data-a11y="true"] .game-star-pop,
+[data-a11y="true"] .game-modal,
+[data-a11y="true"] .game-here {
+  animation: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Accessibility (WCAG 2.2 AA)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Muted grey text written as a literal colour (text-[#7A8FA6]) all over the
+   site measured 3.3:1 on white. Remapped here to the --ink3 shade rather than
+   editing a hundred files; on the dark navy surfaces, where the light grey is
+   the one that passes, it keeps its original colour. */
+.text-\[\#7A8FA6\] {
+  color: #5A6E84;
+}
+:is(.bg-\[\#0D1B2A\], .bg-\[\#1B3A6B\], .bg-\[\#0A1628\], .bg-\[var\(--ink\)\], .bg-\[var\(--blue\)\], footer) .text-\[\#7A8FA6\] {
+  color: #7A8FA6;
+}
+
+/* Honour the system "reduce motion" setting everywhere, not only where a
+   component remembered to. Content never depends on an animation running. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* The exception: the "live" dot's glow does not move anything, so it keeps
+     breathing, slowly. (A class outranks * at equal !important.) */
+  .live-pulse {
+    animation-duration: 3s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+/* Lesson narration ("Listen", components/a11y/LessonListen.tsx): a light
+   tint on the paragraph being read. The sentence itself is marked with the
+   CSS Custom Highlight API; that ::highlight() rule lives in the component
+   because the CSS build here does not parse it yet. */
+[data-narrating] {
+  background-color: rgba(255, 224, 138, 0.28);
+  border-radius: 4px;
+  box-shadow: 0 0 0 4px rgba(255, 224, 138, 0.28);
+}
+
+/* ── Reading preferences (components/a11y/ReadingPrefsPanel.tsx) ──────────
+   data-rp-* attributes on <html>, set only on /learn pages. */
+
+/* Fonts: self-hosted Atkinson Hyperlegible and OpenDyslexic (OFL). Code
+   keeps its monospace font. */
+html[data-rp-font="atkinson"] body :not(code, pre, kbd, samp, code *, pre *, .font-mono),
+html[data-rp-font="atkinson"] body {
+  font-family: var(--rp-font-atkinson, Verdana), Verdana, Tahoma, sans-serif !important;
+}
+html[data-rp-font="dyslexic"] body :not(code, pre, kbd, samp, code *, pre *, .font-mono),
+html[data-rp-font="dyslexic"] body {
+  font-family: var(--rp-font-dyslexic, Verdana), Verdana, Tahoma, sans-serif !important;
+}
+
+/* Text size: scales everything sized in rem. */
+html[data-rp-size="112"] { font-size: 112.5%; }
+html[data-rp-size="125"] { font-size: 125%; }
+html[data-rp-size="150"] { font-size: 150%; }
+
+/* Line spacing (WCAG 1.4.12 asks that 1.5 never breaks the page). */
+html[data-rp-line="relaxed"] body :is(p, li, dd, dt, blockquote, td, th, label, figcaption, summary) {
+  line-height: 1.9 !important;
+}
+html[data-rp-line="loose"] body :is(p, li, dd, dt, blockquote, td, th, label, figcaption, summary) {
+  line-height: 2.3 !important;
+}
+
+/* Letter and word spacing ("wider" is the WCAG 1.4.12 test value). */
+html[data-rp-letter="wide"] body :is(p, li, dd, dt, blockquote, td, th, label, figcaption, summary, h1, h2, h3, h4, h5, h6, a, span, strong, em, button) {
+  letter-spacing: 0.06em !important;
+  word-spacing: 0.1em !important;
+}
+html[data-rp-letter="wider"] body :is(p, li, dd, dt, blockquote, td, th, label, figcaption, summary, h1, h2, h3, h4, h5, h6, a, span, strong, em, button) {
+  letter-spacing: 0.12em !important;
+  word-spacing: 0.16em !important;
+}
+
+/* High contrast: darker text, firmer borders, underlined links, a strong
+   focus ring. Brand colours stay; only their weaker neighbours change. */
+html[data-rp-contrast="high"] {
+  --ink2: #17222E;
+  --ink3: #2E3D4E;
+  --border: #6B7F95;
+  --s2: #FFFFFF;
+  --s3: #EEF2F7;
+}
+html[data-rp-contrast="high"] body {
+  background: #FFFFFF;
+}
+html[data-rp-contrast="high"] main a:not([class*="rounded-full"]):not([role="button"]) {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+html[data-rp-contrast="high"] .text-\[\#7A8FA6\] {
+  color: #2E3D4E;
+}
+html[data-rp-contrast="high"] :focus-visible {
+  outline: 3px solid #0D1B2A !important;
+  outline-offset: 2px;
+}
+
+/* Reduced motion, whatever the system setting says. */
+html[data-rp-motion="reduce"] *,
+html[data-rp-motion="reduce"] *::before,
+html[data-rp-motion="reduce"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Focus mode: hide the lesson outline and side panels; the lesson takes a
+   single comfortable reading column. */
+html[data-rp-focus="on"] [data-focus-hide] {
+  display: none !important;
+}
+html[data-rp-focus="on"] [data-focus-grid] {
+  display: block !important;
+  max-width: 48rem;
+  margin-inline: auto;
 }

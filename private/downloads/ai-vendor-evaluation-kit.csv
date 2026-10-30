@@ -1,0 +1,50 @@
+TIBLOGICS AI Vendor Evaluation Kit,,,
+"Score each vendor 0-4. Weight reflects how often that line is what actually goes wrong.",,,
+,,,
+Criterion,Weight,Score (0-4),What to ask them
+DATA HANDLING,,,
+Is our data used to train their models?,5,,"Get it in writing. 'We don't by default' is not the same as 'we don't.'"
+Where is data stored and processed?,4,,"Name the regions. Ask what happens if you need EU-only."
+Retention period and deletion process?,4,,"How long, and can you force deletion on demand?"
+Sub-processors disclosed?,3,,"Who else touches the data. Ask for the current list."
+Breach notification commitment?,4,,"In hours, in the contract, not 'promptly'."
+,,,
+CAPABILITY,,,
+Have they demoed on OUR data?,5,,"A demo on their curated data proves nothing about yours."
+What is the failure rate on realistic input?,5,,"Ask for the number. Vagueness here is the answer."
+What does it refuse or escalate?,3,,"A system that never escalates is a system that guesses."
+How is output quality measured?,3,,"If they cannot answer, they are not measuring it."
+,,,
+LOCK-IN,,,
+Can we export our data and configuration?,5,,"In what format, how fast, and have they done it for anyone?"
+What happens to our data if we leave?,4,,"Deleted when, and confirmed how?"
+Is the underlying model swappable?,3,,"Or are we married to one provider's roadmap and prices?"
+Notice period and exit terms?,3,,"Auto-renew clauses are where the surprises live."
+,,,
+COMMERCIAL,,,
+How does pricing change with volume?,4,,"Model the 3x case. Ask what the price is there."
+What is NOT included in the quoted price?,4,,"Support, onboarding, overage, extra seats, API calls."
+Price increase history and notice?,3,,"What did they do to existing customers last time?"
+Who owns output produced with the tool?,4,,"Especially for anything customer-facing."
+,,,
+VIABILITY,,,
+How long have they been operating?,2,,
+Reference customers at our size?,3,,"Ask to speak to one who churned, not just a champion."
+What happens if they are acquired?,2,,"Assignment clause. Read it."
+,,,
+SUPPORT,,,
+Response time commitment in writing?,3,,"SLA or it does not exist."
+Who fixes it when it is wrong at 4pm Friday?,3,,"A named route, not 'raise a ticket'."
+,,,
+,TOTAL WEIGHTED,,"= sum of (weight x score)"
+,MAX POSSIBLE,,"= sum of weights x 4"
+,PERCENTAGE,,
+,,,
+HOW TO READ IT,,,
+Below 55%,"Walk away, however good the demo was.",,
+55-70%,"Viable, but negotiate the weak lines before signing. Name them explicitly.",,
+Above 70%,"Strong. Check the weight-5 lines individually — a high total can hide one fatal weakness.",,
+,,,
+THE RULE,,,
+"Any weight-5 criterion scoring 0 or 1 is disqualifying on its own, whatever the total says.",,,
+"Those five lines are where deals fail after signature, not before.",,,

@@ -1,0 +1,41 @@
+TIBLOGICS AI Readiness Scorecard,,,
+"Score each line 0-4. Be honest — an inflated score just wastes your own money later.",,,
+"0 = not at all  |  1 = barely  |  2 = partly  |  3 = mostly  |  4 = fully",,,
+,,,
+Dimension,Question,Score (0-4),What a 4 looks like
+DATA,Do you know where your key business data actually lives?,,"You could list every system and who owns it, today"
+DATA,Is that data accessible without a manual export?,,"An API or direct query exists; nobody emails a spreadsheet"
+DATA,Is it accurate enough to act on without cleaning?,,"You would make a pricing decision on it unreviewed"
+DATA,Do you have a lawful basis to process it this way?,,"Documented, and your DPO has seen it"
+,,,
+PROCESS,Can you name the 3 processes that cost most staff time?,,"With hours per week attached, measured not guessed"
+PROCESS,Are those processes written down?,,"A new hire could follow the document unaided"
+PROCESS,Are they consistent between people?,,"Two staff produce the same output from the same input"
+PROCESS,Do you measure their current cost or duration?,,"You have a baseline you could compare against later"
+,,,
+PEOPLE,Does anyone internally use AI tools competently today?,,"At least one person others already ask for help"
+PEOPLE,Is there a named owner for AI decisions?,,"One person, not a committee, with authority to stop things"
+PEOPLE,Would staff tell you if a tool was not working?,,"They have, recently, and nothing bad happened to them"
+PEOPLE,Is there budget for training rather than only tools?,,"A real line item, not an intention"
+,,,
+GOVERNANCE,Is there a written AI usage policy?,,"Circulated, acknowledged, and reviewed in the last 6 months"
+GOVERNANCE,Do staff know what they must not paste into a chatbot?,,"They could list the categories without prompting"
+GOVERNANCE,Is there an approved-tools list with business accounts?,,"Provisioned by IT, training disabled"
+GOVERNANCE,Is there a route to report a mistake safely?,,"Someone has used it and was not punished"
+,,,
+COMMERCIAL,Can you state the problem before naming a tool?,,"The problem was written down before any vendor was contacted"
+COMMERCIAL,Do you know what success would look like numerically?,,"A specific metric and a target, agreed in advance"
+COMMERCIAL,Have you agreed what would make you stop?,,"A kill criterion exists and someone is willing to apply it"
+COMMERCIAL,Is there a budget holder who has actually approved spend?,,"Signed off, not verbally encouraged"
+,,,
+,TOTAL (out of 80),,
+,,,
+HOW TO READ YOUR SCORE,,,
+0-25,"Not ready. Fix data access and process documentation first. AI on undocumented, inconsistent processes automates the inconsistency.",,
+26-45,"Partially ready. Pick ONE well-documented process and pilot there. Do not start a programme.",,
+46-62,"Ready for real pilots. Your constraint is now choosing well and measuring honestly, not capability.",,
+63-80,"Ready to scale. Your risk has shifted from 'can we' to 'are we doing the right ones' — start killing weak projects faster.",,
+,,,
+"THE ONE THAT MATTERS MOST",,,
+"If you score 0-1 on 'Have you agreed what would make you stop?', treat your total as provisional.",,,
+"Organisations without a kill criterion do not fail at AI — they succeed slowly and expensively at the wrong thing.",,,

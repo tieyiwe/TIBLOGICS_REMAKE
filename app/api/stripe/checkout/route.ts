@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import stripe from "@/lib/stripe";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 // Max reasonable appointment price: $5000
 const MAX_AMOUNT_CENTS = 500_000;
@@ -8,6 +9,12 @@ const MAX_AMOUNT_CENTS = 500_000;
 export async function POST(req: Request) {
   if (!process.env.STRIPE_SECRET_KEY) {
     return NextResponse.json({ error: "Payment processing is not configured yet. Please contact info@tiblogics.com to complete your booking." }, { status: 503 });
+  }
+  // Public (the booking page pays for an appointment), so each caller gets a
+  // handful of Stripe sessions an hour rather than an unlimited supply.
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  if (!(await checkRateLimit(`appt-checkout:${ip}`, 10, 3_600_000))) {
+    return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
   }
   try {
     const body = await req.json();
