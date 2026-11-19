@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { unsubscribeUrl } from "@/lib/newsletter/unsubscribe";
 import { requireAdmin } from "@/lib/require-admin";
 import prisma from "@/lib/prisma";
 import resend from "@/lib/resend";
@@ -77,7 +78,7 @@ function buildEmailHtml(
         You're receiving this because you subscribed at <a href="${SITE_URL}" style="color:#2251A3;text-decoration:none;">tiblogics.com</a>
       </p>
       <p style="margin:0;font-size:12px;color:#7A8FA6;">
-        <a href="${SITE_URL}/unsubscribe?email={{email}}" style="color:#7A8FA6;">Unsubscribe</a>
+        <a href="{{unsubscribe}}" style="color:#7A8FA6;">Unsubscribe</a>
         &nbsp;·&nbsp; TIBLOGICS · AI Agency
       </p>
     </div>
@@ -134,9 +135,9 @@ export async function POST(req: NextRequest) {
   let sent = 0;
   for (const sub of subscribers) {
     try {
-      const personalizedHtml = buildEmailHtml(introText, articles, sub.firstName ?? undefined).replace(
-        "{{email}}",
-        encodeURIComponent(sub.email)
+      const personalizedHtml = buildEmailHtml(introText, articles, sub.firstName ?? undefined).replaceAll(
+        "{{unsubscribe}}",
+        unsubscribeUrl(sub.email),
       );
       await resend.emails.send({
         to: sub.email,

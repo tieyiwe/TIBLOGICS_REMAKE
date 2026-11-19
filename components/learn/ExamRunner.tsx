@@ -185,6 +185,12 @@ export default function ExamRunner({
         body: JSON.stringify({ sessionId, answers }),
       });
       const data = await res.json().catch(() => ({}));
+      // 409: this attempt was already closed (another tab, or scored after
+      // the deadline). Retrying cannot succeed; reload to show its result.
+      if (res.status === 409) {
+        window.location.reload();
+        return;
+      }
       if (!res.ok) throw new Error(data.error ?? t("labs.exam.submitError"));
       setResult(data);
       celebrate({ points: data.pointsAwarded, reason: "exam", newBadges: data.newBadges, levelUp: data.levelUp });

@@ -40,7 +40,8 @@ function fmt(t: string) {
   return t.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 }
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+  // Booked dates are stored at UTC midnight: read in UTC, or the Americas see the day before.
+  return new Date(d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 function fmtMoney(cents: number) {
   return cents === 0 ? "Free" : `$${(cents / 100).toFixed(0)}`;
@@ -815,7 +816,12 @@ export default function AppointmentsClient({
         a.zoomLink ?? "",
       ]),
     ];
-    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    // A leading = + - @ would run as a formula in Excel (names come from the public form).
+    const cell = (c: unknown) => {
+      const v = String(c);
+      return (/^[=+\-@\t\r]/.test(v) && !/^-?\d+(\.\d+)?$/.test(v) ? `'${v}` : v).replace(/"/g, '""');
+    };
+    const csv = rows.map((r) => r.map((c) => `"${cell(c)}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

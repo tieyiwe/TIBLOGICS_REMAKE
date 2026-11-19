@@ -31,8 +31,10 @@ export async function finaliseExamSession(sessionId: string, lateSubmission = fa
   const distinction = score >= exam.distinctionScore;
   const perModule = perModuleBreakdown(graded);
 
-  const updated = await prisma.finalExamSession.update({
-    where: { id: sessionId },
+  // Only an in-progress session is scored: the submit route, the start route
+  // and the sweep can reach the same expired session at once.
+  const claimed = await prisma.finalExamSession.updateMany({
+    where: { id: sessionId, status: "in_progress" },
     data: {
       // A submission that arrives after expiry is still scored on the answers
       // saved up to expiry — marked `expired`, never discarded.
@@ -43,10 +45,12 @@ export async function finaliseExamSession(sessionId: string, lateSubmission = fa
       perModuleScores: perModule as unknown as Prisma.InputJsonValue,
     },
   });
+  const updated = await prisma.finalExamSession.findUniqueOrThrow({ where: { id: sessionId } });
 
-  // Points on first pass only (ledger keeps this idempotent)
+  // Points on first pass only (ledger keeps this idempotent); none when
+  // another request scored this session first.
   let pointsAwarded = 0;
-  if (passed) {
+  if (passed && claimed.count === 1) {
     const totalBefore = await getTotalPoints(session.studentId);
     pointsAwarded = distinction
       ? await awardPoints(session.studentId, "final_exam_distinction", exam.id)

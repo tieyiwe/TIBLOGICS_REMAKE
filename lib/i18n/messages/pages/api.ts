@@ -115,6 +115,29 @@ export default tri({
     "Hatukuweza kukuandikisha. Tafadhali jaribu tena.",
   ],
   "pages.api.news.unsubscribed": ["Unsubscribed successfully.", "Désabonnement effectué.", "Umejiondoa kikamilifu."],
+  "pages.unsubscribe.title": ["Newsletter", "Newsletter", "Jarida"],
+  "pages.unsubscribe.confirm": [
+    "Stop receiving the TIBLOGICS newsletter at this address?",
+    "Ne plus recevoir la newsletter TIBLOGICS à cette adresse ?",
+    "Acha kupokea jarida la TIBLOGICS kwa anwani hii?",
+  ],
+  "pages.unsubscribe.button": ["Unsubscribe", "Me désabonner", "Jiondoe"],
+  "pages.unsubscribe.done": [
+    "You're unsubscribed. You won't receive the newsletter any more.",
+    "Vous êtes désabonné. Vous ne recevrez plus la newsletter.",
+    "Umejiondoa. Hutapokea jarida tena.",
+  ],
+  "pages.unsubscribe.error": [
+    "Something went wrong. Please try again in a moment, or email info@tiblogics.com.",
+    "Une erreur s'est produite. Réessayez dans un instant ou écrivez à info@tiblogics.com.",
+    "Hitilafu imetokea. Tafadhali jaribu tena baadaye, au tuma barua pepe kwa info@tiblogics.com.",
+  ],
+  "pages.unsubscribe.noEmail": [
+    "Use the unsubscribe link in one of our newsletter emails.",
+    "Utilisez le lien de désabonnement d'un de nos e-mails.",
+    "Tumia kiungo cha kujiondoa kilicho kwenye mojawapo ya barua pepe zetu.",
+  ],
+  "pages.unsubscribe.home": ["Back to tiblogics.com", "Retour à tiblogics.com", "Rudi tiblogics.com"],
   "pages.api.news.notFound": [
     "We couldn't find that subscription.",
     "Nous n'avons pas trouvé cet abonnement.",

@@ -7,10 +7,12 @@
 
 const DANGEROUS_BLOCKS = /<(script|style|iframe|object|embed|template|noscript|svg|math|form)\b[\s\S]*?<\/\1\s*>/gi;
 const DANGEROUS_SINGLE = /<\/?(script|style|iframe|object|embed|template|noscript|svg|math|form|input|button|textarea|select|meta|link|base|frame|frameset)\b[^>]*>/gi;
-// Attributes may be separated by "/" as well as whitespace (<img src=x/onerror=...>).
-const EVENT_ATTR = /[\s/]+on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi;
-const STYLE_ATTR = /[\s/]+style\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi;
-const URL_ATTR = /[\s/]+(href|src|xlink:href|action|formaction|srcset|poster|background)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi;
+// Attributes may be separated by "/" as well as whitespace (<img src=x/onerror=...>),
+// and browsers also read one written straight after a quoted value
+// (<img src="x"onerror=...>), so a closing quote counts as a separator too.
+const EVENT_ATTR = /(?<=[\s/"'])on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi;
+const STYLE_ATTR = /(?<=[\s/"'])style\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi;
+const URL_ATTR = /(?<=[\s/"'])(href|src|xlink:href|action|formaction|srcset|poster|background)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi;
 
 const codePoint = (n: number) => (Number.isInteger(n) && n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : "");
 
@@ -29,7 +31,12 @@ export function sanitizeTranslatedHtml(html: string): string {
   return html
     .replace(DANGEROUS_BLOCKS, "")
     .replace(DANGEROUS_SINGLE, "")
-    .replace(EVENT_ATTR, "")
-    .replace(STYLE_ATTR, "")
-    .replace(URL_ATTR, (m, _name: string, value: string) => (/^(?:javascript|data|vbscript):/.test(schemeOf(value)) ? "" : m));
+    // Attributes are cleaned inside tags only, so article text such as
+    // `"once=..."` is never touched.
+    .replace(/<[a-z](?:"[^"]*"|'[^']*'|[^'">])*>/gi, (tag) =>
+      tag
+        .replace(EVENT_ATTR, "")
+        .replace(STYLE_ATTR, "")
+        .replace(URL_ATTR, (m, _name: string, value: string) => (/^(?:javascript|data|vbscript):/.test(schemeOf(value)) ? "" : m)),
+    );
 }

@@ -66,6 +66,10 @@ export const PAGE_RULES: AccessRule[] = [
   { path: "/admin_pro/learn/learners", key: "learners" },
   { path: "/admin_pro/learn/exams", key: "learners" },
   { path: "/admin_pro/learn/scholarships", key: "learners" },
+  // Youth sponsorships list children's details: Learners access, not Academy view.
+  { path: "/admin_pro/learn/youth", key: "learners" },
+  // Teams show owners, members and billing; the Teams API is admin-only too.
+  { path: "/admin_pro/learn/teams", key: "__admin__" },
   { path: "/admin_pro/blog", key: "blog" },
   { path: "/admin_pro/newsletter", key: "blog" },
   { path: "/admin_pro/events", key: "events" },

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isPastSlot } from "@/lib/booking/past-slot";
 import { getT } from "@/lib/i18n/server";
 import prisma from "@/lib/prisma";
 import resend from "@/lib/resend";
@@ -163,10 +164,10 @@ export async function POST(req: Request) {
     if (!bookingDate) {
       return NextResponse.json({ error: t("pages.api.book.invalidDate") }, { status: 400 });
     }
-    // Yesterday's slots are not bookable. Compared against UTC midnight today,
-    // matching how bookings are stored.
-    const todayUtc = new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`);
-    if (bookingDate < todayUtc) {
+    // Past days and today's slots that have passed (or start within 30
+    // minutes) are not bookable, judged in New York like the slots themselves.
+    // Bookings are stored at UTC midnight of the chosen day.
+    if (typeof timeSlot === "string" && isPastSlot(bookingDate.toISOString().slice(0, 10), timeSlot)) {
       return NextResponse.json({ error: t("pages.api.book.pastDate") }, { status: 400 });
     }
 

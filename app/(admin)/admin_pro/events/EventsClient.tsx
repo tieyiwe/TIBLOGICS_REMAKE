@@ -400,7 +400,9 @@ export default function EventsClient({
     };
     const cols = EXPORT_COLUMNS.filter(c => exportCols.has(c.key));
     const headers = cols.map(c => colMap[c.key].header);
-    const rows = filteredRegs.map(r => cols.map(c => colMap[c.key].value(r).replace(/"/g, '""')));
+    // A leading = + - @ would run as a formula in Excel (names come from the public form).
+    const cell = (v: string) => (/^[=+\-@\t\r]/.test(v) && !/^-?\d+(\.\d+)?$/.test(v) ? `'${v}` : v).replace(/"/g, '""');
+    const rows = filteredRegs.map(r => cols.map(c => cell(colMap[c.key].value(r))));
     const csv = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);

@@ -4,7 +4,9 @@ import prisma from "@/lib/prisma";
 import { alertCheckoutSale, alertInvoiceSale } from "@/lib/payments/sale-alert";
 import { TRACK_MONTHLY_PRODUCT } from "@/lib/learn/track-monthly";
 import { markTrackSubscriptionPastDue, upsertTrackSubscription } from "@/lib/learn/track-subscriptions";
-import { sendConfirmationEmail, sendTiweNotification, sendEventWelcomeEmail, sendAdminNewRegistrationAlert, sendOrderConfirmationEmail, sendAdminOrderAlert } from "@/lib/resend";
+import { confirmEventRegistration } from "@/lib/events/confirm";
+import { groupNotePrefix } from "@/lib/events/seat-pricing";
+import { sendConfirmationEmail, sendTiweNotification, sendOrderConfirmationEmail, sendAdminOrderAlert } from "@/lib/resend";
 import { recordScholarshipPayment } from "@/lib/learn/scholarship/service";
 import { DONATION_PRODUCT, markDonationCanceled, recordDonation, recordDonationRenewal } from "@/lib/learn/scholarship/donations";
 import Stripe from "stripe";
@@ -459,35 +461,16 @@ async function fulfillOneTimePurchases(session: Stripe.Checkout.Session) {
       console.log(`[stripe/webhook] registration ${registrationId} already paid: nothing to do`);
       return;
     }
-    const reg = await prisma.eventRegistration.findUniqueOrThrow({ where: { id: registrationId } });
-
-    // Notify admin of confirmed sale
-    sendAdminNewRegistrationAlert({
-      firstName: reg.firstName,
-      lastName: reg.lastName,
-      email: reg.email,
-      eventName: reg.eventName,
-      confirmationNumber: reg.confirmationNumber ?? undefined,
-      whatsapp: reg.whatsapp,
-    }).then(() => {
-      console.log(`[stripe/webhook] ✓ Admin alert sent for ${reg.confirmationNumber}`);
-    }).catch((err) => {
-      console.error(`[stripe/webhook] ✗ Admin alert FAILED:`, err instanceof Error ? err.message : err);
-    });
-
-    // Send the "You're in — let's build" welcome email now that payment
-    // succeeded. firstName is captured from the registration record.
-    console.log(`[stripe/webhook] Sending welcome email to ${maskEmail(reg.email)} (reg: ${registrationId})`);
-    await sendEventWelcomeEmail({
-      firstName: reg.firstName,
-      email: reg.email,
-      eventName: reg.eventName,
-      confirmationNumber: reg.confirmationNumber,
-    }).then(() => {
-      console.log(`[stripe/webhook] ✓ Welcome email sent to ${maskEmail(reg.email)}`);
-    }).catch((err) => {
-      console.error(`[stripe/webhook] ✗ Welcome email FAILED for ${maskEmail(reg.email)}:`, err instanceof Error ? err.message : err);
-    });
+    // The extra seats of a group booking are paid for by the same checkout.
+    const primary = await prisma.eventRegistration.findUnique({ where: { id: registrationId }, select: { confirmationNumber: true } });
+    if (primary?.confirmationNumber) {
+      await prisma.eventRegistration.updateMany({
+        where: { notes: { startsWith: groupNotePrefix(primary.confirmationNumber) }, status: "pending" },
+        data: { status: "paid", stripeSessionId: session.id },
+      });
+    }
+    // Admin alert and the welcome email to every seat.
+    await confirmEventRegistration(registrationId);
   }
 
   if (appointmentId) {

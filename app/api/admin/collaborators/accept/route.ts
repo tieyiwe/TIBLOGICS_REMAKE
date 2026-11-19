@@ -4,7 +4,7 @@ import { ZodError } from "zod";
 import prisma from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { audit } from "@/lib/admin/audit";
-import { AcceptBody, findInvite } from "@/lib/admin/team/service";
+import { AcceptBody, bumpSessionVersion, findInvite } from "@/lib/admin/team/service";
 import { forgetStaffState } from "@/lib/admin/team/state";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +62,9 @@ export async function POST(req: NextRequest) {
     },
   });
   if (!done.count) return NextResponse.json({ error: "This link is invalid or was already used." }, { status: 400 });
+  // A password reset signs out every other session of this account (one
+  // left signed in elsewhere may be why the password was reset).
+  if (reset) await bumpSessionVersion(collab.id);
   forgetStaffState(collab.id);
   await audit({ email: collab.email, name: body.name ?? collab.name, role: "collaborator" }, reset ? "team.password_set" : "team.invite_accept", {
     type: "collaborator",

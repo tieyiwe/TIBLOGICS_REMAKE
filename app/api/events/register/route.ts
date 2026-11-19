@@ -6,6 +6,8 @@ import { resolveCheckoutDiscount } from "@/lib/promotions/service";
 import { requireAdmin } from "@/lib/require-admin";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { recordAttribution } from "@/lib/growth/attribution";
+import { eventSeatLineItems, groupNote, groupNotePrefix, seatTotal } from "@/lib/events/seat-pricing";
+import { confirmEventRegistration } from "@/lib/events/confirm";
 
 
 function generateConfirmationNumber(): string {
@@ -84,16 +86,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (typeof eventRow.spots === "number" && eventRow.spots < seats) {
-      return NextResponse.json(
-        {
-          error:
-            eventRow.spots <= 0
-              ? "That cohort is full."
-              : `Only ${eventRow.spots} seat${eventRow.spots === 1 ? "" : "s"} left.`,
-        },
-        { status: 409 },
-      );
+    // `spots` is the cohort's capacity; seats already paid for are taken
+    // (the row's own figure is never decremented, so comparing it alone let
+    // every cohort overbook).
+    if (typeof eventRow.spots === "number") {
+      const taken = await prisma.eventRegistration.count({ where: { eventSlug, status: "paid" } });
+      const left = Math.max(0, eventRow.spots - taken);
+      if (left < seats) {
+        return NextResponse.json(
+          { error: left <= 0 ? "That cohort is full." : `Only ${left} seat${left === 1 ? "" : "s"} left.` },
+          { status: 409 },
+        );
+      }
     }
 
     const resolvedEventName = eventRow.title;
@@ -132,8 +136,9 @@ export async function POST(req: NextRequest) {
     const rawExtras = Array.isArray(additionalParticipants) ? additionalParticipants : [];
     const extras: Array<{ firstName: string; lastName: string; email: string }> =
       rawExtras.slice(0, seats - 1); // never more than seats - 1 extra participants
+    // Created before checkout, so the payment webhook finds and confirms them.
     if (extras.length > 0) {
-      Promise.all(extras.map(async (p, i) => {
+      await Promise.all(extras.map(async (p, i) => {
         try {
           let cn = generateConfirmationNumber();
           const dup = await prisma.eventRegistration.findUnique({ where: { confirmationNumber: cn } });
@@ -150,13 +155,13 @@ export async function POST(req: NextRequest) {
               currency: resolvedCurrency,
               status: "pending",
               confirmationNumber: cn,
-              notes: `Group booking with ${confirmationNumber} (seat ${i + 2} of ${seats})`,
+              notes: groupNote(confirmationNumber, i + 2, seats),
             },
           });
         } catch (e) {
           console.error(`[event-reg/additional-${i}]`, e instanceof Error ? e.message : e);
         }
-      })).catch(() => {});
+      }));
     }
 
     // Non-blocking side effects — newsletter only. Confirmation email fires
@@ -168,78 +173,51 @@ export async function POST(req: NextRequest) {
       update: { source: `event-register:${eventSlug}` },
     }).catch(() => { /* non-critical */ });
 
-    // Create Stripe checkout session
-    // Seat 1 = full price. Seats 2+ = 25% off (75% of unit price).
-    const priceId = process.env.STRIPE_EVENT_PRICE_ID;
-    if (priceId) {
-      try {
-        const baseUrl = (
-          process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
-        ).replace(/\/$/, "");
-
-        // Tiered seat pricing: seat 1 full, seat 2 −17%, seat 3 −23%, seat 4 −25%, seat 5+ full
-        const curr = resolvedCurrency.toLowerCase();
-        const lineItems: object[] = [{ price: priceId, quantity: 1 }]; // seat 1 full price
-        const discounts: Array<{ label: string; rate: number }> = [
-          { label: "17% group discount", rate: 0.83 },
-          { label: "23% group discount", rate: 0.77 },
-          { label: "25% group discount", rate: 0.75 },
-        ];
-        for (let i = 1; i < Math.min(seats, 4); i++) {
-          lineItems.push({
-            price_data: {
-              currency: curr,
-              product_data: { name: `${resolvedEventName} — Seat ${i + 1} (${discounts[i - 1].label})` },
-              unit_amount: Math.round(priceInt * discounts[i - 1].rate),
-            },
-            quantity: 1,
-          });
-        }
-        // Seats 5+ at full price
-        if (seats > 4) {
-          lineItems.push({
-            price_data: {
-              currency: curr,
-              product_data: { name: `${resolvedEventName} — Additional Seats (standard rate)` },
-              unit_amount: priceInt,
-            },
-            quantity: seats - 4,
-          });
-        }
-
-        // Seat total as charged above (seat 1 at the event price).
-        let seatTotal = priceInt;
-        for (let i = 1; i < Math.min(seats, 4); i++) seatTotal += Math.round(priceInt * discounts[i - 1].rate);
-        if (seats > 4) seatTotal += priceInt * (seats - 4);
-        const promo = await resolveCheckoutDiscount({
-          lines: [{ key: "events", id: eventSlug, amountCents: seatTotal }],
-          recurring: false,
-          buyer: { email: cleanEmail },
-        });
-        const session = await stripe.checkout.sessions.create({
-          line_items: lineItems,
-          mode: "payment",
-          ...(promo.couponId ? { discounts: [{ coupon: promo.couponId }] } : promo.allowPromotionCodes ? { allow_promotion_codes: true } : {}),
-          customer_email: cleanEmail,
-          // Google Pay is auto-shown in Stripe Checkout when card is enabled and browser supports it
-          success_url: `${baseUrl}/events/${eventSlug}/confirmed?conf=${confirmationNumber}`,
-          cancel_url: `${baseUrl}/events/${eventSlug}?payment=cancelled&conf=${confirmationNumber}`,
-          metadata: {
-            ...promo.metadata,
-            registrationId: registration.id,
-            confirmationNumber,
-            eventSlug,
-            seats: String(seats),
-          },
-        });
-        return NextResponse.json({ ok: true, id: registration.id, confirmationNumber, checkoutUrl: session.url });
-      } catch (stripeErr) {
-        console.error("[event-reg/stripe]", stripeErr instanceof Error ? stripeErr.message : stripeErr);
-        return NextResponse.json({ ok: true, id: registration.id, confirmationNumber });
-      }
+    // A free event needs no checkout: the seats are confirmed now.
+    if (priceInt <= 0) {
+      await prisma.eventRegistration.updateMany({
+        where: { OR: [{ id: registration.id }, { notes: { startsWith: groupNotePrefix(confirmationNumber) } }], status: "pending" },
+        data: { status: "paid" },
+      });
+      await confirmEventRegistration(registration.id).catch((e) => console.error("[event-reg/free]", e instanceof Error ? e.message : e));
+      return NextResponse.json({ ok: true, id: registration.id, confirmationNumber });
     }
 
-    return NextResponse.json({ ok: true, id: registration.id, confirmationNumber });
+    // Stripe checkout, priced from the Event row: seat 1 at the event's price,
+    // then the group discounts (lib/events/seat-pricing.ts). Seat 1 used to be
+    // a fixed Stripe Price (STRIPE_EVENT_PRICE_ID) whatever the event cost.
+    try {
+      const baseUrl = (
+        process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com"
+      ).replace(/\/$/, "");
+      const lineItems = eventSeatLineItems(resolvedEventName, priceInt, resolvedCurrency, seats);
+      const promo = await resolveCheckoutDiscount({
+        lines: [{ key: "events", id: eventSlug, amountCents: seatTotal(lineItems) }],
+        recurring: false,
+        buyer: { email: cleanEmail },
+      });
+      const session = await stripe.checkout.sessions.create({
+        line_items: lineItems,
+        mode: "payment",
+        ...(promo.couponId ? { discounts: [{ coupon: promo.couponId }] } : promo.allowPromotionCodes ? { allow_promotion_codes: true } : {}),
+        customer_email: cleanEmail,
+        // Google Pay is auto-shown in Stripe Checkout when card is enabled and browser supports it
+        success_url: `${baseUrl}/events/${eventSlug}/confirmed?conf=${confirmationNumber}`,
+        cancel_url: `${baseUrl}/events/${eventSlug}?payment=cancelled&conf=${confirmationNumber}`,
+        metadata: {
+          ...promo.metadata,
+          registrationId: registration.id,
+          confirmationNumber,
+          eventSlug,
+          seats: String(seats),
+        },
+      });
+      return NextResponse.json({ ok: true, id: registration.id, confirmationNumber, checkoutUrl: session.url });
+    } catch (stripeErr) {
+      // An error, not "ok": the page used to fall back to a one-seat checkout.
+      console.error("[event-reg/stripe]", stripeErr instanceof Error ? stripeErr.message : stripeErr);
+      return NextResponse.json({ error: "Could not start checkout. Please try again or contact support." }, { status: 502 });
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[POST /api/events/register]", msg);

@@ -42,13 +42,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: t("labs.api.questionNotInSession") }, { status: 400 });
     }
 
-    const answers = { ...((session.answers ?? {}) as Record<string, number>), [questionId]: answer };
-    await prisma.finalExamSession.update({
-      where: { id: sessionId },
-      data: { answers: answers as unknown as Prisma.InputJsonValue },
-    });
+    // Merged in the database, in one statement: two answers saved at the
+    // same moment used to overwrite each other (read, merge, write back).
+    const rows = await prisma.$queryRaw<Array<{ n: number }>>`
+      UPDATE "FinalExamSession"
+      SET "answers" = COALESCE("answers", '{}'::jsonb) || jsonb_build_object(${questionId}::text, ${answer}::int)
+      WHERE "id" = ${sessionId} AND "status" = 'in_progress' AND "expiresAt" > NOW()
+      RETURNING (SELECT count(*) FROM jsonb_object_keys("answers"))::int AS n`;
+    if (rows.length === 0) return NextResponse.json({ error: t("labs.api.examClosed") }, { status: 409 });
 
-    return NextResponse.json({ ok: true, saved: Object.keys(answers).length });
+    return NextResponse.json({ ok: true, saved: rows[0].n });
   } catch (err) {
     console.error("[POST /api/learn/exam/answer]", err);
     return NextResponse.json({ error: t("labs.api.saveAnswerFailed") }, { status: 500 });

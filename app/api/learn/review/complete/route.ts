@@ -5,7 +5,7 @@ import { checkRateLimit } from "@/lib/require-admin";
 import { awardPoints, getTotalPoints } from "@/lib/learn/points";
 import { checkLevelUp } from "@/lib/learn/milestones";
 import { gameDelta, gameSnapshot } from "@/lib/learn/badges";
-import { MIN_FOR_COMPLETE, reviewSummary, reviewedRecently, serverDay, validDay } from "@/lib/learn/method/review";
+import { MIN_FOR_COMPLETE, reviewStatus, reviewSummary, reviewedRecently, serverDay, validDay } from "@/lib/learn/method/review";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 
 // Finishes the day's Daily Review: small XP once per day (ledger source
@@ -27,8 +27,11 @@ export async function POST(req: NextRequest) {
   const day = validDay(parsed.data.day) ?? serverDay();
 
   try {
-    const { answered, total } = await reviewedRecently(student.id);
-    const enough = answered > 0 && answered >= Math.min(MIN_FOR_COMPLETE, total);
+    // Counted at MIN_FOR_COMPLETE answers, or on a light day once everything
+    // on offer is done (fewer cards due than the minimum is not the
+    // learner's fault).
+    const [{ answered }, status] = await Promise.all([reviewedRecently(student.id), reviewStatus(student.id)]);
+    const enough = answered > 0 && (answered >= MIN_FOR_COMPLETE || status.due === 0);
 
     let pointsAwarded = 0;
     let game = gameDelta(null, null);

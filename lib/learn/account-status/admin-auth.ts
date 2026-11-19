@@ -21,7 +21,6 @@ import { can } from "@/lib/admin/permissions";
 export type LearnerLevel = "read" | "manage";
 export type LearnerArea = "learners" | "communications";
 
-export const LEARNER_READ_PERMISSIONS = ["*", "learners", "events"];
 
 function isStaff(s: Session | null): s is Session {
   const u = s?.user;
@@ -35,7 +34,12 @@ export function canManageLearners(s: Session | null, area: LearnerArea = "learne
 export function canReadLearners(s: Session | null, area: LearnerArea = "learners"): boolean {
   if (!isStaff(s)) return false;
   if (canManageLearners(s, area) || can(s.user, area)) return true;
-  return area === "learners" && (s.user.permissions ?? []).some((p) => LEARNER_READ_PERMISSIONS.includes(p));
+  // "events" opened the learner pages under the old, flat permission lists.
+  // Current lists also grant "events" to anyone with Academy view (alongside
+  // "events:view"), so it only counts on a list with no ":"-style keys.
+  const perms = s.user.permissions ?? [];
+  const legacy = !perms.some((p) => p.includes(":"));
+  return area === "learners" && perms.some((p) => p === "*" || p === "learners" || (legacy && p === "events"));
 }
 
 /** A capability such as "learners.delete" or "comms.send" (owner and admins always). */

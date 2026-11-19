@@ -19,7 +19,9 @@ export async function GET(req: NextRequest) {
 
     const where: Record<string, unknown> = {
       published: true,
-      OR: [{ date: null }, { date: { gte: now } }],
+      // A multi-week cohort stays listed until its last session (registration
+      // stays open until endDate too).
+      OR: [{ date: null }, { date: { gte: now } }, { endDate: { gte: now } }],
     };
     if (type && type !== "all") where.type = type.toUpperCase();
     if (featured === "true") where.featured = true;

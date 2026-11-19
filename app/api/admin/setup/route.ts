@@ -88,6 +88,12 @@ export async function DELETE(req: NextRequest) {
   if (!(await checkRateLimit(`admin-setup-delete:${ip}`, 5, 3_600_000))) {
     return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
   }
+  // Also one shared limit for every caller of the sessionless owner-password
+  // endpoints: the per-address limit alone can be dodged by changing the
+  // forwarded address, which would allow unlimited guesses.
+  if (!(await checkRateLimit("owner-password-recovery:all", 10, 3_600_000))) {
+    return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
+  }
 
   try {
     const { password, resetToken } = await req.json().catch(() => ({}));

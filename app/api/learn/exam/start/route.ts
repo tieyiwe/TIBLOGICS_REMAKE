@@ -1,3 +1,4 @@
+import { finaliseExamSession } from "@/lib/learn/exam-scoring";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
@@ -50,11 +51,9 @@ export async function POST(req: NextRequest) {
       if (existing.expiresAt.getTime() > Date.now()) {
         return NextResponse.json(await hydrate(existing, exam.id, exam.questions, locale));
       }
-      // Expired while away — close it out so a fresh attempt can start
-      await prisma.finalExamSession.update({
-        where: { id: existing.id },
-        data: { status: "expired", submittedAt: new Date() },
-      });
+      // Expired while away: scored on the answers saved before the deadline,
+      // as the submit route and the sweep do (never closed with no score).
+      await finaliseExamSession(existing.id, true);
     }
 
     // Attempt limit + cooldown

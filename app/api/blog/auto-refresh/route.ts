@@ -720,6 +720,13 @@ const OWNER_EMAIL = "tieyiwebass@gmail.com";
 const ALERT_THRESHOLD_MS = REFRESH_INTERVAL_MS + 6 * 60 * 60 * 1000; // the cadence + 6h grace
 
 async function sendOverdueAlert(lastRefresh: Date | null) {
+  // Once a day at most: it was sent on every scheduled call while overdue.
+  const day = new Date().toISOString().slice(0, 10);
+  const first = await prisma.adminSettings
+    .create({ data: { key: `blog_overdue_alert:${day}`, value: new Date().toISOString() } })
+    .then(() => true)
+    .catch(() => false);
+  if (!first) return;
   const since = lastRefresh
     ? `Last successful run: ${lastRefresh.toUTCString()}`
     : "No successful run recorded.";
@@ -727,7 +734,7 @@ async function sendOverdueAlert(lastRefresh: Date | null) {
     await resend.emails.send({
       to: OWNER_EMAIL,
       subject: "⚠️ AI Times: Article agent is overdue",
-      html: `<p>The AI Times article agent has not run on schedule.</p><p>${since}</p><p>Visit <a href="https://tiblogics.com/admin/blog">Admin → Blog</a> and click <strong>Refresh Now</strong> to trigger manually.</p>`,
+      html: `<p>The AI Times article agent has not run on schedule.</p><p>${since}</p><p>Visit <a href="https://tiblogics.com/admin_pro/blog">Admin → AI Times</a> and click <strong>Refresh Now</strong> to trigger manually.</p>`,
     });
   } catch { /* don't crash the refresh if email fails */ }
 }
@@ -972,7 +979,9 @@ export async function GET(req: NextRequest) {
   // Idempotency lock — prevent duplicate runs from concurrent clicks or tabs.
   // Uses the DB so it works across multiple server instances.
   const LOCK_KEY = "blog_refresh_lock";
-  const LOCK_TTL_MS = 5 * 60 * 1000; // 5 minutes max — stale locks auto-expire
+  // Longer than a run can take (the cron runner allows 15 minutes), so a
+  // "Refresh now" during a long run does not start a second one.
+  const LOCK_TTL_MS = 16 * 60 * 1000;
   try {
     const lock = await prisma.adminSettings.findUnique({ where: { key: LOCK_KEY } });
     if (lock) {
@@ -984,7 +993,13 @@ export async function GET(req: NextRequest) {
       await prisma.adminSettings.delete({ where: { key: LOCK_KEY } });
     }
     await prisma.adminSettings.create({ data: { key: LOCK_KEY, value: new Date().toISOString() } });
-  } catch { /* lock table may not exist — proceed anyway */ }
+  } catch (err) {
+    // Another run took the lock between our read and our insert.
+    if ((err as { code?: string })?.code === "P2002") {
+      return NextResponse.json({ message: "Refresh already in progress", postsAdded: 0 });
+    }
+    /* lock table may not exist — proceed anyway */
+  }
 
   // Fast DB-only patches — always run, no Claude calls
   await Promise.all([

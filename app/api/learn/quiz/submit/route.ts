@@ -165,12 +165,16 @@ export async function POST(req: NextRequest) {
         ? await awardPoints(student.id, "quiz_perfect", id)
         : await awardPoints(student.id, "quiz_pass", id);
 
-      notifyMilestone({
-        studentId: student.id,
-        kind: "module_quiz_passed",
-        trackId: mod?.module.trackId,
-        points: pointsAwarded,
-      });
+      // Only the request that earned the points emails: two submissions
+      // racing past the alreadyPassed check sent the milestone twice.
+      if (pointsAwarded > 0) {
+        notifyMilestone({
+          studentId: student.id,
+          kind: "module_quiz_passed",
+          trackId: mod?.module.trackId,
+          points: pointsAwarded,
+        });
+      }
       checkLevelUp(student.id, totalBefore, totalBefore + pointsAwarded);
       if (pointsAwarded > 0) game = gameDelta(before, await gameSnapshot(student.id));
     }

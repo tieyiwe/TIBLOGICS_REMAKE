@@ -1,5 +1,6 @@
 "use client";
 
+import { isPastSlot as isPastSlotEt } from "@/lib/booking/past-slot";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -47,18 +48,11 @@ function parseSlotMinutes(slot: string): number {
   return ((h % 12) + (period === "PM" ? 12 : 0)) * 60 + m;
 }
 
+// The day the visitor clicked, compared with today in New York (where the
+// slots are); it used to format the visitor's local midnight in New York time,
+// which shifted the day for anyone east of it.
 function isPastSlot(date: Date, slot: string): boolean {
-  const now = new Date();
-  const todayET = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
-  const selectedET = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
-  if (todayET !== selectedET) return false;
-
-  const etParts = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit", hour12: false }).formatToParts(now);
-  const etHour = Number(etParts.find(p => p.type === "hour")?.value ?? 0);
-  const etMin = Number(etParts.find(p => p.type === "minute")?.value ?? 0);
-  const nowMinutes = etHour * 60 + etMin;
-
-  return parseSlotMinutes(slot) <= nowMinutes + 30; // block slots within 30 min of now
+  return isPastSlotEt(toDateKey(date), slot);
 }
 
 /** "2:00 PM" as the visitor's locale writes a time of day. */

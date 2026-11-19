@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { maybeIssueCertificate } from "@/lib/learn/certificates";
 import { notFound, redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { canAccessTrack, getAccess, getStudent } from "@/lib/learn/session";
@@ -178,7 +179,7 @@ export default async function TrackHome({
   };
 
   // Everything about this learner in this track, in one round trip.
-  const [progress, gates, done, quizPasses, cert, labPasses, mastery, masteredIds, resume, newLessons] = await Promise.all([
+  const [progress, gates, done, quizPasses, certFound, labPasses, mastery, masteredIds, resume, newLessons] = await Promise.all([
     getTrackProgress(student.id, track.id),
     getTrackGates(student.id, track.id),
     prisma.lessonProgress.findMany({
@@ -211,6 +212,14 @@ export default async function TrackHome({
     getResumeTarget(student.id, { trackId: track.id }).catch(() => null),
     newLessonsInTrack(student.id, track.id),
   ]);
+  // Every requirement met but no certificate yet: issue it now. It is
+  // otherwise issued only at an exam pass or a capstone approval, so a learner
+  // who finished a missing micro-check or quiz afterwards was left stranded.
+  let cert = certFound;
+  if (!cert && gates.eligible) {
+    const issued = await maybeIssueCertificate(student.id, track.id).catch(() => null);
+    if (issued) cert = { verificationId: issued.verificationId, distinction: false };
+  }
 
   const passedLabIds = new Set(labPasses.map((l) => l.labId));
 

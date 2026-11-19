@@ -1,5 +1,10 @@
 import nodemailer from "nodemailer";
 
+/** Escapes a visitor-supplied value for an email's HTML (names, notes, messages). */
+function h(v: string | null | undefined): string {
+  return String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+}
+
 function getTransport() {
   return nodemailer.createTransport({
     host: process.env.TITAN_SMTP_HOST ?? "smtp.titan.email",
@@ -44,7 +49,7 @@ export async function sendConfirmationEmail(appointment: {
         <div style="padding: 32px; background: white;">
           <h2 style="color: #0D1B2A; font-size: 22px;">You're booked! ✅</h2>
           <div style="background: #F4F7FB; border-radius: 12px; padding: 20px; margin: 20px 0;">
-            <p><strong>Service:</strong> ${appointment.serviceType}</p>
+            <p><strong>Service:</strong> ${h(appointment.serviceType)}</p>
             <p><strong>Date:</strong> ${dateStr} at ${appointment.timeSlot} ET</p>
             <p><strong>Duration:</strong> ${appointment.serviceDuration}</p>
             <p><strong>With:</strong> Tieyiwe Bassole, TIBLOGICS</p>
@@ -95,13 +100,13 @@ export async function sendTiweNotification(appointment: {
     </div>
     <div style="padding:28px 32px;">
       <table style="width:100%;border-collapse:collapse;font-size:15px;">
-        <tr><td style="padding:8px 0;color:#7A8FA6;width:130px;">Client</td><td style="padding:8px 0;color:#0D1B2A;font-weight:700;">${appointment.firstName} ${appointment.lastName}</td></tr>
-        <tr><td style="padding:8px 0;color:#7A8FA6;">Email</td><td style="padding:8px 0;"><a href="mailto:${appointment.email}" style="color:#2251A3;">${appointment.email}</a></td></tr>
-        ${appointment.company ? `<tr><td style="padding:8px 0;color:#7A8FA6;">Company</td><td style="padding:8px 0;color:#0D1B2A;">${appointment.company}</td></tr>` : ""}
-        <tr><td style="padding:8px 0;color:#7A8FA6;">Service</td><td style="padding:8px 0;color:#0D1B2A;font-weight:600;">${appointment.serviceType}</td></tr>
+        <tr><td style="padding:8px 0;color:#7A8FA6;width:130px;">Client</td><td style="padding:8px 0;color:#0D1B2A;font-weight:700;">${h(appointment.firstName)} ${h(appointment.lastName)}</td></tr>
+        <tr><td style="padding:8px 0;color:#7A8FA6;">Email</td><td style="padding:8px 0;"><a href="mailto:${h(appointment.email)}" style="color:#2251A3;">${h(appointment.email)}</a></td></tr>
+        ${appointment.company ? `<tr><td style="padding:8px 0;color:#7A8FA6;">Company</td><td style="padding:8px 0;color:#0D1B2A;">${h(appointment.company)}</td></tr>` : ""}
+        <tr><td style="padding:8px 0;color:#7A8FA6;">Service</td><td style="padding:8px 0;color:#0D1B2A;font-weight:600;">${h(appointment.serviceType)}</td></tr>
         <tr><td style="padding:8px 0;color:#7A8FA6;">Date & Time</td><td style="padding:8px 0;color:#0D1B2A;font-weight:600;">${dateStr} at ${appointment.timeSlot} ET</td></tr>
         <tr><td style="padding:8px 0;color:#7A8FA6;">Amount</td><td style="padding:8px 0;color:#0D1B2A;">${isPaid ? `<strong style="color:#16a34a;">$${(appointment.totalAmount / 100).toFixed(0)} paid</strong>` : "Free"}</td></tr>
-        ${appointment.goalNotes ? `<tr><td style="padding:8px 0;color:#7A8FA6;vertical-align:top;">Their Goals</td><td style="padding:8px 0;color:#3A4A5C;font-style:italic;">${appointment.goalNotes}</td></tr>` : ""}
+        ${appointment.goalNotes ? `<tr><td style="padding:8px 0;color:#7A8FA6;vertical-align:top;">Their Goals</td><td style="padding:8px 0;color:#3A4A5C;font-style:italic;">${h(appointment.goalNotes)}</td></tr>` : ""}
       </table>
       ${appointment.meetingLink ? `
       <div style="margin:24px 0;padding:16px 20px;background:#EFF8FF;border-radius:12px;border-left:4px solid #1D76BA;">
@@ -109,7 +114,7 @@ export async function sendTiweNotification(appointment: {
         <a href="${appointment.meetingLink}" style="color:#1D76BA;word-break:break-all;font-size:14px;">${appointment.meetingLink}</a>
       </div>` : ""}
       <div style="margin-top:24px;">
-        <a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/appointments"
+        <a href="${process.env.NEXT_PUBLIC_APP_URL}/admin_pro/appointments"
            style="display:inline-block;background:#F47C20;color:white;text-decoration:none;padding:12px 24px;border-radius:10px;font-weight:700;font-size:14px;">
           View in Admin →
         </a>
@@ -139,12 +144,12 @@ export async function sendProspectEmail(prospect: {
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
         <h2 style="color: #1B3A6B;">New Prospect from TIBS</h2>
         <div style="background: #F4F7FB; border-radius: 12px; padding: 20px;">
-          <p><strong>Prospect:</strong> ${prospect.name} | ${prospect.business} | ${prospect.industry}</p>
-          <p><strong>Budget:</strong> ${prospect.budget}</p>
-          <p><strong>Challenge:</strong> ${prospect.mainChallenge}</p>
-          <p><strong>Suggested Solutions:</strong> ${prospect.suggestedSolutions.join(", ")}</p>
+          <p><strong>Prospect:</strong> ${h(prospect.name)} | ${h(prospect.business)} | ${h(prospect.industry)}</p>
+          <p><strong>Budget:</strong> ${h(prospect.budget)}</p>
+          <p><strong>Challenge:</strong> ${h(prospect.mainChallenge)}</p>
+          <p><strong>Suggested Solutions:</strong> ${h(prospect.suggestedSolutions.join(", "))}</p>
         </div>
-        <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/prospects" style="color: #F47C20;">View in Admin Dashboard →</a></p>
+        <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/admin_pro/prospects" style="color: #F47C20;">View in Admin Dashboard →</a></p>
       </div>
     `,
   });
@@ -169,13 +174,13 @@ export async function sendRescheduleEmail(data: {
           <h1 style="color: white; margin: 0; font-size: 24px;">TIB<span style="color: #F47C20;">LOGICS</span></h1>
         </div>
         <div style="padding: 32px; background: white;">
-          <h2 style="color: #0D1B2A;">Hi ${data.firstName}, we'd like to reschedule</h2>
+          <h2 style="color: #0D1B2A;">Hi ${h(data.firstName)}, we'd like to reschedule</h2>
           <p style="color: #3A4A5C;">Your original time slot is no longer available. Here's what we're suggesting:</p>
           <div style="background: #F4F7FB; border-radius: 12px; padding: 20px; margin: 20px 0;">
             <p style="margin: 0 0 8px;"><strong style="color: #7A8FA6;">Original:</strong> <span style="text-decoration: line-through; color: #7A8FA6;">${data.originalDate} at ${data.originalTimeSlot} ET</span></p>
             <p style="margin: 0;"><strong style="color: #2251A3;">New suggested time:</strong> <span style="color: #0D1B2A; font-weight: 700;">${data.suggestedDate} at ${data.suggestedTimeSlot} ET</span></p>
           </div>
-          ${data.message ? `<p style="color: #3A4A5C; font-style: italic;">"${data.message}"</p>` : ""}
+          ${data.message ? `<p style="color: #3A4A5C; font-style: italic;">"${h(data.message)}"</p>` : ""}
           <p style="color: #3A4A5C;">Please reply to this email to confirm or suggest an alternative time.</p>
           <p style="color: #7A8FA6; font-size: 14px; margin-top: 32px;">info@tiblogics.com | tiblogics.com</p>
         </div>
@@ -231,7 +236,7 @@ export async function sendEventRegistrationConfirmation(reg: {
         <div style="background:white;padding:36px 32px;">
           <h2 style="color:#0D1B2A;font-size:22px;margin:0 0 8px;">You&rsquo;re registered! 🎉</h2>
           <p style="color:#3A4A5C;font-size:15px;margin:0 0 24px;">
-            Hi ${reg.firstName}, your spot is reserved. Here are your registration details:
+            Hi ${h(reg.firstName)}, your spot is reserved. Here are your registration details:
           </p>
 
           <div style="background:#F4F7FB;border-radius:12px;padding:20px 24px;margin-bottom:24px;">
@@ -246,11 +251,11 @@ export async function sendEventRegistrationConfirmation(reg: {
               </tr>
               <tr>
                 <td style="padding:7px 0;color:#7A8FA6;">Name</td>
-                <td style="padding:7px 0;color:#0D1B2A;">${reg.firstName} ${reg.lastName}</td>
+                <td style="padding:7px 0;color:#0D1B2A;">${h(reg.firstName)} ${h(reg.lastName)}</td>
               </tr>
               <tr>
                 <td style="padding:7px 0;color:#7A8FA6;">Email</td>
-                <td style="padding:7px 0;color:#0D1B2A;">${reg.email}</td>
+                <td style="padding:7px 0;color:#0D1B2A;">${h(reg.email)}</td>
               </tr>
               ${reg.location ? `<tr>
                 <td style="padding:7px 0;color:#7A8FA6;">Location</td>
@@ -430,7 +435,7 @@ export async function sendEventWelcomeEmail(reg: {
   </div>
 
   <div class="body">
-    <div class="greeting">Hi ${firstName}, 👋</div>
+    <div class="greeting">Hi ${h(firstName)}, 👋</div>
     <p class="para">
       Your registration for the <strong>TIBLOGICS AI Practical Training</strong> is confirmed and your payment has been received.
       You are part of the June Cohort — an exclusive early group with direct access to our team,
@@ -551,12 +556,12 @@ export async function sendAdminNewRegistrationAlert(reg: {
   <div class="header">
     <div class="header-emoji">💰🎉</div>
     <p class="header-title">You have a sale!</p>
-    <p style="margin:6px 0 0;font-size:.88rem;color:rgba(255,255,255,.55);">${reg.firstName} just registered for the training. Go get it! 🚀</p>
+    <p style="margin:6px 0 0;font-size:.88rem;color:rgba(255,255,255,.55);">${h(reg.firstName)} just registered for the training. Go get it! 🚀</p>
   </div>
   <div class="body">
-    <div class="row"><span class="label">Name</span><span class="value">${reg.firstName} ${reg.lastName}</span></div>
-    <div class="row"><span class="label">Email</span><span class="value">${reg.email}</span></div>
-    ${reg.whatsapp ? `<div class="row"><span class="label">WhatsApp</span><span class="value">${reg.whatsapp}</span></div>` : ""}
+    <div class="row"><span class="label">Name</span><span class="value">${h(reg.firstName)} ${h(reg.lastName)}</span></div>
+    <div class="row"><span class="label">Email</span><span class="value">${h(reg.email)}</span></div>
+    ${reg.whatsapp ? `<div class="row"><span class="label">WhatsApp</span><span class="value">${h(reg.whatsapp)}</span></div>` : ""}
     ${reg.eventName ? `<div class="row"><span class="label">Event</span><span class="value">${reg.eventName}</span></div>` : ""}
     ${reg.confirmationNumber ? `<div class="row"><span class="label">Conf #</span><span class="value conf">${reg.confirmationNumber}</span></div>` : ""}
     <a class="cta" href="https://tiblogics.com/admin_pro">View in Admin →</a>
@@ -699,7 +704,7 @@ export async function sendSessionReminder(reg: {
   </div>
 
   <div class="body">
-    <div class="greeting">Hi ${reg.firstName}, 👋</div>
+    <div class="greeting">Hi ${h(reg.firstName)}, 👋</div>
     <p class="para">
       Your next session is <strong>tomorrow</strong>. Here is everything you need to join and make the most of it.
     </p>
@@ -869,7 +874,7 @@ export async function sendOrderConfirmationEmail(order: {
         <div style="font-size:20px;font-weight:800;color:#fff;letter-spacing:.04em;">TIB<span style="color:#F47C20;">LOGICS</span> · Shop</div>
       </div>
       <div style="padding:32px;">
-        <h1 style="font-size:22px;color:#131A1B;margin:0 0 8px;">Thank you${order.customerName ? `, ${order.customerName.split(" ")[0]}` : ""}! 🎉</h1>
+        <h1 style="font-size:22px;color:#131A1B;margin:0 0 8px;">Thank you${order.customerName ? `, ${h(order.customerName.split(" ")[0])}` : ""}! 🎉</h1>
         <p style="font-size:14px;color:#5b6b72;line-height:1.6;margin:0 0 24px;">
           Your order is confirmed and paid. Order number
           <strong style="color:#131A1B;">${order.orderNumber}</strong>.
@@ -914,8 +919,8 @@ export async function sendAdminOrderAlert(order: {
     <h2 style="color:#131A1B;font-size:18px;margin:0 0 12px;">🛒 New shop order — payment confirmed</h2>
     <table style="width:100%;font-size:14px;color:#131A1B;border-collapse:collapse;">
       <tr><td style="padding:6px 0;color:#8A9BA0;">Order</td><td style="padding:6px 0;text-align:right;font-weight:700;">${order.orderNumber}</td></tr>
-      <tr><td style="padding:6px 0;color:#8A9BA0;">Customer</td><td style="padding:6px 0;text-align:right;">${order.customerName ?? "—"}</td></tr>
-      <tr><td style="padding:6px 0;color:#8A9BA0;">Email</td><td style="padding:6px 0;text-align:right;">${order.email}</td></tr>
+      <tr><td style="padding:6px 0;color:#8A9BA0;">Customer</td><td style="padding:6px 0;text-align:right;">${h(order.customerName ?? "—")}</td></tr>
+      <tr><td style="padding:6px 0;color:#8A9BA0;">Email</td><td style="padding:6px 0;text-align:right;">${h(order.email)}</td></tr>
       <tr><td style="padding:6px 0;color:#8A9BA0;">Items</td><td style="padding:6px 0;text-align:right;">${order.itemCount}</td></tr>
       <tr><td style="padding:6px 0;color:#8A9BA0;">Total</td><td style="padding:6px 0;text-align:right;font-weight:800;">${money(order.total, order.currency ?? "USD")}</td></tr>
     </table>

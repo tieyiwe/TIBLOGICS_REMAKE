@@ -3,17 +3,13 @@ import prisma from "@/lib/prisma";
 import stripe from "@/lib/stripe";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { resolveCheckoutDiscount } from "@/lib/promotions/service";
+import { eventSeatLineItems, groupNotePrefix, seatTotal } from "@/lib/events/seat-pricing";
 
 export async function POST(req: NextRequest) {
   // Public; each call creates a Stripe checkout session.
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? req.headers.get("x-real-ip") ?? "unknown";
   if (!(await checkRateLimit(`event-checkout:${ip}`, ip === "unknown" ? 200 : 20, 60 * 60_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
-  }
-
-  const priceId = process.env.STRIPE_EVENT_PRICE_ID;
-  if (!priceId) {
-    return NextResponse.json({ error: "Payment not configured" }, { status: 503 });
   }
 
   try {
@@ -27,6 +23,13 @@ export async function POST(req: NextRequest) {
     if (!reg) {
       return NextResponse.json({ error: "Registration not found" }, { status: 404 });
     }
+    if (reg.status === "paid") {
+      return NextResponse.json({ error: "This registration is already paid." }, { status: 409 });
+    }
+    const event = await prisma.event.findUnique({ where: { slug: reg.eventSlug }, select: { title: true, price: true, currency: true } });
+    if (!event || event.price <= 0) {
+      return NextResponse.json({ error: "This event has no payment to make." }, { status: 409 });
+    }
 
     const baseUrl = (
       process.env.NEXT_PUBLIC_APP_URL ??
@@ -34,15 +37,19 @@ export async function POST(req: NextRequest) {
       "https://tiblogics.com"
     ).replace(/\/$/, "");
 
-    // The seat price lives on the Stripe Price; read it for the promotion's math.
-    const unit = await stripe.prices.retrieve(priceId).then((p) => p.unit_amount ?? 0).catch(() => 0);
+    // Every seat of the booking, priced from the Event row (it used to charge
+    // one seat at a fixed Stripe Price whatever the booking).
+    const extras = reg.confirmationNumber
+      ? await prisma.eventRegistration.count({ where: { notes: { startsWith: groupNotePrefix(reg.confirmationNumber) } } })
+      : 0;
+    const lineItems = eventSeatLineItems(event.title, event.price, event.currency, 1 + extras);
     const promo = await resolveCheckoutDiscount({
-      lines: [{ key: "events", id: reg.eventSlug, amountCents: unit }],
+      lines: [{ key: "events", id: reg.eventSlug, amountCents: seatTotal(lineItems) }],
       recurring: false,
       buyer: { email: reg.email },
     });
     const session = await stripe.checkout.sessions.create({
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: lineItems,
       mode: "payment",
       ...(promo.couponId ? { discounts: [{ coupon: promo.couponId }] } : promo.allowPromotionCodes ? { allow_promotion_codes: true } : {}),
       customer_email: reg.email,
@@ -53,6 +60,7 @@ export async function POST(req: NextRequest) {
         registrationId: reg.id,
         confirmationNumber: reg.confirmationNumber ?? "",
         eventSlug: reg.eventSlug,
+        seats: String(1 + extras),
       },
     });
 

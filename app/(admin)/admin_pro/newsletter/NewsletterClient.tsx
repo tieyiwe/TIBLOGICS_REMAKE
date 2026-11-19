@@ -155,7 +155,7 @@ export default function NewsletterClient(initial: {
   }
 
   const filteredSubs = subscribers.filter(s =>
-    !subSearch || s.email.includes(subSearch) || (s.firstName ?? "").toLowerCase().includes(subSearch.toLowerCase())
+    !subSearch || s.email.toLowerCase().includes(subSearch.toLowerCase()) || (s.firstName ?? "").toLowerCase().includes(subSearch.toLowerCase())
   );
   const filteredArticles = articles.filter(a =>
     !articleSearch || a.title.toLowerCase().includes(articleSearch.toLowerCase())

@@ -152,7 +152,7 @@ for (const name of names) {
     const res = await fetch(url, {
       headers: { authorization: `Bearer ${secret}` },
       // A news run generates several articles; give it room.
-      signal: AbortSignal.timeout(name === "news" || name === "news-now" || name === "videos" || name === "dbprep" ? 900_000 : name === "monitor" || name === "blueprints" || name === "translate" || name === "growth" || name === "outreach" || name === "comms" || name === "scanner" || name === "scholarship" ? 330_000 : 120_000),
+      signal: AbortSignal.timeout(name === "news" || name === "news-now" || name === "videos" || name === "dbprep" ? 900_000 : name === "monitor" || name === "blueprints" || name === "recaps" || name === "teams" || name === "translate" || name === "growth" || name === "outreach" || name === "comms" || name === "scanner" || name === "scholarship" ? 330_000 : 120_000),
     });
     const body = await res.text();
     const secs = ((Date.now() - started) / 1000).toFixed(1);

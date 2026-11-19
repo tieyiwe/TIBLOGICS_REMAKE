@@ -137,10 +137,13 @@ export async function computeStreak(studentId: string): Promise<number> {
     cursor -= DAY;
   }
 
-  // Award one bonus per completed 7-day run
+  // Award one bonus per completed 7-day run. The reference carries the day
+  // this streak started, so a later streak earns its bonuses again (with only
+  // the run number, a learner's first bonus was their last).
+  const startDay = new Date(cursor + DAY).toISOString().slice(0, 10);
   const runs = Math.floor(streak / 7);
   for (let i = 1; i <= runs; i++) {
-    await awardPoints(studentId, "streak_bonus", `${studentId}:run:${i}`);
+    await awardPoints(studentId, "streak_bonus", `${studentId}:run:${startDay}:${i}`);
   }
   return streak;
 }

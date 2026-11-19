@@ -23,7 +23,10 @@ export async function GET() {
       .upsert({
         where: { slug: TRAINING_EVENT_SLUG },
         create: TRAINING_EVENT_SEED,
-        update: { title: TRAINING_EVENT_SEED.title, price: TRAINING_EVENT_SEED.price, date: TRAINING_EVENT_SEED.date, endDate: TRAINING_EVENT_SEED.endDate, published: true },
+        // Create-only: this runs on every visit to Admin → Events, and
+        // resetting the fields here undid the admin's own edits each time.
+        // The explicit "Sync database" action still applies the seed.
+        update: {},
       })
       .catch((err) => {
         console.error("[admin/events] ensure training event", err);
