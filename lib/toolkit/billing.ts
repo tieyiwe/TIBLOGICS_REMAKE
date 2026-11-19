@@ -14,6 +14,9 @@ function mapStatus(raw: Stripe.Subscription.Status): string {
 export async function upsertToolkitSubscription(sub: Stripe.Subscription, studentIdArg?: string) {
   const studentId = studentIdArg ?? sub.metadata?.studentId;
   if (!studentId) return;
+  // First payment not settled yet: nothing is granted (it used to map to
+  // past_due, which counts as paid access).
+  if (sub.status === "incomplete") return;
   await ensureToolkitTables();
   const plan: ToolkitPlan = sub.metadata?.plan === "guard" ? "guard" : "toolkit";
   const periodEnd = (sub as unknown as { current_period_end?: number }).current_period_end;

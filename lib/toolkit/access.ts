@@ -17,6 +17,7 @@ export interface ToolkitAccess {
 
 // "comped" is free access granted from the admin Test access page.
 const ENTITLED = new Set(["active", "trialing", "past_due", "comped"]);
+const PAST_DUE_GRACE_MS = 7 * 86_400_000;
 
 export async function getToolkitAccess(): Promise<ToolkitAccess | null> {
   const student = await getStudent();
@@ -24,7 +25,10 @@ export async function getToolkitAccess(): Promise<ToolkitAccess | null> {
   await ensureToolkitTables();
   const sub = await prisma.toolkitSubscription.findUnique({ where: { studentId: student.id } });
   const plans = toolkitPlans();
-  const entitled = !!sub && ENTITLED.has(sub.status);
+  // past_due keeps access for a 7-day grace after the period it failed to
+  // renew, as the Academy plans do; it used to last the whole dunning cycle.
+  const graceOver = sub?.status === "past_due" && (!sub.currentPeriodEnd || Date.now() > sub.currentPeriodEnd.getTime() + PAST_DUE_GRACE_MS);
+  const entitled = !!sub && ENTITLED.has(sub.status) && !graceOver;
   // The site owner's own learner account always has the full plan, for testing.
   const owner = !entitled && student.email.toLowerCase() === OWNER_EMAIL.toLowerCase();
   return {

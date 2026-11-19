@@ -164,11 +164,17 @@ export async function checkGrant(token: string): Promise<RedeemResult> {
   return { ok: true, grant };
 }
 
-export async function recordDownload(grantId: string): Promise<void> {
-  await prisma.downloadGrant
-    .update({
-      where: { id: grantId },
-      data: { downloadCount: { increment: 1 }, lastDownloadAt: new Date() },
-    })
-    .catch((err) => console.error("[shop/delivery] recordDownload", err));
+/**
+ * Counts one download, only while the limit is not spent (one conditional
+ * update, so parallel requests cannot all pass the check above). False when
+ * the last download was already taken.
+ */
+export async function recordDownload(grantId: string): Promise<boolean> {
+  const rows = await prisma.$executeRaw`
+    UPDATE "DownloadGrant" SET "downloadCount" = "downloadCount" + 1, "lastDownloadAt" = NOW()
+    WHERE "id" = ${grantId} AND "downloadCount" < "maxDownloads"`.catch((err) => {
+    console.error("[shop/delivery] recordDownload", err);
+    return 1; // a database hiccup should not refuse a paying customer
+  });
+  return rows > 0;
 }

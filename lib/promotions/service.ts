@@ -567,7 +567,9 @@ async function couponFor(p: PromotionRecord, q: DiscountQuote, recurring: boolea
     duration: recurring ? p.duration : "once",
     durationMonths: p.durationMonths,
     maxRedemptions: 1,
-    redeemBy: new Date(Date.now() + 2 * 86_400_000),
+    // Never past the promotion's own end: a checkout opened just before it
+    // ended could otherwise still be paid at the discount for two days.
+    redeemBy: new Date(Math.min(Date.now() + 2 * 86_400_000, p.endsAt ? Math.max(new Date(p.endsAt).getTime(), Date.now() + 3_600_000) : Infinity)),
     metadata: { promotionId: p.id, oneOff: "1" },
   });
 }

@@ -87,6 +87,13 @@ export async function syncTeamSubscription(
     // Staff comped this team: Stripe no longer drives it.
     return team.id;
   }
+  // A second subscription for a team that already has a live one (paid from
+  // a stale checkout) must not take it over: events for either used to flip
+  // the team between them, and cancelling either cancelled the team.
+  if (team.stripeSubscriptionId && team.stripeSubscriptionId !== sub.id && team.status !== "canceled" && team.status !== "pending") {
+    console.error(`[learn/team] team ${team.id} already has subscription ${team.stripeSubscriptionId}; ignoring ${sub.id}`);
+    return team.id;
+  }
   // customer.subscription.created can arrive before the first payment
   // settles: an unpaid team stays pending (no access, no grace).
   if ((sub.status === "incomplete" || sub.status === "incomplete_expired") && team.status === "pending") return team.id;

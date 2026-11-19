@@ -53,6 +53,16 @@ export async function POST(req: NextRequest) {
       buyer: { studentId: student.id, email: student.email },
     });
     const team = await createPendingTeam({ ownerStudentId: student.id, name: parsed.data.name, seats: parsed.data.seats });
+    // A pending team keeps one checkout: an earlier one (another seat count,
+    // so another price) is expired first, so the team cannot be paid twice or
+    // paid at one quote while storing another.
+    const prior = (await prisma.team.findUnique({ where: { id: team.id }, select: { stripeCheckoutSessionId: true } }))?.stripeCheckoutSessionId;
+    if (prior) {
+      const stripe = (await import("@/lib/stripe")).default;
+      const old = await stripe.checkout.sessions.retrieve(prior).catch(() => null);
+      if (old?.status === "complete") return NextResponse.json({ error: t("team.api.alreadyOwner") }, { status: 409 });
+      if (old?.status === "open") await stripe.checkout.sessions.expire(old.id).catch(() => {});
+    }
     const { url, sessionId } = await payments.createTeamCheckout({
       couponId: discount.couponId,
       allowPromotionCodes: discount.allowPromotionCodes,

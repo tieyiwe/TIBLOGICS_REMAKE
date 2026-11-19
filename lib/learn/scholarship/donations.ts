@@ -62,9 +62,18 @@ export async function createDonationCheckout(d: { amountCents: number; frequency
 }
 
 /** A signed link to manage (change or stop) a monthly gift: Stripe's billing portal. */
-const manageSig = (customerId: string) => createHmac("sha256", process.env.NEXTAUTH_SECRET ?? "dev").update(`donation-manage:${customerId}`).digest("base64url").slice(0, 32);
+// No fallback secret: without NEXTAUTH_SECRET a link signed with a known
+// string ("dev") would open any donor's billing portal.
+const manageSig = (customerId: string) => {
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) throw new Error("NEXTAUTH_SECRET is not set");
+  return createHmac("sha256", secret).update(`donation-manage:${customerId}`).digest("base64url").slice(0, 32);
+};
 export const manageUrl = (customerId: string) => `${SITE}/api/scholarship/donate/manage?c=${encodeURIComponent(customerId)}&s=${manageSig(customerId)}`;
-export const manageLinkValid = (customerId: string, sig: string) => /^cus_[A-Za-z0-9]{6,64}$/.test(customerId) && secretEquals(sig, manageSig(customerId));
+export const manageLinkValid = (customerId: string, sig: string) => {
+  if (!/^cus_[A-Za-z0-9]{6,64}$/.test(customerId) || !process.env.NEXTAUTH_SECRET) return false;
+  return secretEquals(sig, manageSig(customerId));
+};
 
 const idOf = (v: string | { id: string } | null | undefined) => (typeof v === "string" ? v : v?.id ?? null);
 

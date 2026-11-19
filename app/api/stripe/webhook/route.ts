@@ -5,8 +5,9 @@ import { alertCheckoutSale, alertInvoiceSale } from "@/lib/payments/sale-alert";
 import { TRACK_MONTHLY_PRODUCT } from "@/lib/learn/track-monthly";
 import { markTrackSubscriptionPastDue, upsertTrackSubscription } from "@/lib/learn/track-subscriptions";
 import { confirmEventRegistration } from "@/lib/events/confirm";
+import { handleChargeReversal } from "@/lib/payments/refunds";
 import { groupNotePrefix } from "@/lib/events/seat-pricing";
-import { sendConfirmationEmail, sendTiweNotification, sendOrderConfirmationEmail, sendAdminOrderAlert } from "@/lib/resend";
+import { sendConfirmationEmail, sendTiweNotification, sendOrderConfirmationEmail, sendAdminOrderAlert, sendSalesAlertEmail } from "@/lib/resend";
 import { recordScholarshipPayment } from "@/lib/learn/scholarship/service";
 import { DONATION_PRODUCT, markDonationCanceled, recordDonation, recordDonationRenewal } from "@/lib/learn/scholarship/donations";
 import Stripe from "stripe";
@@ -70,13 +71,14 @@ export async function POST(req: Request) {
       event.type === "customer.subscription.deleted" ||
       event.type === "customer.subscription.created"
     ) {
-      const sub = event.data.object as Stripe.Subscription;
+      // Events can arrive out of order (an old "active" after "deleted"): the
+      // subscription's state is read back from Stripe for every product, not
+      // trusted from the event.
+      const sub = await stripe.subscriptions
+        .retrieve((event.data.object as Stripe.Subscription).id)
+        .catch(() => event.data.object as Stripe.Subscription);
       if (sub.metadata?.product === "learn" && sub.metadata?.studentId) {
-        // Events can arrive out of order (an old "active" after "deleted"):
-        // the subscription's state is read back from Stripe, not trusted
-        // from the event.
-        const fresh = await stripe.subscriptions.retrieve(sub.id).catch(() => sub);
-        await upsertLearnSubscription(fresh).catch((err) => {
+        await upsertLearnSubscription(sub).catch((err) => {
           console.error("[stripe/webhook] learn subscription sync FAILED, asking Stripe to retry", err instanceof Error ? err.message : err);
           retry = true;
         });
@@ -112,6 +114,16 @@ export async function POST(req: Request) {
       }
     }
 
+    // ── Refunds and chargebacks take back what was bought (lib/payments/refunds.ts)
+    if (event.type === "charge.refunded" || event.type === "charge.dispute.created") {
+      const obj = event.data.object as Stripe.Charge | Stripe.Dispute;
+      const charge =
+        event.type === "charge.refunded"
+          ? (obj as Stripe.Charge)
+          : await stripe.charges.retrieve(typeof (obj as Stripe.Dispute).charge === "string" ? ((obj as Stripe.Dispute).charge as string) : ((obj as Stripe.Dispute).charge as Stripe.Charge).id);
+      await handleChargeReversal(event.type === "charge.refunded" ? "refund" : "dispute", charge);
+    }
+
     // ── Tilo Vision Scholarship: each monthly gift renewal ─────────────────
     if (event.type === "invoice.paid") {
       await alertInvoiceSale(event.data.object as Stripe.Invoice);
@@ -123,7 +135,12 @@ export async function POST(req: Request) {
 
     if (event.type === "invoice.payment_failed") {
       const invoice = event.data.object as Stripe.Invoice;
-      const subId = (invoice as unknown as { subscription?: string }).subscription;
+      // Newer API versions moved the field to parent.subscription_details.
+      const rawInv = invoice as unknown as { subscription?: string | { id: string } | null; parent?: { subscription_details?: { subscription?: string } } };
+      const subId =
+        (typeof rawInv.subscription === "string" ? rawInv.subscription : rawInv.subscription?.id) ??
+        rawInv.parent?.subscription_details?.subscription ??
+        null;
       if (subId) {
         // Team plans get the same 7-day grace (no-op for other subscriptions).
         await markTeamPaymentFailed(subId).catch((err) => console.error("[stripe/webhook] team payment_failed", err));
@@ -301,10 +318,13 @@ export async function POST(req: Request) {
       await fulfillOneTimePurchases(session);
     }
   } catch (error) {
-    console.error("[stripe/webhook] Event handling error", error);
+    // Ask Stripe to send the event again: every step is claimed or idempotent,
+    // and answering 200 here meant a customer who paid got nothing.
+    console.error("[stripe/webhook] Event handling error, asking Stripe to retry", error);
+    retry = true;
   }
 
-  if (retry) return new Response("Track purchase not recorded", { status: 500 });
+  if (retry) return new Response("Not fully processed; retry", { status: 500 });
   return new Response("ok", { status: 200 });
 }
 
@@ -366,7 +386,9 @@ async function fulfillOneTimePurchases(session: Stripe.Checkout.Session) {
     // Claim the order once: a repeated event (Stripe retries, or both
     // the completed and async events) changes nothing the second time.
     const claimed = await prisma.order.updateMany({
-      where: { id: orderId, status: { not: "paid" } },
+      // Only a pending order: "not paid" also matched an order the admin had
+      // since refunded or cancelled, so a late Stripe retry turned it back on.
+      where: { id: orderId, status: "pending" },
       data: {
         status: "paid",
         stripeSessionId: session.id,
@@ -421,10 +443,24 @@ async function fulfillOneTimePurchases(session: Stripe.Checkout.Session) {
       // Digital delivery. Grants are minted here — after payment settles —
       // so a grant existing is itself proof of purchase. Idempotent, so a
       // Stripe retry does not issue a second set of tokens.
-      const grants = await grantDownloadsForOrder(order.id, email).catch((err) => {
-        console.error("[stripe/webhook] download grants FAILED:", err);
-        return [];
-      });
+      // Retried a few times: the order is already claimed, so a Stripe retry
+      // of this event would not come back here. If it still fails, the sales
+      // inbox is told so the links can be sent by hand.
+      let grants: Awaited<ReturnType<typeof grantDownloadsForOrder>> = [];
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          grants = await grantDownloadsForOrder(order.id, email);
+          break;
+        } catch (err) {
+          console.error(`[stripe/webhook] download grants FAILED (attempt ${attempt}):`, err);
+          if (attempt === 3) {
+            await sendSalesAlertEmail(
+              `Order ${order.orderNumber}: download links not created`,
+              `<p>Order ${order.orderNumber} is paid, but its download links could not be created. Please send the files to the customer by hand.</p>`,
+            ).catch(() => {});
+          } else await new Promise((r) => setTimeout(r, 1500 * attempt));
+        }
+      }
 
       sendOrderConfirmationEmail({
         email,
@@ -454,7 +490,7 @@ async function fulfillOneTimePurchases(session: Stripe.Checkout.Session) {
   // ── Event registration payment ──────────────────────────────────────
   if (registrationId) {
     const claimedReg = await prisma.eventRegistration.updateMany({
-      where: { id: registrationId, status: { not: "paid" } },
+      where: { id: registrationId, status: "pending" },
       data: { status: "paid", stripeSessionId: session.id },
     });
     if (claimedReg.count === 0) {
@@ -477,7 +513,7 @@ async function fulfillOneTimePurchases(session: Stripe.Checkout.Session) {
     // Claim the appointment first, so a repeated event never books a
     // second meeting or sends the emails twice.
     const claimedAppt = await prisma.appointment.updateMany({
-      where: { id: appointmentId, NOT: { paymentStatus: "paid" } },
+      where: { id: appointmentId, paymentStatus: "pending" },
       data: { paymentStatus: "paid", stripeSessionId: session.id },
     });
     if (claimedAppt.count === 0) {

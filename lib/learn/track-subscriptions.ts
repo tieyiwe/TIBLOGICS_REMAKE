@@ -104,7 +104,8 @@ export async function upsertTrackSubscription(sub: Stripe.Subscription, ids?: { 
   const data = {
     studentId,
     trackId,
-    stripeCustomerId: typeof sub.customer === "string" ? sub.customer : sub.customer?.id ?? null,
+    // A sponsor's plan is the sponsor's customer, not the young person's.
+    stripeCustomerId: sub.metadata?.product === "youth-sponsor" ? null : typeof sub.customer === "string" ? sub.customer : sub.customer?.id ?? null,
     status,
     currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000) : null,
     graceUntil,
@@ -133,8 +134,20 @@ export async function markTrackSubscriptionPastDue(subscriptionId: string): Prom
 /** A Stripe customer id for the billing portal, from the learner's track plans. */
 export async function trackSubscriptionCustomer(studentId: string): Promise<string | null> {
   await ensureTrackSubscriptionTables().catch(() => {});
-  const row = await prisma.trackSubscription
-    .findFirst({ where: { studentId, stripeCustomerId: { not: null } }, orderBy: { updatedAt: "desc" }, select: { stripeCustomerId: true } })
-    .catch(() => null);
-  return row?.stripeCustomerId ?? null;
+  const [row, student] = await Promise.all([
+    prisma.trackSubscription
+      .findFirst({ where: { studentId, stripeCustomerId: { not: null } }, orderBy: { updatedAt: "desc" }, select: { stripeCustomerId: true } })
+      .catch(() => null),
+    prisma.student.findUnique({ where: { id: studentId }, select: { email: true } }).catch(() => null),
+  ]);
+  const customerId = row?.stripeCustomerId ?? null;
+  if (!customerId) return null;
+  // A sponsored young person's plan is billed to the SPONSOR's customer: it
+  // must never open the sponsor's billing portal (cards, invoices, address)
+  // or bill the young person's own checkouts. Only a customer with this
+  // learner's own email is theirs.
+  const stripe = (await import("@/lib/stripe")).default;
+  const customer = await stripe.customers.retrieve(customerId).catch(() => null);
+  const email = customer && !("deleted" in customer && customer.deleted) ? (customer as { email?: string | null }).email : null;
+  return email && student?.email && email.trim().toLowerCase() === student.email.trim().toLowerCase() ? customerId : null;
 }

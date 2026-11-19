@@ -234,7 +234,14 @@ export const stripeProvider: PaymentProvider = {
     const sub = await stripe.subscriptions.retrieve(subscriptionId);
     const item = sub.items?.data?.[0];
     if (!item) throw new Error("Team subscription has no item");
-    await stripe.subscriptions.update(subscriptionId, { items: [{ id: item.id, quantity: seats }] });
+    // Added seats are charged now (pro rata), and the change fails if that
+    // payment fails: they used to be granted at once and only invoiced at the
+    // next renewal, so seats added then cancelled were never paid for.
+    const adding = seats > (item.quantity ?? 0);
+    await stripe.subscriptions.update(subscriptionId, {
+      items: [{ id: item.id, quantity: seats }],
+      ...(adding ? { proration_behavior: "always_invoice" as const, payment_behavior: "error_if_incomplete" as const } : {}),
+    });
   },
 
   async updateTeamSeatPrice(subscriptionId: string, seatPriceCents: number, currency: string) {

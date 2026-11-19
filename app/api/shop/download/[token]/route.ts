@@ -15,13 +15,13 @@ export async function GET(
 ) {
   const { token } = await params;
 
+  const messages = {
+    not_found: "This download link isn't valid. Check the link in your receipt email.",
+    expired: "This download link has expired. Reply to your receipt email and we'll reissue it.",
+    limit_reached: "This link has reached its download limit. Reply to your receipt email and we'll reissue it.",
+  } as const;
   const result = await checkGrant(token);
   if (!result.ok) {
-    const messages = {
-      not_found: "This download link isn't valid. Check the link in your receipt email.",
-      expired: "This download link has expired. Reply to your receipt email and we'll reissue it.",
-      limit_reached: "This link has reached its download limit. Reply to your receipt email and we'll reissue it.",
-    } as const;
     // 404 for an unknown token so a scanner cannot tell valid tokens from
     // invalid ones; 410 for links that genuinely existed and lapsed.
     const status = result.reason === "not_found" ? 404 : 410;
@@ -37,7 +37,7 @@ export async function GET(
     if (!product.externalUrl) {
       return NextResponse.json({ error: "This product has no destination set yet." }, { status: 503 });
     }
-    await recordDownload(grant.id);
+    if (!(await recordDownload(grant.id))) return NextResponse.json({ error: messages.limit_reached }, { status: 410 });
     return NextResponse.redirect(product.externalUrl, 302);
   }
 
@@ -64,7 +64,7 @@ export async function GET(
 
   // Counted before streaming: a partial download still consumes an attempt,
   // which is the conservative choice for a limited grant.
-  await recordDownload(grant.id);
+  if (!(await recordDownload(grant.id))) return NextResponse.json({ error: messages.limit_reached }, { status: 410 });
 
   const downloadName = product.fileName || `${product.slug}.download`;
   const stream = Readable.toWeb(createReadStream(filePath)) as unknown as ReadableStream;
