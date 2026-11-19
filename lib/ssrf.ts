@@ -16,6 +16,11 @@
 // So: resolve the name, check every address it resolves to, and re-check each
 // redirect hop rather than letting fetch follow them.
 import { lookup } from "dns/promises";
+import dns from "dns";
+import http from "http";
+import https from "https";
+import zlib from "zlib";
+import { Readable } from "stream";
 import { isIP } from "net";
 
 export type BlockReason =
@@ -218,7 +223,7 @@ export async function safeFetch(
   let current = typeof target === "string" ? new URL(target) : target;
 
   for (let hop = 0; hop <= maxRedirects; hop++) {
-    const res = await fetch(current, { ...rest, redirect: "manual" });
+    const res = await pinnedFetch(current, rest);
     if (res.status < 300 || res.status > 399) return res;
 
     const location = res.headers.get("location");
@@ -238,6 +243,62 @@ export async function safeFetch(
   }
 
   throw new SsrfBlockedError("too-many-redirects", current.toString());
+}
+
+/**
+ * One request (no redirects followed) whose connection is checked at the
+ * moment it is made: the address the socket connects to goes through
+ * isBlockedAddress. Checking the name first and then letting fetch() look it
+ * up again left a gap (DNS rebinding): a name answering with a public address
+ * for the check and 127.0.0.1 or 169.254.169.254 for the connection.
+ * GET or HEAD with headers and a signal is all the callers use.
+ */
+function pinnedFetch(url: URL, init: RequestInit): Promise<Response> {
+  const guardedLookup = ((hostname: string, options: dns.LookupOptions, cb: (...args: unknown[]) => void) => {
+    dns.lookup(hostname, { ...options, all: true }, (err, addresses) => {
+      if (err) return cb(err);
+      const list = addresses as dns.LookupAddress[];
+      if (list.length === 0 || list.some((a) => isBlockedAddress(a.address))) {
+        return cb(new SsrfBlockedError("private", url.toString()));
+      }
+      if (options.all) cb(null, list);
+      else cb(null, list[0].address, list[0].family);
+    });
+  }) as unknown as typeof dns.lookup;
+
+  const headers: Record<string, string> = { "accept-encoding": "gzip, deflate, br" };
+  new Headers(init.headers).forEach((v, k) => {
+    headers[k] = v;
+  });
+  const mod = url.protocol === "https:" ? https : http;
+  return new Promise<Response>((resolve, reject) => {
+    const req = mod.request(
+      url,
+      { method: init.method ?? "GET", headers, lookup: guardedLookup, signal: init.signal ?? undefined },
+      (res) => {
+        const h = new Headers();
+        for (const [k, v] of Object.entries(res.headers)) {
+          if (Array.isArray(v)) v.forEach((x) => h.append(k, x));
+          else if (v != null) h.set(k, String(v));
+        }
+        // fetch() decompressed bodies itself; so does this (the header stays,
+        // the scanner reports it).
+        const enc = String(res.headers["content-encoding"] ?? "").toLowerCase();
+        const body: NodeJS.ReadableStream =
+          enc === "gzip" || enc === "x-gzip" ? res.pipe(zlib.createGunzip())
+          : enc === "br" ? res.pipe(zlib.createBrotliDecompress())
+          : enc === "deflate" ? res.pipe(zlib.createInflate())
+          : res;
+        const status = res.statusCode ?? 502;
+        const noBody = status === 204 || status === 304 || (init.method ?? "GET").toUpperCase() === "HEAD";
+        const out = new Response(noBody ? null : (Readable.toWeb(body as Readable) as unknown as ReadableStream), { status: status < 200 ? 502 : status, headers: h });
+        Object.defineProperty(out, "url", { value: url.toString() });
+        resolve(out);
+      },
+    );
+    req.on("error", reject);
+    req.end();
+  });
 }
 
 /**
