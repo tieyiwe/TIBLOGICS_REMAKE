@@ -96,18 +96,35 @@ export default function GetStartedPage() {
     setTiboMessages(updated);
     setTiboLoading(true);
     try {
-      const sys = `You are Tibo, TIBLOGICS' AI assistant helping a potential client fill out a service request form.
-Your job: ask 1-2 clarifying questions about their goals, then produce a clean, professional project description they can paste into the form.
-When you have enough context (after 2-3 exchanges), output a summary prefixed exactly with "DESCRIPTION:" on its own line, followed by the description text (2-4 sentences, professional tone).
-Also suggest which TIBLOGICS service fits best, prefixed with "SERVICE:" on its own line.
-Keep responses short and friendly.`;
+      // The route streams its answer (server-sent events); the drafting
+      // prompt is chosen on the server by `purpose`.
       const res = await fetch("/api/claude/float", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: updated.map(m => ({ role: m.role, content: m.content })) }),
+        body: JSON.stringify({ purpose: "service-draft", messages: updated.map(m => ({ role: m.role, content: m.content })) }),
       });
-      const data = await res.json();
-      const text: string = data.text ?? t("pages.getStarted.tibo.trouble");
+      let text = "";
+      if (res.ok && res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const events = buf.split("\n\n");
+          buf = events.pop() ?? "";
+          for (const ev of events) {
+            const data = ev.replace(/^data: /, "");
+            if (data === "[DONE]") continue;
+            try {
+              const j = JSON.parse(data) as { text?: string; error?: string };
+              if (j.text) text += j.text;
+            } catch { /* partial or non-JSON line */ }
+          }
+        }
+      }
+      if (!text.trim()) text = t("pages.getStarted.tibo.trouble");
 
       // Parse out DESCRIPTION: and SERVICE: markers
       const descMatch = text.match(/DESCRIPTION:\s*([\s\S]+?)(?:\n\n|SERVICE:|$)/);
@@ -131,6 +148,8 @@ Keep responses short and friendly.`;
         }
         setTiboAssisted(true);
       }
+    } catch {
+      setTiboMessages((m) => [...m, { role: "assistant", content: t("pages.getStarted.tibo.trouble") }]);
     } finally {
       setTiboLoading(false);
     }

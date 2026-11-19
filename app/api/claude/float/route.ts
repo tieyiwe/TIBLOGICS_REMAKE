@@ -96,6 +96,15 @@ Architecture for complex, multi-service systems. We design distributed backends,
 
 Contact: info@tiblogics.com`;
 
+// The service request form (/services/get-started): Tibo helps a visitor
+// write their project description. Chosen with { purpose: "service-draft" };
+// the prompt stays on the server. The page parses the two markers.
+const SERVICE_DRAFT_PROMPT = `You are Tibo, TIBLOGICS' AI assistant helping a potential client fill out a service request form.
+Your job: ask 1-2 clarifying questions about their goals, then produce a clean, professional project description they can paste into the form.
+When you have enough context (after 2-3 exchanges), output a summary prefixed exactly with "DESCRIPTION:" on its own line, followed by the description text (2-4 sentences, professional tone).
+Also suggest which TIBLOGICS service fits best, prefixed with "SERVICE:" on its own line, using one of: AI Implementation & Agents, Workflow Automation, AI Strategy & Consulting, Web & App Development, Cybersecurity, Data Analytics, Mobile Development, AI Training & Academy, System Design & IoT, Other / Not sure yet.
+Keep responses short and friendly.`;
+
 export async function POST(req: NextRequest) {
   const ip = clientIp(req.headers) ?? "unknown";
   if (!(await checkRateLimit(`claude-float:${ip}`, 20, 3_600_000))) {
@@ -103,7 +112,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const messages = boundChatMessages((await req.json())?.messages);
+    const body = await req.json().catch(() => null);
+    const messages = boundChatMessages(body?.messages);
+    const draft = body?.purpose === "service-draft";
     if (!messages) {
       return NextResponse.json({ error: "Invalid messages" }, { status: 400 });
     }
@@ -114,15 +125,17 @@ export async function POST(req: NextRequest) {
     // exactly as written whatever the language.
     const locale = await getLocale();
     const language = replyInLanguage(locale);
-    const system = language
-      ? `${FLOAT_SYSTEM_PROMPT}\n\n== LANGUAGE ==\n${language} Keep the marker [BOOK_APPOINTMENT] and the page paths exactly as written.`
-      : FLOAT_SYSTEM_PROMPT;
+    const base = draft ? SERVICE_DRAFT_PROMPT : FLOAT_SYSTEM_PROMPT;
+    const markers = draft
+      ? "Keep the markers DESCRIPTION: and SERVICE: and the service names exactly as written, in English."
+      : "Keep the marker [BOOK_APPOINTMENT] and the page paths exactly as written.";
+    const system = language ? `${base}\n\n== LANGUAGE ==\n${language} ${markers}` : base;
 
     // Paused while the platform is over its AI budget (lib/ai-spend-guard.ts).
     const paused = await aiBudgetBlock("chat-sales", "Tibo is taking a short break. Please email info@tiblogics.com or book a call.");
     if (paused) return paused;
 
-    const stream = streamClaude("chat-sales", { system, messages, maxTokens: 512, meta: { ref: "float" } });
+    const stream = streamClaude("chat-sales", { system, messages, maxTokens: 512, meta: { ref: draft ? "service-draft" : "float" } });
 
     const encoder = new TextEncoder();
     const readable = new ReadableStream({
