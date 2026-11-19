@@ -346,9 +346,14 @@ const TYPE_COLORS: Record<string, string> = {
   WEBINAR: "bg-teal-100 text-teal-700",
 };
 
-function formatDate(dateStr: string, locale: string) {
+// Event dates are shown in the event's own time zone (New York unless set):
+// in the visitor's zone they could fall on another day, and the server
+// (UTC) and the browser rendered different text (a hydration error).
+const EVENT_TZ = "America/New_York";
+
+function formatDate(dateStr: string, locale: string, timeZone = EVENT_TZ) {
   const d = new Date(dateStr);
-  return d.toLocaleDateString(locale, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString(locale, { weekday: "short", month: "short", day: "numeric", year: "numeric", timeZone });
 }
 
 function formatPrice(cents: number, currency: string, locale: string) {
@@ -376,7 +381,9 @@ function techEventWhen(ev: TechEvent, locale: string, t: T): string {
   }
   const start = new Date(`${ev.startsOn}T12:00:00Z`);
   const f = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-  return f.formatRange(start, end);
+  // Node (server) and the browser use different space characters around the
+  // dash (thin or no-break spaces), so the two renders did not match.
+  return f.formatRange(start, end).replace(/[\u2009\u202f\u00a0]/g, " ");
 }
 
 /** The month a conference belongs to in the calendar (its first day, or the expected month). */
@@ -504,7 +511,7 @@ function hasFinished(event: EventItem, now: Date = new Date()): boolean {
 }
 
 /** Big date badge: day and month, or "TBA". */
-function DateBadge({ iso, locale, tba }: { iso?: string | null; locale: string; tba: string }) {
+function DateBadge({ iso, locale, tba, timeZone = EVENT_TZ }: { iso?: string | null; locale: string; tba: string; timeZone?: string }) {
   if (!iso) {
     return (
       <div className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-2xl bg-[#F47C20]/10 text-[#B8500A]">
@@ -514,11 +521,12 @@ function DateBadge({ iso, locale, tba }: { iso?: string | null; locale: string; 
     );
   }
   const d = new Date(iso);
+  const part = (o: Intl.DateTimeFormatOptions) => d.toLocaleDateString(locale, { ...o, timeZone });
   return (
     <div className="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-2xl bg-[#1B3A6B] text-white">
-      <span className="font-dm text-[11px] font-bold uppercase tracking-widest text-[#F9B47A]">{d.toLocaleDateString(locale, { month: "short" })}</span>
-      <span className="font-syne text-3xl font-extrabold leading-none">{d.getDate()}</span>
-      <span className="font-dm text-[10px] text-white/70">{d.getFullYear()}</span>
+      <span className="font-dm text-[11px] font-bold uppercase tracking-widest text-[#F9B47A]">{part({ month: "short" })}</span>
+      <span className="font-syne text-3xl font-extrabold leading-none">{part({ day: "numeric" })}</span>
+      <span className="font-dm text-[10px] text-white/70">{part({ year: "numeric" })}</span>
     </div>
   );
 }
@@ -540,7 +548,7 @@ function EventCard({ event }: { event: EventItem }) {
     <>
       {notifyOpen && <NotifyModal eventName={event.title} eventSlug={event.slug} onClose={() => setNotifyOpen(false)} />}
       <article className={`group relative flex flex-col gap-5 rounded-3xl border bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg sm:flex-row sm:p-6 ${isOpen ? "border-green-300" : "border-[#D2DCE8]"}`}>
-        <DateBadge iso={event.date} locale={locale} tba={t("pages.events.tba")} />
+        <DateBadge iso={event.date} locale={locale} tba={t("pages.events.tba")} timeZone={event.timezone || EVENT_TZ} />
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className={`rounded-full px-2.5 py-0.5 font-dm text-xs font-semibold ${typeColor}`}>{typeLabel.startsWith("pages.") ? event.type : typeLabel}</span>
@@ -573,7 +581,7 @@ function EventCard({ event }: { event: EventItem }) {
           )}
           <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 font-dm text-xs text-[#5A6E84]">
             {event.date && (
-              <span className="inline-flex items-center gap-1.5"><Calendar size={13} aria-hidden />{formatDate(event.date, locale)}</span>
+              <span className="inline-flex items-center gap-1.5"><Calendar size={13} aria-hidden />{formatDate(event.date, locale, event.timezone || EVENT_TZ)}</span>
             )}
             {event.timeSlot && (
               <span className="inline-flex items-center gap-1.5"><Clock size={13} aria-hidden />{event.timeSlot}</span>
