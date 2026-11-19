@@ -23,7 +23,7 @@ const messages: Messages = {
 
     // Hero website scan
     "home.scan.live": "Live website scan",
-    "home.scan.title": "How AI-ready is your website?",
+    "home.scan.title": "How AI-ready and secure is your platform?",
     "home.scan.intro": "Real measurements from your live site, not an estimate. Takes about twenty seconds.",
     "home.scan.urlLabel": "Your website address",
     "home.scan.placeholder": "yourcompany.com",
@@ -189,7 +189,7 @@ const messages: Messages = {
     "home.hero.builtMore": "et bien d’autres",
 
     "home.scan.live": "Analyse de site en direct",
-    "home.scan.title": "Votre site est-il prêt pour l'IA ?",
+    "home.scan.title": "Votre plateforme est-elle prête pour l'IA et sécurisée ?",
     "home.scan.intro": "De vraies mesures prises sur votre site en ligne, pas une estimation. Comptez environ vingt secondes.",
     "home.scan.urlLabel": "Adresse de votre site web",
     "home.scan.placeholder": "votreentreprise.com",
@@ -346,7 +346,7 @@ const messages: Messages = {
     "home.hero.builtMore": "na mengine mengi",
 
     "home.scan.live": "Uchanganuzi wa tovuti papo hapo",
-    "home.scan.title": "Tovuti yako iko tayari kwa AI kiasi gani?",
+    "home.scan.title": "Jukwaa lako liko tayari kwa AI na salama kiasi gani?",
     "home.scan.intro": "Vipimo halisi kutoka kwenye tovuti yako iliyo hewani, si makadirio. Huchukua takriban sekunde ishirini.",
     "home.scan.urlLabel": "Anwani ya tovuti yako",
     "home.scan.placeholder": "kampuniyako.com",

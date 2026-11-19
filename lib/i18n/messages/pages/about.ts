@@ -50,11 +50,7 @@ export default tri({
   // ── At a glance (hero card) ─────────────────────────────────────────────
   "pages.about.glance.title": ["At a glance", "En bref", "Kwa ufupi"],
   "pages.about.glance.company.k": ["Company", "Entreprise", "Kampuni"],
-  "pages.about.glance.company.v": [
-    "TIBLOGICS, a brand of TILO GROUP, LLC",
-    "TIBLOGICS, une marque de TILO GROUP, LLC",
-    "TIBLOGICS, chapa ya TILO GROUP, LLC",
-  ],
+  "pages.about.glance.company.v": ["TIBLOGICS", "TIBLOGICS", "TIBLOGICS"],
   "pages.about.glance.founder.k": ["Founder", "Fondateur", "Mwanzilishi"],
   "pages.about.glance.founder.v": [
     "{name}, Founder & CEO",
