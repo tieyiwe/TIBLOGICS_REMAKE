@@ -115,7 +115,9 @@ function resolveBase() {
 }
 
 const secret = process.env.CRON_SECRET;
-const base = resolveBase().replace(/\/$/, "");
+// "localhost" can resolve to the IPv6 address while the server listens on
+// IPv4 only (0.0.0.0), which fails with "fetch failed": use 127.0.0.1.
+const base = resolveBase().replace(/\/$/, "").replace(/^(https?:\/\/)localhost(?=[:/]|$)/i, "$1127.0.0.1");
 
 if (!secret) {
   console.error(
