@@ -6,7 +6,7 @@
     "dev": "NODE_OPTIONS=--openssl-legacy-provider next dev --port 5000",
     "prebuild": "node scripts/check-lockfile.mjs",
     "build": "NODE_OPTIONS=--openssl-legacy-provider prisma generate && next build",
-    "start": "NODE_OPTIONS=--openssl-legacy-provider NODE_ENV=production node scripts/serve.mjs",
+    "start": "NODE_OPTIONS=--openssl-legacy-provider NODE_ENV=production exec node scripts/serve.mjs",
     "typecheck": "tsc --noEmit -p .",
     "lint": "next lint",
     "postinstall": "prisma generate",
