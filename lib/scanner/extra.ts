@@ -14,6 +14,7 @@
 //     the page, the response headers and public DNS. Wording says "exposes",
 //     "advertises" or "missing", never that a site is vulnerable.
 
+import type { SecuritySignals } from "./security";
 import { hideOwnStack } from "./own";
 import { resolveTxt, resolveMx } from "node:dns/promises";
 import type { Finding, FindingType } from "./audit";
@@ -59,6 +60,8 @@ export interface ExtraSignals {
   headers: Record<string, string>;
   /** null = DNS could not be checked (do not penalise). */
   dns: DnsSignals | null;
+  /** Certificate, TLS, HTTP redirect, CAA, DKIM and cookies (lib/scanner/security.ts); absent = not probed. */
+  security?: SecuritySignals | null;
 }
 export interface ExtraResult {
   growthScore: number;
@@ -676,6 +679,98 @@ export function extraAudit(s: ExtraSignals): ExtraResult {
     }] : []),
   ];
 
+  // ── Security: cookies, forms, CDN scripts, Permissions-Policy (from the page) ──
+  const cookies = s.security?.setCookies ?? [];
+  if (cookies.length > 0) {
+    const SESSION = /^(?:[^=]*(?:sess|sid|auth|token|login|logged|jwt|remember)[^=]*|PHPSESSID|JSESSIONID|ASP\.NET_SessionId|connect\.sid|laravel_session|wordpress_logged_in[^=]*)=/i;
+    const flags = cookies.map((c) => ({
+      name: c.split("=")[0].trim().slice(0, 40),
+      secure: /;\s*secure\b/i.test(c),
+      httpOnly: /;\s*httponly\b/i.test(c),
+      session: SESSION.test(c.trim()),
+    }));
+    const weak = flags.filter((f) => (https && !f.secure) || (f.session && !f.httpOnly));
+    const names = weak.map((f) => f.name).slice(0, 4).join(", ");
+    checks.push({
+      key: "cookie-flags", area: "security", weight: 2, service: "security", impact: weak.some((f) => f.session) ? 3 : 2,
+      pass: weak.length === 0,
+      good: "Cookies set by the page carry the Secure and HttpOnly protections",
+      bad: `Cookies without the Secure or HttpOnly protection (${names}), so they can be read by scripts or sent over plain HTTP`,
+      vars: { names },
+    });
+  }
+  const formActions = [...html.matchAll(/<form\b[^>]*\baction=["']([^"']*)["']/gi)].map((m) => decodeEntities(m[1]).trim());
+  const passwordField = /<input\b[^>]*type=["']?password/i.test(html);
+  const plainForms = formActions.filter((a) => /^http:\/\//i.test(a)).length + (!https && passwordField ? 1 : 0);
+  if (formActions.length > 0 || passwordField) {
+    checks.push({
+      key: "insecure-form", area: "security", weight: 3, service: "security", impact: 3, pass: plainForms === 0,
+      good: "Forms on the page send their data over HTTPS",
+      bad: !https && passwordField
+        ? "A password field on a page served over plain HTTP, so logins travel unencrypted"
+        : `Forms that send what visitors type over plain HTTP: ${plainForms}`,
+      badMsg: !https && passwordField ? "insecure-form.bad.password" : "insecure-form.bad",
+      vars: { n: plainForms },
+    });
+  }
+  const CDN = /\/\/(?:cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net|unpkg\.com|code\.jquery\.com|ajax\.googleapis\.com|stackpath\.bootstrapcdn\.com|maxcdn\.bootstrapcdn\.com|cdn\.datatables\.net)\//i;
+  const cdnScripts = [...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi)].filter((m) => CDN.test(m[1]));
+  if (cdnScripts.length > 0) {
+    const noSri = cdnScripts.filter((m) => !/\bintegrity=["']sha(?:256|384|512)-/i.test(m[0])).length;
+    checks.push({
+      key: "sri", area: "security", weight: 1, service: "security", impact: 1, soft: true, pass: noSri === 0,
+      good: "Scripts loaded from public CDNs carry an integrity check",
+      bad: `Scripts loaded from public CDNs without an integrity check: ${noSri}. A tampered copy on the CDN would run on your site`,
+      vars: { n: noSri },
+    });
+  }
+  checks.push({
+    key: "permissions-policy", area: "security", weight: 1, service: "security", impact: 1, soft: true,
+    pass: !!headers["permissions-policy"],
+    good: "Permissions-Policy limits which browser features (camera, location...) the page may use",
+    bad: "No Permissions-Policy header, so embedded content may ask for the camera, microphone or location",
+  });
+
+  // ── Security: certificate, old TLS, HTTPS redirect, CAA (probes) ─────────
+  const sec = s.security;
+  if (sec?.tls) {
+    const t = sec.tls;
+    const days = t.daysLeft ?? 0;
+    const broken = !t.trusted || days < 0;
+    checks.push({
+      key: "tls-cert", area: "security", weight: 3, service: "security", impact: 3,
+      pass: !broken && days >= 30, score: broken || days < 7 ? 0 : days < 30 ? 0.5 : 1,
+      good: `The HTTPS certificate is valid for ${days} more days${t.issuer ? ` (${t.issuer})` : ""}`,
+      bad: broken
+        ? days < 0 ? "The HTTPS certificate has expired, so browsers show visitors a security warning"
+          : `Browsers do not trust the HTTPS certificate (${t.error ?? "invalid"}), so visitors see a security warning`
+        : `The HTTPS certificate expires in ${days} days; when it does, browsers block the site with a warning`,
+      badMsg: broken ? (days < 0 ? "tls-cert.bad.expired" : "tls-cert.bad.untrusted") : "tls-cert.bad.soon",
+      vars: { days, issuer: t.issuer ?? "", error: t.error ?? "" },
+    });
+  }
+  if (sec?.legacyTls != null) {
+    checks.push({
+      key: "tls-legacy", area: "security", weight: 2, service: "security", impact: 2, pass: !sec.legacyTls,
+      good: "The server refuses the outdated TLS 1.0 and 1.1 protocols",
+      bad: "The server still accepts TLS 1.0 or 1.1, outdated protocols with known weaknesses",
+    });
+  }
+  if (sec?.httpRedirect && https) {
+    checks.push({
+      key: "https-redirect", area: "security", weight: 2, service: "security", impact: 2, pass: sec.httpRedirect !== "http",
+      good: "Visitors who type http:// are sent to the secure https:// address",
+      bad: "The http:// address does not redirect to https://, so visitors can end up on an unencrypted page",
+    });
+  }
+  if (sec?.caa != null) {
+    checks.push({
+      key: "caa", area: "security", weight: 1, service: "security", impact: 1, soft: true, pass: sec.caa,
+      good: "A CAA record limits which authorities may issue certificates for the domain",
+      bad: "No CAA record, so any certificate authority may issue a certificate for your domain",
+    });
+  }
+
   if (s.dns) {
     const spf = s.dns.spf;
     const open = !!spf && /(?:^|\s)[+?]?all\b/i.test(spf) && !/[-~]all\b/i.test(spf);
@@ -698,6 +793,14 @@ export function extraAudit(s: ExtraSignals): ExtraResult {
       badMsg: policy === "none" ? "dmarc.bad.none" : "dmarc.bad",
       ...(policy ? { vars: { policy } } : {}),
     });
+    if (s.dns.mx && sec?.dkim != null) {
+      checks.push({
+        key: "dkim", area: "security", weight: 2, service: "email", impact: 2, soft: true, pass: sec.dkim !== "",
+        good: `Outgoing email is signed with DKIM (selector "${sec.dkim}")`,
+        bad: "No DKIM key found under the usual names, so receivers cannot verify your emails are really yours",
+        vars: { selector: sec.dkim },
+      });
+    }
   }
 
   const byArea = (area: ExtraArea) => {

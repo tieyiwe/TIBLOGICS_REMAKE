@@ -7,6 +7,7 @@ import type { ExtraFinding, OpportunityKey, PageSpeedResult, Tech } from "./extr
 import { findingText } from "./i18n";
 import { reportPrice } from "./config";
 import { hideOwnStack, isOwnSite } from "./own";
+import { SEVERITIES, isLockedSeverity, securityGrade, severityOf, type Severity } from "./severity";
 
 // What a visitor sees of a scan, by how much they have unlocked:
 //
@@ -14,7 +15,13 @@ import { hideOwnStack, isOwnSite } from "./own";
 //          only), how the site ranks among scanned sites, how many build
 //          ideas we have, the detected platform. Everything else is a
 //          blurred placeholder in the UI, never sent to the browser.
-//   email  + every problem's title.
+//   email  the same page, which now says the results were emailed: every
+//          problem (security ones up to medium) goes to their inbox with a
+//          "fix this for me" link each (lib/scanner/email.ts), not onto a page
+//          anyone holding the link could read.
+//   Security findings carry a severity (lib/scanner/severity.ts). Critical and
+//   high ones are counted but their text stays out of the page and the email
+//   until the report is unlocked.
 //   full   (paid, booked call, or staff) + every check, the written fix
 //          steps, the build ideas, detected tools and versions, PageSpeed,
 //          the competitor comparison, the PDF and the re-scan.
@@ -47,6 +54,18 @@ export interface ViewFinding {
   type: "bad" | "warning" | "good";
   text: string;
   service?: string;
+  /** Security findings only. */
+  severity?: Severity;
+}
+
+export interface SecuritySummary {
+  grade: "A" | "B" | "C" | "D" | "F";
+  score: number;
+  counts: Record<Severity, number>;
+  /** Findings whose text may be shown at this level (up to 2 before unlock). */
+  shown: ViewFinding[];
+  /** Locked findings: severity only, no text. */
+  locked: Severity[];
 }
 
 export interface CompareRow {
@@ -84,6 +103,9 @@ export interface ReportView {
   price: string | null;
   priceCents: number | null;
   hasEmail: boolean;
+  /** The results were emailed (email level): the page shows a notice instead of the list. */
+  emailed: boolean;
+  security: SecuritySummary | null;
 }
 
 /** Problems on scores that matter most for a business come first. */
@@ -125,7 +147,8 @@ type T = (key: string, vars?: Vars) => string;
 
 function toView(t: T, locale: Locale, f: AnyFinding): ViewFinding {
   const service = "service" in f && f.service ? t(`tools.service.${f.service}`) : undefined;
-  return { check: f.check, area: f.area, type: f.type, text: findingText(t, locale, f), ...(service ? { service } : {}) };
+  const severity = severityOf(f);
+  return { check: f.check, area: f.area, type: f.type, text: findingText(t, locale, f), ...(service ? { service } : {}), ...(severity ? { severity } : {}) };
 }
 
 export function levelOf(lead: Pick<ScannerLead, "unlockedAt" | "email">, staff = false): Level {
@@ -165,6 +188,9 @@ export async function buildView(lead: ScannerLead, t: T, locale: Locale, opts: {
   for (const f of findings) counts[f.area] && counts[f.area][f.type]++;
   const problems = findings.filter((f) => f.type !== "good");
   const price = reportPrice();
+  // Critical and high security findings stay out of anything shown before unlock.
+  const open = problems.filter((f) => !isLockedSeverity(severityOf(f)));
+  const security = securitySummary(extra?.securityScore ?? null, problems, level === "full", t, locale);
 
   const view: ReportView = {
     token: lead.token ?? "",
@@ -182,12 +208,15 @@ export async function buildView(lead: ScannerLead, t: T, locale: Locale, opts: {
     percentile: await percentileOf(lead.overallScore),
     ideasCount: extra?.opportunities?.length ?? 0,
     platform: extra?.tech ? [extra.tech.cms, extra.tech.shop].filter(Boolean).join(" · ") || null : null,
-    top: topThree(problems).map((f) => toView(t, locale, f)),
-    problems: level === "free" ? null : problems.map((f) => toView(t, locale, f)),
+    top: topThree(level === "full" ? problems : open).map((f) => toView(t, locale, f)),
+    // The list itself is emailed, not shown (see the header comment).
+    problems: null,
     full: null,
     price: price ? formatMoney(price, locale) : null,
     priceCents: price,
     hasEmail: !!lead.email,
+    emailed: level === "email",
+    security,
   };
   if (held) {
     // Bought over the free limit and not paid yet: only the site and price.
@@ -198,6 +227,7 @@ export async function buildView(lead: ScannerLead, t: T, locale: Locale, opts: {
     view.problemsTotal = 0;
     view.percentile = null;
     view.platform = null;
+    view.security = null;
   }
   if (level === "full") {
     view.full = {
@@ -211,4 +241,24 @@ export async function buildView(lead: ScannerLead, t: T, locale: Locale, opts: {
     };
   }
   return view;
+}
+
+/** The security card: grade, counts by severity, and what may be shown at this level. */
+function securitySummary(score: number | null, problems: AnyFinding[], unlocked: boolean, t: T, locale: Locale): SecuritySummary | null {
+  if (score === null) return null;
+  const sec = problems.filter((f) => f.area === "security");
+  const counts = Object.fromEntries(SEVERITIES.map((s) => [s, 0])) as Record<Severity, number>;
+  for (const f of sec) {
+    const s = severityOf(f);
+    if (s) counts[s]++;
+  }
+  const bySeverity = (f: AnyFinding) => SEVERITIES.indexOf(severityOf(f) ?? "low");
+  const sorted = [...sec].sort((a, b) => bySeverity(a) - bySeverity(b));
+  return {
+    grade: securityGrade(score, counts),
+    score,
+    counts,
+    shown: (unlocked ? sorted : sorted.filter((f) => !isLockedSeverity(severityOf(f))).slice(0, 2)).map((f) => toView(t, locale, f)),
+    locked: unlocked ? [] : sorted.map(severityOf).filter((s): s is Severity => isLockedSeverity(s)),
+  };
 }

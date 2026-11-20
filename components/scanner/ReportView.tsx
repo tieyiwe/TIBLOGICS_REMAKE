@@ -7,7 +7,8 @@ import {
   Loader2, Lock, RefreshCw, Rocket, ScanSearch, Shield, Sparkles, Users, Wrench, XCircle, Zap,
 } from "lucide-react";
 import { useLocale, useT } from "@/lib/i18n/client";
-import type { Area, ReportView as View, ViewFinding } from "@/lib/scanner/view";
+import type { Area, ReportView as View, SecuritySummary, ViewFinding } from "@/lib/scanner/view";
+import type { Severity } from "@/lib/scanner/severity";
 
 // One scan's report on /tools/scanner/report/<token> (and right after a scan).
 // The server decides what is in `view`: locked parts arrive empty and are
@@ -39,6 +40,63 @@ function Ring({ score }: { score: number }) {
   );
 }
 
+const SEV_STYLE: Record<Severity, string> = {
+  critical: "bg-[#B42318] text-white",
+  high: "bg-[#DC6803] text-white",
+  medium: "bg-[#FEF0C7] text-[#93370D]",
+  low: "bg-[#EEF2F7] text-[#475467]",
+};
+
+function SeverityBadge({ s }: { s: Severity }) {
+  const t = useT();
+  return <span className={`inline-flex shrink-0 rounded-md px-1.5 py-0.5 font-dm text-[10.5px] font-bold uppercase tracking-wide ${SEV_STYLE[s]}`}>{t(`tools.sr.sev.${s}`)}</span>;
+}
+
+/** Security grade, counts by severity, and what this level may show (locked rows carry no text). */
+function SecurityCard({ s }: { s: SecuritySummary }) {
+  const t = useT();
+  const tone = s.grade === "A" || s.grade === "B" ? "#16a34a" : s.grade === "C" ? "#E06D12" : "#dc2626";
+  return (
+    <div className={card} data-testid="security-card">
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border-2 font-syne text-3xl font-extrabold" style={{ borderColor: tone, color: tone }} data-testid="security-grade">
+          {s.grade}
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className={`${h2} flex items-center gap-2`}><Shield size={18} className="text-[#1B3A6B]" aria-hidden /> {t("tools.sr.sec.title")}</h2>
+          <p className="mt-0.5 font-dm text-xs text-[#7A8FA6]">{t("tools.sr.sec.grade")} · {s.score}/100</p>
+          <ul className="mt-2 flex flex-wrap gap-1.5" data-testid="security-counts">
+            {(["critical", "high", "medium", "low"] as const).map((k) => (
+              <li key={k} className={`rounded-full px-2.5 py-1 font-dm text-xs font-semibold ${s.counts[k] > 0 ? SEV_STYLE[k] : "bg-[#F4F7FB] text-[#98A2B3]"}`}>
+                {s.counts[k]} {t(`tools.sr.sev.${k}`)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      {s.locked.length + s.shown.length === 0 ? (
+        <p className="mt-4 font-dm text-sm text-[#3A4A5C]">{t("tools.sr.sec.none")}</p>
+      ) : (
+        <ul className="mt-3 divide-y divide-[#EEF2F7]">
+          {s.locked.map((sev, i) => (
+            <li key={`locked-${i}`} className="flex items-center gap-3 py-2.5" data-testid="security-locked">
+              <SeverityBadge s={sev} />
+              <span className="flex min-w-0 items-center gap-1.5 font-dm text-sm text-[#475467]">
+                <Lock size={13} className="shrink-0 text-[#B8500A]" aria-hidden />
+                <span className="select-none blur-[3px]" aria-hidden>████████████ ██████ ███████</span>
+                <span className="sr-only">{t("tools.sr.sec.locked")}</span>
+              </span>
+              <span className="ml-auto hidden shrink-0 font-dm text-[11.5px] text-[#B8500A] sm:inline">{t("tools.sr.sec.locked")}</span>
+            </li>
+          ))}
+          {s.shown.map((f, i) => <FindingRow key={`${f.check}-${i}`} f={f} />)}
+        </ul>
+      )}
+      <p className="mt-3 font-dm text-[11.5px] leading-relaxed text-[#98A2B3]">{t("tools.sr.sec.passive")}</p>
+    </div>
+  );
+}
+
 function FindingRow({ f, locked }: { f: ViewFinding; locked?: boolean }) {
   const t = useT();
   const Icon = f.type === "bad" ? XCircle : f.type === "warning" ? AlertTriangle : CheckCircle2;
@@ -47,7 +105,7 @@ function FindingRow({ f, locked }: { f: ViewFinding; locked?: boolean }) {
     <li className="flex items-start gap-3 py-2.5">
       <Icon size={17} className={`mt-0.5 shrink-0 ${tone}`} aria-hidden />
       <div className="min-w-0 flex-1">
-        <p className="font-dm text-sm text-[#0D1B2A] break-words">{f.text}</p>
+        <p className="font-dm text-sm text-[#0D1B2A] break-words">{f.severity && <span className="mr-1.5 align-[1px]"><SeverityBadge s={f.severity} /></span>}{f.text}</p>
         <p className="mt-0.5 flex flex-wrap items-center gap-x-2 font-dm text-[11.5px] text-[#7A8FA6]">
           <span>{t(`tools.sr.area.${f.area}`)}</span>
           {f.service && <span>· {f.service}</span>}
@@ -273,11 +331,14 @@ export default function ReportView({ initial, paidReturn = false, canceled = fal
         </div>
       </div>
 
+      {/* ── Security ─────────────────────────────────────────────────────── */}
+      {v.security && <SecurityCard s={v.security} />}
+
       {/* ── Problems ─────────────────────────────────────────────────────── */}
       {v.level !== "full" && (
         <div className={card}>
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className={h2}>{v.level === "free" ? t("tools.sr.top") : t("tools.sr.problems", { n: nf.format(v.problemsTotal) })}</h2>
+            <h2 className={h2}>{t("tools.sr.top")}</h2>
             <span className="font-dm text-xs text-[#7A8FA6]">{t("tools.sr.problemsTotal", { n: nf.format(v.problemsTotal) })}</span>
           </div>
           {problemsShown.length === 0 ? (
@@ -309,8 +370,14 @@ export default function ReportView({ initial, paidReturn = false, canceled = fal
               </form>
             </>
           )}
-          {v.level === "email" && (
-            <p className="mt-3 flex items-center gap-2 font-dm text-sm text-green-700"><Check size={16} aria-hidden /> {t("tools.sr.email.done")}</p>
+          {v.emailed && (
+            <div className="mt-4 flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4" role="status" data-testid="emailed">
+              <Check size={18} className="mt-0.5 shrink-0 text-green-700" aria-hidden />
+              <div>
+                <p className="font-syne text-base font-bold text-green-900">{t("tools.sr.emailed.title")}</p>
+                <p className="mt-0.5 font-dm text-sm text-green-900/80">{t("tools.sr.emailed.body")}</p>
+              </div>
+            </div>
           )}
           {err && <p className="mt-3 font-dm text-sm text-red-600" role="alert">{err}</p>}
         </div>

@@ -253,18 +253,32 @@ export async function safeFetch(
  * for the check and 127.0.0.1 or 169.254.169.254 for the connection.
  * GET or HEAD with headers and a signal is all the callers use.
  */
-function pinnedFetch(url: URL, init: RequestInit): Promise<Response> {
-  const guardedLookup = ((hostname: string, options: dns.LookupOptions, cb: (...args: unknown[]) => void) => {
+/**
+ * A dns.lookup for http/https/tls connections that refuses internal addresses
+ * at the moment of connecting (see pinnedFetch). `target` names the request in
+ * the error.
+ */
+export function guardedLookup(target: string): typeof dns.lookup {
+  return ((hostname: string, options: dns.LookupOptions, cb: (...args: unknown[]) => void) => {
     dns.lookup(hostname, { ...options, all: true }, (err, addresses) => {
       if (err) return cb(err);
       const list = addresses as dns.LookupAddress[];
       if (list.length === 0 || list.some((a) => isBlockedAddress(a.address))) {
-        return cb(new SsrfBlockedError("private", url.toString()));
+        return cb(new SsrfBlockedError("private", target));
       }
       if (options.all) cb(null, list);
       else cb(null, list[0].address, list[0].family);
     });
   }) as unknown as typeof dns.lookup;
+}
+
+/** One request, no redirects followed, connection checked (for probes that read the redirect itself). */
+export function fetchOnce(url: URL, init: RequestInit = {}): Promise<Response> {
+  return pinnedFetch(url, init);
+}
+
+function pinnedFetch(url: URL, init: RequestInit): Promise<Response> {
+  const lookup = guardedLookup(url.toString());
 
   const headers: Record<string, string> = { "accept-encoding": "gzip, deflate, br" };
   new Headers(init.headers).forEach((v, k) => {
@@ -274,7 +288,7 @@ function pinnedFetch(url: URL, init: RequestInit): Promise<Response> {
   return new Promise<Response>((resolve, reject) => {
     const req = mod.request(
       url,
-      { method: init.method ?? "GET", headers, lookup: guardedLookup, signal: init.signal ?? undefined },
+      { method: init.method ?? "GET", headers, lookup, signal: init.signal ?? undefined },
       (res) => {
         const h = new Headers();
         for (const [k, v] of Object.entries(res.headers)) {

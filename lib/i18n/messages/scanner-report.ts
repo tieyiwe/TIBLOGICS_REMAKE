@@ -70,13 +70,13 @@ export default tri({
   "tools.sr.noProblems": ["No problems found. Nicely done.", "Aucun problème trouvé. Bravo.", "Hakuna matatizo. Kazi nzuri."],
   "tools.sr.fixLocked": ["Fix steps in the full report", "Correctif dans le rapport complet", "Hatua za kurekebisha ziko kwenye ripoti kamili"],
   "tools.sr.moreHidden": ["{n} more problems", "{n} autres problèmes", "Matatizo mengine {n}"],
-  "tools.sr.email.title": ["See every problem we found", "Voir tous les problèmes trouvés", "Ona matatizo yote tuliyopata"],
+  "tools.sr.email.title": ["Get every problem we found, by email", "Recevez tous les problèmes trouvés par e-mail", "Pokea matatizo yote tuliyopata kwa barua pepe"],
   "tools.sr.email.body": [
-    "Enter your email to see the full list now and get these results in your inbox.",
-    "Indiquez votre e-mail pour voir la liste complète maintenant et recevoir ces résultats.",
-    "Weka barua pepe yako uone orodha kamili sasa na upokee matokeo haya.",
+    "We'll email you the full list, including the security findings, with a way to have each one fixed.",
+    "Nous vous envoyons la liste complète, y compris les résultats de sécurité, avec un moyen de faire corriger chaque point.",
+    "Tutakutumia orodha kamili, ikiwemo matokeo ya usalama, pamoja na njia ya kurekebisha kila moja.",
   ],
-  "tools.sr.email.send": ["Show me", "Afficher", "Nionyeshe"],
+  "tools.sr.email.send": ["Email me the results", "M'envoyer les résultats", "Nitumie matokeo"],
   "tools.sr.email.consent": [
     "Email me these results and a few tips to fix them. I can unsubscribe at any time.",
     "Envoyez-moi ces résultats et quelques conseils pour les corriger. Je peux me désinscrire à tout moment.",
@@ -91,6 +91,37 @@ export default tri({
     "Done. The results are on their way to your inbox.",
     "C'est fait. Les résultats arrivent dans votre boîte de réception.",
     "Imekamilika. Matokeo yanakuja kwenye barua pepe yako.",
+  ],
+  "tools.sr.emailed.title": ["Your full results have been emailed", "Vos résultats complets vous ont été envoyés", "Matokeo yako kamili yametumwa kwa barua pepe"],
+  "tools.sr.emailed.body": [
+    "Every problem we found, security included, is in your inbox, each with a link to have it fixed. Not there in a few minutes? Check your spam folder.",
+    "Tous les problèmes trouvés, sécurité comprise, sont dans votre boîte de réception, chacun avec un lien pour le faire corriger. Rien dans quelques minutes ? Vérifiez vos courriers indésirables.",
+    "Kila tatizo tulilopata, ikiwemo la usalama, liko kwenye barua pepe yako, kila moja na kiungo cha kulirekebisha. Halijafika baada ya dakika chache? Angalia folda ya spam.",
+  ],
+
+  // ── Security card ───────────────────────────────────────────────────────
+  "tools.sr.sec.title": ["Security check", "Contrôle de sécurité", "Ukaguzi wa usalama"],
+  "tools.sr.sec.grade": ["Security grade", "Note de sécurité", "Daraja la usalama"],
+  "tools.sr.sec.none": ["No security problems found.", "Aucun problème de sécurité trouvé.", "Hakuna tatizo la usalama lililopatikana."],
+  "tools.sr.sec.passive": [
+    "A passive check of what any browser can see: certificate, protocols, headers, cookies, forms, scripts and email records. Not a penetration test.",
+    "Un contrôle passif de ce que tout navigateur peut voir : certificat, protocoles, en-têtes, cookies, formulaires, scripts et enregistrements e-mail. Pas un test d'intrusion.",
+    "Ukaguzi tulivu wa kile ambacho kivinjari chochote kinaweza kuona: cheti, itifaki, vichwa, vidakuzi, fomu, hati na rekodi za barua pepe. Si jaribio la kupenya.",
+  ],
+  "tools.sr.sec.locked": ["Details and fix in the full report", "Détails et correctif dans le rapport complet", "Maelezo na marekebisho kwenye ripoti kamili"],
+  "tools.sr.sev.critical": ["Critical", "Critique", "Hatari kubwa"],
+  "tools.sr.sev.high": ["High", "Élevé", "Juu"],
+  "tools.sr.sev.medium": ["Medium", "Moyen", "Wastani"],
+  "tools.sr.sev.low": ["Low", "Faible", "Chini"],
+  "tools.sr.sec.lockedItem.critical": [
+    "A critical security issue (details in the full report)",
+    "Un problème de sécurité critique (détails dans le rapport complet)",
+    "Tatizo la usalama la hatari kubwa (maelezo kwenye ripoti kamili)",
+  ],
+  "tools.sr.sec.lockedItem.high": [
+    "A high-severity security issue (details in the full report)",
+    "Un problème de sécurité grave (détails dans le rapport complet)",
+    "Tatizo la usalama la kiwango cha juu (maelezo kwenye ripoti kamili)",
   ],
 
   // ── Unlock ──────────────────────────────────────────────────────────────
@@ -283,6 +314,11 @@ export default tri({
     "Votre analyse de site : {domain} obtient {score}/100",
     "Uchunguzi wa tovuti yako: {domain} imepata {score}/100",
   ],
+  "tools.sr.mail.r.subjectSec": [
+    "Your website scan: {domain} scored {score}/100, with {n} serious security issues",
+    "Votre analyse de site : {domain} obtient {score}/100, avec {n} problèmes de sécurité sérieux",
+    "Uchunguzi wa tovuti yako: {domain} imepata {score}/100, na matatizo {n} makubwa ya usalama",
+  ],
   "tools.sr.mail.r.title": ["Here's how {domain} scored", "Voici le résultat de {domain}", "Hivi ndivyo {domain} ilivyofanya"],
   "tools.sr.mail.r.intro": [
     "You scanned {domain} with the TIBLOGICS Website Scanner. It scored {score}/100 overall, and we found {n} things holding it back.",
@@ -290,6 +326,27 @@ export default tri({
     "Ulichunguza {domain} kwa Kichunguzi cha Tovuti cha TIBLOGICS. Imepata {score}/100 kwa jumla, na tumepata mambo {n} yanayoizuia.",
   ],
   "tools.sr.mail.r.problems": ["What we found:", "Ce que nous avons trouvé :", "Tulichopata:"],
+  "tools.sr.mail.r.sec": ["Security: grade {grade}", "Sécurité : note {grade}", "Usalama: daraja {grade}"],
+  "tools.sr.mail.r.secCounts": [
+    "{critical} critical · {high} high · {medium} medium · {low} low",
+    "{critical} critique(s) · {high} élevé(s) · {medium} moyen(s) · {low} faible(s)",
+    "{critical} hatari kubwa · {high} juu · {medium} wastani · {low} chini",
+  ],
+  "tools.sr.mail.r.secLocked": [
+    "The critical and high issues are named in the full report, with what they expose and how to fix each one ({price}). Or let us fix them for you.",
+    "Les problèmes critiques et élevés sont détaillés dans le rapport complet, avec ce qu'ils exposent et comment corriger chacun ({price}). Ou laissez-nous les corriger pour vous.",
+    "Matatizo ya hatari kubwa na ya juu yameelezwa kwenye ripoti kamili, pamoja na yanachofichua na jinsi ya kurekebisha kila moja ({price}). Au tuache tuyarekebishe kwa ajili yako.",
+  ],
+  "tools.sr.mail.r.site": ["Website, AI readiness and growth", "Site, préparation à l'IA et croissance", "Tovuti, utayari wa AI na ukuaji"],
+  "tools.sr.mail.r.fixThis": ["Fix this for me →", "Corrigez-le pour moi →", "Nirekebishie hili →"],
+  "tools.sr.mail.r.fixSecurity": ["Fix my security issues", "Corriger mes problèmes de sécurité", "Rekebisha matatizo yangu ya usalama"],
+  "tools.sr.mail.r.fixAll": ["Fix everything for me", "Tout corriger pour moi", "Nirekebishie kila kitu"],
+  "tools.sr.mail.r.unlockBtn": ["Unlock the full report ({price})", "Débloquer le rapport complet ({price})", "Fungua ripoti kamili ({price})"],
+  "tools.sr.mail.r.next": [
+    "Want it done? Tell us which ones and we'll send a fixed quote, or book a free 30-minute call.",
+    "Vous voulez que ce soit fait ? Dites-nous lesquels et nous vous enverrons un devis fixe, ou réservez un appel gratuit de 30 minutes.",
+    "Unataka yafanyike? Tuambie yapi na tutakutumia bei maalum, au weka miadi ya simu ya bure ya dakika 30.",
+  ],
   "tools.sr.mail.r.unlock": [
     "The full report shows why each problem matters and what it costs you, {n} things we'd build for this site, a competitor comparison and a PDF to share. It's {price} and includes a fresh scan within 30 days, or free when you book a short call with us.",
     "Le rapport complet explique pourquoi chaque problème compte et ce qu'il vous coûte, avec {n} idées de projets pour ce site, une comparaison avec vos concurrents et un PDF à partager. Il coûte {price} et inclut une nouvelle analyse sous 30 jours, ou il est gratuit si vous réservez un court appel avec nous.",

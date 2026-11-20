@@ -1,4 +1,5 @@
 import { checkTargetUrl, safeFetch, readTextLimited, BLOCK_MESSAGES, SsrfBlockedError } from "@/lib/ssrf";
+import { probeSecurity } from "./security";
 import { audit, type AuditResult, type Signals } from "@/lib/scanner/audit";
 import { checkDns, extraAudit, type ExtraResult } from "@/lib/scanner/extra";
 
@@ -99,11 +100,13 @@ export async function scanSite(raw: string, timeoutMs = 20_000, opts: { extra?: 
 
     const finalUrl = res.url || target.toString();
     const origin = new URL(finalUrl).origin;
-    const [robotsTxt, sitemapDirect, llms, dns] = await Promise.all([
+    const [robotsTxt, sitemapDirect, llms, dns, security] = await Promise.all([
       probe(`${origin}/robots.txt`, controller.signal, true),
       probe(`${origin}/sitemap.xml`, controller.signal),
       probe(`${origin}/llms.txt`, controller.signal, true),
       opts.extra ? checkDns(new URL(finalUrl).hostname).catch(() => null) : Promise.resolve(null),
+      // Certificate, old TLS, HTTP redirect, CAA, DKIM (lib/scanner/security.ts).
+      opts.extra ? probeSecurity(finalUrl, res.headers.getSetCookie?.() ?? []).catch(() => null) : Promise.resolve(null),
     ]);
 
     const signals: Signals = {
@@ -129,7 +132,7 @@ export async function scanSite(raw: string, timeoutMs = 20_000, opts: { extra?: 
     res.headers.forEach((v, k) => {
       headers[k.toLowerCase()] = v;
     });
-    const extra = extraAudit({ html, finalUrl, headers, dns });
+    const extra = extraAudit({ html, finalUrl, headers, dns, security });
     return { ok: true, url: finalUrl, ...base, extra, page: pageMeta(html) };
   } finally {
     clearTimeout(timeout);

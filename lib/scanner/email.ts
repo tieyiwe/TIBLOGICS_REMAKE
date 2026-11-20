@@ -11,6 +11,8 @@ import { findingText } from "./i18n";
 import { reportPrice } from "./config";
 import { allFindings, readExtra, type Area } from "./view";
 import { servicesNeeded } from "./growth";
+import { fixUrl } from "./fix-link";
+import { SEVERITIES, isLockedSeverity, securityGrade, severityOf, type Severity } from "./severity";
 
 // Scanner emails, in the visitor's language:
 //   results     right after they leave their email (scores and every problem)
@@ -81,7 +83,17 @@ function priceText(locale: Locale): string {
   return c ? formatMoney(c, locale) : "";
 }
 
-/** The results email, sent when the visitor leaves their email. */
+/**
+ * The results email, sent when the visitor leaves their email. This is where
+ * the details live (the page only says they were emailed): the scores, the
+ * security grade, every problem with a signed "Fix this for me" link back to
+ * the service request form (lib/scanner/fix-link.ts), and the critical and
+ * high security issues counted but kept for the full report.
+ *
+ * HTML, not a PDF: it reads on a phone, every problem is one tap from a
+ * prefilled request, and the paid report already comes as a PDF. A plain-text
+ * part goes with it for clients that block HTML.
+ */
 export async function sendScanReportEmail(id: string): Promise<void> {
   const l = await prisma.scannerLead.findUnique({ where: { id } });
   if (!l?.email || !l.token || l.emailedAt) return;
@@ -90,24 +102,85 @@ export async function sendScanReportEmail(id: string): Promise<void> {
   if (isHeld(l)) return;
   const locale = localeOf(l);
   const t = translatorFor(locale);
+  const token = l.token;
   const problems = allFindings(l).filter((f) => f.type !== "good");
-  const ideas = readExtra(l.extra)?.opportunities.length ?? 0;
+  const security = problems.filter((f) => f.area === "security");
+  const site = problems.filter((f) => f.area !== "security");
+  const extra = readExtra(l.extra, l.url);
   const domain = l.domain ?? l.url;
-  const list = problems
-    .slice(0, 12)
-    .map((f) => `<li style="margin:0 0 6px;">${esc(findingText(t, locale, f))}</li>`)
-    .join("");
+  const price = priceText(locale);
+
+  const counts = Object.fromEntries(SEVERITIES.map((s) => [s, 0])) as Record<Severity, number>;
+  for (const f of security) counts[severityOf(f) ?? "low"]++;
+  const grade = extra ? securityGrade(extra.securityScore, counts) : null;
+  const bySev = (f: (typeof security)[number]) => SEVERITIES.indexOf(severityOf(f) ?? "low");
+  const secSorted = [...security].sort((a, b) => bySev(a) - bySev(b));
+  const locked = secSorted.filter((f) => isLockedSeverity(severityOf(f)));
+  const open = secSorted.filter((f) => !isLockedSeverity(severityOf(f)));
+
+  const SEV_COLOR: Record<Severity, string> = { critical: "#B42318", high: "#DC6803", medium: "#B54708", low: "#475467" };
+  const chip = (s: Severity) =>
+    `<span style="display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:${SEV_COLOR[s]};border-radius:6px;padding:2px 7px;margin-right:6px;">${esc(t(`tools.sr.sev.${s}`))}</span>`;
+  const fixLink = (check: string) => `<a href="${esc(fixUrl(token, check))}" style="color:#E06D12;font-weight:700;text-decoration:none;white-space:nowrap;">${esc(t("tools.sr.mail.r.fixThis"))}</a>`;
+  const item = (inner: string) => `<tr><td style="padding:10px 0;border-bottom:1px solid #eef2f7;font-size:14px;color:#3A4A5C;line-height:1.5;">${inner}</td></tr>`;
+  const heading = (txt: string) => `<h2 style="font-size:17px;color:#0D1B2A;margin:22px 0 6px;">${txt}</h2>`;
+  const gradeColor = grade === "A" || grade === "B" ? "#16a34a" : grade === "C" ? "#F47C20" : "#dc2626";
+
+  const securityBlock = extra
+    ? heading(esc(t("tools.sr.mail.r.sec", { grade: "\u0000" })).replace("\u0000", `<span style="color:${gradeColor};">${esc(grade ?? "")}</span>`)) +
+      p(esc(t("tools.sr.mail.r.secCounts", { critical: counts.critical, high: counts.high, medium: counts.medium, low: counts.low }))) +
+      (security.length === 0
+        ? p(esc(t("tools.sr.sec.none")))
+        : `<table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 10px;">${[
+            ...locked.map((f) => item(`${chip(severityOf(f)!)}🔒 ${esc(t(`tools.sr.sec.lockedItem.${severityOf(f)}`))}`)),
+            ...open.map((f) => item(`${chip(severityOf(f)!)}${esc(findingText(t, locale, f))}<br>${fixLink(f.check)}`)),
+          ].join("")}</table>`) +
+      (locked.length ? p(esc(t("tools.sr.mail.r.secLocked", { price }))) + button(reportUrl(l), t("tools.sr.mail.r.unlockBtn", { price })) : "") +
+      (security.length ? button(fixUrl(token, "security"), t("tools.sr.mail.r.fixSecurity"), !!locked.length) : "")
+    : "";
+
+  const siteBlock = site.length
+    ? heading(esc(t("tools.sr.mail.r.site"))) +
+      `<table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 10px;">${site
+        .slice(0, 15)
+        .map((f) => item(`${esc(findingText(t, locale, f))}<br>${fixLink(f.check)}`))
+        .join("")}</table>`
+    : "";
+
   const html = frame(
     esc(t("tools.sr.mail.r.title", { domain })),
     p(esc(t("tools.sr.mail.r.intro", { domain, score: l.overallScore, n: problems.length }))) +
       scoreTable(l, t) +
-      (list ? `<p style="font-size:14px;font-weight:700;color:#0D1B2A;margin:0 0 8px;">${esc(t("tools.sr.mail.r.problems"))}</p><ul style="font-size:14px;color:#3A4A5C;line-height:1.55;padding-left:20px;margin:0 0 16px;">${list}</ul>` : "") +
-      button(reportUrl(l), t("tools.sr.mail.open")) +
-      p(esc(t("tools.sr.mail.r.unlock", { n: ideas, price: priceText(locale) }))) +
-      button(bookUrl(l), t("tools.sr.mail.book"), true),
+      securityBlock +
+      siteBlock +
+      heading(esc(t("tools.sr.mail.r.fixAll"))) +
+      p(esc(t("tools.sr.mail.r.next"))) +
+      button(fixUrl(token, "all"), t("tools.sr.mail.r.fixAll")) +
+      button(bookUrl(l), t("tools.sr.mail.book"), true) +
+      p(esc(t("tools.sr.mail.r.unlock", { n: extra?.opportunities.length ?? 0, price }))) +
+      button(reportUrl(l), t("tools.sr.mail.open"), true),
     footerFor(l, t),
   );
-  await send(l.email, t("tools.sr.mail.r.subject", { domain, score: l.overallScore }), html);
+
+  const text = [
+    t("tools.sr.mail.r.title", { domain }),
+    "",
+    t("tools.sr.mail.r.intro", { domain, score: l.overallScore, n: problems.length }),
+    ...(extra ? ["", t("tools.sr.mail.r.sec", { grade: grade ?? "" }), t("tools.sr.mail.r.secCounts", { critical: counts.critical, high: counts.high, medium: counts.medium, low: counts.low })] : []),
+    ...locked.map((f) => `- [${t(`tools.sr.sev.${severityOf(f)}`)}] ${t(`tools.sr.sec.lockedItem.${severityOf(f)}`)}`),
+    ...open.map((f) => `- [${t(`tools.sr.sev.${severityOf(f)}`)}] ${findingText(t, locale, f)}\n  ${t("tools.sr.mail.r.fixThis")} ${fixUrl(token, f.check)}`),
+    ...(site.length ? ["", t("tools.sr.mail.r.site")] : []),
+    ...site.slice(0, 15).map((f) => `- ${findingText(t, locale, f)}\n  ${t("tools.sr.mail.r.fixThis")} ${fixUrl(token, f.check)}`),
+    "",
+    `${t("tools.sr.mail.r.fixAll")}: ${fixUrl(token, "all")}`,
+    `${t("tools.sr.mail.book")}: ${bookUrl(l)}`,
+    `${t("tools.sr.mail.open")}: ${reportUrl(l)}`,
+  ].join("\n");
+
+  const subject = counts.critical + counts.high > 0
+    ? t("tools.sr.mail.r.subjectSec", { domain, score: l.overallScore, n: counts.critical + counts.high })
+    : t("tools.sr.mail.r.subject", { domain, score: l.overallScore });
+  await mailTransport().sendMail({ from: MAIL_FROM, to: l.email, subject, html, text });
   await prisma.scannerLead.update({ where: { id }, data: { emailedAt: new Date() } });
 }
 
@@ -128,7 +201,11 @@ export async function sendFollowup(l: ScannerLead, stage: 1 | 2): Promise<boolea
   const problems = allFindings(l).filter((f) => f.type !== "good");
   const extra = readExtra(l.extra, l.url);
   if (stage === 1) {
-    const top = problems[0];
+    // A critical or high security issue stays for the full report: the
+    // follow-up quotes the biggest problem that may be shown, and only counts
+    // the locked ones.
+    const top = problems.find((f) => !isLockedSeverity(severityOf(f)));
+    const lockedN = problems.filter((f) => isLockedSeverity(severityOf(f))).length;
     if (!top) return false;
     const html = frame(
       esc(t("tools.sr.mail.f1.title", { domain })),
@@ -136,6 +213,7 @@ export async function sendFollowup(l: ScannerLead, stage: 1 | 2): Promise<boolea
         `<blockquote style="margin:0 0 14px;padding:12px 16px;border-left:4px solid #F47C20;background:#FEF6EE;font-size:15px;color:#0D1B2A;">${esc(findingText(t, locale, top))}</blockquote>` +
         p(esc(t(WHY_AREA[top.area]))) +
         p(esc(t("tools.sr.mail.f1.more", { n: Math.max(0, problems.length - 1) }))) +
+        (lockedN > 0 ? p(esc(t("tools.sr.mail.r.secLocked", { price: priceText(locale) }))) : "") +
         button(reportUrl(l), t("tools.sr.mail.f1.cta")) +
         button(bookUrl(l), t("tools.sr.mail.book"), true),
       footerFor(l, t),
@@ -194,11 +272,17 @@ export async function sendOwnerScanAlert(id: string, kind: "email" | "paid" | "c
   const extra = readExtra(l.extra, l.url);
   const t = translatorFor("en");
   const services = servicesNeeded(l).map((s) => t(`tools.service.${s}`));
-  const problems = allFindings(l).filter((f) => f.type === "bad").slice(0, 6).map((f) => findingText(t, "en", f));
+  const problems = allFindings(l).filter((f) => f.type === "bad").slice(0, 8).map((f) => `${severityOf(f) ? `[${severityOf(f)}] ` : ""}${findingText(t, "en", f)}`);
   const what = kind === "paid" ? `bought the full report (${formatMoney(l.amountPaid ?? 0)})` : kind === "call" ? "booked a call from their report" : "left their email";
   const row = (k: string, v: string) =>
     `<tr><td style="padding:6px 12px 6px 0;color:#7A8FA6;font-size:13px;white-space:nowrap;vertical-align:top;">${k}</td><td style="padding:6px 0;color:#0D1B2A;font-size:14px;">${v}</td></tr>`;
   const tech = extra?.tech;
+  const secCounts = Object.fromEntries(SEVERITIES.map((s) => [s, 0])) as Record<Severity, number>;
+  for (const f of allFindings(l)) {
+    const sev = severityOf(f);
+    if (sev) secCounts[sev]++;
+  }
+  const serious = secCounts.critical + secCounts.high;
   const html = frame(
     `Scanner lead: ${esc(l.domain ?? l.url)}`,
     p(`Someone ${esc(what)} after scanning <strong>${esc(l.url)}</strong>.`) +
@@ -207,6 +291,7 @@ export async function sendOwnerScanAlert(id: string, kind: "email" | "paid" | "c
         l.name ? row("Name", esc(l.name)) : "",
         row("Overall", `${l.overallScore}/100`),
         row("Scores", `AI ${l.aiScore} · SEO ${l.seoScore} · Speed ${l.perfScore} · UX ${l.uxScore}${extra ? ` · Lead capture ${extra.growthScore} · Security ${extra.securityScore}` : ""}`),
+        extra ? row("Security", `Grade ${securityGrade(extra.securityScore, secCounts)} · ${secCounts.critical} critical · ${secCounts.high} high · ${secCounts.medium} medium · ${secCounts.low} low`) : "",
         tech?.cms || tech?.shop ? row("Platform", esc([tech?.cms, tech?.cmsVersion, tech?.shop].filter(Boolean).join(" · "))) : "",
         services.length ? row("Needs", esc(services.join(", "))) : "",
         row("Language", esc(l.locale ?? "en")),
@@ -216,5 +301,5 @@ export async function sendOwnerScanAlert(id: string, kind: "email" | "paid" | "c
       (l.growthLeadId ? button(`${SITE}/admin_pro/growth/leads?open=${encodeURIComponent(l.growthLeadId)}`, "Open in Growth", true) : ""),
     "Sent to ADMIN_NOTIFY_EMAIL by the website scanner.",
   );
-  await send(adminNotifyEmail(), `Scanner lead: ${l.domain ?? l.url} (${l.overallScore}/100): ${kind === "paid" ? "PAID" : kind === "call" ? "call booked" : "email"}`, html);
+  await send(adminNotifyEmail(), `Scanner lead: ${l.domain ?? l.url} (${l.overallScore}/100)${serious ? `, ${serious} serious security issue${serious === 1 ? "" : "s"}` : ""}: ${kind === "paid" ? "PAID" : kind === "call" ? "call booked" : "email"}`, html);
 }

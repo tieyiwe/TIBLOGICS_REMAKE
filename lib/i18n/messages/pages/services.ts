@@ -176,6 +176,18 @@ export default tri({
     "Eleza mradi wako / unachotaka kufanikisha *",
   ],
   "pages.getStarted.tiboAssisted": ["Tibo assisted", "Avec l'aide de Tibo", "Kwa msaada wa Tibo"],
+  "pages.getStarted.scan.banner": [
+    "We filled in the issues from your scan of {domain}. Add your details and we'll send you a fixed quote.",
+    "Nous avons repris les problèmes de l'analyse de {domain}. Ajoutez vos coordonnées et nous vous enverrons un devis fixe.",
+    "Tumejaza matatizo kutoka kwenye uchanganuzi wa {domain}. Ongeza maelezo yako na tutakutumia bei maalum.",
+  ],
+  "pages.getStarted.scan.intro": [
+    "Please fix these issues found by the TIBLOGICS scan of {domain}:",
+    "Merci de corriger ces problèmes trouvés par l'analyse TIBLOGICS de {domain} :",
+    "Tafadhali rekebisheni matatizo haya yaliyopatikana na uchanganuzi wa TIBLOGICS wa {domain}:",
+  ],
+  "pages.getStarted.scan.more": ["…and {n} more in the report.", "…et {n} autres dans le rapport.", "…na {n} zaidi kwenye ripoti."],
+  "pages.getStarted.scan.report": ["Scan report: {url}", "Rapport d'analyse : {url}", "Ripoti ya uchanganuzi: {url}"],
   "pages.getStarted.describePlaceholder": [
     "Tell us what you're trying to build, what problem you're solving, and what success looks like for you…",
     "Dites-nous ce que vous cherchez à construire, quel problème vous résolvez et à quoi ressemble la réussite pour vous…",

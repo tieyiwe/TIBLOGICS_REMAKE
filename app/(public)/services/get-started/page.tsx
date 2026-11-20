@@ -85,6 +85,33 @@ export default function GetStartedPage() {
     tiboEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [tiboMessages]);
 
+  // "Fix this for me" from a scanner email (lib/scanner/fix-link.ts): the
+  // site, the problems and the service are filled in for them.
+  const [fromScan, setFromScan] = useState<string | null>(null);
+  useEffect(() => {
+    const scan = searchParams.get("scan");
+    const fix = searchParams.get("fix");
+    const k = searchParams.get("k");
+    if (!scan || !fix || !k) return;
+    const q = new URLSearchParams({ fix, k });
+    fetch(`/api/scanner/report/${encodeURIComponent(scan)}/fix?${q}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { domain: string; url: string; service: string; items: string[]; more: number } | null) => {
+        if (!d) return;
+        const lines = [
+          t("pages.getStarted.scan.intro", { domain: d.domain }),
+          ...d.items.map((i) => `- ${i}`),
+          ...(d.more > 0 ? [t("pages.getStarted.scan.more", { n: d.more })] : []),
+          "",
+          t("pages.getStarted.scan.report", { url: `${window.location.origin}/tools/scanner/report/${scan}` }),
+        ];
+        setForm((f) => ({ ...f, service: f.service || d.service, description: f.description || lines.join("\n").slice(0, 4900) }));
+        setFromScan(d.domain);
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -240,6 +267,11 @@ export default function GetStartedPage() {
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           {/* Main form */}
           <form onSubmit={handleSubmit} className="flex-1 space-y-5">
+            {fromScan && (
+              <p role="status" data-testid="from-scan" className="rounded-2xl border border-[#F47C20]/30 bg-[#FEF6EE] px-4 py-3 font-dm text-sm text-[#7A3E0E]">
+                {t("pages.getStarted.scan.banner", { domain: fromScan })}
+              </p>
+            )}
             {/* Name row */}
             <div className="bg-white border border-[#D2DCE8] rounded-2xl p-6 space-y-4">
               <h3 className="font-syne font-bold text-sm text-[#0D1B2A] uppercase tracking-wide">{t("pages.getStarted.yourInfo")}</h3>
