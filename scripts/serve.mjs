@@ -1,14 +1,15 @@
-// Production server (npm run start): `next start`, without the gap.
+// Production server (npm run start): what `next start` does, plus a clean
+// handover when Replit swaps versions.
 //
-// `next start` opens the port only once Next.js has finished booting, so for
-// a few seconds after a Republish (or any restart) nothing answers, and the
-// Replit proxy shows "Internal Server Error" to anyone who clicks or reloads
-// right then. This opens the port at once and holds each request until the
-// app is ready, so a visitor in that window waits a moment and gets the page.
-//
-// On shutdown (SIGTERM from Replit when a new version takes over), it stops
-// accepting new connections and lets the requests already in progress finish
-// (up to 10 seconds) instead of cutting them off.
+//   - The port opens the moment the process starts, and each request is held
+//     until Next.js has booted (`next start` also holds early requests; this
+//     keeps that guarantee in our hands). If booting ever takes longer than 25
+//     seconds, visitors get a "One moment" page that reloads itself instead of
+//     an error.
+//   - On shutdown (SIGTERM, when Replit stops the old version after a
+//     Republish), it stops taking new connections and lets the requests
+//     already in progress finish (up to 10 seconds) instead of cutting them
+//     off, which a visitor would see as "Internal Server Error".
 //
 // Same app, same build, same proxy.ts: Next.js documents this as a custom
 // server (node_modules/next/dist/docs/01-app/02-guides/custom-server.md).
@@ -63,6 +64,12 @@ server.on("upgrade", async (req, socket, head) => {
   else socket.destroy();
 });
 
+server.on("error", (err) => {
+  // Port taken (another copy still running) or not allowed: say so and stop,
+  // so the platform restarts us rather than leaving a half-started process.
+  console.error(`Could not listen on ${hostname}:${port}: ${err.message}`);
+  process.exit(1);
+});
 server.listen(port, hostname, () => console.log(`> Listening on http://${hostname}:${port} (the app finishes booting behind it)`));
 
 let closing = false;
