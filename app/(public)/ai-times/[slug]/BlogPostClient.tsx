@@ -3,6 +3,7 @@
 import InArticlePromo, { splitForPromo } from "@/components/public/InArticlePromo";
 import { useState, useEffect, useRef } from "react";
 import CoverImg from "@/components/blog/CoverImg";
+import { isFounderPhoto } from "@/lib/blog/founder-photo";
 import Link from "next/link";
 import ArticleDiscussion from "@/components/blog/ArticleDiscussion";
 import { EngageProvider } from "@/components/blog/engage-store";
@@ -409,11 +410,11 @@ export default function BlogPostPage({
           {post.coverImage && !heroCoverFailed ? (
             // A cover designed for the article (/covers/... or /og/covers/...) carries its own
             // headline: shown whole (16:9), never cropped.
-            <div className={`w-full relative overflow-hidden ${/^\/(og\/)?covers\//.test(post.coverImage) ? "aspect-video" : "h-72"}`}>
+            <div className={`w-full relative overflow-hidden ${/^\/(og\/)?covers\//.test(post.coverImage) ? "aspect-video" : isFounderPhoto(post.coverImage) ? "aspect-[12/5]" : "h-72"}`}>
               <CoverImg
                 src={heroImgFailed ? post.coverImage : post.coverImage.replace('-cover.', '-hero.')}
                 alt={display?.title ?? post.title}
-                className={`w-full h-full ${/^\/(og\/)?covers\//.test(post.coverImage) ? "object-contain" : "object-cover object-top"}`}
+                className={`w-full h-full ${/^\/(og\/)?covers\//.test(post.coverImage) || isFounderPhoto(post.coverImage) ? "object-contain" : "object-cover object-top"}`}
                 loading="eager"
                 fetchPriority="high"
                 decoding="sync"

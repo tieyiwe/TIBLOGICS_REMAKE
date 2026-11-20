@@ -6,10 +6,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   RefreshCw, Plus, Trash2, Eye, EyeOff, Star, Loader2,
-  Zap, Bot, BarChart2, FileText, ImageIcon,
+  Zap, Bot, BarChart2, FileText, ImageIcon, UserRound,
 } from "lucide-react";
 import { Button, EmptyState, PageHeader, StatCard } from "@/components/admin/ui";
 import { BLOG_CATEGORIES, BLOG_CATEGORY_ADMIN_LABELS } from "@/lib/blog/categories";
+import { FOUNDER_PHOTO, isFounderPhoto } from "@/lib/blog/founder-photo";
 
 export interface Post {
   id: string;
@@ -170,10 +171,7 @@ export default function BlogClient(initial: {
   }
 
   async function updateCoverImage(id: string, currentCover: string | null) {
-    const isBroken = !currentCover || currentCover.startsWith("/");
-    const msg = isBroken
-      ? "Enter a new cover image URL (Unsplash recommended):\n⚠️ Current cover is a local file that won't load in production."
-      : "Enter a new cover image URL:";
+    const msg = !currentCover ? "This post has no cover. Enter a cover image URL:" : "Enter a new cover image URL:";
     const newUrl = window.prompt(msg, currentCover ?? "");
     if (!newUrl || newUrl === currentCover) return;
     await fetch(`/api/blog/posts/${id}`, {
@@ -182,6 +180,17 @@ export default function BlogClient(initial: {
       body: JSON.stringify({ coverImage: newUrl }),
     });
     setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, coverImage: newUrl } : p)));
+  }
+
+  /** Your portrait (public/tb_cover.png) as this post's cover; the news job never replaces it. */
+  async function useFounderPhoto(id: string) {
+    if (!window.confirm("Use your photo as this article's cover?")) return;
+    const res = await fetch(`/api/blog/posts/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ coverImage: FOUNDER_PHOTO }),
+    }).catch(() => null);
+    if (res?.ok) setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, coverImage: FOUNDER_PHOTO } : p)));
   }
 
   async function deletePost(id: string) {
@@ -441,17 +450,27 @@ export default function BlogClient(initial: {
                         <button
                           onClick={() => updateCoverImage(p.id, p.coverImage)}
                           className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
-                            !p.coverImage || p.coverImage.startsWith("/")
+                            !p.coverImage
                               ? "text-red-400 hover:bg-red-50 hover:text-red-600"
                               : "text-[var(--a-ink-3)] hover:bg-[var(--a-surface-2)] hover:text-[var(--a-blue)]"
                           }`}
-                          title={
-                            !p.coverImage || p.coverImage.startsWith("/")
-                              ? "⚠️ Local cover — won't load in production. Click to fix."
-                              : "Edit cover image URL"
-                          }
+                          title={!p.coverImage ? "No cover. Click to add one." : "Edit cover image URL"}
                         >
                           <ImageIcon size={14} />
+                        </button>
+                        <button
+                          onClick={() => useFounderPhoto(p.id)}
+                          disabled={isFounderPhoto(p.coverImage)}
+                          className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${
+                            isFounderPhoto(p.coverImage)
+                              ? "bg-[#FEF0E3] text-[#F47C20]"
+                              : "text-[var(--a-ink-3)] hover:bg-[#FEF0E3] hover:text-[#F47C20]"
+                          }`}
+                          title={isFounderPhoto(p.coverImage) ? "Your photo is this article's cover" : "Use my photo as the cover"}
+                          aria-label={isFounderPhoto(p.coverImage) ? "Your photo is this article's cover" : "Use my photo as the cover"}
+                          data-testid="use-founder-photo"
+                        >
+                          <UserRound size={14} />
                         </button>
                         {(() => {
                           const featuredCount = posts.filter((x) => x.featured).length;

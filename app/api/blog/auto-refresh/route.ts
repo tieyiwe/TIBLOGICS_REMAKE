@@ -1,3 +1,6 @@
+import fs from "fs";
+import nodePath from "path";
+import { isFounderPhoto } from "@/lib/blog/founder-photo";
 export const maxDuration = 300;
 import { translateArticleSoon, translateArticlesSoon } from "@/lib/i18n/sources/blog";
 import { escapeAiText, sanitizeAiHtml } from "@/lib/ai-html";
@@ -22,9 +25,10 @@ import { CURATED_ARTICLES as CURATED_BASE, renderSources } from "@/lib/blog/cont
 import { CURATED_OCTOBER } from "@/lib/blog/content/curated-october";
 import { CURATED_MID_OCTOBER } from "@/lib/blog/content/curated-mid-october";
 import { CURATED_LATE_OCTOBER } from "@/lib/blog/content/curated-late-october";
+import { CURATED_MID_NOVEMBER } from "@/lib/blog/content/curated-mid-november";
 
 // Every researched article the agent publishes (idempotent by slug).
-const CURATED_ARTICLES = [...CURATED_BASE, ...CURATED_OCTOBER, ...CURATED_MID_OCTOBER, ...CURATED_LATE_OCTOBER];
+const CURATED_ARTICLES = [...CURATED_BASE, ...CURATED_OCTOBER, ...CURATED_MID_OCTOBER, ...CURATED_LATE_OCTOBER, ...CURATED_MID_NOVEMBER];
 import { RETRACTIONS } from "@/lib/blog/content/retractions";
 import { applyCorrections } from "@/lib/blog/content/apply-corrections";
 import { INDEXNOW_SECTIONS, indexNowSoon } from "@/lib/seo/indexnow";
@@ -532,7 +536,8 @@ async function patchDuplicateCoverImages(usedImages: Set<string>): Promise<numbe
 
       if (!seenImages.has(post.coverImage)) {
         seenImages.add(post.coverImage);
-      } else if (post.aiGenerated) {
+      } else if (post.aiGenerated && !isFounderPhoto(post.coverImage)) {
+        // (The founder's portrait is meant to be on several of his articles.)
         // Only reassign AI-generated duplicates — never touch manually-curated covers
         const newImage = pickFreshImage(post.category, usedImages);
         writes.push(prisma.blogPost.update({
@@ -573,6 +578,16 @@ async function patchGoogleInterviewContent() {
   } catch { /* ignore */ }
 }
 
+/** A cover stored as a site path ("/covers/x.png") whose file is in public/. */
+function localFileExists(path: string): boolean {
+  if (!/^\/[\w./-]+$/.test(path) || path.includes("..")) return false;
+  try {
+    return fs.existsSync(nodePath.join(process.cwd(), "public", path.split(/[?#]/)[0]));
+  } catch {
+    return false;
+  }
+}
+
 async function patchTieyiweCover() {
   try {
     const post = await prisma.blogPost.findFirst({
@@ -580,7 +595,7 @@ async function patchTieyiweCover() {
       select: { id: true, coverImage: true },
     });
     // Always enforce the correct cover — not just when it starts with "/"
-    if (post && post.coverImage !== TIEYIWE_BASS_FALLBACK_IMAGE) {
+    if (post && !isFounderPhoto(post.coverImage)) {
       await prisma.blogPost.update({
         where: { id: post.id },
         data: { coverImage: TIEYIWE_BASS_FALLBACK_IMAGE },
@@ -1180,7 +1195,10 @@ export async function GET(req: NextRequest) {
       try {
         const existing = allExisting.find((p) => p.title.toLowerCase().trim().includes(sp.title.toLowerCase().slice(0, 50)));
         if (existing) {
-          const needsPatch = !existing.coverImage || existing.coverImage.startsWith("/");
+          // Only a missing cover, or a site path whose file is not there. A
+          // local file that exists (the founder's portrait, the drawn covers)
+          // used to be replaced with a stock photo on every run.
+          const needsPatch = !existing.coverImage || (existing.coverImage.startsWith("/") && !localFileExists(existing.coverImage));
           if (needsPatch) {
             // Draw from the shared pool rather than the seed's hardcoded URL —
             // several seeds reuse the same photo, which is how duplicate covers

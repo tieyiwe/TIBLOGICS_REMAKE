@@ -2,11 +2,16 @@
 // WebP copies (<name>.webp at 1200 px, <name>-640.webp). Do not edit by hand.
 
 export const WEBP_COVERS: ReadonlySet<string> = new Set([
+  "africa-ai-november",
   "africa-ai-week",
   "agents-showdown",
+  "ai-price-war",
   "anthropic-bill",
+  "anthropic-ipo",
   "design-for-agents",
   "kind-words",
+  "nvidia-week",
+  "patch-week",
   "php2shell",
   "roadster-flight",
   "roadster-grip",

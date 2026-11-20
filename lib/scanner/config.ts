@@ -2,7 +2,7 @@
 //
 //   SCANNER_REPORT_PRICE_CENTS   price of the full report (default 2900 = $29;
 //                                "0" takes it off sale: only a booked call unlocks)
-//   SCANNER_FREE_SCANS           free scans of one site per 30 days (default 2)
+//   SCANNER_FREE_SCANS           free scans of one site per 30 days (default 3)
 //   SCANNER_CALL_UNLOCKS_PER_DAY reports unlocked by booking a call, per day
 //                                across the site (default 20; each one costs a
 //                                model call)
@@ -22,7 +22,7 @@ export function reportPrice(): number | null {
 
 export function freeScans(): number {
   const n = Number(process.env.SCANNER_FREE_SCANS);
-  return Number.isInteger(n) && n >= 1 ? n : 2;
+  return Number.isInteger(n) && n >= 1 ? n : 3;
 }
 
 export function callUnlocksPerDay(): number {

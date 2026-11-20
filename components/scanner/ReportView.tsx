@@ -258,9 +258,15 @@ export default function ReportView({ initial, paidReturn = false, canceled = fal
         {paidReturn ? (
           <Loader2 className="mx-auto mt-4 animate-spin text-[#F47C20]" aria-hidden />
         ) : (
-          <button type="button" onClick={buy} disabled={busy === "buy"} className="btn-primary mt-5 justify-center px-6 py-3 rounded-xl">
-            {busy === "buy" ? <Loader2 size={16} className="animate-spin" /> : <Lock size={16} aria-hidden />} {t("tools.sr.unlock.buy", { price: v.price ?? "" })}
-          </button>
+          <div className="mt-5 flex flex-col items-center gap-3">
+            <button type="button" onClick={buy} disabled={busy === "buy"} className="btn-primary justify-center px-6 py-3 rounded-xl">
+              {busy === "buy" ? <Loader2 size={16} className="animate-spin" /> : <Lock size={16} aria-hidden />} {t("tools.sr.unlock.buy", { price: v.price ?? "" })}
+            </button>
+            {/* Or talk to us: a booked call unlocks the report too. */}
+            <Link href={`/book?scan=${v.token}`} className="inline-flex items-center gap-2 font-dm text-sm font-semibold text-[#1B3A6B] hover:underline" data-testid="held-call">
+              <CalendarCheck size={16} aria-hidden /> {t("tools.sr.limit.call")}
+            </Link>
+          </div>
         )}
         {err && <p className="mt-3 font-dm text-sm text-red-600">{err}</p>}
       </div>
