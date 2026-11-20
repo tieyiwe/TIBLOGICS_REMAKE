@@ -1,0 +1,594 @@
+"use client";
+
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import {
+  ShoppingBag, Plus, Pencil, Trash2, X, Star, Tag, Eye, EyeOff,
+  Package, Loader2, ExternalLink, Layers, TrendingUp, Check,
+} from "lucide-react";
+import { Button, EmptyState, PageHeader, StatCard, Tabs, tableStyles } from "@/components/admin/ui";
+
+export type Product = {
+  id: string; slug: string; name: string; tagline: string | null; description: string;
+  price: number; compareAtPrice: number | null; currency: string; images: string[];
+  category: string; collections: string[]; tags: string[]; stock: number | null;
+  digital: boolean; featured: boolean; published: boolean; onSale: boolean; sku: string | null; soldCount: number;
+  deliveryType: string; fileKey: string | null; externalUrl: string | null; fileName: string | null;
+  fileFormat: string | null; downloadDays: number; maxDownloads: number;
+};
+
+export type DownloadFile = { key: string; bytes: number };
+
+export type Collection = {
+  id: string; slug: string; name: string; description: string; image: string | null;
+  featured: boolean; published: boolean; sortOrder: number;
+};
+
+export type Order = {
+  id: string; orderNumber: string; email: string; customerName: string | null; phone: string | null;
+  items: Array<{ name?: string; price?: number; quantity?: number }>;
+  subtotal: number; total: number; currency: string; status: string; createdAt: string;
+};
+
+const money = (c: number, cur = "USD") => `${cur === "USD" ? "$" : cur + " "}${(c / 100).toFixed(2)}`;
+
+const ORDER_STATUS: Record<string, string> = {
+  pending: "bg-amber-100 text-amber-700",
+  paid: "bg-emerald-100 text-emerald-700",
+  fulfilled: "bg-blue-100 text-blue-700",
+  cancelled: "bg-gray-200 text-gray-600",
+  refunded: "bg-red-100 text-red-700",
+};
+
+export default function ShopClient(initial: {
+  products: Product[];
+  collections: Collection[];
+  orders: Order[];
+  needsSync: boolean;
+  files: DownloadFile[];
+}) {
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+  const [tab, setTab] = useState<"products" | "collections" | "orders">("products");
+  // Seeded from the server render and re-seeded after router.refresh().
+  const [products, setProducts] = useState<Product[]>(initial.products);
+  const [collections, setCollections] = useState<Collection[]>(initial.collections);
+  const [orders, setOrders] = useState<Order[]>(initial.orders);
+  useEffect(() => {
+    setProducts(initial.products);
+    setCollections(initial.collections);
+    setOrders(initial.orders);
+    setNeedsSync(initial.needsSync);
+  }, [initial.products, initial.collections, initial.orders, initial.needsSync]);
+  const loading = false;
+  const [editing, setEditing] = useState<Product | "new" | null>(null);
+  const [editingCol, setEditingCol] = useState<Collection | "new" | null>(null);
+  const [needsSync, setNeedsSync] = useState(initial.needsSync);
+  const [syncing, setSyncing] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const [seedMsg, setSeedMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  /** Re-render from the server. */
+  function load() {
+    startTransition(() => router.refresh());
+  }
+
+  /**
+   * Send a change made optimistically, and put the real state back if it was
+   * refused. The old code only re-read on a network failure, so a 400 or a 401
+   * left the screen showing a change the database never made.
+   */
+  async function send(url: string, init: RequestInit) {
+    const res = await fetch(url, init).catch(() => null);
+    if (!res || !res.ok) {
+      const d = res ? await res.json().catch(() => ({})) : {};
+      if (d.error) alert(d.error);
+      load();
+    }
+  }
+
+  async function syncDatabase() {
+    setSyncing(true);
+    await fetch("/api/admin/shop/sync-db", { method: "POST" }).catch(() => {});
+    setNeedsSync(false);
+    setSyncing(false);
+    load();
+  }
+
+  // The AI Toolkits are defined in lib/shop/prompt-packs.ts but only exist
+  // in the database once seeded. This puts that behind a button instead of a
+  // hand-rolled POST, and surfaces the endpoint's warnings — it refuses to
+  // publish a product whose PDF is missing, which is exactly what you want to
+  // know before it goes on sale.
+  const TOOLKIT_CATEGORY = "AI Prompt Packs";
+  const toolkitCount = products.filter((p) => p.category === TOOLKIT_CATEGORY).length;
+
+  async function seedToolkits() {
+    setSeeding(true);
+    setSeedMsg(null);
+    try {
+      const res = await fetch("/api/admin/shop/seed-prompt-packs", { method: "POST" });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setSeedMsg({ ok: false, text: data?.error ?? `Failed (HTTP ${res.status})` });
+      } else {
+        const warn = (data.warnings ?? []) as string[];
+        setSeedMsg({
+          ok: warn.length === 0,
+          text: warn.length
+            ? `${data.published} live. Needs attention: ${warn.join("; ")}`
+            : `${data.published} toolkits live at ${data.price} each.`,
+        });
+      }
+    } catch {
+      setSeedMsg({ ok: false, text: "Could not reach the server." });
+    }
+    setSeeding(false);
+    load();
+  }
+
+  const stats = useMemo(() => {
+    const paid = orders.filter((o) => o.status === "paid" || o.status === "fulfilled");
+    return {
+      products: products.length,
+      published: products.filter((p) => p.published).length,
+      orders: paid.length,
+      revenue: paid.reduce((n, o) => n + o.total, 0),
+    };
+  }, [products, orders]);
+
+  async function quickToggle(p: Product, key: "published" | "featured" | "onSale") {
+    setProducts((prev) => prev.map((x) => (x.id === p.id ? { ...x, [key]: !x[key] } : x)));
+    await send(`/api/admin/products/${p.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ [key]: !p[key] }),
+    });
+  }
+  async function del(p: Product) {
+    if (!confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
+    setProducts((prev) => prev.filter((x) => x.id !== p.id));
+    await send(`/api/admin/products/${p.id}`, { method: "DELETE" });
+  }
+  async function colToggle(c: Collection, key: "published" | "featured") {
+    setCollections((prev) => prev.map((x) => (x.id === c.id ? { ...x, [key]: !x[key] } : x)));
+    await send(`/api/admin/collections/${c.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ [key]: !c[key] }),
+    });
+  }
+  async function delCol(c: Collection) {
+    if (!confirm(`Delete collection "${c.name}"? Products stay, but lose this collection tag.`)) return;
+    setCollections((prev) => prev.filter((x) => x.id !== c.id));
+    await send(`/api/admin/collections/${c.id}`, { method: "DELETE" });
+  }
+  async function setOrderStatus(o: Order, status: string) {
+    setOrders((prev) => prev.map((x) => (x.id === o.id ? { ...x, status } : x)));
+    await send("/api/admin/orders", {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: o.id, status }),
+    });
+  }
+
+  const productCountFor = (slug: string) => products.filter((p) => p.collections?.includes(slug)).length;
+
+  return (
+    <div className="pb-10">
+      <PageHeader
+        title="Store"
+        subtitle="Products, collections, sales and orders in one place."
+        actions={
+          <>
+            <Button href="/store" external variant="secondary" icon={ExternalLink}>
+              View store
+            </Button>
+            <Button onClick={() => (tab === "collections" ? setEditingCol("new") : setEditing("new"))} variant="primary" icon={Plus}>
+              {tab === "collections" ? "New collection" : "New product"}
+            </Button>
+          </>
+        }
+      />
+
+      {needsSync && (
+        <div className="mb-6 bg-amber-50 border border-amber-200 rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-4 flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p className="font-syne font-bold text-[var(--a-ink)]">Set up the store database</p>
+            <p className="font-dm text-sm text-[var(--a-ink-3)]">Click Sync Database once to create the Product, Collection & Order tables.</p>
+          </div>
+          <button onClick={syncDatabase} disabled={syncing}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-dm font-semibold text-white bg-[#F47C20] hover:bg-[#e06d15] disabled:opacity-60">
+            {syncing ? <><Loader2 size={16} className="animate-spin" /> Syncing…</> : "Sync Database"}
+          </button>
+        </div>
+      )}
+
+      {!needsSync && !loading && (toolkitCount < 4 || seedMsg) && (
+        <div className="mb-6 bg-[var(--a-surface-2)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] p-4 flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p className="font-syne font-bold text-[var(--a-ink)]">
+              {toolkitCount < 4 ? "Add the AI Toolkits to the store" : "AI Toolkits"}
+            </p>
+            <p className="font-dm text-sm text-[var(--a-ink-3)]">
+              {seedMsg
+                ? seedMsg.text
+                : `The four AI Toolkit PDFs are ready to list at $79 each. ${toolkitCount} of 4 are in the store.`}
+            </p>
+          </div>
+          <button
+            onClick={seedToolkits}
+            disabled={seeding}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-dm font-semibold text-white bg-[var(--a-navy)] hover:bg-[#2251A3] disabled:opacity-60"
+          >
+            {seeding ? <><Loader2 size={16} className="animate-spin" /> Adding…</> : toolkitCount < 4 ? "Add them" : "Refresh them"}
+          </button>
+        </div>
+      )}
+
+      {/* Stats */}
+      <div className="mb-6 grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 md:grid-cols-4">
+        <StatCard label="Products" value={stats.products} icon={Package} />
+        <StatCard label="Published" value={stats.published} icon={Eye} tone="success" />
+        <StatCard label="Paid orders" value={stats.orders} icon={ShoppingBag} />
+        <StatCard label="Revenue" value={money(stats.revenue)} icon={TrendingUp} tone="orange" />
+      </div>
+
+      {/* Tabs */}
+      <div className="mb-5 border-b border-[var(--a-border)]">
+        <Tabs
+          ariaLabel="Store sections"
+          active={tab}
+          onChange={(id) => setTab(id as typeof tab)}
+          items={[
+            { id: "products", label: "Products", count: products.length },
+            { id: "collections", label: "Collections", count: collections.length },
+            { id: "orders", label: "Orders", count: orders.length },
+          ]}
+        />
+      </div>
+
+      {loading ? (
+        <div className="animate-pulse space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 bg-[var(--a-surface-2)] rounded-[var(--a-radius-control)]" />)}</div>
+      ) : tab === "products" ? (
+        products.length === 0 ? (
+          <Empty icon={Package} text="No products yet." sub="Click New Product to add your first listing." />
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {products.map((p) => {
+              const onSale = p.onSale && p.compareAtPrice && p.compareAtPrice > p.price;
+              return (
+                <div key={p.id} className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] overflow-hidden group">
+                  <div className="relative aspect-[16/10] bg-[var(--a-surface-2)] flex items-center justify-center overflow-hidden">
+                    {p.images[0] ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />
+                    ) : <Package size={30} className="text-[#B9C6D6]" />}
+                    <div className="absolute top-2 left-2 flex gap-1.5">
+                      {!p.published && <span className="text-[10px] font-dm font-semibold bg-gray-800/80 text-white px-2 py-0.5 rounded-full">Draft</span>}
+                      {onSale && <span className="text-[10px] font-dm font-bold text-[#131A1B] px-2 py-0.5 rounded-full" style={{ background: "linear-gradient(135deg,#F47C4C,#F9A738)" }}>SALE</span>}
+                      {p.featured && <span className="text-[10px] font-dm font-semibold bg-amber-400/90 text-[#131A1B] px-2 py-0.5 rounded-full">★</span>}
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-syne font-bold text-[var(--a-ink)] truncate">{p.name}</div>
+                        <div className="font-dm text-xs text-[var(--a-ink-3)] mt-0.5">{p.category} · {p.stock == null ? "∞" : p.stock} stock · {p.soldCount} sold</div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="font-syne font-extrabold text-[var(--a-ink)]">{p.price === 0 ? "Free" : money(p.price, p.currency)}</div>
+                        {onSale && <div className="font-dm text-[11px] text-[var(--a-ink-3)] line-through">{money(p.compareAtPrice!, p.currency)}</div>}
+                      </div>
+                    </div>
+                    {p.collections?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {p.collections.slice(0, 3).map((c) => <span key={c} className="text-[10px] font-dm bg-[var(--a-info-bg)] text-[var(--a-blue)] px-1.5 py-0.5 rounded">{c}</span>)}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1 mt-3 pt-3 border-t border-[#F0F3F7]">
+                      <IconBtn active={p.published} onClick={() => quickToggle(p, "published")} title={p.published ? "Published" : "Draft"}>{p.published ? <Eye size={15} /> : <EyeOff size={15} />}</IconBtn>
+                      <IconBtn active={p.featured} activeColor="text-amber-500" onClick={() => quickToggle(p, "featured")} title="Featured"><Star size={15} /></IconBtn>
+                      <IconBtn active={p.onSale} activeColor="text-[#F47C20]" onClick={() => quickToggle(p, "onSale")} title="On sale"><Tag size={15} /></IconBtn>
+                      <div className="flex-1" />
+                      <button onClick={() => setEditing(p)} className="p-2 rounded-lg hover:bg-[var(--a-surface-2)] text-[var(--a-blue)]"><Pencil size={15} /></button>
+                      <button onClick={() => del(p)} className="p-2 rounded-lg hover:bg-red-50 text-red-400"><Trash2 size={15} /></button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )
+      ) : tab === "collections" ? (
+        collections.length === 0 ? (
+          <Empty icon={Layers} text="No collections yet." sub="Group products into collections shoppers can browse." />
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {collections.map((c) => (
+              <div key={c.id} className="bg-[var(--a-surface)] border border-[var(--a-border)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] overflow-hidden">
+                <div className="relative aspect-[16/9] bg-[var(--a-surface-2)] flex items-center justify-center overflow-hidden">
+                  {c.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={c.image} alt={c.name} className="w-full h-full object-cover" />
+                  ) : <Layers size={28} className="text-[#B9C6D6]" />}
+                  <div className="absolute top-2 left-2 flex gap-1.5">
+                    {!c.published && <span className="text-[10px] font-dm font-semibold bg-gray-800/80 text-white px-2 py-0.5 rounded-full">Hidden</span>}
+                    {c.featured && <span className="text-[10px] font-dm font-semibold bg-amber-400/90 text-[#131A1B] px-2 py-0.5 rounded-full">★ Featured</span>}
+                  </div>
+                </div>
+                <div className="p-4">
+                  <div className="font-syne font-bold text-[var(--a-ink)]">{c.name}</div>
+                  <div className="font-dm text-xs text-[var(--a-ink-3)] mt-0.5">{productCountFor(c.slug)} product{productCountFor(c.slug) === 1 ? "" : "s"} · /{c.slug}</div>
+                  {c.description && <p className="font-dm text-xs text-[var(--a-ink-3)] mt-2 line-clamp-2">{c.description}</p>}
+                  <div className="flex items-center gap-1 mt-3 pt-3 border-t border-[#F0F3F7]">
+                    <IconBtn active={c.published} onClick={() => colToggle(c, "published")} title={c.published ? "Published" : "Hidden"}>{c.published ? <Eye size={15} /> : <EyeOff size={15} />}</IconBtn>
+                    <IconBtn active={c.featured} activeColor="text-amber-500" onClick={() => colToggle(c, "featured")} title="Featured on store"><Star size={15} /></IconBtn>
+                    <div className="flex-1" />
+                    <button onClick={() => setEditingCol(c)} className="p-2 rounded-lg hover:bg-[var(--a-surface-2)] text-[var(--a-blue)]"><Pencil size={15} /></button>
+                    <button onClick={() => delCol(c)} className="p-2 rounded-lg hover:bg-red-50 text-red-400"><Trash2 size={15} /></button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      ) : orders.length === 0 ? (
+        <Empty icon={ShoppingBag} text="No orders yet." sub="Orders appear here once shoppers check out." />
+      ) : (
+        <div className={tableStyles.wrap}>
+          <table className={`${tableStyles.table} min-w-[640px]`}>
+            <thead>
+              <tr className={tableStyles.thead}>
+                {["Order", "Customer", "Items", "Total", "Status", "Date"].map((h) => (
+                  <th key={h} scope="col" className={tableStyles.th}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((o, i) => (
+                <tr key={o.id} className={tableStyles.tr}>
+                  <td className="px-5 py-3 font-dm text-sm text-[var(--a-ink)] font-semibold">{o.orderNumber}</td>
+                  <td className="px-5 py-3 font-dm text-sm text-[var(--a-ink)]">
+                    <div>{o.customerName || "Guest"}</div>
+                    <div className="text-xs text-[var(--a-ink-3)]">{o.email || "No email"}</div>
+                  </td>
+                  <td className="px-5 py-3 font-dm text-xs text-[var(--a-ink-3)]">{(o.items ?? []).reduce((n, it) => n + (it.quantity ?? 0), 0)}</td>
+                  <td className="px-5 py-3 font-dm text-sm font-bold text-[var(--a-ink)]">{money(o.total, o.currency)}</td>
+                  <td className="px-5 py-3">
+                    <select aria-label={`Status for order ${o.orderNumber}`} value={o.status} onChange={(e) => setOrderStatus(o, e.target.value)}
+                      className={`text-xs font-dm font-semibold px-2 py-1 rounded-full border-0 cursor-pointer ${ORDER_STATUS[o.status] ?? "bg-gray-100 text-gray-600"}`}>
+                      {Object.keys(ORDER_STATUS).map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </td>
+                  <td className="px-5 py-3 font-dm text-xs text-[var(--a-ink-3)]">{new Date(o.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {editing && (
+        <ProductModal product={editing === "new" ? null : editing} collections={collections} files={initial.files}
+          onClose={() => setEditing(null)} onSaved={() => { setEditing(null); load(); }} />
+      )}
+      {editingCol && (
+        <CollectionModal collection={editingCol === "new" ? null : editingCol}
+          onClose={() => setEditingCol(null)} onSaved={() => { setEditingCol(null); load(); }} />
+      )}
+    </div>
+  );
+}
+
+function Empty({ icon: Icon, text, sub }: { icon: React.ElementType; text: string; sub: string }) {
+  return (
+    <div className="rounded-[var(--a-radius-card)] border border-[var(--a-border)] bg-[var(--a-surface)]">
+      <EmptyState icon={Icon} title={text.replace(/\.$/, "")} body={sub} />
+    </div>
+  );
+}
+
+function IconBtn({ children, onClick, title, active, activeColor = "text-[#22A387]" }: { children: React.ReactNode; onClick: () => void; title: string; active?: boolean; activeColor?: string }) {
+  return (
+    <button onClick={onClick} title={title} className={`p-2 rounded-lg hover:bg-[var(--a-surface-2)] transition-colors ${active ? activeColor : "text-[#B9C6D6]"}`}>
+      {children}
+    </button>
+  );
+}
+
+const input = "w-full bg-[var(--a-surface-2)] border border-[var(--a-border)] rounded-lg px-3 py-2 font-dm text-sm text-[var(--a-ink)] focus:outline-none focus:border-[var(--a-blue)]";
+const label = "block font-dm text-[11px] font-semibold text-[var(--a-ink-3)] uppercase tracking-[.08em] mb-1.5";
+
+function ProductModal({ product, collections, files, onClose, onSaved }: { product: Product | null; collections: Collection[]; files: DownloadFile[]; onClose: () => void; onSaved: () => void }) {
+  const [f, setF] = useState(() =>
+    product
+      ? {
+          name: product.name, tagline: product.tagline ?? "", description: product.description,
+          price: (product.price / 100).toString(), compareAtPrice: product.compareAtPrice ? (product.compareAtPrice / 100).toString() : "",
+          category: product.category, images: product.images.join("\n"), tags: product.tags.join(", "),
+          stock: product.stock == null ? "" : product.stock.toString(), sku: product.sku ?? "",
+          digital: product.digital, featured: product.featured, published: product.published, onSale: product.onSale,
+          deliveryType: product.deliveryType ?? "none", fileKey: product.fileKey ?? "", externalUrl: product.externalUrl ?? "",
+          fileName: product.fileName ?? "", fileFormat: product.fileFormat ?? "",
+          downloadDays: String(product.downloadDays ?? 365), maxDownloads: String(product.maxDownloads ?? 10),
+        }
+      : {
+          name: "", tagline: "", description: "", price: "", compareAtPrice: "", category: "General", images: "", tags: "", stock: "", sku: "",
+          // New products start unpublished: publish once the price and delivery are right.
+          digital: true, featured: false, published: false, onSale: false,
+          deliveryType: "download", fileKey: "", externalUrl: "", fileName: "", fileFormat: "", downloadDays: "365", maxDownloads: "10",
+        }
+  );
+  const [selCols, setSelCols] = useState<string[]>(product?.collections ?? []);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const set = (k: string, v: string | boolean) => setF((p) => ({ ...p, [k]: v }));
+  const toggleCol = (slug: string) => setSelCols((prev) => (prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]));
+
+  async function save() {
+    if (!f.name.trim()) { setError("Name is required"); return; }
+    setSaving(true); setError("");
+    const payload = {
+      name: f.name.trim(), tagline: f.tagline.trim(), description: f.description,
+      price: Math.round((parseFloat(f.price) || 0) * 100),
+      compareAtPrice: f.compareAtPrice ? Math.round(parseFloat(f.compareAtPrice) * 100) : null,
+      category: f.category.trim() || "General",
+      collections: selCols,
+      images: f.images.split("\n").map((s) => s.trim()).filter(Boolean),
+      tags: f.tags.split(",").map((s) => s.trim()).filter(Boolean),
+      stock: f.stock === "" ? null : Math.max(0, Math.round(parseFloat(f.stock) || 0)),
+      sku: f.sku.trim(), digital: f.digital, featured: f.featured, published: f.published, onSale: f.onSale,
+      deliveryType: f.deliveryType, fileKey: f.fileKey, externalUrl: f.externalUrl.trim(),
+      fileName: f.fileName.trim(), fileFormat: f.fileFormat.trim(),
+      downloadDays: Number(f.downloadDays) || 365, maxDownloads: Number(f.maxDownloads) || 10,
+    };
+    const res = await fetch(product ? `/api/admin/products/${product.id}` : "/api/admin/products", {
+      method: product ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+    });
+    if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.error || "Failed to save"); setSaving(false); return; }
+    onSaved();
+  }
+
+  return (
+    <Modal title={product ? "Edit Product" : "New Product"} onClose={onClose} onSave={save} saving={saving} error={error} saveLabel={product ? "Save Changes" : "Create Product"}>
+      <Field label="Name *"><input className={input} value={f.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. AI Prompt Pack" /></Field>
+      <Field label="Tagline"><input className={input} value={f.tagline} onChange={(e) => set("tagline", e.target.value)} placeholder="One-line pitch shown on cards" /></Field>
+      <Field label="Description"><textarea className={input + " min-h-[90px] resize-y"} value={f.description} onChange={(e) => set("description", e.target.value)} placeholder="Full details shown on the product page" /></Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Price (USD)"><input className={input} type="number" min="0" step="0.01" value={f.price} onChange={(e) => set("price", e.target.value)} placeholder="0.00" /></Field>
+        <Field label="Compare-at (was)"><input className={input} type="number" min="0" step="0.01" value={f.compareAtPrice} onChange={(e) => set("compareAtPrice", e.target.value)} placeholder="Optional" /></Field>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Category"><input className={input} value={f.category} onChange={(e) => set("category", e.target.value)} placeholder="General" /></Field>
+        <Field label="Stock (blank = ∞)"><input className={input} type="number" min="0" value={f.stock} onChange={(e) => set("stock", e.target.value)} placeholder="Unlimited" /></Field>
+      </div>
+      <Field label="Image URLs (one per line)"><textarea className={input + " min-h-[64px] resize-y"} value={f.images} onChange={(e) => set("images", e.target.value)} placeholder="https://…/image.jpg" /></Field>
+
+      {collections.length > 0 && (
+        <Field label="Collections">
+          <div className="flex flex-wrap gap-2">
+            {collections.map((c) => {
+              const on = selCols.includes(c.slug);
+              return (
+                <button key={c.id} type="button" onClick={() => toggleCol(c.slug)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-dm font-semibold border transition-colors ${on ? "bg-[var(--a-info-bg)] border-[#2251A3] text-[var(--a-blue)]" : "bg-white border-[var(--a-border)] text-[var(--a-ink-3)]"}`}>
+                  {on && <Check size={12} />} {c.name}
+                </button>
+              );
+            })}
+          </div>
+        </Field>
+      )}
+
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Tags (comma separated)"><input className={input} value={f.tags} onChange={(e) => set("tags", e.target.value)} placeholder="ai, template" /></Field>
+        <Field label="SKU"><input className={input} value={f.sku} onChange={(e) => set("sku", e.target.value)} placeholder="Optional" /></Field>
+      </div>
+      <Field label="What the buyer receives">
+        <select className={input} value={f.deliveryType} onChange={(e) => set("deliveryType", e.target.value)}>
+          <option value="download">A file download</option>
+          <option value="external">A link to a hosted resource (Notion, Sheets…)</option>
+          <option value="none">Nothing to deliver (service or physical item)</option>
+        </select>
+      </Field>
+      {f.deliveryType === "download" && (
+        <>
+          <Field label="File (from private/downloads)">
+            <select className={input} value={f.fileKey} onChange={(e) => set("fileKey", e.target.value)}>
+              <option value="">Choose a file…</option>
+              {files.map((x) => (
+                <option key={x.key} value={x.key}>{x.key} ({Math.max(1, Math.round(x.bytes / 1024))} KB)</option>
+              ))}
+            </select>
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="File name buyers see"><input className={input} value={f.fileName} onChange={(e) => set("fileName", e.target.value)} placeholder="Defaults to the file's name" /></Field>
+            <Field label="Format label"><input className={input} value={f.fileFormat} onChange={(e) => set("fileFormat", e.target.value)} placeholder="PDF, CSV…" /></Field>
+          </div>
+        </>
+      )}
+      {f.deliveryType === "external" && (
+        <Field label="Access link (https)"><input className={input} value={f.externalUrl} onChange={(e) => set("externalUrl", e.target.value)} placeholder="https://notion.so/…" /></Field>
+      )}
+      {f.deliveryType !== "none" && (
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Access period (days)"><input className={input} type="number" min="1" max="3650" value={f.downloadDays} onChange={(e) => set("downloadDays", e.target.value)} /></Field>
+          <Field label="Download limit"><input className={input} type="number" min="1" max="100" value={f.maxDownloads} onChange={(e) => set("maxDownloads", e.target.value)} /></Field>
+        </div>
+      )}
+      <div className="flex flex-wrap gap-4 pt-1">
+        {([["published", "Published"], ["featured", "Featured"], ["onSale", "On Sale"], ["digital", "Digital (no shipping)"]] as const).map(([k, lbl]) => (
+          <label key={k} className="flex items-center gap-2 cursor-pointer font-dm text-sm text-[var(--a-ink)]">
+            <input type="checkbox" checked={f[k] as boolean} onChange={(e) => set(k, e.target.checked)} className="accent-[#F47C20] w-4 h-4" /> {lbl}
+          </label>
+        ))}
+      </div>
+    </Modal>
+  );
+}
+
+function CollectionModal({ collection, onClose, onSaved }: { collection: Collection | null; onClose: () => void; onSaved: () => void }) {
+  const [f, setF] = useState(() =>
+    collection
+      ? { name: collection.name, description: collection.description, image: collection.image ?? "", sortOrder: collection.sortOrder.toString(), featured: collection.featured, published: collection.published }
+      : { name: "", description: "", image: "", sortOrder: "0", featured: false, published: true }
+  );
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const set = (k: string, v: string | boolean) => setF((p) => ({ ...p, [k]: v }));
+
+  async function save() {
+    if (!f.name.trim()) { setError("Name is required"); return; }
+    setSaving(true); setError("");
+    const payload = { name: f.name.trim(), description: f.description, image: f.image.trim(), sortOrder: Math.round(parseFloat(f.sortOrder) || 0), featured: f.featured, published: f.published };
+    const res = await fetch(collection ? `/api/admin/collections/${collection.id}` : "/api/admin/collections", {
+      method: collection ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+    });
+    if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.error || "Failed to save"); setSaving(false); return; }
+    onSaved();
+  }
+
+  return (
+    <Modal title={collection ? "Edit Collection" : "New Collection"} onClose={onClose} onSave={save} saving={saving} error={error} saveLabel={collection ? "Save Changes" : "Create Collection"}>
+      <Field label="Name *"><input className={input} value={f.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. AI Starter Kits" /></Field>
+      <Field label="Description"><textarea className={input + " min-h-[70px] resize-y"} value={f.description} onChange={(e) => set("description", e.target.value)} placeholder="Shown on the collection page & card" /></Field>
+      <Field label="Cover Image URL"><input className={input} value={f.image} onChange={(e) => set("image", e.target.value)} placeholder="https://…/cover.jpg" /></Field>
+      <Field label="Sort Order (lower shows first)"><input className={input} type="number" value={f.sortOrder} onChange={(e) => set("sortOrder", e.target.value)} /></Field>
+      <div className="flex flex-wrap gap-4 pt-1">
+        {([["published", "Published"], ["featured", "Feature on store home"]] as const).map(([k, lbl]) => (
+          <label key={k} className="flex items-center gap-2 cursor-pointer font-dm text-sm text-[var(--a-ink)]">
+            <input type="checkbox" checked={f[k] as boolean} onChange={(e) => set(k, e.target.checked)} className="accent-[#F47C20] w-4 h-4" /> {lbl}
+          </label>
+        ))}
+      </div>
+    </Modal>
+  );
+}
+
+function Modal({ title, children, onClose, onSave, saving, error, saveLabel }: { title: string; children: React.ReactNode; onClose: () => void; onSave: () => void; saving: boolean; error: string; saveLabel: string }) {
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center overflow-y-auto p-4" onClick={onClose}>
+      <div className="bg-[var(--a-surface)] rounded-[var(--a-radius-card)] shadow-[var(--a-shadow-card)] w-full max-w-lg my-8" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E4EBF3] sticky top-0 bg-white rounded-t-2xl z-10">
+          <h2 className="font-syne font-extrabold text-lg text-[var(--a-ink)]">{title}</h2>
+          <button onClick={onClose} className="text-[var(--a-ink-3)] hover:text-[var(--a-ink)]"><X size={20} /></button>
+        </div>
+        <div className="p-6 space-y-4">
+          {children}
+          {error && <p className="text-red-500 font-dm text-sm">{error}</p>}
+        </div>
+        <div className="flex gap-3 px-6 py-4 border-t border-[#E4EBF3]">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg font-dm text-sm font-semibold text-[var(--a-ink-3)] bg-[var(--a-surface-2)] hover:bg-[var(--a-info-bg)]">Cancel</button>
+          <button onClick={onSave} disabled={saving}
+            className="flex-1 py-2.5 rounded-lg font-dm text-sm font-semibold text-white bg-[#F47C20] hover:bg-[#e06d15] flex items-center justify-center gap-2 disabled:opacity-60">
+            {saving ? <><Loader2 size={16} className="animate-spin" /> Saving…</> : saveLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label: lbl, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <span className={label}>{lbl}</span>
+      {children}
+    </div>
+  );
+}

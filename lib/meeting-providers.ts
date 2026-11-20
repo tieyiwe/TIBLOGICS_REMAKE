@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 interface MeetingData {
   serviceType: string;
   date: Date;
@@ -37,7 +38,9 @@ export function calcEndTime(timeSlot: string, durationStr: string): string {
 /** Generates a Jitsi Meet link — no API credentials required */
 export async function createMeeting(appt: MeetingData): Promise<string> {
   const date = appt.date.toISOString().slice(0, 10);
-  const slug = `tiblogics-${appt.firstName}-${appt.lastName}-${date}`
+  // A random part: a room named only after the client and the date could be
+  // guessed and joined by anyone.
+  const slug = `tiblogics-${appt.firstName}-${date}-${randomBytes(6).toString("hex")}`
     .toLowerCase()
     .replace(/[^a-z0-9-]/g, "-")
     .replace(/-+/g, "-")

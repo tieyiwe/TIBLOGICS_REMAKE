@@ -1,7 +1,13 @@
+import { staffAiLimit } from "@/lib/rate-limit";
 export const maxDuration = 120;
+import { translateArticleSoon } from "@/lib/i18n/sources/blog";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
+import { requireAdmin } from "@/lib/require-admin";
+import { assignCoverImage } from "@/lib/blog-cover";
+import { escapeAiText, sanitizeAiHtml } from "@/lib/ai-html";
+import { INDEXNOW_SECTIONS, indexNowSoon } from "@/lib/seo/indexnow";
 
 const CATEGORY_MAP: Record<string, { emoji: string; gradient: string }> = {
   "breaking":    { emoji: "⚡", gradient: "from-red-600 to-orange-500" },
@@ -10,11 +16,20 @@ const CATEGORY_MAP: Record<string, { emoji: string; gradient: string }> = {
   "tools":       { emoji: "🔧", gradient: "from-teal-600 to-emerald-500" },
   "case-studies":{ emoji: "📊", gradient: "from-[#F47C20] to-yellow-500" },
   "industry":    { emoji: "🌐", gradient: "from-slate-600 to-gray-500" },
+  "advanced-tech": { emoji: "🚀", gradient: "from-indigo-700 to-cyan-500" },
 };
 
 const VALID_CATEGORIES = new Set(Object.keys(CATEGORY_MAP));
 
 export async function POST(req: NextRequest) {
+  // Staff only. This was public: anyone could send a title and it would write
+  // an article with a paid model and publish it live on AI Times under the
+  // TIBLOGICS name. Its only real caller is the admin News Agent page.
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+  const slow = await staffAiLimit("blog-generate");
+  if (slow) return slow;
+
   try {
     const body = await req.json();
     const { title, sourceUrl, source } = body;
@@ -57,7 +72,8 @@ Return ONLY a valid JSON object (no markdown fences, no extra text):
   "imageQuery": "2-3 keywords for a relevant cover photo (e.g. 'artificial intelligence robot', 'business technology laptop')"
 }
 
-category must be one of: breaking, ai-business, tips, tools, case-studies, industry`;
+category must be one of: breaking, ai-business, tips, tools, case-studies, industry, advanced-tech
+Use "advanced-tech" for frontier technology beyond AI software (chips and semiconductors, quantum computing, robotics, autonomous vehicles and drones, space, biotech and health tech, energy and climate tech, AR/VR, next-generation networks, brain-computer interfaces). If the topic is advanced tech, replace the small-business section with "What This Means for Businesses and People".`
 
     let generated: { excerpt: string; content: string; category: string; tags: string[]; imageQuery?: string };
 
@@ -65,43 +81,28 @@ category must be one of: breaking, ai-business, tips, tools, case-studies, indus
       const raw = await streamChat(
         [{ role: "user", content: prompt }],
         "You are a professional AI technology journalist. Return only valid JSON — no markdown, no extra commentary.",
-        1200
+        3000,
+        "article-admin",
       );
       const clean = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
       const jsonMatch = clean.match(/\{[\s\S]*\}/);
       if (!jsonMatch) throw new Error("No JSON found");
       generated = JSON.parse(jsonMatch[0]);
-      if (!generated.content || generated.content.length < 100) throw new Error("Content too short");
+      if (typeof generated.content !== "string" || generated.content.length < 100) throw new Error("Content too short");
+      // Model-written HTML is published as-is on the public article page.
+      generated.content = sanitizeAiHtml(generated.content);
       // Enforce category whitelist
       if (!VALID_CATEGORIES.has(generated.category)) generated.category = "industry";
     } catch {
       generated = {
         excerpt: `${title.slice(0, 155)} — a key development in AI worth knowing about.`,
-        content: `<p>${title}</p><h2>Overview</h2><p>This topic is rapidly evolving. Stay tuned for our full coverage.</p>`,
+        content: `<p>${escapeAiText(title)}</p><h2>Overview</h2><p>This topic is rapidly evolving. Stay tuned for our full coverage.</p>`,
         category: "industry",
         tags: ["ai", "technology"],
       };
     }
 
     const meta = CATEGORY_MAP[generated.category] ?? CATEGORY_MAP["industry"];
-
-    // Fetch a stable cover image URL via Unsplash source (follows redirect → final images.unsplash.com URL)
-    let coverImage: string | null = null;
-    const query = encodeURIComponent(generated.imageQuery ?? `${generated.category} technology business`);
-    try {
-      const imgRes = await fetch(`https://source.unsplash.com/1200x630/?${query}`, {
-        redirect: "follow",
-        signal: AbortSignal.timeout(5000),
-      });
-      if (imgRes.ok && imgRes.url.includes("unsplash.com/photo")) {
-        coverImage = imgRes.url.split("?")[0] + "?w=1200&q=80&fit=crop&crop=center";
-      }
-    } catch { /* fall back to gradient */ }
-
-    // Final fallback: picsum with slug as seed (consistent, beautiful, no API key needed)
-    if (!coverImage) {
-      coverImage = null; // let gradient show — picsum images aren't always appropriate for business content
-    }
 
     const baseSlug = title
       .toLowerCase()
@@ -110,11 +111,24 @@ category must be one of: breaking, ai-business, tips, tools, case-studies, indus
       .replace(/\s+/g, "-")
       .slice(0, 70);
 
+    // Every candidate (`baseSlug`, `baseSlug-1`, …) shares the prefix, so one
+    // query covers them all instead of a findUnique per attempt.
+    const takenSlugs = new Set(
+      (await prisma.blogPost.findMany({ where: { slug: { startsWith: baseSlug } }, select: { slug: true } }))
+        .map((p) => p.slug),
+    );
     let slug = baseSlug;
     let i = 1;
-    while (await prisma.blogPost.findUnique({ where: { slug } })) {
+    while (takenSlugs.has(slug)) {
       slug = `${baseSlug}-${i++}`;
     }
+
+    // Cover image. The old source.unsplash.com endpoint was retired by
+    // Unsplash, so this fetch always failed and every generated article was
+    // saved with no cover. Now drawn from a fixed pool, and guaranteed not to
+    // collide with an image another article is already using.
+    const cover = await assignCoverImage(slug);
+    const coverImage = cover.url;
 
     const wordCount = generated.content.replace(/<[^>]*>/g, "").split(/\s+/).length;
 
@@ -126,7 +140,7 @@ category must be one of: breaking, ai-business, tips, tools, case-studies, indus
         content: generated.content,
         category: generated.category,
         tags: (Array.isArray(generated.tags) ? generated.tags : []).slice(0, 10),
-        coverImage: coverImage ?? undefined,
+        coverImage,
         coverEmoji: meta.emoji,
         coverGradient: meta.gradient,
         author: "Echelon AI",
@@ -138,6 +152,9 @@ category must be one of: breaking, ai-business, tips, tools, case-studies, indus
         sourceTitle: source ? source.slice(0, 200) : null,
       },
     });
+    translateArticleSoon(post);
+    // Tell Bing/ChatGPT search and other IndexNow engines (no-op without INDEXNOW_KEY).
+    indexNowSoon(INDEXNOW_SECTIONS.article(post.slug));
 
     return NextResponse.json({ post }, { status: 201 });
   } catch (err) {

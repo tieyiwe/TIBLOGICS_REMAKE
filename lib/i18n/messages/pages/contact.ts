@@ -1,0 +1,158 @@
+import { tri } from "./_tri";
+
+export default tri({
+  "pages.contact.meta.title": [
+    "Contact TIBLOGICS | Get in Touch",
+    "Contacter TIBLOGICS | Écrivez-nous",
+    "Wasiliana na TIBLOGICS",
+  ],
+  "pages.contact.meta.description": [
+    "Reach out to TIBLOGICS for AI implementation, automation, web development, or any digital solution inquiry. We respond fast.",
+    "Contactez TIBLOGICS pour la mise en œuvre de l'IA, l'automatisation, le développement web ou toute demande de solution numérique. Nous répondons vite.",
+    "Wasiliana na TIBLOGICS kuhusu utekelezaji wa AI, otomatiki, utengenezaji wa tovuti, au swali lolote kuhusu suluhisho za kidijitali. Tunajibu haraka.",
+  ],
+  "pages.contact.meta.ogTitle": ["Contact TIBLOGICS", "Contacter TIBLOGICS", "Wasiliana na TIBLOGICS"],
+  "pages.contact.meta.ogDescription": [
+    "Questions, project inquiries, or partnership opportunities: we're responsive and direct.",
+    "Questions, demandes de projet ou propositions de partenariat : nous sommes réactifs et directs.",
+    "Maswali, maombi ya miradi, au fursa za ushirikiano: tunajibu haraka na kwa uwazi.",
+  ],
+
+  "pages.contact.tag": ["Contact", "Contact", "Mawasiliano"],
+  "pages.contact.title": ["Let's talk.", "Parlons-en.", "Tuzungumze."],
+  "pages.contact.subtitle": [
+    "Ready to start your AI project? Have a question? We respond within 24 hours.",
+    "Prêt à lancer votre projet d'IA ? Une question ? Nous répondons sous 24 heures.",
+    "Uko tayari kuanza mradi wako wa AI? Una swali? Tunajibu ndani ya saa 24.",
+  ],
+  "pages.contact.email.title": ["Email Us", "Écrivez-nous", "Tutumie Email"],
+  "pages.contact.email.note": [
+    "Best for project inquiries and partnerships",
+    "Idéal pour les demandes de projet et les partenariats",
+    "Bora kwa maombi ya miradi na ushirikiano",
+  ],
+  "pages.contact.response.title": ["Response Time", "Délai de réponse", "Muda wa Kujibu"],
+  "pages.contact.response.value": ["Within 24 hours", "Sous 24 heures", "Ndani ya saa 24"],
+  "pages.contact.response.hours": [
+    "Monday–Friday, 9 AM–6 PM ET",
+    "Du lundi au vendredi, de 9 h à 18 h (heure de New York)",
+    "Jumatatu–Ijumaa, saa 3 asubuhi–saa 12 jioni (saa za New York)",
+  ],
+  "pages.contact.echelon.title": ["Talk to Echelon Now", "Parler à Echelon maintenant", "Ongea na Echelon Sasa"],
+  "pages.contact.echelon.body": [
+    "Chat with our AI specialist instantly, no wait time.",
+    "Discutez tout de suite avec notre spécialiste IA, sans attente.",
+    "Ongea na mtaalamu wetu wa AI papo hapo, bila kusubiri.",
+  ],
+  "pages.contact.echelon.button": ["Open Echelon →", "Ouvrir Echelon →", "Fungua Echelon →"],
+  "pages.contact.quick.title": ["Quick Actions", "Actions rapides", "Hatua za Haraka"],
+  "pages.contact.quick.discovery": [
+    "Book a Free Discovery Meeting",
+    "Réserver un rendez-vous découverte gratuit",
+    "Weka Miadi ya Utambuzi Bila Malipo",
+  ],
+  "pages.contact.quick.discoveryNote": ["30 min · No commitment", "30 min · Sans engagement", "Dakika 30 · Bila wajibu"],
+  "pages.contact.quick.free": ["Free →", "Gratuit →", "Bure →"],
+  "pages.contact.quick.strategy": ["AI Strategy Session", "Séance de stratégie IA", "Kikao cha Mkakati wa AI"],
+  "pages.contact.quick.strategyNote": [
+    "60 min · Personalized roadmap",
+    "60 min · Feuille de route personnalisée",
+    "Dakika 60 · Ramani mahususi kwako",
+  ],
+  "pages.contact.quick.book": ["Book →", "Réserver →", "Weka →"],
+  "pages.contact.quick.scan": ["Scan Your Website", "Analysez votre site web", "Chunguza Tovuti Yako"],
+  "pages.contact.quick.scanNote": ["Free AI readiness report", "Rapport gratuit de préparation à l'IA", "Ripoti ya utayari wa AI bila malipo"],
+  "pages.contact.quick.partnership": ["Business Partnership", "Partenariat commercial", "Ushirikiano wa Kibiashara"],
+  "pages.contact.quick.partnershipNote": [
+    "B2B, referrals, white-label, co-development",
+    "B2B, recommandation, marque blanche, co-développement",
+    "B2B, rufaa, white-label, utengenezaji wa pamoja",
+  ],
+  "pages.contact.quick.apply": ["Apply →", "Postuler →", "Omba →"],
+
+  "pages.contact.partner.title": ["Business Partnership", "Partenariat commercial", "Ushirikiano wa Kibiashara"],
+  "pages.contact.partner.intro": [
+    "Tell us about your business and what kind of partnership you have in mind.",
+    "Présentez-nous votre entreprise et le type de partenariat que vous envisagez.",
+    "Tueleze kuhusu biashara yako na aina ya ushirikiano unaoufikiria.",
+  ],
+  "pages.contact.partner.close": ["Close", "Fermer", "Funga"],
+  "pages.contact.partner.businessName": ["Business Name", "Nom de l'entreprise", "Jina la Biashara"],
+  "pages.contact.partner.businessNamePh": ["Acme Corp", "Acme SARL", "Acme Ltd"],
+  "pages.contact.partner.contactName": ["Your Full Name", "Vos nom et prénom", "Jina Lako Kamili"],
+  "pages.contact.partner.contactNamePh": ["Jane Smith", "Marie Dupont", "Amina Juma"],
+  "pages.contact.partner.email": ["Email", "E-mail", "Email"],
+  "pages.contact.partner.emailPh": ["jane@acmecorp.com", "marie@acme.fr", "amina@acme.co.ke"],
+  "pages.contact.partner.phone": ["Phone Number", "Numéro de téléphone", "Namba ya Simu"],
+  "pages.contact.partner.phonePh": ["+1 (555) 000-0000", "+33 6 00 00 00 00", "+255 700 000 000"],
+  "pages.contact.partner.website": ["Website", "Site web", "Tovuti"],
+  "pages.contact.partner.address": ["Physical Address", "Adresse postale", "Anwani ya Mahali"],
+  "pages.contact.partner.addressPh": [
+    "123 Main St, City, Country",
+    "12 rue Principale, Ville, Pays",
+    "Mtaa wa 12, Jiji, Nchi",
+  ],
+  "pages.contact.partner.optional": ["(optional)", "(facultatif)", "(si lazima)"],
+  "pages.contact.partner.description": [
+    "About your business & partnership interest",
+    "Votre entreprise et le partenariat envisagé",
+    "Kuhusu biashara yako na ushirikiano unaoutaka",
+  ],
+  "pages.contact.partner.descriptionPh": [
+    "Tell us what your business does, the problem you solve, and the type of partnership you're looking for (e.g. referral, white-label, co-development, distribution, etc.)",
+    "Dites-nous ce que fait votre entreprise, le problème que vous résolvez et le type de partenariat recherché (par exemple recommandation, marque blanche, co-développement, distribution, etc.)",
+    "Tueleze biashara yako inafanya nini, tatizo unalotatua, na aina ya ushirikiano unaoutafuta (kwa mfano rufaa, white-label, utengenezaji wa pamoja, usambazaji, n.k.)",
+  ],
+  "pages.contact.partner.required": ["Required fields", "Champs obligatoires", "Sehemu za lazima"],
+  "pages.contact.partner.submit": [
+    "Submit Partnership Request →",
+    "Envoyer la demande de partenariat →",
+    "Tuma Ombi la Ushirikiano →",
+  ],
+  "pages.contact.partner.submitting": ["Submitting…", "Envoi en cours…", "Inatuma…"],
+  "pages.contact.partner.error": [
+    "Something went wrong. Please try again.",
+    "Un problème est survenu. Veuillez réessayer.",
+    "Hitilafu imetokea. Tafadhali jaribu tena.",
+  ],
+  "pages.contact.partner.err.businessName": [
+    "Please enter your business name.",
+    "Veuillez indiquer le nom de votre entreprise.",
+    "Tafadhali andika jina la biashara yako.",
+  ],
+  "pages.contact.partner.err.contactName": [
+    "Please enter your full name.",
+    "Veuillez indiquer vos nom et prénom.",
+    "Tafadhali andika jina lako kamili.",
+  ],
+  "pages.contact.partner.err.email": [
+    "Please enter a valid email address.",
+    "Veuillez saisir une adresse e-mail valide.",
+    "Tafadhali andika anwani halali ya email.",
+  ],
+  "pages.contact.partner.err.phone": [
+    "Please enter a phone number.",
+    "Veuillez indiquer un numéro de téléphone.",
+    "Tafadhali andika namba ya simu.",
+  ],
+  "pages.contact.partner.err.description": [
+    "Please tell us about your business and the partnership you have in mind.",
+    "Veuillez nous présenter votre entreprise et le partenariat envisagé.",
+    "Tafadhali tueleze kuhusu biashara yako na ushirikiano unaoufikiria.",
+  ],
+  "pages.contact.partner.done.title": [
+    "Thank you for reaching out!",
+    "Merci de nous avoir contactés !",
+    "Asante kwa kuwasiliana nasi!",
+  ],
+  "pages.contact.partner.done.body": [
+    "We've received your partnership interest and are excited to learn more about <strong>{name}</strong>. Our team will review your submission and reach out to you shortly.",
+    "Nous avons bien reçu votre demande de partenariat et avons hâte d'en savoir plus sur <strong>{name}</strong>. Notre équipe va examiner votre demande et vous recontactera très prochainement.",
+    "Tumepokea nia yako ya ushirikiano na tuna hamu ya kujua zaidi kuhusu <strong>{name}</strong>. Timu yetu itapitia ombi lako na kuwasiliana nawe hivi karibuni.",
+  ],
+  "pages.contact.partner.done.note": [
+    "We typically respond within 2–3 business days.",
+    "Nous répondons généralement sous 2 à 3 jours ouvrés.",
+    "Kwa kawaida tunajibu ndani ya siku 2–3 za kazi.",
+  ],
+});

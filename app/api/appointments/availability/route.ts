@@ -1,39 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-
-const DEFAULT_DAYS = [1, 2, 3, 4, 5];
-const DEFAULT_SLOTS = ["9:00 AM", "10:00 AM", "11:00 AM", "2:00 PM", "3:00 PM", "4:00 PM"];
+import { requireAdmin } from "@/lib/require-admin";
+import { getAvailability } from "@/lib/booking/availability";
 
 export async function GET() {
-  try {
-    const [daysRow, slotsRow] = await Promise.all([
-      prisma.adminSettings.findUnique({ where: { key: "avail_days" } }),
-      prisma.adminSettings.findUnique({ where: { key: "avail_slots" } }),
-    ]);
-    const days = daysRow ? daysRow.value.split(",").map(Number) : DEFAULT_DAYS;
-    const slots = slotsRow ? slotsRow.value.split(",") : DEFAULT_SLOTS;
-    return NextResponse.json({ days, slots });
-  } catch {
-    return NextResponse.json({ days: DEFAULT_DAYS, slots: DEFAULT_SLOTS });
-  }
+  const availability = await getAvailability();
+  return NextResponse.json(availability);
 }
 
+// Staff only — this rewrites which days and times the public booking form
+// offers. GET stays public; the booking form reads it.
 export async function POST(req: NextRequest) {
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+
   try {
     const { days, slots } = await req.json();
+
+    // Validated rather than trusted: an empty or malformed value here closes
+    // public booking, and the write-time check in POST /api/appointments now
+    // rejects anything outside this list, so bad data would lock visitors out.
+    const cleanDays = Array.isArray(days)
+      ? [...new Set(days.map(Number).filter((d) => Number.isInteger(d) && d >= 0 && d <= 6))].sort()
+      : [];
+    const cleanSlots = Array.isArray(slots)
+      ? [...new Set(
+          slots
+            .filter((s): s is string => typeof s === "string")
+            .map((s) => s.trim())
+            .filter((s) => /^\d{1,2}:\d{2}\s?(AM|PM)$/i.test(s)),
+        )]
+      : [];
+
+    if (cleanDays.length === 0 || cleanSlots.length === 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Pick at least one day and one time slot. Slots must look like \"9:00 AM\".",
+        },
+        { status: 400 },
+      );
+    }
+
     await Promise.all([
       prisma.adminSettings.upsert({
         where: { key: "avail_days" },
-        update: { value: (days as number[]).join(",") },
-        create: { key: "avail_days", value: (days as number[]).join(",") },
+        update: { value: cleanDays.join(",") },
+        create: { key: "avail_days", value: cleanDays.join(",") },
       }),
       prisma.adminSettings.upsert({
         where: { key: "avail_slots" },
-        update: { value: (slots as string[]).join(",") },
-        create: { key: "avail_slots", value: (slots as string[]).join(",") },
+        update: { value: cleanSlots.join(",") },
+        create: { key: "avail_slots", value: cleanSlots.join(",") },
       }),
     ]);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, days: cleanDays, slots: cleanSlots });
   } catch {
     return NextResponse.json({ error: "Failed to save" }, { status: 500 });
   }

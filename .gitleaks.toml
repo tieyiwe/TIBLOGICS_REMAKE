@@ -1,0 +1,51 @@
+# Secret scanning rules (security checklist, door 2).
+#
+# Uses gitleaks' built-in rules (Stripe, Anthropic, Google, GitHub, AWS,
+# private keys, generic API keys...) plus a few for this project's own
+# secrets. Run locally with:
+#
+#   gitleaks git . --config .gitleaks.toml --redact      # whole history
+#   gitleaks dir . --config .gitleaks.toml --redact      # working tree
+#
+# CI runs it on every push and pull request (.github/workflows/secret-scan.yml)
+# and scripts/pre-commit runs it on staged changes.
+
+title = "TIBLOGICS secret scan"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "postgres-url-with-password"
+description = "Postgres connection string with an inline password"
+regex = '''postgres(?:ql)?://[^:\s/"'@]+:([^@\s"'<>\[\]]{6,})@[^\s"'<>/]+'''
+secretGroup = 1
+keywords = ["postgres://", "postgresql://"]
+
+[[rules]]
+id = "nextauth-or-cron-secret-assignment"
+description = "A real value assigned to NEXTAUTH_SECRET, CRON_SECRET, RESET_TOKEN or ADMIN_PASSWORD"
+regex = '''(?:NEXTAUTH_SECRET|CRON_SECRET|RESET_TOKEN|ADMIN_PASSWORD|TITAN_SMTP_PASS|ARFA_SMTP_PASS)\s*[=:]\s*["']?([A-Za-z0-9+/=_\-!@#%^&*]{12,})'''
+secretGroup = 1
+keywords = ["nextauth_secret", "cron_secret", "reset_token", "admin_password", "smtp_pass"]
+
+[allowlist]
+description = "Placeholders and the deliberately fake keys used as examples in course content"
+# Match the allowlist against the whole finding, not only the secret part.
+regexTarget = "match"
+paths = [
+  '''^\.env\.example$''',
+  '''^package-lock\.json$''',
+]
+regexes = [
+  # Course examples of what NOT to do (lib/learn/seed/**, Studio decks). Each
+  # is short or truncated, so it cannot be a working key.
+  '''sk_live_9f2c7a1e4b''',
+  '''sk-live-7d1f93b2c4e8a605''',
+  '''sk-live-4f9a2c7e1b8d3f60a7''',
+  '''sk_live_51Hx9\.\.\.''',
+  # Placeholders in docs and scripts.
+  '''postgres(?:ql)?://[^:]+:(?:\[?PASSWORD\]?|password|pass|\*\*\*|\.\.\.)@''',
+  '''(?i)your[-_ ]?(?:password|secret|key)''',
+  '''(?i)generate[-_ ]?with''',
+]

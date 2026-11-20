@@ -1,11 +1,140 @@
 import { NextAuthOptions } from "next-auth";
+import { checkRateLimit, clearRateLimit } from "@/lib/rate-limit";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
+import type { JWT } from "next-auth/jwt";
+import { randomBytes, timingSafeEqual } from "crypto";
 
 // tieyiwebass@gmail.com is the Owner — the super account above all admins
-const OWNER_EMAIL = "tieyiwebass@gmail.com";
+export const OWNER_EMAIL = "tieyiwebass@gmail.com";
+
+// These two helpers are duplicated from lib/require-admin.ts rather than
+// imported: that module imports `authOptions` from here, and a cycle through
+// the auth config is not worth saving a few lines.
+
+/** Constant-time compare of a guess against a configured secret. */
+function secretEquals(presented: unknown, secret: string | undefined): boolean {
+  if (!secret || typeof presented !== "string") return false;
+  const a = Buffer.from(presented);
+  const b = Buffer.from(secret);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+/**
+ * Per-identity throttle on sign-in attempts.
+ *
+ * The credentials endpoint had no limit at all, so both providers accepted
+ * unlimited online guesses — against the owner's master password, a
+ * collaborator's hash, or any student account. Keyed by the attempted email
+ * (not the IP) so a distributed attempt on one account is still bounded; the
+ * cost of a wrong guess is a bcrypt compare, which is exactly what we are
+ * rationing.
+ *
+ * The counter is shared (lib/rate-limit). It used to be a per-instance Map,
+ * which meant a redeploy handed an attacker a fresh ten guesses — and on a
+ * platform that recycles idle containers, that is not a rare event.
+ */
+const MAX_LOGIN_ATTEMPTS = 10;
+const LOGIN_WINDOW_MS = 900_000; // 15 minutes
+
+function loginAllowed(key: string): Promise<boolean> {
+  return checkRateLimit(`login:${key}`, MAX_LOGIN_ATTEMPTS, LOGIN_WINDOW_MS);
+}
+
+/**
+ * Per-address ceiling across all accounts: the per-email limit above does not
+ * stop one machine trying a leaked password list against many emails.
+ * Generous, so a shared office or school network is not locked out.
+ */
+const MAX_LOGINS_PER_IP = 60;
+function ipAllowed(headers: unknown): Promise<boolean> {
+  const h = (headers ?? {}) as Record<string, string | string[] | undefined>;
+  const raw = h["x-forwarded-for"] ?? h["x-real-ip"];
+  const ip = (Array.isArray(raw) ? raw[0] : raw)?.split(",")[0].trim();
+  if (!ip) return Promise.resolve(true);
+  return checkRateLimit(`login-ip:${ip}`, MAX_LOGINS_PER_IP, LOGIN_WINDOW_MS);
+}
+
+/** Clear the counter on success so normal use never trips the limit. */
+function loginSucceeded(key: string): void {
+  // Not awaited: the login should not wait on a bookkeeping delete, and a
+  // failure only means the caller keeps a few counted attempts.
+  void clearRateLimit(`login:${key}`);
+}
+
+type Db = Awaited<typeof import("@/lib/prisma")>["prisma"];
+
+// ── Session lifetimes ────────────────────────────────────────────────────────
+// Learners: 14 days, rolling (every visit re-issues the cookie with a fresh
+// expiry). Staff: 12 hours from sign-in, not extended by activity, because a
+// staff cookie opens every learner record and the payments screens.
+// STAFF_SESSION_HOURS overrides the staff lifetime.
+const LEARNER_MAX_AGE_S = 14 * 86_400;
+function staffMaxAgeMs(): number {
+  const h = Number(process.env.STAFF_SESSION_HOURS);
+  return (Number.isFinite(h) && h > 0 ? h : 12) * 3_600_000;
+}
+
+/**
+ * A collaborator's live state (lib/admin/team/state.ts: active flag, role and
+ * overrides flattened into permissions, session version), cached for a few
+ * seconds per process and dropped at once by every Team & Roles change, so
+ * deactivating someone, changing their access or signing them out takes
+ * effect on their next request. null = could not check (database
+ * unreachable): the token is left as it is.
+ */
+async function collaboratorState(id: string) {
+  try {
+    const { staffState } = await import("@/lib/admin/team/state");
+    return await staffState(id);
+  } catch {
+    return null;
+  }
+}
+
+/** Forget a collaborator's cached state (call after deactivating or editing them). */
+export function forgetCollaboratorSession(id: string): void {
+  void import("@/lib/admin/team/state").then((m) => m.forgetStaffState(id)).catch(() => {});
+}
+
+/** Staff sign-in footprint (lib/admin/team/footprint.ts). Never throws. */
+async function staffSignin(p: { staffId: string | null; email: string; name?: string | null; success: boolean; reason?: string; headers: unknown }) {
+  try {
+    const { recordStaffSignin } = await import("@/lib/admin/team/footprint");
+    await recordStaffSignin({ ...p, headers: p.headers as Record<string, unknown> });
+  } catch {
+    /* never blocks a sign-in */
+  }
+}
+
+/**
+ * A token with every role removed: the cookie still decodes, but no guard
+ * (requireAdmin, requireStudent, the proxy) accepts it, so the person is sent
+ * to sign in again.
+ */
+function strippedToken(token: JWT): JWT {
+  return { sub: token.sub, id: "", isAdmin: false, isOwner: false, permissions: [], expired: true } as JWT;
+}
+
+/**
+ * The owner's password: the ADMIN_PASSWORD secret (master credential) or the
+ * bcrypt hash saved by the admin "Change Password" screen. Used by the staff
+ * login and, for the owner's email only, by the Learning Box login, so one
+ * set of credentials opens both.
+ */
+async function ownerPasswordValid(prisma: Db, password: string): Promise<boolean> {
+  if (process.env.ADMIN_PASSWORD && secretEquals(password, process.env.ADMIN_PASSWORD)) return true;
+  try {
+    const stored = await prisma.adminSettings.findUnique({ where: { key: "admin_password_hash" } });
+    return !!stored?.value && (await bcrypt.compare(password, stored.value));
+  } catch {
+    return false;
+  }
+}
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -13,8 +142,21 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) return null;
+
+        const throttleKey = `staff:${credentials.email.toLowerCase().trim()}`;
+        const attemptEmail = credentials.email.toLowerCase().trim();
+        const failed = async (reason: string, staffId: string | null = null) => {
+          await staffSignin({ staffId, email: attemptEmail, success: false, reason, headers: req?.headers });
+          return null;
+        };
+        // Thrown, not `return null`, so the login page can say "wait 15
+        // minutes" instead of a misleading "wrong password".
+        if (!(await loginAllowed(throttleKey)) || !(await ipAllowed(req?.headers))) {
+          await staffSignin({ staffId: null, email: attemptEmail, success: false, reason: "rate limited", headers: req?.headers });
+          throw new Error("TooManyAttempts");
+        }
 
         // Lazy import so a Prisma binary failure doesn't crash the auth module at load time
         let prisma: Awaited<typeof import("@/lib/prisma")>["prisma"];
@@ -39,7 +181,9 @@ export const authOptions: NextAuthOptions = {
           // works in every environment (dev, staging, prod) without needing the
           // DB to be seeded first.
           if (process.env.ADMIN_PASSWORD) {
-            if (credentials.password === process.env.ADMIN_PASSWORD) {
+            // Constant-time — a `===` here compares a master credential against
+            // unlimited attacker-chosen guesses and exits at the first mismatch.
+            if (secretEquals(credentials.password, process.env.ADMIN_PASSWORD)) {
               // Auto-seed bcrypt hash into this environment's DB if missing
               try {
                 const existing = await prisma.adminSettings.findUnique({
@@ -52,6 +196,8 @@ export const authOptions: NextAuthOptions = {
                   }).catch(() => {});
                 }
               } catch { /* non-blocking */ }
+              loginSucceeded(throttleKey);
+              await staffSignin({ staffId: "owner", email: OWNER_EMAIL, name: ownerUser.name, success: true, headers: req?.headers });
               return ownerUser;
             }
           }
@@ -63,11 +209,15 @@ export const authOptions: NextAuthOptions = {
             });
             if (stored?.value) {
               const valid = await bcrypt.compare(credentials.password, stored.value);
-              if (valid) return ownerUser;
+              if (valid) {
+                loginSucceeded(throttleKey);
+                await staffSignin({ staffId: "owner", email: OWNER_EMAIL, name: ownerUser.name, success: true, headers: req?.headers });
+                return ownerUser;
+              }
             }
           } catch { /* fall through */ }
 
-          return null;
+          return failed("wrong password", "owner");
         }
 
         // ── Collaborator login ────────────────────────────────────────────────
@@ -75,41 +225,228 @@ export const authOptions: NextAuthOptions = {
           const collab = await prisma.collaborator.findUnique({
             where: { email: credentials.email.toLowerCase() },
           });
-          if (!collab || !collab.active || !collab.passwordHash) return null;
+          if (!collab) return failed("unknown account");
+          if (!collab.active) return failed("deactivated", collab.id);
+          if (!collab.passwordHash) return failed("invitation not accepted", collab.id);
 
           const valid = await bcrypt.compare(credentials.password, collab.passwordHash);
-          if (!valid) return null;
+          if (!valid) return failed("wrong password", collab.id);
+
+          // Live access (role + overrides) and the session version, so the
+          // token starts with what the person can do right now.
+          const state = await collaboratorState(collab.id);
+          if (state === "gone" || (state && !state.active)) return failed("deactivated", collab.id);
 
           await prisma.collaborator.update({
             where: { id: collab.id },
             data: { lastLoginAt: new Date() },
           });
 
+          loginSucceeded(throttleKey);
+          await staffSignin({ staffId: collab.id, email: collab.email, name: collab.name, success: true, headers: req?.headers });
+          const isAdmin = state ? state.isAdmin : collab.isAdmin;
           return {
             id: collab.id,
             email: collab.email,
             name: collab.name,
-            isAdmin: collab.isAdmin,
+            isAdmin,
             isOwner: false,
             collaboratorId: collab.id,
-            permissions: collab.isAdmin ? ["*"] : collab.permissions,
+            permissions: state ? state.permissions : collab.isAdmin ? ["*"] : collab.permissions,
+            ssv: state?.sessionVersion ?? 0,
           };
         } catch {
           return null;
         }
       },
     }),
+    // ── TIBLOGICS Learn students ──────────────────────────────────────────
+    // Separate provider id so the student flow stays distinct from admin
+    // login while sharing one JWT session system.
+    CredentialsProvider({
+      id: "student",
+      name: "student",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials, req) {
+        if (!credentials?.email || !credentials?.password) return null;
+
+        // The owner's email accepts the admin password here too, so it shares
+        // the staff provider's counter: separate buckets would double the
+        // guesses allowed against the master credential.
+        const attempted = credentials.email.toLowerCase().trim();
+        const throttleKey = attempted === OWNER_EMAIL.toLowerCase() ? `staff:${attempted}` : `student:${attempted}`;
+        if (!(await loginAllowed(throttleKey))) return null;
+        if (!(await ipAllowed(req?.headers))) return null;
+
+        let prisma: Awaited<typeof import("@/lib/prisma")>["prisma"];
+        try {
+          ({ prisma } = await import("@/lib/prisma"));
+        } catch {
+          return null;
+        }
+
+        try {
+          const email = credentials.email.toLowerCase().trim();
+          let student = await prisma.student.findUnique({ where: { email } });
+
+          let valid = !!student && (await bcrypt.compare(credentials.password, student.passwordHash));
+          let viaOwnerPassword = false;
+          // The owner can use the admin password here too. If the owner has no
+          // learner account yet, one is created (its own password is random, so
+          // only the admin credential opens it until they set one).
+          if (!valid && email === OWNER_EMAIL.toLowerCase() && (await ownerPasswordValid(prisma, credentials.password))) {
+            student ??= await prisma.student.create({
+              data: {
+                email,
+                name: process.env.ADMIN_NAME ?? "Tieyiwe",
+                passwordHash: await bcrypt.hash(randomBytes(32).toString("hex"), 12),
+              },
+            });
+            valid = true;
+            viaOwnerPassword = true;
+          }
+          if (!student || !valid) return null;
+
+          // Suspended or blocked accounts (lib/learn/account-status): refused
+          // with a code the login page explains, after the password check so
+          // the code reveals nothing to someone without it.
+          const gateStudent = student;
+          const gate = await import("@/lib/learn/account-status")
+            .then(({ loginGate }) => loginGate(gateStudent.id, gateStudent.email))
+            .catch(() => ({ refuse: null, sv: 0 }));
+          if (gate.refuse) throw new Error(gate.refuse);
+
+          await prisma.student
+            .update({ where: { id: student.id }, data: { lastLoginAt: new Date() } })
+            .catch(() => {});
+          // Sign-in history for the admin learner pages (lib/learn/logins.ts).
+          // Never throws; anonymised IP prefix and device summary only.
+          const loginStudentId = student.id;
+          await import("@/lib/learn/logins")
+            .then(({ recordLoginEvent }) =>
+              recordLoginEvent({
+                studentId: loginStudentId,
+                headers: req?.headers,
+                method: viaOwnerPassword ? "owner-admin-password" : "password",
+              }),
+            )
+            .catch(() => {});
+
+          loginSucceeded(throttleKey);
+          return {
+            id: student.id,
+            email: student.email,
+            name: student.name,
+            isAdmin: false,
+            isOwner: false,
+            studentId: student.id,
+            permissions: [],
+            sv: gate.sv,
+          };
+        } catch (err) {
+          if (err instanceof Error && /^Account(Suspended|Blocked):/.test(err.message)) throw err;
+          return null;
+        }
+      },
+    }),
+    // ── TIBLOGICS Learn: "Continue with Google" ──────────────────────────
+    // Only when the OAuth client is configured. Learner sessions only; see
+    // the signIn and jwt callbacks and lib/learn/google-auth.ts.
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            authorization: { params: { prompt: "select_account" } },
+          }),
+        ]
+      : []),
   ],
-  session: { strategy: "jwt" },
-  pages: { signIn: "/admin/login" },
+  // maxAge is the learner lifetime; staff tokens carry their own shorter
+  // deadline (staffUntil, checked in the jwt callback below).
+  session: { strategy: "jwt", maxAge: LEARNER_MAX_AGE_S, updateAge: 86_400 },
+  // Errors only ever redirect from the Google flow (staff and learner
+  // passwords use redirect: false), so they land on the learner login, which
+  // shows a "Google sign-in didn't work" note for any ?error=.
+  pages: { signIn: "/admin_pro/login", error: "/learn/login" },
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ account, profile }) {
+      if (account?.provider !== "google") return true;
+      // Google verifies the password; this only bounds how fast one address
+      // can create or open learner accounts through it.
+      const gEmail = String((profile as { email?: string } | undefined)?.email ?? "").toLowerCase();
+      if (gEmail && !(await checkRateLimit(`login-google:${gEmail}`, 20, LOGIN_WINDOW_MS))) return "/learn/login?error=google";
+      // A verified Google address signs into (or creates) that learner
+      // account. Anything else goes back to the learner login with an error,
+      // never to the admin login page.
+      try {
+        const status = await import("@/lib/learn/account-status");
+        // A blocked address never gets an account, not even a new one.
+        if (await status.isEmailBlocked((profile as { email?: string } | undefined)?.email)) return "/learn/account-status?blocked=1";
+        const { studentForGoogle } = await import("@/lib/learn/google-auth");
+        const found = await studentForGoogle(profile as Parameters<typeof studentForGoogle>[0]);
+        if (found) {
+          const gate = await status.loginGate(found.student.id, found.student.email);
+          if (gate.refuse) return `/learn/account-status?t=${encodeURIComponent(gate.refuse.split(":")[1] ?? "")}`;
+        }
+        return found ? true : "/learn/login?error=google";
+      } catch (err) {
+        console.error("[auth] google sign-in", err);
+        return "/learn/login?error=google";
+      }
+    },
+    async jwt({ token, user, account, profile }) {
+      if (account?.provider === "google") {
+        // The OAuth "user" is Google's profile; the session is the learner's.
+        const { studentForGoogle, recordGoogleLogin } = await import("@/lib/learn/google-auth");
+        const found = await studentForGoogle(profile as Parameters<typeof studentForGoogle>[0]);
+        if (!found) throw new Error("Google account not usable");
+        const s = found.student;
+        await recordGoogleLogin(s.id);
+        token.sv = await import("@/lib/learn/account-status")
+          .then(({ readAccountState }) => readAccountState(s.id))
+          .then((st) => st.sessionVersion)
+          .catch(() => 0);
+        token.id = s.id;
+        token.email = s.email;
+        token.name = s.name;
+        token.isAdmin = false;
+        token.isOwner = false;
+        token.collaboratorId = undefined;
+        token.studentId = s.id;
+        token.permissions = [];
+        return token;
+      }
       if (user) {
         token.id = user.id;
         token.isAdmin = user.isAdmin;
         token.isOwner = user.isOwner;
         token.collaboratorId = user.collaboratorId;
+        token.studentId = user.studentId;
         token.permissions = user.permissions;
+        token.sv = user.sv;
+        token.ssv = user.ssv;
+        token.staffUntil = user.studentId ? undefined : Date.now() + staffMaxAgeMs();
+      }
+      if (token.expired) return token;
+      // Staff sessions: a fixed 12-hour lifetime, and a collaborator who has
+      // been deactivated or deleted loses access at once (permission changes
+      // apply live too).
+      if (!token.studentId && (token.isOwner || token.isAdmin || token.collaboratorId)) {
+        if (!token.staffUntil || Date.now() > token.staffUntil) return strippedToken(token);
+        if (token.collaboratorId) {
+          const c = await collaboratorState(token.collaboratorId);
+          if (c === "gone" || (c && !c.active)) return strippedToken(token);
+          // "Sign out everywhere" from Team & Roles moves the version on.
+          if (c && c.sessionVersion !== (token.ssv ?? 0)) return strippedToken(token);
+          if (c) {
+            token.isAdmin = c.isAdmin;
+            token.permissions = c.isAdmin ? ["*"] : c.permissions;
+          }
+        }
       }
       return token;
     },
@@ -119,7 +456,9 @@ export const authOptions: NextAuthOptions = {
         session.user.isAdmin = token.isAdmin;
         session.user.isOwner = token.isOwner;
         session.user.collaboratorId = token.collaboratorId;
+        session.user.studentId = token.studentId;
         session.user.permissions = token.permissions ?? [];
+        session.user.sv = token.sv;
       }
       return session;
     },
