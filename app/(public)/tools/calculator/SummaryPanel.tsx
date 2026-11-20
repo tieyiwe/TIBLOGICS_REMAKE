@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ClipboardCopy, Download, Link2, Printer, RotateCcw } from "lucide-react";
+import { Check, ClipboardCopy, Download, Link2, Lock, Printer, RotateCcw } from "lucide-react";
 import { useT } from "@/lib/i18n/client";
 import { PRICES_AS_OF } from "@/lib/calculator/pricing";
 import { encodeState, MAX_SHARE_LENGTH, SHARE_PARAM } from "@/lib/calculator/share";
@@ -38,8 +38,9 @@ async function copyText(text: string): Promise<boolean> {
 export default function SummaryPanel({ description, onReset }: { description: string; onReset: () => void }) {
   const t = useT();
   const f = useFmt();
-  const { inputs, results } = useCalc();
-  const { m, build, unit } = results;
+  const { inputs, results, full } = useCalc();
+  const { m, range } = results;
+  const all = full ? { ...results, ...full } : null;
   const [status, setStatus] = useState<{ key: string; ok: boolean } | null>(null);
 
   const flash = (key: string, ok: boolean) => {
@@ -48,12 +49,14 @@ export default function SummaryPanel({ description, onReset }: { description: st
   };
 
   async function copySummary() {
-    flash("summary", await copyText(summaryText(inputs, results, t, f, description)));
+    if (!all) return;
+    flash("summary", await copyText(summaryText(inputs, all, t, f, description)));
   }
 
   function downloadCsv() {
+    if (!all) return;
     // BOM so spreadsheet apps read accented characters correctly.
-    const blob = new Blob(["﻿" + summaryCsv(inputs, results, t)], { type: "text/csv;charset=utf-8" });
+    const blob = new Blob(["﻿" + summaryCsv(inputs, all, t)], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -80,6 +83,7 @@ export default function SummaryPanel({ description, onReset }: { description: st
   }
 
   const gm = m.grossMarginPct;
+  const perUser = m.users > 0 ? m.total / m.users : 0;
   const btn =
     "inline-flex items-center justify-center gap-2 rounded-xl border border-[#D2DCE8] bg-white px-3 py-2 font-dm text-sm font-semibold text-[#1B3A6B] hover:border-[#2251A3] hover:bg-[#F4F7FB] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2251A3]";
   const label = (key: string, text: string) =>
@@ -108,7 +112,10 @@ export default function SummaryPanel({ description, onReset }: { description: st
         {f.money(m.total)}
       </p>
       <p className="font-dm text-xs text-[#5B6B7F] mt-1">
-        {t("calculator.summary.perUserLine", { perUser: f.moneyPrecise(unit.costPerUser), perInteraction: f.moneyPrecise(m.ai.perInteraction) })}
+        {t("calculator.summary.perUserLine", { perUser: f.moneyPrecise(perUser), perInteraction: f.moneyPrecise(m.ai.perInteraction) })}
+      </p>
+      <p className="font-dm text-xs text-[#3A4A5C] mt-1" data-testid="summary-range">
+        {t("calculator.summary.range", { low: f.money(range.totalLow), high: f.money(range.totalHigh) })}
       </p>
 
       <div className="mt-4 space-y-1.5">
@@ -123,47 +130,75 @@ export default function SummaryPanel({ description, onReset }: { description: st
         ))}
       </div>
 
+      {full ? (
+        <>
       <div className="mt-4 pt-4 border-t border-[#E4EAF2] space-y-1.5">
         <Row label={t("calculator.pricing.revenue")} value={f.money(m.revenue)} />
         <Row label={t("calculator.pricing.grossMargin")} value={gm === null ? "-" : f.pct(gm)} strong />
         <Row label={t("calculator.pricing.profit")} value={f.money(m.profit)} />
         <Row
           label={t("calculator.pricing.breakEven")}
-          value={unit.breakEvenUsers === null ? t("calculator.na") : f.num(unit.breakEvenUsers)}
+          value={full.unit.breakEvenUsers === null ? t("calculator.na") : f.num(full.unit.breakEvenUsers)}
           muted
         />
       </div>
 
       <div className="mt-4 pt-4 border-t border-[#E4EAF2]">
         <p className="font-dm text-xs text-[#5B6B7F]">{t("calculator.summary.buildLabel")}</p>
-        <p className="font-syne font-bold text-2xl text-[#0D1B2A] tabular-nums">{f.money0(build.likely)}</p>
+        <p className="font-syne font-bold text-2xl text-[#0D1B2A] tabular-nums">{f.money0(full.build.likely)}</p>
         <p className="font-dm text-xs text-[#5B6B7F]">
-          {t("calculator.summary.buildRange", { low: f.money0(build.low), high: f.money0(build.high) })}
+          {t("calculator.summary.buildRange", { low: f.money0(full.build.low), high: f.money0(full.build.high) })}
         </p>
-        {unit.targetPrice && (
+        {full.unit.targetPrice && (
           <p className="font-dm text-xs text-[#3A4A5C] mt-2">
             {t("calculator.summary.priceHint", {
               target: f.pct(inputs.targetMarginPct),
-              price: f.money(unit.targetPrice),
+              price: f.money(full.unit.targetPrice),
               unit: t(`calculator.unit.${inputs.pricingMode}`),
             })}
           </p>
         )}
       </div>
 
+        </>
+      ) : (
+        <a href="#plan" data-testid="summary-locked" className="no-print mt-4 pt-4 border-t border-[#E4EAF2] flex items-start gap-2 font-dm text-sm text-[#3A4A5C] hover:text-[#0D1B2A]">
+          <Lock size={16} className="shrink-0 mt-0.5 text-[#B8500A]" aria-hidden />
+          <span>
+            <span className="block font-semibold text-[#0D1B2A]">{t("calculator.summary.lockedTitle")}</span>
+            {t("calculator.summary.lockedBody")}
+          </span>
+        </a>
+      )}
+
       <div className="mt-4">
         <Warnings compact />
       </div>
 
       <div className="grid grid-cols-2 gap-2 mt-5 no-print">
-        <button type="button" onClick={copySummary} className={btn}>
-          {status?.key === "summary" ? null : <ClipboardCopy size={16} aria-hidden />}
-          {label("summary", t("calculator.export.copy"))}
-        </button>
-        <button type="button" onClick={downloadCsv} className={btn}>
-          <Download size={16} aria-hidden />
-          {t("calculator.export.csv")}
-        </button>
+        {all ? (
+          <>
+            <button type="button" onClick={copySummary} className={btn}>
+              {status?.key === "summary" ? null : <ClipboardCopy size={16} aria-hidden />}
+              {label("summary", t("calculator.export.copy"))}
+            </button>
+            <button type="button" onClick={downloadCsv} className={btn}>
+              <Download size={16} aria-hidden />
+              {t("calculator.export.csv")}
+            </button>
+          </>
+        ) : (
+          <>
+            <a href="#plan" className={`${btn} opacity-70`} title={t("calculator.plan.lockedLabel")}>
+              <Lock size={14} aria-hidden />
+              {t("calculator.export.copy")}
+            </a>
+            <a href="#plan" className={`${btn} opacity-70`} title={t("calculator.plan.lockedLabel")}>
+              <Lock size={14} aria-hidden />
+              {t("calculator.export.csv")}
+            </a>
+          </>
+        )}
         <button type="button" onClick={() => window.print()} className={btn}>
           <Printer size={16} aria-hidden />
           {t("calculator.export.print")}

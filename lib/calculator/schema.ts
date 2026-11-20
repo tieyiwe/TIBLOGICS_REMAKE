@@ -17,6 +17,9 @@ export const LIMITS: Record<NumKey, [number, number]> = {
   interactionsPerUser: [0, 100_000],
   inputTokens: [0, 2_000_000],
   outputTokens: [0, 200_000],
+  thinkingTokens: [0, 128_000],
+  callsPerInteraction: [1, 100],
+  historyTurns: [1, 500],
   cacheablePct: [0, 100],
   cacheWritePct: [0, 100],
   customInput: [0, 1000],
@@ -95,6 +98,7 @@ export function sanitizeInputs(raw: unknown, base: Inputs = DEFAULT_INPUTS): Inp
   if (typeof r.scope === "string" && (SCOPES as string[]).includes(r.scope)) out.scope = r.scope as Scope;
   if (typeof r.pricingMode === "string" && (MODES as string[]).includes(r.pricingMode)) out.pricingMode = r.pricingMode as PricingMode;
   if (typeof r.securityReview === "boolean") out.securityReview = r.securityReview;
+  if (typeof r.fastMode === "boolean") out.fastMode = r.fastMode;
 
   const f = obj(r.features);
   if (f) for (const k of RUN_FEATURES) if (typeof f[k] === "boolean") out.features[k as RunFeature] = f[k] as boolean;

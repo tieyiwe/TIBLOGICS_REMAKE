@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useT } from "@/lib/i18n/client";
 import { COST_CATEGORIES } from "@/lib/calculator/types";
-import { useCalc, useFmt } from "./context";
+import { useCalc, useFmt, useFull } from "./context";
 import { CATEGORY_COLORS } from "./colors";
 import { NumberInput, Section } from "./ui";
 
@@ -15,8 +15,8 @@ const Charts = dynamic(() => import("./ScenarioCharts"), {
 export default function ScenariosSection() {
   const t = useT();
   const f = useFmt();
-  const { inputs: i, update, results } = useCalc();
-  const sc = results.scenarios;
+  const { inputs: i, update } = useCalc();
+  const sc = useFull().scenarios;
 
   const setMult = (key: "scenarioUsers" | "scenarioFixed", n: number, v: number) => {
     const next = [...i[key]] as [number, number, number];

@@ -290,6 +290,12 @@ export async function POST(req: Request) {
         await markBlueprintPaid(session.metadata.blueprintId, session);
       }
 
+      // ── AI Product Cost Calculator: Full Plan (one-time) ─────────────────
+      if (session.metadata?.product === "calculator-plan" && session.metadata.passId) {
+        const { markPlanPaid } = await import("@/lib/calculator/plan");
+        await markPlanPaid(session);
+      }
+
       // ── Website scanner: full report (one-time) ──────────────────────────
       if (session.metadata?.product === SCANNER_PRODUCT && session.metadata.leadId && session.mode === "payment") {
         const { markReportPaid } = await import("@/lib/scanner/unlock");

@@ -2,17 +2,17 @@
 
 import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import { useT } from "@/lib/i18n/client";
-import { nicePrice } from "@/lib/calculator/engine";
+import { nicePrice } from "@/lib/calculator/core";
 import { unitLabel, warningText } from "@/lib/calculator/summary";
 import type { PricingMode } from "@/lib/calculator/types";
-import { useCalc, useFmt } from "./context";
+import { useCalc, useFmt, useFull } from "./context";
 import { NumField, Section, Segmented, SliderField, Stat } from "./ui";
 
 export function Warnings({ compact = false }: { compact?: boolean }) {
   const t = useT();
   const f = useFmt();
-  const { results } = useCalc();
-  const list = results.warnings;
+  const { full } = useCalc();
+  const list = full?.warnings ?? [];
   if (!list.length) {
     return compact ? null : (
       <p className="flex items-start gap-2 rounded-xl border border-[#BFE3C9] bg-[#EEF9F1] px-3.5 py-2.5 font-dm text-sm text-[#166534]">
@@ -49,7 +49,9 @@ export default function PricingSection() {
   const t = useT();
   const f = useFmt();
   const { inputs: i, update, results } = useCalc();
-  const { m, unit: u } = results;
+  const full = useFull();
+  const { m } = results;
+  const u = full.unit;
   const unit = unitLabel(i, t);
   const gm = m.grossMarginPct;
   const gmTone = gm === null ? "default" : gm < 0 ? "bad" : gm < i.targetMarginPct ? "warn" : "good";
@@ -139,7 +141,7 @@ export default function PricingSection() {
         <Stat
           label={t("calculator.pricing.recover")}
           value={u.monthsToRecoverBuild === null ? t("calculator.na") : t("calculator.pricing.monthsN", { n: f.num(u.monthsToRecoverBuild, 1) })}
-          sub={t("calculator.pricing.recoverSub", { amount: f.money0(results.build.likely) })}
+          sub={t("calculator.pricing.recoverSub", { amount: f.money0(full.build.likely) })}
         />
       </div>
 

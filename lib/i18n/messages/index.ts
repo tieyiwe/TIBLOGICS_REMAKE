@@ -8,6 +8,7 @@ import learn from "./learn";
 import labs from "./labs";
 import toolkit from "./toolkit";
 import calculator from "./calculator";
+import calculatorPlan from "./calculator-plan";
 import pages from "./pages";
 import tutorMsgs from "./tutor";
 import masteryMsgs from "./mastery";
@@ -42,6 +43,7 @@ import seoMsgs from "./seo";
 import joinMsgs from "./join";
 import scannerChecks from "./scanner-checks";
 import scannerReport from "./scanner-report";
+import scannerOutreach from "./scanner-outreach";
 import scholarshipMsgs from "./scholarship";
 import casesMsgs from "./cases";
 import challengeMsgs from "./challenge";
@@ -49,7 +51,7 @@ import youthMsgs from "./youth";
 import reviewsMsgs from "./reviews";
 import engageMsgs from "./engage";
 
-const ALL: Messages[] = [common, home, site, tools, learn, labs, toolkit, calculator, pages, game, studio, studioAutomation, studioLoops, studioPrompt, studioSorter, studioRisk, studioWireframe, studioArena, studioCritic, studioBench, studioDoors, studioYouth, studioGameForge, method, tutorMsgs, masteryMsgs, communityMsgs, videoMsgs, teamMsgs, resumeMsgs, liveMsgs, badgesMsgs, pwaMsgs, a11yMsgs, acquireMsgs, referralsMsgs, inboxMsgs, promoMsgs, seoMsgs, joinMsgs, scannerChecks, scannerReport, scholarshipMsgs, casesMsgs, challengeMsgs, youthMsgs, reviewsMsgs, engageMsgs];
+const ALL: Messages[] = [common, home, site, tools, learn, labs, toolkit, calculator, calculatorPlan, pages, game, studio, studioAutomation, studioLoops, studioPrompt, studioSorter, studioRisk, studioWireframe, studioArena, studioCritic, studioBench, studioDoors, studioYouth, studioGameForge, method, tutorMsgs, masteryMsgs, communityMsgs, videoMsgs, teamMsgs, resumeMsgs, liveMsgs, badgesMsgs, pwaMsgs, a11yMsgs, acquireMsgs, referralsMsgs, inboxMsgs, promoMsgs, seoMsgs, joinMsgs, scannerChecks, scannerReport, scannerOutreach, scholarshipMsgs, casesMsgs, challengeMsgs, youthMsgs, reviewsMsgs, engageMsgs];
 
 const cache = new Map<Locale, Record<string, string>>();
 

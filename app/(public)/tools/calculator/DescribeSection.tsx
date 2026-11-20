@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useLocale, useT } from "@/lib/i18n/client";
 import { PRESET_IDS, type PresetId } from "@/lib/calculator/presets";
-import { RATIONALE_KEYS, type Rationale } from "@/lib/calculator/ai";
+import { RATIONALE_KEYS, type Rationale } from "@/lib/calculator/rationale";
 import type { Inputs } from "@/lib/calculator/types";
 import { inputCls } from "./ui";
 

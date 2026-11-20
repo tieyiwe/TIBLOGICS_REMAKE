@@ -1,249 +1,24 @@
-// All the arithmetic behind the AI Product Cost Calculator, as pure functions
-// of the inputs. Nothing here touches the DOM, the network or the clock, so
-// the same numbers come out on the server, in the browser and in tests.
+// The business plan behind the AI Product Cost Calculator: the build budget,
+// unit economics and pricing, scenarios, warnings and savings
+// recommendations. Pure functions of the inputs, like core.ts.
+//
+// This is the paid part. Only the server imports it (the estimate route, the
+// full-plan route and tests); the page gets these numbers from
+// /api/tools/calculator/full with a paid pass, so they are not in the page's
+// code. Keep it out of client components.
 
-import { BATCH_MULTIPLIER, CHEAPEST_MODEL, priceFor, type ModelId, type ResolvedPrice } from "./pricing";
-import type {
-  AiBreakdown,
-  BuildFeature,
-  CostCategory,
-  CostLines,
-  Inputs,
-  Scope,
-} from "./types";
+import { BALANCED_MODEL, CHEAPEST_MODEL, modelById, type ModelId } from "./pricing";
+import { monthly, revenueFor, pct, nicePrice, computeFree, type Monthly, type FreeResults } from "./core";
+import type { BuildFeature, CostCategory, Inputs, Scope } from "./types";
 import { BUILD_FEATURES, COST_CATEGORIES } from "./types";
+import { CORE_HOURS, FEATURE_HOURS, SCOPE_FACTOR, BUILD_LOW_FACTOR, BUILD_HIGH_FACTOR } from "./build-model";
 
-const M = 1_000_000;
-
-function pct(n: number): number {
-  return Math.min(Math.max(n, 0), 100) / 100;
-}
-
-function safe(n: number): number {
-  return Number.isFinite(n) ? n : 0;
-}
-
-// ---------------------------------------------------------------------------
-// AI inference
-// ---------------------------------------------------------------------------
-
-interface Slice {
-  inputTokens: number;
-  outputTokens: number;
-  uncachedInputCost: number;
-  cacheReadCost: number;
-  cacheWriteCost: number;
-  outputCost: number;
-  total: number;
-}
-
-/** Cost of one slice of traffic on one model. Batch discount applies to every token. */
-function sliceCost(
-  inputTokens: number,
-  outputTokens: number,
-  price: ResolvedPrice,
-  cacheableShare: number,
-  cacheWriteShare: number,
-  batchShare: number,
-): Slice {
-  const cacheable = inputTokens * cacheableShare;
-  const writes = cacheable * cacheWriteShare;
-  const reads = cacheable - writes;
-  const uncached = inputTokens - cacheable;
-  const batchFactor = 1 - batchShare * (1 - BATCH_MULTIPLIER);
-  const uncachedInputCost = ((uncached * price.input) / M) * batchFactor;
-  const cacheReadCost = ((reads * price.cacheRead) / M) * batchFactor;
-  const cacheWriteCost = ((writes * price.cacheWrite) / M) * batchFactor;
-  const outputCost = ((outputTokens * price.output) / M) * batchFactor;
-  return {
-    inputTokens,
-    outputTokens,
-    uncachedInputCost,
-    cacheReadCost,
-    cacheWriteCost,
-    outputCost,
-    total: uncachedInputCost + cacheReadCost + cacheWriteCost + outputCost,
-  };
-}
-
-export function customModel(i: Inputs) {
-  return { name: i.customName, input: i.customInput, output: i.customOutput, cacheRead: i.customCacheRead };
-}
-
-export interface AiResult extends AiBreakdown {
-  primary: number;
-  routed: number;
-  primaryPrice: ResolvedPrice;
-  routedPrice: ResolvedPrice;
-  perInteraction: number;
-}
-
-/** Monthly AI inference cost for `users` active users. */
-export function aiCost(i: Inputs, users: number = i.users): AiResult {
-  const interactions = Math.max(0, users) * Math.max(0, i.interactionsPerUser);
-  const overhead = 1 + Math.max(0, i.overheadPct) / 100;
-  const inTok = interactions * Math.max(0, i.inputTokens) * overhead;
-  const outTok = interactions * Math.max(0, i.outputTokens) * overhead;
-  const custom = customModel(i);
-  const primaryPrice = priceFor(i.model, custom);
-  const routedPrice = priceFor(i.routeModel, custom);
-  const routeShare = i.routeModel === i.model ? 0 : pct(i.routePct);
-  const c = pct(i.cacheablePct);
-  const w = pct(i.cacheWritePct);
-  const b = pct(i.batchPct);
-
-  const p = sliceCost(inTok * (1 - routeShare), outTok * (1 - routeShare), primaryPrice, c, w, b);
-  const r = sliceCost(inTok * routeShare, outTok * routeShare, routedPrice, c, w, b);
-  const total = p.total + r.total;
-  return {
-    interactions,
-    inputTokens: inTok,
-    outputTokens: outTok,
-    uncachedInputCost: p.uncachedInputCost + r.uncachedInputCost,
-    cacheReadCost: p.cacheReadCost + r.cacheReadCost,
-    cacheWriteCost: p.cacheWriteCost + r.cacheWriteCost,
-    outputCost: p.outputCost + r.outputCost,
-    total,
-    listTotal: (inTok * primaryPrice.input + outTok * primaryPrice.output) / M,
-    primary: p.total,
-    routed: r.total,
-    primaryPrice,
-    routedPrice,
-    perInteraction: interactions > 0 ? total / interactions : 0,
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Monthly running costs and revenue
-// ---------------------------------------------------------------------------
-
-export interface Monthly {
-  users: number;
-  interactions: number;
-  ai: AiResult;
-  lines: CostLines;
-  categories: Record<CostCategory, number>;
-  revenue: number;
-  /** Costs that scale with users, excluding payment fees. */
-  variable: number;
-  /** Costs that do not scale with users (hosting, support, maintenance...). */
-  fixed: number;
-  total: number;
-  /** Everything except maintenance engineering: the basis for gross margin. */
-  costToServe: number;
-  grossMarginPct: number | null;
-  profit: number;
-  payingUnits: number;
-}
-
-/** Revenue for a given number of active users under the current pricing mode. */
-export function revenueFor(i: Inputs, users: number, price: number = i.price): number {
-  const paying = pct(i.payingPct);
-  if (i.pricingMode === "per_account") {
-    const accounts = users / Math.max(1, i.usersPerAccount);
-    return accounts * paying * price;
-  }
-  if (i.pricingMode === "usage") {
-    return ((users * i.interactionsPerUser) / 1000) * paying * price;
-  }
-  return users * paying * price;
-}
-
-/** How many billable units (users, accounts or thousands of interactions) pay. */
-export function payingUnits(i: Inputs, users: number): number {
-  const paying = pct(i.payingPct);
-  if (i.pricingMode === "per_account") return (users / Math.max(1, i.usersPerAccount)) * paying;
-  if (i.pricingMode === "usage") return ((users * i.interactionsPerUser) / 1000) * paying;
-  return users * paying;
-}
-
-export function categorize(l: CostLines): Record<CostCategory, number> {
-  return {
-    ai: l.aiPrimary + l.aiRouted + l.embeddings,
-    usage: l.voice + l.images + l.messaging + l.storage + l.email,
-    infra: l.hosting + l.database + l.vectorDb + l.monitoring + l.auth,
-    people: l.support + l.maintenance,
-    fees: l.paymentFees,
-  };
-}
-
-export function monthly(i: Inputs, userMult = 1, fixedMult = 1): Monthly {
-  const users = Math.max(0, i.users * userMult);
-  const ai = aiCost(i, users);
-  const f = i.features;
-  const lines: CostLines = {
-    aiPrimary: ai.primary,
-    aiRouted: ai.routed,
-    embeddings: f.rag
-      ? ((i.embedDocTokensM * M * userMult + ai.interactions * i.embedQueryTokens) / M) * i.embedPrice
-      : 0,
-    voice: f.voice ? users * i.voiceMinutesPerUser * (i.sttPerMin + i.ttsPerMin) : 0,
-    images: f.images ? users * i.imagesPerUser * i.imagePrice : 0,
-    messaging: f.messaging ? users * i.messagesPerUser * i.messagePrice : 0,
-    storage: f.files ? users * i.storageGbPerUser * i.storagePerGb : 0,
-    email: ((users * i.emailsPerUser) / 1000) * i.emailPer1000,
-    paymentFees: 0,
-    hosting: i.hosting * fixedMult,
-    database: i.database * fixedMult,
-    vectorDb: f.rag ? i.vectorDb * fixedMult : 0,
-    monitoring: i.monitoring * fixedMult,
-    auth: i.auth * fixedMult,
-    support: i.supportHours * i.supportRate * fixedMult,
-    maintenance: i.maintenanceHours * i.maintenanceRate * fixedMult,
-  };
-  for (const k of Object.keys(lines) as (keyof CostLines)[]) lines[k] = safe(lines[k]);
-  const revenue = safe(revenueFor(i, users));
-  lines.paymentFees = revenue * pct(i.paymentPct);
-
-  const variable =
-    lines.aiPrimary + lines.aiRouted + lines.embeddings + lines.voice + lines.images + lines.messaging + lines.storage + lines.email;
-  const fixed =
-    lines.hosting + lines.database + lines.vectorDb + lines.monitoring + lines.auth + lines.support + lines.maintenance;
-  const total = variable + fixed + lines.paymentFees;
-  const costToServe = total - lines.maintenance;
-  return {
-    users,
-    interactions: ai.interactions,
-    ai,
-    lines,
-    categories: categorize(lines),
-    revenue,
-    variable,
-    fixed,
-    total,
-    costToServe,
-    grossMarginPct: revenue > 0 ? ((revenue - costToServe) / revenue) * 100 : null,
-    profit: revenue - total,
-    payingUnits: payingUnits(i, users),
-  };
-}
+export * from "./core";
+export { CORE_HOURS, FEATURE_HOURS, SCOPE_FACTOR, BUILD_LOW_FACTOR, BUILD_HIGH_FACTOR };
 
 // ---------------------------------------------------------------------------
 // Build (one-time) cost
 // ---------------------------------------------------------------------------
-
-/** Engineering hours for the core product at each scope (estimates). */
-export const CORE_HOURS: Record<Scope, number> = { prototype: 40, mvp: 120, production: 240 };
-/** Feature hours are multiplied by this at each scope. */
-export const SCOPE_FACTOR: Record<Scope, number> = { prototype: 0.5, mvp: 1, production: 1.6 };
-/** Engineering hours per feature at MVP scope (estimates). */
-export const FEATURE_HOURS: Record<BuildFeature, number> = {
-  accounts: 16,
-  chatUi: 24,
-  rag: 40,
-  voice: 56,
-  images: 24,
-  messaging: 32,
-  files: 16,
-  agentTools: 48,
-  integrations: 32,
-  payments: 24,
-  admin: 32,
-  multilingual: 16,
-  mobileApp: 120,
-};
-export const BUILD_LOW_FACTOR = 0.8;
-export const BUILD_HIGH_FACTOR = 1.5;
 
 export interface BuildEstimate {
   coreHours: number;
@@ -376,16 +151,6 @@ export function unitEconomics(i: Inputs, m: Monthly = monthly(i), build: BuildEs
   };
 }
 
-/** Round a price up to something a person would put on a pricing page. */
-export function nicePrice(p: number): number {
-  if (!Number.isFinite(p) || p <= 0) return 0;
-  if (p < 1) return Math.ceil(p * 100) / 100;
-  if (p < 10) return Math.ceil(p * 2) / 2;
-  if (p < 100) return Math.ceil(p);
-  if (p < 1000) return Math.ceil(p / 5) * 5;
-  return Math.ceil(p / 50) * 50;
-}
-
 /** The inputs with `price` set to the (rounded) price that hits the target margin. */
 export function withSuggestedPrice(i: Inputs): Inputs {
   const m = monthly(i);
@@ -493,16 +258,17 @@ export function recommendations(i: Inputs, m: Monthly = monthly(i), u: UnitEcono
   };
 
   const primaryHasCache = m.ai.primaryPrice.cacheRead < m.ai.primaryPrice.input;
+  const primaryHasBatch = m.ai.primaryPrice.batch;
   if (i.cacheablePct < 60 && primaryHasCache) consider("cache", { ...i, cacheablePct: 60 }, { pct: 60 });
 
   if (i.model !== CHEAPEST_MODEL && i.routePct < 50 && m.ai.primaryPrice.input > 1) {
-    consider("route", { ...i, routePct: 50, routeModel: CHEAPEST_MODEL }, { pct: 50, model: "Claude Haiku 4.5" });
+    consider("route", { ...i, routePct: 50, routeModel: CHEAPEST_MODEL }, { pct: 50, model: modelById(CHEAPEST_MODEL)!.name });
   }
 
-  if (i.batchPct < 25) consider("batch", { ...i, batchPct: 25 }, { pct: 25 });
+  if (i.batchPct < 25 && primaryHasBatch) consider("batch", { ...i, batchPct: 25 }, { pct: 25 });
 
-  const expensive: ModelId[] = ["claude-fable-5-1", "claude-opus-5", "claude-opus-5-5"];
-  if (expensive.includes(i.model)) consider("model", { ...i, model: "claude-sonnet-5" }, { model: "Claude Sonnet 5" });
+  const expensive: ModelId[] = ["claude-fable-5-2", "claude-fable-5-1", "claude-opus-5", "claude-opus-5-5", "gpt-6-2-astra", "gemini-4-carbon"];
+  if (expensive.includes(i.model)) consider("model", { ...i, model: BALANCED_MODEL, fastMode: false }, { model: modelById(BALANCED_MODEL)!.name });
 
   if (m.ai.outputCost > 0.5 * m.ai.total && i.outputTokens > 100) {
     consider("output", { ...i, outputTokens: Math.round(i.outputTokens * 0.75) }, { pct: 25 });
@@ -534,8 +300,8 @@ export function recommendations(i: Inputs, m: Monthly = monthly(i), u: UnitEcono
 // Everything at once, for the UI
 // ---------------------------------------------------------------------------
 
-export interface Results {
-  m: Monthly;
+/** The paid part, as /api/tools/calculator/full sends it. */
+export interface FullResults {
   build: BuildEstimate;
   unit: UnitEconomics;
   scenarios: Scenario[];
@@ -543,16 +309,15 @@ export interface Results {
   recommendations: Recommendation[];
 }
 
-export function computeAll(i: Inputs): Results {
-  const m = monthly(i);
+export type Results = FreeResults & FullResults;
+
+export function computeFull(i: Inputs, m: Monthly = monthly(i)): FullResults {
   const build = buildEstimate(i);
   const unit = unitEconomics(i, m, build);
-  return {
-    m,
-    build,
-    unit,
-    scenarios: scenarios(i),
-    warnings: warnings(i, m, unit),
-    recommendations: recommendations(i, m, unit),
-  };
+  return { build, unit, scenarios: scenarios(i), warnings: warnings(i, m, unit), recommendations: recommendations(i, m, unit) };
+}
+
+export function computeAll(i: Inputs): Results {
+  const free = computeFree(i);
+  return { ...free, ...computeFull(i, free.m) };
 }

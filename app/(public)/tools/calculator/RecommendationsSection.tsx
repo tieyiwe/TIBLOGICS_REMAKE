@@ -3,14 +3,14 @@
 import { Lightbulb, PiggyBank } from "lucide-react";
 import { useT } from "@/lib/i18n/client";
 import { recommendationText } from "@/lib/calculator/summary";
-import { useCalc, useFmt } from "./context";
+import { useCalc, useFmt, useFull } from "./context";
 import { Section } from "./ui";
 
 export default function RecommendationsSection() {
   const t = useT();
   const f = useFmt();
-  const { inputs, results } = useCalc();
-  const recs = results.recommendations;
+  const { inputs } = useCalc();
+  const recs = useFull().recommendations;
   const totalSaving = recs.filter((r) => r.saving).reduce((s, r) => s + r.amount, 0);
 
   return (

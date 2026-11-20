@@ -262,6 +262,25 @@ model ToolkitRun {
 
 /// A paid Automation Blueprint: intake answers in, a written plan out.
 /// Created by lib/blueprint/db.ts on first use (no migrations).
+/// The AI Product Cost Calculator's paid Full Plan (lib/calculator/plan.ts).
+/// Created by runtime DDL; listed here so Replit's publish keeps the table.
+model CalculatorPass {
+  id              String    @id
+  createdAt       DateTime  @default(now())
+  email           String?
+  locale          String    @default("en")
+  /// pending (checkout not finished) | paid | refunded
+  status          String    @default("pending")
+  stripeSessionId String?   @unique
+  amountPaid      Int       @default(0)
+  paidAt          DateTime?
+  expiresAt       DateTime?
+  emailedAt       DateTime?
+
+  @@index([status])
+  @@index([email])
+}
+
 model Blueprint {
   id                  String    @id @default(cuid())
   createdAt           DateTime  @default(now())

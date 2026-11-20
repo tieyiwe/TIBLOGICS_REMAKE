@@ -16,7 +16,7 @@ import {
 import { useT } from "@/lib/i18n/client";
 import { COST_CATEGORIES } from "@/lib/calculator/types";
 import { CATEGORY_COLORS } from "./colors";
-import { useCalc, useFmt } from "./context";
+import { useCalc, useFmt, useFull } from "./context";
 
 
 const AXIS = { fontSize: 12, fill: "#5B6B7F", fontFamily: "inherit" };
@@ -24,7 +24,8 @@ const AXIS = { fontSize: 12, fill: "#5B6B7F", fontFamily: "inherit" };
 export default function ScenarioCharts() {
   const t = useT();
   const f = useFmt();
-  const { inputs, results } = useCalc();
+  const { inputs } = useCalc();
+  const results = useFull();
 
   const data = results.scenarios.map((s) => ({
     name: t(`calculator.scenario.${s.key}`),

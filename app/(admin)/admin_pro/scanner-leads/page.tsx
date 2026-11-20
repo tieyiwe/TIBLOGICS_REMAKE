@@ -59,11 +59,12 @@ export default async function ScannerLeadsPage() {
       <div>
         <h1 className="font-syne font-bold text-[24px] leading-tight text-[var(--a-ink)] sm:text-[26px]">Scanner Leads</h1>
         <p className="font-dm text-sm text-[var(--a-ink-3)] mt-0.5">
-          Websites scanned with the scanner. Two free scans per site every 30 days; the full report is unlocked by payment, a booked call (from the report link) or here.
+          Websites scanned with the scanner. Three free scans per site every 30 days; the full report is unlocked by payment, a booked call (from the report link) or here.
           Visitors who leave their email also appear in Growth leads (source &quot;scanner&quot;) and get two follow-ups (day 3 and day 7).
         </p>
         <nav aria-label="Sections" className="mt-4 flex gap-1 border-b border-[var(--a-border)]">
           <span aria-current="page" className="-mb-px inline-flex h-10 items-center border-b-2 border-[var(--a-orange)] px-3 font-dm text-[13.5px] font-semibold text-[var(--a-ink)]">Leads</span>
+          <Link href="/admin_pro/scanner-leads/new" className="-mb-px inline-flex h-10 items-center border-b-2 border-transparent px-3 font-dm text-[13.5px] font-semibold text-[var(--a-ink-3)] hover:text-[var(--a-ink)]" data-testid="new-scan-tab">Scan a website</Link>
           <Link href="/admin_pro/scanner-leads/scan-log" className="-mb-px inline-flex h-10 items-center border-b-2 border-transparent px-3 font-dm text-[13.5px] font-semibold text-[var(--a-ink-3)] hover:text-[var(--a-ink)]" data-testid="scan-log-tab">Scan log</Link>
         </nav>
       </div>
@@ -118,6 +119,8 @@ export default async function ScannerLeadsPage() {
                           Leads {ex.growthScore ?? "—"} · Security {ex.securityScore ?? "—"}
                           {ex.tech?.cms ? ` · ${ex.tech.cms}` : ""}{ex.tech?.shop ? ` · ${ex.tech.shop}` : ""}
                           {ex.held && !lead.unlockedAt ? " · awaiting payment" : ""}
+                          {(ex as { adminScan?: unknown }).adminScan ? " · admin scan" : ""}
+                          {Array.isArray((ex as { sent?: unknown[] }).sent) && (ex as { sent: unknown[] }).sent.length ? ` · sent to owner ${(ex as { sent: unknown[] }).sent.length}×` : ""}
                         </p>
                       ) : null;
                     })()}

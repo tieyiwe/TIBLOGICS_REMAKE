@@ -1,4 +1,3 @@
-import type { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { fetchPageSpeed, pageSpeedFindings } from "./extra";
 import { readExtra } from "./view";
@@ -35,12 +34,19 @@ export async function finishReport(id: string): Promise<"ready" | "skipped" | "f
   if (!lead) return "skipped";
   try {
     const extra = readExtra(lead.extra);
-    const data: Prisma.ScannerLeadUpdateInput = { reportStatus: "ready" };
     if (extra && !extra.pageSpeedAt) {
       const ps = await fetchPageSpeed(lead.url).catch(() => null);
-      data.extra = { ...extra, pageSpeed: ps, pageSpeedFindings: ps ? pageSpeedFindings(ps) : [], pageSpeedAt: new Date().toISOString() } as unknown as Prisma.InputJsonValue;
+      // Merged into the stored JSON, not written over it: PageSpeed can take
+      // most of a minute, and the team may send the report meanwhile
+      // (extra.sent, lib/scanner/outreach.ts).
+      const patch = { pageSpeed: ps, pageSpeedFindings: ps ? pageSpeedFindings(ps) : [], pageSpeedAt: new Date().toISOString() };
+      await prisma.$executeRawUnsafe(
+        `UPDATE "ScannerLead" SET "extra" = COALESCE("extra", '{}'::jsonb) || $2::jsonb WHERE "id" = $1`,
+        id,
+        JSON.stringify(patch),
+      );
     }
-    await prisma.scannerLead.update({ where: { id }, data });
+    await prisma.scannerLead.update({ where: { id }, data: { reportStatus: "ready" } });
     const { sendReportReadyEmail } = await import("./email");
     await sendReportReadyEmail(id).catch((err) => console.error("[scanner] report email", id, err instanceof Error ? err.message : err));
     return "ready";

@@ -6,14 +6,16 @@ import { ArrowRight, CalendarCheck, ClipboardList, Link2 } from "lucide-react";
 import SmartRecommendations from "@/components/public/SmartRecommendations";
 import { trackPageVisit, trackToolUse } from "@/lib/recommendations";
 import { useT } from "@/lib/i18n/client";
-import { computeAll } from "@/lib/calculator/engine";
+import { computeFree } from "@/lib/calculator/core";
+import type { FullResults } from "@/lib/calculator/engine";
 import { DEFAULT_INPUTS, cloneInputs } from "@/lib/calculator/defaults";
 import { isPresetId, presetInputs, type PresetId } from "@/lib/calculator/presets";
 import { sanitizeInputs } from "@/lib/calculator/schema";
 import { decodeState, SHARE_PARAM } from "@/lib/calculator/share";
-import { RATIONALE_KEYS, type Rationale } from "@/lib/calculator/ai";
+import { RATIONALE_KEYS, type Rationale } from "@/lib/calculator/rationale";
 import type { Inputs } from "@/lib/calculator/types";
-import { CalcProvider } from "./context";
+import { CalcProvider, type PlanState } from "./context";
+import { PaidSection, PlanCard } from "./Plan";
 import DescribeSection from "./DescribeSection";
 import UsageSection from "./UsageSection";
 import CostsSection from "./CostsSection";
@@ -60,6 +62,64 @@ export default function CalculatorApp() {
   const [notice, setNotice] = useState<"shared" | "restored" | "estimated" | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const fromLink = useRef(false);
+  const [plan, setPlan] = useState<PlanState>({ full: false, via: null, expiresAt: null, price: null, days: 365, loaded: false });
+  const [full, setFull] = useState<FullResults | null>(null);
+  const [fullFor, setFullFor] = useState<Inputs | null>(null);
+  const [planNotice, setPlanNotice] = useState<"paid" | "pending" | "canceled" | "link" | "badLink" | null>(null);
+
+  // The Full Plan on this browser: back from Stripe (?plan=paid&session_id=),
+  // the email's access link (?plan=<key>), or the status from the cookie. The
+  // query is removed from the address bar either way, so a key is not left
+  // in the history or sent on as a referrer.
+  const loadPlan = useCallback(async () => {
+    const res = await fetch("/api/tools/calculator/plan", { cache: "no-store" }).then((r) => r.json()).catch(() => null);
+    setPlan({
+      full: !!res?.full,
+      via: res?.via ?? null,
+      expiresAt: res?.expiresAt ?? null,
+      price: typeof res?.price === "string" ? res.price : null,
+      days: typeof res?.days === "number" ? res.days : 365,
+      loaded: true,
+    });
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const q = new URLSearchParams(window.location.search);
+      const p = q.get("plan");
+      const sessionId = q.get("session_id");
+      if (p) {
+        try {
+          window.history.replaceState(null, "", window.location.pathname + window.location.hash);
+        } catch {
+          /* ignore */
+        }
+      }
+      if (p === "paid" && sessionId) {
+        // The webhook may take a moment: try a few times.
+        let ok = false;
+        for (let n = 0; n < 4 && !ok; n++) {
+          if (n) await new Promise((r) => setTimeout(r, 1500));
+          ok = await fetch("/api/tools/calculator/plan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionId }),
+          }).then((r) => r.ok).catch(() => false);
+        }
+        setPlanNotice(ok ? "paid" : "pending");
+      } else if (p === "canceled") {
+        setPlanNotice("canceled");
+      } else if (p && p !== "paid") {
+        const ok = await fetch("/api/tools/calculator/plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key: p }),
+        }).then((r) => r.ok).catch(() => false);
+        setPlanNotice(ok ? "link" : "badLink");
+      }
+      await loadPlan();
+    })();
+  }, [loadPlan]);
 
   // Analytics, as before the rebuild: the recommendations context and the
   // admin tool-usage counter.
@@ -144,8 +204,69 @@ export default function CalculatorApp() {
     [dropShareHash],
   );
 
-  const results = useMemo(() => computeAll(inputs), [inputs]);
-  const ctx = useMemo(() => ({ inputs, update, results }), [inputs, update, results]);
+  const results = useMemo(() => computeFree(inputs), [inputs]);
+
+  // The Full Plan numbers come from the server, a moment after the last edit.
+  useEffect(() => {
+    if (!plan.full || !hydrated) return;
+    const ctrl = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        const r = await fetch("/api/tools/calculator/full", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ inputs }),
+          signal: ctrl.signal,
+        });
+        if (r.status === 402) {
+          // The plan ended (refund, expiry) or the cookie went.
+          setFull(null);
+          void loadPlan();
+          return;
+        }
+        if (!r.ok) return;
+        setFull((await r.json()) as FullResults);
+        setFullFor(inputs);
+      } catch {
+        /* aborted or offline: keep the last numbers */
+      }
+    }, full ? 250 : 0);
+    return () => {
+      window.clearTimeout(timer);
+      ctrl.abort();
+    };
+    // `full` only picks the delay; refetching on its change would loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputs, plan.full, hydrated, loadPlan]);
+
+  const buyPlan = useCallback(
+    async (email?: string): Promise<string | null> => {
+      const r = await fetch("/api/tools/calculator/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email ?? "" }),
+      }).catch(() => null);
+      const j = await r?.json().catch(() => null);
+      if (r?.ok && typeof j?.url === "string") {
+        window.location.href = j.url;
+        return null;
+      }
+      return typeof j?.error === "string" ? j.error : t("calculator.plan.errFailed");
+    },
+    [t],
+  );
+
+  const forgetPlan = useCallback(async () => {
+    await fetch("/api/tools/calculator/plan", { method: "DELETE" }).catch(() => null);
+    setFull(null);
+    await loadPlan();
+  }, [loadPlan]);
+
+  const fullStale = !!full && fullFor !== inputs;
+  const ctx = useMemo(
+    () => ({ inputs, update, results, full, fullStale, plan, buyPlan, forgetPlan }),
+    [inputs, update, results, full, fullStale, plan, buyPlan, forgetPlan],
+  );
 
   function applyPreset(id: PresetId) {
     dropShareHash();
@@ -199,6 +320,21 @@ export default function CalculatorApp() {
           </div>
         )}
 
+        {planNotice && (
+          <div
+            role="status"
+            data-testid={`plan-notice-${planNotice}`}
+            className={`no-print flex flex-wrap items-center justify-between gap-2 rounded-2xl border px-4 py-3 font-dm text-sm ${
+              planNotice === "paid" || planNotice === "link" ? "border-[#BFE3C9] bg-[#EEF9F1] text-[#166534]" : "border-[#F5D9A8] bg-[#FFF7E6] text-[#7A4A00]"
+            }`}
+          >
+            <span>{t(`calculator.plan.notice.${planNotice}`)}</span>
+            <button type="button" onClick={() => setPlanNotice(null)} className="text-xs font-semibold underline underline-offset-2">
+              {t("calculator.notice.dismiss")}
+            </button>
+          </div>
+        )}
+
         <DescribeSection
           description={description}
           setDescription={setDescription}
@@ -213,19 +349,28 @@ export default function CalculatorApp() {
           <div className="space-y-6 min-w-0">
             <UsageSection />
             <CostsSection />
-            <BuildSection />
-            <PricingSection />
+            <PlanCard />
+            <PaidSection id="build" step={4} titleKey="calculator.build.title" teaserKey="calculator.plan.teaser.build">
+              <BuildSection />
+            </PaidSection>
+            <PaidSection id="pricing" step={5} titleKey="calculator.pricing.title" teaserKey="calculator.plan.teaser.pricing">
+              <PricingSection />
+            </PaidSection>
           </div>
           <SummaryPanel description={description} onReset={reset} />
         </div>
 
-        <ScenariosSection />
-        <RecommendationsSection />
+        <PaidSection id="scenarios" step={6} titleKey="calculator.scenarios.title" teaserKey="calculator.plan.teaser.scenarios">
+          <ScenariosSection />
+        </PaidSection>
+        <PaidSection id="savings" step={7} titleKey="calculator.recs.title" teaserKey="calculator.plan.teaser.savings">
+          <RecommendationsSection />
+        </PaidSection>
 
         <details className="calc-card bg-white border border-[#D2DCE8] rounded-2xl px-5 sm:px-6 py-4">
           <summary className="cursor-pointer font-syne font-bold text-base text-[#0D1B2A]">{t("calculator.method.title")}</summary>
           <div className="font-dm text-sm text-[#3A4A5C] space-y-2 mt-3 leading-relaxed">
-            {["ai", "cache", "running", "margin", "breakEven", "price", "build", "limits"].map((k) => (
+            {["ai", "work", "cache", "range", "providers", "running", "margin", "breakEven", "price", "build", "limits"].map((k) => (
               <p key={k}>{t(`calculator.method.${k}`)}</p>
             ))}
           </div>

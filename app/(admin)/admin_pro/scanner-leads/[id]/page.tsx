@@ -8,6 +8,10 @@ import { findingText } from "@/lib/scanner/i18n";
 import { translatorFor } from "@/lib/i18n/server";
 import { readFixPlan } from "@/lib/scanner/fix-plan";
 import FixPlanPanel from "./FixPlanPanel";
+import SendReportPanel from "./SendReportPanel";
+import { defaultNote, sentRecords } from "@/lib/scanner/outreach";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import UnlockButton from "../UnlockButton";
 import { scanLogsForLead } from "@/lib/analytics/scan-log";
 import { countryName, flag } from "@/lib/geo";
@@ -20,9 +24,11 @@ export const dynamic = "force-dynamic";
 const AREA: Record<string, string> = { seo: "SEO", perf: "Speed", ux: "Usability", ai: "AI readiness", growth: "Lead capture", security: "Security" };
 const tone = (type: string) => (type === "bad" ? "text-red-700 bg-red-50" : type === "warning" ? "text-amber-800 bg-amber-50" : "text-green-800 bg-green-50");
 
-export default async function ScanDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ScanDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await requireAdminPage();
   const { id } = await params;
+  const sp = await searchParams;
+  const one = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string).slice(0, 160) : "");
   if (!/^[a-z0-9]{10,40}$/i.test(id)) notFound();
   await ensureScannerColumns();
   const lead = await prisma.scannerLead.findUnique({ where: { id } });
@@ -42,6 +48,10 @@ export default async function ScanDetailPage({ params }: { params: Promise<{ id:
     ["Lead capture", extra?.growthScore ?? null], ["Security", extra?.securityScore ?? null],
   ];
   const card = "rounded-2xl border border-[var(--a-border)] bg-[var(--a-surface)] p-5";
+  const sender = (await getServerSession(authOptions))?.user?.name?.trim() || "The TIBLOGICS team";
+  const notes = Object.fromEntries((["en", "fr", "sw"] as const).map((l) => [l, defaultNote(lead, l, sender)]));
+  const adminScan = (lead.extra as { adminScan?: { name?: string | null; company?: string | null; by?: string } } | null)?.adminScan;
+  const held = !!(lead.extra as { held?: boolean } | null)?.held && !lead.unlockedAt;
 
   return (
     <div className="space-y-5">
@@ -110,6 +120,30 @@ export default async function ScanDetailPage({ params }: { params: Promise<{ id:
           ))}
         </div>
       </div>
+
+      {adminScan && (
+        <p className="font-dm text-xs text-[var(--a-ink-3)]" data-testid="admin-scan-tag">
+          Scanned from the admin by {adminScan.by}
+          {adminScan.company ? ` for ${adminScan.company}` : ""}.
+        </p>
+      )}
+
+      {held ? (
+        <p className={`${card} font-dm text-sm text-[var(--a-ink-2)]`}>This scan was bought over the free limit and is waiting for the visitor&apos;s payment, so it cannot be sent. Run a new scan from &quot;Scan a website&quot; instead.</p>
+      ) : (
+        <SendReportPanel
+          id={lead.id}
+          domain={lead.domain ?? lead.url}
+          notes={notes}
+          initial={{
+            name: one("name") || adminScan?.name || lead.name || "",
+            company: one("company") || adminScan?.company || "",
+            locale: one("locale") || lead.locale || "en",
+          }}
+          sent={sentRecords(lead.extra)}
+          openByDefault={one("send") === "1"}
+        />
+      )}
 
       <FixPlanPanel id={lead.id} initial={plan} />
 

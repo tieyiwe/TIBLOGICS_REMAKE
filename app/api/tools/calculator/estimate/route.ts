@@ -6,6 +6,8 @@ import { isLocale, replyInLanguage, DEFAULT_LOCALE } from "@/lib/i18n/config";
 import { translatorFor } from "@/lib/i18n/server";
 import { ESTIMATE_SYSTEM_PROMPT, estimatePrompt, parseEstimate } from "@/lib/calculator/ai";
 import { withSuggestedPrice } from "@/lib/calculator/engine";
+import { calculatorAccess, PLAN_COOKIE } from "@/lib/calculator/plan";
+import type { NextRequest } from "next/server";
 
 // "Describe your product" assistant for the AI Product Cost Calculator.
 // POST { description, locale? } -> { inputs, rationale, summary }.
@@ -19,7 +21,7 @@ const Body = z.object({
   locale: z.string().optional(),
 });
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   let raw: unknown;
   try {
     raw = await req.json();
@@ -39,9 +41,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: t("calculator.ai.errorUnavailable"), code: "unavailable" }, { status: 503 });
   }
 
+  // Each estimate is a model call. Free: 3 a day per address. The Full Plan:
+  // 30 a day per plan. Staff: 60 an hour.
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
-  if (!(await checkRateLimit(`calc-estimate:${ip}`, 10, 60 * 60 * 1000))) {
-    return NextResponse.json({ error: t("calculator.ai.errorRate"), code: "rate" }, { status: 429 });
+  const access = await calculatorAccess(req.cookies.get(PLAN_COOKIE)?.value);
+  const [key, max, windowMs] =
+    access.via === "plan" ? [`calc-estimate-plan:${access.passId}`, 30, 86_400_000]
+    : access.via === "staff" ? [`calc-estimate-staff:${ip}`, 60, 3_600_000]
+    : [`calc-estimate:${ip}`, 3, 86_400_000];
+  if (!(await checkRateLimit(key, max, windowMs))) {
+    return NextResponse.json(
+      { error: t(access.full ? "calculator.ai.errorRate" : "calculator.ai.errorRateFree"), code: access.full ? "rate" : "rate_free" },
+      { status: 429 },
+    );
   }
 
   const system = [ESTIMATE_SYSTEM_PROMPT, replyInLanguage(locale) && `Write the "summary" and "rationale" texts in the visitor's language. ${replyInLanguage(locale)} Keep the JSON keys and enum values in English.`]

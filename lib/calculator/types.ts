@@ -43,8 +43,12 @@ export interface Inputs {
   // Usage and inference
   users: number; // monthly active users
   interactionsPerUser: number; // per user per month
-  inputTokens: number; // per interaction, including system prompt and retrieved context
-  outputTokens: number; // per interaction
+  inputTokens: number; // per model call, including system prompt and retrieved context (not earlier turns)
+  outputTokens: number; // per model call
+  thinkingTokens: number; // per model call: reasoning the model does before answering, billed as output
+  callsPerInteraction: number; // model calls per interaction (an agent using tools makes several)
+  historyTurns: number; // average turns per conversation; earlier turns are resent as input
+  fastMode: boolean; // fast-mode prices, where the model offers them
   cacheablePct: number; // share of input tokens that is a stable, cacheable prefix
   cacheWritePct: number; // share of cacheable tokens written (cache misses) rather than read
   model: ModelId;
@@ -136,11 +140,13 @@ export const COST_CATEGORIES: CostCategory[] = ["ai", "usage", "infra", "people"
 export interface AiBreakdown {
   interactions: number;
   inputTokens: number; // total, after overhead
-  outputTokens: number;
+  outputTokens: number; // total, including thinking
+  thinkingTokens: number; // the thinking part of outputTokens
   uncachedInputCost: number;
   cacheReadCost: number;
   cacheWriteCost: number;
-  outputCost: number;
+  outputCost: number; // including thinking
+  thinkingCost: number; // the thinking part of outputCost
   total: number;
   /** What the same traffic would cost with no caching, routing or batching. */
   listTotal: number;

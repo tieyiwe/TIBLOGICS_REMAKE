@@ -10,9 +10,8 @@ import { clamp, sanitizeInputs } from "./schema";
 import type { Inputs } from "./types";
 import { BUILD_FEATURES, RUN_FEATURES } from "./types";
 
-export const RATIONALE_KEYS = ["usage", "model", "features", "build", "pricing"] as const;
-export type RationaleKey = (typeof RATIONALE_KEYS)[number];
-export type Rationale = Partial<Record<RationaleKey, string>>;
+import { RATIONALE_KEYS, type Rationale } from "./rationale";
+export { RATIONALE_KEYS, type Rationale, type RationaleKey } from "./rationale";
 
 export interface AiEstimate {
   inputs: Inputs;
@@ -29,14 +28,19 @@ Estimate realistic starting assumptions for a small launch and return ONLY one J
   "usage": {
     "users": monthly active end users at launch (integer),
     "interactionsPerUser": AI requests per active user per month (integer),
-    "inputTokens": input tokens per request, including system prompt, conversation history and any retrieved documents (integer),
-    "outputTokens": output tokens per request (integer),
+    "inputTokens": input tokens per model call, including system prompt and any retrieved documents, not earlier turns of the conversation (integer),
+    "outputTokens": visible output tokens per model call (integer),
     "cacheablePct": share of input tokens that is a stable prefix reusable across requests, 0-90,
     "routePct": share of requests simple enough for a small cheap model, 0-80,
     "batchPct": share of requests that can wait hours (nightly jobs, bulk generation), 0-90,
     "overheadPct": extra tokens for retries, tool calls and failed attempts, 5-40
   },
-  "model": one of "claude-haiku-4-5" (high volume, simple, latency sensitive), "claude-sonnet-5" (most products), "claude-opus-5" (complex reasoning, multi-step agents),
+  "model": one of "claude-haiku-5-5" (high volume, simple, latency sensitive), "claude-sonnet-5-5" (most products), "claude-opus-5-5" (complex reasoning, multi-step agents),
+  "agent": {
+    "callsPerInteraction": model calls per request: 1 for a plain answer, 3-10 when it uses tools or works in steps (integer),
+    "thinkingTokens": reasoning tokens per call before answering: 0-200 for simple replies, 300-1500 for normal work, 2000-8000 for hard analysis (integer),
+    "historyTurns": average turns in one conversation, 1 when each request stands alone (integer)
+  },
   "features": { "rag": boolean (searches the customer's own documents), "voice": boolean (speech in or out), "images": boolean (generates images), "messaging": boolean (sends SMS or WhatsApp messages), "files": boolean (stores user files) },
   "featureUsage": {
     "embedDocTokensM": millions of document tokens embedded per month if rag,
@@ -89,7 +93,8 @@ const AiSchema = z.object({
     .partial()
     .optional()
     .catch(undefined),
-  model: z.enum(["claude-haiku-4-5", "claude-sonnet-5", "claude-opus-5"]).optional().catch(undefined),
+  model: z.enum(["claude-haiku-5-5", "claude-sonnet-5-5", "claude-opus-5-5"]).optional().catch(undefined),
+  agent: z.object({ callsPerInteraction: n, thinkingTokens: n, historyTurns: n }).partial().optional().catch(undefined),
   features: z.object({ rag: b, voice: b, images: b, messaging: b, files: b }).partial().optional().catch(undefined),
   featureUsage: z
     .object({ embedDocTokensM: n, voiceMinutesPerUser: n, imagesPerUser: n, messagesPerUser: n, storageGbPerUser: n })
@@ -135,6 +140,9 @@ const AI_LIMITS: Record<string, [number, number]> = {
   messagesPerUser: [0, 10_000],
   storageGbPerUser: [0, 1_000],
   usersPerAccount: [1, 1_000_000],
+  callsPerInteraction: [1, 20],
+  thinkingTokens: [0, 16_000],
+  historyTurns: [1, 50],
 };
 
 function cleanText(v: string | undefined, max = 400): string {
@@ -183,6 +191,9 @@ export function parseEstimate(text: string): AiEstimate | null {
   put("messagesPerUser", fu.messagesPerUser);
   put("storageGbPerUser", fu.storageGbPerUser);
   put("usersPerAccount", d.pricing?.usersPerAccount);
+  put("callsPerInteraction", d.agent?.callsPerInteraction && Math.round(d.agent.callsPerInteraction));
+  put("thinkingTokens", d.agent?.thinkingTokens !== undefined ? Math.round(d.agent.thinkingTokens) : undefined);
+  put("historyTurns", d.agent?.historyTurns && Math.round(d.agent.historyTurns));
   if (d.model) flat.model = d.model;
   if (d.pricing?.mode) flat.pricingMode = d.pricing.mode;
   if (d.build?.scope) flat.scope = d.build.scope;
@@ -195,7 +206,7 @@ export function parseEstimate(text: string): AiEstimate | null {
   for (const k of BUILD_FEATURES) build[k] = listed.has(k);
   if (listed.size > 0) flat.buildFeatures = build;
   // Routing only makes sense to a cheaper model than the primary one.
-  if (d.model === "claude-haiku-4-5") flat.routePct = 0;
+  if (d.model === "claude-haiku-5-5") flat.routePct = 0;
 
   const rationale: Rationale = {};
   for (const k of RATIONALE_KEYS) {

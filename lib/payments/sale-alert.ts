@@ -28,6 +28,7 @@ const LABELS: Record<string, string> = {
   "scholarship-donation": "Tilo Vision Scholarship donation",
   "automation-blueprint": "Automation Blueprint",
   "scanner-report": "Website scanner full report",
+  "calculator-plan": "AI Product Cost Calculator Full Plan",
   "toolkit-live": "Toolkit Live subscription",
   "readiness-monitor": "Readiness Monitor subscription",
 };

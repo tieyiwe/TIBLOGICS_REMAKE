@@ -65,6 +65,8 @@ export async function handleChargeReversal(kind: Kind, charge: Stripe.Charge): P
     if (scans.count) done.push("Website scanner report locked again.");
     const bps = await prisma.blueprint.updateMany({ where: { stripeSessionId: sid, status: { not: "refunded" } }, data: { status: "refunded" } });
     if (bps.count) done.push("Automation Blueprint marked refunded.");
+    const plans = await import("@/lib/calculator/plan").then((m) => m.refundPlan(sid)).catch(() => 0);
+    if (plans) done.push("Calculator Full Plan ended.");
   }
 
   const amount = `${(charge.amount / 100).toFixed(2)} ${charge.currency.toUpperCase()}`;

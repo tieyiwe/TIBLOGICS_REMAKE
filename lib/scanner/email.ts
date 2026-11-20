@@ -24,14 +24,14 @@ import { SEVERITIES, isLockedSeverity, securityGrade, severityOf, type Severity 
 // suppressed address. Every value from the scanned site is escaped.
 
 const SITE = (process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com").replace(/\/$/, "");
-const esc = (s: string) => escapeHtml(s);
+export const esc = (s: string) => escapeHtml(s);
 
 const reportUrl = (l: ScannerLead) => `${SITE}/tools/scanner/report/${l.token}`;
 const bookUrl = (l: ScannerLead) => `${SITE}/book?scan=${l.token}`;
 const isHeld = (l: ScannerLead) => !!readExtra(l.extra)?.held && !l.unlockedAt;
 const localeOf = (l: ScannerLead): Locale => (isLocale(l.locale) ? l.locale : "en");
 
-function frame(title: string, body: string, footer: string): string {
+export function frame(title: string, body: string, footer: string): string {
   return `
   <div style="background:#F4F7FB;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;">
     <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e6ebf1;">
@@ -46,12 +46,12 @@ function frame(title: string, body: string, footer: string): string {
     </div>
   </div>`;
 }
-const p = (html: string) => `<p style="font-size:14px;color:#3A4A5C;line-height:1.7;margin:0 0 12px;">${html}</p>`;
-const button = (href: string, label: string, secondary = false) =>
+export const p = (html: string) => `<p style="font-size:14px;color:#3A4A5C;line-height:1.7;margin:0 0 12px;">${html}</p>`;
+export const button = (href: string, label: string, secondary = false) =>
   `<a href="${esc(href)}" style="display:inline-block;margin:6px 8px 6px 0;background:${secondary ? "#fff" : "#F47C20"};color:${secondary ? "#1B3A6B" : "#fff"};border:2px solid ${secondary ? "#1B3A6B" : "#F47C20"};font-weight:700;font-size:14px;text-decoration:none;padding:11px 22px;border-radius:10px;">${esc(label)}</a>`;
 const color = (n: number) => (n >= 70 ? "#16a34a" : n >= 50 ? "#F47C20" : "#dc2626");
 
-function scoreTable(l: ScannerLead, t: ReturnType<typeof translatorFor>): string {
+export function scoreTable(l: ScannerLead, t: ReturnType<typeof translatorFor>): string {
   const extra = readExtra(l.extra, l.url);
   const rows: Array<[string, number | null]> = [
     [t("tools.sr.area.growth"), extra?.growthScore ?? null],

@@ -1,9 +1,9 @@
 "use client";
 
 import { useT } from "@/lib/i18n/client";
-import { FEATURE_HOURS, SCOPE_FACTOR } from "@/lib/calculator/engine";
+import { FEATURE_HOURS, SCOPE_FACTOR } from "@/lib/calculator/build-model";
 import { BUILD_FEATURES, type Scope } from "@/lib/calculator/types";
-import { useCalc, useFmt } from "./context";
+import { useCalc, useFmt, useFull } from "./context";
 import { NumField, PlaceholderNote, Row, Section, Segmented, SliderField, SubHeading, Toggle } from "./ui";
 
 const RATE_PRESETS = [25, 50, 75, 100, 150];
@@ -11,8 +11,8 @@ const RATE_PRESETS = [25, 50, 75, 100, 150];
 export default function BuildSection() {
   const t = useT();
   const f = useFmt();
-  const { inputs: i, update, results } = useCalc();
-  const b = results.build;
+  const { inputs: i, update } = useCalc();
+  const b = useFull().build;
   const factor = SCOPE_FACTOR[i.scope];
   const hoursText = (h: number) => t("calculator.build.hoursN", { n: f.num(h) });
 
