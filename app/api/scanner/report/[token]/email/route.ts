@@ -4,19 +4,24 @@ import prisma from "@/lib/prisma";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { normEmail } from "@/lib/growth/outreach/normalize";
-import { isSuppressed } from "@/lib/growth/outreach/suppression";
 import { leadByToken } from "@/lib/scanner/lead";
 import { isScannerStaff } from "@/lib/scanner/staff";
 import { buildView } from "@/lib/scanner/view";
 import { upsertScannerGrowthLead } from "@/lib/scanner/growth";
 import { sendOwnerScanAlert, sendScanReportEmail } from "@/lib/scanner/email";
 
-// The email gate: an email (and the consent box) shows every problem's title,
-// sends the results by email, and starts two follow-ups (day 3 and day 7).
-// The lead joins the Growth pipeline and the owner is told.
+// The email gate: an email (and the consent box) sends the visitor the report
+// they are looking at, with the ways to get help, and starts two follow-ups
+// (day 3 and day 7). The lead joins the Growth pipeline and the owner is told.
+//
+// The email is sent before the answer (up to 20 seconds), so the page says
+// "emailed" only when it went. If Titan refuses or is slow, the page says it
+// is on its way and the scanner cron job retries (lib/scanner/email.ts).
 //
 // Only a scan without an email takes one: a shared report link cannot be used
 // to change where another visitor's emails go.
+
+export const maxDuration = 60;
 
 const Body = z.object({
   email: z.string().max(254),
@@ -56,10 +61,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     await import("@/lib/analytics/touch").then((m) => m.recordTouch({ kind: "scanner_lead", refId: fresh.id, headers: req.headers })).catch(() => {});
     await upsertScannerGrowthLead(fresh, "scanner_email").catch((err) => console.error("[scanner] growth lead", err));
     sendOwnerScanAlert(fresh.id, "email").catch((err) => console.error("[scanner] owner alert", err instanceof Error ? err.message : err));
-    if (!(await isSuppressed(email))) {
-      sendScanReportEmail(fresh.id).catch((err) => console.error("[scanner] report email", err instanceof Error ? err.message : err));
-    }
+    // Suppressed addresses are recorded and skipped inside (the page says so).
+    const sending = sendScanReportEmail(fresh.id).catch((err) => {
+      console.error("[scanner] report email", err instanceof Error ? err.message : err);
+      return "failed" as const;
+    });
+    await Promise.race([sending, new Promise((r) => setTimeout(r, 20_000))]);
   }
-  const view = await buildView(fresh, t, locale, { staff: await isScannerStaff() });
+  const after = await prisma.scannerLead.findUniqueOrThrow({ where: { id: lead.id } });
+  const view = await buildView(after, t, locale, { staff: await isScannerStaff() });
   return NextResponse.json(view);
 }

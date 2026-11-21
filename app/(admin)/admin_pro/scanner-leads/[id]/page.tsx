@@ -13,6 +13,7 @@ import { defaultNote, sentRecords } from "@/lib/scanner/outreach";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import UnlockButton from "../UnlockButton";
+import ShareReport from "../ShareReport";
 import { scanLogsForLead } from "@/lib/analytics/scan-log";
 import { countryName, flag } from "@/lib/geo";
 
@@ -74,6 +75,18 @@ export default async function ScanDetailPage({ params, searchParams }: { params:
           {!lead.unlockedAt && <UnlockButton id={lead.id} />}
         </div>
       </div>
+
+      {lead.token && (
+        <div className={card} data-testid="report-share-card">
+          <h2 className="font-syne text-base font-bold text-[var(--a-ink)]">Full report: download and share</h2>
+          <p className="mt-1 font-dm text-sm text-[var(--a-ink-3)]">
+            {lead.unlockedAt
+              ? "The PDF and the link show the full report."
+              : "The PDF is the full report. The link shows only the free view until the scan is unlocked; sharing unlocks it."}
+          </p>
+          <ShareReport id={lead.id} token={lead.token} domain={lead.domain ?? lead.url} unlocked={!!lead.unlockedAt} />
+        </div>
+      )}
 
       <div className={card} data-testid="scan-origin">
         <h2 className="font-syne text-base font-bold text-[var(--a-ink)]">Where it was scanned</h2>

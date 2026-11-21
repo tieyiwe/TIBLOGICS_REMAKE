@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import { secretEquals } from "@/lib/require-admin";
 import { ensureScannerColumns } from "@/lib/scanner/db";
 import { finishReport, pendingReports } from "@/lib/scanner/report";
-import { sendFollowup } from "@/lib/scanner/email";
+import { resendPendingReports, sendFollowup } from "@/lib/scanner/email";
 import { pruneAnalytics } from "@/lib/analytics/db";
 import { pruneRateLimits } from "@/lib/rate-limit";
 
@@ -14,6 +14,8 @@ import { pruneRateLimits } from "@/lib/rate-limit";
 //      ideas and the offer). Each is claimed before it is sent, so a run that
 //      overlaps another sends once. Unsubscribed addresses are skipped.
 //   2. Paid or call-unlocked reports whose writing did not finish (up to 3 tries).
+//   2b. Report emails that did not go out (mail server refused or timed out):
+//       retried up to 4 times over 2 days, then the owner is told.
 //   3. Retention: scan-log and click rows older than 400 days are deleted
 //      (lib/analytics/db.ts).
 
@@ -57,6 +59,10 @@ export async function GET(req: NextRequest) {
     const o = await finishReport(id).catch(() => "failed" as const);
     reports[o] = (reports[o] ?? 0) + 1;
   }
+  const reportEmails = await resendPendingReports(20).catch((err) => {
+    console.error("[cron/scanner] report emails", err instanceof Error ? err.message : err);
+    return null;
+  });
   const pruned = await pruneAnalytics().catch((err) => {
     console.error("[cron/scanner] prune analytics", err instanceof Error ? err.message : err);
     return null;
@@ -64,5 +70,5 @@ export async function GET(req: NextRequest) {
   // Expired rate-limit counters (about three rows per visitor address, which
   // nothing else removes).
   const rateLimits = await pruneRateLimits();
-  return NextResponse.json({ followups: { due: due.length, sent, skipped }, reports, pruned, rateLimits });
+  return NextResponse.json({ followups: { due: due.length, sent, skipped }, reports, reportEmails, pruned, rateLimits });
 }

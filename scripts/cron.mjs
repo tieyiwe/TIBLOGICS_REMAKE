@@ -83,7 +83,7 @@ const JOBS = {
   recaps: { path: "/api/cron/recaps", suggested: "daily" },
   // Website scanner: day-3 and day-7 follow-up emails to visitors who left
   // their email, and paid reports whose writing did not finish. Idempotent.
-  scanner: { path: "/api/cron/scanner", suggested: "daily" },
+  scanner: { path: "/api/cron/scanner", suggested: "hourly" },
   // Tilo Vision Scholarship: offer reminders, track-choice and completion
   // reminders, monthly progress and the completion congratulations. Each sent
   // once per scholarship. Also the monthly impact report to each sponsor

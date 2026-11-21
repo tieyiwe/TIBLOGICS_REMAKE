@@ -103,8 +103,12 @@ export interface ReportView {
   price: string | null;
   priceCents: number | null;
   hasEmail: boolean;
-  /** The results were emailed (email level): the page shows a notice instead of the list. */
+  /** The report was emailed (email level): the page says so. */
   emailed: boolean;
+  /** Email level, but the email has not gone yet (slow or refused; the scanner job retries). */
+  emailPending: boolean;
+  /** Email level, but the address unsubscribed from our emails: it will not be sent. */
+  emailBlocked: boolean;
   security: SecuritySummary | null;
 }
 
@@ -150,6 +154,8 @@ function toView(t: T, locale: Locale, f: AnyFinding): ViewFinding {
   const severity = severityOf(f);
   return { check: f.check, area: f.area, type: f.type, text: findingText(t, locale, f), ...(service ? { service } : {}), ...(severity ? { severity } : {}) };
 }
+
+const mailSuppressed = (extra: unknown) => (extra as { mail?: { suppressed?: boolean } } | null)?.mail?.suppressed === true;
 
 export function levelOf(lead: Pick<ScannerLead, "unlockedAt" | "email">, staff = false): Level {
   if (lead.unlockedAt || staff) return "full";
@@ -215,7 +221,11 @@ export async function buildView(lead: ScannerLead, t: T, locale: Locale, opts: {
     price: price ? formatMoney(price, locale) : null,
     priceCents: price,
     hasEmail: !!lead.email,
-    emailed: level === "email",
+    // Sent (emailedAt), or on its way: the send failed or is slow and the
+    // scanner job retries it. A visitor who unlocked has the full report.
+    emailed: level === "email" && !!lead.emailedAt,
+    emailPending: level === "email" && !lead.emailedAt && !mailSuppressed(lead.extra),
+    emailBlocked: level === "email" && !lead.emailedAt && mailSuppressed(lead.extra),
     security,
   };
   if (held) {

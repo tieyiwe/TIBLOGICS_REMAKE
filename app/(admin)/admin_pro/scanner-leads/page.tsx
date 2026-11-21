@@ -4,7 +4,8 @@ import MetricCard from "@/components/admin/MetricCard";
 import { requireAdminPage } from "../_lib/admin-page-auth";
 import { getScannerLeads } from "@/lib/admin/metrics";
 import { formatMoney } from "@/lib/blueprint/config";
-import UnlockButton from "./UnlockButton";
+import ShareReport from "./ShareReport";
+import MailCheck from "./MailCheck";
 
 // Per-request and session-scoped: never cached or prerendered.
 export const dynamic = "force-dynamic";
@@ -68,6 +69,8 @@ export default async function ScannerLeadsPage() {
           <Link href="/admin_pro/scanner-leads/scan-log" className="-mb-px inline-flex h-10 items-center border-b-2 border-transparent px-3 font-dm text-[13.5px] font-semibold text-[var(--a-ink-3)] hover:text-[var(--a-ink)]" data-testid="scan-log-tab">Scan log</Link>
         </nav>
       </div>
+
+      <MailCheck />
 
       {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
@@ -157,7 +160,12 @@ export default async function ScannerLeadsPage() {
                         </span>
                         <p className="font-dm text-xs text-[var(--a-ink-3)] mt-1">{lead.email}</p>
                         <p className="font-dm text-[11px] text-[var(--a-ink-3)]">
-                          {lead.emailedAt ? "Results sent" : "Not emailed"} · follow-ups {lead.followupStage}/2
+                          {(() => {
+                            const mail = (lead.extra as { mail?: { attempts?: number; error?: string } } | null)?.mail;
+                            if (lead.emailedAt) return "Report emailed";
+                            if (mail?.attempts) return <span className="text-red-600" title={mail.error}>Email failed ({mail.attempts}×), retrying</span>;
+                            return "Not emailed yet";
+                          })()} · follow-ups {lead.followupStage}/2
                           {lead.growthLeadId ? (
                             <> · <Link href={`/admin_pro/growth/leads?open=${lead.growthLeadId}`} className="text-[var(--a-blue)] hover:underline">Growth lead</Link></>
                           ) : null}
@@ -202,7 +210,9 @@ export default async function ScannerLeadsPage() {
                     ) : (
                       <span className="block text-xs font-dm text-[var(--a-ink-3)] whitespace-nowrap">Saved before reports</span>
                     )}
-                    {lead.token && !lead.unlockedAt && <UnlockButton id={lead.id} />}
+                    {lead.token && (
+                      <ShareReport id={lead.id} token={lead.token} domain={lead.domain ?? lead.url} unlocked={!!lead.unlockedAt} compact />
+                    )}
                   </td>
                 </tr>
               ))}

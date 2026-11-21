@@ -74,8 +74,47 @@ function footerFor(l: ScannerLead, t: ReturnType<typeof translatorFor>): string 
   return `${esc(t("tools.sr.mail.why", { domain: l.domain ?? "" }))}<br><a href="${esc(unsubscribeUrl(l.email!))}" style="color:#7A8FA6;">${esc(t("tools.sr.mail.unsubscribe"))}</a>`;
 }
 
-async function send(to: string, subject: string, html: string, attachments?: Array<{ filename: string; content: Buffer; contentType: string }>) {
-  await mailTransport().sendMail({ from: MAIL_FROM, to, subject, html, ...(attachments ? { attachments } : {}) });
+type Attachment = { filename: string; content: Buffer; contentType: string };
+
+/** Plain text from the HTML, for the text/plain part (clients that block HTML, and spam filters). */
+function htmlToText(html: string): string {
+  return html
+    .replace(/<(br|\/p|\/h[1-6]|\/tr|\/li|\/div)[^>]*>/gi, "\n")
+    .replace(/<a [^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, (_m, href: string, label: string) => `${label.replace(/<[^>]+>/g, "").trim()}: ${href.replace(/&amp;/g, "&")}`)
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/** Where visitors' replies go: a person reads it. */
+const REPLY_TO = process.env.SCANNER_REPLY_TO || process.env.ADMIN_NOTIFY_EMAIL || undefined;
+
+/**
+ * Every scanner email goes through here. Visitor emails (`visitor` given)
+ * carry what the big mailbox providers check before they deliver a message
+ * to the inbox: a plain-text part, Reply-To a monitored address, and
+ * List-Unsubscribe with one-click unsubscribe (RFC 8058; the endpoint takes
+ * the POST, app/api/outreach/unsubscribe).
+ */
+async function send(to: string, subject: string, html: string, attachments?: Attachment[], opts: { visitor?: boolean; text?: string } = {}) {
+  const unsub = opts.visitor ? unsubscribeUrl(to) : null;
+  await mailTransport().sendMail({
+    from: MAIL_FROM,
+    to,
+    subject,
+    html,
+    text: opts.text ?? htmlToText(html),
+    ...(REPLY_TO ? { replyTo: REPLY_TO } : {}),
+    ...(unsub ? { headers: { "List-Unsubscribe": `<${unsub}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } } : {}),
+    ...(attachments ? { attachments } : {}),
+  });
 }
 
 function priceText(locale: Locale): string {
@@ -84,104 +123,186 @@ function priceText(locale: Locale): string {
 }
 
 /**
- * The results email, sent when the visitor leaves their email. This is where
- * the details live (the page only says they were emailed): the scores, the
- * security grade, every problem with a signed "Fix this for me" link back to
- * the service request form (lib/scanner/fix-link.ts), and the critical and
- * high security issues counted but kept for the full report.
+ * The report email, sent when the visitor leaves their email: the same report
+ * they saw on the page, built from the same view (lib/scanner/view.ts
+ * buildView at the "email" level), so the two never disagree. Scores by area,
+ * the security grade with the critical and high issues counted but kept for
+ * the full report, the biggest problems with a "Fix this for me" link each,
+ * and how many more there are. Then the ways to get help: have it fixed, a
+ * free consultation, a question by reply, or the full report.
  *
- * HTML, not a PDF: it reads on a phone, every problem is one tap from a
- * prefilled request, and the paid report already comes as a PDF. A plain-text
- * part goes with it for clients that block HTML.
+ * Sent while the visitor waits (the email route awaits it), so the page only
+ * says "emailed" once it has gone. A failure is recorded on the scan
+ * (extra.mail) and the scanner cron job tries again (resendPendingReports).
  */
-export async function sendScanReportEmail(id: string): Promise<void> {
+export async function sendScanReportEmail(id: string): Promise<"sent" | "skipped" | "failed"> {
   const l = await prisma.scannerLead.findUnique({ where: { id } });
-  if (!l?.email || !l.token || l.emailedAt) return;
+  if (!l?.email || !l.token || l.emailedAt) return "skipped";
   // A held scan (bought over the free limit, not paid yet) shows nothing until
   // paid; emailing its scores and problems would hand out the scan for free.
-  if (isHeld(l)) return;
+  if (isHeld(l)) return "skipped";
+  if (await isSuppressed(l.email)) {
+    // The address unsubscribed from TIBLOGICS emails: never sent, and the
+    // page says so (view.ts emailBlocked) rather than "on its way".
+    await prisma.$executeRawUnsafe(
+      `UPDATE "ScannerLead" SET "extra" = jsonb_set(COALESCE("extra", '{}'::jsonb), '{mail}', '{"suppressed":true}'::jsonb) WHERE "id" = $1`,
+      id,
+    ).catch(() => {});
+    return "skipped";
+  }
+  const { subject, html } = await reportEmail(l);
+  try {
+    await send(l.email, subject, html, undefined, { visitor: true });
+  } catch (err) {
+    const msg = (err instanceof Error ? err.message : String(err)).slice(0, 300);
+    console.error("[scanner] report email", id, msg);
+    await prisma.$executeRawUnsafe(
+      `UPDATE "ScannerLead" SET "extra" = jsonb_set(COALESCE("extra", '{}'::jsonb), '{mail}',
+         jsonb_build_object('attempts', COALESCE(("extra"->'mail'->>'attempts')::int, 0) + 1, 'error', $2::text, 'at', to_jsonb(NOW())))
+       WHERE "id" = $1`,
+      id,
+      msg,
+    ).catch(() => {});
+    return "failed";
+  }
+  await prisma.$executeRawUnsafe(
+    `UPDATE "ScannerLead" SET "emailedAt" = NOW(), "extra" = COALESCE("extra", '{}'::jsonb) - 'mail' WHERE "id" = $1`,
+    id,
+  );
+  return "sent";
+}
+
+/**
+ * Staff: what a visitor gets, sent to the staff member (the email delivery
+ * check). Uses a real scan; marked as a sample in the subject.
+ */
+export async function sendSampleReport(id: string, to: string): Promise<void> {
+  const l = await prisma.scannerLead.findUnique({ where: { id } });
+  if (!l?.token) throw new Error("No scan to use as a sample");
+  const { subject, html } = await reportEmail({ ...l, email: to, unlockedAt: null });
+  await send(to, `[Sample] ${subject}`, html, undefined, { visitor: true });
+}
+
+/** The visitor's report email for a scan, as the page shows it at the email level. */
+async function reportEmail(l: ScannerLead): Promise<{ subject: string; html: string }> {
   const locale = localeOf(l);
   const t = translatorFor(locale);
-  const token = l.token;
-  const problems = allFindings(l).filter((f) => f.type !== "good");
-  const security = problems.filter((f) => f.area === "security");
-  const site = problems.filter((f) => f.area !== "security");
-  const extra = readExtra(l.extra, l.url);
+  const token = l.token!;
   const domain = l.domain ?? l.url;
   const price = priceText(locale);
-
-  const counts = Object.fromEntries(SEVERITIES.map((s) => [s, 0])) as Record<Severity, number>;
-  for (const f of security) counts[severityOf(f) ?? "low"]++;
-  const grade = extra ? securityGrade(extra.securityScore, counts) : null;
-  const bySev = (f: (typeof security)[number]) => SEVERITIES.indexOf(severityOf(f) ?? "low");
-  const secSorted = [...security].sort((a, b) => bySev(a) - bySev(b));
-  const locked = secSorted.filter((f) => isLockedSeverity(severityOf(f)));
-  const open = secSorted.filter((f) => !isLockedSeverity(severityOf(f)));
+  const { buildView } = await import("./view");
+  const v = await buildView(l, t, locale);
+  const nf = new Intl.NumberFormat(locale);
 
   const SEV_COLOR: Record<Severity, string> = { critical: "#B42318", high: "#DC6803", medium: "#B54708", low: "#475467" };
   const chip = (s: Severity) =>
     `<span style="display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:${SEV_COLOR[s]};border-radius:6px;padding:2px 7px;margin-right:6px;">${esc(t(`tools.sr.sev.${s}`))}</span>`;
   const fixLink = (check: string) => `<a href="${esc(fixUrl(token, check))}" style="color:#E06D12;font-weight:700;text-decoration:none;white-space:nowrap;">${esc(t("tools.sr.mail.r.fixThis"))}</a>`;
   const item = (inner: string) => `<tr><td style="padding:10px 0;border-bottom:1px solid #eef2f7;font-size:14px;color:#3A4A5C;line-height:1.5;">${inner}</td></tr>`;
-  const heading = (txt: string) => `<h2 style="font-size:17px;color:#0D1B2A;margin:22px 0 6px;">${txt}</h2>`;
-  const gradeColor = grade === "A" || grade === "B" ? "#16a34a" : grade === "C" ? "#F47C20" : "#dc2626";
+  const table = (rows: string[]) => `<table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 10px;">${rows.join("")}</table>`;
+  const heading = (txt: string) => `<h2 style="font-size:17px;color:#0D1B2A;margin:22px 0 6px;">${esc(txt)}</h2>`;
+  const sec = v.security;
+  const gradeColor = sec ? (sec.grade === "A" || sec.grade === "B" ? "#16a34a" : sec.grade === "C" ? "#F47C20" : "#dc2626") : "#0D1B2A";
+  const hidden = Math.max(0, v.problemsTotal - v.top.length);
 
-  const securityBlock = extra
-    ? heading(esc(t("tools.sr.mail.r.sec", { grade: "\u0000" })).replace("\u0000", `<span style="color:${gradeColor};">${esc(grade ?? "")}</span>`)) +
-      p(esc(t("tools.sr.mail.r.secCounts", { critical: counts.critical, high: counts.high, medium: counts.medium, low: counts.low }))) +
-      (security.length === 0
+  const securityBlock = sec
+    ? heading(t("tools.sr.mail.r.sec", { grade: "\u0000" })).replace("\u0000", `<span style="color:${gradeColor};">${esc(sec.grade)}</span>`) +
+      p(esc(t("tools.sr.mail.r.secCounts", { critical: sec.counts.critical, high: sec.counts.high, medium: sec.counts.medium, low: sec.counts.low }))) +
+      (sec.locked.length + sec.shown.length === 0
         ? p(esc(t("tools.sr.sec.none")))
-        : `<table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 10px;">${[
-            ...locked.map((f) => item(`${chip(severityOf(f)!)}🔒 ${esc(t(`tools.sr.sec.lockedItem.${severityOf(f)}`))}`)),
-            ...open.map((f) => item(`${chip(severityOf(f)!)}${esc(findingText(t, locale, f))}<br>${fixLink(f.check)}`)),
-          ].join("")}</table>`) +
-      (locked.length ? p(esc(t("tools.sr.mail.r.secLocked", { price }))) + button(reportUrl(l), t("tools.sr.mail.r.unlockBtn", { price })) : "") +
-      (security.length ? button(fixUrl(token, "security"), t("tools.sr.mail.r.fixSecurity"), !!locked.length) : "")
+        : table([
+            ...sec.locked.map((s) => item(`${chip(s)}🔒 ${esc(t(`tools.sr.sec.lockedItem.${s}`))}`)),
+            ...sec.shown.map((f) => item(`${f.severity ? chip(f.severity) : ""}${esc(f.text)}<br>${fixLink(f.check)}`)),
+          ]))
     : "";
 
-  const siteBlock = site.length
-    ? heading(esc(t("tools.sr.mail.r.site"))) +
-      `<table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 10px;">${site
-        .slice(0, 15)
-        .map((f) => item(`${esc(findingText(t, locale, f))}<br>${fixLink(f.check)}`))
-        .join("")}</table>`
-    : "";
+  const topBlock =
+    heading(t("tools.sr.top")) +
+    (v.top.length === 0
+      ? p(esc(t("tools.sr.noProblems")))
+      : table(v.top.map((f) => item(`<span style="font-size:11px;font-weight:700;text-transform:uppercase;color:#7A8FA6;">${esc(t(`tools.sr.area.${f.area}`))}</span><br>${esc(f.text)}<br>${fixLink(f.check)}`))) +
+        (hidden > 0 ? p(`<em>${esc(t("tools.sr.mail.s.more", { n: nf.format(hidden) }))}</em>`) : ""));
+
+  const option = (title: string, body: string, href: string | null, label: string | null, primary = false) =>
+    `<tr><td style="padding:14px 16px;border:1px solid ${primary ? "#F47C20" : "#E4EAF2"};border-radius:12px;background:${primary ? "#FFF6EE" : "#fff"};">
+      <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:#0D1B2A;">${esc(title)}</p>
+      <p style="margin:0 0 ${href ? "10px" : "0"};font-size:13px;color:#3A4A5C;line-height:1.55;">${esc(body)}</p>
+      ${href && label ? `<a href="${esc(href)}" style="display:inline-block;background:${primary ? "#F47C20" : "#1B3A6B"};color:#fff;font-weight:700;font-size:13px;text-decoration:none;padding:9px 16px;border-radius:8px;">${esc(label)}</a>` : ""}
+    </td></tr><tr><td style="height:10px;"></td></tr>`;
+  const helpBlock =
+    heading(t("tools.sr.mail.s.helpTitle")) +
+    p(esc(t("tools.sr.mail.s.helpBody"))) +
+    `<table role="presentation" style="width:100%;border-collapse:separate;margin:4px 0 6px;">` +
+    option(t("tools.sr.mail.s.fixTitle"), t("tools.sr.mail.s.fixBody"), fixUrl(token, "all"), t("tools.sr.mail.s.fixBtn"), true) +
+    option(t("tools.sr.mail.s.callTitle"), t("tools.sr.mail.s.callBody"), bookUrl(l), t("tools.sr.mail.s.callBtn")) +
+    option(t("tools.sr.mail.s.replyTitle"), t("tools.sr.mail.s.replyBody"), null, null) +
+    (price ? option(t("tools.sr.mail.s.reportTitle"), t("tools.sr.mail.s.reportBody", { price, n: nf.format(v.problemsTotal) }), reportUrl(l), t("tools.sr.mail.r.unlockBtn", { price })) : "") +
+    `</table>`;
 
   const html = frame(
-    esc(t("tools.sr.mail.r.title", { domain })),
-    p(esc(t("tools.sr.mail.r.intro", { domain, score: l.overallScore, n: problems.length }))) +
+    esc(t("tools.sr.mail.s.title", { domain })),
+    p(esc(t("tools.sr.mail.s.intro", { domain, score: v.scores.overall ?? l.overallScore }))) +
       scoreTable(l, t) +
       securityBlock +
-      siteBlock +
-      heading(esc(t("tools.sr.mail.r.fixAll"))) +
-      p(esc(t("tools.sr.mail.r.next"))) +
-      button(fixUrl(token, "all"), t("tools.sr.mail.r.fixAll")) +
-      button(bookUrl(l), t("tools.sr.mail.book"), true) +
-      p(esc(t("tools.sr.mail.r.unlock", { n: extra?.opportunities.length ?? 0, price }))) +
-      button(reportUrl(l), t("tools.sr.mail.open"), true),
+      topBlock +
+      helpBlock +
+      p(`<a href="${esc(reportUrl(l))}" style="color:#1B3A6B;font-weight:700;">${esc(t("tools.sr.mail.s.view"))}</a>`),
     footerFor(l, t),
   );
 
-  const text = [
-    t("tools.sr.mail.r.title", { domain }),
-    "",
-    t("tools.sr.mail.r.intro", { domain, score: l.overallScore, n: problems.length }),
-    ...(extra ? ["", t("tools.sr.mail.r.sec", { grade: grade ?? "" }), t("tools.sr.mail.r.secCounts", { critical: counts.critical, high: counts.high, medium: counts.medium, low: counts.low })] : []),
-    ...locked.map((f) => `- [${t(`tools.sr.sev.${severityOf(f)}`)}] ${t(`tools.sr.sec.lockedItem.${severityOf(f)}`)}`),
-    ...open.map((f) => `- [${t(`tools.sr.sev.${severityOf(f)}`)}] ${findingText(t, locale, f)}\n  ${t("tools.sr.mail.r.fixThis")} ${fixUrl(token, f.check)}`),
-    ...(site.length ? ["", t("tools.sr.mail.r.site")] : []),
-    ...site.slice(0, 15).map((f) => `- ${findingText(t, locale, f)}\n  ${t("tools.sr.mail.r.fixThis")} ${fixUrl(token, f.check)}`),
-    "",
-    `${t("tools.sr.mail.r.fixAll")}: ${fixUrl(token, "all")}`,
-    `${t("tools.sr.mail.book")}: ${bookUrl(l)}`,
-    `${t("tools.sr.mail.open")}: ${reportUrl(l)}`,
-  ].join("\n");
-
-  const subject = counts.critical + counts.high > 0
-    ? t("tools.sr.mail.r.subjectSec", { domain, score: l.overallScore, n: counts.critical + counts.high })
+  const serious = sec ? sec.counts.critical + sec.counts.high : 0;
+  const subject = serious > 0
+    ? t("tools.sr.mail.r.subjectSec", { domain, score: l.overallScore, n: serious })
     : t("tools.sr.mail.r.subject", { domain, score: l.overallScore });
-  await mailTransport().sendMail({ from: MAIL_FROM, to: l.email, subject, html, text });
-  await prisma.scannerLead.update({ where: { id }, data: { emailedAt: new Date() } });
+  return { subject, html };
+}
+
+/** Report emails that did not go out (Titan refused or timed out): try again, up to 4 times in 2 days. */
+export async function resendPendingReports(limit = 20): Promise<{ sent: number; failed: number; gaveUp: number }> {
+  const rows = await prisma.$queryRawUnsafe<Array<{ id: string; attempts: number }>>(
+    `SELECT "id", COALESCE(("extra"->'mail'->>'attempts')::int, 0) AS attempts FROM "ScannerLead"
+     WHERE "email" IS NOT NULL AND "consentAt" IS NOT NULL AND "emailedAt" IS NULL
+       AND "createdAt" > NOW() - INTERVAL '2 days'
+       AND COALESCE(("extra"->'mail'->>'attempts')::int, 0) <= 3
+       AND COALESCE(("extra"->'mail'->>'suppressed')::boolean, false) = false
+       -- Not one the email route is still sending (it waits up to 20 seconds).
+       AND "consentAt" < NOW() - INTERVAL '5 minutes'
+     ORDER BY "createdAt" ASC LIMIT ${Math.max(1, Math.min(100, limit))}`,
+  );
+  let sent = 0;
+  let failed = 0;
+  let gaveUp = 0;
+  for (const r of rows) {
+    const o = await sendScanReportEmail(r.id).catch(() => "failed" as const);
+    if (o === "sent") sent++;
+    else if (o === "failed") {
+      failed++;
+      if (r.attempts + 1 >= 4) {
+        gaveUp++;
+        await alertUndelivered(r.id).catch(() => {});
+      }
+    }
+  }
+  return { sent, failed, gaveUp };
+}
+
+/** The owner hears about a visitor whose report could not be emailed after 4 tries. */
+async function alertUndelivered(id: string): Promise<void> {
+  const l = await prisma.scannerLead.findUnique({ where: { id } });
+  if (!l) return;
+  const err = (l.extra as { mail?: { error?: string } } | null)?.mail?.error ?? "unknown error";
+  await send(
+    adminNotifyEmail(),
+    `Scanner report NOT delivered to ${l.email ?? "?"} (${l.domain ?? l.url})`,
+    frame(
+      "A scanner report email could not be sent",
+      p(`The report for <strong>${esc(l.domain ?? l.url)}</strong> could not be emailed to <strong>${esc(l.email ?? "")}</strong> after 4 tries.`) +
+        p(`Last error: <code>${esc(err)}</code>`) +
+        p("Check the mail settings (Admin → Scanner Leads → Check email delivery), then contact the visitor yourself.") +
+        button(`${SITE}/admin_pro/scanner-leads/${l.id}`, "Open the scan"),
+      "Sent to ADMIN_NOTIFY_EMAIL by the website scanner.",
+    ),
+  );
 }
 
 const WHY_AREA: Record<Area, string> = {
@@ -218,7 +339,7 @@ export async function sendFollowup(l: ScannerLead, stage: 1 | 2): Promise<boolea
         button(bookUrl(l), t("tools.sr.mail.book"), true),
       footerFor(l, t),
     );
-    await send(l.email, t("tools.sr.mail.f1.subject", { domain }), html);
+    await send(l.email, t("tools.sr.mail.f1.subject", { domain }), html, undefined, { visitor: true });
     return true;
   }
   const ideas = extra?.opportunities ?? [];
@@ -234,7 +355,7 @@ export async function sendFollowup(l: ScannerLead, stage: 1 | 2): Promise<boolea
       button(reportUrl(l), t("tools.sr.mail.f2.unlock", { price: priceText(locale) }), true),
     footerFor(l, t),
   );
-  await send(l.email, t("tools.sr.mail.f2.subject", { n: ideas.length, domain }), html);
+  await send(l.email, t("tools.sr.mail.f2.subject", { n: ideas.length, domain }), html, undefined, { visitor: true });
   return true;
 }
 

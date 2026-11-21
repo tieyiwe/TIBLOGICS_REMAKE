@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle, ArrowRight, CalendarCheck, Check, CheckCircle2, Copy, Download, FileText, Gauge, Lightbulb,
-  Loader2, Lock, RefreshCw, Rocket, ScanSearch, Shield, Sparkles, Users, Wrench, XCircle, Zap,
+  Loader2, Lock, Mail, RefreshCw, Rocket, ScanSearch, Shield, Sparkles, Users, Wrench, XCircle, Zap,
 } from "lucide-react";
 import { useLocale, useT } from "@/lib/i18n/client";
 import type { Area, ReportView as View, SecuritySummary, ViewFinding } from "@/lib/scanner/view";
@@ -382,6 +382,24 @@ export default function ReportView({ initial, paidReturn = false, canceled = fal
               <div>
                 <p className="font-syne text-base font-bold text-green-900">{t("tools.sr.emailed.title")}</p>
                 <p className="mt-0.5 font-dm text-sm text-green-900/80">{t("tools.sr.emailed.body")}</p>
+              </div>
+            </div>
+          )}
+          {v.emailBlocked && (
+            <div className="mt-4 flex items-start gap-3 rounded-xl border border-[#D2DCE8] bg-[#F4F7FB] p-4" role="status" data-testid="email-blocked">
+              <Mail size={18} className="mt-0.5 shrink-0 text-[#1B3A6B]" aria-hidden />
+              <div>
+                <p className="font-syne text-base font-bold text-[#0D1B2A]">{t("tools.sr.emailBlocked.title")}</p>
+                <p className="mt-0.5 font-dm text-sm text-[#3A4A5C]">{t("tools.sr.emailBlocked.body")}</p>
+              </div>
+            </div>
+          )}
+          {v.emailPending && (
+            <div className="mt-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4" role="status" data-testid="email-pending">
+              <Loader2 size={18} className="mt-0.5 shrink-0 text-amber-700" aria-hidden />
+              <div>
+                <p className="font-syne text-base font-bold text-amber-900">{t("tools.sr.emailPending.title")}</p>
+                <p className="mt-0.5 font-dm text-sm text-amber-900/80">{t("tools.sr.emailPending.body")}</p>
               </div>
             </div>
           )}
