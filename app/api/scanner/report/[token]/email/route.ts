@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
@@ -32,7 +33,7 @@ const Body = z.object({
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const locale = await getLocale();
   const t = translatorFor(locale);
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`scanner-email:${ip}`, 10, 3_600_000))) {
     return NextResponse.json({ error: t("tools.api.rateLimit") }, { status: 429 });
   }
@@ -42,6 +43,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
 
   const lead = await leadByToken((await params).token);
   if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  // Per recipient as well as per address: the report goes to whatever email
+  // is typed, so cap how many reports one inbox can be sent in a day.
+  if (!lead.email && !(await checkRateLimit(`scanner-email-to:${email}`, 3, 86_400_000))) {
+    return NextResponse.json({ error: t("tools.api.rateLimit") }, { status: 429 });
+  }
 
   const now = new Date();
   const taken = await prisma.scannerLead.updateMany({

@@ -1,3 +1,4 @@
+import { sanitizeTranslatedHtml } from "@/lib/i18n/sanitize-html";
 import { setFeaturedPin } from "@/lib/blog/featured";
 import { translateArticleSoon } from "@/lib/i18n/sources/blog";
 import { NextRequest, NextResponse } from "next/server";
@@ -112,7 +113,10 @@ export async function POST(req: NextRequest) {
         slug,
         title: body.title,
         excerpt: body.excerpt,
-        content: body.content,
+        // Staff-written HTML: scripts, event handlers and javascript: links
+        // removed (a team member with blog access must not be able to run code
+        // in the owner's browser). Article markup is kept.
+        content: sanitizeTranslatedHtml(String(body.content)),
         category,
         tags: body.tags ?? [],
         coverEmoji: body.coverEmoji ?? "🤖",

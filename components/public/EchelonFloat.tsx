@@ -153,14 +153,21 @@ export default function EchelonFloat() {
   // Generate or restore a persistent session ID for this browser session
   useEffect(() => {
     if (isAdmin) return;
+    // Long and random (crypto), so nobody can guess another visitor's id and
+    // read their transcript (app/api/sessions/chat). Older short ids are replaced.
+    const fresh = () => {
+      const bytes = new Uint8Array(24);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes, (x) => x.toString(16).padStart(2, "0")).join("");
+    };
     try {
       let sid = sessionStorage.getItem("tibo_session_id");
-      if (!sid) {
-        sid = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      if (!sid || !/^[A-Za-z0-9_-]{24,64}$/.test(sid)) {
+        sid = fresh();
         sessionStorage.setItem("tibo_session_id", sid);
       }
       sessionIdRef.current = sid;
-    } catch { sessionIdRef.current = `${Date.now()}`; }
+    } catch { sessionIdRef.current = fresh(); }
   }, [isAdmin]);
 
   useEffect(() => {

@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextResponse } from "next/server";
 import { boundedObject } from "@/lib/validate/json";
 import prisma from "@/lib/prisma";
@@ -7,7 +8,7 @@ import { checkRateLimit } from "@/lib/require-admin";
 // already caps its fields — this one passed the request through untouched, so
 // any caller could fill the table with rows of arbitrary size.
 export async function POST(req: Request) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`tool-usage:${ip}`, 60, 60_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }

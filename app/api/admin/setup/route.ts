@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
@@ -28,7 +29,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`admin-setup:${ip}`, 5, 3_600_000))) {
     return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
   }
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
 // triggered again on the next visit to /admin_pro/login.
 // Requires either the current password or the RESET_TOKEN env var.
 export async function DELETE(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`admin-setup-delete:${ip}`, 5, 3_600_000))) {
     return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
   }

@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
@@ -9,7 +10,7 @@ import { audit } from "@/lib/admin/audit";
 // No session required — this is the locked-out recovery path.
 // Caller must supply the ADMIN_PASSWORD env var value as proof of ownership.
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`admin-recover:${ip}`, 5, 3_600_000))) {
     return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
   }

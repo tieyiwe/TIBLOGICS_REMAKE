@@ -66,6 +66,7 @@ export type AiTask =
   | "youth-explain"
   | "game-forge"
   | "scanner-report"
+  | "cyber-fix"
   // Sonnet
   | "code-assist"
   | "grade-code"
@@ -162,6 +163,8 @@ export const ROUTES: Record<AiTask, Route> = {
   "review-draft": { tier: "sonnet", maxTokens: 4000, thinking: "adaptive", effort: "medium" },
   "toolkit-write": { tier: "sonnet", maxTokens: 4000, thinking: "off", effort: "low" },
   "compliance-review": { tier: "sonnet", maxTokens: 4000, thinking: "adaptive", effort: "medium" },
+  // Admin cyber scanner: a fix for one finding, written for the client's stack.
+  "cyber-fix": { tier: "sonnet", maxTokens: 4000, thinking: "adaptive", effort: "medium" },
   article: { tier: "sonnet", maxTokens: 4000, thinking: "off", effort: "low" },
   "article-admin": { tier: "sonnet", maxTokens: 3000, thinking: "off", effort: "low" },
   "admin-chat": { tier: "sonnet", maxTokens: 2500, thinking: "off", effort: "low" },

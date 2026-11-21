@@ -66,6 +66,7 @@ export default async function ScannerLeadsPage() {
         <nav aria-label="Sections" className="mt-4 flex gap-1 border-b border-[var(--a-border)]">
           <span aria-current="page" className="-mb-px inline-flex h-10 items-center border-b-2 border-[var(--a-orange)] px-3 font-dm text-[13.5px] font-semibold text-[var(--a-ink)]">Leads</span>
           <Link href="/admin_pro/scanner-leads/new" className="-mb-px inline-flex h-10 items-center border-b-2 border-transparent px-3 font-dm text-[13.5px] font-semibold text-[var(--a-ink-3)] hover:text-[var(--a-ink)]" data-testid="new-scan-tab">Scan a website</Link>
+          <Link href="/admin_pro/scanner-leads/cyber" className="-mb-px inline-flex h-10 items-center border-b-2 border-transparent px-3 font-dm text-[13.5px] font-semibold text-[var(--a-ink-3)] hover:text-[var(--a-ink)]" data-testid="cyber-tab">Cyber scan</Link>
           <Link href="/admin_pro/scanner-leads/scan-log" className="-mb-px inline-flex h-10 items-center border-b-2 border-transparent px-3 font-dm text-[13.5px] font-semibold text-[var(--a-ink-3)] hover:text-[var(--a-ink)]" data-testid="scan-log-tab">Scan log</Link>
         </nav>
       </div>

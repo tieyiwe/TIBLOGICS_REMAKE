@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -48,7 +49,7 @@ function logLimited(ip: string): boolean {
 export async function POST(req: NextRequest) {
   const locale = await getLocale();
   const t = translatorFor(locale);
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   // Every attempt goes to the scan log (lib/analytics/scan-log.ts), after the
   // response so it never slows the scan down.
   const headers = new Headers(req.headers);

@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 import { recommend } from "@/lib/recommendations-rules";
@@ -6,7 +7,7 @@ import { getLocale, translatorFor } from "@/lib/i18n/server";
 export async function POST(req: NextRequest) {
   const locale = await getLocale();
   const t = translatorFor(locale);
-  const ip = req.headers.get("x-forwarded-for") ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`recommendations:${ip}`, 30, 3_600_000))) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }

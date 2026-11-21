@@ -6,6 +6,7 @@
 // Privacy: IPv4 /24 or IPv6 /48 only, a device summary (type, browser, OS)
 // instead of the raw user agent, an approximate country only when the host
 // sends a geo header. Writes never throw and never block the request.
+import { clientIp } from "@/lib/client-ip";
 import { randomUUID } from "crypto";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
@@ -26,7 +27,7 @@ function header(h: HeaderBag, name: string): string | null {
 }
 
 export function clientOf(h: HeaderBag) {
-  const ip = header(h, "x-forwarded-for") ?? header(h, "x-real-ip");
+  const ip = clientIp(h);
   const d = parseUserAgent(header(h, "user-agent"));
   return { ipPrefix: ipPrefix(ip), country: countryFrom(h), deviceType: d.deviceType, browser: d.browser, os: d.os };
 }

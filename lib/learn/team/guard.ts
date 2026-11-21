@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { requireStudent, type StudentSession } from "@/lib/learn/session";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -16,7 +17,7 @@ type Guarded =
 const fail = (error: NextResponse): Guarded => ({ error, student: null, m: null });
 
 export async function teamRateLimit(req: NextRequest, bucket: string, max = 30): Promise<NextResponse | null> {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (await checkRateLimit(`learn-team:${bucket}:${ip}`, max, 60_000)) return null;
   const t = await getT();
   return NextResponse.json({ error: t("team.api.tooMany") }, { status: 429 });

@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { ensureGrowthTables } from "@/lib/growth/db";
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ code
 
   const ua = req.headers.get("user-agent") ?? "";
   if (!isBot(ua)) {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? req.headers.get("x-real-ip") ?? "unknown";
+    const ip = clientIp(req.headers);
     try {
       // The click insert is idempotent per visitor and day; the cap only
       // keeps one address from hammering the database.

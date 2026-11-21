@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import type { NextRequest } from "next/server";
 import { getLocale, getT } from "@/lib/i18n/server";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -50,7 +51,7 @@ function gone(title: string, body: string, lang: string, status: number) {
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const [{ token }, t, locale] = await Promise.all([params, getT(), getLocale()]);
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`gf-play:${ip}`, 120, 600_000))) {
     return gone(t("studio.game-forge.play.busyTitle"), t("studio.game-forge.play.busyBody"), locale, 429);
   }

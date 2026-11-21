@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { agrInputSchema, dateMs, evaluateAgr } from "@/lib/agr/engine";
@@ -24,7 +25,7 @@ const BURST = 300; // requests per network per minute
 const hits = new Map<string, { n: number; reset: number }>();
 
 function limited(req: Request): boolean {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || req.headers.get("x-real-ip") || "unknown";
+  const ip = clientIp(req.headers);
   const now = Date.now();
   const h = hits.get(ip);
   if (!h || now > h.reset) {

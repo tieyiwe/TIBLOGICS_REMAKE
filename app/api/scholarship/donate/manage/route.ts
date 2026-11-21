@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import payments from "@/lib/payments";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -8,7 +9,7 @@ import { manageLinkValid } from "@/lib/learn/scholarship/donations";
 const SITE = (process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ?? "https://tiblogics.com").replace(/\/$/, "");
 
 export async function GET(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`scholarship-donate-manage:${ip}`, 20, 60_000))) return new NextResponse("Too many requests", { status: 429 });
   const c = req.nextUrl.searchParams.get("c") ?? "";
   const s = req.nextUrl.searchParams.get("s") ?? "";

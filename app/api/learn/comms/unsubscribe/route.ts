@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -13,7 +14,7 @@ const Body = z.object({ t: z.string().max(300), optOut: z.boolean() });
 export async function POST(req: NextRequest) {
   const csrf = csrfGuard(req);
   if (csrf) return csrf;
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`comms-unsub:${ip}`, 30, 3_600_000))) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
   const id = parsed.success ? readUnsubscribeToken(parsed.data.t) : null;

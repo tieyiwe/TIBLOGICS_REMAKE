@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
@@ -32,7 +33,7 @@ export const metadata: Metadata = {
 export default async function ParentPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const [t, locale, h] = await Promise.all([getT(), getLocale(), headers()]);
-  const ip = h.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(h);
   const allowed = await checkRateLimit(`parent-view:${ip}`, 60, 600_000);
   const child = allowed ? await parentFromToken(token) : null;
 

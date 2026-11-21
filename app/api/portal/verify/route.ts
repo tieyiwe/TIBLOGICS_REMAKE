@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -13,7 +14,7 @@ export async function POST(req: NextRequest) {
   const blocked = csrfGuard(req);
   if (blocked) return blocked;
   const t = await getT();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`portal-verify:${ip}`, 20, 600_000))) {
     return NextResponse.json({ error: t("learn.api.tooManyLater") }, { status: 429 });
   }

@@ -1,3 +1,4 @@
+import { csrfGuard } from "@/lib/learn/account-status/admin-auth";
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -7,6 +8,10 @@ import { audit } from "@/lib/admin/audit";
 // Owner-only endpoint — clears all transactional/test data before going live
 // Keeps: AdminSettings, Projects, ProjectTasks, BlogPosts, Collaborators, BlockedDates
 export async function POST(req: Request) {
+  // Destructive: same-origin JSON only, so a link or form on another site
+  // (or a script injected elsewhere) cannot trigger it with the owner's cookie.
+  const csrf = csrfGuard(req);
+  if (csrf) return csrf;
   const session = await getServerSession(authOptions);
   if (!session?.user?.isOwner) {
     return NextResponse.json({ error: "Unauthorized — owner only" }, { status: 403 });

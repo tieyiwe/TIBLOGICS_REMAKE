@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { getT } from "@/lib/i18n/server";
 import { prisma } from "@/lib/prisma";
@@ -6,7 +7,7 @@ import { recordTouch } from "@/lib/analytics/touch";
 
 export async function POST(req: NextRequest) {
   const t = await getT();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`partnerships:${ip}`, 3, 60_000))) {
     return NextResponse.json({ error: t("pages.api.tooMany") }, { status: 429 });
   }

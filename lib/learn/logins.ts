@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import prisma from "@/lib/prisma";
 import { anonymiseIp } from "@/lib/require-admin";
 
@@ -167,7 +168,7 @@ export async function recordLoginEvent(p: { studentId: string; headers: HeaderBa
     await ensureLoginEventTable();
     const h = p.headers;
     const ua = (header(h, "user-agent") ?? "").slice(0, 300) || null;
-    const ip = header(h, "x-forwarded-for") ?? header(h, "x-real-ip") ?? header(h, "cf-connecting-ip");
+    const ip = clientIp(h);
     const device = parseUserAgent(ua);
     const method: LoginMethod = p.method === "password" ? (methodFromReferer(header(h, "referer")) ?? "password") : p.method;
     await prisma.loginEvent.create({

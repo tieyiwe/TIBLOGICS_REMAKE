@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextResponse } from "next/server";
 import { isPastSlot } from "@/lib/booking/past-slot";
 import { getT } from "@/lib/i18n/server";
@@ -97,9 +98,7 @@ export async function POST(req: Request) {
     // data — and a /24 put a whole office network on one shared allowance,
     // where five bookings an hour would have colleagues blocking each other.
     const ip =
-      req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
-      req.headers.get("x-real-ip") ??
-      "unknown";
+      clientIp(req.headers);
     // With no forwarded header there is no caller to attribute to, and keying
     // on the literal "unknown" would put every visitor in one bucket — five
     // bookings and the site stops taking any. Fall back to the email instead,
@@ -446,7 +445,7 @@ async function sendBookingConfirmation(data: {
       <p style="color:rgba(255,255,255,0.65);margin:0;font-size:13px;">Meeting Confirmed ✓</p>
     </div>
     <div style="padding:36px 32px;">
-      <h2 style="color:#0D1B2A;font-size:22px;margin:0 0 10px;font-weight:700;">You're confirmed, ${data.firstName}! 🎉</h2>
+      <h2 style="color:#0D1B2A;font-size:22px;margin:0 0 10px;font-weight:700;">You're confirmed, ${safeFirst}! 🎉</h2>
       <p style="color:#3A4A5C;font-size:15px;line-height:1.7;margin:0 0 24px;">
         We're looking forward to speaking with you. Here are your session details.
       </p>

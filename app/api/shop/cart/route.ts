@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { getT } from "@/lib/i18n/server";
 import { Prisma } from "@prisma/client";
@@ -8,7 +9,7 @@ import { isValidEmail, checkRateLimit } from "@/lib/require-admin";
 // abandonment reminder later. Called when a shopper opts in from the drawer.
 export async function POST(req: NextRequest) {
   const t = await getT();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`shop-cart:${ip}`, 20, 60_000))) {
     return NextResponse.json({ error: t("pages.api.tooMany") }, { status: 429 });
   }

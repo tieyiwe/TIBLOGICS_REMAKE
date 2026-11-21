@@ -18,6 +18,7 @@ export default async function NewScanPage() {
         <nav aria-label="Sections" className="mt-4 flex gap-1 border-b border-[var(--a-border)]">
           <Link href="/admin_pro/scanner-leads" className="-mb-px inline-flex h-10 items-center border-b-2 border-transparent px-3 font-dm text-[13.5px] font-semibold text-[var(--a-ink-3)] hover:text-[var(--a-ink)]">Leads</Link>
           <span aria-current="page" className="-mb-px inline-flex h-10 items-center border-b-2 border-[var(--a-orange)] px-3 font-dm text-[13.5px] font-semibold text-[var(--a-ink)]">Scan a website</span>
+          <Link href="/admin_pro/scanner-leads/cyber" className="-mb-px inline-flex h-10 items-center border-b-2 border-transparent px-3 font-dm text-[13.5px] font-semibold text-[var(--a-ink-3)] hover:text-[var(--a-ink)]">Cyber scan</Link>
           <Link href="/admin_pro/scanner-leads/scan-log" className="-mb-px inline-flex h-10 items-center border-b-2 border-transparent px-3 font-dm text-[13.5px] font-semibold text-[var(--a-ink-3)] hover:text-[var(--a-ink)]">Scan log</Link>
         </nav>
       </div>

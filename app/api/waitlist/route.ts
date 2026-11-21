@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isValidEmail, requireAdmin, checkRateLimit } from "@/lib/require-admin";
@@ -5,7 +6,7 @@ import { getT } from "@/lib/i18n/server";
 
 export async function POST(req: NextRequest) {
   const t = await getT();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`waitlist:${ip}`, 5, 60_000))) {
     return NextResponse.json({ error: t("tools.api.rateLimit") }, { status: 429 });
   }

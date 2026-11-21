@@ -60,7 +60,7 @@ function detectCountry(req: NextRequest): string | null {
 
 export async function POST(req: NextRequest) {
   // Public heartbeat; a generous cap so it cannot be used to flood the table.
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? req.headers.get("x-real-ip") ?? "unknown";
+  const ip = clientIp(req.headers) ?? "unknown";
   if (!(await checkRateLimit(`analytics-track:${ip}`, ip === "unknown" ? 6000 : 600, 10 * 60_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
@@ -108,10 +108,7 @@ export async function POST(req: NextRequest) {
     }
 
     const ua = req.headers.get("user-agent") ?? "";
-    const rawIp =
-      req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
-      req.headers.get("x-real-ip") ??
-      "unknown";
+    const rawIp = clientIp(req.headers) ?? "unknown";
     // Anonymise to /24 block for GDPR compliance (no raw IPs stored)
     const ip = anonymiseIp(rawIp);
 

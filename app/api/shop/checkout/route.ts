@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { getT } from "@/lib/i18n/server";
 import { Prisma } from "@prisma/client";
@@ -19,7 +20,7 @@ function orderNumber() {
 
 export async function POST(req: NextRequest) {
   const t = await getT();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`shop-checkout:${ip}`, 10, 60_000))) {
     return NextResponse.json({ error: t("pages.api.tooMany") }, { status: 429 });
   }

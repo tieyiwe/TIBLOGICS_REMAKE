@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import type { Metadata } from "next";
 import Link from "next/link";
 import stripe from "@/lib/stripe";
@@ -19,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 // thanks the donor. The thank-you email goes once, whichever comes first.
 export default async function DonationThanksPage({ searchParams }: { searchParams: Promise<{ session_id?: string }> }) {
   const [{ session_id: id = "" }, t, locale] = await Promise.all([searchParams, getT(), getLocale()]);
-  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(await headers());
   let gift: { amountCents: number; frequency: "once" | "monthly"; name: string | null } | null = null;
   if (/^cs_[A-Za-z0-9_]{6,200}$/.test(id) && (await checkRateLimit(`donate-thanks:${ip}`, 30, 60_000))) {
     try {

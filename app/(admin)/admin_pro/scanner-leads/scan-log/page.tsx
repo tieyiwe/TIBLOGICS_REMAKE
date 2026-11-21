@@ -40,7 +40,7 @@ export default async function ScanLogPage({ searchParams }: { searchParams: Prom
         title="Scan log"
         breadcrumb={[{ label: "Scanner leads", href: "/admin_pro/scanner-leads" }, { label: "Scan log" }]}
         subtitle="Every website scan, including errors and free-limit hits: the site, the time (your time zone), the outcome, the visitor's approximate location from their IP, and their device. Addresses are stored anonymised."
-        tabs={[{ label: "Leads", href: "/admin_pro/scanner-leads" }, { label: "Scan a website", href: "/admin_pro/scanner-leads/new" }, { label: "Scan log", href: BASE }]}
+        tabs={[{ label: "Leads", href: "/admin_pro/scanner-leads" }, { label: "Scan a website", href: "/admin_pro/scanner-leads/new" }, { label: "Cyber scan", href: "/admin_pro/scanner-leads/cyber" }, { label: "Scan log", href: BASE }]}
         activeTab={BASE}
       />
 

@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getLocale } from "@/lib/i18n/server";
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   if (crossSite(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`calc-plan:${ip}`, 30, 3_600_000))) {
     return NextResponse.json({ error: "Too many attempts" }, { status: 429 });
   }

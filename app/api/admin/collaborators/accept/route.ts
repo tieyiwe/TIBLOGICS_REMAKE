@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { ZodError } from "zod";
@@ -13,7 +14,7 @@ export const dynamic = "force-dynamic";
 // the emailed single-use token (stored hashed), a name and a password. Public
 // by design; rate limited per address. The token is cleared on use.
 function ipOf(req: NextRequest): string {
-  return req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? req.headers.get("x-real-ip") ?? "unknown";
+  return clientIp(req.headers);
 }
 
 /** GET ?token=: who the invitation is for (name, email), to prefill the form. */

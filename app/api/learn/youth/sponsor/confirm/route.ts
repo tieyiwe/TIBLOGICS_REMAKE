@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import stripe from "@/lib/stripe";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -15,7 +16,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const id = req.nextUrl.searchParams.get("session_id") ?? "";
   const go = (q: string) => NextResponse.redirect(`${SITE}/sponsor-youth/thanks${q}`);
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   // Only a confirmed payment shows the thank-you; anything else says so.
   if (!(await checkRateLimit(`youth-sponsor-confirm:${ip}`, 30, 60_000))) return go("?unknown=1");
   if (!/^cs_[A-Za-z0-9_]{6,200}$/.test(id)) return go("?unknown=1");

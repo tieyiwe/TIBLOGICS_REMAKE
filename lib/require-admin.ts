@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { timingSafeEqual } from "crypto";
 import { getServerSession, type Session } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
@@ -109,9 +110,7 @@ export async function logActivity(opts: {
   try {
     const ip = opts.req
       ? anonymiseIp(
-          opts.req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
-          opts.req.headers.get("x-real-ip") ??
-          "unknown"
+          clientIp(opts.req.headers)
         )
       : undefined;
     await prisma.collaboratorActivityLog.create({

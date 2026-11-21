@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { loadVerifiedBadge } from "@/lib/learn/skill-badges/engine";
@@ -10,7 +11,7 @@ import { getSigningKey, issuerDid, siteBase, verifyDocument, verifyJwt } from "@
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`badge-verify:${ip}`, 60, 600_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }

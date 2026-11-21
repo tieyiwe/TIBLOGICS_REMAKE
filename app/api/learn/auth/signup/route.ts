@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { checkRateLimit } from "@/lib/require-admin";
@@ -17,7 +18,7 @@ const SignupSchema = z.object({
 
 export async function POST(req: NextRequest) {
   const t = await getT();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   // Short burst limit plus an hourly cap, so one address can't mass-create accounts.
   if (!(await checkRateLimit(`learn-signup:${ip}`, 5, 60_000)) || !(await checkRateLimit(`learn-signup-h:${ip}`, 20, 3_600_000))) {
     return NextResponse.json({ error: t("learn.api.tooManyShort") }, { status: 429 });

@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
 import bcrypt from "bcryptjs";
@@ -12,7 +13,7 @@ import { ensureAccountTables } from "@/lib/learn/account-status/db";
 
 export async function POST(req: NextRequest) {
   const t = await getT();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`learn-reset:${ip}`, 10, 3_600_000))) {
     return NextResponse.json({ error: t("learn.api.tooManyAttemptsLater") }, { status: 429 });
   }

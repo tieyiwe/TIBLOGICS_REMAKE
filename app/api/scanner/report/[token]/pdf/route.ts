@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { isLocale } from "@/lib/i18n/config";
 import { getLocale } from "@/lib/i18n/server";
@@ -11,7 +12,7 @@ import { reportPdf, reportFileName } from "@/lib/scanner/pdf";
 export const maxDuration = 30;
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`scanner-pdf:${ip}`, 30, 3_600_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }

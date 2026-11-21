@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getStudent } from "@/lib/learn/session";
@@ -36,7 +37,7 @@ const Body = z.object({
 });
 
 function ipOf(req: NextRequest): string {
-  return req.headers.get("x-forwarded-for")?.split(",")[0].trim() || req.headers.get("x-real-ip") || "unknown";
+  return clientIp(req.headers);
 }
 
 function cleanLink(raw: string | null | undefined): string | null | "bad" {

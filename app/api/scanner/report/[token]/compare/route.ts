@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
@@ -24,7 +25,7 @@ const MAX_COMPARE_SCANS = 6;
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const locale = await getLocale();
   const t = translatorFor(locale);
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`scanner-compare:${ip}`, 10, 3_600_000))) {
     return NextResponse.json({ error: t("tools.api.rateLimit") }, { status: 429 });
   }

@@ -1,3 +1,4 @@
+import { clientIp as clientIpOf } from "@/lib/client-ip";
 import prisma from "@/lib/prisma";
 
 // Approximate location (country, region, city) of a visitor from their IP.
@@ -84,9 +85,9 @@ export function geoFromHeaders(h: HeaderBag): Geo | null {
 
 /** The caller's address from the proxy headers (first hop). */
 export function clientIp(h: HeaderBag): string | null {
-  const raw = header(h, "x-forwarded-for")?.split(",")[0].trim() || header(h, "x-real-ip")?.trim() || header(h, "cf-connecting-ip")?.trim() || "";
-  const ip = raw.replace(/^\[|\]$/g, "").replace(/^::ffff:(?=\d+\.\d+\.\d+\.\d+$)/i, "");
-  return ip || null;
+  // The trusted-proxy reading (lib/client-ip.ts), not the spoofable first hop.
+  const ip = clientIpOf(h);
+  return ip && ip !== "unknown" ? ip : null;
 }
 
 /** Private, loopback, link-local, CGNAT, multicast and reserved ranges. */

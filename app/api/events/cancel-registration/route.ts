@@ -1,10 +1,11 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   // Public and keyed on a confirmation number alone, so capped against guessing.
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? req.headers.get("x-real-ip") ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`event-cancel:${ip}`, ip === "unknown" ? 200 : 20, 60 * 60_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }

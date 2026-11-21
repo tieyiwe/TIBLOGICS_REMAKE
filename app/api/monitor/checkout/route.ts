@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import stripe from "@/lib/stripe";
@@ -22,7 +23,7 @@ const SITE_URL = (process.env.NEXT_PUBLIC_APP_URL ?? process.env.NEXTAUTH_URL ??
 export async function POST(req: NextRequest) {
   const locale = await getLocale();
   const t = translatorFor(locale);
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`monitor-checkout:${ip}`, 10, 3_600_000))) {
     return NextResponse.json({ error: t("tools.api.tooManyAttempts") }, { status: 429 });
   }

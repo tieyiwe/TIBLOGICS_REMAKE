@@ -281,6 +281,52 @@ model CalculatorPass {
   @@index([email])
 }
 
+/// Admin cyber scanner: a client's written authorisation for active testing
+/// (lib/cyber/engagement.ts). Created by runtime DDL; listed so Replit keeps it.
+model CyberEngagement {
+  id           String    @id
+  createdAt    DateTime  @default(now())
+  createdBy    String
+  client       String
+  contactName  String?
+  contactEmail String?
+  authorizedBy String
+  scope        Json
+  startsAt     DateTime
+  endsAt       DateTime
+  note         String?
+  revokedAt    DateTime?
+
+  @@index([endsAt])
+}
+
+/// Admin cyber scanner: one scan and its report (lib/cyber/run.ts).
+model CyberScan {
+  id           String    @id
+  createdAt    DateTime  @default(now())
+  createdBy    String
+  token        String    @unique
+  url          String
+  domain       String
+  status       String    @default("running")
+  progress     String?
+  deep         Boolean   @default(false)
+  engagementId String?
+  company      String?
+  contactName  String?
+  score        Int?
+  grade        String?
+  counts       Json?
+  result       Json?
+  error        String?
+  finishedAt   DateTime?
+  sharedAt     DateTime?
+  sent         Json?
+
+  @@index([domain])
+  @@index([createdAt])
+}
+
 model Blueprint {
   id                  String    @id @default(cuid())
   createdAt           DateTime  @default(now())

@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import stripe from "@/lib/stripe";
@@ -12,7 +13,7 @@ export async function POST(req: Request) {
   }
   // Public (the booking page pays for an appointment), so each caller gets a
   // handful of Stripe sessions an hour rather than an unlimited supply.
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`appt-checkout:${ip}`, 10, 3_600_000))) {
     return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
   }

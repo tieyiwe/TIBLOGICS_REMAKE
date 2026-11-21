@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { calculatorAccess, PLAN_COOKIE, crossSite } from "@/lib/calculator/plan";
@@ -15,7 +16,7 @@ export async function POST(req: NextRequest) {
   if (crossSite(req)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const access = await calculatorAccess(req.cookies.get(PLAN_COOKIE)?.value);
   if (!access.full) return NextResponse.json({ error: "plan_required" }, { status: 402 });
-  const who = access.passId ?? `staff:${req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown"}`;
+  const who = access.passId ?? `staff:${clientIp(req.headers)}`;
   if (!(await checkRateLimit(`calc-full:${who}`, 1200, 3_600_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }

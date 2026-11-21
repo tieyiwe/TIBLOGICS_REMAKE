@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextAuthOptions } from "next-auth";
 import { checkRateLimit, clearRateLimit } from "@/lib/rate-limit";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -50,9 +51,8 @@ function loginAllowed(key: string): Promise<boolean> {
 const MAX_LOGINS_PER_IP = 60;
 function ipAllowed(headers: unknown): Promise<boolean> {
   const h = (headers ?? {}) as Record<string, string | string[] | undefined>;
-  const raw = h["x-forwarded-for"] ?? h["x-real-ip"];
-  const ip = (Array.isArray(raw) ? raw[0] : raw)?.split(",")[0].trim();
-  if (!ip) return Promise.resolve(true);
+  const ip = clientIp(h);
+  if (!ip || ip === "unknown") return Promise.resolve(true);
   return checkRateLimit(`login-ip:${ip}`, MAX_LOGINS_PER_IP, LOGIN_WINDOW_MS);
 }
 

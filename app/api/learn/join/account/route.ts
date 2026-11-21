@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { checkRateLimit } from "@/lib/require-admin";
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
   const blocked = csrfGuard(req);
   if (blocked) return blocked;
   const t = await getT();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   // Same bucket as the sign-up form: one budget per address, whichever page.
   // Short burst limit plus an hourly cap, so one address can't mass-create accounts.
   if (!(await checkRateLimit(`learn-signup:${ip}`, 5, 60_000)) || !(await checkRateLimit(`learn-signup-h:${ip}`, 20, 3_600_000))) {

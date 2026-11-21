@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { getT } from "@/lib/i18n/server";
 import prisma from "@/lib/prisma";
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
   // Public, and every accepted request emails a confirmation to an address
   // the caller chooses. Without a cap that is a way to send mail from this
   // domain to anyone. Same shape as the booking form's limits.
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? req.headers.get("x-real-ip") ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`service-request:${ip}`, ip === "unknown" ? 50 : 5, 60 * 60_000))) {
     return NextResponse.json({ error: t("pages.api.tooManyLater") }, { status: 429 });
   }

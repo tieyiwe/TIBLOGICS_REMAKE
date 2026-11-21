@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import payments from "@/lib/payments";
@@ -70,7 +71,7 @@ const SITE = (
 
 export async function POST(req: NextRequest) {
   const t = await getT();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`learn-checkout:${ip}`, 10, 60_000))) {
     return NextResponse.json({ error: t("learn.api.tooMany") }, { status: 429 });
   }

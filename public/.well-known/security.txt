@@ -1,0 +1,5 @@
+# How to report a security problem on tiblogics.com (RFC 9116).
+Contact: mailto:info@tiblogics.com
+Expires: 2027-11-21T00:00:00.000Z
+Preferred-Languages: en, fr
+Canonical: https://tiblogics.com/.well-known/security.txt

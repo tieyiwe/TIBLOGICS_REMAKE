@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/require-admin";
@@ -6,12 +7,17 @@ import { checkRateLimit } from "@/lib/require-admin";
 // unauthenticated write into AdminSettings. Both the key and the value need
 // bounds: `sessionId` and `messages` were used verbatim, which let one caller
 // create unlimited rows of unlimited size in a table the admin UI reads.
-const MAX_TRANSCRIPT_BYTES = 128_000;
-/** Session ids are client-generated; accept only an opaque id shape. */
-const SESSION_ID = /^[A-Za-z0-9_-]{1,64}$/;
+const MAX_TRANSCRIPT_BYTES = 64_000;
+/**
+ * Session ids are made by the browser with crypto (components/public/EchelonFloat.tsx):
+ * long and random, so one visitor cannot guess another's id and read or
+ * overwrite their transcript. Short, guessable ids (older clients, the old
+ * Date.now() fallback) are refused: that chat is simply not saved.
+ */
+const SESSION_ID = /^[A-Za-z0-9_-]{24,64}$/;
 
 export async function POST(req: Request) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`sessions-chat:${ip}`, 60, 60_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
@@ -38,6 +44,9 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
+  if (!(await checkRateLimit(`sessions-chat-read:${clientIp(req.headers)}`, 60, 60_000))) {
+    return NextResponse.json({ messages: [] }, { status: 429 });
+  }
   try {
     const { searchParams } = new URL(req.url);
     const sessionId = searchParams.get("sessionId");

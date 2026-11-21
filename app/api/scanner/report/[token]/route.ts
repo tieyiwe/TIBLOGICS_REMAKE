@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -10,7 +11,7 @@ import { buildView } from "@/lib/scanner/view";
 // report is being written.
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`scanner-report:${ip}`, 240, 3_600_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }

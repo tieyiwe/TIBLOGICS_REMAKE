@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireStudent } from "@/lib/learn/session";
@@ -11,7 +12,7 @@ const STATUS: Record<string, number> = { invalid: 404, expired: 410, wrongEmail:
 /** Accept a Tilo Vision Scholarship with its emailed link (the signed-in address must be the awarded one). */
 export async function POST(req: NextRequest) {
   const t = await getT();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   // Per learner, plus a looser per-network ceiling: scholars at one school
   // or office share an IP and must not block each other.
   if (!(await checkRateLimit(`learn-scholarship:accept:ip:${ip}`, 60, 60_000))) {

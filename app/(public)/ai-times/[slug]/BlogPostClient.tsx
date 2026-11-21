@@ -1,5 +1,6 @@
 "use client";
 
+import { sanitizeTranslatedHtml } from "@/lib/i18n/sanitize-html";
 import InArticlePromo, { splitForPromo } from "@/components/public/InArticlePromo";
 import { useState, useEffect, useRef } from "react";
 import CoverImg from "@/components/blog/CoverImg";
@@ -485,7 +486,9 @@ export default function BlogPostPage({
             {(() => {
                 // Promo sits mid-article, where readers still are. The
                 // end-of-article CTA below only reaches the ones who finish.
-                const [head, tail] = splitForPromo(display?.content ?? post.content);
+                // Cleaned again at render, so rows saved before the save-time clean-up
+                // cannot run code either (lib/i18n/sanitize-html.ts).
+                const [head, tail] = splitForPromo(sanitizeTranslatedHtml(display?.content ?? post.content));
                 // A reaction prompt about a third of the way in, before the promo.
                 const [early, late] = tail ? splitEarly(head) : [head, ""];
                 return (

@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -26,7 +27,7 @@ const Body = z.object({
 
 export async function POST(req: NextRequest) {
   const t = await getT();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   // Generous per network: a whole event venue can apply over one Wi-Fi.
   // The per-address limit below and the hidden field stop repeat and bot posts.
   if (!(await checkRateLimit(`scholarship-apply:${ip}`, 200, 3_600_000))) {

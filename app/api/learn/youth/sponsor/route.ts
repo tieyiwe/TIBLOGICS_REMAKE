@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
   const blocked = csrfGuard(req);
   if (blocked) return blocked;
   const [t, locale] = await Promise.all([getT(), getLocale()]);
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`youth-sponsor:${ip}`, 10, 600_000)) || !(await checkRateLimit(`youth-sponsor-d:${ip}`, 40, 86_400_000))) {
     return NextResponse.json({ error: t("learn.api.tooManyLater") }, { status: 429 });
   }

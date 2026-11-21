@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isAiBudgetError, streamChat } from "@/lib/claude";
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
 
   // Each estimate is a model call. Free: 3 a day per address. The Full Plan:
   // 30 a day per plan. Staff: 60 an hour.
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   const access = await calculatorAccess(req.cookies.get(PLAN_COOKIE)?.value);
   const [key, max, windowMs] =
     access.via === "plan" ? [`calc-estimate-plan:${access.passId}`, 30, 86_400_000]

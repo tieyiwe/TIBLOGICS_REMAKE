@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { boundedObject } from "@/lib/validate/json";
 import prisma from "@/lib/prisma";
@@ -6,7 +7,7 @@ import { isTrackablePath, normalizePath } from "@/lib/analytics/paths";
 
 export async function POST(req: NextRequest) {
   // Public beacon; a generous cap so it cannot be used to flood the table.
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? req.headers.get("x-real-ip") ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`analytics-event:${ip}`, ip === "unknown" ? 3000 : 300, 10 * 60_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }

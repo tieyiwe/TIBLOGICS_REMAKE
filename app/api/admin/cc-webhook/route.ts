@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
@@ -18,7 +19,7 @@ function fuzzyMatchTask(tasks: { id: string; text: string; done: boolean }[], ta
 export async function POST(req: NextRequest) {
   // The token is the only credential on this endpoint and it creates and edits
   // projects, so bound guessing and compare in constant time.
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`cc-webhook:${ip}`, 30, 60_000))) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }

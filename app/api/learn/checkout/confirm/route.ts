@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import stripe from "@/lib/stripe";
 import prisma from "@/lib/prisma";
@@ -25,7 +26,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const id = req.nextUrl.searchParams.get("session_id") ?? "";
   const go = (path: string) => NextResponse.redirect(`${SITE}${path}`);
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`learn-checkout-confirm:${ip}`, 30, 60_000))) return go("/learn?welcome=1");
 
   const student = await getStudent();

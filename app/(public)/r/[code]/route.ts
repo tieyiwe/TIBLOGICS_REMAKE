@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isBot, siteUrl } from "@/lib/growth/links";
@@ -30,7 +31,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ code
 
   const ua = req.headers.get("user-agent") ?? "";
   if (!isBot(ua)) {
-    const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? req.headers.get("x-real-ip") ?? "unknown";
+    const ip = clientIp(req.headers);
     if (await checkRateLimit(`ref-visit:${ip}`, 60, 10 * 60_000)) await recordReferralEvent(code, "visit", visitorHash(ip, ua));
   }
 

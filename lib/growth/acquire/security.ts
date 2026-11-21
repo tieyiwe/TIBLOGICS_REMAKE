@@ -1,3 +1,4 @@
+import { clientIp as clientIpOf } from "@/lib/client-ip";
 import { createHash, createHmac, timingSafeEqual } from "crypto";
 import type { NextRequest } from "next/server";
 import { siteUrl } from "../links";
@@ -5,7 +6,7 @@ import { siteUrl } from "../links";
 // Guards shared by the public acquisition endpoints (/api/acquire/*).
 
 export function clientIp(req: Request): string {
-  return req.headers.get("x-forwarded-for")?.split(",")[0].trim() || req.headers.get("x-real-ip") || "unknown";
+  return clientIpOf(req.headers);
 }
 
 /**

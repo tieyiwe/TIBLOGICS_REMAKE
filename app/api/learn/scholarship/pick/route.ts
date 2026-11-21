@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import payments from "@/lib/payments";
@@ -18,7 +19,7 @@ const CONFIRM = "/api/learn/checkout/confirm?session_id={CHECKOUT_SESSION_ID}";
 
 export async function POST(req: NextRequest) {
   const t = await getT();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   // Per learner, plus a looser per-network ceiling: scholars at one school
   // or office share an IP and must not block each other.
   if (!(await checkRateLimit(`learn-scholarship:pick:ip:${ip}`, 60, 60_000))) {

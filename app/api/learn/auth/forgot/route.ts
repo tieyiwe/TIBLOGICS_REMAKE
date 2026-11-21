@@ -1,3 +1,4 @@
+import { clientIp } from "@/lib/client-ip";
 import { NextRequest, NextResponse } from "next/server";
 import { createHash, randomBytes } from "crypto";
 import prisma from "@/lib/prisma";
@@ -15,7 +16,7 @@ const TTL_MS = 60 * 60 * 1000;
 
 export async function POST(req: NextRequest) {
   const t = await getT();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+  const ip = clientIp(req.headers);
   if (!(await checkRateLimit(`learn-forgot:${ip}`, 5, 3_600_000))) {
     return NextResponse.json({ error: t("learn.api.tooManyLater") }, { status: 429 });
   }
