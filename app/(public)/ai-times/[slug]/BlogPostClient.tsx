@@ -772,6 +772,28 @@ export default function BlogPostPage({
           display: inline-block; margin: 0.25rem 0.75rem 0.5rem 0; padding: 0.55rem 1.1rem; border-radius: 999px;
           background: #F47C20; color: #fff; text-decoration: none;
         }
+        /* Article blocks: stat row, callout, box, cards, pull quote (class-based:
+           inline styles are stripped from article HTML at render). */
+        .prose-blog .art-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; margin: 1.5rem 0; }
+        .prose-blog .art-stat { background: #F4F7FB; border: 1px solid #E4EAF2; border-radius: 0.75rem; padding: 1rem; text-align: center; }
+        .prose-blog .art-stat-num { display: block; font-family: var(--font-syne), sans-serif; font-size: 1.5rem; font-weight: 800; line-height: 1.15; color: #0F6E56; margin-bottom: 0.25rem; }
+        .prose-blog .art-stat-label { display: block; font-size: 0.75rem; line-height: 1.4; color: #5B6B7F; }
+        .prose-blog .art-callout { background: #085041; border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin: 1.5rem 0; }
+        .prose-blog .art-callout p { color: #D7F2E8; margin: 0; }
+        .prose-blog .art-callout strong { color: #fff; }
+        .prose-blog .art-callout .art-label { color: #7FDDBB; margin-bottom: 0.5rem; }
+        .prose-blog .art-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #0F6E56; margin-bottom: 0.5rem; }
+        .prose-blog .art-box { border: 1px solid #1D9E75; border-radius: 0.75rem; padding: 1.25rem 1.5rem 0.5rem; margin: 1.5rem 0; }
+        .prose-blog .art-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; margin: 1.25rem 0; }
+        .prose-blog .art-card { border: 1px solid #E4EAF2; border-radius: 0.75rem; padding: 1rem 1.1rem; }
+        .prose-blog .art-card p { margin: 0; font-size: 0.9rem; color: #3A4A5C; }
+        .prose-blog .art-card .art-card-title { font-weight: 700; color: #0F6E56; margin-bottom: 0.35rem; }
+        .prose-blog .art-pullquote { background: #F4F7FB; border: 1px solid #E4EAF2; border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin: 2rem 0 0; }
+        .prose-blog .art-pullquote p { font-size: 1.1rem; font-style: italic; color: #0D1B2A; margin: 0; }
+        .prose-blog .art-sources { font-size: 0.75rem; color: #7A8FA6; margin-top: 2rem; }
+        @media (max-width: 640px) {
+          .prose-blog .art-stats, .prose-blog .art-cards { grid-template-columns: minmax(0, 1fr); }
+        }
         .prose-blog .tips-section {
           background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 50%, #f8fafc 100%);
           border-radius: 1rem;

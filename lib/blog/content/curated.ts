@@ -36,6 +36,12 @@ export interface CuratedArticle {
   aiGenerated?: boolean;
   /** A custom cover (a path on this site) instead of a picked stock photo. */
   coverImage?: string;
+  /**
+   * An article that may already exist under its slug (an older copy, possibly
+   * unpublished): published again with this text once, then left alone, so
+   * later edits in the admin are kept. See publishCurated.
+   */
+  restore?: boolean;
 }
 
 export const CURATED_ARTICLES: CuratedArticle[] = [

@@ -26,9 +26,10 @@ import { CURATED_OCTOBER } from "@/lib/blog/content/curated-october";
 import { CURATED_MID_OCTOBER } from "@/lib/blog/content/curated-mid-october";
 import { CURATED_LATE_OCTOBER } from "@/lib/blog/content/curated-late-october";
 import { CURATED_MID_NOVEMBER } from "@/lib/blog/content/curated-mid-november";
+import { FOUNDER_ARTICLES } from "@/lib/blog/content/founder-articles";
 
 // Every researched article the agent publishes (idempotent by slug).
-const CURATED_ARTICLES = [...CURATED_BASE, ...CURATED_OCTOBER, ...CURATED_MID_OCTOBER, ...CURATED_LATE_OCTOBER, ...CURATED_MID_NOVEMBER];
+const CURATED_ARTICLES = [...CURATED_BASE, ...CURATED_OCTOBER, ...CURATED_MID_OCTOBER, ...CURATED_LATE_OCTOBER, ...CURATED_MID_NOVEMBER, ...FOUNDER_ARTICLES];
 import { RETRACTIONS } from "@/lib/blog/content/retractions";
 import { applyCorrections } from "@/lib/blog/content/apply-corrections";
 import { INDEXNOW_SECTIONS, indexNowSoon } from "@/lib/seo/indexnow";
@@ -775,21 +776,55 @@ function revalidateAiTimes() {
  * Idempotent by slug: an article that exists is skipped, never duplicated or
  * re-dated. Each gets a cover no other post uses, and its sources appended.
  */
+/**
+ * Curated articles marked `restore` that already exist (an older copy, for
+ * example the founder's article that was only in the database seed): if the
+ * copy is unpublished or predates the restored text (no ARFA ad), it gets the
+ * current text, is published and dated today so readers see it again. Once
+ * restored it is left alone, so edits made in the admin are kept.
+ */
+async function restoreCurated(existing: Array<{ slug: string; published: boolean; content: string }>): Promise<string[]> {
+  const out: string[] = [];
+  for (const a of CURATED_ARTICLES.filter((x) => x.restore)) {
+    const row = existing.find((e) => e.slug === a.slug);
+    if (!row || (row.published && row.content.includes('class="arfa-ad"'))) continue;
+    try {
+      const content = a.content + renderSources(a.sources);
+      const meta = CATEGORY_META[a.category] ?? CATEGORY_META["industry"];
+      await prisma.blogPost.update({
+        where: { slug: a.slug },
+        data: {
+          title: a.title, excerpt: a.excerpt, content, category: a.category, tags: a.tags,
+          coverEmoji: meta.emoji, coverGradient: meta.gradient, ...(a.coverImage ? { coverImage: a.coverImage } : {}),
+          author: a.author ?? "Echelon by TIBLOGICS", aiGenerated: a.aiGenerated ?? true, published: true, createdAt: new Date(),
+          readingTime: Math.max(1, Math.ceil(content.replace(/<[^>]*>/g, " ").split(/\s+/).length / 200)),
+        },
+      });
+      indexNowSoon(INDEXNOW_SECTIONS.article(a.slug));
+      out.push(a.slug);
+    } catch (err) {
+      console.error("[auto-refresh] curated restore failed", a.slug, err instanceof Error ? err.message : err);
+    }
+  }
+  return out;
+}
+
 async function publishCurated(): Promise<string[]> {
   if (CURATED_ARTICLES.length === 0) return [];
   const existing = await prisma.blogPost.findMany({
     where: { slug: { in: CURATED_ARTICLES.map((a) => a.slug) } },
-    select: { slug: true },
+    select: { slug: true, published: true, content: true },
   });
   const have = new Set(existing.map((e) => e.slug));
+  const restored = await restoreCurated(existing);
   // A researched article that is not out yet and whose news is over three
   // weeks old stays unpublished: it would show up today as fresh news.
   const staleBefore = Date.now() - 21 * 86_400_000;
   const missing = CURATED_ARTICLES.filter((a) => !have.has(a.slug) && !(a.newsDate && new Date(a.newsDate).getTime() < staleBefore));
-  if (missing.length === 0) return [];
+  if (missing.length === 0) return restored;
 
   const usedPhotoIds = await getUsedCoverPhotoIds();
-  const published: string[] = [];
+  const published: string[] = [...restored];
   for (const a of missing) {
     try {
       const cover = a.coverImage ? { url: a.coverImage, photoId: "" } : pickCoverImage(a.slug, usedPhotoIds);
