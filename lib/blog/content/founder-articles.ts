@@ -5,11 +5,12 @@
 // written, with three changes: the styled boxes use classes (inline styles
 // are stripped at render since the blog XSS fix), two facts corrected or
 // updated (the cleaning-market range, an unverified company replaced), and
-// the ARFA ad the owner asks for on every article.
+// the ARFA ad the owner asks for on every article. The original cover
+// (/tieyiwe-bass-cover.png) was never committed; a new drawn cover with his
+// portrait replaces it.
 
 import type { CuratedArticle } from "./curated";
 import { arfaAd } from "./arfa-ad";
-import { FOUNDER_PHOTO } from "../founder-photo";
 
 export const FOUNDER_ARTICLES: CuratedArticle[] = [
   {
@@ -21,7 +22,9 @@ export const FOUNDER_ARTICLES: CuratedArticle[] = [
     tags: ["data centers", "ai economy", "entrepreneurship", "dmv", "business opportunity", "data center cleaning", "skilled trades"],
     author: "Tieyiwe Bass · Founder, TIBLOGICS",
     aiGenerated: false,
-    coverImage: FOUNDER_PHOTO,
+    // Drawn cover with his portrait (lib/og/covers/founder.tsx). "Use my
+    // photo" in Admin > AI Times switches to the plain photo.
+    coverImage: "/covers/datacenter-cleaning.png",
     restore: true,
     content: `<p>Every time you ask an AI a question, every time a stream starts buffering and then bursts to life, every time a bank processes a transaction in milliseconds — a data center made it happen. Inside that building, there are hundreds of thousands of servers stacked floor to ceiling, humming with heat, and quietly generating something most people never think about: <em>dust</em>.</p>
 

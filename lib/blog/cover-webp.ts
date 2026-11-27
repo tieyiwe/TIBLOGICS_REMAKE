@@ -8,6 +8,7 @@ export const WEBP_COVERS: ReadonlySet<string> = new Set([
   "ai-price-war",
   "anthropic-bill",
   "anthropic-ipo",
+  "datacenter-cleaning",
   "design-for-agents",
   "kind-words",
   "nvidia-week",

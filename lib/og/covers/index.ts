@@ -3,6 +3,7 @@ import { starlinkGlobalCarrierCover } from "./starlink-global-carrier";
 import { OCTOBER_FEATURE_COVERS } from "./october-feature";
 import { LATE_OCTOBER_COVERS } from "./late-october";
 import { MID_NOVEMBER_COVERS } from "./mid-november";
+import { FOUNDER_COVERS } from "./founder";
 
 // Custom article covers drawn in code, served at /og/covers/<name>
 // (app/og/covers/[name]/route.ts). A post's coverImage can point at one, and
@@ -12,6 +13,7 @@ export const CUSTOM_COVERS: Record<string, () => Promise<ImageResponse>> = {
   ...OCTOBER_FEATURE_COVERS,
   ...LATE_OCTOBER_COVERS,
   ...MID_NOVEMBER_COVERS,
+  ...FOUNDER_COVERS,
 };
 
 const PREFIX = "/og/covers/";

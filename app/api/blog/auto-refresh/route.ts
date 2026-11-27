@@ -514,7 +514,6 @@ async function patchMissingTips(limit = 3): Promise<number> {
 
 
 // Tieyiwe Bass personal article — Unsplash fallback used when local PNG not committed
-const TIEYIWE_BASS_FALLBACK_IMAGE = "https://tiblogics.com/tb_cover.png";
 
 // Patch the Tieyiwe Bass article cover if it's still pointing at the local PNG
 // Reassign unique cover images to any AI-generated articles that share an image
@@ -589,17 +588,22 @@ function localFileExists(path: string): boolean {
   }
 }
 
+const FOUNDER_DRAWN_COVER = "/covers/datacenter-cleaning.png";
+
 async function patchTieyiweCover() {
   try {
     const post = await prisma.blogPost.findFirst({
       where: { title: { contains: "Nobody Talks About the People Cleaning", mode: "insensitive" } },
       select: { id: true, coverImage: true },
     });
-    // Always enforce the correct cover — not just when it starts with "/"
-    if (post && !isFounderPhoto(post.coverImage)) {
+    // The founder's article keeps one of his two covers: the drawn cover with
+    // his portrait (the default, lib/og/covers/founder.tsx) or his plain photo
+    // when he picks "Use my photo" in the admin. Anything else (a stock photo
+    // put there by a repair pass) goes back to the drawn cover.
+    if (post && !isFounderPhoto(post.coverImage) && post.coverImage !== FOUNDER_DRAWN_COVER) {
       await prisma.blogPost.update({
         where: { id: post.id },
-        data: { coverImage: TIEYIWE_BASS_FALLBACK_IMAGE },
+        data: { coverImage: FOUNDER_DRAWN_COVER },
       });
     }
   } catch { /* ignore */ }
