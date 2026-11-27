@@ -3,6 +3,7 @@ import { getLocale, getT } from "@/lib/i18n/server";
 import { pageMetadata } from "@/lib/seo/meta";
 import JsonLd from "@/components/seo/JsonLd";
 import { breadcrumbNode, softwareAppNode } from "@/lib/seo/jsonld";
+import { reportCents } from "@/lib/agent-ready/prices";
 
 export async function generateMetadata(): Promise<Metadata> {
   const [t, locale] = await Promise.all([getT(), getLocale()]);
@@ -26,7 +27,7 @@ export default async function AgentReadyLayout({ children }: { children: React.R
             description: t("tools.agent.meta.description"),
             path: "/tools/ai-agent-ready",
             category: "WebApplication",
-            free: true,
+            priceCents: reportCents(),
           }),
           breadcrumbNode([
             { name: t("seo.home"), path: "/" },

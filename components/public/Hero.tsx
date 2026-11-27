@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import HeroScanner from "./HeroScanner";
-import { getT } from "@/lib/i18n/server";
+import AgentHeroScanner from "./AgentHeroScanner";
+import { formatMoney } from "@/lib/blueprint/config";
+import { reportCents } from "@/lib/agent-ready/prices";
+import { getLocale, getT } from "@/lib/i18n/server";
 import { accent } from "./accent";
 
 // Products built in-house, the same list the footer carries. Worded as "built
@@ -20,7 +22,8 @@ const BUILT: { name: string; href?: string }[] = [
 ];
 
 export default async function Hero() {
-  const t = await getT();
+  const [t, locale] = await Promise.all([getT(), getLocale()]);
+  const report = reportCents();
   return (
     <section className="relative overflow-hidden bg-white pt-28 sm:pt-36 lg:pt-40 pb-14 sm:pb-20">
       {/* Quiet backdrop: a faint dot field fading out from the top right, so the
@@ -79,7 +82,9 @@ export default async function Hero() {
           </div>
 
           <div className="anim-fade-up" style={{ animationDelay: "0.2s" }}>
-            <HeroScanner />
+            {/* The flagship: AI Agent Readiness. The website scanner sits
+                just below the hero (app/(public)/page.tsx). */}
+            <AgentHeroScanner reportPrice={report ? formatMoney(report, locale) : null} />
           </div>
         </div>
 

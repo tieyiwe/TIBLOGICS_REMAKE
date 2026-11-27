@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Hero from "@/components/public/Hero";
+import HeroScanner from "@/components/public/HeroScanner";
+import AiVsHumans from "@/components/public/AiVsHumans";
+import { trafficEntries } from "@/lib/ai-traffic";
 import AIBanner from "@/components/public/AIBanner";
 import { Bot, Zap, Brain, BookOpen, HeartPulse, Package, GraduationCap } from "lucide-react";
 import { getLocale, translatorFor } from "@/lib/i18n/server";
@@ -57,6 +60,7 @@ export default async function HomePage() {
   const locale = await getLocale();
   const t = translatorFor(locale);
   const serviceCount = SERVICE_COUNT.toLocaleString(locale);
+  const traffic = (await trafficEntries())[0];
   return (
     <>
       <Hero />
@@ -64,6 +68,20 @@ export default async function HomePage() {
           components/public/StatsBar.tsx, so it drew a navy band of labels with no
           numbers above them, directly above a panel that does show real figures.
           Put the real numbers in that file and restore this line. */}
+
+      {/* AI agents vs humans: the latest published figure (Admin > AI Times > AI vs Humans). */}
+      <section className="bg-white py-14" data-testid="home-aivh">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <AiVsHumans entry={traffic} />
+        </div>
+      </section>
+
+      {/* The website scanner (moved from the hero, which now leads with AI Agent Readiness). */}
+      <section className="overflow-hidden bg-[#F4F7FB] py-14" data-testid="home-website-scanner">
+        <div className="mx-auto max-w-xl px-4 sm:px-6 lg:px-8">
+          <HeroScanner />
+        </div>
+      </section>
 
       {/* AI Banner */}
       <section className="py-6 bg-white">

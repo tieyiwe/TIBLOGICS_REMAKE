@@ -92,12 +92,24 @@ export default function AgentReadyLanding({ prices, rescans }: { prices: { repor
             )}
           </button>
         </form>
-        <p className="mx-auto mt-3 max-w-2xl text-center font-dm text-xs text-[#7A8FA6]">{t("tools.agent.form.note")}</p>
+        <p className="mx-auto mt-3 max-w-2xl text-center font-dm text-xs text-[#7A8FA6]">{t("tools.agent.form.note", { report: prices.report ?? "", kit: prices.kit ?? "" })}</p>
         {error && (
           <div role="alert" data-testid="agent-error" className="mx-auto mt-6 max-w-2xl rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-center font-dm text-sm text-[#7A2020]">
             {error}
           </div>
         )}
+
+        <section className="mt-12 rounded-2xl bg-[#0D1B2A] p-6 text-white sm:p-8" aria-label={t("tools.agent.stat.source")} data-testid="agent-stats">
+          <div className="grid gap-6 sm:grid-cols-3">
+            {[1, 2, 3].map((n) => (
+              <div key={n}>
+                <p className="font-syne text-4xl font-extrabold text-[#F47C20]">{t(`tools.agent.stat${n}.num`)}</p>
+                <p className="mt-1 font-dm text-sm leading-relaxed text-white/80">{t(`tools.agent.stat${n}.label`)}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-5 font-dm text-[11px] text-white/50">{t("tools.agent.stat.source")}</p>
+        </section>
 
         <section className="mt-16" aria-labelledby="agent-what">
           <h2 id="agent-what" className="text-center font-syne text-2xl font-bold text-[#0D1B2A]">{t("tools.agent.what.title")}</h2>

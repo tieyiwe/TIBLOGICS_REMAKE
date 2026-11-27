@@ -20,7 +20,7 @@ const ALL_TOOLS = [
     id: "agentReady",
     href: "/tools/ai-agent-ready",
     color: "#0E7C66",
-    paid: false,
+    paid: true,
     retired: false,
   },
   {

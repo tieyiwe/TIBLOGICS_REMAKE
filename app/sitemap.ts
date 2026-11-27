@@ -31,6 +31,7 @@ const STATIC: Array<[path: string, priority: number, freq: Entry["changeFrequenc
   ["/tools", 0.8, "monthly"],
   ["/tools/scanner", 0.8, "monthly"],
   ["/tools/ai-agent-ready", 0.8, "monthly"],
+  ["/ai-vs-humans", 0.7, "weekly"],
   ["/tools/toolkit-live", 0.8, "monthly"],
   ["/tools/automation-blueprint", 0.75, "monthly"],
   ["/tools/readiness-monitor", 0.75, "monthly"],

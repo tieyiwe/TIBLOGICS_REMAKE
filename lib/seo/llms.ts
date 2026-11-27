@@ -96,7 +96,7 @@ function toolLines(): string[] {
   const mon = monitorPricing();
   return [
     `- [Website AI Scanner](${absUrl("/tools/scanner")}): free, no signup. ${t("tools.index.scanner.desc")}`,
-    `- [AI Agent Readiness](${absUrl("/tools/ai-agent-ready")}): free check${reportCents() ? `, ${money(reportCents()!)} full report` : ""}${kitCents() ? `, ${money(kitCents()!)} fix kit` : ""}. ${t("tools.agent.index.desc")}`,
+    `- [AI Agent Readiness](${absUrl("/tools/ai-agent-ready")}): instant score${reportCents() ? `, ${money(reportCents()!)} full report` : ""}${kitCents() ? `, ${money(kitCents()!)} fix kit` : ""}. ${t("tools.agent.index.desc")}`,
     `- [AI Product Cost Calculator](${absUrl("/tools/calculator")}): free. ${t("tools.index.calculator.desc")}`,
     `- [Toolkit Live + Compliance Guard](${absUrl("/tools/toolkit-live")}): paid monthly subscription${tk.toolkit.amount ? ` (${money(tk.toolkit.amount)}/month)` : ""}. ${LIBRARY_SIZE} AI prompts for ${LIBRARY_VERTICALS.length} fields, filled in with your business details; Compliance Guard flags Fair Housing, financial-advertising and FTC risks.`,
     `- [Automation Blueprint](${absUrl("/tools/automation-blueprint")}): ${bp ? `${money(bp)} one time; ` : ""}a written plan for automating up to three repetitive processes, credited against the build if TIBLOGICS builds it within ${creditDays()} days.`,
