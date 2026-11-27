@@ -10,6 +10,28 @@ import { ogFonts, OG_SIZE } from "@/lib/og/brand-card";
 // plain cover-image preview made different articles look identical.
 
 export const runtime = "nodejs";
+
+/**
+ * Share previews are drawn as PNG, which keeps photos large (a cover with a
+ * portrait came out at 700 KB). WhatsApp, and sometimes LinkedIn and
+ * Facebook, show no picture above about 300 KB, so anything over 250 KB is
+ * sent as a JPEG instead (sharp, installed with Next.js for its image
+ * optimizer). If sharp cannot load, the PNG goes out as before.
+ */
+const MAX_PNG = 250_000;
+async function shareImage(res: ImageResponse, cacheControl: string): Promise<Response> {
+  const png = Buffer.from(await res.arrayBuffer());
+  if (png.length > MAX_PNG) {
+    try {
+      const sharp = (await import("sharp")).default;
+      const jpeg = await sharp(png).flatten({ background: "#03060F" }).jpeg({ quality: 82, mozjpeg: true }).toBuffer();
+      return new Response(new Uint8Array(jpeg), { headers: { "Content-Type": "image/jpeg", "Cache-Control": cacheControl } });
+    } catch (err) {
+      console.error("[og] jpeg conversion", err instanceof Error ? err.message : err);
+    }
+  }
+  return new Response(new Uint8Array(png), { headers: { "Content-Type": "image/png", "Cache-Control": cacheControl } });
+}
 export const revalidate = 86400;
 
 const CATEGORY: Record<string, { label: string; color: string }> = {
@@ -97,15 +119,15 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
   if (designed) {
     const own = customCoverName(post.coverImage) ? await customCoverDataUrl(post.coverImage!) : await coverDataUrl(post.coverImage);
     if (own) {
-      return new ImageResponse(
+      return shareImage(new ImageResponse(
         (
           <div style={{ width: 1200, height: 630, display: "flex", background: "#03060F" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={own} width={1200} height={630} alt="" style={{ width: 1200, height: 630, objectFit: "cover" }} />
           </div>
         ),
-        { width: 1200, height: 630, headers: { "Cache-Control": "public, max-age=3600, s-maxage=86400" } },
-      );
+        { width: 1200, height: 630 },
+      ), "public, max-age=3600, s-maxage=86400");
     }
   }
 
@@ -115,7 +137,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
   const title = post.title.length > 120 ? `${post.title.slice(0, 117).trimEnd()}…` : post.title;
   const titleSize = title.length > 90 ? 50 : title.length > 60 ? 58 : 66;
 
-  return new ImageResponse(
+  return shareImage(new ImageResponse(
     (
       <div style={{ width: OG_SIZE.width, height: OG_SIZE.height, display: "flex", position: "relative", fontFamily: "Instrument Sans, sans-serif", background: "#0D1B2A" }}>
         {cover ? (
@@ -154,6 +176,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
         </div>
       </div>
     ),
-    { ...OG_SIZE, fonts, headers: { "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800" } },
-  );
+    { ...OG_SIZE, fonts },
+  ), "public, max-age=86400, stale-while-revalidate=604800");
 }

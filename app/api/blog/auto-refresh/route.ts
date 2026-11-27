@@ -663,7 +663,45 @@ async function patchBrokenImages(): Promise<number> {
       patched += result.count;
     } catch { /* ignore */ }
   }
-  return patched;
+  return patched + (await repairDeadStockCovers());
+}
+
+/**
+ * Unsplash removes photos, and a removed one leaves its articles with no
+ * picture (six of them in November 2026). Each run asks Unsplash about every
+ * stock cover in use (a HEAD request each, a few at a time) and moves an
+ * article whose photo is gone (404 or 410) to its own generated cover,
+ * /api/blog/cover/<slug>, which is always there. A timeout or any other
+ * answer changes nothing: only a definite "gone" does.
+ */
+async function repairDeadStockCovers(): Promise<number> {
+  try {
+    const posts = await prisma.blogPost.findMany({
+      where: { coverImage: { startsWith: "https://images.unsplash.com/" } },
+      select: { id: true, slug: true, coverImage: true },
+    });
+    const urls = [...new Set(posts.map((p) => p.coverImage!))];
+    const dead = new Set<string>();
+    let i = 0;
+    await Promise.all(Array.from({ length: Math.min(6, urls.length) }, async () => {
+      while (i < urls.length) {
+        const url = urls[i++];
+        try {
+          const res = await fetch(url, { method: "HEAD", redirect: "manual", signal: AbortSignal.timeout(6000) });
+          if (res.status === 404 || res.status === 410) dead.add(url);
+        } catch { /* unknown: leave it */ }
+      }
+    }));
+    let n = 0;
+    for (const p of posts.filter((x) => dead.has(x.coverImage!))) {
+      await prisma.blogPost.update({ where: { id: p.id }, data: { coverImage: `/api/blog/cover/${p.slug}` } }).catch(() => {});
+      n++;
+    }
+    if (n) console.log(`[auto-refresh] ${n} article(s) moved off deleted Unsplash photos`);
+    return n;
+  } catch {
+    return 0;
+  }
 }
 
 // Delete AI-generated articles whose titles contain stale year references (2024, 2025).
@@ -1237,7 +1275,10 @@ export async function GET(req: NextRequest) {
           // Only a missing cover, or a site path whose file is not there. A
           // local file that exists (the founder's portrait, the drawn covers)
           // used to be replaced with a stock photo on every run.
-          const needsPatch = !existing.coverImage || (existing.coverImage.startsWith("/") && !localFileExists(existing.coverImage));
+          // A generated cover (/api/blog/cover/...) or a drawn one
+          // (/og/covers/...) is a route, not a file: it is not missing.
+          const isRoute = !!existing.coverImage && /^\/(api\/blog\/cover|og\/covers)\//.test(existing.coverImage);
+          const needsPatch = !existing.coverImage || (existing.coverImage.startsWith("/") && !isRoute && !localFileExists(existing.coverImage));
           if (needsPatch) {
             // Draw from the shared pool rather than the seed's hardcoded URL —
             // several seeds reuse the same photo, which is how duplicate covers
