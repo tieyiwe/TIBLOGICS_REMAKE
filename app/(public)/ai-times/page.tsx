@@ -121,13 +121,16 @@ export default async function BlogPage() {
   const translations = await cachedPostSummaries(locale, initialPosts.map((p) => p.slug));
   // Reader comment counts on the cards (cached until a comment changes).
   const comments = await commentCounts().catch(() => ({}) as Record<string, number>);
+  // How many are published in all: the page loads the newest 100, and "Load
+  // more" fetches the rest from /api/blog/posts page by page.
+  const total = await cachedPublicData("blog", "count:published", () => prisma.blogPost.count({ where: { published: true } })).catch(() => initialPosts.length);
 
   // BlogPageClient reads useSearchParams(), which needs a Suspense boundary
   // (the section's loading.tsx used to be it). The data is loaded above, so
   // nothing inside suspends: no fallback, no delay.
   return (
     <Suspense fallback={null}>
-      <BlogPageClient initialPosts={initialPosts} translations={translations} commentCounts={comments} />
+      <BlogPageClient initialPosts={initialPosts} initialTotal={total} translations={translations} commentCounts={comments} />
     </Suspense>
   );
 }

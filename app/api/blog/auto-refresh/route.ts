@@ -838,7 +838,8 @@ async function restoreCurated(existing: Array<{ slug: string; published: boolean
         data: {
           title: a.title, excerpt: a.excerpt, content, category: a.category, tags: a.tags,
           coverEmoji: meta.emoji, coverGradient: meta.gradient, ...(a.coverImage ? { coverImage: a.coverImage } : {}),
-          author: a.author ?? "Echelon by TIBLOGICS", aiGenerated: a.aiGenerated ?? true, published: true, createdAt: new Date(),
+          author: a.author ?? "Echelon by TIBLOGICS", aiGenerated: a.aiGenerated ?? true, published: true,
+          createdAt: a.publishedAt ? new Date(a.publishedAt) : new Date(),
           readingTime: Math.max(1, Math.ceil(content.replace(/<[^>]*>/g, " ").split(/\s+/).length / 200)),
         },
       });
@@ -849,6 +850,35 @@ async function restoreCurated(existing: Array<{ slug: string; published: boolean
     }
   }
   return out;
+}
+
+/**
+ * Curated articles with a `publishedAt` (a piece that came back) keep their
+ * original date, and their view counter is never lower than the visits the
+ * site's analytics recorded for their address (PageView, kept 400 days):
+ * a copy recreated after the old one was lost starts again from those.
+ * Idempotent: the date is set only when it differs, the counter only raised.
+ */
+async function settleCurated(): Promise<void> {
+  for (const a of CURATED_ARTICLES.filter((x) => x.publishedAt)) {
+    try {
+      await prisma.$executeRawUnsafe(
+        `UPDATE "BlogPost" SET "createdAt" = $2
+         WHERE "slug" = $1 AND abs(extract(epoch FROM ("createdAt" - $2::timestamp))) > 60`,
+        a.slug,
+        new Date(a.publishedAt!),
+      );
+      await prisma.$executeRawUnsafe(
+        `UPDATE "BlogPost" b SET "viewCount" = v.n
+         FROM (SELECT count(*)::int AS n FROM "PageView" WHERE "page" = $2) v
+         WHERE b."slug" = $1 AND v.n > b."viewCount"`,
+        a.slug,
+        `/ai-times/${a.slug}`,
+      );
+    } catch (err) {
+      console.error("[auto-refresh] curated settle failed", a.slug, err instanceof Error ? err.message : err);
+    }
+  }
 }
 
 async function publishCurated(): Promise<string[]> {
@@ -895,6 +925,7 @@ async function publishCurated(): Promise<string[]> {
           featured: a.featured ?? false,
           published: true,
           aiGenerated: a.aiGenerated ?? true,
+          ...(a.publishedAt ? { createdAt: new Date(a.publishedAt) } : {}),
           sourceUrl: a.sources[0]?.url,
           sourceTitle: a.sources[0]?.label,
         },
@@ -1012,6 +1043,8 @@ export async function GET(req: NextRequest) {
   let curatedPublished: string[] = [];
   try {
     curatedPublished = await publishCurated();
+    // After publishing, so a copy made just now is dated and counted too.
+    await settleCurated();
   } catch (err) {
     console.error("[auto-refresh] curated publishing skipped", err instanceof Error ? err.message : err);
   }

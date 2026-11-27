@@ -42,6 +42,12 @@ export interface CuratedArticle {
    * later edits in the admin are kept. See publishCurated.
    */
   restore?: boolean;
+  /**
+   * When the article first went out (ISO). Kept as its date on the site
+   * (new copies, restored copies and an existing copy are dated with it),
+   * for a piece that was published before and came back.
+   */
+  publishedAt?: string;
 }
 
 export const CURATED_ARTICLES: CuratedArticle[] = [

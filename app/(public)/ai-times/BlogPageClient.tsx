@@ -72,10 +72,13 @@ function timeAgo(dateStr: string, locale: string, t: T): string {
 
 export default function BlogPageClient({
   initialPosts,
+  initialTotal,
   translations = {},
   commentCounts = {},
 }: {
   initialPosts: BlogPost[];
+  /** Published articles in all (the page loads the newest 100). */
+  initialTotal?: number;
   /** Cached titles/excerpts in the visitor's language, by slug. */
   translations?: Summaries;
   /** Published comments per article, by slug. */
@@ -99,6 +102,11 @@ export default function BlogPageClient({
   const [featuredImgFailed, setFeaturedImgFailed] = useState(false);
   const [featured2ImgFailed, setFeatured2ImgFailed] = useState(false);
   const [visibleCount, setVisibleCount] = useState(9);
+  // How many match in all (the list, a category or a search): pages of 100
+  // are fetched as "Load more" reaches the end of what is loaded, so older
+  // articles stay reachable by browsing, not only by search.
+  const [total, setTotal] = useState(initialTotal ?? initialPosts.length);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Skip the first fetchPosts call on mount when SSR already provided posts.
   const skipInitialFetch = useRef(initialPosts.length > 0);
@@ -127,7 +135,11 @@ export default function BlogPageClient({
       if (search.trim()) params.set("search", search.trim());
       const res = await fetch(`/api/blog/posts?${params}`, { signal: controller.signal });
       const data = await res.json();
-      if (inFlight.current === controller) setPosts(data.posts ?? []);
+      if (inFlight.current === controller) {
+        setPosts(data.posts ?? []);
+        setTotal(typeof data.total === "number" ? data.total : (data.posts ?? []).length);
+        setVisibleCount(9);
+      }
     } catch {
       // timeout, network error or replaced by a newer request: leave posts as-is
     } finally {
@@ -165,7 +177,32 @@ export default function BlogPageClient({
   const featuredIds = new Set(featuredPosts.map((p) => p.id));
   const grid = posts.filter((p) => !featuredIds.has(p.id));
   const visibleGrid = grid.slice(0, visibleCount);
-  const hiddenCount = Math.max(0, grid.length - visibleCount);
+  const notLoaded = Math.max(0, total - rawPosts.length);
+  const hiddenCount = Math.max(0, grid.length - visibleCount) + notLoaded;
+
+  async function loadMore() {
+    setVisibleCount((c) => c + 9);
+    // Fetch the next page before the loaded ones run out.
+    if (notLoaded === 0 || grid.length - visibleCount > 18 || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const params = new URLSearchParams({ limit: "100", page: String(Math.floor(rawPosts.length / 100) + 1) });
+      if (category !== "all") params.set("category", category);
+      if (search.trim()) params.set("search", search.trim());
+      const res = await fetch(`/api/blog/posts?${params}`);
+      const data = await res.json();
+      const more: BlogPost[] = data.posts ?? [];
+      setPosts((prev) => {
+        const have = new Set(prev.map((p) => p.id));
+        return [...prev, ...more.filter((p) => !have.has(p.id))];
+      });
+      if (typeof data.total === "number") setTotal(data.total);
+    } catch {
+      /* offline: the button stays, try again */
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   return (
     <div className="pt-32 sm:pt-44 pb-36 sm:pb-20 min-h-screen bg-[#F4F7FB]">
@@ -328,7 +365,9 @@ export default function BlogPageClient({
                   <div className="flex-1 h-px bg-[#D2DCE8]" />
                 </div>
                 <button
-                  onClick={() => setVisibleCount((c) => c + 9)}
+                  onClick={() => void loadMore()}
+                  disabled={loadingMore}
+                  data-testid="ai-times-load-more"
                   className="inline-flex items-center gap-2 bg-white border border-[#D2DCE8] hover:border-[#2251A3] hover:text-[#2251A3] text-[#3A4A5C] font-dm font-medium text-sm px-8 py-3 rounded-2xl shadow-sm transition-all duration-200"
                 >
                   {t("pages.aiTimes.loadMore", { n: Math.min(9, hiddenCount) })}
