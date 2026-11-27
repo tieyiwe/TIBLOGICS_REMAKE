@@ -126,7 +126,8 @@ export async function scanSite(raw: string, timeoutMs = 20_000, opts: { extra?: 
       llmsTxt: !!llms,
     };
 
-    const base = audit(signals);
+    // The public scanner hands the AI-agent checks to AI Agent Readiness.
+    const base = audit(signals, { agentChecks: !opts.extra });
     if (!opts.extra) return { ok: true, url: finalUrl, ...base };
     const headers: Record<string, string> = {};
     res.headers.forEach((v, k) => {

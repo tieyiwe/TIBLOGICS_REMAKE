@@ -264,6 +264,39 @@ model ToolkitRun {
 /// Created by lib/blueprint/db.ts on first use (no migrations).
 /// The AI Product Cost Calculator's paid Full Plan (lib/calculator/plan.ts).
 /// Created by runtime DDL; listed here so Replit's publish keeps the table.
+model AgentReadyScan {
+  id              String    @id
+  /// The report's address: /tools/ai-agent-ready/r/<token>
+  token           String    @unique
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now())
+  url             String
+  host            String
+  locale          String    @default("en")
+  /// Hashed visitor address, for the free-scan limit
+  ipHash          String?
+  score           Int       @default(0)
+  /// ready | partial | notReady
+  verdict         String    @default("notReady")
+  /// The scan (lib/agent-ready/scan.ts AgentScan)
+  result          Json
+  /// free | report ($25) | kit ($50)
+  tier            String    @default("free")
+  email           String?
+  reportSessionId String?   @unique
+  kitSessionId    String?   @unique
+  amountPaid      Int       @default(0)
+  paidAt          DateTime?
+  /// Re-scans used (the kit includes some, to check the fixes)
+  rescans         Int       @default(0)
+  /// Started by staff (not a customer)
+  staff           Boolean   @default(false)
+
+  @@index([host])
+  @@index([tier])
+  @@index([createdAt])
+}
+
 model CalculatorPass {
   id              String    @id
   createdAt       DateTime  @default(now())

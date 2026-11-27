@@ -149,6 +149,7 @@ export const NAV_SECTIONS: NavSection[] = [
         ],
       },
       { label: "Scanner Leads", href: "/admin_pro/scanner-leads", icon: Search },
+      { label: "AI Agent Readiness", href: "/admin_pro/scanner-leads/agent-ready", icon: Bot, keywords: "robots llms ai agents crawler" },
       {
         label: "Agents",
         href: "/admin_pro/agents",
@@ -269,6 +270,7 @@ export const NAV_PERMISSION_MAP: Record<string, string> = {
   "/admin_pro/reviews": "contacts",
   "/admin_pro/prospects": "prospects",
   "/admin_pro/scanner-leads": "scanner_leads",
+  "/admin_pro/scanner-leads/agent-ready": "scanner_leads", // (inherited)
   "/admin_pro/tools": "tools",
   "/admin_pro/monitor": "tools",
   "/admin_pro/toolkit": "tools",

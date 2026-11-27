@@ -35,6 +35,7 @@ export type ConversionKind =
   | "toolkit_checkout"
   | "blueprint"
   | "scanner"
+  | "agent-ready"
   | "order"
   | "event_registration"
   | "appointment";

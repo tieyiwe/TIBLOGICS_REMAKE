@@ -30,6 +30,7 @@ const STEPS: Array<[string, () => Promise<unknown>]> = [
   ["lib/analytics/db", () => import("@/lib/analytics/db").then((m) => m.ensureAnalyticsTables())],
   ["lib/cyber/db", () => import("@/lib/cyber/db").then((m) => m.ensureCyberTables())],
   ["lib/calculator/plan", () => import("@/lib/calculator/plan").then((m) => m.ensureCalculatorTables())],
+  ["lib/agent-ready/db", () => import("@/lib/agent-ready/db").then((m) => m.ensureAgentReadyTables())],
   ["lib/blueprint/db", () => import("@/lib/blueprint/db").then((m) => m.ensureBlueprintTables())],
   ["lib/learn/community/db", () => import("@/lib/learn/community/db").then((m) => m.ensureCommunityTables())],
   ["lib/learn/admin/learners", () => import("@/lib/learn/admin/learners").then((m) => m.ensureLearnerTables())],

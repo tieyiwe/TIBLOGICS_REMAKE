@@ -9,6 +9,7 @@ import { breadcrumbNode, itemListNode } from "@/lib/seo/jsonld";
 // do not run JavaScript still read what each tool is and what it costs.
 const LISTED = [
   { id: "scanner", href: "/tools/scanner" },
+  { id: "agentReady", href: "/tools/ai-agent-ready" },
   { id: "toolkit", href: "/tools/toolkit-live" },
   { id: "blueprint", href: "/tools/automation-blueprint" },
   { id: "monitor", href: "/tools/readiness-monitor" },

@@ -167,7 +167,15 @@ export function robotsBlocksAi(robots: string): boolean {
   return !!star && blocked(star) && named.size < 3;
 }
 
-export function audit(s: Signals): AuditResult {
+/**
+ * Checks that belong to AI Agent Readiness (lib/agent-ready), which tests
+ * them properly (20 named agents, firewalls, the file itself). The public
+ * scanner leaves them out and links to that check instead; the Readiness
+ * Monitor keeps scoring them so its history stays comparable.
+ */
+export const AGENT_CHECKS = new Set(["ai-crawlers", "llms-txt"]);
+
+export function audit(s: Signals, opts: { agentChecks?: boolean } = {}): AuditResult {
   const html = s.html;
   const lower = html.toLowerCase();
 
@@ -311,6 +319,10 @@ export function audit(s: Signals): AuditResult {
       good: "llms.txt published — an explicit guide for AI crawlers",
       bad: "No llms.txt — an emerging standard for telling AI systems what matters on your site" },
   ];
+
+  if (opts.agentChecks === false) {
+    for (let i = checks.length - 1; i >= 0; i--) if (AGENT_CHECKS.has(checks[i].key)) checks.splice(i, 1);
+  }
 
   const byArea = (area: Finding["area"]) => {
     const list = checks.filter((c) => c.area === area);

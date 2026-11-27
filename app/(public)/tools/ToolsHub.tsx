@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Search, Bot, Calculator, Radar, Wand2, FileText } from "lucide-react";
+import { Search, Bot, BotMessageSquare, Calculator, Radar, Wand2, FileText } from "lucide-react";
 import SmartRecommendations from "@/components/public/SmartRecommendations";
 import { useEffect } from "react";
 import { trackPageVisit } from "@/lib/recommendations";
@@ -12,6 +12,14 @@ const ALL_TOOLS = [
     id: "scanner",
     href: "/tools/scanner",
     color: "#2251A3",
+    paid: false,
+    retired: false,
+  },
+  {
+    icon: BotMessageSquare,
+    id: "agentReady",
+    href: "/tools/ai-agent-ready",
+    color: "#0E7C66",
     paid: false,
     retired: false,
   },

@@ -2,7 +2,7 @@ import type { ScannerLead } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import type { Locale, Vars } from "@/lib/i18n/config";
 import { formatMoney } from "@/lib/blueprint/config";
-import type { Finding } from "./audit";
+import { AGENT_CHECKS, type Finding } from "./audit";
 import type { ExtraFinding, OpportunityKey, PageSpeedResult, Tech } from "./extra";
 import { findingText } from "./i18n";
 import { reportPrice } from "./config";
@@ -129,7 +129,8 @@ export function allFindings(lead: Pick<ScannerLead, "findings" | "extra">): AnyF
   const base = (Array.isArray(lead.findings) ? lead.findings : []) as unknown as Finding[];
   const extra = readExtra(lead.extra);
   const list: AnyFinding[] = [
-    ...base.filter((f) => f && typeof f.check === "string"),
+    // Reports saved before AI Agent Readiness still hold its checks: not shown.
+    ...base.filter((f) => f && typeof f.check === "string" && !AGENT_CHECKS.has(f.check)),
     ...(extra?.findings ?? []),
     ...(extra?.pageSpeedFindings ?? []),
   ] as AnyFinding[];

@@ -302,6 +302,12 @@ export async function POST(req: Request) {
         await markReportPaid(session.metadata.leadId, session);
       }
 
+      // ── AI Agent Readiness: report or kit (one-time) ─────────────────────
+      if (session.metadata?.product === "agent-ready" && session.metadata.scanId && session.mode === "payment") {
+        const { markPaid } = await import("@/lib/agent-ready/service");
+        await markPaid(session);
+      }
+
       // ── Toolkit Live / Compliance Guard checkout ─────────────────────────
       if (session.metadata?.product === TOOLKIT_PRODUCT && session.mode === "subscription") {
         const studentId = session.metadata.studentId || session.client_reference_id;

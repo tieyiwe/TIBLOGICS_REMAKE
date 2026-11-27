@@ -22,6 +22,7 @@ export type TouchKind =
   | "toolkit_checkout"
   | "blueprint"
   | "scanner"
+  | "agent-ready"
   | "scanner_lead"
   | "order"
   | "event_registration"

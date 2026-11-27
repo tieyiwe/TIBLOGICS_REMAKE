@@ -29,6 +29,7 @@ const LABELS: Record<string, string> = {
   "automation-blueprint": "Automation Blueprint",
   "scanner-report": "Website scanner full report",
   "calculator-plan": "AI Product Cost Calculator Full Plan",
+  "agent-ready": "AI Agent Readiness",
   "toolkit-live": "Toolkit Live subscription",
   "readiness-monitor": "Readiness Monitor subscription",
 };
@@ -80,6 +81,11 @@ export async function alertCheckoutSale(session: Stripe.Checkout.Session): Promi
       const t = await prisma.learnTrack.findUnique({ where: { id: m.trackId }, select: { title: true } }).catch(() => null);
       if (t) detail.push(`Track: ${t.title}`);
       if (m.scholarshipCode) detail.push(`Scholarship: ${m.scholarshipCode}`);
+    }
+    if (m.product === "agent-ready") {
+      what = m.buy === "kit" ? "AI Agent Readiness fix kit" : "AI Agent Readiness report";
+      const r = m.scanId ? await prisma.agentReadyScan.findUnique({ where: { id: m.scanId }, select: { host: true, score: true } }).catch(() => null) : null;
+      if (r) detail.push(`Site: ${r.host} (score ${r.score}/100)`, "Next step: offer to apply the fixes (Admin > AI Agent Readiness)");
     }
     if (m.orderId) {
       what = "Shop order";

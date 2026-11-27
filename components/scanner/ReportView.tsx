@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  AlertTriangle, ArrowRight, CalendarCheck, Check, CheckCircle2, Copy, Download, FileText, Gauge, Lightbulb,
+  AlertTriangle, ArrowRight, BotMessageSquare, CalendarCheck, Check, CheckCircle2, Copy, Download, FileText, Gauge, Lightbulb,
   Loader2, Lock, Mail, RefreshCw, Rocket, ScanSearch, Shield, Sparkles, Users, Wrench, XCircle, Zap,
 } from "lucide-react";
 import { useLocale, useT } from "@/lib/i18n/client";
@@ -340,6 +340,9 @@ export default function ReportView({ initial, paidReturn = false, canceled = fal
       {/* ── Security ─────────────────────────────────────────────────────── */}
       {v.security && <SecurityCard s={v.security} />}
 
+      {/* ── AI agents: their own check (AI Agent Readiness) ──────────────── */}
+      <AgentReadyCta domain={v.domain} />
+
       {/* ── Problems ─────────────────────────────────────────────────────── */}
       {v.level !== "full" && (
         <div className={card}>
@@ -457,6 +460,29 @@ export default function ReportView({ initial, paidReturn = false, canceled = fal
 }
 
 /** "We'll fix these issues for you": shown on every report with problems. */
+/** AI crawler and agent checks moved to AI Agent Readiness: hand the site over. */
+function AgentReadyCta({ domain }: { domain: string }) {
+  const t = useT();
+  return (
+    <div className="flex flex-col gap-4 rounded-2xl border border-[#0E7C66]/30 bg-gradient-to-br from-[#EAF7F3] to-white p-6 sm:flex-row sm:items-center sm:p-7" data-testid="agent-ready-cta">
+      <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#0E7C66]/10 text-[#0E7C66]">
+        <BotMessageSquare size={24} aria-hidden />
+      </span>
+      <div className="min-w-0 flex-1">
+        <h2 className="font-syne text-lg font-bold text-[#0D1B2A]">{t("tools.agent.cta.title")}</h2>
+        <p className="mt-1 font-dm text-sm text-[#3A4A5C]">{t("tools.agent.cta.body")}</p>
+      </div>
+      <Link
+        href={`/tools/ai-agent-ready?url=${encodeURIComponent(domain)}`}
+        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#0E7C66] px-5 py-3 font-dm text-sm font-semibold text-white hover:bg-[#0B6553]"
+        data-track="cta-scanner-to-agent-ready"
+      >
+        {t("tools.agent.cta.button")} <ArrowRight size={15} aria-hidden />
+      </Link>
+    </div>
+  );
+}
+
 function FixOffer({ n, href }: { n: number; href: string }) {
   const t = useT();
   if (n <= 0) return null;

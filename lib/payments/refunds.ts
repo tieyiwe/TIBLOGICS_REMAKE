@@ -67,6 +67,8 @@ export async function handleChargeReversal(kind: Kind, charge: Stripe.Charge): P
     if (bps.count) done.push("Automation Blueprint marked refunded.");
     const plans = await import("@/lib/calculator/plan").then((m) => m.refundPlan(sid)).catch(() => 0);
     if (plans) done.push("Calculator Full Plan ended.");
+    const agent = await import("@/lib/agent-ready/service").then((m) => m.refundAgentSession(sid)).catch(() => null);
+    if (agent) done.push(agent);
   }
 
   const amount = `${(charge.amount / 100).toFixed(2)} ${charge.currency.toUpperCase()}`;
