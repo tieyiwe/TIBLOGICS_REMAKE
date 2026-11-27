@@ -875,6 +875,17 @@ async function settleCurated(): Promise<void> {
         a.slug,
         `/ai-times/${a.slug}`,
       );
+      if (a.earlierReads) {
+        await prisma.$executeRawUnsafe(
+          `UPDATE "BlogPost" b SET "viewCount" = $3 + v.n
+           FROM (SELECT count(*)::int AS n FROM "PageView" WHERE "page" = $2 AND "createdAt" >= $4::timestamp) v
+           WHERE b."slug" = $1 AND $3 + v.n > b."viewCount"`,
+          a.slug,
+          `/ai-times/${a.slug}`,
+          a.earlierReads.before,
+          new Date(a.earlierReads.since),
+        );
+      }
     } catch (err) {
       console.error("[auto-refresh] curated settle failed", a.slug, err instanceof Error ? err.message : err);
     }

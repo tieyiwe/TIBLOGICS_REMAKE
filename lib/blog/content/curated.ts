@@ -48,6 +48,12 @@ export interface CuratedArticle {
    * for a piece that was published before and came back.
    */
   publishedAt?: string;
+  /**
+   * Reads an earlier copy had that the visit log never recorded (the copy was
+   * lost before PageView existed), and when the current copy went up (ISO).
+   * The counter is kept at least `before` plus the visits logged since `since`.
+   */
+  earlierReads?: { before: number; since: string };
 }
 
 export const CURATED_ARTICLES: CuratedArticle[] = [

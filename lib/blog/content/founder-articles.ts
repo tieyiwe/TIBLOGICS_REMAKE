@@ -28,6 +28,9 @@ export const FOUNDER_ARTICLES: CuratedArticle[] = [
     restore: true,
     // Written and first published on May 4, 2026 (it keeps that date).
     publishedAt: "2026-05-04T15:16:35Z",
+    // The May copy had 112 reads (the owner's count) before it was lost;
+    // this copy went up on Nov 27, 2026.
+    earlierReads: { before: 112, since: "2026-11-27T00:00:00Z" },
     content: `<p>Every time you ask an AI a question, every time a stream starts buffering and then bursts to life, every time a bank processes a transaction in milliseconds — a data center made it happen. Inside that building, there are hundreds of thousands of servers stacked floor to ceiling, humming with heat, and quietly generating something most people never think about: <em>dust</em>.</p>
 
 <p>The AI economy has minted a new class of billionaires. It has launched million-dollar SaaS companies, spawned entire college departments, and triggered a global infrastructure arms race. But one of its most consistently profitable subindustries — one that requires no coding degree, no venture capital, and no algorithm — is hiding in plain sight, one vacuum filter at a time.</p>
