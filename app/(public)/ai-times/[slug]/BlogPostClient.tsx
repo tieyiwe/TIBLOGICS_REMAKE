@@ -361,7 +361,7 @@ export default function BlogPostPage({
     <EngageProvider slug={slug}>
     <div className="pt-32 sm:pt-44 pb-36 sm:pb-20 min-h-screen bg-[#F4F7FB]">
       {/* Sticky back bar — always visible while reading */}
-      <div className="sticky top-20 sm:top-44 z-30 bg-white/95 backdrop-blur-sm border-b border-[#D2DCE8] shadow-sm">
+      <div className="sticky top-[var(--site-header-h,5.5rem)] sm:top-[var(--site-header-h,8.5rem)] z-30 bg-white border-b border-[#D2DCE8] shadow-sm">
         {/* Reading progress bar */}
         <div className="h-[3px] bg-[#E8EFF8] w-full">
           <div

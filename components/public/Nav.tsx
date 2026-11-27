@@ -54,6 +54,24 @@ export default function Nav() {
     setMobileOpen(false);
   }, [pathname]);
 
+  // The header's real height (it changes with the promotion banner, the
+  // screen width and zoom) as --site-header-h, so bars that stick below it
+  // (the article reading bar) sit flush against it with no gap or overlap.
+  const headerRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const root = document.documentElement;
+    const set = () => root.style.setProperty("--site-header-h", `${Math.round(el.getBoundingClientRect().height)}px`);
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      root.style.removeProperty("--site-header-h");
+    };
+  }, []);
+
   // The open drawer is a modal dialog: focus stays inside, Escape closes it,
   // and focus returns to the menu button.
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -75,6 +93,7 @@ export default function Nav() {
   return (
     <>
       <header
+        ref={headerRef}
         className={cn(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white",
           scrolled
