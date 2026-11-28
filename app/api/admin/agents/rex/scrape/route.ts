@@ -1,13 +1,33 @@
+import { staffAiLimit } from "@/lib/rate-limit";
 export const maxDuration = 30;
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
+import { requirePermission } from "@/lib/require-admin";
+import { checkTargetUrl, safeFetch } from "@/lib/ssrf";
+
+/**
+ * The lead's website as a URL we are willing to fetch, or null.
+ *
+ * agentLead.website is whatever a Rex search wrote — usually an AI-invented
+ * domain, never an operator-reviewed value. Fetched unchecked it was an SSRF
+ * primitive: the page body is summarised straight back to the caller, so
+ * `http://169.254.169.254/...` or a localhost port would have exfiltrated
+ * cloud metadata and internal responses through the analysis field.
+ */
+async function safeTargetUrl(website: string | null): Promise<URL | null> {
+  if (!website) return null;
+  const checked = await checkTargetUrl(website);
+  return checked.ok ? checked.url : null;
+}
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Staff only. A bare session check passed here for TIBLOGICS Learn students
+  // too, since learners share this NextAuth instance — requireAdmin rejects them.
+  const unauth = await requirePermission("agents");
+  if (unauth) return unauth;
+  const slow = await staffAiLimit("rex-scrape");
+  if (slow) return slow;
 
   const { leadId } = await req.json();
   if (!leadId) return NextResponse.json({ error: "leadId required" }, { status: 400 });
@@ -16,14 +36,17 @@ export async function POST(req: NextRequest) {
   if (!lead) return NextResponse.json({ error: "Lead not found" }, { status: 404 });
 
   let pageText = "";
-  const websiteUrl = lead.website
-    ? lead.website.startsWith("http") ? lead.website : `https://${lead.website}`
-    : null;
+  const target = await safeTargetUrl(lead.website);
+  const websiteUrl = target?.toString() ?? null;
 
   // Try to fetch the website
-  if (websiteUrl) {
+  if (target) {
     try {
-      const res = await fetch(websiteUrl, {
+      // safeFetch follows redirects but re-checks every hop, so a lead's site
+      // that 302s somewhere internal is refused rather than followed. Plain
+      // redirect: "manual" simply gave up on sites that redirect, which is
+      // most of them.
+      const res = await safeFetch(target, {
         headers: { "User-Agent": "Mozilla/5.0 (compatible; TIBLOGICSBot/1.0)" },
         signal: AbortSignal.timeout(8000),
       });
@@ -69,7 +92,7 @@ Provide a JSON analysis with ONLY these fields (no markdown, just raw JSON):
 }`;
 
   const messages = [{ role: "user" as const, content: prompt }];
-  const text = await streamChat(messages, "You are a business analyst. Return only valid JSON.", 1500);
+  const text = await streamChat(messages, "You are a business analyst. Return only valid JSON.", 1500, "classify");
 
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   let info: Record<string, unknown> = {};

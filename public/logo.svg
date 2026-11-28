@@ -33,13 +33,15 @@
   <circle cx="192" cy="46"  r="6"  fill="url(#ng)"/>
 
   <!-- TIB -->
-  <text x="218" y="108"
+  <!-- textLength pins the wordmark width so it cannot overrun the 560-wide
+       viewBox on machines without Helvetica Neue, which clipped the S. -->
+  <text x="218" y="108" textLength="115" lengthAdjust="spacingAndGlyphs"
         font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
         font-weight="800" font-size="68"
         fill="#1B3A6B">TIB</text>
 
   <!-- LOGICS -->
-  <text x="333" y="108"
+  <text x="333" y="108" textLength="212" lengthAdjust="spacingAndGlyphs"
         font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
         font-weight="800" font-size="68"
         fill="#F47C20">LOGICS</text>

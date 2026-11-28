@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { unsubscribeUrl } from "@/lib/newsletter/unsubscribe";
 import prisma from "@/lib/prisma";
 import resend from "@/lib/resend";
 import { requireAdmin } from "@/lib/require-admin";
@@ -59,8 +60,16 @@ export async function POST(req: NextRequest) {
 }
 
 async function sendCampaign(campaignId: string): Promise<NextResponse> {
-  const campaign = await prisma.newsletterCampaign.findUnique({ where: { id: campaignId } });
-  if (!campaign) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  // Claimed once: a second Send (two tabs, the news agent) used to email
+  // every subscriber again.
+  const claimed = await prisma.newsletterCampaign.updateMany({ where: { id: campaignId, status: "DRAFT" }, data: { status: "SENDING" } });
+  if (claimed.count === 0) {
+    const exists = await prisma.newsletterCampaign.findUnique({ where: { id: campaignId }, select: { status: true } });
+    return exists
+      ? NextResponse.json({ error: `This campaign is already ${exists.status.toLowerCase()}.` }, { status: 409 })
+      : NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  const campaign = await prisma.newsletterCampaign.findUniqueOrThrow({ where: { id: campaignId } });
 
   const subscribers = await prisma.newsletterSubscriber.findMany({ where: { active: true }, select: { email: true, firstName: true } });
 
@@ -68,26 +77,36 @@ async function sendCampaign(campaignId: string): Promise<NextResponse> {
   const batchSize = 10;
   for (let i = 0; i < subscribers.length; i += batchSize) {
     const batch = subscribers.slice(i, i + batchSize);
-    await Promise.allSettled(
+    const results = await Promise.allSettled(
       batch.map((sub) =>
         resend.emails.send({
           from: process.env.FROM_EMAIL ?? "newsletter@tiblogics.com",
           to: sub.email,
           subject: campaign.subject,
-          html: buildEmailHtml(campaign.contentHtml, sub.firstName, sub.email),
+          html: campaignHtml(campaign.contentHtml, sub.firstName, sub.email),
         })
       )
     );
-    sent += batch.length;
+    sent += results.filter((r) => r.status === "fulfilled").length;
   }
 
   await prisma.newsletterCampaign.update({ where: { id: campaignId }, data: { status: "SENT", sentAt: new Date(), recipientCount: sent } });
   return NextResponse.json({ message: `Sent to ${sent} subscribers`, sent });
 }
 
+/**
+ * A campaign's email for one subscriber. A draft saved from Compose is already
+ * a whole email (with a {{email}} placeholder): it is sent as is, not wrapped
+ * in a second one.
+ */
+function campaignHtml(content: string, firstName: string | null, email: string): string {
+  if (/^\s*<!DOCTYPE/i.test(content)) return content.replaceAll("{{unsubscribe}}", unsubscribeUrl(email));
+  return buildEmailHtml(content, firstName, email);
+}
+
 function buildEmailHtml(content: string, firstName: string | null, email: string): string {
-  const greeting = firstName ? `Hi ${firstName},` : "Hi there,";
-  const unsubUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? "https://tiblogics.com"}/unsubscribe?email=${encodeURIComponent(email)}`;
+  const greeting = firstName ? `Hi ${firstName.replace(/[&<>"']/g, "")},` : "Hi there,";
+  const unsubUrl = unsubscribeUrl(email);
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#F4F7FB;font-family:Arial,sans-serif;">
   <div style="max-width:600px;margin:24px auto;background:white;border-radius:16px;overflow:hidden;">

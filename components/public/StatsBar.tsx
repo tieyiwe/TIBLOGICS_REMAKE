@@ -1,15 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useLocale, useT } from "@/lib/i18n/client";
 
-const stats = [
-  { value: null, suffix: "",  label: "Live AI Products" },
-  { value: null, suffix: "",  label: "Serving Markets Worldwide" },
-  { value: null, suffix: "+", label: "Businesses Transformed" },
-  { value: null, suffix: "+", label: "AI Academy on Skool" },
+// `label` is the dictionary key suffix under home.stats.*
+const stats: { value: number | null; suffix: string; label: string }[] = [
+  { value: null, suffix: "",  label: "products" },
+  { value: null, suffix: "",  label: "markets" },
+  { value: null, suffix: "+", label: "businesses" },
+  { value: null, suffix: "+", label: "academy" },
 ];
 
 function CountUp({ target, suffix }: { target: number | null; suffix: string }) {
+  const locale = useLocale();
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
   const started = useRef(false);
@@ -43,13 +46,14 @@ function CountUp({ target, suffix }: { target: number | null; suffix: string }) 
 
   return (
     <span ref={ref} className="font-syne font-extrabold text-4xl">
-      <span className="text-[#F47C20]">{count}</span>
+      <span className="text-[#F47C20]">{count.toLocaleString(locale)}</span>
       {suffix && <span className="text-white">{suffix}</span>}
     </span>
   );
 }
 
 export default function StatsBar() {
+  const t = useT();
   return (
     <div className="bg-[#1B3A6B] py-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -64,7 +68,7 @@ export default function StatsBar() {
               ].filter(Boolean).join(" ")}
             >
               {stat.value !== null && <CountUp target={stat.value} suffix={stat.suffix} />}
-              <p className="font-dm text-sm text-white/60 text-center">{stat.label}</p>
+              <p className="font-dm text-sm text-white/60 text-center">{t(`home.stats.${stat.label}`)}</p>
             </div>
           ))}
         </div>

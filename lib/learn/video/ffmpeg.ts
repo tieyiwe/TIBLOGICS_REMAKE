@@ -1,0 +1,237 @@
+import { spawn } from "child_process";
+import { existsSync } from "fs";
+import os from "os";
+import { readFile, writeFile } from "fs/promises";
+import path from "path";
+import { LEAD_SEC, TAIL_SEC } from "./timing";
+
+// ffmpeg for the narrated lesson videos (the ffmpeg-static binary, or
+// FFMPEG_PATH). Every run has a timeout and is killed when it passes.
+//
+//   VIDEO_KEN_BURNS=1     slow zoom on each slide (more CPU)
+//   VIDEO_FFMPEG_THREADS  encoder threads (default 2)
+//   VIDEO_FPS             default 15 (slides are stills: 15 keeps the fades smooth
+//                         and encodes about a third faster than 25)
+//   VIDEO_X264_PRESET     default "superfast"; "ultrafast" is faster again but the
+//                         files are about 3x bigger (slower for learners on mobile data)
+//   VIDEO_AUDIO_WARMTH=0  turn off the voice polish (bass lift, gentle compression, even loudness)
+
+let resolved: string | null = null;
+
+export function ffmpegPath(): string {
+  if (resolved) return resolved;
+  const env = process.env.FFMPEG_PATH;
+  if (env && existsSync(env)) return (resolved = env);
+  // Resolved at runtime (the package is external to the server bundle).
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const p = require("ffmpeg-static") as string | null;
+  if (p && existsSync(p)) return (resolved = p);
+  const local = path.join(process.cwd(), "node_modules", "ffmpeg-static", "ffmpeg");
+  if (existsSync(local)) return (resolved = local);
+  throw new Error("ffmpeg binary not found (install ffmpeg-static or set FFMPEG_PATH)");
+}
+
+export async function runFfmpeg(args: string[], timeoutMs: number): Promise<string> {
+  const bin = ffmpegPath();
+  return new Promise((resolve, reject) => {
+    const child = spawn(/*turbopackIgnore: true*/ bin, ["-hide_banner", "-nostdin", "-loglevel", "error", ...args], { stdio: ["ignore", "ignore", "pipe"] });
+    // Lowest CPU priority: on a shared server the website is served first.
+    if (child.pid) {
+      try {
+        os.setPriority(child.pid, 19);
+      } catch {
+        /* not permitted here: runs at normal priority */
+      }
+    }
+    let err = "";
+    child.stderr.on("data", (d) => {
+      if (err.length < 20_000) err += String(d);
+    });
+    const timer = setTimeout(() => {
+      child.kill("SIGKILL");
+      reject(new Error(`ffmpeg timed out after ${Math.round(timeoutMs / 1000)}s`));
+    }, timeoutMs);
+    child.on("error", (e) => {
+      clearTimeout(timer);
+      reject(e);
+    });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      if (code === 0) resolve(err);
+      else reject(new Error(`ffmpeg exited ${code}: ${err.trim().split("\n").slice(-4).join(" | ").slice(0, 600)}`));
+    });
+  });
+}
+
+/** Duration in seconds of any media file (from ffmpeg's own report). */
+export async function probe(file: string): Promise<{ duration: number; streams: string[] }> {
+  const bin = ffmpegPath();
+  const out: string = await new Promise((resolve, reject) => {
+    const child = spawn(/*turbopackIgnore: true*/ bin, ["-hide_banner", "-nostdin", "-i", file], { stdio: ["ignore", "ignore", "pipe"] });
+    let s = "";
+    child.stderr.on("data", (d) => (s += String(d)));
+    const timer = setTimeout(() => child.kill("SIGKILL"), 20_000);
+    child.on("error", reject);
+    child.on("close", () => {
+      clearTimeout(timer);
+      resolve(s);
+    });
+  });
+  const m = /Duration: (\d+):(\d+):(\d+(?:\.\d+)?)/.exec(out);
+  const duration = m ? Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]) : 0;
+  const streams = [...out.matchAll(/Stream #\d+:\d+[^:]*: (.*)/g)].map((x) => x[1].trim());
+  return { duration, streams };
+}
+
+const RATE = 48_000;
+
+/** Exact length of a 16-bit mono PCM WAV from its data chunk. */
+async function wavSeconds(file: string): Promise<number> {
+  const buf = await readFile(file);
+  for (let i = 12; i < Math.min(buf.length - 8, 4096); ) {
+    const id = buf.toString("ascii", i, i + 4);
+    const size = buf.readUInt32LE(i + 4);
+    if (id === "data") return Math.min(size, buf.length - i - 8) / (RATE * 2);
+    i += 8 + size + (size % 2);
+  }
+  throw new Error("Could not read the narration audio length");
+}
+
+/**
+ * One scene's narration: the MP3 chunks from the TTS provider joined into a
+ * WAV with a short lead-in and a pause at the end. Returns the speech length
+ * (without the padding) and the padded scene length, both measured from the audio.
+ */
+export async function sceneAudio(chunks: string[], out: string): Promise<{ speech: number; total: number }> {
+  const inputs = chunks.flatMap((c) => ["-i", c]);
+  const joined = chunks.map((_, i) => `[${i}:a]aresample=${RATE},aformat=sample_fmts=s16:channel_layouts=mono[a${i}]`).join(";");
+  const concat = `${chunks.map((_, i) => `[a${i}]`).join("")}concat=n=${chunks.length}:v=0:a=1[speech]`;
+  const speechFile = out.replace(/\.wav$/, ".speech.wav");
+  await runFfmpeg(["-y", ...inputs, "-filter_complex", `${joined};${concat}`, "-map", "[speech]", "-c:a", "pcm_s16le", "-ar", String(RATE), "-ac", "1", speechFile], 120_000);
+  const speech = await wavSeconds(speechFile);
+  await runFfmpeg(
+    ["-y", "-i", speechFile, "-af", `adelay=${Math.round(LEAD_SEC * 1000)}:all=1,apad=pad_dur=${TAIL_SEC}`, "-c:a", "pcm_s16le", "-ar", String(RATE), "-ac", "1", out],
+    120_000,
+  );
+  return { speech, total: await wavSeconds(out) };
+}
+
+/**
+ * Voice polish for the narration: removes rumble, adds a little body to the
+ * low end (a warmer, deeper voice), evens out loud and soft words and sets
+ * a steady loudness (-16 LUFS, the usual level for spoken video). Does not
+ * change the length, so slides and captions stay in step.
+ */
+export function voiceFilter(): string | null {
+  if (process.env.VIDEO_AUDIO_WARMTH === "0") return null;
+  return [
+    "highpass=f=70",
+    "bass=g=3:f=120:w=0.8",
+    "equalizer=f=3200:t=q:w=1.2:g=1.5",
+    "acompressor=threshold=-21dB:ratio=2:attack=10:release=150:makeup=1.5",
+    "loudnorm=I=-16:TP=-1.5:LRA=11",
+  ].join(",");
+}
+
+/** The same polish on a voice sample (MP3 in, MP3 out), so the admin hears what videos will sound like. */
+export async function polishSample(mp3: Buffer, tmp: string): Promise<Buffer> {
+  const f = voiceFilter();
+  if (!f) return mp3;
+  const src = path.join(tmp, "sample-in.mp3");
+  const out = path.join(tmp, "sample-out.mp3");
+  await writeFile(src, mp3);
+  await runFfmpeg(["-y", "-i", src, "-af", f, "-ar", "24000", "-ac", "1", "-c:a", "libmp3lame", "-b:a", "96k", out], 60_000);
+  return readFile(out);
+}
+
+/**
+ * The video: a sequence of shots (each scene's slide, or the frames that
+ * build it up point by point), each held for its time with a short
+ * crossfade from the previous one, AAC audio, H.264 1080p with fast start.
+ *
+ * Made one shot at a time and then joined without re-encoding: a single
+ * filter graph over every slide made ffmpeg buffer frames for all of them
+ * (about 2.4 GB for a 3-minute lesson), which ran a small server out of
+ * memory and took the website down with it. A shot's clip needs about 200 MB.
+ * Each clip's length comes from the running total, rounded to whole frames,
+ * so the slides never drift from the narration.
+ */
+export interface Shot {
+  /** The slide image. */
+  file: string;
+  /** How long it is on screen, seconds. */
+  seconds: number;
+  /** Crossfade from the previous shot, seconds (0 for the first). */
+  fade: number;
+}
+
+export async function composeVideo(opts: { shots: Shot[]; audio: string[]; totalSeconds: number; out: string; tmp: string }): Promise<void> {
+  const { shots, audio, out, tmp } = opts;
+  const fps = Number(process.env.VIDEO_FPS) || 15;
+  const kenBurns = process.env.VIDEO_KEN_BURNS === "1";
+  const threads = ["-threads", process.env.VIDEO_FFMPEG_THREADS || "2", "-filter_threads", "1", "-filter_complex_threads", "1"];
+  const encode = [
+    "-c:v", "libx264", "-preset", process.env.VIDEO_X264_PRESET || "superfast", "-tune", "stillimage", "-crf", "24",
+    // No lookahead: the frames are stills, and it saves memory.
+    "-x264-params", "rc-lookahead=0:sync-lookahead=0",
+    "-maxrate", "3M", "-bufsize", "6M", "-pix_fmt", "yuv420p", "-profile:v", "high", "-level", "4.1",
+    "-r", String(fps), "-g", String(fps * 10), "-an",
+  ];
+  // A still decoded once and repeated (tpad), not re-read for every frame.
+  const hold = (secs: number) => `format=yuv420p,setsar=1,tpad=stop_mode=clone:stop_duration=${secs.toFixed(3)},fps=${fps}`;
+  const zoomIn = kenBurns ? `,scale=2880:-1,zoompan=z='min(zoom+0.00025,1.05)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1920x1080:fps=${fps}` : "";
+  // The previous slide as it ended (fully zoomed) for the crossfade.
+  const zoomEnd = kenBurns ? ",scale=2016:-1,crop=1920:1080" : "";
+
+  const clips: string[] = [];
+  let cum = 0;
+  let prevFrame = 0;
+  for (let i = 0; i < shots.length; i++) {
+    cum += shots[i].seconds;
+    const endFrame = Math.round(cum * fps);
+    const frames = Math.max(1, endFrame - prevFrame);
+    prevFrame = endFrame;
+    const secs = frames / fps;
+    const fade = i === 0 ? 0 : Math.min(shots[i].fade, secs / 2);
+    const clip = path.join(tmp, `clip${i}.mp4`);
+    const args =
+      fade <= 0
+        ? ["-y", "-i", shots[i].file, "-filter_complex", `[0:v]${hold(secs + 1)}${zoomIn}[v]`]
+        : [
+            "-y", "-i", shots[i - 1].file, "-i", shots[i].file,
+            "-filter_complex",
+            `[0:v]${hold(fade + 1)}${zoomEnd}[a];[1:v]${hold(secs + 1)}${zoomIn}[b];[a][b]xfade=transition=fade:duration=${fade.toFixed(3)}:offset=0[v]`,
+          ];
+    args.push("-map", "[v]", "-frames:v", String(frames), ...encode, ...threads, clip);
+    await runFfmpeg(args, Math.min(30 * 60_000, Math.max(120_000, Math.round(secs * (kenBurns ? 8000 : 3000)))));
+    clips.push(clip);
+  }
+
+  // Join the clips as they are, with the narration (scene WAVs) as one track.
+  const list = (files: string[]) => files.map((f) => `file '${f.replace(/'/g, "'\\''")}'`).join("\n");
+  const videoList = path.join(tmp, "clips.txt");
+  const audioList = path.join(tmp, "audio.txt");
+  await writeFile(videoList, list(clips));
+  await writeFile(audioList, list(audio));
+  const total = opts.totalSeconds;
+  await runFfmpeg(
+    [
+      "-y", "-f", "concat", "-safe", "0", "-i", videoList, "-f", "concat", "-safe", "0", "-i", audioList,
+      "-map", "0:v", "-map", "1:a", "-c:v", "copy",
+      ...(voiceFilter() ? ["-af", voiceFilter() as string] : []),
+      "-c:a", "aac", "-b:a", "96k", "-ac", "1", "-ar", "48000",
+      "-t", total.toFixed(3), "-movflags", "+faststart",
+      out,
+    ],
+    Math.min(30 * 60_000, Math.max(120_000, Math.round(total * 1000))),
+  );
+}
+
+/** Optional WebM (VP9 + Opus) copy for browsers without H.264 (VIDEO_WEBM=1). */
+export async function toWebm(mp4: string, out: string, seconds: number): Promise<void> {
+  const threads = process.env.VIDEO_FFMPEG_THREADS ? ["-threads", process.env.VIDEO_FFMPEG_THREADS] : [];
+  await runFfmpeg(
+    ["-y", "-i", mp4, "-c:v", "libvpx-vp9", "-b:v", "0", "-crf", "40", "-deadline", "realtime", "-cpu-used", "8", "-row-mt", "1", "-c:a", "libopus", "-b:a", "64k", ...threads, out],
+    Math.min(30 * 60_000, Math.max(180_000, Math.round(seconds * 4000))),
+  );
+}

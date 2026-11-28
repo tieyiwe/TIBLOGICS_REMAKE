@@ -1,10 +1,14 @@
+import { staffAiLimit } from "@/lib/rate-limit";
 export const maxDuration = 300;
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { streamChat } from "@/lib/claude";
+import { requireAdmin } from "@/lib/require-admin";
+import { sanitizeAiHtml } from "@/lib/ai-html";
+import { translateArticlesSoon } from "@/lib/i18n/sources/blog";
 
 const VALID_CATEGORIES = new Set([
-  "breaking", "ai-business", "tips", "tools", "case-studies", "industry",
+  "breaking", "ai-business", "tips", "tools", "case-studies", "industry", "advanced-tech",
 ]);
 
 async function regenerate(title: string, sourceTitle?: string | null) {
@@ -30,23 +34,35 @@ Return ONLY a valid JSON object (no markdown, no fences):
   "tags": ["ai", "business"]
 }
 
-category must be exactly one of: breaking, ai-business, tips, tools, case-studies, industry`;
+category must be exactly one of: breaking, ai-business, tips, tools, case-studies, industry, advanced-tech
+Use "advanced-tech" for frontier technology beyond AI software (chips, quantum, robotics, autonomous vehicles, space, biotech, energy tech, AR/VR, networks, brain-computer interfaces).`;
 
   const raw = await streamChat(
     [{ role: "user", content: prompt }],
     "You are a professional AI technology journalist. Return only valid JSON — no markdown, no extra commentary.",
-    1200
+    3000,
+    "article-admin",
   );
   const clean = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
   const jsonMatch = clean.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error("No JSON in response");
   const parsed = JSON.parse(jsonMatch[0]);
-  if (!parsed.content || parsed.content.length < 200) throw new Error("Content too short");
+  if (typeof parsed.content !== "string" || parsed.content.length < 200) throw new Error("Content too short");
   if (!VALID_CATEGORIES.has(parsed.category)) parsed.category = "industry";
+  // Model-written HTML is published as-is on the public article page.
+  parsed.content = sanitizeAiHtml(parsed.content);
   return parsed as { excerpt: string; content: string; category: string; tags: string[] };
 }
 
-export async function GET() {
+// POST, staff only. This was a public GET that rewrites article content with a paid model: anyone could
+// trigger it, and so could anything that merely fetches a URL (a crawler, a
+// link preview, a browser prefetch). A destructive action must never be a GET.
+export async function POST() {
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
+  const slow = await staffAiLimit("repair-posts");
+  if (slow) return slow;
+
   try {
     // Find posts with thin content (placeholder fallback or very short)
     const allPosts = await prisma.blogPost.findMany({
@@ -86,6 +102,9 @@ export async function GET() {
         errors.push(`"${post.title.slice(0, 50)}": ${String(e).slice(0, 100)}`);
       }
     }
+
+    // Repaired articles have new English: their translations are redone now.
+    if (fixed > 0) void translateArticlesSoon(2 * fixed);
 
     return NextResponse.json({
       message: `Repaired ${fixed} of ${thinPosts.length} thin posts`,

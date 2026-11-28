@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/require-admin";
 
 export async function POST(req: NextRequest) {
+  const unauth = await requirePermission("agents");
+  if (unauth) return unauth;
+
   const { leadIds } = await req.json();
   if (!Array.isArray(leadIds) || leadIds.length === 0) {
     return NextResponse.json({ error: "No leads provided" }, { status: 400 });

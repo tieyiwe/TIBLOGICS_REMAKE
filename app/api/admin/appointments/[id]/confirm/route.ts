@@ -1,19 +1,30 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import resend from "@/lib/resend";
 import { createMeeting, calcEndTime } from "@/lib/meeting-providers";
+import { requireAdmin, escapeHtml } from "@/lib/require-admin";
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Staff only. A bare session check passed here for TIBLOGICS Learn students
+  // too, since learners share this NextAuth instance — requireAdmin rejects them.
+  const unauth = await requireAdmin();
+  if (unauth) return unauth;
 
   const { id } = await params;
   const { meetingLink: manualLink, resendOnly } = await req.json();
+
+  // This link is stored and then emailed to the customer as a clickable button,
+  // so only an http(s) URL is accepted — not `javascript:` or arbitrary text.
+  if (
+    manualLink !== undefined &&
+    manualLink !== null &&
+    (typeof manualLink !== "string" || manualLink.length > 2048 || !/^https?:\/\//i.test(manualLink))
+  ) {
+    return NextResponse.json({ error: "meetingLink must be an http(s) URL" }, { status: 400 });
+  }
 
   const appt = await prisma.appointment.findUnique({ where: { id } });
   if (!appt) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -91,16 +102,27 @@ async function sendConfirmationEmail(data: {
   const providerName = "Jitsi Meet";
   const providerColor = "#1D76BA";
 
-  const meetingSection = data.meetingLink
+  // firstName and timeSlot come from the public booking form, and meetingLink
+  // can be a value typed into the confirm dialog. Escaped for the same reason
+  // the reschedule template escapes its inputs: this is an HTML email.
+  const safeFirst = escapeHtml(data.firstName);
+  const safeTimeSlot = escapeHtml(data.timeSlot);
+  const safeTimezone = escapeHtml(data.timezone);
+  const safeDuration = data.serviceDuration ? escapeHtml(data.serviceDuration) : "";
+  // A link only ever goes in an href when it really is an http(s) URL.
+  const safeLink =
+    data.meetingLink && /^https?:\/\//i.test(data.meetingLink) ? data.meetingLink : null;
+
+  const meetingSection = safeLink
     ? `
     <div style="margin:28px 0;text-align:center;">
       <p style="margin:0 0 14px;font-size:13px;color:#7A8FA6;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Your Meeting Link</p>
-      <a href="${data.meetingLink}"
+      <a href="${encodeURI(safeLink)}"
          style="display:inline-block;background:${providerColor};color:white;text-decoration:none;padding:15px 36px;border-radius:12px;font-size:16px;font-weight:700;">
         🎥 Join on ${providerName}
       </a>
       <p style="color:#7A8FA6;font-size:12px;margin:12px 0 0;word-break:break-all;">
-        ${data.meetingLink}
+        ${escapeHtml(safeLink)}
       </p>
     </div>`
     : `
@@ -126,7 +148,7 @@ async function sendConfirmationEmail(data: {
     </div>
     <div style="padding:36px 32px;">
       <h2 style="color:#0D1B2A;font-size:22px;margin:0 0 10px;font-weight:700;">
-        You're confirmed, ${data.firstName}! 🎉
+        You're confirmed, ${safeFirst}! 🎉
       </h2>
       <p style="color:#3A4A5C;font-size:15px;line-height:1.7;margin:0 0 24px;">
         We're looking forward to speaking with you.
@@ -144,11 +166,11 @@ async function sendConfirmationEmail(data: {
           </tr>
           <tr>
             <td style="padding:6px 0;color:#7A8FA6;font-size:14px;">Time</td>
-            <td style="padding:6px 0;color:#0D1B2A;font-size:14px;font-weight:600;">${data.timeSlot}${endTime ? ` – ${endTime}` : ""} (${data.timezone})</td>
+            <td style="padding:6px 0;color:#0D1B2A;font-size:14px;font-weight:600;">${safeTimeSlot}${endTime ? ` – ${endTime}` : ""} (${safeTimezone})</td>
           </tr>
           ${data.serviceDuration ? `<tr>
             <td style="padding:6px 0;color:#7A8FA6;font-size:14px;">Duration</td>
-            <td style="padding:6px 0;color:#0D1B2A;font-size:14px;font-weight:600;">${data.serviceDuration}</td>
+            <td style="padding:6px 0;color:#0D1B2A;font-size:14px;font-weight:600;">${safeDuration}</td>
           </tr>` : ""}
         </table>
       </div>
