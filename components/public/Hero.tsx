@@ -82,7 +82,7 @@ export default async function Hero() {
           </div>
 
           <div className="anim-fade-up" style={{ animationDelay: "0.2s" }}>
-            {/* The flagship: AI Agent Readiness. The website scanner sits
+            {/* AI Agent Readiness leads the home page. The website scanner sits
                 just below the hero (app/(public)/page.tsx). */}
             <AgentHeroScanner reportPrice={report ? formatMoney(report, locale) : null} />
           </div>
