@@ -1,13 +1,15 @@
 "use client";
 import { useState } from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Globe, Brain, Calculator, MailCheck, CalendarCheck } from "lucide-react";
+import Link from "next/link";
+import { Globe, Brain, Calculator, MailCheck, CalendarCheck, Bot, DollarSign, ShieldCheck } from "lucide-react";
 import { Card, PageHeader, Segmented, StatCard } from "@/components/admin/ui";
 import type { ToolUsageData } from "@/lib/admin/metrics";
 
-type TabId = "scanner" | "calculator" | "advisor";
+type TabId = "agentReady" | "scanner" | "calculator" | "advisor";
 
 const TABS: { id: TabId; label: string; icon: typeof Globe; color: string }[] = [
+  { id: "agentReady", label: "AI Agent Readiness", icon: Bot, color: "#0E7C66" },
   { id: "scanner", label: "Website Scanner", icon: Globe, color: "#2251A3" },
   { id: "calculator", label: "Cost Calculator", icon: Calculator, color: "#F47C20" },
   { id: "advisor", label: "AI Project Advisor", icon: Brain, color: "#7c3aed" },
@@ -47,16 +49,17 @@ function UsageChart({ data, color }: { data: { week: string; uses: number }[]; c
 }
 
 export default function ToolsClient({ data }: { data: ToolUsageData }) {
-  const [activeTab, setActiveTab] = useState<TabId>("scanner");
+  const [activeTab, setActiveTab] = useState<TabId>("agentReady");
   const tab = TABS.find((t) => t.id === activeTab)!;
   const usage = data.tools.find((t) => t.tool === activeTab)!;
   const pct = (v: number | null) => (v == null ? "n/a" : `${v}%`);
+  const money = (c: number) => `$${(c / 100).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Tool analytics"
-        subtitle="Recorded uses of each free tool. Only what is actually tracked is shown: which tool, and when."
+        subtitle="Recorded uses of each tool. Only what is actually tracked is shown. AI Agent Readiness counts customer checks (not staff)."
         className="mb-0"
       />
 
@@ -85,7 +88,17 @@ export default function ToolsClient({ data }: { data: ToolUsageData }) {
           icon={tab.icon}
           spark={usage.trend.map((t) => t.uses)}
         />
-        {activeTab === "scanner" ? (
+        {activeTab === "agentReady" ? (
+          <>
+            <StatCard label="Bought a report or kit" value={pct(data.agentReady.paidRate)} hint={`${data.agentReady.paid} paid, ${data.agentReady.kits} kits`} icon={ShieldCheck} tone="success" />
+            <StatCard label="Revenue" value={money(data.agentReady.revenueCents)} hint={data.agentReady.avgScore != null ? `average score ${data.agentReady.avgScore}/100` : undefined} icon={DollarSign} tone="orange" />
+          </>
+        ) : activeTab === "calculator" ? (
+          <>
+            <StatCard label="Full Plans sold" value={data.calculator.plansSold.toLocaleString()} icon={ShieldCheck} tone="success" />
+            <StatCard label="Full Plan revenue" value={money(data.calculator.revenueCents)} icon={DollarSign} tone="orange" />
+          </>
+        ) : activeTab === "scanner" ? (
           <>
             <StatCard label="Email capture" value={pct(data.scanner.emailCaptureRate)} hint="of saved scans" icon={MailCheck} tone="success" />
             <StatCard label="Booked a call" value={pct(data.scanner.bookingRate)} hint="of saved scans" icon={CalendarCheck} tone="orange" />
@@ -98,6 +111,11 @@ export default function ToolsClient({ data }: { data: ToolUsageData }) {
           {data.scanner.avgScore != null ? `, averaging ${data.scanner.avgScore}/100` : ""}. Rates are out of saved scans, not every scan run.
         </p>
       )}
+      {activeTab === "agentReady" && (
+        <p className="-mt-3 font-dm text-[12.5px] text-[var(--a-ink-3)]">
+          Every check and sale is listed in <Link href="/admin_pro/scanner-leads/agent-ready" className="text-[var(--a-blue)] hover:underline">Scanner Leads &gt; AI Agent Readiness</Link>.
+        </p>
+      )}
       {activeTab === "advisor" && (
         <p className="-mt-3 font-dm text-[12.5px] text-[var(--a-ink-3)]">
           The advisor is hidden from the public tools page in production, so new uses here are expected to be rare.
@@ -105,6 +123,35 @@ export default function ToolsClient({ data }: { data: ToolUsageData }) {
       )}
 
       <UsageChart data={usage.trend} color={tab.color} />
+
+      {activeTab === "calculator" && (
+        <Card title="Recent Full Plans" subtitle="Buyers of the calculator's paid plan (refunded plans stop working).">
+          {data.calculator.recent.length === 0 ? (
+            <p className="font-dm text-sm text-[var(--a-ink-3)]">No Full Plans sold yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[520px] font-dm text-sm" data-testid="calc-plans">
+                <thead>
+                  <tr className="text-left text-[11px] uppercase tracking-[.08em] text-[var(--a-ink-3)]">
+                    <th className="py-2 pr-3">Email</th><th className="py-2 pr-3">Paid</th><th className="py-2 pr-3">Amount</th><th className="py-2 pr-3">Access until</th><th className="py-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--a-border)]">
+                  {data.calculator.recent.map((p, i) => (
+                    <tr key={i}>
+                      <td className="break-all py-2 pr-3 text-[var(--a-ink)]">{p.email ?? "—"}</td>
+                      <td className="py-2 pr-3 text-[var(--a-ink-3)]">{p.paidAt ? new Date(p.paidAt).toLocaleDateString("en-US", { dateStyle: "medium" }) : "—"}</td>
+                      <td className="py-2 pr-3">{money(p.amountPaid)}</td>
+                      <td className="py-2 pr-3 text-[var(--a-ink-3)]">{p.expiresAt ? new Date(p.expiresAt).toLocaleDateString("en-US", { dateStyle: "medium" }) : "—"}</td>
+                      <td className="py-2">{p.status === "refunded" ? <span className="text-red-600">Refunded</span> : p.expiresAt && new Date(p.expiresAt).getTime() < Date.now() ? <span className="text-[var(--a-ink-3)]">Expired</span> : <span className="text-green-700">Active</span>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      )}
     </div>
   );
 }

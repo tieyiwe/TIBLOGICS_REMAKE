@@ -14,7 +14,8 @@ import { teamMrr } from "@/lib/learn/team/admin";
 
 /**
  * Money actually received, in cents, from each paid source, including
- * Learning Box one-time track purchases. Subscription products (Learn
+ * Learning Box one-time track purchases, website scanner reports, calculator
+ * Full Plans and AI Agent Readiness reports and kits. Subscription products (Learn
  * all-access, Readiness Monitor, Toolkit Live) are not here: individual
  * renewals are not recorded, so they are shown as estimates on their pages.
  */
@@ -27,8 +28,11 @@ function monthStart(d: Date, offsetMonths = 0): Date {
 async function paidRevenueBetween(
   from: Date,
   to: Date,
-): Promise<{ store: number; events: number; bookings: number; blueprints: number; learnTracks: number; total: number }> {
-  const [orders, events, bookings, blueprints, learnTracks] = await Promise.all([
+): Promise<{ store: number; events: number; bookings: number; blueprints: number; learnTracks: number; scannerReports: number; calculatorPlans: number; agentReady: number; total: number }> {
+  // Tables created on first sale (runtime DDL): absent means nothing sold.
+  const sumSql = (sql: string) =>
+    prisma.$queryRawUnsafe<Array<{ c: bigint | null }>>(sql, from, to).then((r) => Number(r[0]?.c ?? 0)).catch(() => 0);
+  const [orders, events, bookings, blueprints, learnTracks, scannerReports, calculatorPlans, agentReady] = await Promise.all([
     prisma.order.aggregate({
       _sum: { total: true },
       where: { status: { in: PAID_ORDER_STATUSES }, createdAt: { gte: from, lt: to } },
@@ -52,13 +56,25 @@ async function paidRevenueBetween(
         prisma.trackPurchase.aggregate({ _sum: { amountCents: true }, where: { createdAt: { gte: from, lt: to } } }),
       )
       .catch(() => ({ _sum: { amountCents: 0 } })),
+    // Website scanner full reports (paid unlocks).
+    prisma.scannerLead
+      .aggregate({ _sum: { amountPaid: true }, where: { unlockSource: "paid", unlockedAt: { gte: from, lt: to } } })
+      .then((r) => r._sum.amountPaid ?? 0)
+      .catch(() => 0),
+    // AI Product Cost Calculator Full Plans (refunded ones excluded).
+    sumSql(`SELECT sum("amountPaid")::bigint AS c FROM "CalculatorPass" WHERE "status" = 'paid' AND "paidAt" >= $1 AND "paidAt" < $2`),
+    // AI Agent Readiness reports and kits (refunds put the tier back to free).
+    sumSql(`SELECT sum("amountPaid")::bigint AS c FROM "AgentReadyScan" WHERE "tier" <> 'free' AND "paidAt" >= $1 AND "paidAt" < $2`),
   ]);
   const store = orders._sum.total ?? 0;
   const ev = events._sum.price ?? 0;
   const bk = bookings._sum.totalAmount ?? 0;
   const bp = blueprints._sum.amountPaid ?? 0;
   const lt = learnTracks._sum.amountCents ?? 0;
-  return { store, events: ev, bookings: bk, blueprints: bp, learnTracks: lt, total: store + ev + bk + bp + lt };
+  return {
+    store, events: ev, bookings: bk, blueprints: bp, learnTracks: lt, scannerReports, calculatorPlans, agentReady,
+    total: store + ev + bk + bp + lt + scannerReports + calculatorPlans + agentReady,
+  };
 }
 
 /**
@@ -208,17 +224,50 @@ export async function getToolUsage() {
     prisma.scannerLead.aggregate({ _avg: { overallScore: true } }),
   ]);
 
+  // AI Agent Readiness checks (customers only) and calculator Full Plans. Both
+  // tables are created on first use: absent means none yet.
+  const [agentWeeks, agentStats, plans, recentPlans] = await Promise.all([
+    prisma
+      .$queryRawUnsafe<Array<{ week: Date; n: bigint }>>(
+        `SELECT date_trunc('week', "createdAt") AS week, count(*) AS n FROM "AgentReadyScan" WHERE "staff" = false AND "createdAt" >= $1 GROUP BY 1`,
+        since,
+      )
+      .catch(() => []),
+    prisma
+      .$queryRawUnsafe<Array<{ total: bigint; paid: bigint; kits: bigint; avg: number | null; revenue: bigint | null }>>(
+        `SELECT count(*) AS total, count(*) FILTER (WHERE "tier" <> 'free') AS paid, count(*) FILTER (WHERE "tier" = 'kit') AS kits,
+                avg("score")::float AS avg, sum("amountPaid") FILTER (WHERE "tier" <> 'free') AS revenue
+         FROM "AgentReadyScan" WHERE "staff" = false`,
+      )
+      .then((r) => r[0])
+      .catch(() => null),
+    prisma
+      .$queryRawUnsafe<Array<{ n: bigint; revenue: bigint | null }>>(`SELECT count(*) AS n, sum("amountPaid") AS revenue FROM "CalculatorPass" WHERE "status" = 'paid'`)
+      .then((r) => r[0])
+      .catch(() => null),
+    prisma
+      .$queryRawUnsafe<Array<{ email: string | null; status: string; amountPaid: number; paidAt: Date | null; expiresAt: Date | null }>>(
+        `SELECT "email", "status", "amountPaid", "paidAt", "expiresAt" FROM "CalculatorPass" WHERE "status" IN ('paid', 'refunded') ORDER BY "paidAt" DESC NULLS LAST LIMIT 20`,
+      )
+      .catch(() => []),
+  ]);
+
   const weekStarts = Array.from({ length: weeks }, (_, i) => new Date(since.getTime() + i * 7 * 86_400_000));
   const label = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
   const series = (tool: string) =>
     weekStarts.map((w) => ({
       week: label(w),
-      uses: Number(rows.find((r) => r.tool === tool && new Date(r.week).getTime() === w.getTime())?.n ?? 0),
+      uses:
+        tool === "agentReady"
+          ? Number(agentWeeks.find((r) => new Date(r.week).getTime() === w.getTime())?.n ?? 0)
+          : Number(rows.find((r) => r.tool === tool && new Date(r.week).getTime() === w.getTime())?.n ?? 0),
     }));
-  const totals = Object.fromEntries(allTime.map((t) => [t.tool, t._count._all]));
+  const totals: Record<string, number> = Object.fromEntries(allTime.map((t) => [t.tool, t._count._all]));
+  totals.agentReady = Number(agentStats?.total ?? 0);
+  const agentTotal = Number(agentStats?.total ?? 0);
 
   return {
-    tools: ["scanner", "calculator", "advisor"].map((tool) => ({
+    tools: ["agentReady", "scanner", "calculator", "advisor"].map((tool) => ({
       tool,
       allTime: totals[tool] ?? 0,
       last6Weeks: series(tool).reduce((n, w) => n + w.uses, 0),
@@ -229,6 +278,25 @@ export async function getToolUsage() {
       emailCaptureRate: scans === 0 ? null : Math.round((leadsWithEmail / scans) * 100),
       bookingRate: scans === 0 ? null : Math.round((bookedFromScan / scans) * 100),
       avgScore: avg._avg.overallScore == null ? null : Math.round(avg._avg.overallScore),
+    },
+    agentReady: {
+      checks: agentTotal,
+      paid: Number(agentStats?.paid ?? 0),
+      kits: Number(agentStats?.kits ?? 0),
+      paidRate: agentTotal === 0 ? null : Math.round((Number(agentStats?.paid ?? 0) / agentTotal) * 100),
+      avgScore: agentStats?.avg == null ? null : Math.round(agentStats.avg),
+      revenueCents: Number(agentStats?.revenue ?? 0),
+    },
+    calculator: {
+      plansSold: Number(plans?.n ?? 0),
+      revenueCents: Number(plans?.revenue ?? 0),
+      recent: recentPlans.map((p) => ({
+        email: p.email,
+        status: p.status,
+        amountPaid: p.amountPaid,
+        paidAt: p.paidAt ? new Date(p.paidAt).toISOString() : null,
+        expiresAt: p.expiresAt ? new Date(p.expiresAt).toISOString() : null,
+      })),
     },
   };
 }

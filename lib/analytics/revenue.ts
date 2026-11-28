@@ -33,9 +33,11 @@ export const LINES: Record<string, string> = {
   bookings: "Paid bookings",
   events: "Events",
   blueprints: "AI Blueprints",
+  calculator_plans: "Calculator Full Plans",
+  agent_ready: "AI Agent Readiness",
 };
 
-const OPTIONAL = ["TrackPurchase", "TrackSubscription", "YouthSponsorship", "ScholarshipDonation", "Blueprint", "TouchAttribution", "LearnTrack"] as const;
+const OPTIONAL = ["TrackPurchase", "TrackSubscription", "YouthSponsorship", "ScholarshipDonation", "Blueprint", "TouchAttribution", "LearnTrack", "CalculatorPass", "AgentReadyScan"] as const;
 
 async function present(): Promise<Record<string, boolean>> {
   const rows = await prisma.$queryRawUnsafe<Array<{ t: string; ok: boolean }>>(
@@ -70,6 +72,10 @@ function revSql(has: Record<string, boolean>): string {
   if (has.ScholarshipDonation)
     parts.push(`SELECT 'donations', d."createdAt", d."amountCents"::bigint, lower(d."email"), 'donation', d."stripeSessionId", 'Scholarship donation (' || d."frequency" || ')' FROM "ScholarshipDonation" d`);
   if (has.Blueprint) parts.push(`SELECT 'blueprints', b."paidAt", b."amountPaid"::bigint, lower(b."email"), 'blueprint', b."id", 'AI Blueprint' FROM "Blueprint" b WHERE b."paidAt" IS NOT NULL`);
+  if (has.CalculatorPass)
+    parts.push(`SELECT 'calculator_plans', cp."paidAt", cp."amountPaid"::bigint, lower(cp."email"), 'calculator_plan', cp."id", 'AI Product Cost Calculator Full Plan' FROM "CalculatorPass" cp WHERE cp."status" = 'paid' AND cp."paidAt" IS NOT NULL`);
+  if (has.AgentReadyScan)
+    parts.push(`SELECT 'agent_ready', ar."paidAt", ar."amountPaid"::bigint, lower(ar."email"), 'agent-ready', ar."id", CASE WHEN ar."tier" = 'kit' THEN 'AI Agent Readiness fix kit' ELSE 'AI Agent Readiness report' END FROM "AgentReadyScan" ar WHERE ar."tier" <> 'free' AND ar."paidAt" IS NOT NULL`);
   return parts.join("\n UNION ALL ");
 }
 

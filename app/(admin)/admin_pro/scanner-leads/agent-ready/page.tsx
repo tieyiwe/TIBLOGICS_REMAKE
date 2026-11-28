@@ -5,6 +5,7 @@ import { requireAdminPage } from "../../_lib/admin-page-auth";
 import prisma from "@/lib/prisma";
 import { formatMoney } from "@/lib/blueprint/config";
 import { ensureAgentReadyTables } from "@/lib/agent-ready/db";
+import { freePerDay, kitCents, reportCents } from "@/lib/agent-ready/prices";
 
 // AI Agent Readiness scans: who checked, what they scored, what they bought.
 // Staff open any report in full (no purchase needed) and can run a check from
@@ -40,7 +41,8 @@ export default async function AgentReadyAdminPage() {
         <div>
           <h1 className="font-syne text-2xl font-bold text-[var(--a-ink)]">AI Agent Readiness</h1>
           <p className="mt-1 font-dm text-sm text-[var(--a-ink-3)]">
-            Free check, $25 report, $50 fix kit. Buyers who still need help are your best service leads.
+            Instant score included, report {reportCents() ? formatMoney(reportCents()!) : "off sale"}, fix kit {kitCents() ? formatMoney(kitCents()!) : "off sale"}
+            {" "}({freePerDay()} checks of one site a day). Buyers who still need help are your best service leads.
           </p>
         </div>
         <Link href="/tools/ai-agent-ready" target="_blank" className="inline-flex items-center gap-2 rounded-xl bg-[var(--a-blue)] px-4 py-2.5 font-dm text-sm font-semibold text-white">
@@ -53,6 +55,10 @@ export default async function AgentReadyAdminPage() {
         <MetricCard label="Paid reports and kits" value={paid} icon={ShieldCheck} iconColor="#16a34a" />
         <MetricCard label="Revenue" value={formatMoney(revenue._sum.amountPaid ?? 0)} icon={DollarSign} iconColor="#F47C20" />
       </div>
+      <p className="font-dm text-xs text-[var(--a-ink-3)]">
+        Prices are set in Replit Secrets: AGENT_READY_REPORT_CENTS, AGENT_READY_KIT_CENTS (0 takes an option off sale) and AGENT_READY_FREE_PER_DAY.
+        The home page figure on AI agents vs people is edited in <Link href="/admin_pro/blog/ai-traffic" className="text-[var(--a-blue)] hover:underline">AI Times &gt; AI vs Humans</Link>.
+      </p>
 
       <div className="overflow-x-auto rounded-2xl border border-[var(--a-border)] bg-[var(--a-surface)]">
         <table className="w-full min-w-[760px]" data-testid="agent-admin-table">
